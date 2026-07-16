@@ -1530,19 +1530,14 @@
                 </div>
             </div>
 
-            <!-- Premium Channel Action and Interaction Row -->
-            <div class="channel-action-row-watch">
-                <div class="action-row-left">
+            <!-- Adjusted Channel Action and Interaction Row (Name and subcount removed) -->
+            <div class="channel-action-row-watch" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
+                <div class="action-row-left" style="display: flex; align-items: center; gap: 10px;">
                     <img id="movie-channel-avatar" src="" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--border-color); background: #E2E8F0;">
-                    <div style="display: flex; flex-direction: column; min-width: 0;">
-                        <span id="movie-channel-name" style="font-size: 0.85rem; font-weight: 850; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Channel Name</span>
-                        <span id="movie-channel-subs-count" style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">0 Subscribers</span>
-                    </div>
+                    <button id="movie-subscribe-btn" class="btn-watch-subscribe" onclick="toggleMovieChannelSubscribe()">Subscribe</button>
                 </div>
                 
-                <div class="action-row-right">
-                    <button id="movie-subscribe-btn" class="btn-watch-subscribe" onclick="toggleMovieChannelSubscribe()">Subscribe</button>
-                    
+                <div class="action-row-right" style="display: flex; align-items: center; gap: 8px;">
                     <div class="pill-likes-dislikes">
                         <button id="movie-like-btn" class="btn-watch-like ripple" onclick="toggleMovieLike()">
                             <i class="far fa-thumbs-up" id="movie-like-icon"></i>
@@ -1554,8 +1549,9 @@
                         </button>
                     </div>
 
-                    <button class="btn-watch-download ripple" onclick="requestDownloadWithAd()">
-                        <i class="fas fa-download"></i> Download
+                    <!-- Circular Icon-only Download button -->
+                    <button class="btn-watch-download ripple" onclick="requestDownloadWithAd()" style="width: 34px; height: 34px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;" title="Download">
+                        <i class="fas fa-download"></i>
                     </button>
                 </div>
             </div>
@@ -2733,7 +2729,7 @@
                 const fileInput = document.createElement('input');
                 fileInput.type = 'file';
                 fileInput.accept = 'image/*';
-                fileInput.onchange = function() { uploadUserAvatarToR2Engine(fileInput); };
+                onchange = function() { uploadUserAvatarToR2Engine(fileInput); };
                 fileInput.click();
             } else {
                 logout();
@@ -4384,14 +4380,8 @@
             db.ref(`channels/${channelId}`).on('value', (snap) => {
                 const data = snap.val() || {};
                 const avatarImg = document.getElementById('movie-channel-avatar');
-                const nameTxt = document.getElementById('movie-channel-name');
-                const subsTxt = document.getElementById('movie-channel-subs-count');
 
                 if (avatarImg) avatarImg.src = data.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop";
-                if (nameTxt) nameTxt.innerText = data.channelName || "Channel Name";
-                
-                const subs = data.subscribersCount || 0;
-                if (subsTxt) subsTxt.innerText = formatCount(subs) + " Subscriber" + (subs === 1 ? "" : "s");
             });
 
             if (auth.currentUser) {
@@ -4634,79 +4624,67 @@
             if (sheet) sheet.style.display = 'none';
         }
 
+        // =========================================================
+        // REWRITTEN HIGH-FIDELITY WATCH PAGE RECOMMENDED FEED ENGINE
+        // =========================================================
         function renderMovieWatchRecommendedFeed() {
             const container = document.getElementById('yt-related-list');
             if (!container) return;
 
             let html = '';
             const currentId = currentActiveMovie ? String(currentActiveMovie.id) : null;
+            
+            // Only pull Long Videos, filtering out the active playing one
             const longvids = allLongVideos.filter(m => String(m.id) !== currentId);
-            const shortvids = allShorts.filter(m => String(m.id) !== currentId);
 
-            let recommendedItems = [];
-            longvids.forEach(v => recommendedItems.push({ type: 'long', data: v, time: v.createdAt || 0 }));
-            shortvids.forEach(s => recommendedItems.push({ type: 'short', data: s, time: s.createdAt || 0 }));
-
-            recommendedItems.sort((a, b) => b.time - a.time);
-
-            if (recommendedItems.length === 0) {
+            if (longvids.length === 0) {
                 container.innerHTML = `<p style="color:var(--text-muted); font-size:0.9rem; text-align:center; padding: 20px 0;">No recommendations found.</p>`;
                 return;
             }
 
-            const limit = Math.min(recommendedItems.length, watchRecommendedLimit);
-            const itemsToRender = recommendedItems.slice(0, limit);
+            // Sort by upload time desc
+            longvids.sort((a, b) => b.createdAt - a.createdAt);
 
-            itemsToRender.forEach(item => {
-                if (item.type === 'long') {
-                    const v = item.data;
-                    const viewsId = `watch-rec-long-${v.id}`;
-                    html += `
-                        <div style="display:flex; gap:12px; background:var(--surface); border-radius:16px; overflow:hidden; border:1px solid var(--border-color); padding:10px; cursor:pointer;" onclick="openMoviePage('${v.id}', false)">
-                            <div style="position:relative; width:120px; aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:#000; flex-shrink:0;">
-                                <img src="${v.poster}" style="width:100%; height:100%; object-fit:cover;" loading="lazy">
-                                <span style="position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.8); color:white; font-size:0.65rem; padding:2px 4px; border-radius:4px; font-weight:800;">${v.duration || '10:00'}</span>
-                            </div>
-                            <div style="display:flex; flex-direction:column; justify-content:center; flex:1; min-width:0;">
-                                <h4 style="font-size:0.88rem; font-weight:800; margin:0 0 4px 0; color:var(--text-main); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.2;">${escapeHTML(v.title)}</h4>
-                                <p style="font-size:0.75rem; color:var(--text-muted); margin:0; font-weight:600;">@${escapeHTML(v.username || 'user')}</p>
-                                <div style="font-size:0.72rem; color:var(--text-muted); display:flex; align-items:center; gap:4px; margin-top:2px; font-weight:500;">
+            const limit = Math.min(longvids.length, watchRecommendedLimit);
+            const itemsToRender = longvids.slice(0, limit);
+
+            itemsToRender.forEach(v => {
+                const viewsId = `rec-long-views-${v.id}`;
+                const relTime = getRelativeTime(v.createdAt);
+                const initial = v.username ? v.username.charAt(0).toUpperCase() : 'U';
+                const avatarHtml = v.channelAvatar 
+                    ? `<img class="long-video-channel-avatar" src="${v.channelAvatar}" style="width:36px; height:36px; border-radius:50%; object-fit:cover; flex-shrink: 0;" loading="lazy">`
+                    : `<div class="long-video-channel-avatar" style="width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, var(--primary), #FF7A00); color:#fff; font-weight:800; font-size:0.9rem; flex-shrink:0;">${initial}</div>`;
+
+                // Exactly match the Home Page Long Video card markup & style constraints
+                html += `
+                    <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+                        <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #000; overflow: hidden;">
+                            <img src="${v.poster}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+                            <span class="long-video-duration" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">${v.duration || '10:00'}</span>
+                        </div>
+                        <div class="long-video-details" style="padding: 14px 16px; display: flex; gap: 12px;">
+                            ${avatarHtml}
+                            <div class="long-video-meta-text" style="flex-grow: 1; min-width: 0;">
+                                <h4 class="long-video-title" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(v.title)}</h4>
+                                <div class="long-video-subtitle" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;">
+                                    <span>${escapeHTML(v.username || 'Flaynity User')}</span>
+                                    <span>•</span>
                                     <span id="${viewsId}">0 Views</span>
                                     <span>•</span>
-                                    <span>${getRelativeTime(v.createdAt)}</span>
+                                    <span>${relTime}</span>
                                 </div>
                             </div>
                         </div>
-                    `;
-                    db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
-                        const viewsObj = vSnap.val() || {};
-                        const count = Object.keys(viewsObj).length;
-                        const label = document.getElementById(viewsId);
-                        if (label) label.innerText = formatCount(count) + " Views";
-                    });
-                } else {
-                    const s = item.data;
-                    const viewsId = `watch-rec-short-${s.id}`;
-                    html += `
-                        <div style="display:flex; gap:12px; background:var(--surface); border-radius:16px; overflow:hidden; border:1px solid var(--border-color); padding:10px; cursor:pointer;" onclick="openShortFromWatchPage('${s.id}')">
-                            <div style="position:relative; width:80px; aspect-ratio:9/16; border-radius:10px; overflow:hidden; background:#000; flex-shrink:0;">
-                                <img src="${s.poster}" style="width:100%; height:100%; object-fit:cover;" loading="lazy">
-                                <span style="position:absolute; bottom:4px; left:4px; color:white; font-size:0.65rem; font-weight:800; display:flex; align-items:center; gap:2px;"><i class="fas fa-play" style="font-size:0.55rem;"></i> <span id="${viewsId}">0</span></span>
-                            </div>
-                            <div style="display:flex; flex-direction:column; justify-content:center; flex:1; min-width:0;">
-                                <span style="background:rgba(255, 46, 85, 0.1); color:var(--primary); font-size:0.65rem; font-weight:800; padding:2px 6px; border-radius:4px; width:fit-content; margin-bottom:4px;">SHORTS</span>
-                                <h4 style="font-size:0.88rem; font-weight:800; margin:0 0 4px 0; color:var(--text-main); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.2;">${escapeHTML(s.title)}</h4>
-                                <p style="font-size:0.75rem; color:var(--text-muted); margin:0; font-weight:600;">@${escapeHTML(s.username || 'user')}</p>
-                            </div>
-                        </div>
-                    `;
-                    db.ref(`movie_stats/${s.id}/views`).once('value', (vSnap) => {
-                        const viewsObj = vSnap.val() || {};
-                        const count = Object.keys(viewsObj).length;
-                        const label = document.getElementById(viewsId);
-                        if (label) label.innerText = formatCount(count);
-                    });
-                }
+                    </div>
+                `;
+
+                db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
+                    const viewsObj = vSnap.val() || {};
+                    const count = Object.keys(viewsObj).length;
+                    const label = document.getElementById(viewsId);
+                    if (label) label.innerText = formatCount(count) + " Views";
+                });
             });
 
             container.innerHTML = html;

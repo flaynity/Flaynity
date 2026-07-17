@@ -590,7 +590,7 @@
         .profile-avatar-large {
             width: 80px; height: 80px; border-radius: 50%;
             background: linear-gradient(135deg, var(--primary), #FF7A00); color: white;
-            display: flex; align-items: center; justify-content: center; font-size: 1.9rem;
+            display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.9rem;
             font-weight: 800; overflow: hidden; box-shadow: 0 8px 20px var(--primary-glow);
             transition: transform 0.3s ease;
         }
@@ -1537,7 +1537,7 @@
                     <button id="movie-subscribe-btn" class="btn-watch-subscribe" onclick="toggleMovieChannelSubscribe()">Subscribe</button>
                 </div>
                 
-                <div class="action-row-right" style="display: flex; align-items: center; gap: 8px;">
+                <div class="action-row-right">
                     <div class="pill-likes-dislikes">
                         <button id="movie-like-btn" class="btn-watch-like ripple" onclick="toggleMovieLike()">
                             <i class="far fa-thumbs-up" id="movie-like-icon"></i>
@@ -2562,14 +2562,14 @@
         // FIREBASE SETUP
         // =========================================
         const firebaseConfig = {
-            apiKey: "AIzaSyCiUTQp_QDSbBIOGJXKI7jJmzQHPu8L14I",
-            authDomain: "flaynity-app.firebaseapp.com",
-            databaseURL: "https://flaynity-app-default-rtdb.firebaseio.com",
-            projectId: "flaynity-app",
-            storageBucket: "flaynity-app.firebasestorage.app",
-            messagingSenderId: "587469287255",
-            appId: "1:587469287255:web:6ec177b0c1c802efc95812",
-            measurementId: "G-HPMF5TPJB2"
+            apiKey: "AIzaSyDG8qWbRc02zu4gFCCKuJozbCKxuE3Jc9c",
+            authDomain: "startube-759e9.firebaseapp.com",
+            databaseURL: "https://startube-759e9-default-rtdb.firebaseio.com",
+            projectId: "startube-759e9",
+            storageBucket: "startube-759e9.firebasestorage.app",
+            messagingSenderId: "175934866763",
+            appId: "1:175934866763:web:ae271d04d255309ffed4ce",
+            measurementId: "G-XE9ZYS9SPM"
         };
         
         try {
@@ -2614,14 +2614,8 @@
             signatureVersion: 'v4'
         };
         
-        let s3 = null;
-        try {
-            AWS.config.update(R2_CONFIG);
-            s3 = new AWS.S3({ params: { Bucket: 'startube-videos' } });
-        } catch (e) {
-            console.warn("AWS Object storage offline:", e);
-        }
-        
+        AWS.config.update(R2_CONFIG);
+        const s3 = new AWS.S3({ params: { Bucket: 'startube-videos' } });
         const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-35bc2db4a9ec499dacbd0a45f7a53f8a.r2.dev";
 
         // =========================================================
@@ -2729,7 +2723,7 @@
                 const fileInput = document.createElement('input');
                 fileInput.type = 'file';
                 fileInput.accept = 'image/*';
-                onchange = function() { uploadUserAvatarToR2Engine(fileInput); };
+                fileInput.onchange = function() { uploadUserAvatarToR2Engine(fileInput); };
                 fileInput.click();
             } else {
                 logout();
@@ -3426,9 +3420,11 @@
                 }
                 posts.slice(0, postRenderLimit).forEach(p => {
                     html += renderSinglePostSegmentUI(p);
-                    setTimeout(() => registerPostReactionsListener(p.id), 50);
                 });
                 container.innerHTML = html;
+                posts.slice(0, postRenderLimit).forEach(p => {
+                    registerPostReactionsListener(p.id);
+                });
                 return;
             }
 
@@ -3440,6 +3436,8 @@
                 container.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 40px 0; font-weight:700;">No items in this category.</p>`;
                 return;
             }
+
+            let postsToBind = [];
 
             while (longIdx < longs.length || shortIdx < shorts.length || postIdx < posts.length) {
                 if (shortIdx < shorts.length) {
@@ -3458,12 +3456,16 @@
                     const singlePost = posts[postIdx];
                     postIdx++;
                     html += renderSinglePostSegmentUI(singlePost);
-                    const currentPostId = singlePost.id;
-                    setTimeout(() => registerPostReactionsListener(currentPostId), 50);
+                    postsToBind.push(singlePost.id);
                 }
             }
 
             container.innerHTML = html;
+            
+            // Bind listeners after DOM updates to prevent race conditions
+            postsToBind.forEach(postId => {
+                registerPostReactionsListener(postId);
+            });
         }
 
         function renderShortsSegmentUI(segmentShorts) {

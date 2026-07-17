@@ -2562,14 +2562,14 @@
         // FIREBASE SETUP
         // =========================================
         const firebaseConfig = {
-            apiKey: "AIzaSyDG8qWbRc02zu4gFCCKuJozbCKxuE3Jc9c",
-            authDomain: "startube-759e9.firebaseapp.com",
-            databaseURL: "https://startube-759e9-default-rtdb.firebaseio.com",
-            projectId: "startube-759e9",
-            storageBucket: "startube-759e9.firebasestorage.app",
-            messagingSenderId: "175934866763",
-            appId: "1:175934866763:web:ae271d04d255309ffed4ce",
-            measurementId: "G-XE9ZYS9SPM"
+            apiKey: "AIzaSyCiUTQp_QDSbBIOGJXKI7jJmzQHPu8L14I",
+            authDomain: "flaynity-app.firebaseapp.com",
+            databaseURL: "https://flaynity-app-default-rtdb.firebaseio.com",
+            projectId: "flaynity-app",
+            storageBucket: "flaynity-app.firebasestorage.app",
+            messagingSenderId: "587469287255",
+            appId: "1:587469287255:web:6ec177b0c1c802efc95812",
+            measurementId: "G-HPMF5TPJB2"
         };
         
         try {
@@ -2607,16 +2607,16 @@
         // CLOUDFLARE R2 S3 SDK CONFIGURATIONS
         // =========================================================
         const R2_CONFIG = {
-            accessKeyId: "720a80785689b24eb505c17e2f7dd8d8",
-            secretAccessKey: "e54995abd7d7a83106941bf5cb1ef4d7a0516a2cecd5384dd670408a43639abe",
-            endpoint: "https://a99a8754f095307dcb50afd7f9a14da4.r2.cloudflarestorage.com",
+            accessKeyId: "76b902c42a3697ad5011ef1c72438306",
+            secretAccessKey: "33902a8ed31914daf36aa6d6f7a715d93ab1cad856cb7eb286edb05e0fe87763",
+            endpoint: "https://b3741135bd1f3e96b6744f11e6a06600.r2.cloudflarestorage.com",
             s3ForcePathStyle: true,
             signatureVersion: 'v4'
         };
         
         AWS.config.update(R2_CONFIG);
-        const s3 = new AWS.S3({ params: { Bucket: 'startube-videos' } });
-        const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-35bc2db4a9ec499dacbd0a45f7a53f8a.r2.dev";
+        const s3 = new AWS.S3({ params: { Bucket: 'flaynity-storage' } });
+        const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-bcff9c709dbe44d7a50c78e9a0f9bd59.r2.dev";
 
         // =========================================================
         // S3 R2 OBJECT STORAGE MEDIA UPLOAD MODULE

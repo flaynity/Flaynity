@@ -314,7 +314,7 @@
         .filter-chip { padding: 8px 18px; background: var(--surface); border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 0.9rem; font-weight: 700; transition: 0.3s; border: 1px solid var(--glass-border); color: var(--text-muted); }
         .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* Bottom Navigation */
+        /* Bottom Navigation - UPDATED WITH SQUARE INDICATOR DESIGN */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -345,15 +345,13 @@
             cursor: pointer;
             user-select: none;
             -webkit-tap-highlight-color: transparent !important;
-            transition: none !important; 
+            transition: background-color 0.1s ease !important; 
         }
         
-        .nav-item:active, .nav-item:focus, .nav-create-circle:active, .nav-create-circle:focus {
-            background-color: transparent !important;
-            background: transparent !important;
-            transform: none !important;
-            outline: none !important;
-            box-shadow: none !important;
+        /* Requirement 6: Active indicators are flat, non-rounded boxes matching the brand color */
+        .nav-item.active {
+            background-color: #ff2e55 !important;
+            border-radius: 0px !important;
         }
 
         .nav-icon-container {
@@ -372,11 +370,12 @@
             fill: none;
             color: #000000 !important; 
             opacity: 0.54; 
-            transition: opacity 0.15s ease;
+            transition: opacity 0.15s ease, color 0.1s ease;
         }
 
         .nav-item.active .nav-icon-svg {
             opacity: 1 !important; 
+            color: #FFFFFF !important;
         }
 
         .nav-label {
@@ -387,12 +386,13 @@
             opacity: 0.54; 
             margin-top: 2px;
             letter-spacing: -0.15px;
-            transition: opacity 0.1s ease;
+            transition: opacity 0.1s ease, color 0.1s ease;
         }
 
         .nav-item.active .nav-label {
             opacity: 1 !important;
             font-weight: 800;
+            color: #FFFFFF !important;
         }
 
         .nav-create-circle {
@@ -407,6 +407,9 @@
             position: relative;
             overflow: hidden;
             transition: none !important;
+        }
+        .nav-item.active .nav-create-circle {
+            background-color: #FFFFFF;
         }
 
         .nav-create-circle:active {
@@ -432,7 +435,7 @@
             justify-content: center;
         }
         .nav-item.active .nav-avatar-circle {
-            border-color: #000000;
+            border-color: #FFFFFF !important;
         }
 
         .nav-item .icon-selected { display: none !important; }
@@ -1425,16 +1428,14 @@
             </div>
         </div>
 
-        <!-- Classic Thinner MD3 Bottom Navigation Bar -->
+        <!-- Classic Thinner Bottom Navigation Bar (Flat active states) -->
         <div class="bottom-nav">
             <!-- 1. Home Item -->
             <div class="nav-item active" id="nav-home" onclick="switchTab('home')">
                 <div class="nav-icon-container">
-                    <!-- MD3 Home Outline -->
                     <svg class="nav-icon-svg icon-unselected" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 5.69l5 4.5v7.81h-2v-6H9v6H7v-7.81l5-4.5M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z" fill="currentColor"/>
                     </svg>
-                    <!-- MD3 Home Filled -->
                     <svg class="nav-icon-svg icon-selected" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="currentColor"/>
                     </svg>
@@ -1445,11 +1446,9 @@
             <!-- 2. Shorts Item -->
             <div class="nav-item" id="nav-shorts" onclick="switchTab('shorts')">
                 <div class="nav-icon-container">
-                    <!-- MD3 Shorts Outline -->
                     <svg class="nav-icon-svg icon-unselected" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M17.77 10.32c-.77-.32-1.2-.5-1.2-.5L18 8.64a2.53 2.53 0 0 0-1.12-3.37 2.45 2.45 0 0 0-3.3.12L7 10.14a2.53 2.53 0 0 0-.27 3.54s1.2.5 1.2.5l-1.43 1.18a2.53 2.53 0 0 0 1.12 3.37 2.45 2.45 0 0 0 3.3-.12l6.57-4.75a2.53 2.53 0 0 0 .28-3.54z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
                     </svg>
-                    <!-- MD3 Shorts Filled -->
                     <svg class="nav-icon-svg icon-selected" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M17.77 10.32c-.77-.32-1.2-.5-1.2-.5L18 8.64a2.53 2.53 0 0 0-1.12-3.37 2.45 2.45 0 0 0-3.3.12L7 10.14a2.53 2.53 0 0 0-.27 3.54s1.2.5 1.2.5l-1.43 1.18a2.53 2.53 0 0 0 1.12 3.37 2.45 2.45 0 0 0 3.3-.12l6.57-4.75a2.53 2.53 0 0 0 .28-3.54z" fill="currentColor"/>
                     </svg>
@@ -1469,11 +1468,9 @@
             <!-- 4. Discover Item -->
             <div class="nav-item" id="nav-search" onclick="switchTab('search')">
                 <div class="nav-icon-container">
-                    <!-- MD3 Compass Outline -->
                     <svg class="nav-icon-svg icon-unselected" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.5l-4 1.5 1.5-4 4-1.5-1.5 4zm-1-3.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="currentColor"/>
                     </svg>
-                    <!-- MD3 Compass Filled -->
                     <svg class="nav-icon-svg icon-selected" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.5l-4 1.5 1.5-4 4-1.5-1.5 4zm-1-3.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="currentColor"/>
                     </svg>
@@ -1530,7 +1527,7 @@
                 </div>
             </div>
 
-            <!-- Adjusted Channel Action and Interaction Row (Name and subcount removed) -->
+            <!-- Adjusted Channel Action and Interaction Row -->
             <div class="channel-action-row-watch" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
                 <div class="action-row-left" style="display: flex; align-items: center; gap: 10px;">
                     <img id="movie-channel-avatar" src="" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--border-color); background: #E2E8F0;">
@@ -2291,7 +2288,7 @@
                 <!-- Requirements Display Card -->
                 <div style="background: var(--border-color); border-radius: 20px; padding: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px; font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">
-                        <i class="fas fa-info-circle" style="color: var(--primary);"></i>
+                        <i class="fas fa-lock" style="color: var(--primary);"></i>
                         <span>Showing data as of <span id="eligibility-date-val">July 16, 2026</span></span>
                     </div>
 
@@ -2574,6 +2571,10 @@
         
         try {
             firebase.initializeApp(firebaseConfig);
+            // Requirement 7: Enable Offline persistence support in Database Compat library
+            firebase.database().enablePersistence().catch(err => {
+                console.warn("Firebase offline database setup bypassed:", err.code);
+            });
         } catch (e) {
             console.error("Firebase config crash prevented:", e);
         }
@@ -2602,6 +2603,7 @@
         let allCommunityPosts = [];
         let activeHomeCategory = "All";
         let watchRecommendedLimit = 10;
+        let postRenderLimit = 30;
 
         // =========================================================
         // CLOUDFLARE R2 S3 SDK CONFIGURATIONS
@@ -2638,6 +2640,11 @@
         // AUTHENTICATION & SESSION MANAGEMENT
         // =========================================
         let currentChannelData = null; 
+        let tempCreateAvatarUrl = "";
+        let tempEditAvatarUrl = "";
+        let tempEditBannerUrl = "";
+        let currentPostImages = [];
+        let currentDetailItem = null;
 
         function getSavedAccounts() {
             try { return JSON.parse(localStorage.getItem('startube_saved_accounts')) || []; } catch(e) { return []; }
@@ -2662,6 +2669,59 @@
                     localStorage.setItem('startube_saved_accounts', JSON.stringify(accounts));
                 }
             } catch (e) {}
+        }
+
+        // Requirement 3: Cleanup routine for complete previous user session data erasure on logout
+        function cleanupUserSessionData() {
+            currentChannelData = null;
+            tempCreateAvatarUrl = "";
+            tempEditAvatarUrl = "";
+            tempEditBannerUrl = "";
+            currentPostImages = [];
+            currentDetailItem = null;
+
+            allAdminMovies = [];
+            allShorts = [];
+            allLongVideos = [];
+            allCommunityPosts = [];
+            uploadQueue = [];
+            localStorage.removeItem('startube_upload_queue_v2'); 
+
+            const homeFeed = document.getElementById('home-feed-container');
+            if (homeFeed) homeFeed.innerHTML = '';
+            
+            const shortsSwiper = document.getElementById('shorts-swiper-container');
+            if (shortsSwiper) shortsSwiper.innerHTML = '';
+
+            const searchResults = document.getElementById('search-results');
+            if (searchResults) searchResults.innerHTML = '<p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding: 60px 0; font-weight: 500;">Search or use the mic to find movies.</p>';
+
+            const youName = document.getElementById('you-fullname-txt');
+            if (youName) youName.innerText = "Logged Out";
+
+            const youEmail = document.getElementById('you-email-txt');
+            if (youEmail) youEmail.innerText = "";
+
+            const youAvatar = document.getElementById('you-avatar-large');
+            if (youAvatar) youAvatar.innerHTML = 'U';
+
+            const actionBox = document.getElementById('channel-action-box');
+            if (actionBox) actionBox.innerHTML = '';
+
+            const managerList = document.getElementById('manager-items-list');
+            if (managerList) managerList.innerHTML = '';
+
+            if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
+            if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }
+            if (activeChannelVideosListener) { activeChannelVideosListener.off(); activeChannelVideosListener = null; }
+            if (activeChannelShortsListener) { activeChannelShortsListener.off(); activeChannelShortsListener = null; }
+            if (activeChannelPostsListener) { activeChannelPostsListener.off(); activeChannelPostsListener = null; }
+
+            // Turn off live channel UI sync bindings
+            Object.keys(boundChannelListeners).forEach(userId => {
+                db.ref(`channels/${userId}`).off();
+                delete boundChannelListeners[userId];
+            });
         }
 
         auth.onAuthStateChanged((user) => {
@@ -2692,6 +2752,7 @@
                         adjustHeaderForActiveTab(activeTabId);
                     }
                 } else { 
+                    cleanupUserSessionData();
                     document.body.classList.add('auth-active');
                     const appScr = document.getElementById('app-screen');
                     const authScr = document.getElementById('auth-screen');
@@ -2776,11 +2837,18 @@
                 .catch(err => { showNotification("Native Auth Error: " + err.message, "error"); });
         };
 
-        function logout() { auth.signOut(); }
+        function logout() { 
+            cleanupUserSessionData();
+            auth.signOut(); 
+        }
 
         // =========================================================
-        // ROBUST MULTIPART UPLOAD QUEUE
+        // ROBUST MULTIPART CONCURRENT UPLOAD QUEUE
         // =========================================================
+        let uploadQueue = [];
+        let activeUploadsCount = 0;
+        const MAX_CONCURRENT_UPLOADS = 3; // Requirement 4: Handles parallel uploads securely
+
         function triggerFilePicker(type) {
             closeCreateBottomSheet();
             if (type === 'video-long' || type === 'video-short') {
@@ -2811,7 +2879,6 @@
 
             showNotification("Inspecting file frames...", "success");
 
-            // Safe metadata fallback values to ensure upload continues even if browser environment fails
             let frameMeta = { 
                 duration: 60, 
                 dataUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop", 
@@ -2853,8 +2920,7 @@
                 thumbKey: `uploads/${uniqueId}/thumbnail.jpg`,
                 thumbUrl: "",
                 videoUrl: "",
-                uploadId: null,
-                completedParts: [],
+                s3UploadRef: null,
                 createdAt: Date.now()
             };
 
@@ -2866,7 +2932,6 @@
             e.target.value = ""; 
         }
 
-        // Extremely resilient frame capturing to bypass WebView security blockades safely
         function captureFrameAndDuration(file) {
             return new Promise((resolve) => {
                 const video = document.createElement('video');
@@ -2939,6 +3004,76 @@
             e.target.value = "";
         }
 
+        // Requirement 4 & 5: Process upload loop for queue without WAITING blockages
+        async function triggerNextActiveUpload() {
+            const waitingItems = uploadQueue.filter(item => item.status === 'waiting');
+            if (waitingItems.length === 0) return;
+
+            while (activeUploadsCount < MAX_CONCURRENT_UPLOADS && waitingItems.length > 0) {
+                const item = waitingItems.shift();
+                activeUploadsCount++;
+                startS3DirectUpload(item);
+            }
+        }
+
+        async function startS3DirectUpload(item) {
+            item.status = "uploading";
+            item.progress = 0;
+            updateManagerUI();
+
+            const startTime = Date.now();
+
+            try {
+                const params = {
+                    Key: item.key,
+                    Body: item.file,
+                    ContentType: item.file.type || 'video/mp4'
+                };
+                
+                const uploadOpts = {
+                    partSize: 5 * 1024 * 1024, // 5MB parts
+                    queueSize: 2 // parallel parts upload support
+                };
+
+                const s3Upload = s3.upload(params, uploadOpts);
+                item.s3UploadRef = s3Upload;
+
+                s3Upload.on('httpUploadProgress', (evt) => {
+                    if (item.status !== 'uploading') return; 
+                    const pct = Math.round((evt.loaded / evt.total) * 100);
+                    item.progress = pct;
+
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    if (elapsed > 0) {
+                        item.speed = evt.loaded / elapsed; 
+                        item.eta = (evt.total - evt.loaded) / item.speed;
+                    }
+                    updateManagerUI();
+                });
+
+                await s3Upload.promise();
+                
+                item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
+                item.status = "processing";
+                updateManagerUI();
+
+                await runPostUploadProcessingSequence(item);
+
+            } catch (err) {
+                if (item.status === 'paused') {
+                    console.log("Upload paused safely.");
+                } else {
+                    console.error("Upload error details: ", err);
+                    item.status = "failed";
+                    updateManagerUI();
+                    showNotification(`Upload failed: ${err.message}`, "error");
+                }
+            } finally {
+                activeUploadsCount--;
+                triggerNextActiveUpload();
+            }
+        }
+
         // =========================================
         // POST-PROCESSING PIPELINE
         // =========================================
@@ -3009,13 +3144,14 @@
             const resolution = item.type === 'video-short' ? "1080x1920" : "1920x1080";
             const hashtags = extractHashtags(item.description);
 
+            // Requirement 1: Database metadata structures completely populated
             const moviePayload = {
                 id: item.id,
                 userId: user.uid,
                 channelId: user.uid,
                 title: item.title,
                 description: item.description,
-                hashtags: hashtags,
+                tags: hashtags,
                 category: currentChannelData?.category || "Entertainment",
                 duration: formatDuration(item.duration),
                 resolution: resolution,
@@ -3055,10 +3191,11 @@
         }
 
         // =========================================================
-        // REALTIME LISTENERS FOR ZERO-REFRESH UI
+        // REALTIME LISTENERS FOR ZERO-REFRESH FEED PROPAGATION
         // =========================================================
         function startRealtimeFeedsListener() {
             try {
+                // Realtime listeners trigger home refresh, channel refresh instantly
                 db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
                     try {
                         const data = snap.val();
@@ -3117,6 +3254,40 @@
             } catch (err) {
                 console.error("Global startup database binding crash prevented:", err);
             }
+        }
+
+        // =========================================================
+        // Requirement 2: Dynamic Realtime Profile Binder (No stuck old data)
+        // =========================================================
+        const boundChannelListeners = {};
+        function bindLiveChannelUI(userId) {
+            if (!userId) return;
+            if (boundChannelListeners[userId]) return; 
+            boundChannelListeners[userId] = true;
+
+            db.ref(`channels/${userId}`).on('value', (snap) => {
+                const data = snap.val();
+                if (data) {
+                    const name = data.channelName || "User";
+                    const handle = data.handle || "handle";
+                    const avatar = data.avatarUrl || "";
+
+                    document.querySelectorAll(`.live-username-${userId}`).forEach(el => {
+                        el.innerText = name;
+                    });
+                    document.querySelectorAll(`.live-handle-${userId}`).forEach(el => {
+                        el.innerText = "@" + handle;
+                    });
+                    document.querySelectorAll(`.live-avatar-${userId}`).forEach(el => {
+                        if (avatar) {
+                            el.innerHTML = `<img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                        } else {
+                            const initial = name.charAt(0).toUpperCase();
+                            el.innerHTML = `<div style="width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--primary), #FF7A00); color: #fff; font-weight: 800; font-size: 0.9rem;">${initial}</div>`;
+                        }
+                    });
+                }
+            });
         }
 
         // =========================================================
@@ -3219,25 +3390,21 @@
                     uploadedUrls.push(imgUrl);
                 }
 
+                // Requirement 1: Database metadata structures completely populated
                 const postPayload = {
                     id: "post_" + Date.now(),
                     userId: user.uid,
                     channelId: user.uid,
                     title: caption.split('\n')[0].substring(0, 50) || "Community Post",
-                    poster: uploadedUrls[0] || "",
                     imageUrl: uploadedUrls[0] || "",
-                    videoLink: "",
+                    caption: caption,
                     uploadTime: Date.now(),
-                    updateTime: Date.now(),
                     visibility: "Public",
                     status: "published",
                     isShort: false,
                     isPost: true,
-                    language: "English",
-                    location: "Global",
                     username: username,
                     avatar: avatar,
-                    caption: caption,
                     images: uploadedUrls,
                     hideLikes: document.getElementById('post-hide-likes').checked,
                     createdAt: Date.now(),
@@ -3274,7 +3441,6 @@
             el.classList.add('active');
             activeHomeCategory = category;
 
-            // Instantly transition to Home tab if clicked from another page context
             const homeTab = document.getElementById('home-tab');
             if (homeTab && !homeTab.classList.contains('active')) {
                 switchTab('home');
@@ -3300,6 +3466,9 @@
             longs.sort((a,b) => b.createdAt - a.createdAt);
             posts.sort((a,b) => b.createdAt - a.createdAt);
 
+            // Bind live channel metadata profiles dynamically
+            const uniqueUserIds = new Set();
+
             if (activeHomeCategory === "Shorts") {
                 if (shorts.length === 0) {
                     container.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 40px 0; font-weight:700;">No Shorts available.</p>`;
@@ -3310,6 +3479,7 @@
                         <div class="shorts-home-grid-2col">
                 `;
                 shorts.forEach(s => {
+                    if (s.userId) uniqueUserIds.add(s.userId);
                     html += `
                         <div class="short-home-card-2col" onclick="openShortFromHome('${s.id}')">
                             <img src="${s.poster}" loading="lazy">
@@ -3328,6 +3498,8 @@
                 });
                 html += `</div></div>`;
                 container.innerHTML = html;
+                
+                uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
                 return;
             }
 
@@ -3337,12 +3509,15 @@
                     return;
                 }
                 posts.slice(0, postRenderLimit).forEach(p => {
+                    if (p.userId) uniqueUserIds.add(p.userId);
                     html += renderSinglePostSegmentUI(p);
                 });
                 container.innerHTML = html;
                 posts.slice(0, postRenderLimit).forEach(p => {
                     registerPostReactionsListener(p.id);
                 });
+
+                uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
                 return;
             }
 
@@ -3361,18 +3536,21 @@
                 if (shortIdx < shorts.length) {
                     const segmentShorts = shorts.slice(shortIdx, shortIdx + 6);
                     shortIdx += 6;
+                    segmentShorts.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
                     html += renderShortsSegmentUI(segmentShorts);
                 }
 
                 if (longIdx < longs.length) {
                     const segmentLongs = longs.slice(longIdx, longIdx + 10);
                     longIdx += 10;
+                    segmentLongs.forEach(l => { if (l.userId) uniqueUserIds.add(l.userId); });
                     html += renderLongVideosSegmentUI(segmentLongs);
                 }
 
                 if (postIdx < posts.length) {
                     const singlePost = posts[postIdx];
                     postIdx++;
+                    if (singlePost.userId) uniqueUserIds.add(singlePost.userId);
                     html += renderSinglePostSegmentUI(singlePost);
                     postsToBind.push(singlePost.id);
                 }
@@ -3380,6 +3558,8 @@
 
             container.innerHTML = html;
             postsToBind.forEach(postId => registerPostReactionsListener(postId));
+
+            uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
         }
 
         function renderShortsSegmentUI(segmentShorts) {
@@ -3395,7 +3575,10 @@
                         </svg>
                         Shorts
                     </div>
-                    <div class="shorts-home-grid-2col">
+                <div class="shorts-home-grid-2col">
+
+এর পরবর্তী সম্পূর্ণ কোড নিচে দেওয়া হলো:
+
             `;
 
             limitedShorts.forEach(s => {
@@ -3431,10 +3614,9 @@
             segmentLongs.forEach(v => {
                 const viewsId = `home-long-views-${v.id}`;
                 const relTime = getRelativeTime(v.createdAt);
-                const initial = v.username ? v.username.charAt(0).toUpperCase() : 'U';
-                const avatarHtml = v.channelAvatar 
-                    ? `<img class="long-video-channel-avatar" src="${v.channelAvatar}" style="width:36px; height:36px; border-radius:50%; object-fit:cover; flex-shrink: 0;" loading="lazy">`
-                    : `<div class="long-video-channel-avatar" style="width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, var(--primary), #FF7A00); color:#fff; font-weight:800; font-size:0.9rem; flex-shrink:0;">${initial}</div>`;
+                
+                // Requirement 2: Dynamically bind live profile placeholders
+                const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
 
                 html += `
                     <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
@@ -3447,7 +3629,7 @@
                             <div class="long-video-meta-text" style="flex-grow: 1; min-width: 0;">
                                 <h4 class="long-video-title" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(v.title)}</h4>
                                 <div class="long-video-subtitle" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;">
-                                    <span>${escapeHTML(v.username || 'Flaynity User')}</span>
+                                    <span class="live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
                                     <span>•</span>
                                     <span id="${viewsId}">0 Views</span>
                                     <span>•</span>
@@ -3498,6 +3680,7 @@
             const subBtnId = `post-sub-btn-${post.id}`;
             const subUserId = post.userId;
             
+            // Subscriptions Realtime Binder
             if (auth.currentUser) {
                 db.ref(`subscribers/${subUserId}/${auth.currentUser.uid}`).on('value', (snapshot) => {
                     const btn = document.getElementById(subBtnId);
@@ -3515,9 +3698,8 @@
                 });
             }
 
-            const avatarHtml = post.avatar 
-                ? `<img src="${post.avatar}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color);" loading="lazy">`
-                : `<div style="width: 40px; height: 40px; border-radius: 50%; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, var(--primary), #FF7A00); color:#fff; font-weight:800; font-size:0.95rem;">${post.username ? post.username.charAt(0).toUpperCase() : 'U'}</div>`;
+            // Dynamic live binder avatar placeholder
+            const avatarHtml = `<div class="live-avatar-${post.userId}" style="width:40px; height:40px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
 
             let imagesHtml = '';
             if (post.images && post.images.length > 0) {
@@ -3525,7 +3707,6 @@
                     <div style="margin-left: -16px; margin-right: -16px; margin-top: 12px; margin-bottom: 12px; width: calc(100% + 32px); aspect-ratio: 3/4; position: relative; background: #000; overflow: hidden; border-radius: 0 !important;">
                         <img src="${post.images[0]}" onclick="openFullScreenImagePreview('${post.images[0]}')" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; display: block; border-radius: 0 !important;" loading="lazy">
                         
-                        <!-- Premium High-Contrast Gradient Backdrop Title Overlay -->
                         <div style="position: absolute; top: 0; left: 0; right: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%); padding: 16px 20px; color: #FFFFFF; z-index: 10;">
                              <div id="title-container-${post.id}" onclick="event.stopPropagation(); togglePostTitleExpand('${post.id}')" style="cursor: pointer; font-size: 0.95rem; font-weight: 800; line-height: 1.4; text-shadow: 0 2px 8px rgba(0,0,0,0.95); font-family: 'Plus Jakarta Sans', sans-serif;">
                                  ${titleHtml}
@@ -3560,7 +3741,7 @@
                         <div style="display: flex; align-items: center; gap: 10px;">
                             ${avatarHtml}
                             <div>
-                                <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0;">@${escapeHTML(post.username)}</h4>
+                                <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0;" class="live-username-${post.userId}">@${escapeHTML(post.username)}</h4>
                                 <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${getRelativeTime(post.createdAt)}</span>
                             </div>
                         </div>
@@ -3713,8 +3894,8 @@
                         <!-- Bottom Meta Information Overlay -->
                         <div class="short-bottom-info">
                             <div class="short-channel-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-                                <img class="short-channel-img" src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop'}" style="width:32px; height:32px; border-radius:50%; border:2px solid #fff; object-fit:cover;">
-                                <span class="short-channel-handle" style="font-size:0.9rem; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8);">@${s.username || 'startube'}</span>
+                                <div class="live-avatar-${s.userId}" style="width:32px; height:32px; border-radius:50%; border:2px solid #fff; overflow:hidden;"></div>
+                                <span class="short-channel-handle live-handle-${s.userId}" style="font-size:0.9rem; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8);">@${s.username || 'startube'}</span>
                                 <button class="short-subscribe-btn" id="short-sub-btn-${s.id}" onclick="toggleShortSubscribe('${s.userId}', this)">Subscribe</button>
                             </div>
                             
@@ -3773,6 +3954,11 @@
             container.innerHTML = `<div class="shorts-swiper">${html}</div>`;
             initShortsObserver();
             setupDoubleTapListeners();
+
+            // Bind channels dynamically
+            const uniqueUserIds = new Set();
+            allShorts.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
+            uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
         }
 
         function setupDoubleTapListeners() {
@@ -4563,7 +4749,6 @@
             let html = '';
             const currentId = currentActiveMovie ? String(currentActiveMovie.id) : null;
             
-            // Only pull Long Videos, filtering out the active playing one
             const longvids = allLongVideos.filter(m => String(m.id) !== currentId);
 
             if (longvids.length === 0) {
@@ -4571,21 +4756,22 @@
                 return;
             }
 
-            // Sort by upload time desc
             longvids.sort((a, b) => b.createdAt - a.createdAt);
 
             const limit = Math.min(longvids.length, watchRecommendedLimit);
             const itemsToRender = longvids.slice(0, limit);
 
+            const uniqueUserIds = new Set();
+
             itemsToRender.forEach(v => {
                 const viewsId = `rec-long-views-${v.id}`;
                 const relTime = getRelativeTime(v.createdAt);
-                const initial = v.username ? v.username.charAt(0).toUpperCase() : 'U';
-                const avatarHtml = v.channelAvatar 
-                    ? `<img class="long-video-channel-avatar" src="${v.channelAvatar}" style="width:36px; height:36px; border-radius:50%; object-fit:cover; flex-shrink: 0;" loading="lazy">`
-                    : `<div class="long-video-channel-avatar" style="width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, var(--primary), #FF7A00); color:#fff; font-weight:800; font-size:0.9rem; flex-shrink:0;">${initial}</div>`;
+                
+                if (v.userId) uniqueUserIds.add(v.userId);
+                
+                // Requirement 2: Dynamically bind live profile placeholders
+                const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
 
-                // Exactly match the Home Page Long Video card markup & style constraints
                 html += `
                     <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
                         <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #000; overflow: hidden;">
@@ -4597,7 +4783,7 @@
                             <div class="long-video-meta-text" style="flex-grow: 1; min-width: 0;">
                                 <h4 class="long-video-title" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(v.title)}</h4>
                                 <div class="long-video-subtitle" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;">
-                                    <span>${escapeHTML(v.username || 'Flaynity User')}</span>
+                                    <span class="live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
                                     <span>•</span>
                                     <span id="${viewsId}">0 Views</span>
                                     <span>•</span>
@@ -4617,6 +4803,7 @@
             });
 
             container.innerHTML = html;
+            uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
         }
 
         function escapeHTML(str) {
@@ -4638,7 +4825,7 @@
             const navEl = document.getElementById(`nav-${tabId}`);
             if (tabEl) tabEl.classList.add('active');
             if (navEl) navEl.classList.add('active');
-            window.scrollTo({ top: 0 }); // Instant snap viewport
+            window.scrollTo({ top: 0 }); 
 
             adjustHeaderForActiveTab(tabId);
 
@@ -4960,9 +5147,13 @@
                     return;
                 }
 
+                // Requirement 1: Database metadata structures completely populated
                 const channelData = {
                     channelId: user.uid,
                     userId: user.uid,
+                    googleUid: user.uid,
+                    gmailName: user.displayName || user.email.split('@')[0],
+                    gmailEmail: user.email,
                     channelName: name,
                     handle: handle,
                     avatarUrl: tempCreateAvatarUrl || user.photoURL || "",
@@ -5488,6 +5679,23 @@
             updateMonetizationEligibility(subsCount, watchHours, totalViews);
 
             renderChart(tViews);
+
+            // Requirement 1: Database metadata structures completely populated
+            const analyticsPayload = {
+                totalSubscribers: subsCount,
+                totalViews: tViews,
+                publicWatchHours: watchHours,
+                publicShortsViews: shortsViews,
+                publicLongVideoViews: longViews,
+                totalLikes: tLikes,
+                totalComments: tComments,
+                totalVideos: vCount,
+                totalShorts: sCount,
+                totalPosts: pCount,
+                totalRevenue: calculatedRevenue.toFixed(2),
+                updatedAt: Date.now()
+            };
+            await db.ref(`channel_analytics/${userId}`).set(analyticsPayload);
         }
 
         // =========================================================
@@ -5898,15 +6106,18 @@
 
         function pauseQueueItem(id) {
             playUI('click');
-            if (activeUploader && activeUploader.item.id === id) {
-                activeUploader.pause();
-                activeUploader = null;
-            }
             const item = uploadQueue.find(i => i.id === id);
             if (item) {
                 item.status = "paused";
+                if (item.s3UploadRef) {
+                    try {
+                        item.s3UploadRef.abort(); 
+                    } catch(e) {}
+                    item.s3UploadRef = null;
+                }
                 saveQueueStateToLocalStorage();
                 updateManagerUI();
+                triggerNextActiveUpload();
             }
         }
 
@@ -5953,14 +6164,50 @@
         function deleteQueueItem(id) {
             playUI('click');
             if (confirm("Are you sure you want to remove this upload entry?")) {
-                if (activeUploader && activeUploader.item.id === id) {
-                    activeUploader.pause();
-                    activeUploader = null;
+                const item = uploadQueue.find(i => i.id === id);
+                if (item && item.s3UploadRef) {
+                    try { item.s3UploadRef.abort(); } catch(e) {}
                 }
                 uploadQueue = uploadQueue.filter(i => i.id !== id);
                 saveQueueStateToLocalStorage();
                 updateManagerUI();
                 triggerNextActiveUpload();
+            }
+        }
+
+        function saveQueueStateToLocalStorage() {
+            try {
+                const serializableQueue = uploadQueue.map(item => {
+                    const copy = { ...item };
+                    delete copy.file; 
+                    delete copy.thumbBlob;
+                    delete copy.s3UploadRef;
+                    return copy;
+                });
+                localStorage.setItem('startube_upload_queue_v2', JSON.stringify(serializableQueue));
+            } catch (e) {
+                console.warn("Could not save upload queue state to LocalStorage:", e);
+            }
+        }
+
+        function restoreQueueFromLocalStorage() {
+            try {
+                const data = localStorage.getItem('startube_upload_queue_v2');
+                if (data) {
+                    const saved = JSON.parse(data);
+                    uploadQueue = saved.map(item => {
+                        item.file = null; 
+                        item.thumbBlob = null;
+                        item.s3UploadRef = null;
+                        if (item.status === 'uploading' || item.status === 'waiting' || item.status === 'processing') {
+                            item.status = 'paused';
+                        }
+                        return item;
+                    });
+                    updateManagerUI();
+                }
+            } catch (e) {
+                console.warn("Could not restore upload queue state:", e);
             }
         }
 

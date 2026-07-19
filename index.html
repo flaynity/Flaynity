@@ -17,6 +17,23 @@
     <!-- AWS SDK for Cloudflare R2 Uploads -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.1400.0/aws-sdk.min.js"></script>
 
+    <!-- Pre-load theme state to avoid initial white flash/flicker -->
+    <script>
+        (function() {
+            try {
+                let pref = localStorage.getItem('flaynity-theme-pref') || 'system';
+                let finalTheme = 'light';
+                if (pref === 'system') {
+                    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    finalTheme = systemDark ? 'dark' : 'light';
+                } else {
+                    finalTheme = pref;
+                }
+                document.documentElement.setAttribute('data-theme', finalTheme);
+            } catch (e) {}
+        })();
+    </script>
+
     <style>
         /* =========================================
            ULTRA PREMIUM CLASS GLASS UI ENGINE (MD3)
@@ -40,19 +57,24 @@
         [data-theme="dark"] {
             --bg-color: #000000;
             --surface: #000000;
-            --primary: #FF3B30;
-            --primary-glow: rgba(255, 59, 48, 0.15);
+            --primary: #FF2E55; /* Retained primary theme branding color */
+            --primary-glow: rgba(255, 46, 85, 0.15);
             --text-main: #FFFFFF;
             --text-muted: #AAAAAA;
-            --card-bg: #111111;
+            --card-bg: #000000;
             --glass-bg: rgba(0, 0, 0, 0.95);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.15);
             --border-color: #222222;
         }
 
         * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
         input, textarea, select { -webkit-user-select: auto; user-select: auto; }
         
+        /* Smooth transitions for theme switching properties */
+        body, header, .bottom-nav, .tab-content, .post-card, .premium-white-card-watch, .channel-profile-section, .channel-tabs, .channel-tab-content, .fullscreen-page, .appbar, .upcoming-content, .premium-download-content, .format-option-row, .sheet-input, .sheet-textarea, .sheet-select, .form-input, .form-textarea, .form-select, .you-menu, .you-menu-item, .profile-card-you, .analytics-overview-card, .analytics-card, .chart-container-mock {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+        }
+
         body { 
             margin: 0; 
             background-color: var(--bg-color); 
@@ -61,7 +83,6 @@
             padding-top: 126px; /* Rigid locked layout padding to prevent any chips shaking */
             padding-bottom: 48px; 
             touch-action: pan-y; 
-            transition: background-color 0.3s; 
         }
         body.auth-active { overflow: hidden; height: 100vh; }
         ::-webkit-scrollbar { display: none; }
@@ -71,7 +92,7 @@
             position: fixed;
             top: 0; left: 0;
             width: 100vw; height: 100vh;
-            background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
+            background: var(--bg-color);
             display: flex; justify-content: center; align-items: center;
             z-index: 999999;
             transition: opacity 0.6s ease;
@@ -90,7 +111,7 @@
         .logo-splash {
             font-family: 'Cinzel', serif;
             font-size: 3.5rem; letter-spacing: 2px;
-            color: #1e293b; opacity: 0; margin: 0 0 20px 0;
+            color: var(--text-main); opacity: 0; margin: 0 0 20px 0;
             animation: fadeUp 1.5s ease-out forwards;
             text-shadow: 0px 5px 15px rgba(0, 0, 0, 0.05);
         }
@@ -105,7 +126,7 @@
             position: relative;
         }
         .progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #bf953f, #b38728); border-radius: 10px; animation: loadProgress 3.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-        .loading-text { color: #64748b; font-size: 0.9rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0; margin: 0; animation: fadeIn 1s ease-out 1.5s forwards; }
+        .loading-text { color: var(--text-muted); font-size: 0.9rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0; margin: 0; animation: fadeIn 1s ease-out 1.5s forwards; }
 
         @keyframes fadeUp { 0% { opacity: 0; transform: translateY(30px) scale(0.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
         @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
@@ -172,7 +193,7 @@
             padding: 16px; box-sizing: border-box;
         }
         .auth-box { 
-            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(30px); 
+            background: var(--surface); backdrop-filter: blur(30px); 
             border: 1px solid var(--glass-border); box-shadow: 0 20px 40px rgba(0,0,0,0.05); 
             padding: 35px 24px; border-radius: 32px; width: 100%; max-width: 420px; max-height: 90vh;
             overflow-y: auto; scrollbar-width: none; animation: scaleFadeIn 0.6s ease; 
@@ -182,7 +203,7 @@
         .auth-box h1 span { color: var(--primary); }
         .auth-box h2 { text-align: center; margin: 0 0 25px 0; font-weight: 500; color: var(--text-muted); font-size: 1rem; }
         
-        .btn-google { width: 100%; padding: 18px; background: white; color: #000000; border: 1px solid rgba(0,0,0,0.08); border-radius: 18px; font-size: 1.05rem; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.03); }
+        .btn-google { width: 100%; padding: 18px; background: var(--surface); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 18px; font-size: 1.05rem; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.03); }
         .btn-google img { width: 22px; }
         @keyframes scaleFadeIn { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
 
@@ -243,8 +264,8 @@
             align-items: center;
             justify-content: center;
             padding: 8px 0;
-            background: #F1F5F9;
-            color: #000000;
+            background: var(--border-color);
+            color: var(--text-main);
             font-size: 0.85rem;
             font-weight: 700;
             border-radius: 12px;
@@ -254,17 +275,9 @@
             text-align: center;
             width: 100%;
         }
-        [data-theme="dark"] .chip-item {
-            background: #222222;
-            color: #FFFFFF;
-        }
         .chip-item.active {
-            background: #000000 !important;
-            color: #FFFFFF !important;
-        }
-        [data-theme="dark"] .chip-item.active {
-            background: #FFFFFF !important;
-            color: #000000 !important;
+            background: var(--text-main) !important;
+            color: var(--surface) !important;
         }
 
         /* Tabs & Rows */
@@ -307,7 +320,7 @@
         /* Search UI */
         .search-container { position: relative; margin-bottom: 15px; }
         .search-bar { width: 100%; padding: 16px 50px 16px 18px; background: var(--surface); border: 1px solid var(--glass-border); border-radius: 16px; color: var(--text-main); font-size: 1.05rem; outline:none; transition: 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.02); }
-        .search-bar:focus { border-color: var(--primary); background: #ffffff; box-shadow: 0 0 0 4px rgba(255, 46, 85, 0.08); }
+        .search-bar:focus { border-color: var(--primary); background: var(--surface); box-shadow: 0 0 0 4px rgba(255, 46, 85, 0.08); }
         .mic-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
         
         .filters { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 10px; margin-right: -20px; padding-right: 20px;}
@@ -324,8 +337,8 @@
             right: 0;
             width: 100%;
             height: 48px; 
-            background: #FFFFFF !important;
-            border-top: 1px solid #EEEEEE;
+            background: var(--surface) !important;
+            border-top: 1px solid var(--border-color);
             display: flex;
             justify-content: space-around;
             align-items: center;
@@ -374,7 +387,7 @@
             width: 26px !important; 
             height: 26px !important;
             fill: none;
-            color: #000000 !important; 
+            color: var(--text-main) !important; 
             opacity: 1 !important; 
             transition: color 0.15s ease-in-out;
         }
@@ -388,7 +401,7 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
             font-size: 11px; 
             font-weight: 700;
-            color: #000000 !important; 
+            color: var(--text-main) !important; 
             opacity: 1 !important; 
             margin-top: 2px;
             letter-spacing: -0.15px;
@@ -401,8 +414,8 @@
         }
 
         .nav-create-circle {
-            background-color: #F1F5F9;
-            color: #000000;
+            background-color: var(--border-color);
+            color: var(--text-main);
             width: 36px;
             height: 36px;
             border-radius: 50%;
@@ -416,13 +429,13 @@
 
         .nav-create-circle:active {
             transform: none !important;
-            background-color: #F1F5F9 !important; 
+            background-color: var(--border-color) !important; 
         }
 
         .nav-create-circle svg {
             width: 20px;
             height: 20px;
-            color: #000000;
+            color: var(--text-main);
         }
 
         .nav-avatar-circle {
@@ -450,7 +463,7 @@
         #full-movie-page { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--bg-color); z-index: 2000; display: none; overflow-y: auto; animation: slideUpFade 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes slideUpFade { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        .back-btn { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); color: #000000; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; z-index: 2010; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .back-btn { position: absolute; top: 20px; left: 20px; background: var(--surface); border: 1px solid var(--glass-border); color: var(--text-main); width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; z-index: 2010; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .back-btn:active { transform: scale(0.85); background: var(--primary); border-color: var(--primary); color: white; }
 
         .full-page-banner { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; border-bottom: 1px solid var(--glass-border); }
@@ -514,10 +527,10 @@
         .format-size { font-size: 0.85rem; font-weight: 600; color: #94A3B8; margin-right: 32px; }
         
         .custom-radio-check { width: 22px; height: 22px; border: 2px solid #CBD5E1; border-radius: 50%; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); transition: 0.2s; display: flex; align-items: center; justify-content: center; background: var(--surface); }
-        .custom-radio-check::after { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; font-size: 0.75rem; color: #000000; opacity: 0; transition: 0.2s; }
+        .custom-radio-check::after { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; font-size: 0.75rem; color: var(--text-main); opacity: 0; transition: 0.2s; }
         .format-option-row input[type="radio"]:checked ~ .custom-radio-check { border-color: #FFC107; background: #FFC107; }
         .format-option-row input[type="radio"]:checked ~ .custom-radio-check::after { opacity: 1; }
-        .format-option-row input[type="radio"]:checked ~ .format-left .format-name { color: #000000; }
+        .format-option-row input[type="radio"]:checked ~ .format-left .format-name { color: var(--text-main); }
         .format-option-row input[type="radio"]:checked { border-color: rgba(255, 193, 7, 0.4); background: rgba(255, 193, 7, 0.03); }
         
         .watch-ad-download-btn { background: var(--primary); color: white; border: none; border-radius: 20px; padding: 18px; font-size: 1.05rem; font-weight: 800; width: 100%; cursor: pointer; box-shadow: 0 8px 24px var(--primary-glow); transition: 0.2s; text-align: center; }
@@ -768,7 +781,7 @@
         .chart-footer-label { font-size: 0.75rem; color: var(--text-muted); text-align: center; margin: 14px 0 0; font-weight: 700; }
         
         .nav-avatar-wrap { width: 22px; height: 22px; border-radius: 50%; overflow: hidden; border: 2px solid transparent; transition: border-color 0.1s ease; display: flex; align-items: center; justify-content: center; }
-        .nav-item.active .nav-avatar-wrap { border-color: #000000; }
+        .nav-item.active .nav-avatar-wrap { border-color: var(--text-main); }
         .nav-avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
 
         /* =============================================================
@@ -1075,11 +1088,6 @@
             flex-direction: column;
         }
 
-        [data-theme="dark"] .premium-white-card-watch {
-            background: #111111;
-            border-color: #222222;
-        }
-
         .movie-metadata-row {
             display: flex;
             align-items: center;
@@ -1137,8 +1145,8 @@
         }
 
         .btn-watch-subscribe {
-            background: #000000;
-            color: #ffffff;
+            background: var(--text-main);
+            color: var(--surface);
             border: none;
             padding: 8px 18px;
             border-radius: 20px;
@@ -1147,11 +1155,6 @@
             cursor: pointer;
             transition: background 0.2s, transform 0.1s;
             white-space: nowrap;
-        }
-
-        [data-theme="dark"] .btn-watch-subscribe {
-            background: #ffffff;
-            color: #000000;
         }
 
         .btn-watch-subscribe:active {
@@ -1340,12 +1343,14 @@
                 <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 900; font-size: 1.35rem; color: var(--text-main); letter-spacing: -0.5px;">Flaynity</span>
             </div>
             
-            <!-- Header Actions with Search Trigger & Profile Avatar -->
+            <!-- Header Actions with Search Trigger & Theme Switcher (Profile Option Deleted) -->
             <div class="header-actions" id="appbar-actions-wrap" style="display: flex; align-items: center; gap: 14px;">
                 <button onclick="switchTab('search')" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
                     <i class="fas fa-search"></i>
                 </button>
-                <div class="header-avatar" id="small-avatar" onclick="handleAvatarClick()" title="Upload Avatar or Logout"></div>
+                <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="cycleTheme()" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
+                    <i class="fas fa-circle-half-stroke"></i>
+                </button>
             </div>
         </header>
 
@@ -1463,7 +1468,7 @@
             <div class="nav-item" id="nav-create" onclick="openCreateBottomSheet(); playUI('click')" style="height: 100%; display: flex; align-items: center; justify-content: center;">
                 <div class="nav-create-circle">
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="#000000"/>
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
                     </svg>
                 </div>
             </div>
@@ -1531,8 +1536,8 @@
             </div>
 
             <!-- Adjusted Channel Action and Interaction Row (Name and subcount removed) -->
-            <div class="channel-action-row-watch" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
-                <div class="action-row-left" style="display: flex; align-items: center; gap: 10px;">
+            <div class="channel-action-row-watch">
+                <div class="action-row-left">
                     <img id="movie-channel-avatar" src="" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--border-color); background: #E2E8F0;">
                     <button id="movie-subscribe-btn" class="btn-watch-subscribe" onclick="toggleMovieChannelSubscribe()">Subscribe</button>
                 </div>
@@ -1832,7 +1837,7 @@
             </div>
 
             <div style="display: flex; gap: 10px;">
-                <button class="play-btn" style="background: #F1F5F9; color: var(--text-main); font-weight:700;" onclick="handleSaveDraftAction()">Save Draft</button>
+                <button class="play-btn" style="background: #F1F5F9; color: #000000; font-weight:700;" onclick="handleSaveDraftAction()">Save Draft</button>
                 <button class="play-btn" style="background: #EF4444;" onclick="handleDiscardDetailsSheet()">Discard</button>
                 <button class="play-btn" style="background: var(--success); flex: 1.5;" onclick="handlePublishAction()" id="publish-details-btn">Publish</button>
             </div>
@@ -1874,7 +1879,7 @@
             </div>
 
             <div style="display: flex; gap: 10px;">
-                <button class="play-btn" style="background: #F1F5F9; color: var(--text-main); font-weight:700;" onclick="closePostSheet()">Cancel</button>
+                <button class="play-btn" style="background: #F1F5F9; color: #000000; font-weight:700;" onclick="closePostSheet()">Cancel</button>
                 <button class="play-btn" style="background: var(--primary); flex: 1.5;" onclick="publishPostAction()" id="post-publish-btn">Publish Post</button>
             </div>
         </div>
@@ -2178,9 +2183,9 @@
     <!-- 5. MONETIZATION PAGE -->
     <div id="monetization-page" class="fullscreen-page" style="z-index: 1530; background: var(--bg-color);">
         <!-- Top App Bar -->
-        <header class="appbar" style="height: 56px; background: #FFFFFF; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; justify-content: space-between;">
-            <button class="appbar-back-btn" onclick="executeBackAction()" style="background: none; border: none; font-size: 1.25rem; color: #000000; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"><i class="fas fa-arrow-left"></i></button>
-            <h3 class="appbar-title" style="font-size: 1.15rem; font-weight: 800; color: #000000; position: absolute; left: 50%; transform: translateX(-50%); margin: 0; font-family: 'Plus Jakarta Sans', sans-serif;">Monetization</h3>
+        <header class="appbar" style="height: 56px; background: var(--surface); display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; justify-content: space-between;">
+            <button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
+            <h3 class="appbar-title" style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); position: absolute; left: 50%; transform: translateX(-50%); margin: 0; font-family: 'Plus Jakarta Sans', sans-serif;">Monetization</h3>
             <div style="width: 40px;"></div>
         </header>
 
@@ -2192,7 +2197,7 @@
                 
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
                     <span style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted);">Next milestone</span>
-                    <div style="width: 24px; height: 24px; border-radius: 50%; background: #E2E8F0; display: flex; align-items: center; justify-content: center; color: #64748B;">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--border-color); display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
                         <i class="fas fa-lock" style="font-size: 0.75rem;"></i>
                     </div>
                 </div>
@@ -2466,9 +2471,57 @@
 
     <script>
         // =========================================
-        // SPLASH SCREEN LOGIC
+        // AUTOMATIC & MANUAL THEME ENGINE
         // =========================================
+        function applyTheme() {
+            let pref = localStorage.getItem('flaynity-theme-pref') || 'system';
+            let finalTheme = 'light';
+            
+            if (pref === 'system') {
+                const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                finalTheme = systemDark ? 'dark' : 'light';
+            } else {
+                finalTheme = pref;
+            }
+            
+            document.documentElement.setAttribute('data-theme', finalTheme);
+            
+            // Update app bar toggle buttons globally
+            const themeBtns = document.querySelectorAll('.appbar-theme-btn');
+            themeBtns.forEach(btn => {
+                if (pref === 'light') {
+                    btn.innerHTML = `<i class="fas fa-sun" style="color: #FFB300;"></i>`;
+                } else if (pref === 'dark') {
+                    btn.innerHTML = `<i class="fas fa-moon" style="color: #FF2E55;"></i>`;
+                } else {
+                    btn.innerHTML = `<i class="fas fa-circle-half-stroke"></i>`;
+                }
+            });
+        }
+
+        function cycleTheme() {
+            playUI('click');
+            let currentPref = localStorage.getItem('flaynity-theme-pref') || 'system';
+            let nextPref = 'light';
+            
+            if (currentPref === 'light') nextPref = 'dark';
+            else if (currentPref === 'dark') nextPref = 'system';
+            
+            localStorage.setItem('flaynity-theme-pref', nextPref);
+            applyTheme();
+            showNotification(`Theme: ${nextPref.toUpperCase()}`, "success");
+        }
+
+        // Live system theme changes observer
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            let pref = localStorage.getItem('flaynity-theme-pref') || 'system';
+            if (pref === 'system') {
+                applyTheme();
+            }
+        });
+
         document.addEventListener("DOMContentLoaded", function() {
+            applyTheme();
             try {
                 const sound = document.getElementById("startupSound");
                 if (sound) {
@@ -2484,13 +2537,6 @@
                 }
             } catch (e) {
                 console.warn("Startup sound engine bypassed:", e);
-            }
-
-            try {
-                const restoredTheme = localStorage.getItem('startube-theme') || 'light';
-                document.documentElement.setAttribute('data-theme', restoredTheme);
-            } catch (e) {
-                console.warn("Local storage theme fallback:", e);
             }
 
             // High Precision Loader Disposer
@@ -2638,7 +2684,7 @@
             return `${PUBLIC_R2_DOMAIN_PREFIX}/${fileKey}`;
         }
 
-        // Helper: base64 DataURL কে সলিড ব্লব ফরম্যাটে কনভার্ট করার মেকানিজম
+        // Helper: Convert base64 DataURL to Blob object
         function dataURLtoBlob(dataurl) {
             var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
                 bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
@@ -2775,16 +2821,7 @@
         });
 
         function renderUserAvatar(photoURL, email) {
-            try {
-                const avatarEl = document.getElementById('small-avatar');
-                if (avatarEl) {
-                    if (photoURL) {
-                        avatarEl.innerHTML = `<img src="${photoURL}" alt="Profile">`;
-                    } else {
-                        avatarEl.innerHTML = email ? email.charAt(0).toUpperCase() : 'U';
-                    }
-                }
-            } catch (e) {}
+            // Unused globally since Profile Header Button has been deleted in favor of the Theme Switcher. Retained internally.
         }
 
         function handleAvatarClick() {
@@ -2890,7 +2927,7 @@
             showNotification("Inspecting file frames...", "success");
 
             // =========================================================
-            // 2. AUTOMATIC THUMBNAIL GENERATION IMPLEMENTATION (Fixed)
+            // 2. AUTOMATIC HIGH RESOLUTION THUMBNAIL GENERATION (FIXED)
             // =========================================================
             let frameMeta = { 
                 duration: 60, 
@@ -2929,7 +2966,7 @@
                 eta: 0,
                 duration: frameMeta.duration,
                 thumbDataUrl: frameMeta.dataUrl,
-                thumbBlob: frameMeta.blob, // Generates video frame preview blob immediately
+                thumbBlob: frameMeta.blob, 
                 thumbKey: `uploads/${uniqueId}/thumbnail.jpg`,
                 thumbUrl: "",
                 videoUrl: "",
@@ -2945,7 +2982,9 @@
             e.target.value = ""; 
         }
 
-        // Resilient automatic frame capturing mechanism
+        // =========================================================
+        // SMART HIGH-RESOLUTION AUTOMATIC THUMBNAIL GENERATION (FIXED)
+        // =========================================================
         function captureFrameAndDuration(file) {
             return new Promise((resolve) => {
                 const video = document.createElement('video');
@@ -2964,33 +3003,98 @@
 
                 const safetyTimeout = setTimeout(() => {
                     resolve(fallbackData);
-                }, 4000);
+                }, 10000); // 10 second safety threshold
 
-                video.onloadeddata = () => {
-                    // Seek to 1 second to capture a valid frame
-                    video.currentTime = Math.min(1.0, video.duration / 2);
-                };
+                video.onloadedmetadata = () => {
+                    const duration = video.duration || 60;
+                    // Multi-point sampling to find the frame with the best lighting and detail
+                    const seekTimes = [duration * 0.15, duration * 0.40, duration * 0.70];
+                    let bestFrame = null;
+                    let bestScore = -1;
+                    let currentSeekIndex = 0;
 
-                video.onseeked = () => {
-                    try {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = video.videoWidth || 640;
-                        canvas.height = video.videoHeight || 360;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        
-                        canvas.toBlob((blob) => {
+                    const analyzeFrame = () => {
+                        try {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = video.videoWidth || 1280;
+                            canvas.height = video.videoHeight || 720;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                            // Speed check: draw on a small 32x32 comparison canvas
+                            const sampleCanvas = document.createElement('canvas');
+                            sampleCanvas.width = 32;
+                            sampleCanvas.height = 32;
+                            const sCtx = sampleCanvas.getContext('2d');
+                            sCtx.drawImage(canvas, 0, 0, 32, 32);
+                            const imgData = sCtx.getImageData(0, 0, 32, 32).data;
+
+                            let totalBrightness = 0;
+                            let minVal = 255;
+                            let maxVal = 0;
+                            const len = imgData.length;
+
+                            for (let i = 0; i < len; i += 4) {
+                                const r = imgData[i];
+                                const g = imgData[i+1];
+                                const b = imgData[i+2];
+                                const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+                                totalBrightness += brightness;
+                                if (brightness < minVal) minVal = brightness;
+                                if (brightness > maxVal) maxVal = brightness;
+                            }
+
+                            const avgBrightness = totalBrightness / (32 * 32);
+                            const range = maxVal - minVal; 
+
+                            let score = range; 
+                            // Avoid blank/dark frames or washed out pure white frames
+                            if (avgBrightness < 40 || avgBrightness > 220) {
+                                score -= 150; 
+                            }
+
+                            if (score > bestScore || bestFrame === null) {
+                                bestScore = score;
+                                bestFrame = {
+                                    canvas: canvas,
+                                    avgBrightness: avgBrightness
+                                };
+                            }
+                        } catch (e) {
+                            console.error("Frame analysis error: ", e);
+                        }
+
+                        currentSeekIndex++;
+                        if (currentSeekIndex < seekTimes.length) {
+                            video.currentTime = seekTimes[currentSeekIndex];
+                        } else {
+                            finishGeneration();
+                        }
+                    };
+
+                    const finishGeneration = () => {
+                        try {
+                            if (bestFrame && bestFrame.canvas) {
+                                bestFrame.canvas.toBlob((blob) => {
+                                    clearTimeout(safetyTimeout);
+                                    resolve({
+                                        blob: blob,
+                                        dataUrl: bestFrame.canvas.toDataURL('image/jpeg', 0.90),
+                                        duration: duration
+                                    });
+                                }, 'image/jpeg', 0.90);
+                            } else {
+                                clearTimeout(safetyTimeout);
+                                resolve(fallbackData);
+                            }
+                        } catch (e) {
                             clearTimeout(safetyTimeout);
-                            resolve({ 
-                                blob: blob, 
-                                dataUrl: canvas.toDataURL('image/jpeg'), 
-                                duration: video.duration || 60 
-                            });
-                        }, 'image/jpeg', 0.85);
-                    } catch (err) {
-                        clearTimeout(safetyTimeout);
-                        resolve(fallbackData);
-                    }
+                            resolve(fallbackData);
+                        }
+                    };
+
+                    video.onseeked = analyzeFrame;
+                    video.currentTime = seekTimes[0];
                 };
 
                 video.onerror = () => {
@@ -3084,9 +3188,6 @@
             }
         }
 
-        // =========================================
-        // POST-PROCESSING PIPELINE
-        // =========================================
         async function runPostUploadProcessingSequence(item) {
             item.status = "processing";
             item.progress = 0;
@@ -3105,11 +3206,10 @@
                     try {
                         finalThumbBlob = dataURLtoBlob(item.thumbDataUrl);
                     } catch (e) {
-                        console.error("DataURL to blob conversion error: ", e);
+                        console.error("DataURL parsing exception:", e);
                     }
                 }
 
-                // Generates smart thumbnail frames and uploads them to R2
                 if (finalThumbBlob && s3) {
                     const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg" };
                     await s3.putObject(thumbParams).promise();
@@ -3270,13 +3370,10 @@
                     });
                 }
             } catch (err) {
-                console.error("Global startup database binding crash prevented:", err);
+                console.error("Global database binding crash prevented:", err);
             }
         }
 
-        // =========================================================
-        // Dynamic Live Channel profile synchronization bindings (Fixed)
-        // =========================================================
         const boundChannelListeners = {};
         function bindLiveChannelUI(userId) {
             if (!userId) return;
@@ -3331,7 +3428,7 @@
             const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
             files.forEach(file => {
                 if (!allowed.includes(file.type)) {
-                    showNotification(`Skipped "${file.name}" - Unsupported image format!`, "error");
+                    showNotification(`Skipped "${file.name}" - Unsupported format!`, "error");
                     return;
                 }
                 
@@ -3394,7 +3491,7 @@
             const btn = document.getElementById('post-publish-btn');
 
             if (!caption && currentPostImages.length === 0) {
-                showNotification("Post cannot be completely empty!", "error");
+                showNotification("Post cannot be empty!", "error");
                 return;
             }
 
@@ -3450,7 +3547,7 @@
                 if (hideLikesCb) hideLikesCb.checked = false;
 
             } catch (err) {
-                showNotification("Failed to publish post: " + err.message, "error");
+                showNotification("Failed to publish: " + err.message, "error");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = "Publish Post";
@@ -3800,9 +3897,6 @@
             `;
         }
 
-        // =========================================================
-        // POST TITLE SMOOTH COLLAPSE / EXPAND TOGGLER
-        // =========================================================
         function togglePostTitleExpand(postId) {
             playUI('click');
             const collapsed = document.getElementById(`title-collapsed-${postId}`);
@@ -3832,9 +3926,6 @@
             }
         }
 
-        // =========================================================
-        // TikTok Style Double Tap To Like Heart Animation
-        // =========================================================
         function spawnDoubleTapHeart(e, slideElement) {
             const rect = slideElement.getBoundingClientRect();
             const x = e.clientX - rect.left;
@@ -3973,7 +4064,6 @@
             initShortsObserver();
             setupDoubleTapListeners();
 
-            // Bind channels dynamically
             const uniqueUserIds = new Set();
             allShorts.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
             uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
@@ -4091,18 +4181,27 @@
         }
 
         // =========================================================
-        // 5. ULTRA FAST DOWNLOAD SYSTEM IMPLEMENTATION
+        // 5. ULTRA FAST SECURE DOWNLOAD SYSTEM IMPLEMENTATION (FIXED)
         // =========================================================
         async function triggerFileDownload(url, filename) {
             if (!url) {
-                showNotification("Invalid file download link.", "error");
+                showNotification("Invalid download link.", "error");
                 return;
             }
-            showNotification("Preparing secure, optimized download...", "success");
+
+            // Route through Native Android Download Bridge if available
+            if (window.AndroidBridge && typeof window.AndroidBridge.downloadVideo === 'function') {
+                const posterUrl = currentActiveMovie ? (currentActiveMovie.poster || "") : "";
+                window.AndroidBridge.downloadVideo(url, filename, posterUrl);
+                showNotification("Download started in system background.", "success");
+                return;
+            }
+
+            // Standard Web Fallback
+            showNotification("Preparing web download transfer...", "success");
             try {
-                // Secure validation and blob capture
                 const response = await fetch(url, { method: 'GET', mode: 'cors' });
-                if (!response.ok) throw new Error("CORS or accessibility error");
+                if (!response.ok) throw new Error("CORS verification mismatch");
                 
                 const blob = await response.blob();
                 const blobUrl = URL.createObjectURL(blob);
@@ -4117,7 +4216,7 @@
                 
                 showNotification("Download completed successfully!", "success");
             } catch (err) {
-                console.warn("Direct blob secure download failed, initiating browser-managed transfer: ", err);
+                console.warn("Direct blob download failed, falling back to direct anchor target:", err);
                 const a = document.createElement('a');
                 a.href = url;
                 a.target = "_blank";
@@ -4125,11 +4224,10 @@
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                showNotification("Download initiated securely in browser background.", "success");
+                showNotification("Redirecting direct download link...", "success");
             }
         }
 
-        // 3. Download Pop-up Page: Long Video বা Shorts Video ডাউনলোড বাটনে ক্লিক করলে ডাউনলোড পপ-আপ ওপেন হবে (লিঙ্ক সরাসরি ওপেন হবে না)
         function triggerShortDownload(shortId) {
             playUI('click');
             const s = allShorts.find(item => item.id === shortId);
@@ -4137,7 +4235,6 @@
                 showNotification("No valid short found.", "error");
                 return;
             }
-            // Download modal পপ-আপ লোড করতে বর্তমান অ্যাক্টিভ মুভি অবজেক্ট সেট করা হচ্ছে
             currentActiveMovie = s;
             openDownloadModal();
         }
@@ -4572,8 +4669,8 @@
                             btn.style.color = "var(--text-main)";
                         } else {
                             btn.innerText = "Subscribe";
-                            btn.style.background = "#000000";
-                            btn.style.color = "#ffffff";
+                            btn.style.background = "var(--text-main)";
+                            btn.style.color = "var(--surface)";
                         }
                     }
                 });
@@ -4802,9 +4899,6 @@
             if (sheet) sheet.style.display = 'none';
         }
 
-        // =========================================================
-        // REWRITTEN HIGH-FIDELITY WATCH PAGE RECOMMENDED FEED ENGINE
-        // =========================================================
         function renderMovieWatchRecommendedFeed() {
             const container = document.getElementById('yt-related-list');
             if (!container) return;
@@ -4928,6 +5022,9 @@
                 if (brand) brand.style.display = 'none';
                 if (actions) {
                     actions.innerHTML = `
+                        <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="cycleTheme()" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
+                            <!-- Populated dynamically -->
+                        </button>
                         <button class="btn-switch-account-header" onclick="openAccountSwitcher()" title="Switch Account">
                             <i class="fas fa-exchange-alt"></i> Switch Account
                         </button>
@@ -4936,21 +5033,18 @@
             } else {
                 if (brand) brand.style.display = 'flex';
                 if (actions) {
-                    const user = auth.currentUser;
-                    const photoURL = user ? (currentChannelData?.avatarUrl || user.photoURL || '') : '';
-                    const activeName = user ? (user.displayName || user.email.split('@')[0]) : 'U';
-                    const activeInitial = activeName.charAt(0).toUpperCase();
-
                     actions.innerHTML = `
                         <button onclick="switchTab('search')" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
                             <i class="fas fa-search"></i>
                         </button>
-                        <div class="header-avatar" id="small-avatar" onclick="handleAvatarClick()" title="Upload Avatar or Logout">
-                            ${photoURL ? `<img src="${photoURL}" style="width:100%; height:100%; object-fit:cover;">` : activeInitial}
-                        </div>
+                        <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="cycleTheme()" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
+                            <!-- Populated dynamically -->
+                        </button>
                     `;
                 }
             }
+            // Trigger dynamic icon updates for the switcher button
+            applyTheme();
         }
 
         function startVoiceSearch() {
@@ -4964,16 +5058,8 @@
         }
 
         // =========================================
-        // NEW YOU & CHANNEL PLATFORM WORKFLOW CONTROLS
+        // YOU & CHANNEL PLATFORM WORKFLOW CONTROLS
         // =========================================
-        function toggleTheme() {
-            playUI('click');
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('startube-theme', newTheme);
-        }
-
         function initYouTabUI() {
             const wrap = document.getElementById('channel-action-box');
             if (!wrap) return;
@@ -6576,8 +6662,8 @@
                             <div class="filter-chip" 
                                  onclick="selectReactedFilter('${t}')" 
                                  style="padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; border: 1.5px solid var(--glass-border); transition: all 0.2s;
-                                        background: ${isActive ? '#000000' : '#F1F5F9'};
-                                        color: ${isActive ? '#FFFFFF' : '#000000'};">
+                                        background: ${isActive ? 'var(--text-main)' : 'var(--border-color)'};
+                                        color: ${isActive ? 'var(--surface)' : 'var(--text-main)'};">
                                 <span>${emoji}</span>
                                 <span>${label} (${count})</span>
                             </div>
@@ -6616,9 +6702,9 @@
             });
         }
 
-        // =========================================================
-        // 3. DOWNLOAD POP-UP PAGE CONTROLLERS (Fixed)
-        // =========================================================
+        // =========================================
+        // DOWNLOAD POP-UP CONTROLLERS
+        // =========================================
         function requestDownloadWithAd() {
             playUI('click');
             if (!currentActiveMovie) return;

@@ -17,14 +17,13 @@
     <!-- AWS SDK for Cloudflare R2 Uploads -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.1400.0/aws-sdk.min.js"></script>
 
-    <!-- Pre-load theme state immediately inside the head to prevent white flashes -->
+    <!-- Pre-load theme state to avoid initial white flash/flicker -->
     <script>
         (function() {
             try {
                 let pref = localStorage.getItem('flaynity-theme-pref') || 'system';
                 let finalTheme = 'light';
                 if (pref === 'system') {
-                    // Check local media queries on first paint
                     const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                     finalTheme = systemDark ? 'dark' : 'light';
                 } else {
@@ -58,7 +57,7 @@
         [data-theme="dark"] {
             --bg-color: #000000;
             --surface: #000000;
-            --primary: #FF2E55; /* Retention of red primary theme */
+            --primary: #FF2E55; /* Retained primary theme branding color */
             --primary-glow: rgba(255, 46, 85, 0.15);
             --text-main: #FFFFFF;
             --text-muted: #AAAAAA;
@@ -71,9 +70,9 @@
         * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
         input, textarea, select { -webkit-user-select: auto; user-select: auto; }
         
-        /* Premium transition parameters covering all target nodes */
+        /* Smooth transitions for theme switching properties */
         body, header, .bottom-nav, .tab-content, .post-card, .premium-white-card-watch, .channel-profile-section, .channel-tabs, .channel-tab-content, .fullscreen-page, .appbar, .upcoming-content, .premium-download-content, .format-option-row, .sheet-input, .sheet-textarea, .sheet-select, .form-input, .form-textarea, .form-select, .you-menu, .you-menu-item, .profile-card-you, .analytics-overview-card, .analytics-card, .chart-container-mock {
-            transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
         }
 
         body { 
@@ -81,7 +80,7 @@
             background-color: var(--bg-color); 
             color: var(--text-main); 
             overflow-x: hidden; 
-            padding-top: 126px; 
+            padding-top: 126px; /* Rigid locked layout padding to prevent any chips shaking */
             padding-bottom: 48px; 
             touch-action: pan-y; 
         }
@@ -363,6 +362,7 @@
             transition: color 0.15s ease-in-out !important; 
         }
         
+        /* Selected item has NO extra background highlight box modifications */
         .nav-item.active {
             background-color: transparent !important;
             background: transparent !important;
@@ -382,6 +382,7 @@
             transition: none !important;
         }
 
+        /* Default unselected colors (standard solid dark) */
         .nav-icon-svg {
             width: 26px !important; 
             height: 26px !important;
@@ -391,6 +392,7 @@
             transition: color 0.15s ease-in-out;
         }
 
+        /* Selected active state color transforms */
         .nav-item.active .nav-icon-svg {
             color: #FF2E55 !important;
         }
@@ -790,7 +792,7 @@
             top: 0;
             left: 0;
             width: 100vw;
-            height: calc(100vh - 48px); 
+            height: calc(100vh - 48px); /* Standard aligned with updated slim Bottom Nav */
             background: #000000 !important;
             color: #FFFFFF !important;
             z-index: 500;
@@ -820,7 +822,7 @@
         
         /* Shorts Action Button Overlays */
         .short-right-actions {
-            position: absolute; right: 12px; bottom: 54px !important; 
+            position: absolute; right: 12px; bottom: 54px !important; /* Sitting perfectly above thin bottom-nav */
             display: flex; flex-direction: column; gap: 16px; z-index: 10; align-items: center;
         }
         .short-action-container { display: flex; flex-direction: column; align-items: center; }
@@ -870,7 +872,7 @@
         /* Bottom Information Overlays */
         .short-bottom-info {
             position: absolute;
-            bottom: 54px !important; 
+            bottom: 54px !important; /* Sitting perfectly above the thinner bottom-nav */
             left: 12px;
             right: 76px;
             z-index: 10;
@@ -1289,54 +1291,6 @@
             align-items: center;
             gap: 8px;
         }
-
-        /* =========================================
-           MD3 CUSTOM FLOATING POPUP MENU STYLES
-           ========================================= */
-        .theme-popup-menu {
-            position: fixed;
-            top: 76px;
-            right: 16px;
-            background: var(--surface);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.12);
-            padding: 8px;
-            z-index: 9999999;
-            width: 220px;
-            display: none;
-            flex-direction: column;
-            gap: 4px;
-            animation: md3ScaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-            transform-origin: top right;
-        }
-        @keyframes md3ScaleIn {
-            from { transform: scale(0.85); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        .theme-menu-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 14px;
-            border-radius: 12px;
-            cursor: pointer;
-            gap: 12px;
-            color: var(--text-main);
-            font-size: 0.95rem;
-            font-weight: 700;
-            transition: background 0.2s ease;
-        }
-        .theme-menu-item:active {
-            background: var(--border-color);
-        }
-        .theme-radio-indicator {
-            margin-left: auto;
-            color: var(--primary);
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
     </style>
 </head>
 <body>
@@ -1389,12 +1343,12 @@
                 <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 900; font-size: 1.35rem; color: var(--text-main); letter-spacing: -0.5px;">Flaynity</span>
             </div>
             
-            <!-- Header Actions with Search Trigger & Custom MD3 Theme Selector Switcher -->
+            <!-- Header Actions with Search Trigger & Theme Switcher (Profile Option Deleted) -->
             <div class="header-actions" id="appbar-actions-wrap" style="display: flex; align-items: center; gap: 14px;">
                 <button onclick="switchTab('search')" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
                     <i class="fas fa-search"></i>
                 </button>
-                <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="openThemeSelectionMenu(event)" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
+                <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="cycleTheme()" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
                     <i class="fas fa-circle-half-stroke"></i>
                 </button>
             </div>
@@ -1409,12 +1363,15 @@
 
         <!-- 1. Home Tab -->
         <div id="home-tab" class="tab-content active" style="padding-top: 0px;">
+            <!-- Unified Scroll Feed for Shorts & Long videos -->
             <div id="home-feed-container" style="margin-top: 12px;"></div>
         </div>
 
-        <!-- 2. Dedicated Shorts Tab -->
+        <!-- 2. Replaced Dedicated Shorts Tab -->
         <div id="shorts-tab" class="tab-content" style="padding:0;">
-            <div id="shorts-swiper-container" style="height:100%; width:100%;"></div>
+            <div id="shorts-swiper-container" style="height:100%; width:100%;">
+                <!-- Swipable Shorts loaded dynamically -->
+            </div>
         </div>
 
         <!-- 3. Discover Tab -->
@@ -1449,7 +1406,9 @@
                     </div>
                 </div>
                 
-                <div id="channel-action-box" class="channel-action-box"></div>
+                <div id="channel-action-box" class="channel-action-box">
+                    <!-- Populated dynamically -->
+                </div>
             </div>
 
             <!-- Full bleed Menu Items -->
@@ -1505,7 +1464,7 @@
                 <span class="nav-label">Shorts</span>
             </div>
 
-            <!-- 3. Create Item -->
+            <!-- 3. Create Item (Center Action Button) -->
             <div class="nav-item" id="nav-create" onclick="openCreateBottomSheet(); playUI('click')" style="height: 100%; display: flex; align-items: center; justify-content: center;">
                 <div class="nav-create-circle">
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1550,6 +1509,7 @@
 
         <!-- Full Width Video Player Engine -->
         <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000000;">
+            <!-- Skeleton/Buffer Animation Container -->
             <div id="video-player-skeleton" style="position: absolute; top:0; left:0; width:100%; height:100%; background:#000000; display:flex; align-items:center; justify-content:center; z-index:11;">
                 <div style="width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
             </div>
@@ -1559,6 +1519,7 @@
         </div>
 
         <div class="full-page-content" style="padding: 16px;">
+            <!-- Premium Metadata Information Card -->
             <div class="premium-white-card-watch">
                 <h1 id="movie-detail-title" style="font-size: 1.15rem; font-weight: 800; margin: 0 0 6px 0; line-height: 1.35; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Plus Jakarta Sans', sans-serif;">Title</h1>
                 
@@ -1574,6 +1535,7 @@
                 </div>
             </div>
 
+            <!-- Adjusted Channel Action and Interaction Row (Name and subcount removed) -->
             <div class="channel-action-row-watch">
                 <div class="action-row-left">
                     <img id="movie-channel-avatar" src="" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--border-color); background: #E2E8F0;">
@@ -1592,12 +1554,14 @@
                         </button>
                     </div>
 
+                    <!-- Circular Icon-only Download button -->
                     <button class="btn-watch-download ripple" onclick="requestDownloadWithAd()" style="width: 34px; height: 34px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;" title="Download">
                         <i class="fas fa-download"></i>
                     </button>
                 </div>
             </div>
 
+            <!-- Premium Realtime Comment Preview Card -->
             <div class="comment-preview-card" id="comment-preview-trigger" onclick="openCommentModal()">
                 <div class="comment-preview-header">
                     <span class="comment-preview-title">Comments <span class="comment-preview-count" id="comment-preview-count">0</span></span>
@@ -1611,6 +1575,7 @@
                 </div>
             </div>
 
+            <!-- Infinite Recommended List -->
             <div class="recommended-feed-title">
                 <i class="fas fa-play-circle" style="color:var(--primary);"></i> Recommended Feed
             </div>
@@ -1715,6 +1680,21 @@
             <h2>Upcoming Feature</h2>
             <p>Our development team is actively building this experience. Stay tuned for future updates!</p>
             <button class="upcoming-close-btn" onclick="hideUpcomingModal()">Close</button>
+        </div>
+    </div>
+
+    <!-- Exit Confirmation Dialog -->
+    <div id="exit-dialog" class="upcoming-modal">
+        <div class="upcoming-content">
+            <div class="upcoming-icon">
+                <i class="fas fa-sign-out-alt"></i>
+            </div>
+            <h2>Exit Flaynity?</h2>
+            <p>Are you sure you want to close the application?</p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button class="upcoming-close-btn" style="background: var(--border-color); color: var(--text-main); box-shadow: none;" onclick="closeExitDialog()">Cancel</button>
+                <button class="upcoming-close-btn" style="background: var(--primary);" onclick="confirmExitApp()">Exit</button>
+            </div>
         </div>
     </div>
 
@@ -2211,6 +2191,7 @@
 
         <!-- Main Content Scroll Area -->
         <div class="page-content" style="padding: 24px 20px 60px 20px; overflow-y: auto;">
+            <!-- Header Section -->
             <div class="monetization-header" style="margin-bottom: 28px;">
                 <h1 style="font-size: 34px; font-weight: 900; line-height: 1.2; color: var(--text-main); margin: 0 0 16px 0; font-family: 'Plus Jakarta Sans', sans-serif;">Become a Flaynity Partner</h1>
                 
@@ -2298,6 +2279,7 @@
                         <p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Recommend products and earn from shopping.</p>
                     </div>
                 </div>
+                <!-- Pagination Dot indicators -->
                 <div class="slider-dots">
                     <span class="slider-dot active"></span>
                     <span class="slider-dot"></span>
@@ -2311,6 +2293,7 @@
             <div class="eligibility-section" style="margin-bottom: 32px;">
                 <h2 style="font-size: 1.6rem; font-weight: 850; color: var(--text-main); margin: 0 0 16px 0;">Eligibility</h2>
                 
+                <!-- Requirements Display Card -->
                 <div style="background: var(--border-color); border-radius: 20px; padding: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px; font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">
                         <i class="fas fa-lock" style="color: var(--primary);"></i>
@@ -2486,38 +2469,59 @@
         </div>
     </div>
 
-    <!-- MD3 Theme Selector Popup -->
-    <div id="theme-menu-popup" class="theme-popup-menu">
-        <div class="theme-menu-item" onclick="setThemePreference('light')">
-            <span>☀️</span>
-            <span>Light Theme</span>
-            <span class="theme-radio-indicator" id="radio-light"><i class="far fa-circle"></i></span>
-        </div>
-        <div class="theme-menu-item" onclick="setThemePreference('dark')">
-            <span>🌙</span>
-            <span>Dark Theme</span>
-            <span class="theme-radio-indicator" id="radio-dark"><i class="far fa-circle"></i></span>
-        </div>
-        <div class="theme-menu-item" onclick="setThemePreference('system')">
-            <span>⚙️</span>
-            <span>System Default</span>
-            <span class="theme-radio-indicator" id="radio-system"><i class="far fa-circle"></i></span>
-        </div>
-    </div>
-
-    <!-- Hidden native triggers configuration -->
-    <input type="file" id="video-file-input" accept="video/mp4, video/quicktime, video/mkv, video/webm" style="display:none;" onchange="handleFileSelected(event)">
-    <input type="file" id="post-image-input" accept="image/jpeg, image/png, image/webp, image/gif" multiple style="display:none;" onchange="handleImagesSelected(event)">
-    <input type="file" id="custom-thumb-input" accept="image/jpeg, image/png, image/webp" style="display:none;" onchange="handleCustomThumbSelected(event)">
-    <input type="file" id="create-avatar-input" accept="image/*" style="display:none;" onchange="handleChannelAvatarSelect(event, 'create')">
-    <input type="file" id="edit-avatar-input" accept="image/*" style="display:none;" onchange="handleChannelAvatarSelect(event, 'edit')">
-    <input type="file" id="edit-banner-input" accept="image/*" style="display:none;" onchange="handleChannelBannerSelect(event)">
-
     <script>
         // =========================================
-        // SPLASH SCREEN LOGIC
+        // AUTOMATIC & MANUAL THEME ENGINE
         // =========================================
+        function applyTheme() {
+            let pref = localStorage.getItem('flaynity-theme-pref') || 'system';
+            let finalTheme = 'light';
+            
+            if (pref === 'system') {
+                const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                finalTheme = systemDark ? 'dark' : 'light';
+            } else {
+                finalTheme = pref;
+            }
+            
+            document.documentElement.setAttribute('data-theme', finalTheme);
+            
+            // Update app bar toggle buttons globally
+            const themeBtns = document.querySelectorAll('.appbar-theme-btn');
+            themeBtns.forEach(btn => {
+                if (pref === 'light') {
+                    btn.innerHTML = `<i class="fas fa-sun" style="color: #FFB300;"></i>`;
+                } else if (pref === 'dark') {
+                    btn.innerHTML = `<i class="fas fa-moon" style="color: #FF2E55;"></i>`;
+                } else {
+                    btn.innerHTML = `<i class="fas fa-circle-half-stroke"></i>`;
+                }
+            });
+        }
+
+        function cycleTheme() {
+            playUI('click');
+            let currentPref = localStorage.getItem('flaynity-theme-pref') || 'system';
+            let nextPref = 'light';
+            
+            if (currentPref === 'light') nextPref = 'dark';
+            else if (currentPref === 'dark') nextPref = 'system';
+            
+            localStorage.setItem('flaynity-theme-pref', nextPref);
+            applyTheme();
+            showNotification(`Theme: ${nextPref.toUpperCase()}`, "success");
+        }
+
+        // Live system theme changes observer
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            let pref = localStorage.getItem('flaynity-theme-pref') || 'system';
+            if (pref === 'system') {
+                applyTheme();
+            }
+        });
+
         document.addEventListener("DOMContentLoaded", function() {
+            applyTheme();
             try {
                 const sound = document.getElementById("startupSound");
                 if (sound) {
@@ -2544,9 +2548,6 @@
                 }
             }, 3000); 
 
-            // Initialize app preference and dynamic change observer setup
-            applyTheme();
-
             try {
                 window.history.replaceState({ type: 'page', pageId: 'home' }, '');
             } catch (e) {}
@@ -2563,102 +2564,6 @@
                         else dot.classList.remove('active');
                     });
                 });
-            }
-        });
-
-        // =========================================
-        // AUTOMATIC & MANUAL THEME ENGINE
-        // =========================================
-        let systemThemeIsDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-        function updateSystemTheme(isDark) {
-            // Callback received live from native Android UI change configurations
-            systemThemeIsDark = isDark;
-            const pref = localStorage.getItem('flaynity-theme-pref') || 'system';
-            if (pref === 'system') {
-                applyTheme();
-            }
-        }
-
-        function applyTheme() {
-            const pref = localStorage.getItem('flaynity-theme-pref') || 'system';
-            let finalTheme = 'light';
-            
-            if (pref === 'system') {
-                finalTheme = systemThemeIsDark ? 'dark' : 'light';
-            } else {
-                finalTheme = pref;
-            }
-            
-            document.documentElement.setAttribute('data-theme', finalTheme);
-            
-            // Update top bar toggle button icon configurations
-            const toggleBtn = document.getElementById('theme-toggle-btn');
-            if (toggleBtn) {
-                if (pref === 'light') {
-                    toggleBtn.innerHTML = `<i class="fas fa-sun" style="color: #FFB300;"></i>`;
-                } else if (pref === 'dark') {
-                    toggleBtn.innerHTML = `<i class="fas fa-moon" style="color: #FF2E55;"></i>`;
-                } else {
-                    toggleBtn.innerHTML = `<i class="fas fa-circle-half-stroke"></i>`;
-                }
-            }
-        }
-
-        function openThemeSelectionMenu(event) {
-            if (event) event.stopPropagation();
-            playUI('click');
-            const popup = document.getElementById('theme-menu-popup');
-            if (!popup) return;
-            
-            if (popup.style.display === 'flex') {
-                const current = AppNavigation.current();
-                if (current && current.id === 'theme-menu-popup') {
-                    AppNavigation.pop();
-                }
-            } else {
-                const pref = localStorage.getItem('flaynity-theme-pref') || 'system';
-                document.getElementById('radio-light').innerHTML = pref === 'light' ? '<i class="fas fa-circle-dot"></i>' : '<i class="far fa-circle"></i>';
-                document.getElementById('radio-dark').innerHTML = pref === 'dark' ? '<i class="fas fa-circle-dot"></i>' : '<i class="far fa-circle"></i>';
-                document.getElementById('radio-system').innerHTML = pref === 'system' ? '<i class="fas fa-circle-dot"></i>' : '<i class="far fa-circle"></i>';
-                
-                AppNavigation.push({ type: 'modal', id: 'theme-menu-popup' });
-            }
-        }
-
-        function setThemePreference(pref) {
-            playUI('click');
-            localStorage.setItem('flaynity-theme-pref', pref);
-            applyTheme();
-            
-            const current = AppNavigation.current();
-            if (current && current.id === 'theme-menu-popup') {
-                AppNavigation.pop();
-            }
-            
-            showNotification(`Theme set to: ${pref.toUpperCase()}`, "success");
-        }
-
-        // Live system scheme settings toggled query channel
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-            systemThemeIsDark = e.matches;
-            const pref = localStorage.getItem('flaynity-theme-pref') || 'system';
-            if (pref === 'system') {
-                applyTheme();
-            }
-        });
-
-        // Close theme selection popup when clicking outside target elements
-        document.addEventListener('click', function(e) {
-            const popup = document.getElementById('theme-menu-popup');
-            const btn = document.getElementById('theme-toggle-btn');
-            if (popup && popup.style.display === 'flex') {
-                if (!popup.contains(e.target) && !btn.contains(e.target)) {
-                    const current = AppNavigation.current();
-                    if (current && current.id === 'theme-menu-popup') {
-                        AppNavigation.pop();
-                    }
-                }
             }
         });
 
@@ -2779,6 +2684,7 @@
             return `${PUBLIC_R2_DOMAIN_PREFIX}/${fileKey}`;
         }
 
+        // Helper: Convert base64 DataURL to Blob object
         function dataURLtoBlob(dataurl) {
             var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
                 bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
@@ -2915,7 +2821,72 @@
         });
 
         function renderUserAvatar(photoURL, email) {
-            // Deprecated from standard UI actions block. Preserved internally.
+            // Unused globally since Profile Header Button has been deleted in favor of the Theme Switcher. Retained internally.
+        }
+
+        function handleAvatarClick() {
+            playUI('click');
+            const choice = confirm("Profile Options:\n\n[OK] - Upload Profile Picture\n[Cancel] - Log Out");
+            if (choice) {
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = 'image/*';
+                fileInput.onchange = function() { uploadUserAvatarToR2Engine(fileInput); };
+                fileInput.click();
+            } else {
+                logout();
+            }
+        }
+
+        async function uploadUserAvatarToR2Engine(fileInput) {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            showNotification("Uploading profile picture...", "success");
+            try {
+                const secureUrl = await uploadImageToR2(file, "avatars");
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    await currentUser.updateProfile({ photoURL: secureUrl });
+                    await db.ref(`users/${currentUser.uid}`).update({ photoURL: secureUrl });
+                    showNotification("Profile picture updated successfully!", "success");
+                }
+            } catch (err) {
+                showNotification("Upload failed.", "error");
+            }
+        }
+
+        async function signInWithGoogle() {
+            playUI('click');
+            if (window.AndroidBridge && typeof window.AndroidBridge.triggerGoogleSignIn === 'function') {
+                window.AndroidBridge.triggerGoogleSignIn(); 
+            } else {
+                try { 
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    provider.setCustomParameters({ prompt: 'select_account' });
+                    const result = await auth.signInWithPopup(provider); 
+                    saveAccountToList(result.user);
+                    showNotification("Google Sign-In Successful!", "success"); 
+                } catch (err) { 
+                    showNotification(err.message, "error"); 
+                }
+            }
+        }
+
+        window.handleNativeGoogleSignIn = function(idToken) {
+            showNotification("Connecting secure session...", "success");
+            const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
+            auth.signInWithCredential(credential)
+                .then((result) => { 
+                    saveAccountToList(result.user);
+                    showNotification("Google Sign-In Successful!", "success"); 
+                })
+                .catch(err => { showNotification("Native Auth Error: " + err.message, "error"); });
+        };
+
+        function logout() { 
+            cleanupUserSessionData();
+            auth.signOut(); 
         }
 
         // =========================================================
@@ -2955,6 +2926,9 @@
 
             showNotification("Inspecting file frames...", "success");
 
+            // =========================================================
+            // 2. AUTOMATIC HIGH RESOLUTION THUMBNAIL GENERATION (FIXED)
+            // =========================================================
             let frameMeta = { 
                 duration: 60, 
                 dataUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop", 
@@ -2973,7 +2947,7 @@
                 return;
             }
 
-            const uniqueId = "st_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+            const uniqueId = "st_" + Date.now() + "_" + Math.floor(Math.random()*1000);
             const fileKey = `uploads/${uniqueId}/${file.name}`;
             
             const queueItem = {
@@ -3008,7 +2982,9 @@
             e.target.value = ""; 
         }
 
-        // High resolution fast automatic smart frame picker implementation (Fixed)
+        // =========================================================
+        // SMART HIGH-RESOLUTION AUTOMATIC THUMBNAIL GENERATION (FIXED)
+        // =========================================================
         function captureFrameAndDuration(file) {
             return new Promise((resolve) => {
                 const video = document.createElement('video');
@@ -3027,10 +3003,11 @@
 
                 const safetyTimeout = setTimeout(() => {
                     resolve(fallbackData);
-                }, 10000);
+                }, 10000); // 10 second safety threshold
 
                 video.onloadedmetadata = () => {
                     const duration = video.duration || 60;
+                    // Multi-point sampling to find the frame with the best lighting and detail
                     const seekTimes = [duration * 0.15, duration * 0.40, duration * 0.70];
                     let bestFrame = null;
                     let bestScore = -1;
@@ -3044,7 +3021,7 @@
                             const ctx = canvas.getContext('2d');
                             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                            // Speed check: draw on a small downscaled 32x32 comparison canvas
+                            // Speed check: draw on a small 32x32 comparison canvas
                             const sampleCanvas = document.createElement('canvas');
                             sampleCanvas.width = 32;
                             sampleCanvas.height = 32;
@@ -3071,8 +3048,9 @@
                             const range = maxVal - minVal; 
 
                             let score = range; 
-                            if (avgBrightness < 30 || avgBrightness > 230) {
-                                score -= 100; // Penalize dark or washed frames
+                            // Avoid blank/dark frames or washed out pure white frames
+                            if (avgBrightness < 40 || avgBrightness > 220) {
+                                score -= 150; 
                             }
 
                             if (score > bestScore || bestFrame === null) {
@@ -3228,7 +3206,7 @@
                     try {
                         finalThumbBlob = dataURLtoBlob(item.thumbDataUrl);
                     } catch (e) {
-                        console.error("DataURL to blob conversion error: ", e);
+                        console.error("DataURL parsing exception:", e);
                     }
                 }
 
@@ -4130,16 +4108,18 @@
                 document.getElementById('short-sheet-likes').innerText = formatCount(Object.keys(likesObj).length);
             });
 
-            AppNavigation.push({ type: 'modal', id: 'short-desc-bottom-sheet' });
-            setupSwipeToClose(document.getElementById('short-desc-bottom-sheet'), 'short-desc-drag-handle', closeShortDescBottomSheet);
+            const sheet = document.getElementById('short-desc-bottom-sheet');
+            if (sheet) {
+                sheet.style.display = 'flex';
+                setupSwipeToClose(sheet, 'short-desc-drag-handle', closeShortDescBottomSheet);
+                AppNavigation.push('short-desc-bottom-sheet');
+            }
         }
 
         function closeShortDescBottomSheet() {
             playUI('click');
-            const current = AppNavigation.current();
-            if (current && current.id === 'short-desc-bottom-sheet') {
-                AppNavigation.pop();
-            }
+            const sheet = document.getElementById('short-desc-bottom-sheet');
+            if (sheet) sheet.style.display = 'none';
         }
 
         function setupSwipeToClose(element, handleId, closeCallback) {
@@ -4330,116 +4310,142 @@
         }
 
         // =========================================================
-        // UNIVERSAL BACK NAVIGATION & STATE ENGINE
+        // HIGH PERFORMANCE UNIVERSAL BACK NAVIGATION & STATE ENGINE
         // =========================================================
         const AppNavigation = {
-            stack: [{ type: 'tab', id: 'home' }],
+            history: ['home'],
+            modalStack: [],
 
-            updateNativeStatus: function() {
-                const hasHistory = this.stack.length > 1;
+            push: function(pageId, modalId = null) {
+                if (modalId) {
+                    this.modalStack.push(modalId);
+                    window.history.pushState({ type: 'modal', modalId: modalId }, '', '#' + modalId);
+                } else {
+                    if (this.history[this.history.length - 1] === pageId) return;
+                    this.history.push(pageId);
+                    window.history.pushState({ type: 'page', pageId: pageId }, '', '#' + pageId);
+                }
+                this.updateNativeBackStackStatus();
+            },
+
+            onPopState: function(event) {
+                if (this.modalStack.length > 0) {
+                    const modalId = this.modalStack.pop();
+                    this.closeModal(modalId);
+                    this.updateNativeBackStackStatus();
+                    return;
+                }
+
+                if (event.state && event.state.type === 'page') {
+                    const targetPage = event.state.pageId;
+                    const idx = this.history.indexOf(targetPage);
+                    if (idx !== -1) {
+                        while (this.history.length - 1 > idx) {
+                            const poppedPage = this.history.pop();
+                            this.hidePageUI(poppedPage);
+                        }
+                    } else {
+                        this.history.push(targetPage);
+                    }
+                    this.showPageUI(targetPage);
+                } else {
+                    if (this.history.length > 1) {
+                        const poppedPage = this.history.pop();
+                        this.hidePageUI(poppedPage);
+                        const prevPage = this.history[this.history.length - 1];
+                        this.showPageUI(prevPage);
+                    } else {
+                        this.handleExitProtection();
+                    }
+                }
+                this.updateNativeBackStackStatus();
+            },
+
+            hidePageUI: function(pageId) {
+                if (pageId === 'full-movie-page') {
+                    const page = document.getElementById('full-movie-page');
+                    if (page) page.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                    const container = document.getElementById('video-player-container');
+                    if (container) container.innerHTML = '';
+                    if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
+                    if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }
+                } else {
+                    const targetId = pageId.endsWith('-page') ? pageId : (pageId + '-page');
+                    const pageEl = document.getElementById(targetId);
+                    if (pageEl) pageEl.style.display = 'none';
+                }
+            },
+
+            showPageUI: function(pageId) {
+                if (['home', 'shorts', 'search', 'you'].includes(pageId)) {
+                    document.querySelectorAll('.tab-content, .nav-item').forEach(el => el.classList.remove('active'));
+                    const tabEl = document.getElementById(`${pageId}-tab`);
+                    const navEl = document.getElementById(`nav-${pageId}`);
+                    if (tabEl) tabEl.classList.add('active');
+                    if (navEl) navEl.classList.add('active');
+                    adjustHeaderForActiveTab(pageId);
+                    if (pageId === 'you') initYouTabUI();
+                    if (pageId === 'shorts') buildShortsPage();
+                } else {
+                    if (pageId === 'full-movie-page') {
+                        const page = document.getElementById('full-movie-page');
+                        if (page) page.style.display = 'block';
+                        document.body.style.overflow = 'hidden';
+                    } else {
+                        const targetId = pageId.endsWith('-page') ? pageId : (pageId + '-page');
+                        const pageEl = document.getElementById(targetId);
+                        if (pageEl) pageEl.style.display = 'flex';
+                    }
+                }
+            },
+
+            closeModal: function(modalId) {
+                const el = document.getElementById(modalId);
+                if (el) el.style.display = 'none';
+                if (modalId === 'comment-modal') closeCommentModal();
+                if (modalId === 'more-desc-sheet') closeMoreDescriptionSheet();
+                if (modalId === 'create-bottom-sheet') closeCreateBottomSheet();
+                if (modalId === 'upload-details-sheet') closeDetailsSheet();
+                if (modalId === 'create-post-sheet') closePostSheet();
+                if (modalId === 'upload-manager-screen') closeUploadManager();
+                if (modalId === 'desc-bottom-sheet') closeDescBottomSheet();
+                if (modalId === 'account-switcher-modal') closeAccountSwitcher();
+                if (modalId === 'short-desc-bottom-sheet') closeShortDescBottomSheet();
+                this.updateNativeBackStackStatus();
+            },
+
+            updateNativeBackStackStatus: function() {
+                const hasHistory = (this.history.length > 1) || (this.modalStack.length > 0);
                 if (window.AndroidBridge && typeof window.AndroidBridge.setBackStackStatus === 'function') {
                     window.AndroidBridge.setBackStackStatus(hasHistory);
                 }
             },
 
-            push: function(state) {
-                if (state.type === 'tab') {
-                    const current = this.current();
-                    if (current && current.type === 'tab' && current.id === state.id) {
-                        return;
-                    }
-                    if (state.id === 'home') {
-                        this.clearToRoot();
-                        return;
-                    }
-                }
-                this.stack.push(state);
-                this.applyState(state);
-                this.updateNativeStatus();
-            },
-
-            current: function() {
-                return this.stack[this.stack.length - 1];
-            },
-
-            pop: function() {
-                if (this.stack.length <= 1) {
-                    this.updateNativeStatus();
-                    return;
-                }
-                const popped = this.stack.pop();
-                this.revertState(popped);
-                
-                const current = this.current();
-                if (current) {
-                    this.applyState(current);
-                }
-                this.updateNativeStatus();
-            },
-
-            clearToRoot: function() {
-                while (this.stack.length > 1) {
-                    const popped = this.stack.pop();
-                    this.revertState(popped);
-                }
-                this.applyState({ type: 'tab', id: 'home' });
-                this.updateNativeStatus();
-            },
-
-            applyState: function(state) {
-                if (state.type === 'tab') {
-                    document.querySelectorAll('.tab-content, .nav-item').forEach(el => el.classList.remove('active'));
-                    const tabEl = document.getElementById(`${state.id}-tab`);
-                    const navEl = document.getElementById(`nav-${state.id}`);
-                    if (tabEl) tabEl.classList.add('active');
-                    if (navEl) navEl.classList.add('active');
-                    
-                    adjustHeaderForActiveTab(state.id);
-                    if (state.id === 'you') initYouTabUI();
-                    if (state.id === 'shorts') buildShortsPage();
-                    
-                    document.querySelectorAll('.fullscreen-page').forEach(page => page.style.display = 'none');
-                    const watchPage = document.getElementById('full-movie-page');
-                    if (watchPage) watchPage.style.display = 'none';
-                    document.body.style.overflow = 'auto';
-                } else if (state.type === 'page') {
-                    if (state.id === 'full-movie-page') {
-                        const page = document.getElementById('full-movie-page');
-                        if (page) page.style.display = 'block';
-                        document.body.style.overflow = 'hidden';
+            exitTimer: null,
+            handleExitProtection: function() {
+                if (this.exitTimer) {
+                    if (window.AndroidBridge && typeof window.AndroidBridge.exitApp === 'function') {
+                        window.AndroidBridge.exitApp();
                     } else {
-                        const page = document.getElementById(state.id);
-                        if (page) page.style.display = 'flex';
+                        window.close();
                     }
-                } else if (state.type === 'modal') {
-                    const modal = document.getElementById(state.id);
-                    if (modal) modal.style.display = 'flex';
-                }
-            },
-
-            revertState: function(state) {
-                if (state.type === 'page') {
-                    if (state.id === 'full-movie-page') {
-                        const page = document.getElementById('full-movie-page');
-                        if (page) page.style.display = 'none';
-                        document.body.style.overflow = 'auto';
-                        const container = document.getElementById('video-player-container');
-                        if (container) container.innerHTML = '';
-                        if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
-                        if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }
-                    } else {
-                        const page = document.getElementById(state.id);
-                        if (page) page.style.display = 'none';
-                    }
-                } else if (state.type === 'modal') {
-                    const modal = document.getElementById(state.id);
-                    if (modal) modal.style.display = 'none';
+                } else {
+                    showNotification("Press back again to exit", "success");
+                    this.exitTimer = setTimeout(() => {
+                        this.exitTimer = null;
+                    }, 2000);
+                    window.history.pushState({ type: 'page', pageId: 'home' }, '', '#home');
                 }
             }
         };
 
+        window.addEventListener('popstate', function(event) {
+            AppNavigation.onPopState(event);
+        });
+
         function executeBackAction() {
-            AppNavigation.pop();
+            window.history.back();
         }
 
         // =========================================================
@@ -4500,7 +4506,7 @@
             startVideoPlayer();
             registerViewAndListen(currentActiveMovie.id);
             loadChannelMetaForWatchPage(currentActiveMovie.userId || currentActiveMovie.channelId);
-            AppNavigation.push({ type: 'page', id: 'full-movie-page' });
+            AppNavigation.push('full-movie-page');
         }
 
         function startVideoPlayer() {
@@ -4740,7 +4746,9 @@
 
         function openCommentModal() {
             playUI('click');
-            AppNavigation.push({ type: 'modal', id: 'comment-modal' });
+            const commentModal = document.getElementById('comment-modal');
+            if (commentModal) commentModal.style.display = 'flex';
+            AppNavigation.push('comment-modal');
             
             const currentU = auth.currentUser;
             const avatarEl = document.getElementById('comment-user-avatar');
@@ -4759,10 +4767,8 @@
 
         function closeCommentModal() {
             playUI('click');
-            const current = AppNavigation.current();
-            if (current && current.id === 'comment-modal') {
-                AppNavigation.pop();
-            }
+            const commentModal = document.getElementById('comment-modal');
+            if (commentModal) commentModal.style.display = 'none';
         }
 
         function submitComment() {
@@ -4879,16 +4885,18 @@
             const timeVal = document.getElementById('more-sheet-time-val');
             if (timeVal) timeVal.innerText = uploadTime;
 
-            AppNavigation.push({ type: 'modal', id: 'more-desc-sheet' });
-            setupSwipeToClose(document.getElementById('more-desc-sheet'), 'more-desc-drag-handle', closeMoreDescriptionSheet);
+            const sheet = document.getElementById('more-desc-sheet');
+            if (sheet) {
+                sheet.style.display = 'flex';
+                setupSwipeToClose(sheet, 'more-desc-drag-handle', closeMoreDescriptionSheet);
+                AppNavigation.push('more-desc-sheet');
+            }
         }
 
         function closeMoreDescriptionSheet() {
             playUI('click');
-            const current = AppNavigation.current();
-            if (current && current.id === 'more-desc-sheet') {
-                AppNavigation.pop();
-            }
+            const sheet = document.getElementById('more-desc-sheet');
+            if (sheet) sheet.style.display = 'none';
         }
 
         function renderMovieWatchRecommendedFeed() {
@@ -4964,8 +4972,23 @@
         // =========================================
         function switchTab(tabId) {
             playUI('click');
+            
             document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
-            AppNavigation.push({ type: 'tab', id: tabId });
+
+            document.querySelectorAll('.tab-content, .nav-item').forEach(el => el.classList.remove('active'));
+            
+            const tabEl = document.getElementById(`${tabId}-tab`);
+            const navEl = document.getElementById(`nav-${tabId}`);
+            if (tabEl) tabEl.classList.add('active');
+            if (navEl) navEl.classList.add('active');
+            window.scrollTo({ top: 0 }); 
+
+            adjustHeaderForActiveTab(tabId);
+
+            if (tabId === 'you') { initYouTabUI(); }
+            if (tabId === 'shorts') { buildShortsPage(); }
+
+            AppNavigation.push(tabId);
         }
 
         function adjustHeaderForActiveTab(tabId) {
@@ -4999,7 +5022,7 @@
                 if (brand) brand.style.display = 'none';
                 if (actions) {
                     actions.innerHTML = `
-                        <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="openThemeSelectionMenu(event)" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
+                        <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="cycleTheme()" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
                             <!-- Populated dynamically -->
                         </button>
                         <button class="btn-switch-account-header" onclick="openAccountSwitcher()" title="Switch Account">
@@ -5014,12 +5037,13 @@
                         <button onclick="switchTab('search')" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
                             <i class="fas fa-search"></i>
                         </button>
-                        <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="openThemeSelectionMenu(event)" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
+                        <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="cycleTheme()" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
                             <!-- Populated dynamically -->
                         </button>
                     `;
                 }
             }
+            // Trigger dynamic icon updates for the switcher button
             applyTheme();
         }
 
@@ -5134,7 +5158,9 @@
             if (feedback) feedback.innerHTML = "";
             if (submitBtn) submitBtn.disabled = true;
 
-            AppNavigation.push({ type: 'page', id: 'create-channel-page' });
+            const page = document.getElementById('create-channel-page');
+            if (page) page.style.display = 'flex';
+            AppNavigation.push('create-channel');
         }
 
         function triggerAvatarSelection(mode) {
@@ -5337,7 +5363,7 @@
             if (viewSub) viewSub.innerText = formatCount(data.subscribersCount) + " Subscriber" + (data.subscribersCount === 1 ? "" : "s");
 
             switchChannelTab('videos');
-            AppNavigation.push({ type: 'page', id: 'view-channel-page' });
+            AppNavigation.push('view-channel');
         }
 
         let activeChannelVideosListener = null;
@@ -5546,30 +5572,27 @@
             
             const joinedDate = data.createdDate ? new Date(data.createdDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : "Unknown";
             if (metaJoined) metaJoined.innerText = joinedDate;
-            
-            AppNavigation.push({ type: 'modal', id: 'desc-bottom-sheet' });
+            const sheet = document.getElementById('desc-bottom-sheet');
+            if (sheet) sheet.style.display = 'flex';
         }
 
         function closeDescBottomSheet() {
             playUI('click');
-            const current = AppNavigation.current();
-            if (current && current.id === 'desc-bottom-sheet') {
-                AppNavigation.pop();
-            }
+            const sheet = document.getElementById('desc-bottom-sheet');
+            if (sheet) sheet.style.display = 'none';
         }
 
         function openAccountSwitcher() {
             playUI('click');
-            AppNavigation.push({ type: 'modal', id: 'account-switcher-modal' });
+            const sheet = document.getElementById('account-switcher-modal');
+            if (sheet) sheet.style.display = 'flex';
             renderAccountSwitcherList();
         }
 
         function closeAccountSwitcher() {
             playUI('click');
-            const current = AppNavigation.current();
-            if (current && current.id === 'account-switcher-modal') {
-                AppNavigation.pop();
-            }
+            const sheet = document.getElementById('account-switcher-modal');
+            if (sheet) sheet.style.display = 'none';
         }
 
         function renderAccountSwitcherList() {
@@ -5703,20 +5726,21 @@
                 }
                 return;
             }
-            AppNavigation.push({ type: 'modal', id: 'create-bottom-sheet' });
+            const bs = document.getElementById('create-bottom-sheet');
+            if (bs) bs.style.display = 'flex';
         }
 
         function closeCreateBottomSheet() {
-            const current = AppNavigation.current();
-            if (current && current.id === 'create-bottom-sheet') {
-                AppNavigation.pop();
-            }
+            const bs = document.getElementById('create-bottom-sheet');
+            if (bs) bs.style.display = 'none';
         }
 
         function openAnalyticsPage() {
             playUI('click');
+            const page = document.getElementById('analytics-page');
+            if (page) page.style.display = 'flex';
             calculateChannelAnalytics();
-            AppNavigation.push({ type: 'page', id: 'analytics-page' });
+            AppNavigation.push('analytics');
         }
 
         // =========================================================
@@ -5825,13 +5849,15 @@
         // =========================================================
         function openMonetizationPage() {
             playUI('click');
-            AppNavigation.push({ type: 'page', id: 'monetization-page' });
+            const page = document.getElementById('monetization-page');
+            if (page) page.style.display = 'flex';
             
             const dateSpan = document.getElementById('eligibility-date-val');
             if (dateSpan) {
                 const options = { year: 'numeric', month: 'long', day: 'numeric' };
                 dateSpan.innerText = new Date().toLocaleDateString('en-US', options);
             }
+            AppNavigation.push('monetization');
         }
 
         function updateMonetizationEligibility(subs, hours, views) {
@@ -5899,6 +5925,9 @@
 
         function openEditChannelPage() {
             playUI('click');
+            const page = document.getElementById('edit-channel-page');
+            if (page) page.style.display = 'flex';
+            
             let data = currentChannelData;
             if (!data) return;
 
@@ -5925,15 +5954,13 @@
             if (handleFeedback) handleFeedback.innerHTML = "";
             if (saveBtn) saveBtn.disabled = false;
 
-            AppNavigation.push({ type: 'page', id: 'edit-channel-page' });
+            AppNavigation.push('edit-channel');
         }
 
         function closeEditChannelPage() {
             playUI('click');
-            const current = AppNavigation.current();
-            if (current && current.id === 'edit-channel-page') {
-                AppNavigation.pop();
-            }
+            const page = document.getElementById('edit-channel-page');
+            if (page) page.style.display = 'none';
         }
 
         function updateDescCounter(val) {
@@ -6030,39 +6057,45 @@
             if (sheetTitle) sheetTitle.innerText = isShort ? "Upload Short Clip" : "Upload Video";
             if (hashtagSelector) hashtagSelector.style.display = isShort ? "block" : "none";
             
-            AppNavigation.push({ type: 'modal', id: 'upload-details-sheet' });
+            const sheet = document.getElementById('upload-details-sheet');
+            if (sheet) {
+                sheet.style.display = 'flex';
+                AppNavigation.push('upload-details-sheet');
+            }
         }
 
         function closeDetailsSheet() {
-            const current = AppNavigation.current();
-            if (current && current.id === 'upload-details-sheet') {
-                AppNavigation.pop();
-            }
+            const sheet = document.getElementById('upload-details-sheet');
+            if (sheet) sheet.style.display = 'none';
         }
 
         function openPostSheet() {
             currentPostImages = [];
             renderPostAttachedImagesUI();
-            AppNavigation.push({ type: 'modal', id: 'create-post-sheet' });
+            const sheet = document.getElementById('create-post-sheet');
+            if (sheet) {
+                sheet.style.display = 'flex';
+                AppNavigation.push('create-post-sheet');
+            }
         }
 
         function closePostSheet() {
-            const current = AppNavigation.current();
-            if (current && current.id === 'create-post-sheet') {
-                AppNavigation.pop();
-            }
+            const sheet = document.getElementById('create-post-sheet');
+            if (sheet) sheet.style.display = 'none';
         }
 
         function openUploadManager() {
-            AppNavigation.push({ type: 'modal', id: 'upload-manager-screen' });
-            updateManagerUI();
+            const screen = document.getElementById('upload-manager-screen');
+            if (screen) {
+                screen.style.display = 'flex';
+                updateManagerUI();
+                AppNavigation.push('upload-manager-screen');
+            }
         }
 
         function closeUploadManager() {
-            const current = AppNavigation.current();
-            if (current && current.id === 'upload-manager-screen') {
-                AppNavigation.pop();
-            }
+            const screen = document.getElementById('upload-manager-screen');
+            if (screen) screen.style.display = 'none';
         }
 
         function appendHashtag(tag, el) {
@@ -6333,15 +6366,17 @@
             const img = document.getElementById('full-image-preview-el');
             if (overlay && img) {
                 img.src = src;
-                AppNavigation.push({ type: 'modal', id: 'full-image-preview-overlay' });
+                overlay.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
             }
         }
 
         function closeFullScreenImagePreview() {
             playUI('click');
-            const current = AppNavigation.current();
-            if (current && current.id === 'full-image-preview-overlay') {
-                AppNavigation.pop();
+            const overlay = document.getElementById('full-image-preview-overlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+                document.body.style.overflow = 'auto';
             }
         }
 
@@ -6578,8 +6613,12 @@
             playUI('click');
             activeReactedPostId = postId;
             activeReactedFilter = 'all';
+            
+            const page = document.getElementById('reacted-people-page');
+            if (page) page.style.display = 'flex';
+            
             loadReactedPeopleData();
-            AppNavigation.push({ type: 'page', id: 'reacted-people-page' });
+            AppNavigation.push('reacted-people-page');
         }
 
         function selectReactedFilter(type) {
@@ -6673,14 +6712,16 @@
         }
 
         function openDownloadModal() {
-            AppNavigation.push({ type: 'modal', id: 'premium-download-modal' });
+            const modal = document.getElementById('premium-download-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                AppNavigation.push('premium-download-modal');
+            }
         }
 
         function closeDownloadModal() {
-            const current = AppNavigation.current();
-            if (current && current.id === 'premium-download-modal') {
-                AppNavigation.pop();
-            }
+            const modal = document.getElementById('premium-download-modal');
+            if (modal) modal.style.display = 'none';
         }
 
         function startDownloadAdRequest() {

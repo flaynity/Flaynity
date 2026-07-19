@@ -240,7 +240,7 @@
         }
         .btn-switch-account-header:active { transform: scale(0.95); background: var(--border-color); }
 
-        /* Category Chips Styling */
+        /* Locked & Glitch-free Category Chips Styling */
         .category-chips-container {
             position: fixed;
             top: 82px; 
@@ -783,7 +783,7 @@
         .nav-avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
 
         /* =============================================================
-           SHORTS TAB CONFIGURATIONS ( TikTok Player Layout )
+           SHORTS TAB CONFIGURATIONS ( TikTok Premium Player Layout )
            ============================================================= */
         #shorts-tab {
             position: fixed;
@@ -5558,9 +5558,6 @@
             }
         }
 
-        // =========================================
-        // ACCOUNT MANAGEMENT HOOKS
-        // =========================================
         function openAccountSwitcher() {
             playUI('click');
             AppNavigation.push({ type: 'modal', id: 'account-switcher-modal' });
@@ -6355,7 +6352,7 @@
         let reactionTimer = null;
 
         function startReactionTimer(postId, e) {
-            reactionActivePostId = Math.floor(postId); // Safe casting
+            reactionActivePostId = postId;
             clearTimeout(reactionTimer);
             reactionTimer = setTimeout(() => {
                 showReactionPicker(postId, e);

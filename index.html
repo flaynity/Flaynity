@@ -21,15 +21,8 @@
     <script>
         (function() {
             try {
-                let pref = localStorage.getItem('flaynity-theme-pref') || 'system';
-                let finalTheme = 'light';
-                if (pref === 'system') {
-                    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                    finalTheme = systemDark ? 'dark' : 'light';
-                } else {
-                    finalTheme = pref;
-                }
-                document.documentElement.setAttribute('data-theme', finalTheme);
+                let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
+                document.documentElement.setAttribute('data-theme', pref);
             } catch (e) {}
         })();
     </script>
@@ -57,7 +50,7 @@
         [data-theme="dark"] {
             --bg-color: #000000;
             --surface: #000000;
-            --primary: #FF2E55; /* Retained primary theme branding color */
+            --primary: #FF2E55; 
             --primary-glow: rgba(255, 46, 85, 0.15);
             --text-main: #FFFFFF;
             --text-muted: #AAAAAA;
@@ -80,7 +73,7 @@
             background-color: var(--bg-color); 
             color: var(--text-main); 
             overflow-x: hidden; 
-            padding-top: 126px; /* Rigid locked layout padding to prevent any chips shaking */
+            padding-top: 126px; 
             padding-bottom: 48px; 
             touch-action: pan-y; 
         }
@@ -239,7 +232,7 @@
         }
         .btn-switch-account-header:active { transform: scale(0.95); background: var(--border-color); }
 
-        /* Locked & Glitch-free Category Chips Styling */
+        /* Locked & Category Chips Styling */
         .category-chips-container {
             position: fixed;
             top: 82px; 
@@ -327,9 +320,7 @@
         .filter-chip { padding: 8px 18px; background: var(--surface); border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 0.9rem; font-weight: 700; transition: 0.3s; border: 1px solid var(--glass-border); color: var(--text-muted); }
         .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* =========================================================
-           1. PREMIUM BOTTOM NAVIGATION DESIGN RESTORATION
-           ========================================================= */
+        /* PREMIUM BOTTOM NAVIGATION DESIGN */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -362,7 +353,6 @@
             transition: color 0.15s ease-in-out !important; 
         }
         
-        /* Selected item has NO extra background highlight box modifications */
         .nav-item.active {
             background-color: transparent !important;
             background: transparent !important;
@@ -382,7 +372,6 @@
             transition: none !important;
         }
 
-        /* Default unselected colors (standard solid dark) */
         .nav-icon-svg {
             width: 26px !important; 
             height: 26px !important;
@@ -392,7 +381,6 @@
             transition: color 0.15s ease-in-out;
         }
 
-        /* Selected active state color transforms */
         .nav-item.active .nav-icon-svg {
             color: #FF2E55 !important;
         }
@@ -784,15 +772,13 @@
         .nav-item.active .nav-avatar-wrap { border-color: var(--text-main); }
         .nav-avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* =============================================================
-           SHORTS TAB CONFIGURATIONS ( TikTok Premium Player Layout )
-           ============================================================= */
+        /* SHORTS TAB CONFIGURATIONS ( TikTok Premium Player Layout ) */
         #shorts-tab {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
-            height: calc(100vh - 48px); /* Standard aligned with updated slim Bottom Nav */
+            height: calc(100vh - 48px); 
             background: #000000 !important;
             color: #FFFFFF !important;
             z-index: 500;
@@ -822,12 +808,11 @@
         
         /* Shorts Action Button Overlays */
         .short-right-actions {
-            position: absolute; right: 12px; bottom: 54px !important; /* Sitting perfectly above thin bottom-nav */
+            position: absolute; right: 12px; bottom: 54px !important; 
             display: flex; flex-direction: column; gap: 16px; z-index: 10; align-items: center;
         }
         .short-action-container { display: flex; flex-direction: column; align-items: center; }
         
-        /* TikTok Circle-less Premium Buttons */
         .short-action-btn-tiktok {
             background: transparent !important;
             border: none !important;
@@ -872,7 +857,7 @@
         /* Bottom Information Overlays */
         .short-bottom-info {
             position: absolute;
-            bottom: 54px !important; /* Sitting perfectly above the thinner bottom-nav */
+            bottom: 54px !important; 
             left: 12px;
             right: 76px;
             z-index: 10;
@@ -1067,7 +1052,6 @@
             line-height: 1;
         }
 
-        /* Loader spin animation */
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -1291,6 +1275,71 @@
             align-items: center;
             gap: 8px;
         }
+
+        /* Material Design 3 Dropdown Theme Menu */
+        .theme-popup-menu {
+            position: fixed;
+            top: 80px;
+            right: 16px;
+            background: var(--surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+            padding: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 10000;
+            min-width: 180px;
+            animation: pickerPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        [data-theme="dark"] .theme-popup-menu {
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .theme-menu-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-main);
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .theme-menu-item:active {
+            background: var(--border-color);
+        }
+        .theme-menu-item-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .theme-radio-circle {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--text-muted);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s ease;
+        }
+        .theme-menu-item.active .theme-radio-circle {
+            border-color: var(--primary);
+        }
+        .theme-radio-inner {
+            width: 10px;
+            height: 10px;
+            background: var(--primary);
+            border-radius: 50%;
+            transform: scale(0);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .theme-menu-item.active .theme-radio-inner {
+            transform: scale(1);
+        }
     </style>
 </head>
 <body>
@@ -1343,18 +1392,17 @@
                 <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 900; font-size: 1.35rem; color: var(--text-main); letter-spacing: -0.5px;">Flaynity</span>
             </div>
             
-            <!-- Header Actions with Search Trigger & Theme Switcher (Profile Option Deleted) -->
             <div class="header-actions" id="appbar-actions-wrap" style="display: flex; align-items: center; gap: 14px;">
                 <button onclick="switchTab('search')" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
                     <i class="fas fa-search"></i>
                 </button>
-                <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="cycleTheme()" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
+                <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="openThemePopupMenu()" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
                     <i class="fas fa-circle-half-stroke"></i>
                 </button>
             </div>
         </header>
 
-        <!-- Fixed category chips at base body level for total layout rigidity -->
+        <!-- Fixed category chips -->
         <div class="category-chips-container" id="global-category-chips">
             <div class="chip-item active" onclick="selectCategoryChip('All', this)">All</div>
             <div class="chip-item" onclick="selectCategoryChip('Posts', this)">Posts</div>
@@ -1363,15 +1411,12 @@
 
         <!-- 1. Home Tab -->
         <div id="home-tab" class="tab-content active" style="padding-top: 0px;">
-            <!-- Unified Scroll Feed for Shorts & Long videos -->
             <div id="home-feed-container" style="margin-top: 12px;"></div>
         </div>
 
-        <!-- 2. Replaced Dedicated Shorts Tab -->
+        <!-- 2. Shorts Tab -->
         <div id="shorts-tab" class="tab-content" style="padding:0;">
-            <div id="shorts-swiper-container" style="height:100%; width:100%;">
-                <!-- Swipable Shorts loaded dynamically -->
-            </div>
+            <div id="shorts-swiper-container" style="height:100%; width:100%;"></div>
         </div>
 
         <!-- 3. Discover Tab -->
@@ -1396,7 +1441,6 @@
 
         <!-- 4. YOU Tab -->
         <div id="you-tab" class="tab-content">
-            <!-- Full bleed Profile Info Card -->
             <div class="profile-card-you" style="margin-top: 15px;">
                 <div class="profile-card-main">
                     <div class="profile-avatar-large" id="you-avatar-large">U</div>
@@ -1406,12 +1450,9 @@
                     </div>
                 </div>
                 
-                <div id="channel-action-box" class="channel-action-box">
-                    <!-- Populated dynamically -->
-                </div>
+                <div id="channel-action-box" class="channel-action-box"></div>
             </div>
 
-            <!-- Full bleed Menu Items -->
             <div class="you-menu">
                 <div class="you-menu-item" onclick="openUploadManager()">
                     <i class="fas fa-tasks"></i>
@@ -1436,9 +1477,8 @@
             </div>
         </div>
 
-        <!-- RESTORED PREMIUM DESIGN BOTTOM NAVIGATION -->
+        <!-- BOTTOM NAVIGATION -->
         <div class="bottom-nav">
-            <!-- 1. Home Item -->
             <div class="nav-item active" id="nav-home" onclick="switchTab('home')">
                 <div class="nav-icon-container">
                     <svg class="nav-icon-svg icon-unselected" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1451,7 +1491,6 @@
                 <span class="nav-label">Home</span>
             </div>
 
-            <!-- 2. Shorts Item -->
             <div class="nav-item" id="nav-shorts" onclick="switchTab('shorts')">
                 <div class="nav-icon-container">
                     <svg class="nav-icon-svg icon-unselected" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1464,7 +1503,6 @@
                 <span class="nav-label">Shorts</span>
             </div>
 
-            <!-- 3. Create Item (Center Action Button) -->
             <div class="nav-item" id="nav-create" onclick="openCreateBottomSheet(); playUI('click')" style="height: 100%; display: flex; align-items: center; justify-content: center;">
                 <div class="nav-create-circle">
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1473,7 +1511,6 @@
                 </div>
             </div>
 
-            <!-- 4. Discover Item -->
             <div class="nav-item" id="nav-search" onclick="switchTab('search')">
                 <div class="nav-icon-container">
                     <svg class="nav-icon-svg icon-unselected" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1486,7 +1523,6 @@
                 <span class="nav-label">Discover</span>
             </div>
 
-            <!-- 5. You Item -->
             <div class="nav-item" id="nav-you" onclick="switchTab('you')">
                 <div class="nav-icon-container">
                     <div class="nav-avatar-circle" id="nav-avatar-img">
@@ -1502,14 +1538,11 @@
 
     <!-- PREMIUM WATCH PAGE Layout -->
     <div id="full-movie-page">
-        <!-- Universal Back Navigation Button -->
         <button class="back-btn" onclick="executeBackAction(); playUI('click')">
             <i class="fas fa-arrow-left"></i>
         </button>
 
-        <!-- Full Width Video Player Engine -->
         <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000000;">
-            <!-- Skeleton/Buffer Animation Container -->
             <div id="video-player-skeleton" style="position: absolute; top:0; left:0; width:100%; height:100%; background:#000000; display:flex; align-items:center; justify-content:center; z-index:11;">
                 <div style="width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
             </div>
@@ -1519,7 +1552,6 @@
         </div>
 
         <div class="full-page-content" style="padding: 16px;">
-            <!-- Premium Metadata Information Card -->
             <div class="premium-white-card-watch">
                 <h1 id="movie-detail-title" style="font-size: 1.15rem; font-weight: 800; margin: 0 0 6px 0; line-height: 1.35; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Plus Jakarta Sans', sans-serif;">Title</h1>
                 
@@ -1535,7 +1567,6 @@
                 </div>
             </div>
 
-            <!-- Adjusted Channel Action and Interaction Row (Name and subcount removed) -->
             <div class="channel-action-row-watch">
                 <div class="action-row-left">
                     <img id="movie-channel-avatar" src="" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--border-color); background: #E2E8F0;">
@@ -1554,14 +1585,12 @@
                         </button>
                     </div>
 
-                    <!-- Circular Icon-only Download button -->
                     <button class="btn-watch-download ripple" onclick="requestDownloadWithAd()" style="width: 34px; height: 34px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;" title="Download">
                         <i class="fas fa-download"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Premium Realtime Comment Preview Card -->
             <div class="comment-preview-card" id="comment-preview-trigger" onclick="openCommentModal()">
                 <div class="comment-preview-header">
                     <span class="comment-preview-title">Comments <span class="comment-preview-count" id="comment-preview-count">0</span></span>
@@ -1575,7 +1604,6 @@
                 </div>
             </div>
 
-            <!-- Infinite Recommended List -->
             <div class="recommended-feed-title">
                 <i class="fas fa-play-circle" style="color:var(--primary);"></i> Recommended Feed
             </div>
@@ -1680,21 +1708,6 @@
             <h2>Upcoming Feature</h2>
             <p>Our development team is actively building this experience. Stay tuned for future updates!</p>
             <button class="upcoming-close-btn" onclick="hideUpcomingModal()">Close</button>
-        </div>
-    </div>
-
-    <!-- Exit Confirmation Dialog -->
-    <div id="exit-dialog" class="upcoming-modal">
-        <div class="upcoming-content">
-            <div class="upcoming-icon">
-                <i class="fas fa-sign-out-alt"></i>
-            </div>
-            <h2>Exit Flaynity?</h2>
-            <p>Are you sure you want to close the application?</p>
-            <div style="display: flex; gap: 12px; justify-content: center;">
-                <button class="upcoming-close-btn" style="background: var(--border-color); color: var(--text-main); box-shadow: none;" onclick="closeExitDialog()">Cancel</button>
-                <button class="upcoming-close-btn" style="background: var(--primary);" onclick="confirmExitApp()">Exit</button>
-            </div>
         </div>
     </div>
 
@@ -2004,14 +2017,12 @@
                 </div>
             </div>
 
-            <!-- Custom Tabs -->
             <div class="channel-tabs">
                 <div class="channel-tab-item active" id="tab-channel-videos" onclick="switchChannelTab('videos')">Videos</div>
                 <div class="channel-tab-item" id="tab-channel-shorts" onclick="switchChannelTab('shorts')">Shorts</div>
                 <div class="channel-tab-item" id="tab-channel-posts" onclick="switchChannelTab('posts')">Posts</div>
             </div>
 
-            <!-- Content Areas -->
             <div class="channel-tab-content active" id="channel-content-videos">
                 <div id="channel-videos-grid" class="channel-videos-container"></div>
             </div>
@@ -2182,16 +2193,13 @@
 
     <!-- 5. MONETIZATION PAGE -->
     <div id="monetization-page" class="fullscreen-page" style="z-index: 1530; background: var(--bg-color);">
-        <!-- Top App Bar -->
         <header class="appbar" style="height: 56px; background: var(--surface); display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; justify-content: space-between;">
             <button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
             <h3 class="appbar-title" style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); position: absolute; left: 50%; transform: translateX(-50%); margin: 0; font-family: 'Plus Jakarta Sans', sans-serif;">Monetization</h3>
             <div style="width: 40px;"></div>
         </header>
 
-        <!-- Main Content Scroll Area -->
         <div class="page-content" style="padding: 24px 20px 60px 20px; overflow-y: auto;">
-            <!-- Header Section -->
             <div class="monetization-header" style="margin-bottom: 28px;">
                 <h1 style="font-size: 34px; font-weight: 900; line-height: 1.2; color: var(--text-main); margin: 0 0 16px 0; font-family: 'Plus Jakarta Sans', sans-serif;">Become a Flaynity Partner</h1>
                 
@@ -2206,10 +2214,8 @@
                 <p style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.5; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Earn income by showing ads and connecting with your fans, and gain access to creator tools and support.</p>
             </div>
 
-            <!-- Premium Swipeable Slider Container -->
             <div class="slider-outer-container">
                 <div id="premium-features-slider">
-                    <!-- Card 1 -->
                     <div class="slider-card">
                         <div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
                             <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2224,7 +2230,6 @@
                         <p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Earn from ads and premium subscribers on long videos.</p>
                     </div>
 
-                    <!-- Card 2 -->
                     <div class="slider-card">
                         <div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
                             <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2238,7 +2243,6 @@
                         <p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Earn from ads shown in the Shorts Feed.</p>
                     </div>
 
-                    <!-- Card 3 -->
                     <div class="slider-card">
                         <div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
                             <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2253,7 +2257,6 @@
                         <p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Create exclusive memberships for your biggest supporters.</p>
                     </div>
 
-                    <!-- Card 4 -->
                     <div class="slider-card">
                         <div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
                             <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2266,7 +2269,6 @@
                         <p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Receive fan support through one-time purchases.</p>
                     </div>
 
-                    <!-- Card 5 -->
                     <div class="slider-card">
                         <div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
                             <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2279,7 +2281,6 @@
                         <p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Recommend products and earn from shopping.</p>
                     </div>
                 </div>
-                <!-- Pagination Dot indicators -->
                 <div class="slider-dots">
                     <span class="slider-dot active"></span>
                     <span class="slider-dot"></span>
@@ -2289,18 +2290,15 @@
                 </div>
             </div>
 
-            <!-- Eligibility Segment -->
             <div class="eligibility-section" style="margin-bottom: 32px;">
                 <h2 style="font-size: 1.6rem; font-weight: 850; color: var(--text-main); margin: 0 0 16px 0;">Eligibility</h2>
                 
-                <!-- Requirements Display Card -->
                 <div style="background: var(--border-color); border-radius: 20px; padding: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px; font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">
                         <i class="fas fa-lock" style="color: var(--primary);"></i>
                         <span>Showing data as of <span id="eligibility-date-val">July 16, 2026</span></span>
                     </div>
 
-                    <!-- Req 1: Subs -->
                     <div style="margin-bottom: 18px;">
                         <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem; margin-bottom: 6px;">
                             <span style="color: var(--text-main);">Subscribers</span>
@@ -2311,7 +2309,6 @@
                         </div>
                     </div>
 
-                    <!-- Req 2: Watch Hours -->
                     <div style="margin-bottom: 18px;">
                         <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem; margin-bottom: 4px;">
                             <span style="color: var(--text-main);">Valid Public Watch Hours</span>
@@ -2323,7 +2320,6 @@
                         </div>
                     </div>
 
-                    <!-- Req 3: Views -->
                     <div style="margin-bottom: 8px;">
                         <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem; margin-bottom: 4px;">
                             <span style="color: var(--text-main);">Public Views (Shorts & Videos)</span>
@@ -2339,7 +2335,6 @@
                 <p style="text-align: center; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-top: 16px; padding: 0 10px;">Some monetization features may have additional eligibility requirements.</p>
             </div>
 
-            <!-- Apply Button -->
             <div class="next-steps-section" style="margin-bottom: 24px;">
                 <h2 style="font-size: 1.6rem; font-weight: 850; color: var(--text-main); margin: 0 0 16px 0;">Next Steps</h2>
                 
@@ -2424,9 +2419,7 @@
                 <h3>Switch account</h3>
                 <button class="close-download-modal" onclick="closeAccountSwitcher()"><i class="fas fa-times"></i></button>
             </div>
-            <div class="account-switcher-list" id="account-switcher-list-container" style="display: flex; flex-direction: column; gap: 12px; max-height: 50vh; overflow-y: auto;">
-                <!-- Dynamically Populated -->
-            </div>
+            <div class="account-switcher-list" id="account-switcher-list-container" style="display: flex; flex-direction: column; gap: 12px; max-height: 50vh; overflow-y: auto;"></div>
         </div>
     </div>
 
@@ -2449,7 +2442,7 @@
         <div class="animated-emoji-item" onclick="selectPostReaction('angry')">😡</div>
     </div>
 
-    <!-- ALL PEOPLE REACTED PAGE (MD3) -->
+    <!-- ALL PEOPLE REACTED PAGE -->
     <div id="reacted-people-page" class="fullscreen-page" style="z-index: 1540; background: var(--bg-color);">
         <header class="appbar" style="display: flex; align-items: center; justify-content: space-between; position: relative;">
             <button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
@@ -2457,14 +2450,29 @@
             <div style="width: 40px;"></div>
         </header>
         <div class="page-content" style="padding: 16px 0;">
-            <!-- Reaction Filter Horizontal Chips -->
-            <div id="reacted-chips-container" style="display: flex; gap: 8px; overflow-x: auto; padding: 0 16px 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); scrollbar-width: none;">
-                <!-- Dynamically Populated -->
-            </div>
+            <div id="reacted-chips-container" style="display: flex; gap: 8px; overflow-x: auto; padding: 0 16px 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); scrollbar-width: none;"></div>
+            <div id="reacted-users-list" style="display: flex; flex-direction: column; gap: 14px; padding: 0 16px;"></div>
+        </div>
+    </div>
 
-            <!-- Reacted Users List Row-by-Row -->
-            <div id="reacted-users-list" style="display: flex; flex-direction: column; gap: 14px; padding: 0 16px;">
-                <!-- Dynamically Populated -->
+    <!-- MATERIAL DESIGN 3 DROPDOWN THEME MENU MARKUP -->
+    <div id="theme-popup-menu" class="theme-popup-menu">
+        <div class="theme-menu-item" data-theme-val="light" onclick="selectThemeVal('light')">
+            <div class="theme-menu-item-left">
+                <i class="fas fa-sun" style="color: #FFB300; width: 20px; text-align: center;"></i>
+                <span>Light Theme</span>
+            </div>
+            <div class="theme-radio-circle">
+                <div class="theme-radio-inner"></div>
+            </div>
+        </div>
+        <div class="theme-menu-item" data-theme-val="dark" onclick="selectThemeVal('dark')">
+            <div class="theme-menu-item-left">
+                <i class="fas fa-moon" style="color: #FF2E55; width: 20px; text-align: center;"></i>
+                <span>Dark Theme</span>
+            </div>
+            <div class="theme-radio-circle">
+                <div class="theme-radio-inner"></div>
             </div>
         </div>
     </div>
@@ -2474,51 +2482,41 @@
         // AUTOMATIC & MANUAL THEME ENGINE
         // =========================================
         function applyTheme() {
-            let pref = localStorage.getItem('flaynity-theme-pref') || 'system';
-            let finalTheme = 'light';
+            let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
+            document.documentElement.setAttribute('data-theme', pref);
             
-            if (pref === 'system') {
-                const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                finalTheme = systemDark ? 'dark' : 'light';
-            } else {
-                finalTheme = pref;
-            }
-            
-            document.documentElement.setAttribute('data-theme', finalTheme);
-            
-            // Update app bar toggle buttons globally
+            // Update global toggle buttons
             const themeBtns = document.querySelectorAll('.appbar-theme-btn');
             themeBtns.forEach(btn => {
                 if (pref === 'light') {
                     btn.innerHTML = `<i class="fas fa-sun" style="color: #FFB300;"></i>`;
                 } else if (pref === 'dark') {
                     btn.innerHTML = `<i class="fas fa-moon" style="color: #FF2E55;"></i>`;
+                }
+            });
+
+            // Sync menu radio items
+            document.querySelectorAll('.theme-menu-item').forEach(item => {
+                if (item.getAttribute('data-theme-val') === pref) {
+                    item.classList.add('active');
                 } else {
-                    btn.innerHTML = `<i class="fas fa-circle-half-stroke"></i>`;
+                    item.classList.remove('active');
                 }
             });
         }
 
-        function cycleTheme() {
+        function openThemePopupMenu() {
             playUI('click');
-            let currentPref = localStorage.getItem('flaynity-theme-pref') || 'system';
-            let nextPref = 'light';
-            
-            if (currentPref === 'light') nextPref = 'dark';
-            else if (currentPref === 'dark') nextPref = 'system';
-            
-            localStorage.setItem('flaynity-theme-pref', nextPref);
-            applyTheme();
-            showNotification(`Theme: ${nextPref.toUpperCase()}`, "success");
+            AppNavigation.pushModal('theme-popup-menu');
         }
 
-        // Live system theme changes observer
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-            let pref = localStorage.getItem('flaynity-theme-pref') || 'system';
-            if (pref === 'system') {
-                applyTheme();
-            }
-        });
+        function selectThemeVal(val) {
+            playUI('click');
+            localStorage.setItem('flaynity-theme-pref', val);
+            applyTheme();
+            showNotification(`Theme: ${val.toUpperCase()}`, "success");
+            AppNavigation.pop(); 
+        }
 
         document.addEventListener("DOMContentLoaded", function() {
             applyTheme();
@@ -2539,7 +2537,6 @@
                 console.warn("Startup sound engine bypassed:", e);
             }
 
-            // High Precision Loader Disposer
             setTimeout(function() {
                 const splash = document.getElementById('splash-screen');
                 if (splash) {
@@ -2549,10 +2546,10 @@
             }, 3000); 
 
             try {
-                window.history.replaceState({ type: 'page', pageId: 'home' }, '');
+                AppNavigation.stack = [{ type: 'tab', id: 'home' }];
+                AppNavigation.updateBridge();
             } catch (e) {}
             
-            // Slider Page Indicator Dot Engine
             const slider = document.getElementById('premium-features-slider');
             const dots = document.querySelectorAll('.slider-dot');
             if (slider && dots.length > 0) {
@@ -2684,7 +2681,6 @@
             return `${PUBLIC_R2_DOMAIN_PREFIX}/${fileKey}`;
         }
 
-        // Helper: Convert base64 DataURL to Blob object
         function dataURLtoBlob(dataurl) {
             var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
                 bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
@@ -2816,12 +2812,12 @@
                     if (authScr) authScr.style.display = 'flex'; 
                 }
             } catch (e) {
-                console.error("Auth status sync crash:", e);
+                console.error("Auth status sync error:", e);
             }
         });
 
         function renderUserAvatar(photoURL, email) {
-            // Unused globally since Profile Header Button has been deleted in favor of the Theme Switcher. Retained internally.
+            // Header avatar container handled dynamically in theme engine
         }
 
         function handleAvatarClick() {
@@ -2897,7 +2893,7 @@
         const MAX_CONCURRENT_UPLOADS = 3; 
 
         function triggerFilePicker(type) {
-            closeCreateBottomSheet();
+            AppNavigation.pop(); // Close create content sheet
             if (type === 'video-long' || type === 'video-short') {
                 const picker = document.getElementById('video-file-input');
                 if (picker) {
@@ -2926,9 +2922,6 @@
 
             showNotification("Inspecting file frames...", "success");
 
-            // =========================================================
-            // 2. AUTOMATIC HIGH RESOLUTION THUMBNAIL GENERATION (FIXED)
-            // =========================================================
             let frameMeta = { 
                 duration: 60, 
                 dataUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop", 
@@ -2982,9 +2975,6 @@
             e.target.value = ""; 
         }
 
-        // =========================================================
-        // SMART HIGH-RESOLUTION AUTOMATIC THUMBNAIL GENERATION (FIXED)
-        // =========================================================
         function captureFrameAndDuration(file) {
             return new Promise((resolve) => {
                 const video = document.createElement('video');
@@ -3003,11 +2993,10 @@
 
                 const safetyTimeout = setTimeout(() => {
                     resolve(fallbackData);
-                }, 10000); // 10 second safety threshold
+                }, 10000);
 
                 video.onloadedmetadata = () => {
                     const duration = video.duration || 60;
-                    // Multi-point sampling to find the frame with the best lighting and detail
                     const seekTimes = [duration * 0.15, duration * 0.40, duration * 0.70];
                     let bestFrame = null;
                     let bestScore = -1;
@@ -3021,7 +3010,6 @@
                             const ctx = canvas.getContext('2d');
                             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                            // Speed check: draw on a small 32x32 comparison canvas
                             const sampleCanvas = document.createElement('canvas');
                             sampleCanvas.width = 32;
                             sampleCanvas.height = 32;
@@ -3048,17 +3036,13 @@
                             const range = maxVal - minVal; 
 
                             let score = range; 
-                            // Avoid blank/dark frames or washed out pure white frames
                             if (avgBrightness < 40 || avgBrightness > 220) {
                                 score -= 150; 
                             }
 
                             if (score > bestScore || bestFrame === null) {
                                 bestScore = score;
-                                bestFrame = {
-                                    canvas: canvas,
-                                    avgBrightness: avgBrightness
-                                };
+                                bestFrame = { canvas: canvas, avgBrightness: avgBrightness };
                             }
                         } catch (e) {
                             console.error("Frame analysis error: ", e);
@@ -3144,10 +3128,7 @@
                     ContentType: item.file.type || 'video/mp4'
                 };
                 
-                const uploadOpts = {
-                    partSize: 5 * 1024 * 1024, 
-                    queueSize: 2 
-                };
+                const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
 
                 const s3Upload = s3.upload(params, uploadOpts);
                 item.s3UploadRef = s3Upload;
@@ -3203,11 +3184,7 @@
             try {
                 let finalThumbBlob = item.thumbBlob;
                 if (!finalThumbBlob && item.thumbDataUrl && item.thumbDataUrl.startsWith('data:')) {
-                    try {
-                        finalThumbBlob = dataURLtoBlob(item.thumbDataUrl);
-                    } catch (e) {
-                        console.error("DataURL parsing exception:", e);
-                    }
+                    try { finalThumbBlob = dataURLtoBlob(item.thumbDataUrl); } catch (e) {}
                 }
 
                 if (finalThumbBlob && s3) {
@@ -3231,7 +3208,7 @@
                 item.progress = 100;
                 updateManagerUI();
                 saveQueueStateToLocalStorage();
-                showNotification(`"${item.title}" is published and live!`, "success");
+                showNotification(`"${item.title}" is published!`, "success");
 
             } catch (err) {
                 item.status = "failed";
@@ -3330,9 +3307,7 @@
                                 allAdminMovies.push(m);
                             }
                         });
-                    } catch (e) {
-                        console.error("User uploads database read exception:", e);
-                    }
+                    } catch (e) {}
                 });
 
                 db.ref('admin_panel/movies/shorts').on('value', (snap) => {
@@ -3344,9 +3319,7 @@
                         if (shortsTab && shortsTab.classList.contains('active')) {
                             buildShortsPage();
                         }
-                    } catch (e) {
-                        console.error("Shorts database sync exception:", e);
-                    }
+                    } catch (e) {}
                 });
 
                 db.ref('admin_panel/posts').on('value', (snap) => {
@@ -3354,9 +3327,7 @@
                         const data = snap.val();
                         allCommunityPosts = data ? Object.values(data) : [];
                         buildHomeFeed();
-                    } catch (e) {
-                        console.error("Posts node exception:", e);
-                    }
+                    } catch (e) {}
                 });
 
                 const currentUser = auth.currentUser;
@@ -3370,7 +3341,7 @@
                     });
                 }
             } catch (err) {
-                console.error("Global database binding crash prevented:", err);
+                console.error("Global database binding exception:", err);
             }
         }
 
@@ -3768,9 +3739,6 @@
             return html;
         }
 
-        // =========================================================
-        // PORTRAIT 3:4 EDGE-TO-EDGE POST COMPONENT UI
-        // =========================================================
         function renderSinglePostSegmentUI(post) {
             if (!post) return '';
 
@@ -3939,13 +3907,11 @@
             slideElement.appendChild(heart);
             triggerHapticFeedback();
             
-            setTimeout(() => {
-                heart.remove();
-            }, 800);
+            setTimeout(() => { heart.remove(); }, 800);
         }
 
         // =========================================================
-        // FULL SCREEN SHORTS BUILDER (TikTok Alignment & Controls)
+        // FULL SCREEN SHORTS BUILDER
         // =========================================================
         function buildShortsPage() {
             const container = document.getElementById('shorts-swiper-container');
@@ -3971,12 +3937,10 @@
                     <div class="short-slide" id="slide-short-${s.id}" data-shortid="${s.id}">
                         <video class="short-video-el" src="${s.videoLink}" loop playsinline webkit-playsinline></video>
 
-                        <!-- Video Progress Bar -->
                         <div class="short-progress-container">
                             <div class="short-progress-bar" id="short-progress-bar-${s.id}"></div>
                         </div>
 
-                        <!-- Right Actions Overlay -->
                         <div class="short-right-actions">
                             <div class="short-action-container">
                                 <button class="short-action-btn-tiktok" id="${isLikedId}" onclick="toggleShortLike('${s.id}')">
@@ -4000,7 +3964,6 @@
                             </div>
                         </div>
 
-                        <!-- Bottom Meta Information Overlay -->
                         <div class="short-bottom-info">
                             <div class="short-channel-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
                                 <div class="live-avatar-${s.userId}" style="width:32px; height:32px; border-radius:50%; border:2px solid #fff; overflow:hidden;"></div>
@@ -4021,7 +3984,6 @@
                     const stats = snapshot.val() || {};
                     const viewsObj = stats.views || {};
                     const likesObj = stats.likes || {};
-                    
                     const likesCount = Object.keys(likesObj).length;
 
                     const lblLikes = document.getElementById(likesCountId);
@@ -4108,18 +4070,18 @@
                 document.getElementById('short-sheet-likes').innerText = formatCount(Object.keys(likesObj).length);
             });
 
-            const sheet = document.getElementById('short-desc-bottom-sheet');
-            if (sheet) {
-                sheet.style.display = 'flex';
-                setupSwipeToClose(sheet, 'short-desc-drag-handle', closeShortDescBottomSheet);
-                AppNavigation.push('short-desc-bottom-sheet');
-            }
+            AppNavigation.pushModal('short-desc-bottom-sheet');
+            
+            setTimeout(() => {
+                const sheet = document.getElementById('short-desc-bottom-sheet');
+                if (sheet) {
+                    setupSwipeToClose(sheet, 'short-desc-drag-handle', closeShortDescBottomSheet);
+                }
+            }, 100);
         }
 
         function closeShortDescBottomSheet() {
-            playUI('click');
-            const sheet = document.getElementById('short-desc-bottom-sheet');
-            if (sheet) sheet.style.display = 'none';
+            AppNavigation.pop();
         }
 
         function setupSwipeToClose(element, handleId, closeCallback) {
@@ -4181,7 +4143,7 @@
         }
 
         // =========================================================
-        // 5. ULTRA FAST SECURE DOWNLOAD SYSTEM IMPLEMENTATION (FIXED)
+        // SECURE DOWNLOAD SYSTEM IMPLEMENTATION
         // =========================================================
         async function triggerFileDownload(url, filename) {
             if (!url) {
@@ -4189,7 +4151,6 @@
                 return;
             }
 
-            // Route through Native Android Download Bridge if available
             if (window.AndroidBridge && typeof window.AndroidBridge.downloadVideo === 'function') {
                 const posterUrl = currentActiveMovie ? (currentActiveMovie.poster || "") : "";
                 window.AndroidBridge.downloadVideo(url, filename, posterUrl);
@@ -4197,7 +4158,6 @@
                 return;
             }
 
-            // Standard Web Fallback
             showNotification("Preparing web download transfer...", "success");
             try {
                 const response = await fetch(url, { method: 'GET', mode: 'cors' });
@@ -4313,139 +4273,142 @@
         // HIGH PERFORMANCE UNIVERSAL BACK NAVIGATION & STATE ENGINE
         // =========================================================
         const AppNavigation = {
-            history: ['home'],
-            modalStack: [],
+            stack: [{ type: 'tab', id: 'home' }],
 
-            push: function(pageId, modalId = null) {
-                if (modalId) {
-                    this.modalStack.push(modalId);
-                    window.history.pushState({ type: 'modal', modalId: modalId }, '', '#' + modalId);
-                } else {
-                    if (this.history[this.history.length - 1] === pageId) return;
-                    this.history.push(pageId);
-                    window.history.pushState({ type: 'page', pageId: pageId }, '', '#' + pageId);
-                }
-                this.updateNativeBackStackStatus();
-            },
-
-            onPopState: function(event) {
-                if (this.modalStack.length > 0) {
-                    const modalId = this.modalStack.pop();
-                    this.closeModal(modalId);
-                    this.updateNativeBackStackStatus();
+            pushTab: function(tabId) {
+                const current = this.current();
+                if (current && current.type === 'tab' && current.id === tabId) {
                     return;
                 }
-
-                if (event.state && event.state.type === 'page') {
-                    const targetPage = event.state.pageId;
-                    const idx = this.history.indexOf(targetPage);
-                    if (idx !== -1) {
-                        while (this.history.length - 1 > idx) {
-                            const poppedPage = this.history.pop();
-                            this.hidePageUI(poppedPage);
-                        }
-                    } else {
-                        this.history.push(targetPage);
-                    }
-                    this.showPageUI(targetPage);
-                } else {
-                    if (this.history.length > 1) {
-                        const poppedPage = this.history.pop();
-                        this.hidePageUI(poppedPage);
-                        const prevPage = this.history[this.history.length - 1];
-                        this.showPageUI(prevPage);
-                    } else {
-                        this.handleExitProtection();
-                    }
-                }
-                this.updateNativeBackStackStatus();
+                this.stack.push({ type: 'tab', id: tabId });
+                this.syncUI();
+                this.updateBridge();
             },
 
-            hidePageUI: function(pageId) {
-                if (pageId === 'full-movie-page') {
-                    const page = document.getElementById('full-movie-page');
-                    if (page) page.style.display = 'none';
+            pushPage: function(pageId) {
+                const current = this.current();
+                if (current && current.type === 'page' && current.id === pageId) {
+                    return;
+                }
+                this.stack.push({ type: 'page', id: pageId });
+                this.syncUI();
+                this.updateBridge();
+            },
+
+            pushModal: function(modalId) {
+                const current = this.current();
+                if (current && current.type === 'modal' && current.id === modalId) {
+                    return;
+                }
+                this.stack.push({ type: 'modal', id: modalId });
+                this.syncUI();
+                this.updateBridge();
+            },
+
+            current: function() {
+                return this.stack[this.stack.length - 1];
+            },
+
+            pop: function() {
+                if (this.stack.length > 1) {
+                    const popped = this.stack.pop();
+                    this.syncUI();
+                    this.updateBridge();
+                    return popped;
+                }
+                return null;
+            },
+
+            syncUI: function() {
+                // Hide all fullscreen pages and modals
+                document.querySelectorAll('.fullscreen-page, .premium-download-modal').forEach(el => {
+                    el.style.display = 'none';
+                });
+                const moviePage = document.getElementById('full-movie-page');
+                if (moviePage) moviePage.style.display = 'none';
+                
+                const themeMenu = document.getElementById('theme-popup-menu');
+                if (themeMenu) themeMenu.style.display = 'none';
+
+                const imagePreview = document.getElementById('full-image-preview-overlay');
+                if (imagePreview) imagePreview.style.display = 'none';
+
+                const reactionPicker = document.getElementById('fb-reaction-picker');
+                if (reactionPicker) reactionPicker.style.display = 'none';
+
+                let activeTab = 'home';
+                let activePage = null;
+                let activeModals = [];
+
+                this.stack.forEach(item => {
+                    if (item.type === 'tab') {
+                        activeTab = item.id;
+                        activePage = null;
+                        activeModals = [];
+                    } else if (item.type === 'page') {
+                        activePage = item.id;
+                        activeModals = [];
+                    } else if (item.type === 'modal') {
+                        activeModals.push(item.id);
+                    }
+                });
+
+                // Apply Active Tab
+                document.querySelectorAll('.tab-content, .nav-item').forEach(el => el.classList.remove('active'));
+                const tabEl = document.getElementById(`${activeTab}-tab`);
+                const navEl = document.getElementById(`nav-${activeTab}`);
+                if (tabEl) tabEl.classList.add('active');
+                if (navEl) navEl.classList.add('active');
+
+                adjustHeaderForActiveTab(activeTab);
+
+                if (activeTab === 'you') initYouTabUI();
+                if (activeTab === 'shorts') buildShortsPage();
+
+                // Apply Active Page
+                if (activePage) {
+                    if (activePage === 'full-movie-page') {
+                        if (moviePage) moviePage.style.display = 'block';
+                        document.body.style.overflow = 'hidden';
+                    } else {
+                        const targetId = activePage.endsWith('-page') ? activePage : (activePage + '-page');
+                        const pageEl = document.getElementById(targetId);
+                        if (pageEl) pageEl.style.display = 'flex';
+                    }
+                } else {
                     document.body.style.overflow = 'auto';
                     const container = document.getElementById('video-player-container');
                     if (container) container.innerHTML = '';
                     if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
                     if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }
-                } else {
-                    const targetId = pageId.endsWith('-page') ? pageId : (pageId + '-page');
-                    const pageEl = document.getElementById(targetId);
-                    if (pageEl) pageEl.style.display = 'none';
                 }
-            },
 
-            showPageUI: function(pageId) {
-                if (['home', 'shorts', 'search', 'you'].includes(pageId)) {
-                    document.querySelectorAll('.tab-content, .nav-item').forEach(el => el.classList.remove('active'));
-                    const tabEl = document.getElementById(`${pageId}-tab`);
-                    const navEl = document.getElementById(`nav-${pageId}`);
-                    if (tabEl) tabEl.classList.add('active');
-                    if (navEl) navEl.classList.add('active');
-                    adjustHeaderForActiveTab(pageId);
-                    if (pageId === 'you') initYouTabUI();
-                    if (pageId === 'shorts') buildShortsPage();
-                } else {
-                    if (pageId === 'full-movie-page') {
-                        const page = document.getElementById('full-movie-page');
-                        if (page) page.style.display = 'block';
-                        document.body.style.overflow = 'hidden';
-                    } else {
-                        const targetId = pageId.endsWith('-page') ? pageId : (pageId + '-page');
-                        const pageEl = document.getElementById(targetId);
-                        if (pageEl) pageEl.style.display = 'flex';
+                // Apply Active Modals
+                activeModals.forEach(modalId => {
+                    const el = document.getElementById(modalId);
+                    if (el) {
+                        if (modalId === 'theme-popup-menu') {
+                            el.style.display = 'flex';
+                        } else if (modalId === 'full-image-preview-overlay') {
+                            el.style.display = 'flex';
+                            document.body.style.overflow = 'hidden';
+                        } else {
+                            el.style.display = 'flex';
+                        }
                     }
-                }
+                });
             },
 
-            closeModal: function(modalId) {
-                const el = document.getElementById(modalId);
-                if (el) el.style.display = 'none';
-                if (modalId === 'comment-modal') closeCommentModal();
-                if (modalId === 'more-desc-sheet') closeMoreDescriptionSheet();
-                if (modalId === 'create-bottom-sheet') closeCreateBottomSheet();
-                if (modalId === 'upload-details-sheet') closeDetailsSheet();
-                if (modalId === 'create-post-sheet') closePostSheet();
-                if (modalId === 'upload-manager-screen') closeUploadManager();
-                if (modalId === 'desc-bottom-sheet') closeDescBottomSheet();
-                if (modalId === 'account-switcher-modal') closeAccountSwitcher();
-                if (modalId === 'short-desc-bottom-sheet') closeShortDescBottomSheet();
-                this.updateNativeBackStackStatus();
-            },
-
-            updateNativeBackStackStatus: function() {
-                const hasHistory = (this.history.length > 1) || (this.modalStack.length > 0);
+            updateBridge: function() {
+                const hasHistory = this.stack.length > 1;
                 if (window.AndroidBridge && typeof window.AndroidBridge.setBackStackStatus === 'function') {
                     window.AndroidBridge.setBackStackStatus(hasHistory);
-                }
-            },
-
-            exitTimer: null,
-            handleExitProtection: function() {
-                if (this.exitTimer) {
-                    if (window.AndroidBridge && typeof window.AndroidBridge.exitApp === 'function') {
-                        window.AndroidBridge.exitApp();
-                    } else {
-                        window.close();
-                    }
-                } else {
-                    showNotification("Press back again to exit", "success");
-                    this.exitTimer = setTimeout(() => {
-                        this.exitTimer = null;
-                    }, 2000);
-                    window.history.pushState({ type: 'page', pageId: 'home' }, '', '#home');
                 }
             }
         };
 
-        window.addEventListener('popstate', function(event) {
-            AppNavigation.onPopState(event);
-        });
-
         function executeBackAction() {
-            window.history.back();
+            AppNavigation.pop();
         }
 
         // =========================================================
@@ -4459,10 +4422,6 @@
 
             if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
             if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }
-
-            const page = document.getElementById('full-movie-page');
-            if (page) page.style.display = 'block';
-            document.body.style.overflow = 'hidden';
 
             const playerContainer = document.getElementById('video-player-container');
             const skeleton = document.getElementById('video-player-skeleton');
@@ -4506,7 +4465,8 @@
             startVideoPlayer();
             registerViewAndListen(currentActiveMovie.id);
             loadChannelMetaForWatchPage(currentActiveMovie.userId || currentActiveMovie.channelId);
-            AppNavigation.push('full-movie-page');
+            
+            AppNavigation.pushPage('full-movie-page');
         }
 
         function startVideoPlayer() {
@@ -4546,7 +4506,7 @@
         }
 
         function openShortFromWatchPage(shortId) {
-            closeModal();
+            executeBackAction();
             switchTab('shorts');
             setTimeout(() => {
                 const targetSlide = document.getElementById(`slide-short-${shortId}`);
@@ -4746,10 +4706,6 @@
 
         function openCommentModal() {
             playUI('click');
-            const commentModal = document.getElementById('comment-modal');
-            if (commentModal) commentModal.style.display = 'flex';
-            AppNavigation.push('comment-modal');
-            
             const currentU = auth.currentUser;
             const avatarEl = document.getElementById('comment-user-avatar');
             if (currentU && avatarEl) {
@@ -4763,12 +4719,11 @@
                     }
                 });
             }
+            AppNavigation.pushModal('comment-modal');
         }
 
         function closeCommentModal() {
-            playUI('click');
-            const commentModal = document.getElementById('comment-modal');
-            if (commentModal) commentModal.style.display = 'none';
+            AppNavigation.pop();
         }
 
         function submitComment() {
@@ -4885,18 +4840,18 @@
             const timeVal = document.getElementById('more-sheet-time-val');
             if (timeVal) timeVal.innerText = uploadTime;
 
-            const sheet = document.getElementById('more-desc-sheet');
-            if (sheet) {
-                sheet.style.display = 'flex';
-                setupSwipeToClose(sheet, 'more-desc-drag-handle', closeMoreDescriptionSheet);
-                AppNavigation.push('more-desc-sheet');
-            }
+            AppNavigation.pushModal('more-desc-sheet');
+            
+            setTimeout(() => {
+                const sheet = document.getElementById('more-desc-sheet');
+                if (sheet) {
+                    setupSwipeToClose(sheet, 'more-desc-drag-handle', closeMoreDescriptionSheet);
+                }
+            }, 100);
         }
 
         function closeMoreDescriptionSheet() {
-            playUI('click');
-            const sheet = document.getElementById('more-desc-sheet');
-            if (sheet) sheet.style.display = 'none';
+            AppNavigation.pop();
         }
 
         function renderMovieWatchRecommendedFeed() {
@@ -4972,23 +4927,8 @@
         // =========================================
         function switchTab(tabId) {
             playUI('click');
-            
             document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
-
-            document.querySelectorAll('.tab-content, .nav-item').forEach(el => el.classList.remove('active'));
-            
-            const tabEl = document.getElementById(`${tabId}-tab`);
-            const navEl = document.getElementById(`nav-${tabId}`);
-            if (tabEl) tabEl.classList.add('active');
-            if (navEl) navEl.classList.add('active');
-            window.scrollTo({ top: 0 }); 
-
-            adjustHeaderForActiveTab(tabId);
-
-            if (tabId === 'you') { initYouTabUI(); }
-            if (tabId === 'shorts') { buildShortsPage(); }
-
-            AppNavigation.push(tabId);
+            AppNavigation.pushTab(tabId);
         }
 
         function adjustHeaderForActiveTab(tabId) {
@@ -5022,7 +4962,7 @@
                 if (brand) brand.style.display = 'none';
                 if (actions) {
                     actions.innerHTML = `
-                        <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="cycleTheme()" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
+                        <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="openThemePopupMenu()" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
                             <!-- Populated dynamically -->
                         </button>
                         <button class="btn-switch-account-header" onclick="openAccountSwitcher()" title="Switch Account">
@@ -5037,13 +4977,12 @@
                         <button onclick="switchTab('search')" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
                             <i class="fas fa-search"></i>
                         </button>
-                        <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="cycleTheme()" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
+                        <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="openThemePopupMenu()" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
                             <!-- Populated dynamically -->
                         </button>
                     `;
                 }
             }
-            // Trigger dynamic icon updates for the switcher button
             applyTheme();
         }
 
@@ -5158,9 +5097,7 @@
             if (feedback) feedback.innerHTML = "";
             if (submitBtn) submitBtn.disabled = true;
 
-            const page = document.getElementById('create-channel-page');
-            if (page) page.style.display = 'flex';
-            AppNavigation.push('create-channel');
+            AppNavigation.pushPage('create-channel-page');
         }
 
         function triggerAvatarSelection(mode) {
@@ -5305,7 +5242,7 @@
                     handle: handle,
                     avatarUrl: tempCreateAvatarUrl || user.photoURL || "",
                     bannerUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop", 
-                    description: "Welcome to " + name + "! Glad to have you here.",
+                    description: "Welcome to " + name + "!",
                     category: category,
                     subscribersCount: 1, 
                     videosCount: 0,
@@ -5325,8 +5262,7 @@
                 currentChannelData = channelData;
                 showNotification("Channel created successfully!", "success");
                 
-                const createPage = document.getElementById('create-channel-page');
-                if (createPage) createPage.style.display = 'none';
+                AppNavigation.pop(); 
                 openViewChannelPage();
             } catch(err) {
                 showNotification("Error creating channel: " + err.message, "error");
@@ -5340,9 +5276,6 @@
 
         function openViewChannelPage() {
             playUI('click');
-            const page = document.getElementById('view-channel-page');
-            if (page) page.style.display = 'flex';
-
             let data = currentChannelData;
             if (!data) return;
 
@@ -5363,21 +5296,12 @@
             if (viewSub) viewSub.innerText = formatCount(data.subscribersCount) + " Subscriber" + (data.subscribersCount === 1 ? "" : "s");
 
             switchChannelTab('videos');
-            AppNavigation.push('view-channel');
+            AppNavigation.pushPage('view-channel-page');
         }
 
         let activeChannelVideosListener = null;
         let activeChannelShortsListener = null;
         let activeChannelPostsListener = null;
-
-        function closeViewChannelPage() {
-            playUI('click');
-            const page = document.getElementById('view-channel-page');
-            if (page) page.style.display = 'none';
-            if (activeChannelVideosListener) { activeChannelVideosListener.off(); activeChannelVideosListener = null; }
-            if (activeChannelShortsListener) { activeChannelShortsListener.off(); activeChannelShortsListener = null; }
-            if (activeChannelPostsListener) { activeChannelPostsListener.off(); activeChannelPostsListener = null; }
-        }
 
         let activeChannelTab = 'videos';
         function switchChannelTab(type) {
@@ -5572,27 +5496,22 @@
             
             const joinedDate = data.createdDate ? new Date(data.createdDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : "Unknown";
             if (metaJoined) metaJoined.innerText = joinedDate;
-            const sheet = document.getElementById('desc-bottom-sheet');
-            if (sheet) sheet.style.display = 'flex';
+
+            AppNavigation.pushModal('desc-bottom-sheet');
         }
 
         function closeDescBottomSheet() {
-            playUI('click');
-            const sheet = document.getElementById('desc-bottom-sheet');
-            if (sheet) sheet.style.display = 'none';
+            AppNavigation.pop();
         }
 
         function openAccountSwitcher() {
             playUI('click');
-            const sheet = document.getElementById('account-switcher-modal');
-            if (sheet) sheet.style.display = 'flex';
+            AppNavigation.pushModal('account-switcher-modal');
             renderAccountSwitcherList();
         }
 
         function closeAccountSwitcher() {
-            playUI('click');
-            const sheet = document.getElementById('account-switcher-modal');
-            if (sheet) sheet.style.display = 'none';
+            AppNavigation.pop();
         }
 
         function renderAccountSwitcherList() {
@@ -5658,7 +5577,7 @@
             showNotification("Switching account...", "success");
             if (window.AndroidBridge && typeof window.AndroidBridge.triggerGoogleSignIn === 'function') {
                 window.AndroidBridge.triggerGoogleSignIn(); 
-                closeAccountSwitcher();
+                AppNavigation.pop();
             } else {
                 try {
                     await auth.signOut();
@@ -5669,7 +5588,7 @@
                     });
                     const result = await auth.signInWithPopup(provider);
                     saveAccountToList(result.user);
-                    closeAccountSwitcher();
+                    AppNavigation.pop();
                     showNotification("Switched successfully!", "success");
                     location.reload();
                 } catch (err) {
@@ -5683,7 +5602,7 @@
             showNotification("Opening Google Sign-In...", "success");
             if (window.AndroidBridge && typeof window.AndroidBridge.triggerGoogleSignIn === 'function') {
                 window.AndroidBridge.triggerGoogleSignIn();
-                closeAccountSwitcher();
+                AppNavigation.pop();
             } else {
                 try {
                     const provider = new firebase.auth.GoogleAuthProvider();
@@ -5726,21 +5645,17 @@
                 }
                 return;
             }
-            const bs = document.getElementById('create-bottom-sheet');
-            if (bs) bs.style.display = 'flex';
+            AppNavigation.pushModal('create-bottom-sheet');
         }
 
         function closeCreateBottomSheet() {
-            const bs = document.getElementById('create-bottom-sheet');
-            if (bs) bs.style.display = 'none';
+            AppNavigation.pop();
         }
 
         function openAnalyticsPage() {
             playUI('click');
-            const page = document.getElementById('analytics-page');
-            if (page) page.style.display = 'flex';
             calculateChannelAnalytics();
-            AppNavigation.push('analytics');
+            AppNavigation.pushPage('analytics-page');
         }
 
         // =========================================================
@@ -5824,7 +5739,6 @@
             if (infoEl) infoEl.innerText = formatCount(subsCount) + " Subscribers";
 
             updateMonetizationEligibility(subsCount, watchHours, totalViews);
-
             renderChart(tViews);
 
             const analyticsPayload = {
@@ -5849,15 +5763,12 @@
         // =========================================================
         function openMonetizationPage() {
             playUI('click');
-            const page = document.getElementById('monetization-page');
-            if (page) page.style.display = 'flex';
-            
             const dateSpan = document.getElementById('eligibility-date-val');
             if (dateSpan) {
                 const options = { year: 'numeric', month: 'long', day: 'numeric' };
                 dateSpan.innerText = new Date().toLocaleDateString('en-US', options);
             }
-            AppNavigation.push('monetization');
+            AppNavigation.pushPage('monetization-page');
         }
 
         function updateMonetizationEligibility(subs, hours, views) {
@@ -5925,9 +5836,6 @@
 
         function openEditChannelPage() {
             playUI('click');
-            const page = document.getElementById('edit-channel-page');
-            if (page) page.style.display = 'flex';
-            
             let data = currentChannelData;
             if (!data) return;
 
@@ -5954,13 +5862,7 @@
             if (handleFeedback) handleFeedback.innerHTML = "";
             if (saveBtn) saveBtn.disabled = false;
 
-            AppNavigation.push('edit-channel');
-        }
-
-        function closeEditChannelPage() {
-            playUI('click');
-            const page = document.getElementById('edit-channel-page');
-            if (page) page.style.display = 'none';
+            AppNavigation.pushPage('edit-channel-page');
         }
 
         function updateDescCounter(val) {
@@ -6021,7 +5923,7 @@
                 currentChannelData = updatedData;
 
                 showNotification("Channel Successfully Updated!", "success");
-                closeEditChannelPage();
+                AppNavigation.pop(); 
                 openViewChannelPage();
                 initYouTabUI();
             } catch(err) {
@@ -6057,45 +5959,30 @@
             if (sheetTitle) sheetTitle.innerText = isShort ? "Upload Short Clip" : "Upload Video";
             if (hashtagSelector) hashtagSelector.style.display = isShort ? "block" : "none";
             
-            const sheet = document.getElementById('upload-details-sheet');
-            if (sheet) {
-                sheet.style.display = 'flex';
-                AppNavigation.push('upload-details-sheet');
-            }
+            AppNavigation.pushModal('upload-details-sheet');
         }
 
         function closeDetailsSheet() {
-            const sheet = document.getElementById('upload-details-sheet');
-            if (sheet) sheet.style.display = 'none';
+            AppNavigation.pop();
         }
 
         function openPostSheet() {
             currentPostImages = [];
             renderPostAttachedImagesUI();
-            const sheet = document.getElementById('create-post-sheet');
-            if (sheet) {
-                sheet.style.display = 'flex';
-                AppNavigation.push('create-post-sheet');
-            }
+            AppNavigation.pushModal('create-post-sheet');
         }
 
         function closePostSheet() {
-            const sheet = document.getElementById('create-post-sheet');
-            if (sheet) sheet.style.display = 'none';
+            AppNavigation.pop();
         }
 
         function openUploadManager() {
-            const screen = document.getElementById('upload-manager-screen');
-            if (screen) {
-                screen.style.display = 'flex';
-                updateManagerUI();
-                AppNavigation.push('upload-manager-screen');
-            }
+            updateManagerUI();
+            AppNavigation.pushModal('upload-manager-screen');
         }
 
         function closeUploadManager() {
-            const screen = document.getElementById('upload-manager-screen');
-            if (screen) screen.style.display = 'none';
+            AppNavigation.pop();
         }
 
         function appendHashtag(tag, el) {
@@ -6126,14 +6013,14 @@
             currentDetailItem.status = "draft"; 
             saveQueueStateToLocalStorage();
             showNotification("Draft saved successfully!", "success");
-            closeDetailsSheet();
+            AppNavigation.pop(); 
             openUploadManager();
         }
 
         function handleDiscardDetailsSheet() {
             playUI('click');
             if (confirm("Are you sure you want to discard this upload?")) {
-                closeDetailsSheet();
+                AppNavigation.pop(); 
                 const index = uploadQueue.findIndex(i => i.id === currentDetailItem.id);
                 if (index !== -1) {
                     uploadQueue.splice(index, 1);
@@ -6148,7 +6035,7 @@
             syncDetailsFormToState();
             currentDetailItem.status = "waiting";
             saveQueueStateToLocalStorage();
-            closeDetailsSheet();
+            AppNavigation.pop(); 
             showNotification("Added to Upload Queue", "success");
             openUploadManager();
             triggerNextActiveUpload();
@@ -6256,9 +6143,7 @@
             if (item) {
                 item.status = "paused";
                 if (item.s3UploadRef) {
-                    try {
-                        item.s3UploadRef.abort(); 
-                    } catch(e) {}
+                    try { item.s3UploadRef.abort(); } catch(e) {}
                     item.s3UploadRef = null;
                 }
                 saveQueueStateToLocalStorage();
@@ -6362,22 +6247,15 @@
         // =========================================
         function openFullScreenImagePreview(src) {
             playUI('click');
-            const overlay = document.getElementById('full-image-preview-overlay');
             const img = document.getElementById('full-image-preview-el');
-            if (overlay && img) {
+            if (img) {
                 img.src = src;
-                overlay.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
             }
+            AppNavigation.pushModal('full-image-preview-overlay');
         }
 
         function closeFullScreenImagePreview() {
-            playUI('click');
-            const overlay = document.getElementById('full-image-preview-overlay');
-            if (overlay) {
-                overlay.style.display = 'none';
-                document.body.style.overflow = 'auto';
-            }
+            AppNavigation.pop();
         }
 
         // =========================================================
@@ -6412,7 +6290,6 @@
                 clientY = e.clientY;
             }
 
-            picker.style.display = 'flex';
             picker.style.left = `${Math.max(16, Math.min(window.innerWidth - 320, clientX - 140))}px`; 
             picker.style.top = `${clientY - 75}px`;
             picker.dataset.postId = postId;
@@ -6420,43 +6297,30 @@
             picker.classList.remove('picker-pop-active');
             void picker.offsetWidth; 
             picker.classList.add('picker-pop-active');
+
+            AppNavigation.pushModal('fb-reaction-picker');
         }
 
         document.addEventListener('click', (e) => {
             const picker = document.getElementById('fb-reaction-picker');
             if (picker && picker.style.display === 'flex') {
                 if (!picker.contains(e.target) && !e.target.closest('.post-action-btn-fb')) {
-                    picker.style.display = 'none';
+                    const current = AppNavigation.current();
+                    if (current && current.type === 'modal' && current.id === 'fb-reaction-picker') {
+                        AppNavigation.pop();
+                    }
                 }
             }
         });
 
         const reactionEmojis = {
-            'love': '❤️',
-            'like': '👍',
-            'care': '🥰',
-            'haha': '😆',
-            'wow': '😮',
-            'sad': '😭',
-            'angry': '😡'
+            'love': '❤️', 'like': '👍', 'care': '🥰', 'haha': '😆', 'wow': '😮', 'sad': '😭', 'angry': '😡'
         };
         const reactionLabels = {
-            'love': 'Love',
-            'like': 'Like',
-            'care': 'Care',
-            'haha': 'Haha',
-            'wow': 'Wow',
-            'sad': 'Sad',
-            'angry': 'Angry'
+            'love': 'Love', 'like': 'Like', 'care': 'Care', 'haha': 'Haha', 'wow': 'Wow', 'sad': 'Sad', 'angry': 'Angry'
         };
         const reactionColors = {
-            'love': '#FF2E55',
-            'like': '#007AFF',
-            'care': '#FF9500',
-            'haha': '#FFCC00',
-            'wow': '#FFCC00',
-            'sad': '#FF9500',
-            'angry': '#FF3B30'
+            'love': '#FF2E55', 'like': '#007AFF', 'care': '#FF9500', 'haha': '#FFCC00', 'wow': '#FFCC00', 'sad': '#FF9500', 'angry': '#FF3B30'
         };
 
         function selectPostReaction(type) {
@@ -6465,7 +6329,7 @@
             const postId = picker.dataset.postId;
             if (!postId) return;
 
-            picker.style.display = 'none';
+            AppNavigation.pop(); 
             submitPostReaction(postId, type);
         }
 
@@ -6521,9 +6385,7 @@
             document.body.appendChild(floatEl);
             triggerHapticFeedback();
 
-            setTimeout(() => {
-                floatEl.remove();
-            }, 1200);
+            setTimeout(() => { floatEl.remove(); }, 1200);
         }
 
         function registerPostReactionsListener(postId) {
@@ -6613,12 +6475,8 @@
             playUI('click');
             activeReactedPostId = postId;
             activeReactedFilter = 'all';
-            
-            const page = document.getElementById('reacted-people-page');
-            if (page) page.style.display = 'flex';
-            
             loadReactedPeopleData();
-            AppNavigation.push('reacted-people-page');
+            AppNavigation.pushPage('reacted-people-page');
         }
 
         function selectReactedFilter(type) {
@@ -6712,21 +6570,16 @@
         }
 
         function openDownloadModal() {
-            const modal = document.getElementById('premium-download-modal');
-            if (modal) {
-                modal.style.display = 'flex';
-                AppNavigation.push('premium-download-modal');
-            }
+            AppNavigation.pushModal('premium-download-modal');
         }
 
         function closeDownloadModal() {
-            const modal = document.getElementById('premium-download-modal');
-            if (modal) modal.style.display = 'none';
+            AppNavigation.pop();
         }
 
         function startDownloadAdRequest() {
             playUI('click');
-            closeDownloadModal();
+            AppNavigation.pop(); 
             if (!currentActiveMovie || !currentActiveMovie.videoLink) {
                 showNotification("No valid download link found.", "error");
                 return;

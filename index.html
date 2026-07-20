@@ -1366,6 +1366,99 @@
         .theme-menu-item.active .theme-radio-inner {
             transform: scale(1);
         }
+
+        /* =========================================
+           ULTRA-SPEED SHORTS VIDEO OVERLAYS & MOTION
+           ========================================= */
+
+        /* Default Browser Play Button Overlay Hide */
+        video::-webkit-media-controls { display:none !important; }
+        video::-webkit-media-controls-start-play-button { display: none !important; -webkit-appearance: none; }
+        video::-webkit-media-controls-play-button { display: none !important; }
+
+        /* Dynamic Loading Background to prevent grey/white flashes */
+        .short-slide {
+            background: #000000 !important;
+        }
+
+        .short-video-el {
+            background: #000000 !important;
+        }
+
+        /* Interactivity overlays for Smooth Tapping and Loading Spinner */
+        .short-overlay-ui {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none; z-index: 5;
+        }
+
+        /* Centered Material Feedback Icon on Tap */
+        .short-center-icon {
+            font-size: 3rem; color: rgba(255, 255, 255, 0.95);
+            background: rgba(0, 0, 0, 0.55);
+            width: 76px; height: 76px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transform: scale(0.4);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+            pointer-events: none;
+        }
+
+        /* Premium smooth pop-fade transition */
+        .short-center-icon.animate-pop {
+            animation: centerIconPop 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes centerIconPop {
+            0% { opacity: 0; transform: scale(0.4) rotate(-15deg); }
+            25% { opacity: 1; transform: scale(1.15) rotate(0deg); }
+            40% { opacity: 1; transform: scale(1) rotate(0deg); }
+            80% { opacity: 1; transform: scale(1) rotate(0deg); }
+            100% { opacity: 0; transform: scale(0.7) rotate(10deg); }
+        }
+
+        /* Circular Buffer Progress Bar (Like YouTube Shorts) */
+        .short-spinner {
+            display: none;
+            position: absolute;
+        }
+
+        .shorts-circular-loader {
+            width: 44px; height: 44px;
+            border: 4px solid rgba(255, 255, 255, 0.15);
+            border-top: 4px solid #FF2E55;
+            border-radius: 50%;
+            animation: spin 0.85s linear infinite;
+        }
+
+        /* Premium Rotating Album Art Disc */
+        .music-disc-container {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: #111111;
+            border: 2.5px solid rgba(255, 255, 255, 0.25);
+            display: flex; align-items: center; justify-content: center;
+            margin-top: 14px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            animation: discRotation 4.2s linear infinite;
+            animation-play-state: paused;
+        }
+
+        .music-disc-inner {
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #252525;
+        }
+
+        .music-disc-inner img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+
+        @keyframes discRotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -2280,7 +2373,7 @@
                             </svg>
                         </div>
                         <h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Memberships</h4>
-                        <p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Create exclusive memberships for your biggest supporters.</p>
+                        <p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Earn from shopping.</p>
                     </div>
 
                     <div class="slider-card">
@@ -2505,7 +2598,7 @@
 
     <script>
         // =========================================
-        // AUTOMATIC & MANUAL THEME ENGINE (WITHOUT FORCE REFRESH)
+        // AUTOMATIC & MANUAL THEME ENGINE
         // =========================================
         function applyTheme() {
             let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
@@ -2540,7 +2633,6 @@
             applyTheme();
             showNotification(`Theme: ${val.toUpperCase()}`, "success");
             
-            // অ্যাক্টিভ মোডাল পপ করা হলো, কোনো ওরিয়েন্টেশন বা থিম পরিবর্তন ওয়েবভিউর ভেতরের সেশন রিফ্রেশ করবে না।
             const current = AppNavigation.current();
             if (current && current.id === 'theme-popup-menu') {
                 AppNavigation.pop(); 
@@ -2550,7 +2642,7 @@
         document.addEventListener("DOMContentLoaded", function() {
             applyTheme();
             
-            // অফলাইন ক্যাশ ইমিডিয়েট লোড (Instant Load Posts/Shorts From LocalStorage Cache)
+            // অফলাইন ক্যাশ ইমিডিয়েট লোড (Instant Metadata UI Restoration)
             try {
                 const cachedPosts = localStorage.getItem('flaynity_offline_posts');
                 const cachedShorts = localStorage.getItem('flaynity_offline_shorts');
@@ -3337,7 +3429,7 @@
         }
 
         // =========================================================
-        // REALTIME LISTENERS FOR ZERO-REFRESH FEED PROPAGATION
+        // REALTIME LISTENERS FOR FEED PROPAGATION (WITH LOCAL CACHE)
         // =========================================================
         function startRealtimeFeedsListener() {
             try {
@@ -3997,10 +4089,21 @@
                 const isLikedId = `short-like-btn-${s.id}`;
                 const likesCountId = `short-likes-count-${s.id}`;
                 const commentsCountId = `short-comments-count-${s.id}`;
+                
+                // ইমিডিয়েট ক্যাশ ডাটা ফেচিং প্রসেস (প্রতিরোধ করবে 0 বা নাল কাউন্ট প্রবলেম)
+                const cacheData = getCachedStats(s.id);
+                const initLikes = cacheData && cacheData.likes ? Object.keys(cacheData.likes).length : 0;
+                const initComments = cacheData && cacheData.comments ? Object.keys(cacheData.comments).length : 0;
 
                 html += `
                     <div class="short-slide" id="slide-short-${s.id}" data-shortid="${s.id}">
-                        <video class="short-video-el" loop playsinline webkit-playsinline></video>
+                        <video class="short-video-el" loop playsinline webkit-playsinline preload="auto" style="background: #000000; width: 100%; height: 100%; object-fit: contain;"></video>
+                        
+                        <!-- Premium Motion Feedback overlays -->
+                        <div class="short-overlay-ui">
+                            <div class="short-center-icon"><i class="fas fa-play"></i></div>
+                            <div class="short-spinner"><div class="shorts-circular-loader"></div></div>
+                        </div>
 
                         <div class="short-progress-container">
                             <div class="short-progress-bar" id="short-progress-bar-${s.id}"></div>
@@ -4011,14 +4114,14 @@
                                 <button class="short-action-btn-tiktok" id="${isLikedId}" onclick="toggleShortLike('${s.id}')">
                                     <i class="far fa-heart"></i>
                                 </button>
-                                <div class="short-action-label-tiktok" id="${likesCountId}">0</div>
+                                <div class="short-action-label-tiktok" id="${likesCountId}">${formatCount(initLikes)}</div>
                             </div>
 
                             <div class="short-action-container">
                                 <button class="short-action-btn-tiktok-other" onclick="openShortComments('${s.id}')">
                                     <i class="far fa-comment"></i>
                                 </button>
-                                <div class="short-action-label-tiktok" id="${commentsCountId}">0</div>
+                                <div class="short-action-label-tiktok" id="${commentsCountId}">${formatCount(initComments)}</div>
                             </div>
 
                             <div class="short-action-container">
@@ -4026,6 +4129,13 @@
                                     <i class="fas fa-download"></i>
                                 </button>
                                 <div class="short-action-label-tiktok">Save</div>
+                            </div>
+                            
+                            <!-- Premium Rotating Music Disc Icon -->
+                            <div class="music-disc-container">
+                                <div class="music-disc-inner">
+                                    <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=150" alt="Disc">
+                                </div>
                             </div>
                         </div>
 
@@ -4047,6 +4157,8 @@
 
                 db.ref(`movie_stats/${s.id}`).on('value', (snapshot) => {
                     const stats = snapshot.val() || {};
+                    localStorage.setItem(`flaynity_stats_cache_${s.id}`, JSON.stringify(stats)); // ক্যাশ মেমোরি আপডেট
+                    
                     const viewsObj = stats.views || {};
                     const likesObj = stats.likes || {};
                     const likesCount = Object.keys(likesObj).length;
@@ -4096,9 +4208,15 @@
             uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
         }
 
+        function getCachedStats(id) {
+            try {
+                const cached = localStorage.getItem(`flaynity_stats_cache_${id}`);
+                return cached ? JSON.parse(cached) : null;
+            } catch(e) { return null; }
+        }
+
         let lastTap = 0;
         function setupDoubleTapListeners() {
-            let clickTimer = null;
             document.querySelectorAll('.short-slide').forEach(slide => {
                 slide.addEventListener('click', (e) => {
                     if (e.target.closest('.short-right-actions') || e.target.closest('.short-bottom-info') || e.target.closest('.short-progress-container')) {
@@ -4116,12 +4234,25 @@
                         toggleShortLike(shortId, true); 
                     } else {
                         clickTimer = setTimeout(() => {
+                            const centerIcon = slide.querySelector('.short-center-icon');
+                            const iconEl = centerIcon ? centerIcon.querySelector('i') : null;
+
                             if (video.paused) {
                                 video.play().catch(() => {});
-                                showNotification("Playing", "success", 600);
+                                if (centerIcon && iconEl) {
+                                    iconEl.className = "fas fa-play";
+                                    centerIcon.classList.remove('animate-pop');
+                                    void centerIcon.offsetWidth; 
+                                    centerIcon.classList.add('animate-pop');
+                                }
                             } else {
                                 video.pause();
-                                showNotification("Paused", "error", 600);
+                                if (centerIcon && iconEl) {
+                                    iconEl.className = "fas fa-pause";
+                                    centerIcon.classList.remove('animate-pop');
+                                    void centerIcon.offsetWidth; 
+                                    centerIcon.classList.add('animate-pop');
+                                }
                             }
                         }, 250);
                     }
@@ -4204,16 +4335,20 @@
         }
 
         function toggleShortLike(shortId, forceLike = false) {
-            playUI('click');
             if (!auth.currentUser) { showNotification("Please sign in to Like", "error"); return; }
             const userId = auth.currentUser.uid;
             const ref = db.ref(`movie_stats/${shortId}/likes/${userId}`);
             
             ref.once('value', (snap) => {
-                if (snap.exists()) {
-                    if (!forceLike) ref.remove(); 
+                const exists = snap.exists();
+                if (exists) {
+                    if (!forceLike) {
+                        ref.remove();
+                        playUI('click');
+                    }
                 } else {
                     ref.set(true);
+                    playUI('success');
                 }
             });
         }
@@ -4316,25 +4451,59 @@
             const slides = document.querySelectorAll('.short-slide');
             slides.forEach((slide, idx) => {
                 const video = slide.querySelector('video');
+                const spinner = slide.querySelector('.short-spinner');
+                const disc = slide.querySelector('.music-disc-container');
                 if (!video) return;
+
                 const shortId = slide.getAttribute('data-shortid');
                 const s = allShorts.find(item => item.id === shortId);
                 if (!s) return;
 
-                // আগের ২টি ভিডিও মেমোরিতে রেন্ডারিং সচল রাখবে এবং সামনের ২০টি ভিডিও ব্যাকগ্রাউন্ড বাফারে লোড করবে
-                if (idx >= activeIndex - 2 && idx <= activeIndex + 20) {
+                const inWindow = (idx >= activeIndex - 2 && idx <= activeIndex + 20);
+
+                if (inWindow) {
                     if (video.getAttribute('src') !== s.videoLink) {
                         video.setAttribute('src', s.videoLink);
                         video.load();
                     }
                     video.preload = "auto";
+                    
+                    if (idx === activeIndex) {
+                        video.muted = false;
+                        
+                        // YT Shorts circular buffering loader integration
+                        video.onwaiting = () => {
+                            if (spinner) spinner.style.display = 'block';
+                        };
+                        video.onplaying = () => {
+                            if (spinner) spinner.style.display = 'none';
+                            if (disc) disc.style.animationPlayState = 'running';
+                        };
+                        video.onpause = () => {
+                            if (disc) disc.style.animationPlayState = 'paused';
+                        };
+
+                        let playPromise = video.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(error => {
+                                video.muted = true;
+                                video.play().catch(() => {});
+                            });
+                        }
+                    } else {
+                        video.pause();
+                        video.muted = true;
+                        if (disc) disc.style.animationPlayState = 'paused';
+                    }
                 } else {
-                    // মেমোরি রিলিজ করা হলো যাতে অতিরিক্ত ব্যাকগ্রাউন্ড ভিডিওর কারণে অ্যাপ ল্যাগ বা ক্র্যাশ না হয়
+                    // অব্যবহৃত ভিডিও সোর্সমুক্ত করা হলো হার্ডওয়্যার রেন্ডারিং ট্র্যাকিং ও ক্র্যাশ এড়াতে
                     if (video.getAttribute('src')) {
                         video.pause();
                         video.removeAttribute('src');
                         video.load();
                     }
+                    if (spinner) spinner.style.display = 'none';
+                    if (disc) disc.style.animationPlayState = 'paused';
                 }
             });
         }
@@ -4658,6 +4827,7 @@
             return num;
         }
 
+        // URL আইডি এক্সট্রাকশন
         function extractVideoID(url) {
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
             const match = url.match(regExp);
@@ -6712,9 +6882,32 @@
         // =========================================================
         // AUTOMATIC ONLINE SYNC ENGINE (A-Z REFRESH ON STATUS CHANGE)
         // =========================================================
+        let offlineLikesQueue = [];
+        try {
+            offlineLikesQueue = JSON.parse(localStorage.getItem('flaynity_offline_likes_queue')) || [];
+        } catch(e) {}
+
+        function syncOfflineLikes() {
+            if (offlineLikesQueue.length === 0 || !navigator.onLine || !auth.currentUser) return;
+            const userId = auth.currentUser.uid;
+            
+            offlineLikesQueue.forEach(shortId => {
+                db.ref(`movie_stats/${shortId}/likes/${userId}`).set(true);
+            });
+
+            offlineLikesQueue = [];
+            localStorage.setItem('flaynity_offline_likes_queue', JSON.stringify([]));
+            showNotification("Sync complete: Offline likes updated!", "success");
+        }
+
         window.setAppOnlineStatus = function(isOnline) {
             if (isOnline) {
                 showNotification("Network Connection Restored! Syncing A-Z Data...", "success");
+                
+                // অফলাইন লাইক সিঙ্ক্রোনাইজেশন
+                syncOfflineLikes();
+                
+                // রিয়েলটাইম লিসেনার রিস্টার্ট
                 startRealtimeFeedsListener(); 
                 
                 const activeNav = document.querySelector('.nav-item.active');

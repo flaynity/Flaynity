@@ -17,6 +17,15 @@
     <!-- AWS SDK for Cloudflare R2 Uploads -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.1400.0/aws-sdk.min.js"></script>
 
+    <!-- Pre-load theme state to avoid initial white flash/flicker -->
+    <script>
+        (function() {
+            try {
+                let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
+                document.documentElement.setAttribute('data-theme', pref);
+            } catch (e) {}
+        })();
+    </script>
 
     <style>
         /* =========================================
@@ -24,7 +33,6 @@
            HIGH CONTRAST PURE BLACK & WHITE THEME
            ========================================= */
         :root {
-            color-scheme: light dark; /* এই নতুন লাইনটি যুক্ত করুন */
             --bg-color: #FFFFFF; 
             --surface: #FFFFFF; 
             --primary: #FF2E55; 

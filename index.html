@@ -4508,9 +4508,9 @@
         // =========================================================
         async function openMoviePage(id, isTMDB = false) {
             playUI('click');
-            if (window.AndroidBridge && typeof window.AndroidBridge.showMovieClickInterstitial === 'function') {
-                window.AndroidBridge.showMovieClickInterstitial(); 
-            }
+                if (window.AndroidBridge && typeof window.AndroidBridge.setScreenOrientation === 'function') {
+        window.AndroidBridge.setScreenOrientation("sensor"); 
+    }
 
             if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
             if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }

@@ -27,6 +27,33 @@
         })();
     </script>
 
+    <!-- Instant Pre-login Session Recovery Engine to Prevent "Loading Session..." delays -->
+    <script>
+        (function() {
+            try {
+                let cachedSession = localStorage.getItem('flaynity_user_session_cache');
+                if (cachedSession) {
+                    let data = JSON.parse(cachedSession);
+                    document.addEventListener("DOMContentLoaded", function() {
+                        let fullname = document.getElementById('you-fullname-txt');
+                        let email = document.getElementById('you-email-txt');
+                        let avatarLarge = document.getElementById('you-avatar-large');
+                        let avatarNav = document.getElementById('nav-avatar-img');
+                        if (fullname) fullname.innerText = data.channelName || data.gmailName || "Flaynity User";
+                        if (email) email.innerText = "@" + (data.handle || "handle");
+                        if (avatarLarge) {
+                            if (data.avatarUrl) avatarLarge.innerHTML = `<img src="${data.avatarUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+                            else avatarLarge.innerHTML = (data.channelName || "F").charAt(0).toUpperCase();
+                        }
+                        if (avatarNav && data.avatarUrl) {
+                            avatarNav.innerHTML = `<img src="${data.avatarUrl}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                        }
+                    });
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     <style>
         /* =========================================
            ULTRA PREMIUM CLASS GLASS UI ENGINE (MD3)
@@ -63,7 +90,6 @@
         * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
         input, textarea, select { -webkit-user-select: auto; user-select: auto; }
         
-        /* Smooth transitions for theme switching properties */
         body, header, .bottom-nav, .tab-content, .post-card, .premium-white-card-watch, .channel-profile-section, .channel-tabs, .channel-tab-content, .fullscreen-page, .appbar, .upcoming-content, .premium-download-content, .format-option-row, .sheet-input, .sheet-textarea, .sheet-select, .form-input, .form-textarea, .form-select, .you-menu, .you-menu-item, .profile-card-you, .analytics-overview-card, .analytics-card, .chart-container-mock {
             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
         }
@@ -2479,13 +2505,12 @@
 
     <script>
         // =========================================
-        // AUTOMATIC & MANUAL THEME ENGINE
+        // AUTOMATIC & MANUAL THEME ENGINE (WITHOUT FORCE REFRESH)
         // =========================================
         function applyTheme() {
             let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
             document.documentElement.setAttribute('data-theme', pref);
             
-            // Update global toggle buttons
             const themeBtns = document.querySelectorAll('.appbar-theme-btn');
             themeBtns.forEach(btn => {
                 if (pref === 'light') {
@@ -2495,7 +2520,6 @@
                 }
             });
 
-            // Sync menu radio items
             document.querySelectorAll('.theme-menu-item').forEach(item => {
                 if (item.getAttribute('data-theme-val') === pref) {
                     item.classList.add('active');
@@ -2515,11 +2539,28 @@
             localStorage.setItem('flaynity-theme-pref', val);
             applyTheme();
             showNotification(`Theme: ${val.toUpperCase()}`, "success");
-            AppNavigation.pop(); 
+            
+            // অ্যাক্টিভ মোডাল পপ করা হলো, কোনো ওরিয়েন্টেশন বা থিম পরিবর্তন ওয়েবভিউর ভেতরের সেশন রিফ্রেশ করবে না।
+            const current = AppNavigation.current();
+            if (current && current.id === 'theme-popup-menu') {
+                AppNavigation.pop(); 
+            }
         }
 
         document.addEventListener("DOMContentLoaded", function() {
             applyTheme();
+            
+            // অফলাইন ক্যাশ ইমিডিয়েট লোড (Instant Load Posts/Shorts From LocalStorage Cache)
+            try {
+                const cachedPosts = localStorage.getItem('flaynity_offline_posts');
+                const cachedShorts = localStorage.getItem('flaynity_offline_shorts');
+                const cachedLongs = localStorage.getItem('flaynity_offline_longs');
+                if (cachedPosts) allCommunityPosts = JSON.parse(cachedPosts);
+                if (cachedShorts) allShorts = JSON.parse(cachedShorts);
+                if (cachedLongs) allLongVideos = JSON.parse(cachedLongs);
+                buildHomeFeed();
+            } catch (e) {}
+
             try {
                 const sound = document.getElementById("startupSound");
                 if (sound) {
@@ -2739,6 +2780,7 @@
             allCommunityPosts = [];
             uploadQueue = [];
             localStorage.removeItem('startube_upload_queue_v2'); 
+            localStorage.removeItem('flaynity_user_session_cache');
 
             const homeFeed = document.getElementById('home-feed-container');
             if (homeFeed) homeFeed.innerHTML = '';
@@ -2817,7 +2859,15 @@
         });
 
         function renderUserAvatar(photoURL, email) {
-            // Header avatar container handled dynamically in theme engine
+            const avatarNav = document.getElementById('nav-avatar-img');
+            if (avatarNav) {
+                if (photoURL) {
+                    avatarNav.innerHTML = `<img src="${photoURL}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                } else {
+                    const initial = email ? email.charAt(0).toUpperCase() : 'U';
+                    avatarNav.innerHTML = `<div style="background: linear-gradient(135deg, var(--primary), #FF7A00); color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem;">${initial}</div>`;
+                }
+            }
         }
 
         function handleAvatarClick() {
@@ -2893,7 +2943,7 @@
         const MAX_CONCURRENT_UPLOADS = 3; 
 
         function triggerFilePicker(type) {
-            AppNavigation.pop(); // Close create content sheet
+            AppNavigation.pop(); 
             if (type === 'video-long' || type === 'video-short') {
                 const picker = document.getElementById('video-file-input');
                 if (picker) {
@@ -3300,6 +3350,7 @@
                             return;
                         }
                         allLongVideos = Object.values(data);
+                        localStorage.setItem('flaynity_offline_longs', JSON.stringify(allLongVideos));
                         buildHomeFeed();
                         
                         allLongVideos.forEach(m => {
@@ -3314,6 +3365,7 @@
                     try {
                         const data = snap.val();
                         allShorts = data ? Object.values(data) : [];
+                        localStorage.setItem('flaynity_offline_shorts', JSON.stringify(allShorts));
                         buildHomeFeed();
                         const shortsTab = document.getElementById('shorts-tab');
                         if (shortsTab && shortsTab.classList.contains('active')) {
@@ -3326,6 +3378,7 @@
                     try {
                         const data = snap.val();
                         allCommunityPosts = data ? Object.values(data) : [];
+                        localStorage.setItem('flaynity_offline_posts', JSON.stringify(allCommunityPosts));
                         buildHomeFeed();
                     } catch (e) {}
                 });
@@ -3882,10 +3935,22 @@
 
         function openShortFromHome(shortId) {
             switchTab('shorts');
-            const targetSlide = document.getElementById(`slide-short-${shortId}`);
-            if (targetSlide) {
-                targetSlide.scrollIntoView({ behavior: 'smooth' });
-            }
+            buildShortsPage();
+            setTimeout(() => {
+                const targetSlide = document.getElementById(`slide-short-${shortId}`);
+                if (targetSlide) {
+                    targetSlide.scrollIntoView({ block: 'start', behavior: 'auto' });
+                    const video = targetSlide.querySelector('video');
+                    if (video) {
+                        video.currentTime = 0;
+                        video.muted = false;
+                        video.play().catch(() => {
+                            video.muted = true;
+                            video.play().catch(() => {});
+                        });
+                    }
+                }
+            }, 50);
         }
 
         function triggerHapticFeedback() {
@@ -3911,7 +3976,7 @@
         }
 
         // =========================================================
-        // FULL SCREEN SHORTS BUILDER
+        // HIGH PERFORMANCE SHORTS BUILDER (SMART ALLOCATION)
         // =========================================================
         function buildShortsPage() {
             const container = document.getElementById('shorts-swiper-container');
@@ -3935,7 +4000,7 @@
 
                 html += `
                     <div class="short-slide" id="slide-short-${s.id}" data-shortid="${s.id}">
-                        <video class="short-video-el" src="${s.videoLink}" loop playsinline webkit-playsinline></video>
+                        <video class="short-video-el" loop playsinline webkit-playsinline></video>
 
                         <div class="short-progress-container">
                             <div class="short-progress-bar" id="short-progress-bar-${s.id}"></div>
@@ -4031,15 +4096,34 @@
             uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
         }
 
+        let lastTap = 0;
         function setupDoubleTapListeners() {
-            let lastTap = 0;
+            let clickTimer = null;
             document.querySelectorAll('.short-slide').forEach(slide => {
                 slide.addEventListener('click', (e) => {
+                    if (e.target.closest('.short-right-actions') || e.target.closest('.short-bottom-info') || e.target.closest('.short-progress-container')) {
+                        return;
+                    }
+                    const video = slide.querySelector('video');
+                    if (!video) return;
+
                     const now = Date.now();
                     const shortId = slide.getAttribute('data-shortid');
+                    
                     if (now - lastTap < 300) {
+                        clearTimeout(clickTimer);
                         spawnDoubleTapHeart(e, slide);
                         toggleShortLike(shortId, true); 
+                    } else {
+                        clickTimer = setTimeout(() => {
+                            if (video.paused) {
+                                video.play().catch(() => {});
+                                showNotification("Playing", "success", 600);
+                            } else {
+                                video.pause();
+                                showNotification("Paused", "error", 600);
+                            }
+                        }, 250);
                     }
                     lastTap = now;
                 });
@@ -4224,6 +4308,37 @@
             });
         }
 
+        // =========================================================
+        // PRE-LOAD ADJACENT CLIPS & SHORTS MEMORY MANAGEMENT ENGINE
+        // =========================================================
+        let currentActiveShortsIdx = -1;
+        function optimizeShortsMemoryAndPreload(activeIndex) {
+            const slides = document.querySelectorAll('.short-slide');
+            slides.forEach((slide, idx) => {
+                const video = slide.querySelector('video');
+                if (!video) return;
+                const shortId = slide.getAttribute('data-shortid');
+                const s = allShorts.find(item => item.id === shortId);
+                if (!s) return;
+
+                // আগের ২টি ভিডিও মেমোরিতে রেন্ডারিং সচল রাখবে এবং সামনের ২০টি ভিডিও ব্যাকগ্রাউন্ড বাফারে লোড করবে
+                if (idx >= activeIndex - 2 && idx <= activeIndex + 20) {
+                    if (video.getAttribute('src') !== s.videoLink) {
+                        video.setAttribute('src', s.videoLink);
+                        video.load();
+                    }
+                    video.preload = "auto";
+                } else {
+                    // মেমোরি রিলিজ করা হলো যাতে অতিরিক্ত ব্যাকগ্রাউন্ড ভিডিওর কারণে অ্যাপ ল্যাগ বা ক্র্যাশ না হয়
+                    if (video.getAttribute('src')) {
+                        video.pause();
+                        video.removeAttribute('src');
+                        video.load();
+                    }
+                }
+            });
+        }
+
         let shortsObserver;
         function initShortsObserver() {
             if (shortsObserver) shortsObserver.disconnect();
@@ -4236,6 +4351,13 @@
 
                     if (video) {
                         if (entry.isIntersecting) {
+                            const slides = Array.from(document.querySelectorAll('.short-slide'));
+                            const activeIdx = slides.indexOf(entry.target);
+                            if (activeIdx !== -1 && activeIdx !== currentActiveShortsIdx) {
+                                currentActiveShortsIdx = activeIdx;
+                                optimizeShortsMemoryAndPreload(activeIdx);
+                            }
+
                             video.currentTime = 0;
                             video.muted = false;
                             
@@ -4320,7 +4442,6 @@
             },
 
             syncUI: function() {
-                // Hide all fullscreen pages and modals
                 document.querySelectorAll('.fullscreen-page, .premium-download-modal').forEach(el => {
                     el.style.display = 'none';
                 });
@@ -4353,7 +4474,6 @@
                     }
                 });
 
-                // Apply Active Tab
                 document.querySelectorAll('.tab-content, .nav-item').forEach(el => el.classList.remove('active'));
                 const tabEl = document.getElementById(`${activeTab}-tab`);
                 const navEl = document.getElementById(`nav-${activeTab}`);
@@ -4365,7 +4485,6 @@
                 if (activeTab === 'you') initYouTabUI();
                 if (activeTab === 'shorts') buildShortsPage();
 
-                // Apply Active Page
                 if (activePage) {
                     if (activePage === 'full-movie-page') {
                         if (moviePage) moviePage.style.display = 'block';
@@ -4383,7 +4502,6 @@
                     if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }
                 }
 
-                // Apply Active Modals
                 activeModals.forEach(modalId => {
                     const el = document.getElementById(modalId);
                     if (el) {
@@ -4445,7 +4563,6 @@
                     releaseDate: data.release_date?.split('-')[0] || "N/A", 
                     poster: IMG_URL + data.poster_path, 
                     banner: BG_URL + (data.backdrop_path || data.poster_path), 
-                    description: data.overview, 
                     videoLink: trailerKey ? `https://www.youtube.com/watch?v=${trailerKey}` : null, 
                     isTMDB: true 
                 };
@@ -4963,7 +5080,6 @@
                 if (actions) {
                     actions.innerHTML = `
                         <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="openThemePopupMenu()" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
-                            <!-- Populated dynamically -->
                         </button>
                         <button class="btn-switch-account-header" onclick="openAccountSwitcher()" title="Switch Account">
                             <i class="fas fa-exchange-alt"></i> Switch Account
@@ -4978,7 +5094,6 @@
                             <i class="fas fa-search"></i>
                         </button>
                         <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="openThemePopupMenu()" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
-                            <!-- Populated dynamically -->
                         </button>
                     `;
                 }
@@ -5006,8 +5121,12 @@
             const user = auth.currentUser;
             if (!user) return;
 
-            db.ref(`channels/${user.uid}`).once('value', (snapshot) => {
+            db.ref(`channels/${user.uid}`).on('value', (snapshot) => {
                 currentChannelData = snapshot.val();
+                
+                if (currentChannelData) {
+                    localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                }
                 
                 const youAvatarLarge = document.getElementById('you-avatar-large');
                 const youFullNameTxt = document.getElementById('you-fullname-txt');
@@ -5027,7 +5146,7 @@
 
                     if (youAvatarLarge) {
                         if (channelAvatar) {
-                            youAvatarLarge.innerHTML = `<img src="${channelAvatar}">`;
+                            youAvatarLarge.innerHTML = `<img src="${channelAvatar}" style="width:100%; height:100%; object-fit:cover;">`;
                         } else {
                             youAvatarLarge.innerHTML = channelName.charAt(0).toUpperCase();
                         }
@@ -5051,7 +5170,7 @@
                     if (youAvatarLarge) {
                         const photoURL = user.photoURL || '';
                         if (photoURL) {
-                            youAvatarLarge.innerHTML = `<img src="${photoURL}">`;
+                            youAvatarLarge.innerHTML = `<img src="${photoURL}" style="width:100%; height:100%; object-fit:cover;">`;
                         } else {
                             youAvatarLarge.innerHTML = displayName.charAt(0).toUpperCase();
                         }
@@ -5063,6 +5182,7 @@
                         </button>
                     `;
                 }
+                updateBottomNavAvatar();
             });
         }
 
@@ -6588,6 +6708,26 @@
             const filename = `${currentActiveMovie.title.replace(/\s+/g, '_')}_${format}.mp4`;
             triggerFileDownload(currentActiveMovie.videoLink, filename);
         }
+
+        // =========================================================
+        // AUTOMATIC ONLINE SYNC ENGINE (A-Z REFRESH ON STATUS CHANGE)
+        // =========================================================
+        window.setAppOnlineStatus = function(isOnline) {
+            if (isOnline) {
+                showNotification("Network Connection Restored! Syncing A-Z Data...", "success");
+                startRealtimeFeedsListener(); 
+                
+                const activeNav = document.querySelector('.nav-item.active');
+                if (activeNav) {
+                    const activeTabId = activeNav.id.replace('nav-', '');
+                    if (activeTabId === 'home') buildHomeFeed();
+                    if (activeTabId === 'shorts') buildShortsPage();
+                    if (activeTabId === 'you') initYouTabUI();
+                }
+            } else {
+                showNotification("Network connection lost. Offline fallback mode active.", "error");
+            }
+        };
     </script>
 </body>
 </html>

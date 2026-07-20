@@ -71,7 +71,7 @@
         input, textarea, select { -webkit-user-select: auto; user-select: auto; }
         
         body, header, .bottom-nav, .tab-content, .post-card, .premium-white-card-watch, .channel-profile-section, .channel-tabs, .channel-tab-content, .fullscreen-page, .appbar, .upcoming-content, .premium-download-content, .format-option-row, .sheet-input, .sheet-textarea, .sheet-select, .form-input, .form-textarea, .form-select, .you-menu, .you-menu-item, .profile-card-you, .analytics-overview-card, .analytics-card, .chart-container-mock {
-            transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease, background 0.35s ease, box-shadow 0.35s ease;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
         }
 
         body { 
@@ -238,7 +238,7 @@
         }
         .btn-switch-account-header:active { transform: scale(0.95); background: var(--border-color); }
 
-        /* Locked & Glitch-free Category Chips Styling */
+        /* Category Chips Styling */
         .category-chips-container {
             position: fixed;
             top: 82px; 
@@ -326,7 +326,7 @@
         .filter-chip { padding: 8px 18px; background: var(--surface); border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 0.9rem; font-weight: 700; transition: 0.3s; border: 1px solid var(--glass-border); color: var(--text-muted); }
         .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* PREMIUM BOTTOM NAVIGATION */
+        /* BOTTOM NAVIGATION */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -2384,7 +2384,7 @@
         </div>
     </div>
 
-    <!-- 🌟 MD3 THEME SELECTOR POPUP MODAL (NEW) 🌟 -->
+    <!-- MD3 THEME SELECTOR POPUP MODAL -->
     <div id="theme-selector-popup" class="premium-download-modal" style="z-index: 1000000; align-items: center; justify-content: center;">
         <div class="upcoming-content" style="text-align: left; padding: 24px; max-width: 320px; border-radius: 28px;">
             <h3 style="margin: 0 0 16px 0; font-size: 1.2rem; font-weight: 850; color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif;">Choose Theme</h3>
@@ -2426,7 +2426,7 @@
 
     <script>
         // =========================================
-        // AUTOMATIC & MANUAL THEME ENGINE (FIXED)
+        // AUTOMATIC & MANUAL THEME ENGINE
         // =========================================
         function applyTheme() {
             let pref = localStorage.getItem('flaynity-theme-pref') || 'system';
@@ -2458,7 +2458,7 @@
             });
         }
 
-        // Native Android configuration changes dynamic callback
+        // Live system config sync callback (Called by native configuration change listener without reloads)
         window.setSystemThemeState = function(isDark) {
             const pref = localStorage.getItem('flaynity-theme-pref') || 'system';
             if (pref === 'system') {
@@ -2854,7 +2854,7 @@
         }
 
         // =========================================================
-        // ROBUST MULTIPART CONCURRENT UPLOAD QUEUE
+        // ROBUST MULTIPART CONCURRENT UPLOAD QUEUE (UNCHANGED)
         // =========================================================
         let uploadQueue = [];
         let activeUploadsCount = 0;
@@ -3651,7 +3651,7 @@
                         <img src="${s.poster}" loading="lazy">
                         <div class="short-home-meta">
                             <h4 style="font-size: 0.85rem; font-weight: 800; margin: 0 0 2px 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(s.title)}</h4>
-                            <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}">0</span></p>
+                            <p style="font-size: 0.7.rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}">0</span></p>
                         </div>
                     </div>
                 `;
@@ -4115,7 +4115,7 @@
         }
 
         // =========================================================
-        // SECURE INSTANT NATIVE & WEB DOWNSTREAM ADAPTER
+        // SECURE INSTANT NATIVE & WEB DOWNSTREAM ADAPTER (UNCHANGED)
         // =========================================================
         async function triggerFileDownload(url, filename) {
             if (!url) {
@@ -4373,82 +4373,133 @@
         // UNIFIED SYSTEM BACK BUTTON HANDLING (100% RELIABLE)
         // =========================================================
         window.handleAndroidBackPress = function() {
-            // 1. Fullscreen Image lightbox
-            const lightbox = document.getElementById('full-image-preview-overlay');
-            if (lightbox && lightbox.style.display === 'flex') {
-                closeFullScreenImagePreview();
-                return;
-            }
-
-            // 2. Reaction Picker
-            const rxPicker = document.getElementById('fb-reaction-picker');
-            if (rxPicker && rxPicker.style.display === 'flex') {
-                rxPicker.style.display = 'none';
-                return;
-            }
-
-            // 3. Theme selector popup (New MD3)
-            const themePopup = document.getElementById('theme-selector-popup');
-            if (themePopup && themePopup.style.display === 'flex') {
-                closeThemeSelectorPopup();
-                return;
-            }
-
-            // 4. Sheets & Bottom Modals
-            const modals = [
-                { id: 'comment-modal', close: closeCommentModal },
-                { id: 'premium-download-modal', close: closeDownloadModal },
-                { id: 'create-bottom-sheet', close: closeCreateBottomSheet },
-                { id: 'short-desc-bottom-sheet', close: closeShortDescBottomSheet },
-                { id: 'upload-details-sheet', close: closeDetailsSheet },
-                { id: 'create-post-sheet', close: closePostSheet },
-                { id: 'upload-manager-screen', close: closeUploadManager },
-                { id: 'desc-bottom-sheet', close: closeDescBottomSheet },
-                { id: 'more-desc-sheet', close: closeMoreDescriptionSheet },
-                { id: 'account-switcher-modal', close: closeAccountSwitcher },
-                { id: 'upcoming-modal', close: hideUpcomingModal }
-            ];
-
-            for (let modal of modals) {
-                const el = document.getElementById(modal.id);
-                if (el && (el.style.display === 'flex' || el.style.display === 'block')) {
-                    modal.close();
+            try {
+                // 1. Fullscreen Image lightbox
+                const lightbox = document.getElementById('full-image-preview-overlay');
+                if (lightbox && lightbox.style.display === 'flex') {
+                    closeFullScreenImagePreview();
                     return;
                 }
-            }
 
-            // 5. Fullscreen Sub-pages
-            const fullscreenPages = [
-                { id: 'reacted-people-page', close: () => executeBackAction() },
-                { id: 'monetization-page', close: () => executeBackAction() },
-                { id: 'edit-channel-page', close: () => executeBackAction() },
-                { id: 'analytics-page', close: () => executeBackAction() },
-                { id: 'view-channel-page', close: () => executeBackAction() },
-                { id: 'create-channel-page', close: () => executeBackAction() },
-                { id: 'full-movie-page', close: () => executeBackAction() }
-            ];
-
-            for (let page of fullscreenPages) {
-                const el = document.getElementById(page.id);
-                if (el && (el.style.display === 'flex' || el.style.display === 'block')) {
-                    page.close();
+                // 2. Reaction Picker
+                const rxPicker = document.getElementById('fb-reaction-picker');
+                if (rxPicker && rxPicker.style.display === 'flex') {
+                    rxPicker.style.display = 'none';
                     return;
                 }
-            }
 
-            // 6. Non-Home Navigation Tab transitions
-            const tabs = ['shorts', 'search', 'you'];
-            for (let tab of tabs) {
-                const el = document.getElementById(`${tab}-tab`);
-                if (el && el.classList.contains('active')) {
-                    switchTab('home');
+                // 3. Theme selector popup (New MD3)
+                const themePopup = document.getElementById('theme-selector-popup');
+                if (themePopup && themePopup.style.display === 'flex') {
+                    closeThemeSelectorPopup();
                     return;
                 }
-            }
 
-            // 7. On Root Screen ('home') with no active overlays: Terminate securely
-            if (window.AndroidBridge && typeof window.AndroidBridge.exitApp === 'function') {
-                window.AndroidBridge.exitApp();
+                // 4. Sheets & Bottom Modals
+                const commentModal = document.getElementById('comment-modal');
+                if (commentModal && commentModal.style.display === 'flex') {
+                    closeCommentModal();
+                    return;
+                }
+
+                const downloadModal = document.getElementById('premium-download-modal');
+                if (downloadModal && downloadModal.style.display === 'flex') {
+                    closeDownloadModal();
+                    return;
+                }
+
+                const createSheet = document.getElementById('create-bottom-sheet');
+                if (createSheet && createSheet.style.display === 'flex') {
+                    closeCreateBottomSheet();
+                    return;
+                }
+
+                const shortDescSheet = document.getElementById('short-desc-bottom-sheet');
+                if (shortDescSheet && shortDescSheet.style.display === 'flex') {
+                    closeShortDescBottomSheet();
+                    return;
+                }
+
+                const uploadDetailsSheet = document.getElementById('upload-details-sheet');
+                if (uploadDetailsSheet && uploadDetailsSheet.style.display === 'flex') {
+                    closeDetailsSheet();
+                    return;
+                }
+
+                const createPostSheet = document.getElementById('create-post-sheet');
+                if (createPostSheet && createPostSheet.style.display === 'flex') {
+                    closePostSheet();
+                    return;
+                }
+
+                const uploadManagerScreen = document.getElementById('upload-manager-screen');
+                if (uploadManagerScreen && uploadManagerScreen.style.display === 'flex') {
+                    closeUploadManager();
+                    return;
+                }
+
+                const descBottomSheet = document.getElementById('desc-bottom-sheet');
+                if (descBottomSheet && descBottomSheet.style.display === 'flex') {
+                    closeDescBottomSheet();
+                    return;
+                }
+
+                const moreDescSheet = document.getElementById('more-desc-sheet');
+                if (moreDescSheet && moreDescSheet.style.display === 'flex') {
+                    closeMoreDescriptionSheet();
+                    return;
+                }
+
+                const accountSwitcherModal = document.getElementById('account-switcher-modal');
+                if (accountSwitcherModal && accountSwitcherModal.style.display === 'flex') {
+                    closeAccountSwitcher();
+                    return;
+                }
+
+                const upcomingModal = document.getElementById('upcoming-modal');
+                if (upcomingModal && upcomingModal.style.display === 'flex') {
+                    hideUpcomingModal();
+                    return;
+                }
+
+                // 5. Fullscreen Sub-pages
+                const fullscreenPages = [
+                    { id: 'reacted-people-page', close: () => executeBackAction() },
+                    { id: 'monetization-page', close: () => executeBackAction() },
+                    { id: 'edit-channel-page', close: () => executeBackAction() },
+                    { id: 'analytics-page', close: () => executeBackAction() },
+                    { id: 'view-channel-page', close: () => executeBackAction() },
+                    { id: 'create-channel-page', close: () => executeBackAction() },
+                    { id: 'full-movie-page', close: () => executeBackAction() }
+                ];
+
+                for (let page of fullscreenPages) {
+                    const el = document.getElementById(page.id);
+                    if (el && (el.style.display === 'flex' || el.style.display === 'block')) {
+                        page.close();
+                        return;
+                    }
+                }
+
+                // 6. Navigation tabs (if on non-home active tab)
+                const tabs = ['shorts', 'search', 'you'];
+                for (let t of tabs) {
+                    const el = document.getElementById(`${t}-tab`);
+                    if (el && el.classList.contains('active')) {
+                        switchTab('home');
+                        return;
+                    }
+                }
+
+                // 7. On Root Screen ('home') with no active overlays: Terminate securely
+                if (window.AndroidBridge && typeof window.AndroidBridge.exitApp === 'function') {
+                    window.AndroidBridge.exitApp();
+                }
+            } catch (e) {
+                console.error("Backpress processing failed safely", e);
+                if (window.AndroidBridge && typeof window.AndroidBridge.exitApp === 'function') {
+                    window.AndroidBridge.exitApp();
+                }
             }
         };
 

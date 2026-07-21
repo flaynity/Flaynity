@@ -2641,19 +2641,41 @@
             }
         }
 
+        // =========================================
+        // SMART LOCAL CACHE MANAGEMENT (TOP 20)
+        // =========================================
+        function saveTop20Cache() {
+            try {
+                if (allShorts && allShorts.length > 0) {
+                    const top20Shorts = [...allShorts].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 20);
+                    localStorage.setItem('flaynity_offline_shorts_20', JSON.stringify(top20Shorts));
+                }
+                if (allCommunityPosts && allCommunityPosts.length > 0) {
+                    const top20Posts = [...allCommunityPosts].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 20);
+                    localStorage.setItem('flaynity_offline_posts_20', JSON.stringify(top20Posts));
+                }
+            } catch(e) {
+                console.warn("Failed to update top 20 offline cache:", e);
+            }
+        }
+
+        function loadOffline20Cache() {
+            try {
+                const cachedShorts = localStorage.getItem('flaynity_offline_shorts_20');
+                const cachedPosts = localStorage.getItem('flaynity_offline_posts_20');
+                if (cachedShorts) allShorts = JSON.parse(cachedShorts);
+                if (cachedPosts) allCommunityPosts = JSON.parse(cachedPosts);
+            } catch(e) {
+                console.warn("Failed to load offline cache:", e);
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", function() {
             applyTheme();
             
-            // Offline caches instant load
-            try {
-                const cachedPosts = localStorage.getItem('flaynity_offline_posts');
-                const cachedShorts = localStorage.getItem('flaynity_offline_shorts');
-                const cachedLongs = localStorage.getItem('flaynity_offline_longs');
-                if (cachedPosts) allCommunityPosts = JSON.parse(cachedPosts);
-                if (cachedShorts) allShorts = JSON.parse(cachedShorts);
-                if (cachedLongs) allLongVideos = JSON.parse(cachedLongs);
-                buildHomeFeed();
-            } catch (e) {}
+            // Instant load offline 20 items cache
+            loadOffline20Cache();
+            buildHomeFeed();
 
             try {
                 const sound = document.getElementById("startupSound");
@@ -3444,7 +3466,6 @@
                             return;
                         }
                         allLongVideos = Object.values(data);
-                        localStorage.setItem('flaynity_offline_longs', JSON.stringify(allLongVideos));
                         buildHomeFeed();
                         
                         allLongVideos.forEach(m => {
@@ -3459,7 +3480,7 @@
                     try {
                         const data = snap.val();
                         allShorts = data ? Object.values(data) : [];
-                        localStorage.setItem('flaynity_offline_shorts', JSON.stringify(allShorts));
+                        saveTop20Cache();
                         buildHomeFeed();
                         const shortsTab = document.getElementById('shorts-tab');
                         if (shortsTab && shortsTab.classList.contains('active')) {
@@ -3472,7 +3493,7 @@
                     try {
                         const data = snap.val();
                         allCommunityPosts = data ? Object.values(data) : [];
-                        localStorage.setItem('flaynity_offline_posts', JSON.stringify(allCommunityPosts));
+                        saveTop20Cache();
                         buildHomeFeed();
                     } catch (e) {}
                 });
@@ -3529,7 +3550,6 @@
                     el.innerHTML = `<div style="width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--primary), #FF7A00); color: #fff; font-weight: 800; font-size: 0.9rem;">${initial}</div>`;
                 }
             });
-            // Update rotating disc inner image with actual avatar
             document.querySelectorAll(`.live-disc-avatar-${userId}`).forEach(el => {
                 if (avatar) {
                     el.innerHTML = `<img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
@@ -3704,13 +3724,21 @@
 
             let html = '';
 
+            const isOffline = !navigator.onLine;
+
             let shorts = [...allShorts];
-            let longs = [...allLongVideos];
+            let longs = isOffline ? [] : [...allLongVideos]; // Hide Long Videos when offline
             let posts = [...allCommunityPosts];
 
-            shorts.sort((a,b) => b.createdAt - a.createdAt);
-            longs.sort((a,b) => b.createdAt - a.createdAt);
-            posts.sort((a,b) => b.createdAt - a.createdAt);
+            if (isOffline) {
+                // Strictly load top 20 cached shorts and top 20 posts when offline
+                shorts = shorts.slice(0, 20);
+                posts = posts.slice(0, 20);
+            }
+
+            shorts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+            longs.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+            posts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
 
             const uniqueUserIds = new Set();
 
@@ -3734,12 +3762,14 @@
                             </div>
                         </div>
                     `;
-                    db.ref(`movie_stats/${s.id}/views`).once('value', (vSnap) => {
-                        const viewsObj = vSnap.val() || {};
-                        const count = Object.keys(viewsObj).length;
-                        const label = document.getElementById(`home-short-views-${s.id}`);
-                        if (label) label.innerText = formatCount(count);
-                    });
+                    if (!isOffline) {
+                        db.ref(`movie_stats/${s.id}/views`).once('value', (vSnap) => {
+                            const viewsObj = vSnap.val() || {};
+                            const count = Object.keys(viewsObj).length;
+                            const label = document.getElementById(`home-short-views-${s.id}`);
+                            if (label) label.innerText = formatCount(count);
+                        });
+                    }
                 });
                 html += `</div></div>`;
                 container.innerHTML = html;
@@ -3771,7 +3801,7 @@
             let postIdx = 0;
 
             if (shorts.length === 0 && longs.length === 0 && posts.length === 0) {
-                container.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 40px 0; font-weight:700;">No items in this category.</p>`;
+                container.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 40px 0; font-weight:700;">No items available offline.</p>`;
                 return;
             }
 
@@ -3834,12 +3864,14 @@
                     </div>
                 `;
                 
-                db.ref(`movie_stats/${s.id}/views`).once('value', (vSnap) => {
-                    const viewsObj = vSnap.val() || {};
-                    const count = Object.keys(viewsObj).length;
-                    const label = document.getElementById(`home-short-views-${s.id}`);
-                    if (label) label.innerText = formatCount(count);
-                });
+                if (navigator.onLine) {
+                    db.ref(`movie_stats/${s.id}/views`).once('value', (vSnap) => {
+                        const viewsObj = vSnap.val() || {};
+                        const count = Object.keys(viewsObj).length;
+                        const label = document.getElementById(`home-short-views-${s.id}`);
+                        if (label) label.innerText = formatCount(count);
+                    });
+                }
             });
 
             html += `
@@ -3881,12 +3913,14 @@
                     </div>
                 `;
 
-                db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
-                    const viewsObj = vSnap.val() || {};
-                    const count = Object.keys(viewsObj).length;
-                    const label = document.getElementById(viewsId);
-                    if (label) label.innerText = formatCount(count) + " Views";
-                });
+                if (navigator.onLine) {
+                    db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
+                        const viewsObj = vSnap.val() || {};
+                        const count = Object.keys(viewsObj).length;
+                        const label = document.getElementById(viewsId);
+                        if (label) label.innerText = formatCount(count) + " Views";
+                    });
+                }
             });
 
             return html;
@@ -3918,7 +3952,7 @@
             const subBtnId = `post-sub-btn-${post.id}`;
             const subUserId = post.userId;
             
-            if (auth.currentUser) {
+            if (auth.currentUser && navigator.onLine) {
                 db.ref(`subscribers/${subUserId}/${auth.currentUser.uid}`).on('value', (snapshot) => {
                     const btn = document.getElementById(subBtnId);
                     if (btn) {
@@ -4082,35 +4116,41 @@
             const container = document.getElementById('shorts-swiper-container');
             if (!container) return;
 
-            if (allShorts.length === 0) {
+            let shortsList = [...allShorts];
+            if (!navigator.onLine) {
+                shortsList = shortsList.slice(0, 20); // Top 20 strictly offline
+            }
+
+            if (shortsList.length === 0) {
                 container.innerHTML = `
                     <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#FFFFFF;">
                         <i class="fas fa-video-slash" style="font-size:3rem; margin-bottom:12px; color:var(--primary);"></i>
-                        <p style="font-size:1.1rem; font-weight:700;">No Shorts Available</p>
+                        <p style="font-size:1.1rem; font-weight:700;">No Shorts Available Offline</p>
                     </div>
                 `;
                 return;
             }
 
             let html = '';
-            allShorts.forEach(s => {
+            shortsList.forEach(s => {
                 const isLikedId = `short-like-btn-${s.id}`;
                 const likesCountId = `short-likes-count-${s.id}`;
                 const commentsCountId = `short-comments-count-${s.id}`;
                 const statsCacheKey = `flaynity_stats_cache_${s.id}`;
 
-                // Instant cache load
-                let cachedStats = { likes: 0, comments: 0 };
+                let cachedStats = { likes: s.likes || 0, comments: s.comments || 0 };
                 try {
-                    cachedStats = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
+                    const localData = localStorage.getItem(statsCacheKey);
+                    if (localData) cachedStats = JSON.parse(localData);
                 } catch(e) {}
+
+                // Offline & Online persistent Like status check
+                const isLikedLocally = isItemLikedLocally(s.id);
+                const initialHeartIcon = isLikedLocally ? `<i class="fas fa-heart liked"></i>` : `<i class="far fa-heart"></i>`;
 
                 html += `
                     <div class="short-slide" id="slide-short-${s.id}" data-shortid="${s.id}">
-                        <!-- Circular loading indicator -->
                         <div class="short-buffer-spinner" id="short-spinner-${s.id}"></div>
-                        
-                        <!-- Play/Pause smooth animated overlays -->
                         <div class="short-play-pause-overlay" id="short-pp-overlay-${s.id}"></div>
 
                         <video class="short-video-el" loop playsinline webkit-playsinline></video>
@@ -4122,7 +4162,7 @@
                         <div class="short-right-actions">
                             <div class="short-action-container">
                                 <button class="short-action-btn-tiktok" id="${isLikedId}" onclick="toggleShortLike('${s.id}')">
-                                    <i class="far fa-heart"></i>
+                                    ${initialHeartIcon}
                                 </button>
                                 <div class="short-action-label-tiktok" id="${likesCountId}">${formatCount(cachedStats.likes)}</div>
                             </div>
@@ -4141,7 +4181,6 @@
                                 <div class="short-action-label-tiktok">Save</div>
                             </div>
 
-                            <!-- Rotating Music Disc Icon with Avatar -->
                             <div class="music-disc-container">
                                 <div class="music-disc-inner live-disc-avatar-${s.userId}" id="music-disc-${s.id}">
                                     <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
@@ -4165,58 +4204,59 @@
                     </div>
                 `;
 
-                db.ref(`movie_stats/${s.id}`).on('value', (snapshot) => {
-                    const stats = snapshot.val() || {};
-                    const viewsObj = stats.views || {};
-                    const likesObj = stats.likes || {};
-                    const likesCount = Object.keys(likesObj).length;
+                if (navigator.onLine) {
+                    db.ref(`movie_stats/${s.id}`).on('value', (snapshot) => {
+                        const stats = snapshot.val() || {};
+                        const likesObj = stats.likes || {};
+                        const likesCount = Object.keys(likesObj).length;
 
-                    try {
-                        let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
-                        currCache.likes = likesCount;
-                        localStorage.setItem(statsCacheKey, JSON.stringify(currCache));
-                    } catch(e) {}
+                        try {
+                            let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
+                            currCache.likes = likesCount;
+                            localStorage.setItem(statsCacheKey, JSON.stringify(currCache));
+                        } catch(e) {}
 
-                    const lblLikes = document.getElementById(likesCountId);
-                    if (lblLikes) lblLikes.innerText = formatCount(likesCount);
+                        const lblLikes = document.getElementById(likesCountId);
+                        if (lblLikes) lblLikes.innerText = formatCount(likesCount);
 
-                    const likeBtn = document.getElementById(isLikedId);
-                    if (likeBtn && auth.currentUser) {
-                        if (likesObj[auth.currentUser.uid]) {
-                            likeBtn.innerHTML = `<i class="fas fa-heart liked"></i>`;
-                        } else {
-                            likeBtn.innerHTML = `<i class="far fa-heart"></i>`;
-                        }
-                    }
-                });
-
-                db.ref(`movie_comments/${s.id}`).on('value', (snapshot) => {
-                    const commentsObj = snapshot.val() || {};
-                    const count = Object.keys(commentsObj).length;
-
-                    try {
-                        let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
-                        currCache.comments = count;
-                        localStorage.setItem(statsCacheKey, JSON.stringify(currCache));
-                    } catch(e) {}
-
-                    const lblComments = document.getElementById(commentsCountId);
-                    if (lblComments) lblComments.innerText = formatCount(count);
-                });
-
-                if (auth.currentUser) {
-                    db.ref(`subscribers/${s.userId}/${auth.currentUser.uid}`).on('value', (snapshot) => {
-                        const subBtn = document.getElementById(`short-sub-btn-${s.id}`);
-                        if (subBtn) {
-                            if (snapshot.exists()) {
-                                subBtn.innerText = "Subscribed";
-                                subBtn.style.background = "#4B5563";
+                        const likeBtn = document.getElementById(isLikedId);
+                        if (likeBtn && auth.currentUser) {
+                            if (likesObj[auth.currentUser.uid] || isItemLikedLocally(s.id)) {
+                                likeBtn.innerHTML = `<i class="fas fa-heart liked"></i>`;
                             } else {
-                                subBtn.innerText = "Subscribe";
-                                subBtn.style.background = "var(--primary)";
+                                likeBtn.innerHTML = `<i class="far fa-heart"></i>`;
                             }
                         }
                     });
+
+                    db.ref(`movie_comments/${s.id}`).on('value', (snapshot) => {
+                        const commentsObj = snapshot.val() || {};
+                        const count = Object.keys(commentsObj).length;
+
+                        try {
+                            let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
+                            currCache.comments = count;
+                            localStorage.setItem(statsCacheKey, JSON.stringify(currCache));
+                        } catch(e) {}
+
+                        const lblComments = document.getElementById(commentsCountId);
+                        if (lblComments) lblComments.innerText = formatCount(count);
+                    });
+
+                    if (auth.currentUser) {
+                        db.ref(`subscribers/${s.userId}/${auth.currentUser.uid}`).on('value', (snapshot) => {
+                            const subBtn = document.getElementById(`short-sub-btn-${s.id}`);
+                            if (subBtn) {
+                                if (snapshot.exists()) {
+                                    subBtn.innerText = "Subscribed";
+                                    subBtn.style.background = "#4B5563";
+                                } else {
+                                    subBtn.innerText = "Subscribe";
+                                    subBtn.style.background = "var(--primary)";
+                                }
+                            }
+                        });
+                    }
                 }
             });
 
@@ -4226,7 +4266,7 @@
             bindShortsVideoEvents();
 
             const uniqueUserIds = new Set();
-            allShorts.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
+            shortsList.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
             uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
         }
 
@@ -4332,14 +4372,16 @@
             document.getElementById('short-sheet-description').innerText = plainDescription || "No description provided.";
             document.getElementById('short-sheet-uploaded').innerText = getRelativeTime(s.createdAt);
 
-            db.ref(`movie_stats/${shortId}`).once('value', (snapshot) => {
-                const stats = snapshot.val() || {};
-                const viewsObj = stats.views || {};
-                const likesObj = stats.likes || {};
-                
-                document.getElementById('short-sheet-views').innerText = formatCount(Object.keys(viewsObj).length);
-                document.getElementById('short-sheet-likes').innerText = formatCount(Object.keys(likesObj).length);
-            });
+            if (navigator.onLine) {
+                db.ref(`movie_stats/${shortId}`).once('value', (snapshot) => {
+                    const stats = snapshot.val() || {};
+                    const viewsObj = stats.views || {};
+                    const likesObj = stats.likes || {};
+                    
+                    document.getElementById('short-sheet-views').innerText = formatCount(Object.keys(viewsObj).length);
+                    document.getElementById('short-sheet-likes').innerText = formatCount(Object.keys(likesObj).length);
+                });
+            }
 
             AppNavigation.pushModal('short-desc-bottom-sheet');
             
@@ -4390,10 +4432,19 @@
             };
         }
 
+        // =========================================
+        // OFFLINE LIKES & QUEUE ENGINE
+        // =========================================
+        function isItemLikedLocally(itemId) {
+            try {
+                let offlineLikes = JSON.parse(localStorage.getItem('flaynity_offline_likes') || '{}');
+                return !!offlineLikes[itemId];
+            } catch(e) { return false; }
+        }
+
         function toggleShortLike(shortId, forceLike = false) {
             playUI('click');
-            if (!auth.currentUser) { showNotification("Please sign in to Like", "error"); return; }
-            const userId = auth.currentUser.uid;
+            const userId = auth.currentUser ? auth.currentUser.uid : 'anonymous_user';
             
             if (!navigator.onLine) {
                 handleOfflineLike(shortId, userId, forceLike);
@@ -4403,47 +4454,46 @@
             const ref = db.ref(`movie_stats/${shortId}/likes/${userId}`);
             ref.once('value', (snap) => {
                 if (snap.exists()) {
-                    if (!forceLike) ref.remove(); 
+                    if (!forceLike) {
+                        ref.remove(); 
+                        handleOfflineLike(shortId, userId, false, true);
+                    }
                 } else {
                     ref.set(true);
+                    handleOfflineLike(shortId, userId, true, true);
                 }
             });
         }
 
-        function handleOfflineLike(shortId, userId, forceLike) {
+        function handleOfflineLike(shortId, userId, forceLike, isOnlineSync = false) {
             try {
                 let offlineLikes = JSON.parse(localStorage.getItem('flaynity_offline_likes') || '{}');
                 const isLiked = !!offlineLikes[shortId];
                 
-                if (isLiked) {
-                    if (!forceLike) {
-                        delete offlineLikes[shortId];
-                        showNotification("Unliked (offline)", "success");
-                    }
+                if (isLiked && !forceLike) {
+                    delete offlineLikes[shortId];
+                    if (!isOnlineSync) showNotification("Unliked (Offline)", "success");
                 } else {
                     offlineLikes[shortId] = { userId: userId, timestamp: Date.now() };
-                    showNotification("Liked (offline)", "success");
+                    if (!isOnlineSync) showNotification("Liked (Saved Offline)", "success");
                 }
                 
                 localStorage.setItem('flaynity_offline_likes', JSON.stringify(offlineLikes));
-                updateLikesDOMOffline(shortId);
+                updateLikesDOMOffline(shortId, offlineLikes[shortId] ? true : false);
             } catch (e) {
-                console.error(e);
+                console.error("Offline like queue error:", e);
             }
         }
 
-        function updateLikesDOMOffline(shortId) {
+        function updateLikesDOMOffline(shortId, isNowLiked) {
             try {
-                let offlineLikes = JSON.parse(localStorage.getItem('flaynity_offline_likes') || '{}');
-                let isLocallyLiked = !!offlineLikes[shortId];
-                
                 const likesCountId = `short-likes-count-${shortId}`;
                 const lblLikes = document.getElementById(likesCountId);
                 const likeBtn = document.getElementById(`short-like-btn-${shortId}`);
                 
                 if (lblLikes) {
                     let currentVal = parseInt(lblLikes.innerText) || 0;
-                    if (isLocallyLiked) {
+                    if (isNowLiked) {
                         lblLikes.innerText = formatCount(currentVal + 1);
                     } else {
                         lblLikes.innerText = formatCount(Math.max(0, currentVal - 1));
@@ -4451,7 +4501,7 @@
                 }
                 
                 if (likeBtn) {
-                    if (isLocallyLiked) {
+                    if (isNowLiked) {
                         likeBtn.innerHTML = `<i class="fas fa-heart liked"></i>`;
                     } else {
                         likeBtn.innerHTML = `<i class="far fa-heart"></i>`;
@@ -4468,13 +4518,13 @@
                 if (entries.length === 0) return;
                 
                 for (const [shortId, data] of entries) {
-                    await db.ref(`movie_stats/${shortId}/likes/${data.userId}`).set(true);
+                    await db.ref(`movie_stats/${shortId}/likes/${auth.currentUser.uid}`).set(true);
                 }
                 
                 localStorage.removeItem('flaynity_offline_likes');
-                showNotification("Synced offline actions!", "success");
+                showNotification("Synced offline likes with server!", "success");
             } catch (e) {
-                console.error(e);
+                console.error("Sync offline likes error:", e);
             }
         }
 
@@ -4581,22 +4631,35 @@
                 const s = allShorts.find(item => item.id === shortId);
                 if (!s) return;
 
-                if (idx >= activeIndex - 2 && idx <= activeIndex + 20) {
+                if (idx === activeIndex) {
+                    if (video.getAttribute('src') !== s.videoLink) {
+                        video.setAttribute('src', s.videoLink);
+                    }
+                    video.preload = "auto";
+                    video.muted = false;
+                    let playPromise = video.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(() => {
+                            video.muted = true;
+                            video.play().catch(e => console.log(e));
+                        });
+                    }
+                } else if (idx > activeIndex && idx <= activeIndex + 20) {
+                    // Preload next 20 shorts in background
                     if (video.getAttribute('src') !== s.videoLink) {
                         video.setAttribute('src', s.videoLink);
                         video.preload = "auto";
                     }
-                    if (idx === activeIndex) {
-                        video.muted = false;
-                        let playPromise = video.play();
-                        if (playPromise !== undefined) {
-                            playPromise.catch(() => {
-                                video.muted = true;
-                                video.play().catch(e => console.log(e));
-                            });
-                        }
+                    video.pause();
+                } else if (idx >= activeIndex - 2 && idx < activeIndex) {
+                    // Keep previous 2 in memory
+                    if (video.getAttribute('src') !== s.videoLink) {
+                        video.setAttribute('src', s.videoLink);
+                        video.preload = "auto";
                     }
+                    video.pause();
                 } else {
+                    // Unload farther videos to prevent memory overflow
                     if (video.getAttribute('src')) {
                         video.pause();
                         video.removeAttribute('src');
@@ -4627,7 +4690,7 @@
                             }
 
                             const userId = auth.currentUser ? auth.currentUser.uid : 'anonymous';
-                            if (userId !== 'anonymous') {
+                            if (userId !== 'anonymous' && navigator.onLine) {
                                 db.ref(`movie_stats/${shortId}/views/${userId}`).set(true);
                             }
 
@@ -4924,7 +4987,7 @@
         function registerViewAndListen(movieId) {
             const userId = auth.currentUser ? auth.currentUser.uid : 'anonymous';
             
-            if (userId !== 'anonymous') {
+            if (userId !== 'anonymous' && navigator.onLine) {
                 db.ref(`movie_stats/${movieId}/views/${userId}`).set(true);
             }
 
@@ -4935,57 +4998,59 @@
             const timeEl = document.getElementById('movie-detail-upload-time');
             if (timeEl) timeEl.innerText = uploadTimeText;
 
-            activeStatsRef = db.ref(`movie_stats/${movieId}`);
-            activeStatsRef.on('value', (snapshot) => {
-                const stats = snapshot.val() || {};
-                const viewsObj = stats.views || {};
-                const likesObj = stats.likes || {};
-                const dislikesObj = stats.dislikes || {};
+            if (navigator.onLine) {
+                activeStatsRef = db.ref(`movie_stats/${movieId}`);
+                activeStatsRef.on('value', (snapshot) => {
+                    const stats = snapshot.val() || {};
+                    const viewsObj = stats.views || {};
+                    const likesObj = stats.likes || {};
+                    const dislikesObj = stats.dislikes || {};
 
-                const totalViews = Object.keys(viewsObj).length;
-                const totalLikes = Object.keys(likesObj).length;
+                    const totalViews = Object.keys(viewsObj).length;
+                    const totalLikes = Object.keys(likesObj).length;
 
-                const viewsEl = document.getElementById('movie-detail-views');
-                const likesEl = document.getElementById('movie-detail-likes');
-                const countEl = document.getElementById('movie-like-count');
+                    const viewsEl = document.getElementById('movie-detail-views');
+                    const likesEl = document.getElementById('movie-detail-likes');
+                    const countEl = document.getElementById('movie-like-count');
 
-                if (viewsEl) viewsEl.innerText = formatCount(totalViews) + " Views";
-                if (likesEl) likesEl.innerText = formatCount(totalLikes) + " Likes";
-                if (countEl) countEl.innerText = formatCount(totalLikes);
+                    if (viewsEl) viewsEl.innerText = formatCount(totalViews) + " Views";
+                    if (likesEl) likesEl.innerText = formatCount(totalLikes) + " Likes";
+                    if (countEl) countEl.innerText = formatCount(totalLikes);
 
-                const likeIcon = document.getElementById('movie-like-icon');
-                const dislikeIcon = document.getElementById('movie-dislike-icon');
-                
-                if (auth.currentUser && likesObj[auth.currentUser.uid]) {
-                    if (likeIcon) likeIcon.className = "fas fa-thumbs-up";
-                } else {
-                    if (likeIcon) likeIcon.className = "far fa-thumbs-up";
-                }
+                    const likeIcon = document.getElementById('movie-like-icon');
+                    const dislikeIcon = document.getElementById('movie-dislike-icon');
+                    
+                    if (auth.currentUser && likesObj[auth.currentUser.uid]) {
+                        if (likeIcon) likeIcon.className = "fas fa-thumbs-up";
+                    } else {
+                        if (likeIcon) likeIcon.className = "far fa-thumbs-up";
+                    }
 
-                if (auth.currentUser && dislikesObj[auth.currentUser.uid]) {
-                    if (dislikeIcon) dislikeIcon.className = "fas fa-thumbs-down";
-                } else {
-                    if (dislikeIcon) dislikeIcon.className = "far fa-thumbs-down";
-                }
-            });
+                    if (auth.currentUser && dislikesObj[auth.currentUser.uid]) {
+                        if (dislikeIcon) dislikeIcon.className = "fas fa-thumbs-down";
+                    } else {
+                        if (dislikeIcon) dislikeIcon.className = "far fa-thumbs-down";
+                    }
+                });
 
-            activeCommentsRef = db.ref(`movie_comments/${movieId}`);
-            activeCommentsRef.on('value', (snapshot) => {
-                const commentsObj = snapshot.val() || {};
-                const totalComments = Object.keys(commentsObj).length;
-                
-                const modalCommentCount = document.getElementById('modal-comment-count');
-                if (modalCommentCount) modalCommentCount.innerText = totalComments;
+                activeCommentsRef = db.ref(`movie_comments/${movieId}`);
+                activeCommentsRef.on('value', (snapshot) => {
+                    const commentsObj = snapshot.val() || {};
+                    const totalComments = Object.keys(commentsObj).length;
+                    
+                    const modalCommentCount = document.getElementById('modal-comment-count');
+                    if (modalCommentCount) modalCommentCount.innerText = totalComments;
 
-                renderCommentList(commentsObj);
-                updateCommentPreviewCard(commentsObj);
-            });
+                    renderCommentList(commentsObj);
+                    updateCommentPreviewCard(commentsObj);
+                });
+            }
 
             renderMovieWatchRecommendedFeed();
         }
 
         function loadChannelMetaForWatchPage(channelId) {
-            if (!channelId) return;
+            if (!channelId || !navigator.onLine) return;
             db.ref(`channels/${channelId}`).on('value', (snap) => {
                 const data = snap.val() || {};
                 const avatarImg = document.getElementById('movie-channel-avatar');
@@ -5082,7 +5147,7 @@
             playUI('click');
             const currentU = auth.currentUser;
             const avatarEl = document.getElementById('comment-user-avatar');
-            if (currentU && avatarEl) {
+            if (currentU && avatarEl && navigator.onLine) {
                 db.ref(`users/${currentU.uid}`).once('value', (snap) => {
                     const uData = snap.val();
                     const photo = uData?.photoURL || currentU.photoURL || '';
@@ -5199,16 +5264,18 @@
             if (sheetDesc) sheetDesc.innerText = currentActiveMovie.description || "No description provided.";
             
             const movieId = currentActiveMovie.id;
-            db.ref(`movie_stats/${movieId}`).once('value', (snap) => {
-                const stats = snap.val() || {};
-                const likesCount = Object.keys(stats.likes || {}).length;
-                const viewsCount = Object.keys(stats.views || {}).length;
-                
-                const likesVal = document.getElementById('more-sheet-likes-val');
-                const viewsVal = document.getElementById('more-sheet-views-val');
-                if (likesVal) likesVal.innerText = formatCount(likesCount);
-                if (viewsVal) viewsVal.innerText = formatCount(viewsCount);
-            });
+            if (navigator.onLine) {
+                db.ref(`movie_stats/${movieId}`).once('value', (snap) => {
+                    const stats = snap.val() || {};
+                    const likesCount = Object.keys(stats.likes || {}).length;
+                    const viewsCount = Object.keys(stats.views || {}).length;
+                    
+                    const likesVal = document.getElementById('more-sheet-likes-val');
+                    const viewsVal = document.getElementById('more-sheet-views-val');
+                    if (likesVal) likesVal.innerText = formatCount(likesCount);
+                    if (viewsVal) viewsVal.innerText = formatCount(viewsCount);
+                });
+            }
 
             const uploadTime = currentActiveMovie.createdAt ? getRelativeTime(currentActiveMovie.createdAt) : "Just Now";
             const timeVal = document.getElementById('more-sheet-time-val');
@@ -5279,12 +5346,14 @@
                     </div>
                 `;
 
-                db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
-                    const viewsObj = vSnap.val() || {};
-                    const count = Object.keys(viewsObj).length;
-                    const label = document.getElementById(viewsId);
-                    if (label) label.innerText = formatCount(count) + " Views";
-                });
+                if (navigator.onLine) {
+                    db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
+                        const viewsObj = vSnap.val() || {};
+                        const count = Object.keys(viewsObj).length;
+                        const label = document.getElementById(viewsId);
+                        if (label) label.innerText = formatCount(count) + " Views";
+                    });
+                }
             });
 
             container.innerHTML = html;
@@ -5378,69 +5447,80 @@
             const user = auth.currentUser;
             if (!user) return;
 
-            db.ref(`channels/${user.uid}`).on('value', (snapshot) => {
-                currentChannelData = snapshot.val();
-                
-                if (currentChannelData) {
-                    localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+            if (navigator.onLine) {
+                db.ref(`channels/${user.uid}`).on('value', (snapshot) => {
+                    currentChannelData = snapshot.val();
+                    if (currentChannelData) {
+                        localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                    }
+                    renderYouTabUIElements(user);
+                });
+            } else {
+                renderYouTabUIElements(user);
+            }
+        }
+
+        function renderYouTabUIElements(user) {
+            const wrap = document.getElementById('channel-action-box');
+            const youAvatarLarge = document.getElementById('you-avatar-large');
+            const youFullNameTxt = document.getElementById('you-fullname-txt');
+            const youEmailTxt = document.getElementById('you-email-txt');
+
+            if (currentChannelData) {
+                const channelName = currentChannelData.channelName;
+                const channelHandle = "@" + currentChannelData.handle;
+                const channelAvatar = currentChannelData.avatarUrl || user.photoURL || '';
+
+                if (youFullNameTxt) youFullNameTxt.innerText = channelName;
+                if (youEmailTxt) {
+                    youEmailTxt.innerText = channelHandle;
+                    youEmailTxt.style.color = "var(--primary)";
+                    youEmailTxt.style.fontWeight = "800";
                 }
-                
-                const youAvatarLarge = document.getElementById('you-avatar-large');
-                const youFullNameTxt = document.getElementById('you-fullname-txt');
-                const youEmailTxt = document.getElementById('you-email-txt');
 
-                if (currentChannelData) {
-                    const channelName = currentChannelData.channelName;
-                    const channelHandle = "@" + currentChannelData.handle;
-                    const channelAvatar = currentChannelData.avatarUrl || user.photoURL || '';
-
-                    if (youFullNameTxt) youFullNameTxt.innerText = channelName;
-                    if (youEmailTxt) {
-                        youEmailTxt.innerText = channelHandle;
-                        youEmailTxt.style.color = "var(--primary)";
-                        youEmailTxt.style.fontWeight = "800";
+                if (youAvatarLarge) {
+                    if (channelAvatar) {
+                        youAvatarLarge.innerHTML = `<img src="${channelAvatar}" style="width:100%; height:100%; object-fit:cover;">`;
+                    } else {
+                        youAvatarLarge.innerHTML = channelName.charAt(0).toUpperCase();
                     }
+                }
 
-                    if (youAvatarLarge) {
-                        if (channelAvatar) {
-                            youAvatarLarge.innerHTML = `<img src="${channelAvatar}" style="width:100%; height:100%; object-fit:cover;">`;
-                        } else {
-                            youAvatarLarge.innerHTML = channelName.charAt(0).toUpperCase();
-                        }
-                    }
-
+                if (wrap) {
                     wrap.innerHTML = `
                         <button class="btn-view-channel" onclick="openViewChannelPage()">
                             <i class="fas fa-tv"></i> View Channel 
                             <i class="fas fa-chevron-right" style="margin-left: auto;"></i>
                         </button>
                     `;
-                } else {
-                    const displayName = user.displayName || user.email.split('@')[0];
-                    if (youFullNameTxt) youFullNameTxt.innerText = displayName;
-                    if (youEmailTxt) {
-                        youEmailTxt.innerText = user.email;
-                        youEmailTxt.style.color = "var(--text-muted)";
-                        youEmailTxt.style.fontWeight = "600";
-                    }
+                }
+            } else {
+                const displayName = user.displayName || user.email.split('@')[0];
+                if (youFullNameTxt) youFullNameTxt.innerText = displayName;
+                if (youEmailTxt) {
+                    youEmailTxt.innerText = user.email;
+                    youEmailTxt.style.color = "var(--text-muted)";
+                    youEmailTxt.style.fontWeight = "600";
+                }
 
-                    if (youAvatarLarge) {
-                        const photoURL = user.photoURL || '';
-                        if (photoURL) {
-                            youAvatarLarge.innerHTML = `<img src="${photoURL}" style="width:100%; height:100%; object-fit:cover;">`;
-                        } else {
-                            youAvatarLarge.innerHTML = displayName.charAt(0).toUpperCase();
-                        }
+                if (youAvatarLarge) {
+                    const photoURL = user.photoURL || '';
+                    if (photoURL) {
+                        youAvatarLarge.innerHTML = `<img src="${photoURL}" style="width:100%; height:100%; object-fit:cover;">`;
+                    } else {
+                        youAvatarLarge.innerHTML = displayName.charAt(0).toUpperCase();
                     }
+                }
 
+                if (wrap) {
                     wrap.innerHTML = `
                         <button class="btn-create-channel" onclick="openCreateChannelPage()">
                             <i class="fas fa-plus"></i> Create a Channel
                         </button>
                     `;
                 }
-                updateBottomNavAvatar();
-            });
+            }
+            updateBottomNavAvatar();
         }
 
         function handleViewChannelMenu() {
@@ -5754,43 +5834,47 @@
             if (!grid) return;
             if (activeChannelVideosListener) { activeChannelVideosListener.off(); }
             
-            activeChannelVideosListener = db.ref('admin_panel/movies/user_uploads');
-            activeChannelVideosListener.on('value', (snap) => {
-                const data = snap.val();
-                if (!data) {
-                    grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No uploaded videos yet.</p>`;
+            if (navigator.onLine) {
+                activeChannelVideosListener = db.ref('admin_panel/movies/user_uploads');
+                activeChannelVideosListener.on('value', (snap) => {
+                    const data = snap.val();
+                    if (!data) {
+                        grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No uploaded videos yet.</p>`;
+                        const vidCount = document.getElementById('view-vid-count');
+                        if (vidCount) vidCount.innerText = "0 Videos";
+                        return;
+                    }
+
+                    const list = Object.values(data).filter(m => m.userId === userId && !m.isShort);
                     const vidCount = document.getElementById('view-vid-count');
-                    if (vidCount) vidCount.innerText = "0 Videos";
-                    return;
-                }
+                    if (vidCount) vidCount.innerText = list.length + " Video" + (list.length === 1 ? "" : "s");
 
-                const list = Object.values(data).filter(m => m.userId === userId && !m.isShort);
-                const vidCount = document.getElementById('view-vid-count');
-                if (vidCount) vidCount.innerText = list.length + " Video" + (list.length === 1 ? "" : "s");
+                    if (list.length === 0) {
+                        grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No uploaded videos yet.</p>`;
+                        return;
+                    }
 
-                if (list.length === 0) {
-                    grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No uploaded videos yet.</p>`;
-                    return;
-                }
+                    grid.innerHTML = list.map(m => buildChannelVideoCard({
+                        id: m.id,
+                        title: m.title,
+                        duration: m.duration || "10:00", 
+                        views: 0, 
+                        poster: m.poster,
+                        createdAt: m.createdAt
+                    })).join('');
 
-                grid.innerHTML = list.map(m => buildChannelVideoCard({
-                    id: m.id,
-                    title: m.title,
-                    duration: m.duration || "10:00", 
-                    views: 0, 
-                    poster: m.poster,
-                    createdAt: m.createdAt
-                })).join('');
-
-                list.forEach(m => {
-                    db.ref(`movie_stats/${m.id}/views`).once('value', (vSnap) => {
-                        const viewsObj = vSnap.val() || {};
-                        const count = Object.keys(viewsObj).length;
-                        const label = document.getElementById(`chan-vid-views-${m.id}`);
-                        if (label) label.innerText = formatCount(count) + " Views";
+                    list.forEach(m => {
+                        db.ref(`movie_stats/${m.id}/views`).once('value', (vSnap) => {
+                            const viewsObj = vSnap.val() || {};
+                            const count = Object.keys(viewsObj).length;
+                            const label = document.getElementById(`chan-vid-views-${m.id}`);
+                            if (label) label.innerText = formatCount(count) + " Views";
+                        });
                     });
                 });
-            });
+            } else {
+                grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">Videos unavailable offline.</p>`;
+            }
         }
 
         function renderChannelShorts(userId) {
@@ -5798,35 +5882,48 @@
             if (!grid) return;
             if (activeChannelShortsListener) { activeChannelShortsListener.off(); }
 
-            activeChannelShortsListener = db.ref('admin_panel/movies/shorts');
-            activeChannelShortsListener.on('value', (snap) => {
-                const data = snap.val();
-                if (!data) {
-                    grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No shorts uploaded yet.</p>`;
-                    return;
-                }
+            if (navigator.onLine) {
+                activeChannelShortsListener = db.ref('admin_panel/movies/shorts');
+                activeChannelShortsListener.on('value', (snap) => {
+                    const data = snap.val();
+                    if (!data) {
+                        grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No shorts uploaded yet.</p>`;
+                        return;
+                    }
 
-                const list = Object.values(data).filter(m => m.userId === userId);
+                    const list = Object.values(data).filter(m => m.userId === userId);
+                    if (list.length === 0) {
+                        grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No shorts uploaded yet.</p>`;
+                        return;
+                    }
+
+                    grid.innerHTML = list.map(m => buildChannelShortCard({
+                        id: m.id,
+                        poster: m.poster,
+                        views: 0
+                    })).join('');
+
+                    list.forEach(m => {
+                        db.ref(`movie_stats/${m.id}/views`).once('value', (vSnap) => {
+                            const viewsObj = vSnap.val() || {};
+                            const count = Object.keys(viewsObj).length;
+                            const label = document.getElementById(`chan-short-views-${m.id}`);
+                            if (label) label.innerText = formatCount(count);
+                        });
+                    });
+                });
+            } else {
+                const list = allShorts.filter(m => m.userId === userId).slice(0, 20);
                 if (list.length === 0) {
-                    grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No shorts uploaded yet.</p>`;
+                    grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No cached shorts found.</p>`;
                     return;
                 }
-
                 grid.innerHTML = list.map(m => buildChannelShortCard({
                     id: m.id,
                     poster: m.poster,
-                    views: 0
+                    views: m.views || 0
                 })).join('');
-
-                list.forEach(m => {
-                    db.ref(`movie_stats/${m.id}/views`).once('value', (vSnap) => {
-                        const viewsObj = vSnap.val() || {};
-                        const count = Object.keys(viewsObj).length;
-                        const label = document.getElementById(`chan-short-views-${m.id}`);
-                        if (label) label.innerText = formatCount(count);
-                    });
-                });
-            });
+            }
         }
 
         function renderChannelPosts(userId) {
@@ -5834,29 +5931,45 @@
             if (!grid) return;
             if (activeChannelPostsListener) { activeChannelPostsListener.off(); }
 
-            activeChannelPostsListener = db.ref('admin_panel/posts');
-            activeChannelPostsListener.on('value', (snap) => {
-                const data = snap.val();
-                if (!data) {
-                    grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No posts yet.</p>`;
-                    return;
-                }
+            if (navigator.onLine) {
+                activeChannelPostsListener = db.ref('admin_panel/posts');
+                activeChannelPostsListener.on('value', (snap) => {
+                    const data = snap.val();
+                    if (!data) {
+                        grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No posts yet.</p>`;
+                        return;
+                    }
 
-                const list = Object.values(data).filter(p => p.userId === userId);
+                    const list = Object.values(data).filter(p => p.userId === userId);
+                    if (list.length === 0) {
+                        grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No posts yet.</p>`;
+                        return;
+                    }
+
+                    grid.innerHTML = list.map(p => buildChannelPostCard({
+                        id: p.id,
+                        caption: p.caption,
+                        images: p.images || [],
+                        likes: 0,
+                        comments: 0,
+                        createdAt: p.createdAt
+                    }, p.username)).join('');
+                });
+            } else {
+                const list = allCommunityPosts.filter(p => p.userId === userId).slice(0, 20);
                 if (list.length === 0) {
-                    grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No posts yet.</p>`;
+                    grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No cached posts found.</p>`;
                     return;
                 }
-
                 grid.innerHTML = list.map(p => buildChannelPostCard({
                     id: p.id,
                     caption: p.caption,
                     images: p.images || [],
-                    likes: 0,
-                    comments: 0,
+                    likes: p.likes || 0,
+                    comments: p.comments || 0,
                     createdAt: p.createdAt
                 }, p.username)).join('');
-            });
+            }
         }
 
         function toggleFullDescription() {
@@ -6044,43 +6157,45 @@
             let vCount = 0, sCount = 0, pCount = 0;
             let longViews = 0, shortsViews = 0;
 
-            const vSnap = await db.ref('admin_panel/movies/user_uploads').once('value');
-            if (vSnap.exists()) {
-                const vData = Object.values(vSnap.val()).filter(m => m.userId === userId && !m.isShort);
-                vCount = vData.length;
-                for (let m of vData) {
-                    const statSnap = await db.ref(`movie_stats/${m.id}`).once('value');
-                    const stat = statSnap.val() || {};
-                    const viewsCount = Object.keys(stat.views || {}).length;
-                    tViews += viewsCount;
-                    longViews += viewsCount;
-                    tLikes += Object.keys(stat.likes || {}).length;
+            if (navigator.onLine) {
+                const vSnap = await db.ref('admin_panel/movies/user_uploads').once('value');
+                if (vSnap.exists()) {
+                    const vData = Object.values(vSnap.val()).filter(m => m.userId === userId && !m.isShort);
+                    vCount = vData.length;
+                    for (let m of vData) {
+                        const statSnap = await db.ref(`movie_stats/${m.id}`).once('value');
+                        const stat = statSnap.val() || {};
+                        const viewsCount = Object.keys(stat.views || {}).length;
+                        tViews += viewsCount;
+                        longViews += viewsCount;
+                        tLikes += Object.keys(stat.likes || {}).length;
 
-                    const commSnap = await db.ref(`movie_comments/${m.id}`).once('value');
-                    tComments += commSnap.exists() ? Object.keys(commSnap.val()).length : 0;
+                        const commSnap = await db.ref(`movie_comments/${m.id}`).once('value');
+                        tComments += commSnap.exists() ? Object.keys(commSnap.val()).length : 0;
+                    }
                 }
-            }
 
-            const sSnap = await db.ref('admin_panel/movies/shorts').once('value');
-            if (sSnap.exists()) {
-                const sData = Object.values(sSnap.val()).filter(m => m.userId === userId);
-                sCount = sData.length;
-                for (let m of sData) {
-                    const statSnap = await db.ref(`movie_stats/${m.id}`).once('value');
-                    const stat = statSnap.val() || {};
-                    const viewsCount = Object.keys(stat.views || {}).length;
-                    tViews += viewsCount;
-                    shortsViews += viewsCount;
-                    tLikes += Object.keys(stat.likes || {}).length;
+                const sSnap = await db.ref('admin_panel/movies/shorts').once('value');
+                if (sSnap.exists()) {
+                    const sData = Object.values(sSnap.val()).filter(m => m.userId === userId);
+                    sCount = sData.length;
+                    for (let m of sData) {
+                        const statSnap = await db.ref(`movie_stats/${m.id}`).once('value');
+                        const stat = statSnap.val() || {};
+                        const viewsCount = Object.keys(stat.views || {}).length;
+                        tViews += viewsCount;
+                        shortsViews += viewsCount;
+                        tLikes += Object.keys(stat.likes || {}).length;
 
-                    const commSnap = await db.ref(`movie_comments/${m.id}`).once('value');
-                    tComments += commSnap.exists() ? Object.keys(commSnap.val()).length : 0;
+                        const commSnap = await db.ref(`movie_comments/${m.id}`).once('value');
+                        tComments += commSnap.exists() ? Object.keys(commSnap.val()).length : 0;
+                    }
                 }
-            }
 
-            const pSnap = await db.ref('admin_panel/posts').once('value');
-            if (pSnap.exists()) {
-                pCount = Object.values(pSnap.val()).filter(p => p.userId === userId).length;
+                const pSnap = await db.ref('admin_panel/posts').once('value');
+                if (pSnap.exists()) {
+                    pCount = Object.values(pSnap.val()).filter(p => p.userId === userId).length;
+                }
             }
 
             const calculatedRevenue = ((longViews / 1000) * 0.30) + ((shortsViews / 1000) * 0.15);
@@ -6118,21 +6233,23 @@
             updateMonetizationEligibility(subsCount, watchHours, totalViews);
             renderChart(tViews);
 
-            const analyticsPayload = {
-                totalSubscribers: subsCount,
-                totalViews: tViews,
-                publicWatchHours: watchHours,
-                publicShortsViews: shortsViews,
-                publicLongVideoViews: longViews,
-                totalLikes: tLikes,
-                totalComments: tComments,
-                totalVideos: vCount,
-                totalShorts: sCount,
-                totalPosts: pCount,
-                totalRevenue: calculatedRevenue.toFixed(2),
-                updatedAt: Date.now()
-            };
-            await db.ref(`channel_analytics/${userId}`).set(analyticsPayload);
+            if (navigator.onLine) {
+                const analyticsPayload = {
+                    totalSubscribers: subsCount,
+                    totalViews: tViews,
+                    publicWatchHours: watchHours,
+                    publicShortsViews: shortsViews,
+                    publicLongVideoViews: longViews,
+                    totalLikes: tLikes,
+                    totalComments: tComments,
+                    totalVideos: vCount,
+                    totalShorts: sCount,
+                    totalPosts: pCount,
+                    totalRevenue: calculatedRevenue.toFixed(2),
+                    updatedAt: Date.now()
+                };
+                await db.ref(`channel_analytics/${userId}`).set(analyticsPayload);
+            }
         }
 
         // =========================================================
@@ -6719,6 +6836,10 @@
                 return;
             }
             const userId = auth.currentUser.uid;
+            if (!navigator.onLine) {
+                handleOfflineLike(postId, userId, false);
+                return;
+            }
             db.ref(`post_reactions/${postId}/${userId}`).once('value', (snap) => {
                 if (snap.exists() && snap.val().type === 'love') {
                     db.ref(`post_reactions/${postId}/${userId}`).remove();
@@ -6734,6 +6855,10 @@
                 return;
             }
             const userId = auth.currentUser.uid;
+            if (!navigator.onLine) {
+                handleOfflineLike(postId, userId, false);
+                return;
+            }
             const userSnap = await db.ref(`users/${userId}`).once('value');
             const uData = userSnap.val() || {};
             const username = uData.username || auth.currentUser.email.split('@')[0];
@@ -6766,71 +6891,73 @@
         }
 
         function registerPostReactionsListener(postId) {
-            db.ref(`post_reactions/${postId}`).on('value', (snapshot) => {
-                const reactions = snapshot.val() || {};
-                const totalReactions = Object.keys(reactions).length;
-                
-                const reactionCounts = { love: 0, like: 0, care: 0, haha: 0, wow: 0, sad: 0, angry: 0 };
-                Object.values(reactions).forEach(r => {
-                    if (r && r.type && reactionCounts[r.type] !== undefined) {
-                        reactionCounts[r.type]++;
+            if (navigator.onLine) {
+                db.ref(`post_reactions/${postId}`).on('value', (snapshot) => {
+                    const reactions = snapshot.val() || {};
+                    const totalReactions = Object.keys(reactions).length;
+                    
+                    const reactionCounts = { love: 0, like: 0, care: 0, haha: 0, wow: 0, sad: 0, angry: 0 };
+                    Object.values(reactions).forEach(r => {
+                        if (r && r.type && reactionCounts[r.type] !== undefined) {
+                            reactionCounts[r.type]++;
+                        }
+                    });
+
+                    const sortedTypes = Object.keys(reactionCounts)
+                        .filter(t => reactionCounts[t] > 0)
+                        .sort((a,b) => reactionCounts[b] - reactionCounts[a])
+                        .slice(0, 3);
+
+                    const topEmojisEl = document.getElementById(`post-top-emojis-${postId}`);
+                    if (topEmojisEl) {
+                        topEmojisEl.innerHTML = sortedTypes.map(t => reactionEmojis[t]).join('');
+                    }
+
+                    const totalReactionsEl = document.getElementById(`post-total-reactions-${postId}`);
+                    if (totalReactionsEl) {
+                        totalReactionsEl.innerText = `${totalReactions} Reaction${totalReactions === 1 ? '' : 's'}`;
+                    }
+
+                    const loveBtn = document.getElementById(`post-love-btn-${postId}`);
+                    const loveIcon = document.getElementById(`love-icon-${postId}`);
+                    const loveText = document.getElementById(`love-text-${postId}`);
+
+                    if (loveBtn && auth.currentUser) {
+                        const myReact = reactions[auth.currentUser.uid];
+                        if (myReact) {
+                            const type = myReact.type;
+                            if (loveIcon) {
+                                loveIcon.className = 'love-icon-element';
+                                loveIcon.innerText = reactionEmojis[type];
+                                loveIcon.style.fontSize = '1.25rem';
+                            }
+                            if (loveText) {
+                                loveText.innerText = reactionLabels[type];
+                                loveText.style.color = reactionColors[type];
+                            }
+                        } else {
+                            if (loveIcon) {
+                                loveIcon.className = 'far fa-heart love-icon-element';
+                                loveIcon.innerText = '';
+                                loveIcon.style.fontSize = '';
+                            }
+                            if (loveText) {
+                                loveText.innerText = 'Love';
+                                loveText.style.color = '';
+                            }
+                        }
                     }
                 });
 
-                const sortedTypes = Object.keys(reactionCounts)
-                    .filter(t => reactionCounts[t] > 0)
-                    .sort((a,b) => reactionCounts[b] - reactionCounts[a])
-                    .slice(0, 3);
-
-                const topEmojisEl = document.getElementById(`post-top-emojis-${postId}`);
-                if (topEmojisEl) {
-                    topEmojisEl.innerHTML = sortedTypes.map(t => reactionEmojis[t]).join('');
-                }
-
-                const totalReactionsEl = document.getElementById(`post-total-reactions-${postId}`);
-                if (totalReactionsEl) {
-                    totalReactionsEl.innerText = `${totalReactions} Reaction${totalReactions === 1 ? '' : 's'}`;
-                }
-
-                const loveBtn = document.getElementById(`post-love-btn-${postId}`);
-                const loveIcon = document.getElementById(`love-icon-${postId}`);
-                const loveText = document.getElementById(`love-text-${postId}`);
-
-                if (loveBtn && auth.currentUser) {
-                    const myReact = reactions[auth.currentUser.uid];
-                    if (myReact) {
-                        const type = myReact.type;
-                        if (loveIcon) {
-                            loveIcon.className = 'love-icon-element';
-                            loveIcon.innerText = reactionEmojis[type];
-                            loveIcon.style.fontSize = '1.25rem';
-                        }
-                        if (loveText) {
-                            loveText.innerText = reactionLabels[type];
-                            loveText.style.color = reactionColors[type];
-                        }
-                    } else {
-                        if (loveIcon) {
-                            loveIcon.className = 'far fa-heart love-icon-element';
-                            loveIcon.innerText = '';
-                            loveIcon.style.fontSize = '';
-                        }
-                        if (loveText) {
-                            loveText.innerText = 'Love';
-                            loveText.style.color = '';
-                        }
+                db.ref(`movie_comments/${postId}`).on('value', (snapshot) => {
+                    const comments = snapshot.val() || {};
+                    const totalComments = Object.keys(comments).length;
+                    const totalCommentsEl = document.getElementById(`post-total-comments-${postId}`);
+                    if (totalCommentsEl) {
+                        totalCommentsEl.innerText = `${totalComments} Comment${totalComments === 1 ? '' : 's'}`;
                     }
-                }
-            });
-
-            db.ref(`movie_comments/${postId}`).on('value', (snapshot) => {
-                const comments = snapshot.val() || {};
-                const totalComments = Object.keys(comments).length;
-                const totalCommentsEl = document.getElementById(`post-total-comments-${postId}`);
-                if (totalCommentsEl) {
-                    totalCommentsEl.innerText = `${totalComments} Comment${totalComments === 1 ? '' : 's'}`;
-                }
-            });
+                });
+            }
         }
 
         function openCommentsForPost(postId) {
@@ -6865,6 +6992,11 @@
         function loadReactedPeopleData() {
             const postId = activeReactedPostId;
             if (!postId) return;
+
+            if (!navigator.onLine) {
+                showNotification("Reacted people list unavailable offline", "error");
+                return;
+            }
 
             db.ref(`post_reactions/${postId}`).once('value', (snapshot) => {
                 const reactions = snapshot.val() || {};
@@ -6971,21 +7103,23 @@
         // =========================================================
         window.setAppOnlineStatus = function(isOnline) {
             if (isOnline) {
-                showNotification("Network Connection Restored! Syncing A-Z Data...", "success");
+                showNotification("Network Connection Restored! Syncing Data...", "success");
                 
                 // Sync offline tasks
                 syncOfflineLikes();
                 
                 // Shut down active listeners to prevent duplicate triggers on database reconnect
-                db.ref('admin_panel/movies/user_uploads').off();
-                db.ref('admin_panel/movies/shorts').off();
-                db.ref('admin_panel/posts').off();
-                
-                const currentUser = auth.currentUser;
-                if (currentUser) {
-                    db.ref(`channels/${currentUser.uid}`).off();
-                    db.ref(`users/${currentUser.uid}`).off();
-                }
+                try {
+                    db.ref('admin_panel/movies/user_uploads').off();
+                    db.ref('admin_panel/movies/shorts').off();
+                    db.ref('admin_panel/posts').off();
+                    
+                    const currentUser = auth.currentUser;
+                    if (currentUser) {
+                        db.ref(`channels/${currentUser.uid}`).off();
+                        db.ref(`users/${currentUser.uid}`).off();
+                    }
+                } catch(e) {}
                 
                 startRealtimeFeedsListener(); 
                 
@@ -6997,9 +7131,14 @@
                     if (activeTabId === 'you') initYouTabUI();
                 }
             } else {
-                showNotification("Network connection lost. Offline fallback mode active.", "error");
+                showNotification("Network connection lost. Offline mode active.", "error");
+                buildHomeFeed();
             }
         };
+
+        // Network status event listeners for webview
+        window.addEventListener('online', () => window.setAppOnlineStatus(true));
+        window.addEventListener('offline', () => window.setAppOnlineStatus(false));
     </script>
 </body>
 </html>

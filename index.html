@@ -27,7 +27,7 @@
         })();
     </script>
 
-    <!-- Instant Pre-login Session Recovery Engine to Prevent "Loading Session..." delays -->
+    <!-- Instant Pre-login Session Recovery Engine -->
     <script>
         (function() {
             try {
@@ -711,7 +711,7 @@
         
         .channel-description-box { margin: 12px 0; background: var(--bg-color); padding: 12px 14px; border-radius: 12px; border: 1px solid var(--glass-border); }
         .channel-desc-text { margin: 0; font-size: 0.88rem; color: var(--text-muted); line-height: 1.4; }
-        .channel-desc-text.line-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .channel-desc-text.line-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
         .btn-more-desc { background: none; border: none; color: var(--primary); font-size: 0.82rem; font-weight: 800; cursor: pointer; padding: 4px 0 0; display: flex; align-items: center; gap: 4px; }
         
         .channel-action-row { display: flex; gap: 10px; margin-top: 14px; }
@@ -1367,83 +1367,99 @@
             transform: scale(1);
         }
 
-        /* ===== NEW STYLES FOR SHORTS PLAYER ===== */
-        /* Play/Pause Icon */
+        /* =========================================================
+           UPDATED PREMIUM SHORTS CUSTOM DESIGN EXTENSIONS
+           ========================================================= */
+        video::-webkit-media-controls {
+            display: none !important;
+        }
+        video::-webkit-media-controls-start-playback-button {
+            display: none !important;
+            -webkit-appearance: none;
+        }
+
+        /* Centered Dynamic Buffer Indicator */
+        @keyframes spinnerSpin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        .short-buffer-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(255, 255, 255, 0.15);
+            border-top-color: #FF2E55;
+            border-radius: 50%;
+            animation: spinnerSpin 0.8s linear infinite;
+            display: none;
+            z-index: 18;
+            pointer-events: none;
+        }
+
+        /* Centered Play/Pause Interaction Overlays */
         .short-play-pause-overlay {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 20;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        .short-play-pause-overlay.show {
-            opacity: 1;
-        }
-        .short-play-pause-overlay i {
-            font-size: 4rem;
-            color: rgba(255,255,255,0.9);
-            filter: drop-shadow(0 0 15px rgba(0,0,0,0.7));
-        }
-
-        /* Buffering Spinner */
-        .short-buffering-indicator {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 20;
-            pointer-events: none;
-            display: none;
-        }
-        .short-buffering-indicator.active {
-            display: block;
-        }
-        .short-buffering-indicator .spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid rgba(255,255,255,0.2);
-            border-top: 4px solid #FF2E55;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        /* Rotating Music Disc */
-        .short-music-disc {
-            position: absolute;
-            bottom: 120px;
-            right: 12px;
-            z-index: 10;
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(4px);
-            border: 2px solid rgba(255,255,255,0.3);
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 2rem;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 20;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .short-play-pause-overlay.animate-pop {
+            animation: ppPopIcon 0.8s ease forwards;
+        }
+        @keyframes ppPopIcon {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.9; }
+            40% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+            80% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+        }
+
+        /* Premium Rotating Music Disc Under Download */
+        .music-disc-container {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #111;
+            border: 2px solid #222;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 6px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+        .music-disc-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
             overflow: hidden;
-            animation: spin 4s linear infinite;
+            border: 1px solid #333;
+            animation: rotateDisc 5s linear infinite;
             animation-play-state: paused;
         }
-        .short-music-disc.playing {
-            animation-play-state: running;
-        }
-        .short-music-disc img {
+        .music-disc-inner img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 50%;
         }
-        .short-music-disc i {
-            color: #fff;
-            font-size: 1.2rem;
-            background: rgba(0,0,0,0.4);
-            padding: 8px;
-            border-radius: 50%;
+        @keyframes rotateDisc {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -2584,7 +2600,7 @@
 
     <script>
         // =========================================
-        // AUTOMATIC & MANUAL THEME ENGINE (WITHOUT FORCE REFRESH)
+        // AUTOMATIC & MANUAL THEME ENGINE
         // =========================================
         function applyTheme() {
             let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
@@ -2628,7 +2644,7 @@
         document.addEventListener("DOMContentLoaded", function() {
             applyTheme();
             
-            // অফলাইন ক্যাশ ইমিডিয়েট লোড (Instant Load Posts/Shorts From LocalStorage Cache)
+            // Offline caches instant load
             try {
                 const cachedPosts = localStorage.getItem('flaynity_offline_posts');
                 const cachedShorts = localStorage.getItem('flaynity_offline_shorts');
@@ -3513,6 +3529,12 @@
                     el.innerHTML = `<div style="width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--primary), #FF7A00); color: #fff; font-weight: 800; font-size: 0.9rem;">${initial}</div>`;
                 }
             });
+            // Update rotating disc inner image with actual avatar
+            document.querySelectorAll(`.live-disc-avatar-${userId}`).forEach(el => {
+                if (avatar) {
+                    el.innerHTML = `<img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                }
+            });
         }
 
         // =========================================================
@@ -4075,25 +4097,23 @@
                 const isLikedId = `short-like-btn-${s.id}`;
                 const likesCountId = `short-likes-count-${s.id}`;
                 const commentsCountId = `short-comments-count-${s.id}`;
+                const statsCacheKey = `flaynity_stats_cache_${s.id}`;
+
+                // Instant cache load
+                let cachedStats = { likes: 0, comments: 0 };
+                try {
+                    cachedStats = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
+                } catch(e) {}
 
                 html += `
                     <div class="short-slide" id="slide-short-${s.id}" data-shortid="${s.id}">
-                        <video class="short-video-el" loop playsinline webkit-playsinline preload="auto" src="${s.videoLink}"></video>
+                        <!-- Circular loading indicator -->
+                        <div class="short-buffer-spinner" id="short-spinner-${s.id}"></div>
+                        
+                        <!-- Play/Pause smooth animated overlays -->
+                        <div class="short-play-pause-overlay" id="short-pp-overlay-${s.id}"></div>
 
-                        <!-- Play/Pause Overlay -->
-                        <div class="short-play-pause-overlay" id="play-pause-overlay-${s.id}">
-                            <i class="fas fa-play" id="play-pause-icon-${s.id}"></i>
-                        </div>
-
-                        <!-- Buffering Indicator -->
-                        <div class="short-buffering-indicator" id="buffering-indicator-${s.id}">
-                            <div class="spinner"></div>
-                        </div>
-
-                        <!-- Rotating Music Disc -->
-                        <div class="short-music-disc ${s.id}" id="music-disc-${s.id}">
-                            <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop'}" alt="avatar">
-                        </div>
+                        <video class="short-video-el" loop playsinline webkit-playsinline></video>
 
                         <div class="short-progress-container">
                             <div class="short-progress-bar" id="short-progress-bar-${s.id}"></div>
@@ -4104,14 +4124,14 @@
                                 <button class="short-action-btn-tiktok" id="${isLikedId}" onclick="toggleShortLike('${s.id}')">
                                     <i class="far fa-heart"></i>
                                 </button>
-                                <div class="short-action-label-tiktok" id="${likesCountId}">0</div>
+                                <div class="short-action-label-tiktok" id="${likesCountId}">${formatCount(cachedStats.likes)}</div>
                             </div>
 
                             <div class="short-action-container">
                                 <button class="short-action-btn-tiktok-other" onclick="openShortComments('${s.id}')">
                                     <i class="far fa-comment"></i>
                                 </button>
-                                <div class="short-action-label-tiktok" id="${commentsCountId}">0</div>
+                                <div class="short-action-label-tiktok" id="${commentsCountId}">${formatCount(cachedStats.comments)}</div>
                             </div>
 
                             <div class="short-action-container">
@@ -4119,6 +4139,13 @@
                                     <i class="fas fa-download"></i>
                                 </button>
                                 <div class="short-action-label-tiktok">Save</div>
+                            </div>
+
+                            <!-- Rotating Music Disc Icon with Avatar -->
+                            <div class="music-disc-container">
+                                <div class="music-disc-inner live-disc-avatar-${s.userId}" id="music-disc-${s.id}">
+                                    <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                </div>
                             </div>
                         </div>
 
@@ -4144,6 +4171,12 @@
                     const likesObj = stats.likes || {};
                     const likesCount = Object.keys(likesObj).length;
 
+                    try {
+                        let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
+                        currCache.likes = likesCount;
+                        localStorage.setItem(statsCacheKey, JSON.stringify(currCache));
+                    } catch(e) {}
+
                     const lblLikes = document.getElementById(likesCountId);
                     if (lblLikes) lblLikes.innerText = formatCount(likesCount);
 
@@ -4160,6 +4193,13 @@
                 db.ref(`movie_comments/${s.id}`).on('value', (snapshot) => {
                     const commentsObj = snapshot.val() || {};
                     const count = Object.keys(commentsObj).length;
+
+                    try {
+                        let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
+                        currCache.comments = count;
+                        localStorage.setItem(statsCacheKey, JSON.stringify(currCache));
+                    } catch(e) {}
+
                     const lblComments = document.getElementById(commentsCountId);
                     if (lblComments) lblComments.innerText = formatCount(count);
                 });
@@ -4183,6 +4223,7 @@
             container.innerHTML = `<div class="shorts-swiper">${html}</div>`;
             initShortsObserver();
             setupDoubleTapListeners();
+            bindShortsVideoEvents();
 
             const uniqueUserIds = new Set();
             allShorts.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
@@ -4190,134 +4231,49 @@
         }
 
         // =========================================================
-        // SHORTS PLAYER CONTROLS (Play/Pause, Buffering, Music Disc)
+        // DYNAMIC SHORTS VIDEO PLAYER INTERACTION INTERFACE
         // =========================================================
-        function initShortsObserver() {
-            if (shortsObserver) shortsObserver.disconnect();
+        function triggerPlayPauseIndicator(slide, actionType) {
+            const overlay = slide.querySelector('.short-play-pause-overlay');
+            if (!overlay) return;
             
-            shortsObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    const slide = entry.target;
-                    const video = slide.querySelector('video');
-                    const shortId = slide.id.replace('slide-short-', '');
-                    const progressBar = slide.querySelector(`#short-progress-bar-${shortId}`);
-                    const overlay = slide.querySelector(`#play-pause-overlay-${shortId}`);
-                    const icon = overlay ? overlay.querySelector('i') : null;
-                    const buffering = slide.querySelector(`#buffering-indicator-${shortId}`);
-                    const disc = slide.querySelector(`#music-disc-${shortId}`);
-
-                    if (video) {
-                        if (entry.isIntersecting) {
-                            const slides = Array.from(document.querySelectorAll('.short-slide'));
-                            const activeIdx = slides.indexOf(slide);
-                            if (activeIdx !== -1 && activeIdx !== currentActiveShortsIdx) {
-                                currentActiveShortsIdx = activeIdx;
-                                optimizeShortsMemoryAndPreload(activeIdx);
-                            }
-
-                            // Reset and play
-                            video.currentTime = 0;
-                            video.muted = false;
-
-                            // Record view
-                            const userId = auth.currentUser ? auth.currentUser.uid : 'anonymous';
-                            if (userId !== 'anonymous') {
-                                db.ref(`movie_stats/${shortId}/views/${userId}`).set(true);
-                            }
-
-                            // Progress bar
-                            video.ontimeupdate = () => {
-                                if (video.duration) {
-                                    const percentage = (video.currentTime / video.duration) * 100;
-                                    if (progressBar) progressBar.style.width = `${percentage}%`;
-                                }
-                            };
-
-                            // Buffering events
-                            video.onwaiting = () => {
-                                if (buffering) buffering.classList.add('active');
-                            };
-                            video.oncanplay = () => {
-                                if (buffering) buffering.classList.remove('active');
-                                video.play().catch(() => {
-                                    video.muted = true;
-                                    video.play().catch(() => {});
-                                });
-                            };
-                            video.onplaying = () => {
-                                if (disc) disc.classList.add('playing');
-                                if (overlay) overlay.classList.remove('show');
-                            };
-                            video.onpause = () => {
-                                if (disc) disc.classList.remove('playing');
-                            };
-
-                            // Initial play attempt
-                            let playPromise = video.play();
-                            if (playPromise !== undefined) {
-                                playPromise.catch(error => {
-                                    video.muted = true;
-                                    video.play().catch(() => {});
-                                });
-                            }
-
-                        } else {
-                            video.pause();
-                            video.ontimeupdate = null;
-                            const disc = slide.querySelector(`#music-disc-${shortId}`);
-                            if (disc) disc.classList.remove('playing');
-                            // optional: remove buffering class
-                            const buffering = slide.querySelector(`#buffering-indicator-${shortId}`);
-                            if (buffering) buffering.classList.remove('active');
-                        }
-                    }
-                });
-            }, { threshold: 0.6 });
-
-            document.querySelectorAll('.short-slide').forEach(slide => { shortsObserver.observe(slide); });
+            if (actionType === 'pause') {
+                overlay.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            } else {
+                overlay.innerHTML = '<i class="fa-solid fa-play"></i>';
+            }
+            
+            overlay.classList.remove('animate-pop');
+            void overlay.offsetWidth; 
+            overlay.classList.add('animate-pop');
         }
 
+        let lastTap = 0;
         function setupDoubleTapListeners() {
             let clickTimer = null;
-            let lastTap = 0;
-
             document.querySelectorAll('.short-slide').forEach(slide => {
                 slide.addEventListener('click', (e) => {
-                    // Ignore clicks on action buttons and info areas
                     if (e.target.closest('.short-right-actions') || e.target.closest('.short-bottom-info') || e.target.closest('.short-progress-container')) {
                         return;
                     }
-
                     const video = slide.querySelector('video');
                     if (!video) return;
 
                     const now = Date.now();
                     const shortId = slide.getAttribute('data-shortid');
-                    const overlay = slide.querySelector(`#play-pause-overlay-${shortId}`);
-                    const icon = overlay ? overlay.querySelector('i') : null;
-
+                    
                     if (now - lastTap < 300) {
-                        // Double tap: Like
                         clearTimeout(clickTimer);
                         spawnDoubleTapHeart(e, slide);
-                        toggleShortLike(shortId, true);
+                        toggleShortLike(shortId, true); 
                     } else {
-                        // Single tap: Play/Pause
                         clickTimer = setTimeout(() => {
                             if (video.paused) {
                                 video.play().catch(() => {});
-                                if (icon) {
-                                    icon.className = 'fas fa-play';
-                                    if (overlay) overlay.classList.add('show');
-                                    setTimeout(() => { if (overlay) overlay.classList.remove('show'); }, 1500);
-                                }
+                                triggerPlayPauseIndicator(slide, 'play');
                             } else {
                                 video.pause();
-                                if (icon) {
-                                    icon.className = 'fas fa-pause';
-                                    if (overlay) overlay.classList.add('show');
-                                    setTimeout(() => { if (overlay) overlay.classList.remove('show'); }, 1500);
-                                }
+                                triggerPlayPauseIndicator(slide, 'pause');
                             }
                         }, 250);
                     }
@@ -4326,35 +4282,40 @@
             });
         }
 
-        function optimizeShortsMemoryAndPreload(activeIndex) {
-            const slides = document.querySelectorAll('.short-slide');
-            slides.forEach((slide, idx) => {
+        function bindShortsVideoEvents() {
+            document.querySelectorAll('.short-slide').forEach(slide => {
                 const video = slide.querySelector('video');
                 if (!video) return;
                 const shortId = slide.getAttribute('data-shortid');
-                const s = allShorts.find(item => item.id === shortId);
-                if (!s) return;
 
-                // Preload current, previous 2, and next 20
-                if (idx >= activeIndex - 2 && idx <= activeIndex + 20) {
-                    if (video.getAttribute('src') !== s.videoLink) {
-                        video.setAttribute('src', s.videoLink);
-                        video.load();
-                    }
-                    video.preload = "auto";
-                } else {
-                    // Release memory for others
-                    if (video.getAttribute('src')) {
-                        video.pause();
-                        video.removeAttribute('src');
-                        video.load();
-                    }
-                }
+                video.setAttribute('playsinline', '');
+                video.setAttribute('webkit-playsinline', '');
+                video.style.background = '#000000';
+
+                video.onplay = () => {
+                    const disc = document.getElementById(`music-disc-${shortId}`);
+                    if (disc) disc.style.animationPlayState = 'running';
+                };
+                video.onpause = () => {
+                    const disc = document.getElementById(`music-disc-${shortId}`);
+                    if (disc) disc.style.animationPlayState = 'paused';
+                };
+                video.onwaiting = () => {
+                    const spinner = document.getElementById(`short-spinner-${shortId}`);
+                    if (spinner) spinner.style.display = 'block';
+                };
+                video.onplaying = () => {
+                    const spinner = document.getElementById(`short-spinner-${shortId}`);
+                    if (spinner) spinner.style.display = 'none';
+                    const disc = document.getElementById(`music-disc-${shortId}`);
+                    if (disc) disc.style.animationPlayState = 'running';
+                };
+                video.oncanplay = () => {
+                    const spinner = document.getElementById(`short-spinner-${shortId}`);
+                    if (spinner) spinner.style.display = 'none';
+                };
             });
         }
-
-        let currentActiveShortsIdx = -1;
-        let shortsObserver;
 
         function openShortDescBottomSheet(shortId) {
             playUI('click');
@@ -4433,8 +4394,13 @@
             playUI('click');
             if (!auth.currentUser) { showNotification("Please sign in to Like", "error"); return; }
             const userId = auth.currentUser.uid;
-            const ref = db.ref(`movie_stats/${shortId}/likes/${userId}`);
             
+            if (!navigator.onLine) {
+                handleOfflineLike(shortId, userId, forceLike);
+                return;
+            }
+
+            const ref = db.ref(`movie_stats/${shortId}/likes/${userId}`);
             ref.once('value', (snap) => {
                 if (snap.exists()) {
                     if (!forceLike) ref.remove(); 
@@ -4442,6 +4408,74 @@
                     ref.set(true);
                 }
             });
+        }
+
+        function handleOfflineLike(shortId, userId, forceLike) {
+            try {
+                let offlineLikes = JSON.parse(localStorage.getItem('flaynity_offline_likes') || '{}');
+                const isLiked = !!offlineLikes[shortId];
+                
+                if (isLiked) {
+                    if (!forceLike) {
+                        delete offlineLikes[shortId];
+                        showNotification("Unliked (offline)", "success");
+                    }
+                } else {
+                    offlineLikes[shortId] = { userId: userId, timestamp: Date.now() };
+                    showNotification("Liked (offline)", "success");
+                }
+                
+                localStorage.setItem('flaynity_offline_likes', JSON.stringify(offlineLikes));
+                updateLikesDOMOffline(shortId);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function updateLikesDOMOffline(shortId) {
+            try {
+                let offlineLikes = JSON.parse(localStorage.getItem('flaynity_offline_likes') || '{}');
+                let isLocallyLiked = !!offlineLikes[shortId];
+                
+                const likesCountId = `short-likes-count-${shortId}`;
+                const lblLikes = document.getElementById(likesCountId);
+                const likeBtn = document.getElementById(`short-like-btn-${shortId}`);
+                
+                if (lblLikes) {
+                    let currentVal = parseInt(lblLikes.innerText) || 0;
+                    if (isLocallyLiked) {
+                        lblLikes.innerText = formatCount(currentVal + 1);
+                    } else {
+                        lblLikes.innerText = formatCount(Math.max(0, currentVal - 1));
+                    }
+                }
+                
+                if (likeBtn) {
+                    if (isLocallyLiked) {
+                        likeBtn.innerHTML = `<i class="fas fa-heart liked"></i>`;
+                    } else {
+                        likeBtn.innerHTML = `<i class="far fa-heart"></i>`;
+                    }
+                }
+            } catch (e) {}
+        }
+
+        async function syncOfflineLikes() {
+            if (!navigator.onLine || !auth.currentUser) return;
+            try {
+                let offlineLikes = JSON.parse(localStorage.getItem('flaynity_offline_likes') || '{}');
+                const entries = Object.entries(offlineLikes);
+                if (entries.length === 0) return;
+                
+                for (const [shortId, data] of entries) {
+                    await db.ref(`movie_stats/${shortId}/likes/${data.userId}`).set(true);
+                }
+                
+                localStorage.removeItem('flaynity_offline_likes');
+                showNotification("Synced offline actions!", "success");
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         function openShortComments(shortId) {
@@ -4537,7 +4571,82 @@
         // =========================================================
         // PRE-LOAD ADJACENT CLIPS & SHORTS MEMORY MANAGEMENT ENGINE
         // =========================================================
-        // Already integrated in optimizeShortsMemoryAndPreload and initShortsObserver
+        let currentActiveShortsIdx = -1;
+        function optimizeShortsMemoryAndPreload(activeIndex) {
+            const slides = document.querySelectorAll('.short-slide');
+            slides.forEach((slide, idx) => {
+                const video = slide.querySelector('video');
+                if (!video) return;
+                const shortId = slide.getAttribute('data-shortid');
+                const s = allShorts.find(item => item.id === shortId);
+                if (!s) return;
+
+                if (idx >= activeIndex - 2 && idx <= activeIndex + 20) {
+                    if (video.getAttribute('src') !== s.videoLink) {
+                        video.setAttribute('src', s.videoLink);
+                        video.preload = "auto";
+                    }
+                    if (idx === activeIndex) {
+                        video.muted = false;
+                        let playPromise = video.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(() => {
+                                video.muted = true;
+                                video.play().catch(e => console.log(e));
+                            });
+                        }
+                    }
+                } else {
+                    if (video.getAttribute('src')) {
+                        video.pause();
+                        video.removeAttribute('src');
+                        video.removeAttribute('preload');
+                        video.load();
+                    }
+                }
+            });
+        }
+
+        let shortsObserver;
+        function initShortsObserver() {
+            if (shortsObserver) shortsObserver.disconnect();
+            
+            shortsObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const video = entry.target.querySelector('video');
+                    const shortId = entry.target.id.replace('slide-short-', '');
+                    const progressBar = entry.target.querySelector(`#short-progress-bar-${shortId}`);
+
+                    if (video) {
+                        if (entry.isIntersecting) {
+                            const slides = Array.from(document.querySelectorAll('.short-slide'));
+                            const activeIdx = slides.indexOf(entry.target);
+                            if (activeIdx !== -1 && activeIdx !== currentActiveShortsIdx) {
+                                currentActiveShortsIdx = activeIdx;
+                                optimizeShortsMemoryAndPreload(activeIdx);
+                            }
+
+                            const userId = auth.currentUser ? auth.currentUser.uid : 'anonymous';
+                            if (userId !== 'anonymous') {
+                                db.ref(`movie_stats/${shortId}/views/${userId}`).set(true);
+                            }
+
+                            video.ontimeupdate = () => {
+                                if (video.duration) {
+                                    const percentage = (video.currentTime / video.duration) * 100;
+                                    if (progressBar) progressBar.style.width = `${percentage}%`;
+                                }
+                            };
+                        } else {
+                            video.pause();
+                            video.ontimeupdate = null;
+                        }
+                    }
+                });
+            }, { threshold: 0.6 });
+
+            document.querySelectorAll('.short-slide').forEach(slide => { shortsObserver.observe(slide); });
+        }
 
         // =========================================================
         // HIGH PERFORMANCE UNIVERSAL BACK NAVIGATION & STATE ENGINE
@@ -6858,26 +6967,34 @@
         }
 
         // =========================================================
-        // AUTOMATIC ONLINE SYNC ENGINE (A-Z REFRESH ON STATUS CHANGE)
+        // AUTOMATIC ONLINE SYNC ENGINE
         // =========================================================
         window.setAppOnlineStatus = function(isOnline) {
             if (isOnline) {
                 showNotification("Network Connection Restored! Syncing A-Z Data...", "success");
-                // Re-attach all listeners
+                
+                // Sync offline tasks
+                syncOfflineLikes();
+                
+                // Shut down active listeners to prevent duplicate triggers on database reconnect
+                db.ref('admin_panel/movies/user_uploads').off();
+                db.ref('admin_panel/movies/shorts').off();
+                db.ref('admin_panel/posts').off();
+                
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    db.ref(`channels/${currentUser.uid}`).off();
+                    db.ref(`users/${currentUser.uid}`).off();
+                }
+                
                 startRealtimeFeedsListener(); 
                 
-                // Refresh all tabs
                 const activeNav = document.querySelector('.nav-item.active');
                 if (activeNav) {
                     const activeTabId = activeNav.id.replace('nav-', '');
                     if (activeTabId === 'home') buildHomeFeed();
                     if (activeTabId === 'shorts') buildShortsPage();
                     if (activeTabId === 'you') initYouTabUI();
-                }
-
-                // Also refresh channel analytics if applicable
-                if (auth.currentUser) {
-                    calculateChannelAnalytics();
                 }
             } else {
                 showNotification("Network connection lost. Offline fallback mode active.", "error");

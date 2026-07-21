@@ -27,7 +27,7 @@
         })();
     </script>
 
-    <!-- Instant Pre-login Session Recovery Engine to Prevent "Loading Session..." delays -->
+    <!-- Instant Pre-login Session Recovery Engine -->
     <script>
         (function() {
             try {
@@ -2382,7 +2382,7 @@
                         <div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
                             <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <rect width="80" height="80" rx="20" fill="rgba(245, 158, 11, 0.1)"/>
-                                <path d="M40 54L36.5 50.8C24.2 39.7 16 32.2(16 23C16 15.5 21.8 9.7 29.3 9.7C33.5 9.7 37.5 11.7 40 14.8C42.5 11.7 46.5 9.7 50.7 9.7C58.2 9.7 64 15.5 64 23C64 32.2 55.8 39.7 43.5 50.8L40 54Z" fill="#F59E0B"/>
+                                <path d="M40 54L36.5 50.8C24.2 39.7 16 32.2 16 23C16 15.5 21.8 9.7 29.3 9.7C33.5 9.7 37.5 11.7 40 14.8C42.5 11.7 46.5 9.7 50.7 9.7C58.2 9.7 64 15.5 64 23C64 32.2 55.8 39.7 43.5 50.8L40 54Z" fill="#F59E0B"/>
                                 <path d="M40 22L42.5 27L48 27.8L44 31.7L45 37L40 34.5L35 37L36 31.7L32 27.8L37.5 27L40 22Z" fill="#FFFFFF"/>
                             </svg>
                         </div>
@@ -2600,7 +2600,7 @@
 
     <script>
         // =========================================
-        // AUTOMATIC & MANUAL THEME ENGINE (WITHOUT FORCE REFRESH)
+        // AUTOMATIC & MANUAL THEME ENGINE
         // =========================================
         function applyTheme() {
             let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
@@ -2644,12 +2644,14 @@
         document.addEventListener("DOMContentLoaded", function() {
             applyTheme();
             
-            // Local offline memory initial load
+            // Offline caches instant load
             try {
-                const cachedPosts = localStorage.getItem('flaynity_cached_posts');
-                const cachedShorts = localStorage.getItem('flaynity_cached_shorts');
+                const cachedPosts = localStorage.getItem('flaynity_offline_posts');
+                const cachedShorts = localStorage.getItem('flaynity_offline_shorts');
+                const cachedLongs = localStorage.getItem('flaynity_offline_longs');
                 if (cachedPosts) allCommunityPosts = JSON.parse(cachedPosts);
                 if (cachedShorts) allShorts = JSON.parse(cachedShorts);
+                if (cachedLongs) allLongVideos = JSON.parse(cachedLongs);
                 buildHomeFeed();
             } catch (e) {}
 
@@ -3457,13 +3459,7 @@
                     try {
                         const data = snap.val();
                         allShorts = data ? Object.values(data) : [];
-                        
-                        // Smart Cache Handler: Keep only the latest 20 shorts locally
-                        if (navigator.onLine && allShorts.length > 0) {
-                            const latest20 = allShorts.slice(0, 20);
-                            localStorage.setItem('flaynity_cached_shorts', JSON.stringify(latest20));
-                            FlaynityOfflineEngine.refreshVideoAssets(latest20);
-                        }
+                        localStorage.setItem('flaynity_offline_shorts', JSON.stringify(allShorts));
                         buildHomeFeed();
                         const shortsTab = document.getElementById('shorts-tab');
                         if (shortsTab && shortsTab.classList.contains('active')) {
@@ -3476,12 +3472,7 @@
                     try {
                         const data = snap.val();
                         allCommunityPosts = data ? Object.values(data) : [];
-                        
-                        // Smart Cache Handler: Keep only the latest 20 posts locally
-                        if (navigator.onLine && allCommunityPosts.length > 0) {
-                            const latest20 = allCommunityPosts.slice(0, 20);
-                            localStorage.setItem('flaynity_cached_posts', JSON.stringify(latest20));
-                        }
+                        localStorage.setItem('flaynity_offline_posts', JSON.stringify(allCommunityPosts));
                         buildHomeFeed();
                     } catch (e) {}
                 });
@@ -3794,14 +3785,11 @@
                     html += renderShortsSegmentUI(segmentShorts);
                 }
 
-                // Long Videos do NOT render when offline
-                if (longIdx < longs.length && navigator.onLine) {
+                if (longIdx < longs.length) {
                     const segmentLongs = longs.slice(longIdx, longIdx + 10);
                     longIdx += 10;
                     segmentLongs.forEach(l => { if (l.userId) uniqueUserIds.add(l.userId); });
                     html += renderLongVideosSegmentUI(segmentLongs);
-                } else if (!navigator.onLine) {
-                    longIdx = longs.length; // Skip Long Videos rendering offline
                 }
 
                 if (postIdx < posts.length) {
@@ -4111,27 +4099,11 @@
                 const commentsCountId = `short-comments-count-${s.id}`;
                 const statsCacheKey = `flaynity_stats_cache_${s.id}`;
 
-                // Instant cache load to prevent UI stuttering
-                let cachedStats = { likes: 0, comments: 0, isLikedByUser: false };
+                // Instant cache load
+                let cachedStats = { likes: 0, comments: 0 };
                 try {
-                    cachedStats = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0, "isLikedByUser": false}');
+                    cachedStats = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
                 } catch(e) {}
-
-                // Offline action queue lookup
-                let offlineLikes = JSON.parse(localStorage.getItem('flaynity_offline_likes') || '{}');
-                const isLocallyLiked = offlineLikes[s.id] && offlineLikes[s.id].type === 'like';
-                const isLocallyUnliked = offlineLikes[s.id] && offlineLikes[s.id].type === 'unlike';
-                
-                let heartIconClass = "far fa-heart";
-                if (auth.currentUser) {
-                    let isInitiallyLiked = cachedStats.isLikedByUser;
-                    if (isLocallyLiked) isInitiallyLiked = true;
-                    if (isLocallyUnliked) isInitiallyLiked = false;
-                    
-                    if (isInitiallyLiked) {
-                        heartIconClass = "fas fa-heart liked";
-                    }
-                }
 
                 html += `
                     <div class="short-slide" id="slide-short-${s.id}" data-shortid="${s.id}">
@@ -4150,7 +4122,7 @@
                         <div class="short-right-actions">
                             <div class="short-action-container">
                                 <button class="short-action-btn-tiktok" id="${isLikedId}" onclick="toggleShortLike('${s.id}')">
-                                    <i class="${heartIconClass}"></i>
+                                    <i class="far fa-heart"></i>
                                 </button>
                                 <div class="short-action-label-tiktok" id="${likesCountId}">${formatCount(cachedStats.likes)}</div>
                             </div>
@@ -4198,28 +4170,22 @@
                     const viewsObj = stats.views || {};
                     const likesObj = stats.likes || {};
                     const likesCount = Object.keys(likesObj).length;
-                    const isLiked = auth.currentUser ? !!likesObj[auth.currentUser.uid] : false;
 
                     try {
-                        let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0, "isLikedByUser": false}');
+                        let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
                         currCache.likes = likesCount;
-                        currCache.isLikedByUser = isLiked;
                         localStorage.setItem(statsCacheKey, JSON.stringify(currCache));
                     } catch(e) {}
 
-                    // Only update DOM if no offline operations are pending on this short
-                    let currOffline = JSON.parse(localStorage.getItem('flaynity_offline_likes') || '{}');
-                    if (!currOffline[s.id]) {
-                        const lblLikes = document.getElementById(likesCountId);
-                        if (lblLikes) lblLikes.innerText = formatCount(likesCount);
+                    const lblLikes = document.getElementById(likesCountId);
+                    if (lblLikes) lblLikes.innerText = formatCount(likesCount);
 
-                        const likeBtn = document.getElementById(isLikedId);
-                        if (likeBtn) {
-                            if (isLiked) {
-                                likeBtn.innerHTML = `<i class="fas fa-heart liked"></i>`;
-                            } else {
-                                likeBtn.innerHTML = `<i class="far fa-heart"></i>`;
-                            }
+                    const likeBtn = document.getElementById(isLikedId);
+                    if (likeBtn && auth.currentUser) {
+                        if (likesObj[auth.currentUser.uid]) {
+                            likeBtn.innerHTML = `<i class="fas fa-heart liked"></i>`;
+                        } else {
+                            likeBtn.innerHTML = `<i class="far fa-heart"></i>`;
                         }
                     }
                 });
@@ -4229,7 +4195,7 @@
                     const count = Object.keys(commentsObj).length;
 
                     try {
-                        let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0, "isLikedByUser": false}');
+                        let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
                         currCache.comments = count;
                         localStorage.setItem(statsCacheKey, JSON.stringify(currCache));
                     } catch(e) {}
@@ -4424,70 +4390,6 @@
             };
         }
 
-        // =========================================================
-        // UNIFIED OFFLINE ENGINE WITH STORAGE DRIVERS
-        // =========================================================
-        const FlaynityOfflineEngine = {
-            // Sequential cached downloader to maintain extreme 60fps scrolling
-            refreshVideoAssets: async function(shortsList) {
-                if (!navigator.onLine) return;
-                try {
-                    const videoCache = await caches.open('flaynity-video-cache');
-                    const imgCache = await caches.open('flaynity-img-cache');
-                    
-                    const activeKeys = shortsList.map(s => s.videoLink);
-                    const cachedRequests = await videoCache.keys();
-                    
-                    // Background Prune older unused shorts elements
-                    for (let req of cachedRequests) {
-                        if (!activeKeys.includes(req.url)) {
-                            await videoCache.delete(req);
-                        }
-                    }
-
-                    // Download new entries one by one to prevent queue congestion
-                    for (let item of shortsList) {
-                        if (item.videoLink) {
-                            const isCached = await videoCache.match(item.videoLink);
-                            if (!isCached) {
-                                const response = await fetch(item.videoLink, { mode: 'cors' });
-                                if (response.ok) {
-                                    await videoCache.put(item.videoLink, response);
-                                }
-                            }
-                        }
-                        if (item.poster) {
-                            const isImgCached = await imgCache.match(item.poster);
-                            if (!isImgCached) {
-                                await imgCache.add(item.poster).catch(()=>{});
-                            }
-                        }
-                        if (item.channelAvatar) {
-                            const isAvatarCached = await imgCache.match(item.channelAvatar);
-                            if (!isAvatarCached) {
-                                await imgCache.add(item.channelAvatar).catch(()=>{});
-                            }
-                        }
-                    }
-                } catch(e) {
-                    console.warn("Storage controller cache failure:", e);
-                }
-            },
-
-            // Intercept source link and resolve into high speed local blob
-            getCachedVideoSrc: async function(videoUrl) {
-                try {
-                    const videoCache = await caches.open('flaynity-video-cache');
-                    const matched = await videoCache.match(videoUrl);
-                    if (matched) {
-                        const blob = await matched.blob();
-                        return URL.createObjectURL(blob);
-                    }
-                } catch(e) {}
-                return videoUrl;
-            }
-        };
-
         function toggleShortLike(shortId, forceLike = false) {
             playUI('click');
             if (!auth.currentUser) { showNotification("Please sign in to Like", "error"); return; }
@@ -4511,16 +4413,16 @@
         function handleOfflineLike(shortId, userId, forceLike) {
             try {
                 let offlineLikes = JSON.parse(localStorage.getItem('flaynity_offline_likes') || '{}');
-                const isLiked = offlineLikes[shortId] && offlineLikes[shortId].type === 'like';
+                const isLiked = !!offlineLikes[shortId];
                 
                 if (isLiked) {
                     if (!forceLike) {
-                        offlineLikes[shortId] = { userId: userId, type: 'unlike', timestamp: Date.now() };
-                        showNotification("Unliked (offline mode)", "success");
+                        delete offlineLikes[shortId];
+                        showNotification("Unliked (offline)", "success");
                     }
                 } else {
-                    offlineLikes[shortId] = { userId: userId, type: 'like', timestamp: Date.now() };
-                    showNotification("Liked (offline mode)", "success");
+                    offlineLikes[shortId] = { userId: userId, timestamp: Date.now() };
+                    showNotification("Liked (offline)", "success");
                 }
                 
                 localStorage.setItem('flaynity_offline_likes', JSON.stringify(offlineLikes));
@@ -4533,16 +4435,15 @@
         function updateLikesDOMOffline(shortId) {
             try {
                 let offlineLikes = JSON.parse(localStorage.getItem('flaynity_offline_likes') || '{}');
-                const stateObj = offlineLikes[shortId];
-                if (!stateObj) return;
-
+                let isLocallyLiked = !!offlineLikes[shortId];
+                
                 const likesCountId = `short-likes-count-${shortId}`;
                 const lblLikes = document.getElementById(likesCountId);
                 const likeBtn = document.getElementById(`short-like-btn-${shortId}`);
                 
                 if (lblLikes) {
                     let currentVal = parseInt(lblLikes.innerText) || 0;
-                    if (stateObj.type === 'like') {
+                    if (isLocallyLiked) {
                         lblLikes.innerText = formatCount(currentVal + 1);
                     } else {
                         lblLikes.innerText = formatCount(Math.max(0, currentVal - 1));
@@ -4550,7 +4451,7 @@
                 }
                 
                 if (likeBtn) {
-                    if (stateObj.type === 'like') {
+                    if (isLocallyLiked) {
                         likeBtn.innerHTML = `<i class="fas fa-heart liked"></i>`;
                     } else {
                         likeBtn.innerHTML = `<i class="far fa-heart"></i>`;
@@ -4567,11 +4468,7 @@
                 if (entries.length === 0) return;
                 
                 for (const [shortId, data] of entries) {
-                    if (data.type === 'like') {
-                        await db.ref(`movie_stats/${shortId}/likes/${data.userId}`).set(true);
-                    } else {
-                        await db.ref(`movie_stats/${shortId}/likes/${data.userId}`).remove();
-                    }
+                    await db.ref(`movie_stats/${shortId}/likes/${data.userId}`).set(true);
                 }
                 
                 localStorage.removeItem('flaynity_offline_likes');
@@ -4677,7 +4574,7 @@
         let currentActiveShortsIdx = -1;
         function optimizeShortsMemoryAndPreload(activeIndex) {
             const slides = document.querySelectorAll('.short-slide');
-            slides.forEach(async (slide, idx) => {
+            slides.forEach((slide, idx) => {
                 const video = slide.querySelector('video');
                 if (!video) return;
                 const shortId = slide.getAttribute('data-shortid');
@@ -4685,9 +4582,8 @@
                 if (!s) return;
 
                 if (idx >= activeIndex - 2 && idx <= activeIndex + 20) {
-                    const localSource = await FlaynityOfflineEngine.getCachedVideoSrc(s.videoLink);
-                    if (video.getAttribute('src') !== localSource) {
-                        video.setAttribute('src', localSource);
+                    if (video.getAttribute('src') !== s.videoLink) {
+                        video.setAttribute('src', s.videoLink);
                         video.preload = "auto";
                     }
                     if (idx === activeIndex) {
@@ -5011,6 +4907,393 @@
             
             const months = Math.floor(days / 30);
             return `${months} Month${months > 1 ? 's' : ''} Ago`;
+        }
+
+        function formatCount(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num;
+        }
+
+        function extractVideoID(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        function registerViewAndListen(movieId) {
+            const userId = auth.currentUser ? auth.currentUser.uid : 'anonymous';
+            
+            if (userId !== 'anonymous') {
+                db.ref(`movie_stats/${movieId}/views/${userId}`).set(true);
+            }
+
+            let uploadTimeText = "Just Now"; 
+            if (currentActiveMovie && currentActiveMovie.createdAt) {
+                uploadTimeText = getRelativeTime(currentActiveMovie.createdAt);
+            }
+            const timeEl = document.getElementById('movie-detail-upload-time');
+            if (timeEl) timeEl.innerText = uploadTimeText;
+
+            activeStatsRef = db.ref(`movie_stats/${movieId}`);
+            activeStatsRef.on('value', (snapshot) => {
+                const stats = snapshot.val() || {};
+                const viewsObj = stats.views || {};
+                const likesObj = stats.likes || {};
+                const dislikesObj = stats.dislikes || {};
+
+                const totalViews = Object.keys(viewsObj).length;
+                const totalLikes = Object.keys(likesObj).length;
+
+                const viewsEl = document.getElementById('movie-detail-views');
+                const likesEl = document.getElementById('movie-detail-likes');
+                const countEl = document.getElementById('movie-like-count');
+
+                if (viewsEl) viewsEl.innerText = formatCount(totalViews) + " Views";
+                if (likesEl) likesEl.innerText = formatCount(totalLikes) + " Likes";
+                if (countEl) countEl.innerText = formatCount(totalLikes);
+
+                const likeIcon = document.getElementById('movie-like-icon');
+                const dislikeIcon = document.getElementById('movie-dislike-icon');
+                
+                if (auth.currentUser && likesObj[auth.currentUser.uid]) {
+                    if (likeIcon) likeIcon.className = "fas fa-thumbs-up";
+                } else {
+                    if (likeIcon) likeIcon.className = "far fa-thumbs-up";
+                }
+
+                if (auth.currentUser && dislikesObj[auth.currentUser.uid]) {
+                    if (dislikeIcon) dislikeIcon.className = "fas fa-thumbs-down";
+                } else {
+                    if (dislikeIcon) dislikeIcon.className = "far fa-thumbs-down";
+                }
+            });
+
+            activeCommentsRef = db.ref(`movie_comments/${movieId}`);
+            activeCommentsRef.on('value', (snapshot) => {
+                const commentsObj = snapshot.val() || {};
+                const totalComments = Object.keys(commentsObj).length;
+                
+                const modalCommentCount = document.getElementById('modal-comment-count');
+                if (modalCommentCount) modalCommentCount.innerText = totalComments;
+
+                renderCommentList(commentsObj);
+                updateCommentPreviewCard(commentsObj);
+            });
+
+            renderMovieWatchRecommendedFeed();
+        }
+
+        function loadChannelMetaForWatchPage(channelId) {
+            if (!channelId) return;
+            db.ref(`channels/${channelId}`).on('value', (snap) => {
+                const data = snap.val() || {};
+                const avatarImg = document.getElementById('movie-channel-avatar');
+
+                if (avatarImg) avatarImg.src = data.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop";
+            });
+
+            if (auth.currentUser) {
+                db.ref(`subscribers/${channelId}/${auth.currentUser.uid}`).on('value', (snap) => {
+                    const btn = document.getElementById('movie-subscribe-btn');
+                    if (btn) {
+                        if (snap.exists()) {
+                            btn.innerText = "Subscribed";
+                            btn.style.background = "var(--border-color)";
+                            btn.style.color = "var(--text-main)";
+                        } else {
+                            btn.innerText = "Subscribe";
+                            btn.style.background = "var(--text-main)";
+                            btn.style.color = "var(--surface)";
+                        }
+                    }
+                });
+            }
+        }
+
+        async function toggleMovieChannelSubscribe() {
+            playUI('click');
+            if (!auth.currentUser) { showNotification("Please sign in to Subscribe", "error"); return; }
+            if (!currentActiveMovie) return;
+            const channelId = currentActiveMovie.userId || currentActiveMovie.channelId;
+            if (channelId === auth.currentUser.uid) { showNotification("You cannot subscribe to your own channel!", "error"); return; }
+
+            const userSubRef = db.ref(`subscribers/${channelId}/${auth.currentUser.uid}`);
+            const channelSubCountRef = db.ref(`channels/${channelId}/subscribersCount`);
+
+            userSubRef.once('value', async (snap) => {
+                if (snap.exists()) {
+                    await userSubRef.remove();
+                    channelSubCountRef.transaction((currentCount) => {
+                        return (currentCount || 1) - 1;
+                    });
+                    showNotification("Unsubscribed from channel.", "success");
+                } else {
+                    await userSubRef.set(true);
+                    channelSubCountRef.transaction((currentCount) => {
+                        return (currentCount || 0) + 1;
+                    });
+                    showNotification("Subscribed to channel!", "success");
+                }
+            });
+        }
+
+        function toggleMovieLike() {
+            playUI('click');
+            if (!auth.currentUser) { showNotification("Please sign in to Like", "error"); return; }
+            if (!currentActiveMovie) return;
+            const userId = auth.currentUser.uid;
+            const movieId = currentActiveMovie.id;
+            
+            const likeRef = db.ref(`movie_stats/${movieId}/likes/${userId}`);
+            const dislikeRef = db.ref(`movie_stats/${movieId}/dislikes/${userId}`);
+            
+            likeRef.once('value', (snap) => {
+                if (snap.exists()) {
+                    likeRef.remove();
+                } else {
+                    likeRef.set(true);
+                    dislikeRef.remove();
+                }
+            });
+        }
+
+        function toggleMovieDislike() {
+            playUI('click');
+            if (!auth.currentUser) { showNotification("Please sign in to Dislike", "error"); return; }
+            if (!currentActiveMovie) return;
+            const userId = auth.currentUser.uid;
+            const movieId = currentActiveMovie.id;
+            
+            const likeRef = db.ref(`movie_stats/${movieId}/likes/${userId}`);
+            const dislikeRef = db.ref(`movie_stats/${movieId}/dislikes/${userId}`);
+            
+            dislikeRef.once('value', (snap) => {
+                if (snap.exists()) {
+                    dislikeRef.remove();
+                } else {
+                    dislikeRef.set(true);
+                    likeRef.remove();
+                }
+            });
+        }
+
+        function openCommentModal() {
+            playUI('click');
+            const currentU = auth.currentUser;
+            const avatarEl = document.getElementById('comment-user-avatar');
+            if (currentU && avatarEl) {
+                db.ref(`users/${currentU.uid}`).once('value', (snap) => {
+                    const uData = snap.val();
+                    const photo = uData?.photoURL || currentU.photoURL || '';
+                    if (photo) {
+                        avatarEl.innerHTML = `<img src="${photo}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+                    } else {
+                        avatarEl.innerHTML = (currentU.email || 'U').charAt(0).toUpperCase();
+                    }
+                });
+            }
+            AppNavigation.pushModal('comment-modal');
+        }
+
+        function closeCommentModal() {
+            AppNavigation.pop();
+        }
+
+        function submitComment() {
+            playUI('click');
+            if (!auth.currentUser) { showNotification("Please log in to Comment", "error"); return; }
+            const input = document.getElementById('comment-input');
+            const text = input ? input.value.trim() : "";
+            if (!text) return;
+
+            const userId = auth.currentUser.uid;
+            const movieId = currentActiveMovie.id;
+
+            db.ref(`users/${userId}`).once('value', (snap) => {
+                const uData = snap.val() || {};
+                const username = uData.username || auth.currentUser.email.split('@')[0];
+                const avatar = currentChannelData?.avatarUrl || auth.currentUser.photoURL || "";
+
+                const commentData = {
+                    uid: userId,
+                    username: username,
+                    avatar: avatar,
+                    text: text,
+                    timestamp: Date.now()
+                };
+
+                db.ref(`movie_comments/${movieId}`).push(commentData)
+                    .then(() => {
+                        if (input) input.value = "";
+                        showNotification("Comment posted!", "success");
+                    })
+                    .catch(err => { showNotification("Failed to post comment", "error"); });
+            });
+        }
+
+        function renderCommentList(commentsObj) {
+            const container = document.getElementById('comment-list-container');
+            if (!container) return;
+
+            const comments = Object.values(commentsObj).sort((a,b) => b.timestamp - a.timestamp);
+            if (comments.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:40px;">No comments yet. Be the first to comment!</p>`;
+                return;
+            }
+
+            container.innerHTML = comments.map(c => {
+                const initial = c.username ? c.username.charAt(0).toUpperCase() : 'U';
+                const avatarHTML = c.avatar 
+                    ? `<img src="${c.avatar}" style="width:34px; height:34px; border-radius:50%; object-fit:cover; flex-shrink: 0;">` 
+                    : `<div class="header-avatar" style="width:34px; height:34px; font-size:0.8rem; background:linear-gradient(135deg, var(--primary), #FF7A00); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink: 0;">${initial}</div>`;
+                
+                return `
+                    <div style="display:flex; gap:12px; margin-bottom:16px; align-items:flex-start;">
+                        ${avatarHTML}
+                        <div style="flex:1;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="font-size:0.85rem; font-weight:700; color:var(--text-main);">@${c.username}</span>
+                                <span style="font-size:0.75rem; color:var(--text-muted);">${getRelativeTime(c.timestamp)}</span>
+                            </div>
+                            <p style="font-size:0.9rem; color:var(--text-main); margin:4px 0 0 0; line-height:1.4;">${escapeHTML(c.text)}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateCommentPreviewCard(commentsObj) {
+            const countEl = document.getElementById('comment-preview-count');
+            const avatarEl = document.getElementById('comment-preview-avatar');
+            const textEl = document.getElementById('comment-preview-text');
+
+            const comments = Object.values(commentsObj).sort((a,b) => b.timestamp - a.timestamp);
+            
+            if (countEl) countEl.innerText = formatCount(comments.length);
+
+            if (comments.length === 0) {
+                if (avatarEl) avatarEl.innerHTML = '<i class="far fa-comment" style="color: var(--text-muted);"></i>';
+                if (textEl) textEl.innerText = "No comments yet. Tap to start the conversation!";
+                return;
+            }
+
+            const lastComment = comments[0];
+            if (avatarEl) {
+                if (lastComment.avatar) {
+                    avatarEl.innerHTML = `<img src="${lastComment.avatar}" style="width:100%; height:100%; object-fit:cover;">`;
+                } else {
+                    avatarEl.innerHTML = (lastComment.username || 'U').charAt(0).toUpperCase();
+                    avatarEl.style.color = '#ffffff';
+                    avatarEl.style.background = 'linear-gradient(135deg, var(--primary), #FF7A00)';
+                }
+            }
+            if (textEl) textEl.innerText = `${lastComment.username}: ${lastComment.text}`;
+        }
+
+        function openMoreDescriptionSheet() {
+            if (!currentActiveMovie) return;
+            const sheetTitle = document.getElementById('more-sheet-video-title');
+            const sheetDesc = document.getElementById('more-sheet-desc-text');
+            if (sheetTitle) sheetTitle.innerText = currentActiveMovie.title;
+            if (sheetDesc) sheetDesc.innerText = currentActiveMovie.description || "No description provided.";
+            
+            const movieId = currentActiveMovie.id;
+            db.ref(`movie_stats/${movieId}`).once('value', (snap) => {
+                const stats = snap.val() || {};
+                const likesCount = Object.keys(stats.likes || {}).length;
+                const viewsCount = Object.keys(stats.views || {}).length;
+                
+                const likesVal = document.getElementById('more-sheet-likes-val');
+                const viewsVal = document.getElementById('more-sheet-views-val');
+                if (likesVal) likesVal.innerText = formatCount(likesCount);
+                if (viewsVal) viewsVal.innerText = formatCount(viewsCount);
+            });
+
+            const uploadTime = currentActiveMovie.createdAt ? getRelativeTime(currentActiveMovie.createdAt) : "Just Now";
+            const timeVal = document.getElementById('more-sheet-time-val');
+            if (timeVal) timeVal.innerText = uploadTime;
+
+            AppNavigation.pushModal('more-desc-sheet');
+            
+            setTimeout(() => {
+                const sheet = document.getElementById('more-desc-sheet');
+                if (sheet) {
+                    setupSwipeToClose(sheet, 'more-desc-drag-handle', closeMoreDescriptionSheet);
+                }
+            }, 100);
+        }
+
+        function closeMoreDescriptionSheet() {
+            AppNavigation.pop();
+        }
+
+        function renderMovieWatchRecommendedFeed() {
+            const container = document.getElementById('yt-related-list');
+            if (!container) return;
+
+            let html = '';
+            const currentId = currentActiveMovie ? String(currentActiveMovie.id) : null;
+            
+            const longvids = allLongVideos.filter(m => String(m.id) !== currentId);
+
+            if (longvids.length === 0) {
+                container.innerHTML = `<p style="color:var(--text-muted); font-size:0.9rem; text-align:center; padding: 20px 0;">No recommendations found.</p>`;
+                return;
+            }
+
+            longvids.sort((a, b) => b.createdAt - a.createdAt);
+
+            const limit = Math.min(longvids.length, watchRecommendedLimit);
+            const itemsToRender = longvids.slice(0, limit);
+
+            const uniqueUserIds = new Set();
+
+            itemsToRender.forEach(v => {
+                const viewsId = `rec-long-views-${v.id}`;
+                const relTime = getRelativeTime(v.createdAt);
+                
+                if (v.userId) uniqueUserIds.add(v.userId);
+                
+                const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
+
+                html += `
+                    <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+                        <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #000; overflow: hidden;">
+                            <img src="${v.poster}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+                            <span class="long-video-duration" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">${v.duration || '10:00'}</span>
+                        </div>
+                        <div class="long-video-details" style="padding: 14px 16px; display: flex; gap: 12px;">
+                            ${avatarHtml}
+                            <div class="long-video-meta-text" style="flex-grow: 1; min-width: 0;">
+                                <h4 class="long-video-title" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(v.title)}</h4>
+                                <div class="long-video-subtitle" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;">
+                                    <span class="live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
+                                    <span>•</span>
+                                    <span id="${viewsId}">0 Views</span>
+                                    <span>•</span>
+                                    <span>${relTime}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
+                    const viewsObj = vSnap.val() || {};
+                    const count = Object.keys(viewsObj).length;
+                    const label = document.getElementById(viewsId);
+                    if (label) label.innerText = formatCount(count) + " Views";
+                });
+            });
+
+            container.innerHTML = html;
+            uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
+        }
+
+        function escapeHTML(str) {
+            if(!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
         // =========================================
@@ -6690,10 +6973,10 @@
             if (isOnline) {
                 showNotification("Network Connection Restored! Syncing A-Z Data...", "success");
                 
-                // Trigger background actions sync
+                // Sync offline tasks
                 syncOfflineLikes();
                 
-                // Reset listeners to avoid duplicates
+                // Shut down active listeners to prevent duplicate triggers on database reconnect
                 db.ref('admin_panel/movies/user_uploads').off();
                 db.ref('admin_panel/movies/shorts').off();
                 db.ref('admin_panel/posts').off();

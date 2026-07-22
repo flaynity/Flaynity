@@ -2709,76 +2709,66 @@
         });
         
         // =========================================================
-        // OFFLINE -> ONLINE AUTO SYNC & NETWORK MONITORING (FIXED)
+        // OFFLINE -> ONLINE AUTO SYNC & NETWORK MONITORING
         // =========================================================
         window.addEventListener('online', () => { window.setAppOnlineStatus(true); });
         window.addEventListener('offline', () => { window.setAppOnlineStatus(false); });
 
         window.setAppOnlineStatus = async function(isOnline) {
             const spinner = document.getElementById('network-spinner-overlay');
-            
             if (isOnline) {
-                // 1. Force Firebase to Reconnect instantly
+                // 1. Force Firebase Connection Instantly
                 firebase.database().goOnline();
-                
                 if(spinner) spinner.style.display = 'none';
                 showNotification("Network Restored! Syncing Live Data...", "success");
                 
-                // 2. Upload any offline actions (like cached hearts/likes)
                 await syncOfflineLikes();
                 
-                // 3. A-Z Data Sync: Force Firebase to push fresh data to current UI
+                // 2. Clear all Dead Listeners
+                db.ref('admin_panel/movies/user_uploads').off();
+                db.ref('admin_panel/movies/shorts').off();
+                db.ref('admin_panel/posts').off();
+                
                 const currentUser = auth.currentUser;
                 if (currentUser) {
-                    // Profile, Channel, Analytics Auto Refresh
+                    db.ref(`channels/${currentUser.uid}`).off();
+                    db.ref(`users/${currentUser.uid}`).off();
+                }
+                
+                // 3. Force Variables to -1 to trigger COMPLETE UI Rebuild (A-Z Update)
+                previousShortsCount = -1;
+                previousLongsCount = -1;
+                previousPostsCount = -1;
+                
+                // 4. Restart Live Data Feeds
+                startRealtimeFeedsListener(); 
+                
+                // 5. Update Profile, Analytics & Watch Page instantly
+                if (currentUser) {
                     db.ref(`channels/${currentUser.uid}`).once('value', snap => {
                         currentChannelData = snap.val();
                         if(currentChannelData) {
                             localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
                         }
-                        initYouTabUI(); // Refresh Profile Tab A-Z
+                        initYouTabUI();
                         
                         const analyticsPage = document.getElementById('analytics-page');
                         if (analyticsPage && analyticsPage.style.display === 'flex') {
-                            calculateChannelAnalytics(); // Refresh Analytics A-Z
+                            calculateChannelAnalytics();
                         }
                     });
                 }
                 
-                // 4. Force Update UI based on Current Active Screen without app restart
-                const activeNav = document.querySelector('.nav-item.active');
-                if (activeNav) {
-                    const activeTabId = activeNav.id.replace('nav-', '');
-                    
-                    if (activeTabId === 'home') {
-                        // Firebase will auto-trigger on('value'), but we force DOM rebuild
-                        setTimeout(() => buildHomeFeed(), 500); 
-                    } 
-                    else if (activeTabId === 'shorts') {
-                        // Re-bind specific active shorts stats (Views, Likes, Comments)
-                        const activeShortId = document.querySelector('.short-slide video[src]')?.closest('.short-slide')?.getAttribute('data-shortid');
-                        buildShortsPage();
-                        if(activeShortId) {
-                             setTimeout(() => {
-                                 const targetSlide = document.getElementById(`slide-short-${activeShortId}`);
-                                 if (targetSlide) targetSlide.scrollIntoView({block: 'start'});
-                             }, 100);
-                        }
-                    }
-                }
-                
-                // 5. If Watch Page is open, instantly refresh Video Stats (Views, Likes, Dislikes, Comments)
                 const moviePage = document.getElementById('full-movie-page');
                 if (moviePage && moviePage.style.display === 'block' && currentActiveMovie) {
                     registerViewAndListen(currentActiveMovie.id);
                 }
-
-                // 6. Resume Video smoothly
+                
+                // 6. Resume Video Playback
                 const activeVideo = document.querySelector('.short-slide video[src]');
                 if(activeVideo && activeVideo.paused && activeVideo.readyState > 2) {
                     activeVideo.play().catch(()=>{});
                 }
-                
             } else {
                 // OFFLINE MODE
                 firebase.database().goOffline();
@@ -4811,23 +4801,21 @@
         let currentActiveShortsIdx = -1;
         
         function attachSmartAdaptiveSource(videoElement, url, shortId) {
-            // Check if HLS.js is supported and URL is M3U8 for Enterprise Streaming
             if (url && url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
                 if(hlsInstances[shortId]) {
                     hlsInstances[shortId].destroy();
                 }
                 const hls = new Hls({
-                    maxBufferLength: 30,         // Smart Buffer (30 Seconds)
-                    maxMaxBufferLength: 600,     // Max Memory limit for buffer
+                    maxBufferLength: 30,
+                    maxMaxBufferLength: 600,
                     enableWorker: true,
-                    lowLatencyMode: true,        // Fast start Progressive playback
-                    capLevelToPlayerSize: true   // Adaptive hardware optimization
+                    lowLatencyMode: true,
+                    capLevelToPlayerSize: true
                 });
                 hls.loadSource(url);
                 hls.attachMedia(videoElement);
                 hlsInstances[shortId] = hls;
             } else {
-                // Progressive MP4 Fallback
                 videoElement.src = url;
             }
         }
@@ -4841,49 +4829,39 @@
                 const s = allShorts.find(item => item.id === shortId);
                 if (!s) return;
 
-                // SMART PRELOAD LOGIC: Prev 5, Next 20 metadata/posters
-                if (idx >= activeIndex - 5 && idx <= activeIndex + 20) {
+                // 🚀 LIMIT PRELOAD TO ONLY CURRENT, 1 PREV AND 2 NEXT (Saves Bandwidth)
+                if (idx >= activeIndex - 1 && idx <= activeIndex + 2) {
                     
                     if (video.getAttribute('poster') !== s.poster) {
-                        video.setAttribute('poster', s.poster); // Instant Metadata
+                        video.setAttribute('poster', s.poster);
                     }
 
-                    // Strict Memory Range to attach heavy SRC or HLS (Prev 2, Next 3)
-                    if (idx >= activeIndex - 2 && idx <= activeIndex + 3) {
-                        if (!video.getAttribute('src') && !hlsInstances[shortId]) {
-                            attachSmartAdaptiveSource(video, s.videoLink, shortId);
-                            video.preload = "auto";
-                        }
+                    if (!video.getAttribute('src') && !hlsInstances[shortId]) {
+                        attachSmartAdaptiveSource(video, s.videoLink, shortId);
+                        // 🔥 FIX: Prevent all videos downloading at once. Only Active video uses 'auto'
+                        video.preload = (idx === activeIndex) ? "auto" : "metadata";
+                    }
 
-                        if (idx === activeIndex) {
-                            video.muted = false;
-                            let playPromise = video.play();
-                            if (playPromise !== undefined) {
-                                playPromise.catch(() => {
-                                    video.muted = true;
-                                    video.play().catch(e => console.log(e));
-                                });
-                            }
-                        } else {
-                            video.pause();
-                            video.currentTime = 0;
+                    if (idx === activeIndex) {
+                        video.preload = "auto"; // Download priority to current video
+                        video.muted = false;
+                        let playPromise = video.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(() => {
+                                video.muted = true;
+                                video.play().catch(e => console.log(e));
+                            });
                         }
                     } else {
-                        // Keep Poster but unload source to save RAM (LRU Memory Control)
+                        video.preload = "metadata"; // Stops background full download
                         video.pause();
-                        video.removeAttribute('src');
-                        video.removeAttribute('preload');
-                        if (hlsInstances[shortId]) {
-                            hlsInstances[shortId].destroy();
-                            delete hlsInstances[shortId];
-                        }
-                        video.load();
+                        video.currentTime = 0;
                     }
                 } else {
-                    // Out of bounds completely
+                    // Completely unload video source for items out of range to free RAM
                     video.pause();
                     video.removeAttribute('src');
-                    video.removeAttribute('poster');
+                    video.removeAttribute('preload');
                     if (hlsInstances[shortId]) {
                         hlsInstances[shortId].destroy();
                         delete hlsInstances[shortId];

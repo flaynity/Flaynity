@@ -2709,62 +2709,87 @@
         });
         
         // =========================================================
-        // OFFLINE -> ONLINE AUTO SYNC & NETWORK MONITORING
+        // OFFLINE -> ONLINE AUTO SYNC & NETWORK MONITORING (FIXED)
         // =========================================================
         window.addEventListener('online', () => { window.setAppOnlineStatus(true); });
         window.addEventListener('offline', () => { window.setAppOnlineStatus(false); });
 
         window.setAppOnlineStatus = async function(isOnline) {
             const spinner = document.getElementById('network-spinner-overlay');
+            
             if (isOnline) {
-                // Force Firebase to reconnect INSTANTLY to sync all data A-Z
+                // 1. Force Firebase to Reconnect instantly
                 firebase.database().goOnline();
                 
                 if(spinner) spinner.style.display = 'none';
-                showNotification("Network Restored! Syncing Data...", "success");
+                showNotification("Network Restored! Syncing Live Data...", "success");
                 
+                // 2. Upload any offline actions (like cached hearts/likes)
                 await syncOfflineLikes();
                 
-                // Clear old listeners before reattaching to prevent duplications & memory leaks
-                db.ref('admin_panel/movies/user_uploads').off();
-                db.ref('admin_panel/movies/shorts').off();
-                db.ref('admin_panel/posts').off();
-                
+                // 3. A-Z Data Sync: Force Firebase to push fresh data to current UI
                 const currentUser = auth.currentUser;
                 if (currentUser) {
-                    db.ref(`channels/${currentUser.uid}`).off();
-                    db.ref(`users/${currentUser.uid}`).off();
+                    // Profile, Channel, Analytics Auto Refresh
+                    db.ref(`channels/${currentUser.uid}`).once('value', snap => {
+                        currentChannelData = snap.val();
+                        if(currentChannelData) {
+                            localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                        }
+                        initYouTabUI(); // Refresh Profile Tab A-Z
+                        
+                        const analyticsPage = document.getElementById('analytics-page');
+                        if (analyticsPage && analyticsPage.style.display === 'flex') {
+                            calculateChannelAnalytics(); // Refresh Analytics A-Z
+                        }
+                    });
                 }
                 
-                // Reboot real-time listeners for instant refresh
-                startRealtimeFeedsListener(); 
-                
+                // 4. Force Update UI based on Current Active Screen without app restart
                 const activeNav = document.querySelector('.nav-item.active');
                 if (activeNav) {
                     const activeTabId = activeNav.id.replace('nav-', '');
-                    if (activeTabId === 'you') initYouTabUI();
+                    
+                    if (activeTabId === 'home') {
+                        // Firebase will auto-trigger on('value'), but we force DOM rebuild
+                        setTimeout(() => buildHomeFeed(), 500); 
+                    } 
+                    else if (activeTabId === 'shorts') {
+                        // Re-bind specific active shorts stats (Views, Likes, Comments)
+                        const activeShortId = document.querySelector('.short-slide video[src]')?.closest('.short-slide')?.getAttribute('data-shortid');
+                        buildShortsPage();
+                        if(activeShortId) {
+                             setTimeout(() => {
+                                 const targetSlide = document.getElementById(`slide-short-${activeShortId}`);
+                                 if (targetSlide) targetSlide.scrollIntoView({block: 'start'});
+                             }, 100);
+                        }
+                    }
                 }
                 
-                // Refresh Analytics smoothly if active
-                if (currentUser && document.getElementById('analytics-page').style.display === 'flex') {
-                    calculateChannelAnalytics();
+                // 5. If Watch Page is open, instantly refresh Video Stats (Views, Likes, Dislikes, Comments)
+                const moviePage = document.getElementById('full-movie-page');
+                if (moviePage && moviePage.style.display === 'block' && currentActiveMovie) {
+                    registerViewAndListen(currentActiveMovie.id);
                 }
-                
-                // Resume active videos automatically smoothly
+
+                // 6. Resume Video smoothly
                 const activeVideo = document.querySelector('.short-slide video[src]');
                 if(activeVideo && activeVideo.paused && activeVideo.readyState > 2) {
                     activeVideo.play().catch(()=>{});
                 }
+                
             } else {
+                // OFFLINE MODE
                 firebase.database().goOffline();
                 showNotification("Offline Mode. Showing Cached Data.", "error");
+                
                 buildHomeFeed(); 
                 const shortsTab = document.getElementById('shorts-tab');
                 if (shortsTab && shortsTab.classList.contains('active')) {
                     buildShortsPage();
                 }
                 
-                // Show spinner if video was streaming and suddenly disconnected
                 const activeVideo = document.querySelector('.short-slide video[src]');
                 if(activeVideo && !activeVideo.paused) {
                     activeVideo.pause();

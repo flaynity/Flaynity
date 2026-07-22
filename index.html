@@ -3676,116 +3676,133 @@
         }
 
         // =========================================================
-        // REALTIME LISTENERS FOR ZERO-REFRESH FEED PROPAGATION
+        // REALTIME LISTENERS & UNIVERSAL SYNC ENGINE (FIXED)
         // =========================================================
         let previousShortsCount = -1;
         let previousLongsCount = -1;
         let previousPostsCount = -1;
 
-        function startRealtimeFeedsListener() {
-            if (!navigator.onLine) return; // Prevent unnecessary binding if offline
+        // Optimized Global Listener with Callbacks for PTR Sync
+        function startRealtimeFeedsListener(onFeedLoadedCallback) {
+            if (!navigator.onLine) return; // Only bind if online
             
-            try {
-                db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
-                    try {
-                        const data = snap.val();
-                        allLongVideos = data ? Object.values(data) : [];
-                        allLongVideos.sort((a,b) => b.createdAt - a.createdAt);
-                        
-                        allLongVideos.forEach(m => {
-                            if (m && m.id && !allAdminMovies.find(x => x.id === m.id)) {
-                                allAdminMovies.push(m);
-                            }
-                        });
+            // 1. Duplicate Request Prevention: Remove old listeners first
+            db.ref('admin_panel/movies/user_uploads').off();
+            db.ref('admin_panel/movies/shorts').off();
+            db.ref('admin_panel/posts').off();
 
-                        // Rebuild strictly to prevent DOM wiping and layout shifts
-                        if(allLongVideos.length !== previousLongsCount) {
-                            previousLongsCount = allLongVideos.length;
-                            buildHomeFeed();
-                        } else {
-                            // Update quiet states manually
-                            allLongVideos.forEach(v => {
-                                const titleEl = document.querySelector(`.long-video-feed-card[onclick*="${v.id}"] .long-video-title`);
-                                if (titleEl) titleEl.innerText = escapeHTML(v.title);
-                            });
-                        }
-                    } catch (e) {}
-                });
-
-                db.ref('admin_panel/movies/shorts').on('value', (snap) => {
-                    try {
-                        const data = snap.val();
-                        allShorts = data ? Object.values(data) : [];
-                        allShorts.sort((a,b) => b.createdAt - a.createdAt);
-                        
-                        // ZERO FREEZE LOGIC: Only full rebuild if length changes
-                        if(allShorts.length !== previousShortsCount) {
-                            previousShortsCount = allShorts.length;
-                            buildHomeFeed();
-                            const shortsTab = document.getElementById('shorts-tab');
-                            if (shortsTab && shortsTab.classList.contains('active')) {
-                                const activeShortId = document.querySelector('.short-slide video[src]')?.closest('.short-slide')?.getAttribute('data-shortid');
-                                buildShortsPage();
-                                if(activeShortId) {
-                                     setTimeout(() => {
-                                         const targetSlide = document.getElementById(`slide-short-${activeShortId}`);
-                                         if (targetSlide) targetSlide.scrollIntoView({block: 'start'});
-                                     }, 50);
-                                }
-                            }
-                        } else {
-                            // Quiet Metadata injection
-                            allShorts.forEach(s => {
-                                const titleEl = document.querySelector(`#slide-short-${s.id} #short-title-val`);
-                                if(titleEl) titleEl.innerHTML = `${escapeHTML(s.title)} <span style="font-weight:400; font-size:0.8rem; color:#ccc; display:block;">Click to view description</span>`;
-                                const thumbEl = document.querySelector(`.short-home-card-2col[onclick*="${s.id}"] img`);
-                                if (thumbEl) thumbEl.src = s.poster;
-                            });
-                        }
-                    } catch (e) {}
-                });
-
-                db.ref('admin_panel/posts').on('value', (snap) => {
-                    try {
-                        const data = snap.val();
-                        allCommunityPosts = data ? Object.values(data) : [];
-                        allCommunityPosts.sort((a,b) => b.createdAt - a.createdAt);
-                        
-                        // Zero Freeze Render for Posts
-                        if (allCommunityPosts.length !== previousPostsCount) {
-                            previousPostsCount = allCommunityPosts.length;
-                            buildHomeFeed();
-                        }
-                    } catch (e) {}
-                });
-
-                const currentUser = auth.currentUser;
-                if (currentUser) {
-                    db.ref(`channels/${currentUser.uid}`).on('value', (snapshot) => {
-                        try {
-                            currentChannelData = snapshot.val();
-                            if (currentChannelData) {
-                                localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
-                            }
-                            const activeNav = document.querySelector('.nav-item.active');
-                            if (activeNav && activeNav.id === 'nav-you') {
-                                initYouTabUI();
-                            }
-                            updateBottomNavAvatar();
-                        } catch (e) {}
-                    });
-
-                    // Live User Profile Listener
-                    db.ref(`users/${currentUser.uid}`).on('value', (snapshot) => {
-                        try {
-                            const userData = snapshot.val();
-                            const photoURL = userData?.photoURL || currentUser.photoURL || '';
-                            renderUserAvatar(photoURL, currentUser.email);
-                        } catch (e) {}
-                    });
+            let signalsReceived = 0;
+            const checkDataLoaded = () => {
+                signalsReceived++;
+                // Wait for all 3 primary feeds to arrive
+                if (signalsReceived >= 3 && onFeedLoadedCallback) {
+                    onFeedLoadedCallback();
                 }
-            } catch (err) {
-                console.error("Global database binding exception:", err);
+            };
+
+            // 2. Attach New Live Listeners for Zero-Refresh Update
+            db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
+                try {
+                    const data = snap.val();
+                    allLongVideos = data ? Object.values(data) : [];
+                    allLongVideos.sort((a,b) => b.createdAt - a.createdAt);
+                    
+                    allLongVideos.forEach(m => {
+                        if (m && m.id && !allAdminMovies.find(x => x.id === m.id)) {
+                            allAdminMovies.push(m);
+                        }
+                    });
+
+                    // Force Rebuild if data length changes OR if we are doing a Manual Refresh
+                    if(allLongVideos.length !== previousLongsCount || isRefreshing) {
+                        previousLongsCount = allLongVideos.length;
+                        buildHomeFeed();
+                    } else {
+                        // Quiet update without re-rendering DOM (prevents layout shift)
+                        allLongVideos.forEach(v => {
+                            const titleEl = document.querySelector(`.long-video-feed-card[onclick*="${v.id}"] .long-video-title`);
+                            if (titleEl) titleEl.innerText = escapeHTML(v.title);
+                        });
+                    }
+                    checkDataLoaded();
+                } catch (e) {}
+            });
+
+            db.ref('admin_panel/movies/shorts').on('value', (snap) => {
+                try {
+                    const data = snap.val();
+                    allShorts = data ? Object.values(data) : [];
+                    allShorts.sort((a,b) => b.createdAt - a.createdAt);
+                    
+                    if(allShorts.length !== previousShortsCount || isRefreshing) {
+                        previousShortsCount = allShorts.length;
+                        buildHomeFeed();
+                        const shortsTab = document.getElementById('shorts-tab');
+                        if (shortsTab && shortsTab.classList.contains('active')) {
+                            const activeShortId = document.querySelector('.short-slide video[src]')?.closest('.short-slide')?.getAttribute('data-shortid');
+                            buildShortsPage();
+                            if(activeShortId) {
+                                 setTimeout(() => {
+                                     const targetSlide = document.getElementById(`slide-short-${activeShortId}`);
+                                     if (targetSlide) targetSlide.scrollIntoView({block: 'start'});
+                                 }, 50);
+                            }
+                        }
+                    } else {
+                        allShorts.forEach(s => {
+                            const titleEl = document.querySelector(`#slide-short-${s.id} #short-title-val`);
+                            if(titleEl) titleEl.innerHTML = `${escapeHTML(s.title)} <span style="font-weight:400; font-size:0.8rem; color:#ccc; display:block;">Click to view description</span>`;
+                            const thumbEl = document.querySelector(`.short-home-card-2col[onclick*="${s.id}"] img`);
+                            if (thumbEl) thumbEl.src = s.poster;
+                        });
+                    }
+                    checkDataLoaded();
+                } catch (e) {}
+            });
+
+            db.ref('admin_panel/posts').on('value', (snap) => {
+                try {
+                    const data = snap.val();
+                    allCommunityPosts = data ? Object.values(data) : [];
+                    allCommunityPosts.sort((a,b) => b.createdAt - a.createdAt);
+                    
+                    if (allCommunityPosts.length !== previousPostsCount || isRefreshing) {
+                        previousPostsCount = allCommunityPosts.length;
+                        buildHomeFeed();
+                    }
+                    checkDataLoaded();
+                } catch (e) {}
+            });
+
+            // 3. User & Channel Specific Sync
+            const currentUser = auth.currentUser;
+            if (currentUser) {
+                db.ref(`channels/${currentUser.uid}`).off();
+                db.ref(`channels/${currentUser.uid}`).on('value', (snapshot) => {
+                    try {
+                        currentChannelData = snapshot.val();
+                        if (currentChannelData) {
+                            localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                        }
+                        const activeNav = document.querySelector('.nav-item.active');
+                        if (activeNav && activeNav.id === 'nav-you') {
+                            initYouTabUI();
+                        }
+                        updateBottomNavAvatar();
+                    } catch (e) {}
+                });
+
+                db.ref(`users/${currentUser.uid}`).off();
+                db.ref(`users/${currentUser.uid}`).on('value', (snapshot) => {
+                    try {
+                        const userData = snapshot.val();
+                        const photoURL = userData?.photoURL || currentUser.photoURL || '';
+                        renderUserAvatar(photoURL, currentUser.email);
+                    } catch (e) {}
+                });
+            } else {
+                // If not logged in, we only wait for the 3 main feeds.
+                // Signals logic will trigger automatically.
             }
         }
 
@@ -4003,7 +4020,7 @@
             const container = document.getElementById('home-feed-container');
             if (!container) return;
 
-            // ⚠️ OFFLINE LOGIC: Show Premium Skeleton (No Blank / No Cache logic here)
+            // ⚠️ OFFLINE LOGIC: Show Premium Skeleton instantly
             if (!navigator.onLine) {
                 container.innerHTML = getHomeSkeletonHTML();
                 return;
@@ -4401,7 +4418,7 @@
             const container = document.getElementById('shorts-swiper-container');
             if (!container) return;
             
-            // ⚠️ OFFLINE LOGIC: Show Premium Skeleton (No Blank / No Cache logic here)
+            // ⚠️ OFFLINE LOGIC: Show Premium Skeleton instantly
             if (!navigator.onLine) {
                 container.innerHTML = `<div class="shorts-swiper">${getShortsSkeletonHTML()}</div>`;
                 return;
@@ -4927,12 +4944,11 @@
 
                     if (!video.getAttribute('src') && !hlsInstances[shortId]) {
                         attachSmartAdaptiveSource(video, s.videoLink, shortId);
-                        // 🔥 FIX: Prevent all videos downloading at once. Only Active video uses 'auto'
                         video.preload = (idx === activeIndex) ? "auto" : "metadata";
                     }
 
                     if (idx === activeIndex) {
-                        video.preload = "auto"; // Download priority to current video
+                        video.preload = "auto"; 
                         video.muted = false;
                         let playPromise = video.play();
                         if (playPromise !== undefined) {
@@ -4942,12 +4958,11 @@
                             });
                         }
                     } else {
-                        video.preload = "metadata"; // Stops background full download
+                        video.preload = "metadata"; 
                         video.pause();
                         video.currentTime = 0;
                     }
                 } else {
-                    // Completely unload video source for items out of range to free RAM
                     video.pause();
                     video.removeAttribute('src');
                     video.removeAttribute('preload');
@@ -7351,6 +7366,10 @@
             const filename = `${currentActiveMovie.title.replace(/\s+/g, '_')}_${format}.mp4`;
             triggerFileDownload(currentActiveMovie.videoLink, filename);
         }
+
+        // Apply Overscroll Behavior correctly via JS
+        document.body.style.overscrollBehaviorY = 'none';
+        document.documentElement.style.overscrollBehaviorY = 'none';
 
     </script>
 </body>

@@ -155,48 +155,6 @@
         @keyframes loadProgress { 0% { width: 0%; } 40% { width: 45%; } 70% { width: 80%; } 100% { width: 100%; } }
         @keyframes pulse { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.5); opacity: 1; } }
 
-        /* SKELETON UI & PULL-TO-REFRESH */
-        .skeleton {
-            background: linear-gradient(90deg, var(--border-color) 25%, var(--glass-border) 50%, var(--border-color) 75%);
-            background-size: 200% 100%;
-            animation: skeleton-shimmer 1.5s infinite linear;
-            border-radius: 8px;
-        }
-        [data-theme="dark"] .skeleton {
-            background: linear-gradient(90deg, #111 25%, #222 50%, #111 75%);
-            background-size: 200% 100%;
-        }
-        @keyframes skeleton-shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        .ptr-container {
-            position: fixed;
-            top: 70px;
-            left: 50%;
-            transform: translateX(-50%) translateY(-100px);
-            width: 40px;
-            height: 40px;
-            background: var(--surface);
-            border-radius: 50%;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            pointer-events: none;
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .ptr-spinner {
-            width: 24px;
-            height: 24px;
-            border: 3px solid var(--border-color);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-        }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
         /* Toast Notifications */
         .toast-container {
             position: fixed;
@@ -294,6 +252,7 @@
         .header-avatar { width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), #FF7A00); color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; cursor: pointer; overflow: hidden; border: 1px solid rgba(0,0,0,0.05); }
         .header-avatar img { width: 100%; height: 100%; object-fit: cover;}
 
+        /* Account Switch Header Button */
         .btn-switch-account-header {
             background: var(--surface); border: 1px solid var(--glass-border);
             padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 700;
@@ -302,6 +261,7 @@
         }
         .btn-switch-account-header:active { transform: scale(0.95); background: var(--border-color); }
 
+        /* Locked & Category Chips Styling */
         .category-chips-container {
             position: fixed;
             top: 82px; 
@@ -342,6 +302,7 @@
             color: var(--surface) !important;
         }
 
+        /* Tabs & Rows */
         .tab-content { display: none; padding: 0 16px; animation: fadeTab 0.4s ease; }
         .tab-content.active { display: block; }
         @keyframes fadeTab { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -353,6 +314,7 @@
         .movie-card img { width: 100%; height: 100%; object-fit: cover; display: block; transition: 0.5s; }
         .movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 14px; }
         
+        /* Premium 2-Column Shorts Grid Layout on Home Page */
         .shorts-home-grid-2col {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -377,6 +339,7 @@
             padding: 12px; color: #fff; z-index: 2;
         }
 
+        /* Search UI */
         .search-container { position: relative; margin-bottom: 15px; }
         .search-bar { width: 100%; padding: 16px 50px 16px 18px; background: var(--surface); border: 1px solid var(--glass-border); border-radius: 16px; color: var(--text-main); font-size: 1.05rem; outline:none; transition: 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.02); }
         .search-bar:focus { border-color: var(--primary); background: var(--surface); box-shadow: 0 0 0 4px rgba(255, 46, 85, 0.08); }
@@ -386,6 +349,7 @@
         .filter-chip { padding: 8px 18px; background: var(--surface); border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 0.9rem; font-weight: 700; transition: 0.3s; border: 1px solid var(--glass-border); color: var(--text-muted); }
         .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
 
+        /* PREMIUM BOTTOM NAVIGATION DESIGN */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -527,11 +491,13 @@
         .play-btn { flex:1; background:var(--primary); color:white; border:none; border-radius:18px; padding:16px; font-size:1.1rem; font-weight:800; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 10px 25px rgba(255, 46, 85, 0.15); transition:0.2s; cursor: pointer;}
         .play-btn:active { transform: scale(0.95); }
         
+        /* YouTube Actions Bar */
         .yt-actions-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid var(--glass-border); }
         .yt-actions-bar::-webkit-scrollbar { display: none; }
         .yt-action-btn { display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--glass-border); color: var(--text-main); padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: 0.2s; }
         .yt-action-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
+        /* Material Design 3 Modals and Sheets */
         .upcoming-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(15px); z-index: 999999; display: none; justify-content: center; align-items: center; }
         .upcoming-content {
             background: var(--surface) !important;
@@ -554,8 +520,10 @@
         .upcoming-content p { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin: 0 0 25px; }
         .upcoming-close-btn { background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 14px; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: 0.2s; box-shadow: 0 5px 15px rgba(255, 46, 85, 0.15); }
         .upcoming-close-btn:active { transform: scale(0.95); }
+        
         @keyframes rotateGlow { 0% { transform: rotate(0deg) scale(1); box-shadow: 0 0 0 rgba(255, 46, 85, 0); } 100% { transform: rotate(15deg) scale(1.1); box-shadow: 0 0 15px rgba(255, 46, 85, 0.15); } }
 
+        /* Premium Bottom Sheets */
         .premium-download-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(15px); z-index: 3000; display: none; align-items: flex-end; animation: fadeIn 0.3s ease; }
         .premium-download-content { background: var(--surface); width: 100%; max-height: 85vh; border-radius: 32px 32px 0 0; padding: 24px; display: flex; flex-direction: column; box-shadow: 0 -15px 40px rgba(0, 0, 0, 0.12); animation: slideUpModal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.15); }
         @keyframes slideUpModal { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -585,6 +553,7 @@
         .watch-ad-download-btn { background: var(--primary); color: white; border: none; border-radius: 20px; padding: 18px; font-size: 1.05rem; font-weight: 800; width: 100%; cursor: pointer; box-shadow: 0 8px 24px var(--primary-glow); transition: 0.2s; text-align: center; }
         .watch-ad-download-btn:active { transform: scale(0.97); }
 
+        /* Community Post & Community Feed UI */
         .community-feed { display: flex; flex-direction: column; gap: 16px; padding: 10px 0; }
         .post-card { background: var(--surface); border-radius: 20px; border: 1px solid var(--glass-border); padding: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.01); }
         .post-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
@@ -597,6 +566,7 @@
         .post-image-grid.grid-3 { grid-template-columns: repeat(3, 1fr); }
         .post-image-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; background: #e2e8f0; }
 
+        /* General Inputs */
         .sheet-input, .sheet-textarea, .sheet-select { width: 100%; padding: 14px 16px; border: 1px solid rgba(0,0,0,0.08); border-radius: 14px; background: var(--bg-color); color: var(--text-main); font-size: 0.95rem; outline: none; margin-bottom: 16px; transition: 0.3s; }
         .sheet-input:focus, .sheet-textarea:focus, .sheet-select:focus { background: var(--surface); border-color: var(--primary); box-shadow: 0 0 0 4px rgba(255,46,85,0.08); }
         .sheet-textarea { resize: none; height: 100px; }
@@ -621,6 +591,7 @@
         .inner-tab-item { padding: 6px 14px; font-size: 0.85rem; font-weight: 800; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; transition: 0.3s; }
         .inner-tab-item.active { color: var(--primary); border-bottom-color: var(--primary); }
 
+        /* Full Screen Pages Stack */
         .fullscreen-page {
             position: fixed; top: 0; left: 0;
             width: 100%; height: 100vh;
@@ -642,6 +613,7 @@
         .appbar-back-btn:active { background: var(--border-color); }
         .appbar-title { font-size: 1.15rem; font-weight: 800; margin: 0 0 0 12px; color: var(--text-main); }
         
+        /* You Profile Card */
         .profile-card-you {
             background: var(--surface); border: 1px solid var(--glass-border);
             margin: 8px 8px 24px 8px !important; border-radius: 24px !important;
@@ -679,6 +651,7 @@
         }
         .btn-view-channel:active { transform: scale(0.97); background: var(--border-color); }
         
+        /* You Menu List */
         .you-menu {
             display: flex; flex-direction: column; background: var(--surface);
             border: 1px solid var(--glass-border); margin: 0 8px 24px 8px !important;
@@ -698,6 +671,7 @@
         .you-menu-item span { font-size: 1.05rem; font-weight: 700; flex-grow: 1; }
         .arrow-r { font-size: 0.9rem !important; color: var(--text-muted); opacity: 0.6; }
         
+        /* Create Forms */
         .avatar-selector-wrap { display: flex; flex-direction: column; align-items: center; margin: 24px 0; }
         .avatar-preview-container { width: 110px; height: 110px; border-radius: 50%; background: var(--surface); border: 3px solid var(--primary); cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px var(--primary-glow); position: relative; }
         .avatar-preview-container img { width: 100%; height: 100%; object-fit: cover; }
@@ -724,6 +698,7 @@
         .btn-primary-action:disabled { background: #CBD5E1; color: #94A3B8; box-shadow: none; cursor: not-allowed; }
         .btn-primary-action:active:not(:disabled) { transform: scale(0.97); }
         
+        /* View Channel */
         .channel-banner-container { width: 100%; height: 120px; position: relative; background: #E2E8F0; overflow: hidden; }
         .channel-banner-img { width: 100%; height: 100%; object-fit: cover; }
         .banner-gradient { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 80%); }
@@ -748,6 +723,7 @@
         .btn-channel-action.btn-edit { background: var(--bg-color); border-color: var(--glass-border); color: var(--text-main); }
         .btn-channel-action.btn-edit:active { background: var(--border-color); }
         
+        /* Content Tabs */
         .channel-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--glass-border); position: sticky; top: 64px; z-index: 10; }
         .channel-tab-item { flex: 1; text-align: center; padding: 16px 0; font-size: 0.95rem; font-weight: 800; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; }
         .channel-tab-item.active { color: var(--primary); border-bottom-color: var(--primary); }
@@ -770,6 +746,7 @@
         .short-grid-card img { width: 100%; height: 100%; object-fit: cover; }
         .short-grid-views { position: absolute; bottom: 8px; left: 8px; color: white; font-size: 0.75rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.8); display: flex; align-items: center; gap: 4px; }
         
+        /* Account Switching */
         .account-row { display: flex; align-items: center; gap: 14px; padding: 16px; background: var(--bg-color); border: 1px solid var(--glass-border); border-radius: 20px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
         .account-row:active { transform: scale(0.97); background: var(--primary-glow); }
         .account-row.active { border-color: var(--primary); background: var(--primary-glow); }
@@ -792,6 +769,7 @@
         .avatar-overlay-camera { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; opacity: 0; transition: 0.2s; }
         .edit-avatar-section .avatar-preview-container:hover .avatar-overlay-camera { opacity: 1; }
         
+        /* Analytics */
         .analytics-overview-card { background: var(--surface); border: 1px solid var(--glass-border); border-radius: 24px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.01); margin-bottom: 24px; }
         .analytics-header-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
         .analytics-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: var(--bg-color); }
@@ -823,6 +801,7 @@
         .nav-item.active .nav-avatar-wrap { border-color: var(--text-main); }
         .nav-avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
 
+        /* SHORTS TAB CONFIGURATIONS ( TikTok Premium Player Layout ) */
         #shorts-tab {
             position: fixed;
             top: 0;
@@ -856,6 +835,7 @@
             margin: auto;
         }
         
+        /* Shorts Action Button Overlays */
         .short-right-actions {
             position: absolute; right: 12px; bottom: 54px !important; 
             display: flex; flex-direction: column; gap: 16px; z-index: 10; align-items: center;
@@ -903,6 +883,7 @@
             text-shadow: 0 1px 3px rgba(0,0,0,0.6);
         }
         
+        /* Bottom Information Overlays */
         .short-bottom-info {
             position: absolute;
             bottom: 54px !important; 
@@ -928,6 +909,7 @@
         }
         .short-subscribe-btn:active { transform: scale(0.95); }
         
+        /* YouTube-like Progress Bar */
         .short-progress-container {
             position: absolute;
             bottom: 0;
@@ -945,6 +927,7 @@
             transition: width 0.1s linear;
         }
 
+        /* Double Tap Heart Animation Styles */
         .double-tap-heart {
             position: absolute;
             color: #FF2E55;
@@ -963,6 +946,7 @@
             100% { transform: translate(-50%, -50%) scale(0.6) translateY(-60px); opacity: 0; }
         }
 
+        /* Shorts Expandable Description bottom sheet */
         .short-expandable-panel {
             background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(20px);
             border-radius: 20px; padding: 16px; margin-top: 10px; display: none;
@@ -971,6 +955,7 @@
         }
         @keyframes slideUpFast { from { transform: translateY(15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
+        /* Unified Feed Item Realtime Insert Animation */
         .long-video-feed-card, .short-home-card-2col, .post-card {
             animation: feedItemFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
@@ -979,6 +964,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Premium Horizontal Slider Styles */
         .slider-outer-container {
             margin-bottom: 32px;
             position: relative;
@@ -1023,6 +1009,7 @@
             background: var(--text-main);
         }
 
+        /* FB Style Post Custom CSS Rules */
         .animated-emoji-item {
             font-size: 1.6rem; 
             cursor: pointer;
@@ -1084,6 +1071,7 @@
             transition: 0s;
         }
 
+        /* Love Button Fix Helpers */
         .love-icon-element {
             font-style: normal !important;
             transform: none !important;
@@ -1091,6 +1079,11 @@
             align-items: center;
             justify-content: center;
             line-height: 1;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         #full-movie-page {
@@ -1312,6 +1305,7 @@
             gap: 8px;
         }
 
+        /* Material Design 3 Dropdown Theme Menu */
         .theme-popup-menu {
             position: fixed;
             top: 80px;
@@ -1376,6 +1370,9 @@
             transform: scale(1);
         }
 
+        /* =========================================================
+           UPDATED PREMIUM SHORTS CUSTOM DESIGN EXTENSIONS
+           ========================================================= */
         video::-webkit-media-controls {
             display: none !important;
         }
@@ -1384,6 +1381,7 @@
             -webkit-appearance: none;
         }
 
+        /* Centered Dynamic Buffer Indicator */
         @keyframes spinnerSpin {
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             100% { transform: translate(-50%, -50%) rotate(360deg); }
@@ -1403,6 +1401,7 @@
             pointer-events: none;
         }
 
+        /* Centered Play/Pause Interaction Overlays */
         .short-play-pause-overlay {
             position: absolute;
             top: 50%;
@@ -1433,6 +1432,7 @@
             100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
         }
 
+        /* Premium Rotating Music Disc Under Download */
         .music-disc-container {
             width: 44px;
             height: 44px;
@@ -1468,11 +1468,6 @@
 </head>
 <body>
 
-    <!-- Pull to Refresh UI Overlay -->
-    <div id="ptr-container" class="ptr-container">
-        <div class="ptr-spinner"></div>
-    </div>
-
     <!-- Premium Audio Settings -->
     <audio id="startupSound" preload="auto">
         <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
@@ -1492,6 +1487,12 @@
 
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
+
+    <!-- Network Restore Loading Spinner -->
+    <div id="network-spinner-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:9999999; justify-content:center; align-items:center; flex-direction:column; color:white;">
+        <div style="width:48px; height:48px; border:4px solid rgba(255,255,255,0.2); border-top-color:var(--primary); border-radius:50%; animation:spin 1s linear infinite; margin-bottom:16px;"></div>
+        <p style="font-weight:700;">Reconnecting to Server...</p>
+    </div>
 
     <!-- AUTHENTICATION SCREEN -->
     <div id="auth-screen">
@@ -1564,13 +1565,13 @@
                 <div class="filter-chip" onclick="applyFilter(16, this); playUI('click')">Animation</div>
             </div>
             <div id="search-results" class="movie-grid">
-                <!-- Data will be populated here -->
+                <p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding: 60px 0; font-weight: 500;">Search or use the mic to find movies.</p>
             </div>
         </div>
 
         <!-- 4. YOU Tab -->
         <div id="you-tab" class="tab-content">
-            <div class="profile-card-you" id="you-profile-card-main" style="margin-top: 15px;">
+            <div class="profile-card-you" style="margin-top: 15px;">
                 <div class="profile-card-main">
                     <div class="profile-avatar-large" id="you-avatar-large">U</div>
                     <div class="profile-info-you">
@@ -1582,7 +1583,7 @@
                 <div id="channel-action-box" class="channel-action-box"></div>
             </div>
 
-            <div class="you-menu" id="you-profile-menu-container">
+            <div class="you-menu">
                 <div class="you-menu-item" onclick="openUploadManager()">
                     <i class="fas fa-tasks"></i>
                     <span>Upload Manager</span>
@@ -2649,186 +2650,19 @@
             }
         }
 
-        // =========================================================
-        // PULL TO REFRESH ENGINE (UNIVERSAL & ULTRA-FAST)
-        // =========================================================
-        let ptrStartY = 0;
-        let ptrCurrentY = 0;
-        let isPulling = false;
-        let isRefreshing = false;
-
-        document.addEventListener('touchstart', (e) => {
-            if (isRefreshing) return;
-            const scrollContainer = e.target.closest('.tab-content, .shorts-swiper, .fullscreen-page, .download-modal-scrollable');
-            const scrollTop = scrollContainer ? scrollContainer.scrollTop : window.scrollY;
-            
-            if (scrollTop <= 0) {
-                ptrStartY = e.touches[0].clientY;
-                isPulling = true;
-            }
-        }, {passive: true});
-
-        document.addEventListener('touchmove', (e) => {
-            if (!isPulling || isRefreshing) return;
-            ptrCurrentY = e.touches[0].clientY;
-            const deltaY = ptrCurrentY - ptrStartY;
-            
-            if (deltaY > 0) {
-                const ptrContainer = document.getElementById('ptr-container');
-                if (ptrContainer) {
-                    const translateY = Math.min(deltaY * 0.4, 60);
-                    ptrContainer.style.transition = 'none';
-                    ptrContainer.style.transform = `translateX(-50%) translateY(${translateY}px)`;
-                }
-            }
-        }, {passive: true});
-
-        document.addEventListener('touchend', (e) => {
-            if (!isPulling || isRefreshing) return;
-            isPulling = false;
-            const deltaY = ptrCurrentY - ptrStartY;
-            const ptrContainer = document.getElementById('ptr-container');
-            
-            if (deltaY > 90 && navigator.onLine) {
-                isRefreshing = true;
-                if(ptrContainer) {
-                    ptrContainer.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                    ptrContainer.style.transform = `translateX(-50%) translateY(30px)`;
-                    ptrContainer.querySelector('.ptr-spinner').style.animation = 'spin 0.6s linear infinite';
-                }
-                refreshAllFeeds();
-            } else {
-                if(ptrContainer) {
-                    ptrContainer.style.transition = 'transform 0.3s ease';
-                    ptrContainer.style.transform = `translateX(-50%) translateY(-100px)`;
-                }
-            }
-            ptrStartY = 0;
-            ptrCurrentY = 0;
-        });
-
-        function refreshAllFeeds() {
-            triggerHapticFeedback();
-            
-            // Force state reset to ensure new render (prevents layout freezing)
-            previousShortsCount = -1;
-            previousLongsCount = -1;
-            previousPostsCount = -1;
-            
-            // Unbind listeners to prevent memory leak/duplicate
-            db.ref('admin_panel/movies/user_uploads').off();
-            db.ref('admin_panel/movies/shorts').off();
-            db.ref('admin_panel/posts').off();
-            
-            // Re-bind to fetch newest data natively and ultra-fast
-            startRealtimeFeedsListener();
-            
-            const currentUser = auth.currentUser;
-            if(currentUser) {
-                db.ref(`channels/${currentUser.uid}`).once('value', snap => {
-                    currentChannelData = snap.val();
-                    initYouTabUI();
-                    if (document.getElementById('analytics-page') && document.getElementById('analytics-page').style.display === 'flex') {
-                        calculateChannelAnalytics();
-                    }
-                });
-            }
-            
-            setTimeout(() => {
-                const ptrContainer = document.getElementById('ptr-container');
-                if(ptrContainer) {
-                    ptrContainer.style.transform = `translateX(-50%) translateY(-100px)`;
-                }
-                isRefreshing = false;
-            }, 1200); 
-        }
-
-        // =========================================================
-        // OFFLINE PREMIUM SKELETON GENERATOR ENGINE
-        // =========================================================
-        function getHomeSkeletonHTML() {
-            let html = '';
-            for(let i=0; i<3; i++) {
-                html += `
-                    <div class="long-video-feed-card" style="margin-bottom: 24px; border: none; box-shadow: none; background: transparent;">
-                        <div class="skeleton" style="width:100%; aspect-ratio:16/9; border-radius: 12px;"></div>
-                        <div style="padding: 14px 0; display: flex; gap: 12px;">
-                            <div class="skeleton" style="width:36px; height:36px; border-radius:50%; flex-shrink:0;"></div>
-                            <div style="flex-grow: 1;">
-                                <div class="skeleton" style="width: 90%; height: 16px; margin-bottom: 8px; border-radius: 4px;"></div>
-                                <div class="skeleton" style="width: 60%; height: 14px; border-radius: 4px;"></div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            return html;
-        }
-
-        function getShortsSkeletonHTML() {
-            return `
-                <div class="short-slide" style="background:#000;">
-                    <div class="skeleton" style="width:100%; height:100%; position:absolute; top:0; left:0; border-radius:0; opacity: 0.15;"></div>
-                    <div class="short-right-actions" style="display:flex; flex-direction:column; gap:20px; z-index:10; right:12px; bottom:54px; position:absolute;">
-                        <div class="skeleton" style="width:48px; height:48px; border-radius:50%; opacity:0.4;"></div>
-                        <div class="skeleton" style="width:48px; height:48px; border-radius:50%; opacity:0.4;"></div>
-                        <div class="skeleton" style="width:48px; height:48px; border-radius:50%; opacity:0.4;"></div>
-                        <div class="skeleton" style="width:44px; height:44px; border-radius:50%; opacity:0.4; margin-top:6px;"></div>
-                    </div>
-                    <div class="short-bottom-info" style="z-index:10; padding-bottom:10px; left:12px; bottom:54px; position:absolute; width:calc(100% - 76px);">
-                        <div style="display:flex; gap:10px; margin-bottom:12px; align-items:center;">
-                            <div class="skeleton" style="width:36px; height:36px; border-radius:50%; opacity:0.4;"></div>
-                            <div class="skeleton" style="width:120px; height:16px; border-radius:4px; opacity:0.4;"></div>
-                            <div class="skeleton" style="width:70px; height:24px; border-radius:12px; opacity:0.4;"></div>
-                        </div>
-                        <div class="skeleton" style="width:80%; height:16px; border-radius:4px; margin-bottom:8px; opacity:0.4;"></div>
-                        <div class="skeleton" style="width:50%; height:16px; border-radius:4px; opacity:0.4;"></div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function getSearchSkeletonHTML() {
-            let html = '';
-            for(let i=0; i<6; i++) {
-                html += `
-                    <div class="movie-card" style="border: none; box-shadow: none;">
-                        <div class="skeleton" style="width:100%; height:100%; border-radius:16px;"></div>
-                    </div>
-                `;
-            }
-            return html;
-        }
-
-        function renderAllSkeletons() {
-            const homeFeed = document.getElementById('home-feed-container');
-            if (homeFeed) homeFeed.innerHTML = getHomeSkeletonHTML();
-
-            const shortsContainer = document.getElementById('shorts-swiper-container');
-            if (shortsContainer) shortsContainer.innerHTML = `<div class="shorts-swiper">${getShortsSkeletonHTML()}</div>`;
-
-            const searchResults = document.getElementById('search-results');
-            if (searchResults) searchResults.innerHTML = getSearchSkeletonHTML();
-            
-            // You Page
-            const youAvatarLarge = document.getElementById('you-avatar-large');
-            const youFullNameTxt = document.getElementById('you-fullname-txt');
-            const youEmailTxt = document.getElementById('you-email-txt');
-            const wrap = document.getElementById('channel-action-box');
-            
-            if(youAvatarLarge) youAvatarLarge.innerHTML = '<div class="skeleton" style="width:100%; height:100%; border-radius:50%;"></div>';
-            if(youFullNameTxt) youFullNameTxt.innerHTML = '<div class="skeleton" style="width:150px; height:20px; border-radius:4px; margin: 0;"></div>';
-            if(youEmailTxt) youEmailTxt.innerHTML = '<div class="skeleton" style="width:100px; height:14px; border-radius:4px; margin-top:8px;"></div>';
-            if(wrap) wrap.innerHTML = '<div class="skeleton" style="width:100%; height:54px; border-radius:20px; margin-top: 10px;"></div>';
-        }
-
         document.addEventListener("DOMContentLoaded", function() {
             applyTheme();
             
-            // Render skeletons immediately before Firebase load
-            if (!navigator.onLine) {
-                renderAllSkeletons();
-            }
+            // Offline caches instant load
+            try {
+                const cachedPosts = localStorage.getItem('flaynity_offline_posts');
+                const cachedShorts = localStorage.getItem('flaynity_offline_shorts');
+                const cachedLongs = localStorage.getItem('flaynity_offline_longs');
+                if (cachedPosts) allCommunityPosts = JSON.parse(cachedPosts);
+                if (cachedShorts) allShorts = JSON.parse(cachedShorts);
+                if (cachedLongs) allLongVideos = JSON.parse(cachedLongs);
+                buildHomeFeed();
+            } catch (e) {}
 
             try {
                 const sound = document.getElementById("startupSound");
@@ -2881,13 +2715,16 @@
         window.addEventListener('offline', () => { window.setAppOnlineStatus(false); });
 
         window.setAppOnlineStatus = async function(isOnline) {
+            const spinner = document.getElementById('network-spinner-overlay');
             if (isOnline) {
-                // Force Firebase Connection Instantly
+                // 1. Force Firebase Connection Instantly
                 firebase.database().goOnline();
+                if(spinner) spinner.style.display = 'none';
+                showNotification("Network Restored! Syncing Live Data...", "success");
                 
                 await syncOfflineLikes();
                 
-                // Clear all Dead Listeners
+                // 2. Clear all Dead Listeners
                 db.ref('admin_panel/movies/user_uploads').off();
                 db.ref('admin_panel/movies/shorts').off();
                 db.ref('admin_panel/posts').off();
@@ -2898,15 +2735,15 @@
                     db.ref(`users/${currentUser.uid}`).off();
                 }
                 
-                // Force Variables to -1 to trigger COMPLETE UI Rebuild (A-Z Update)
+                // 3. Force Variables to -1 to trigger COMPLETE UI Rebuild (A-Z Update)
                 previousShortsCount = -1;
                 previousLongsCount = -1;
                 previousPostsCount = -1;
                 
-                // Restart Live Data Feeds (Auto replaces skeletons)
+                // 4. Restart Live Data Feeds
                 startRealtimeFeedsListener(); 
                 
-                // Update Profile, Analytics & Watch Page instantly
+                // 5. Update Profile, Analytics & Watch Page instantly
                 if (currentUser) {
                     db.ref(`channels/${currentUser.uid}`).once('value', snap => {
                         currentChannelData = snap.val();
@@ -2927,19 +2764,26 @@
                     registerViewAndListen(currentActiveMovie.id);
                 }
                 
-                // Resume Video Playback
+                // 6. Resume Video Playback
                 const activeVideo = document.querySelector('.short-slide video[src]');
                 if(activeVideo && activeVideo.paused && activeVideo.readyState > 2) {
                     activeVideo.play().catch(()=>{});
                 }
             } else {
-                // OFFLINE MODE - Inject Skeletons instantly
+                // OFFLINE MODE
                 firebase.database().goOffline();
-                renderAllSkeletons();
+                showNotification("Offline Mode. Showing Cached Data.", "error");
+                
+                buildHomeFeed(); 
+                const shortsTab = document.getElementById('shorts-tab');
+                if (shortsTab && shortsTab.classList.contains('active')) {
+                    buildShortsPage();
+                }
                 
                 const activeVideo = document.querySelector('.short-slide video[src]');
                 if(activeVideo && !activeVideo.paused) {
                     activeVideo.pause();
+                    if(spinner) spinner.style.display = 'flex';
                 }
             }
         };
@@ -3070,6 +2914,40 @@
             return new Blob([u8arr], {type:mime});
         }
 
+        // =========================================================
+        // BACKGROUND CACHE API SYSTEM FOR ULTRA-FAST OFFLINE SHORTS
+        // =========================================================
+        async function cacheMediaFiles(shorts) {
+            if (!window.caches) return;
+            try {
+                const cache = await caches.open('flaynity-shorts-cache');
+                const validUrls = shorts.map(s => s.videoLink).filter(Boolean);
+                
+                // Limit to LRU logic (Delete old caches not in the latest 50)
+                const keys = await cache.keys();
+                for (let request of keys) {
+                    if (!validUrls.includes(request.url)) {
+                        await cache.delete(request);
+                    }
+                }
+                
+                // Background fetch new caches without blocking UI thread
+                setTimeout(async () => {
+                    for (let url of validUrls) {
+                        const match = await cache.match(url);
+                        if (!match) {
+                            try {
+                                const res = await fetch(url, { mode: 'no-cors', cache: 'no-store' });
+                                if (res) await cache.put(url, res.clone());
+                            } catch(e) {}
+                        }
+                    }
+                }, 2000); // 2-second delay to prioritize playback
+            } catch (e) {
+                console.warn("Background cache failed:", e);
+            }
+        }
+
         // =========================================
         // AUTHENTICATION & SESSION MANAGEMENT
         // =========================================
@@ -3128,7 +3006,7 @@
             if (shortsSwiper) shortsSwiper.innerHTML = '';
 
             const searchResults = document.getElementById('search-results');
-            if (searchResults) searchResults.innerHTML = '';
+            if (searchResults) searchResults.innerHTML = '<p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding: 60px 0; font-weight: 500;">Search or use the mic to find movies.</p>';
 
             const youName = document.getElementById('you-fullname-txt');
             if (youName) youName.innerText = "Logged Out";
@@ -3537,6 +3415,9 @@
 
                 await s3Upload.promise();
                 
+                // Simulate backend optimization step / Encoding logic
+                // Cloudflare Stream / backend converts MP4 to HLS / optimized MP4 automatically in production
+                
                 item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
                 item.status = "processing";
                 updateManagerUI();
@@ -3676,133 +3557,124 @@
         }
 
         // =========================================================
-        // REALTIME LISTENERS & UNIVERSAL SYNC ENGINE (FIXED)
+        // REALTIME LISTENERS FOR ZERO-REFRESH FEED PROPAGATION
         // =========================================================
         let previousShortsCount = -1;
         let previousLongsCount = -1;
         let previousPostsCount = -1;
 
-        // Optimized Global Listener with Callbacks for PTR Sync
-        function startRealtimeFeedsListener(onFeedLoadedCallback) {
-            if (!navigator.onLine) return; // Only bind if online
-            
-            // 1. Duplicate Request Prevention: Remove old listeners first
-            db.ref('admin_panel/movies/user_uploads').off();
-            db.ref('admin_panel/movies/shorts').off();
-            db.ref('admin_panel/posts').off();
+        function startRealtimeFeedsListener() {
+            try {
+                db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
+                    try {
+                        const data = snap.val();
+                        allLongVideos = data ? Object.values(data) : [];
+                        allLongVideos.sort((a,b) => b.createdAt - a.createdAt);
+                        
+                        localStorage.setItem('flaynity_offline_longs', JSON.stringify(allLongVideos));
+                        
+                        allLongVideos.forEach(m => {
+                            if (m && m.id && !allAdminMovies.find(x => x.id === m.id)) {
+                                allAdminMovies.push(m);
+                            }
+                        });
 
-            let signalsReceived = 0;
-            const checkDataLoaded = () => {
-                signalsReceived++;
-                // Wait for all 3 primary feeds to arrive
-                if (signalsReceived >= 3 && onFeedLoadedCallback) {
-                    onFeedLoadedCallback();
-                }
-            };
-
-            // 2. Attach New Live Listeners for Zero-Refresh Update
-            db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
-                try {
-                    const data = snap.val();
-                    allLongVideos = data ? Object.values(data) : [];
-                    allLongVideos.sort((a,b) => b.createdAt - a.createdAt);
-                    
-                    allLongVideos.forEach(m => {
-                        if (m && m.id && !allAdminMovies.find(x => x.id === m.id)) {
-                            allAdminMovies.push(m);
+                        // Rebuild strictly to prevent DOM wiping
+                        if(allLongVideos.length !== previousLongsCount) {
+                            previousLongsCount = allLongVideos.length;
+                            buildHomeFeed();
+                        } else {
+                            // Update quiet states manually
+                            allLongVideos.forEach(v => {
+                                const titleEl = document.querySelector(`.long-video-feed-card[onclick*="${v.id}"] .long-video-title`);
+                                if (titleEl) titleEl.innerText = escapeHTML(v.title);
+                            });
                         }
+                    } catch (e) {}
+                });
+
+                db.ref('admin_panel/movies/shorts').on('value', (snap) => {
+                    try {
+                        const data = snap.val();
+                        allShorts = data ? Object.values(data) : [];
+                        allShorts.sort((a,b) => b.createdAt - a.createdAt);
+                        
+                        // Limit Offline Cache to latest 50 items for LRU logic
+                        const top50Shorts = allShorts.slice(0, 50);
+                        localStorage.setItem('flaynity_offline_shorts', JSON.stringify(top50Shorts));
+                        cacheMediaFiles(top50Shorts); 
+                        
+                        // ZERO FREEZE LOGIC: Only full rebuild if length changes
+                        if(allShorts.length !== previousShortsCount) {
+                            previousShortsCount = allShorts.length;
+                            buildHomeFeed();
+                            const shortsTab = document.getElementById('shorts-tab');
+                            if (shortsTab && shortsTab.classList.contains('active')) {
+                                const activeShortId = document.querySelector('.short-slide video[src]')?.closest('.short-slide')?.getAttribute('data-shortid');
+                                buildShortsPage();
+                                if(activeShortId) {
+                                     setTimeout(() => {
+                                         const targetSlide = document.getElementById(`slide-short-${activeShortId}`);
+                                         if (targetSlide) targetSlide.scrollIntoView({block: 'start'});
+                                     }, 50);
+                                }
+                            }
+                        } else {
+                            // Quiet Metadata injection
+                            allShorts.forEach(s => {
+                                const titleEl = document.querySelector(`#slide-short-${s.id} #short-title-val`);
+                                if(titleEl) titleEl.innerHTML = `${escapeHTML(s.title)} <span style="font-weight:400; font-size:0.8rem; color:#ccc; display:block;">Click to view description</span>`;
+                                const thumbEl = document.querySelector(`.short-home-card-2col[onclick*="${s.id}"] img`);
+                                if (thumbEl) thumbEl.src = s.poster;
+                            });
+                        }
+                    } catch (e) {}
+                });
+
+                db.ref('admin_panel/posts').on('value', (snap) => {
+                    try {
+                        const data = snap.val();
+                        allCommunityPosts = data ? Object.values(data) : [];
+                        allCommunityPosts.sort((a,b) => b.createdAt - a.createdAt);
+                        
+                        // Limit Offline Cache to latest 20 items
+                        localStorage.setItem('flaynity_offline_posts', JSON.stringify(allCommunityPosts.slice(0, 20)));
+                        
+                        // Zero Freeze Render for Posts
+                        if (allCommunityPosts.length !== previousPostsCount) {
+                            previousPostsCount = allCommunityPosts.length;
+                            buildHomeFeed();
+                        }
+                    } catch (e) {}
+                });
+
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    db.ref(`channels/${currentUser.uid}`).on('value', (snapshot) => {
+                        try {
+                            currentChannelData = snapshot.val();
+                            if (currentChannelData) {
+                                localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                            }
+                            const activeNav = document.querySelector('.nav-item.active');
+                            if (activeNav && activeNav.id === 'nav-you') {
+                                initYouTabUI();
+                            }
+                            updateBottomNavAvatar();
+                        } catch (e) {}
                     });
 
-                    // Force Rebuild if data length changes OR if we are doing a Manual Refresh
-                    if(allLongVideos.length !== previousLongsCount || isRefreshing) {
-                        previousLongsCount = allLongVideos.length;
-                        buildHomeFeed();
-                    } else {
-                        // Quiet update without re-rendering DOM (prevents layout shift)
-                        allLongVideos.forEach(v => {
-                            const titleEl = document.querySelector(`.long-video-feed-card[onclick*="${v.id}"] .long-video-title`);
-                            if (titleEl) titleEl.innerText = escapeHTML(v.title);
-                        });
-                    }
-                    checkDataLoaded();
-                } catch (e) {}
-            });
-
-            db.ref('admin_panel/movies/shorts').on('value', (snap) => {
-                try {
-                    const data = snap.val();
-                    allShorts = data ? Object.values(data) : [];
-                    allShorts.sort((a,b) => b.createdAt - a.createdAt);
-                    
-                    if(allShorts.length !== previousShortsCount || isRefreshing) {
-                        previousShortsCount = allShorts.length;
-                        buildHomeFeed();
-                        const shortsTab = document.getElementById('shorts-tab');
-                        if (shortsTab && shortsTab.classList.contains('active')) {
-                            const activeShortId = document.querySelector('.short-slide video[src]')?.closest('.short-slide')?.getAttribute('data-shortid');
-                            buildShortsPage();
-                            if(activeShortId) {
-                                 setTimeout(() => {
-                                     const targetSlide = document.getElementById(`slide-short-${activeShortId}`);
-                                     if (targetSlide) targetSlide.scrollIntoView({block: 'start'});
-                                 }, 50);
-                            }
-                        }
-                    } else {
-                        allShorts.forEach(s => {
-                            const titleEl = document.querySelector(`#slide-short-${s.id} #short-title-val`);
-                            if(titleEl) titleEl.innerHTML = `${escapeHTML(s.title)} <span style="font-weight:400; font-size:0.8rem; color:#ccc; display:block;">Click to view description</span>`;
-                            const thumbEl = document.querySelector(`.short-home-card-2col[onclick*="${s.id}"] img`);
-                            if (thumbEl) thumbEl.src = s.poster;
-                        });
-                    }
-                    checkDataLoaded();
-                } catch (e) {}
-            });
-
-            db.ref('admin_panel/posts').on('value', (snap) => {
-                try {
-                    const data = snap.val();
-                    allCommunityPosts = data ? Object.values(data) : [];
-                    allCommunityPosts.sort((a,b) => b.createdAt - a.createdAt);
-                    
-                    if (allCommunityPosts.length !== previousPostsCount || isRefreshing) {
-                        previousPostsCount = allCommunityPosts.length;
-                        buildHomeFeed();
-                    }
-                    checkDataLoaded();
-                } catch (e) {}
-            });
-
-            // 3. User & Channel Specific Sync
-            const currentUser = auth.currentUser;
-            if (currentUser) {
-                db.ref(`channels/${currentUser.uid}`).off();
-                db.ref(`channels/${currentUser.uid}`).on('value', (snapshot) => {
-                    try {
-                        currentChannelData = snapshot.val();
-                        if (currentChannelData) {
-                            localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
-                        }
-                        const activeNav = document.querySelector('.nav-item.active');
-                        if (activeNav && activeNav.id === 'nav-you') {
-                            initYouTabUI();
-                        }
-                        updateBottomNavAvatar();
-                    } catch (e) {}
-                });
-
-                db.ref(`users/${currentUser.uid}`).off();
-                db.ref(`users/${currentUser.uid}`).on('value', (snapshot) => {
-                    try {
-                        const userData = snapshot.val();
-                        const photoURL = userData?.photoURL || currentUser.photoURL || '';
-                        renderUserAvatar(photoURL, currentUser.email);
-                    } catch (e) {}
-                });
-            } else {
-                // If not logged in, we only wait for the 3 main feeds.
-                // Signals logic will trigger automatically.
+                    // Live User Profile Listener
+                    db.ref(`users/${currentUser.uid}`).on('value', (snapshot) => {
+                        try {
+                            const userData = snapshot.val();
+                            const photoURL = userData?.photoURL || currentUser.photoURL || '';
+                            renderUserAvatar(photoURL, currentUser.email);
+                        } catch (e) {}
+                    });
+                }
+            } catch (err) {
+                console.error("Global database binding exception:", err);
             }
         }
 
@@ -4020,17 +3892,18 @@
             const container = document.getElementById('home-feed-container');
             if (!container) return;
 
-            // ⚠️ OFFLINE LOGIC: Show Premium Skeleton instantly
-            if (!navigator.onLine) {
-                container.innerHTML = getHomeSkeletonHTML();
-                return;
-            }
-
             let html = '';
 
             let shorts = [...allShorts];
             let longs = [...allLongVideos];
             let posts = [...allCommunityPosts];
+
+            // ⚠️ OFFLINE LOGIC: Hide long videos when offline, use ONLY cached Shorts & Posts
+            if (!navigator.onLine) {
+                longs = []; 
+                shorts = JSON.parse(localStorage.getItem('flaynity_offline_shorts') || '[]');
+                posts = JSON.parse(localStorage.getItem('flaynity_offline_posts') || '[]');
+            }
 
             shorts.sort((a,b) => b.createdAt - a.createdAt);
             longs.sort((a,b) => b.createdAt - a.createdAt);
@@ -4418,13 +4291,11 @@
             const container = document.getElementById('shorts-swiper-container');
             if (!container) return;
             
-            // ⚠️ OFFLINE LOGIC: Show Premium Skeleton instantly
-            if (!navigator.onLine) {
-                container.innerHTML = `<div class="shorts-swiper">${getShortsSkeletonHTML()}</div>`;
-                return;
-            }
-
+            // Offline Shorts Source
             let activeShortsList = allShorts;
+            if (!navigator.onLine) {
+                activeShortsList = JSON.parse(localStorage.getItem('flaynity_offline_shorts') || '[]');
+            }
 
             if (activeShortsList.length === 0) {
                 container.innerHTML = `
@@ -4441,6 +4312,17 @@
                 const isLikedId = `short-like-btn-${s.id}`;
                 const likesCountId = `short-likes-count-${s.id}`;
                 const commentsCountId = `short-comments-count-${s.id}`;
+                const statsCacheKey = `flaynity_stats_cache_${s.id}`;
+
+                // Instant cache load & Offline Sync Check
+                let cachedStats = { likes: 0, comments: 0 };
+                let offlineLikes = JSON.parse(localStorage.getItem('flaynity_offline_likes') || '{}');
+                let isLocallyLiked = !!offlineLikes[s.id];
+                try {
+                    cachedStats = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
+                } catch(e) {}
+
+                if(isLocallyLiked && cachedStats.likes === 0) cachedStats.likes = 1;
 
                 html += `
                     <div class="short-slide" id="slide-short-${s.id}" data-shortid="${s.id}">
@@ -4459,16 +4341,16 @@
                         <div class="short-right-actions">
                             <div class="short-action-container">
                                 <button class="short-action-btn-tiktok" id="${isLikedId}" onclick="toggleShortLike('${s.id}')">
-                                    <i class="far fa-heart"></i>
+                                    <i class="${isLocallyLiked ? 'fas fa-heart liked' : 'far fa-heart'}"></i>
                                 </button>
-                                <div class="short-action-label-tiktok" id="${likesCountId}">0</div>
+                                <div class="short-action-label-tiktok" id="${likesCountId}">${formatCount(cachedStats.likes)}</div>
                             </div>
 
                             <div class="short-action-container">
                                 <button class="short-action-btn-tiktok-other" onclick="openShortComments('${s.id}')">
                                     <i class="far fa-comment"></i>
                                 </button>
-                                <div class="short-action-label-tiktok" id="${commentsCountId}">0</div>
+                                <div class="short-action-label-tiktok" id="${commentsCountId}">${formatCount(cachedStats.comments)}</div>
                             </div>
 
                             <div class="short-action-container">
@@ -4509,6 +4391,12 @@
                         const likesObj = stats.likes || {};
                         const likesCount = Object.keys(likesObj).length;
 
+                        try {
+                            let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
+                            currCache.likes = likesCount;
+                            localStorage.setItem(statsCacheKey, JSON.stringify(currCache));
+                        } catch(e) {}
+
                         const lblLikes = document.getElementById(likesCountId);
                         if (lblLikes) lblLikes.innerText = formatCount(likesCount);
 
@@ -4525,6 +4413,12 @@
                     db.ref(`movie_comments/${s.id}`).on('value', (snapshot) => {
                         const commentsObj = snapshot.val() || {};
                         const count = Object.keys(commentsObj).length;
+
+                        try {
+                            let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
+                            currCache.comments = count;
+                            localStorage.setItem(statsCacheKey, JSON.stringify(currCache));
+                        } catch(e) {}
 
                         const lblComments = document.getElementById(commentsCountId);
                         if (lblComments) lblComments.innerText = formatCount(count);
@@ -4944,11 +4838,12 @@
 
                     if (!video.getAttribute('src') && !hlsInstances[shortId]) {
                         attachSmartAdaptiveSource(video, s.videoLink, shortId);
+                        // 🔥 FIX: Prevent all videos downloading at once. Only Active video uses 'auto'
                         video.preload = (idx === activeIndex) ? "auto" : "metadata";
                     }
 
                     if (idx === activeIndex) {
-                        video.preload = "auto"; 
+                        video.preload = "auto"; // Download priority to current video
                         video.muted = false;
                         let playPromise = video.play();
                         if (playPromise !== undefined) {
@@ -4958,11 +4853,12 @@
                             });
                         }
                     } else {
-                        video.preload = "metadata"; 
+                        video.preload = "metadata"; // Stops background full download
                         video.pause();
                         video.currentTime = 0;
                     }
                 } else {
+                    // Completely unload video source for items out of range to free RAM
                     video.pause();
                     video.removeAttribute('src');
                     video.removeAttribute('preload');
@@ -7366,10 +7262,6 @@
             const filename = `${currentActiveMovie.title.replace(/\s+/g, '_')}_${format}.mp4`;
             triggerFileDownload(currentActiveMovie.videoLink, filename);
         }
-
-        // Apply Overscroll Behavior correctly via JS
-        document.body.style.overscrollBehaviorY = 'none';
-        document.documentElement.style.overscrollBehaviorY = 'none';
 
     </script>
 </body>

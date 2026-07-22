@@ -75,6 +75,10 @@
             --success: #00C853;
             --download: #007AFF;
             --border-color: #EEEEEE;
+            
+            /* Skeleton Colors */
+            --skeleton-bg: #E2E8F0;
+            --skeleton-hl: #F1F5F9;
         }
 
         [data-theme="dark"] {
@@ -88,6 +92,10 @@
             --glass-bg: rgba(0, 0, 0, 0.95);
             --glass-border: rgba(255, 255, 255, 0.15);
             --border-color: #222222;
+            
+            /* Skeleton Colors */
+            --skeleton-bg: #1A1A1A;
+            --skeleton-hl: #2A2A2A;
         }
 
         * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
@@ -307,12 +315,6 @@
         .tab-content.active { display: block; }
         @keyframes fadeTab { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .section-title { font-size: 1.1rem; font-weight: 850; margin: 16px 0 12px; display: flex; align-items: center; gap: 8px; color: var(--text-main); }
-        .movie-row { display: flex; overflow-x: auto; gap: 14px; padding-bottom: 15px; scroll-behavior: smooth; margin-right: -16px; padding-right: 16px; scroll-snap-type: x mandatory;}
-        
-        .movie-card { flex: 0 0 130px; scroll-snap-align: start; border-radius: 16px; overflow: hidden; cursor: pointer; transition: 0.3s; position: relative; background: var(--card-bg); aspect-ratio: 2/3; box-shadow: 0 10px 20px rgba(0,0,0,0.04); transform: translate3d(0,0,0); will-change: transform; }
-        .movie-card:active { transform: scale3d(0.92, 0.92, 1); } 
-        .movie-card img { width: 100%; height: 100%; object-fit: cover; display: block; transition: 0.5s; }
-        .movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 14px; }
         
         /* Premium 2-Column Shorts Grid Layout on Home Page */
         .shorts-home-grid-2col {
@@ -348,6 +350,7 @@
         .filters { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 10px; margin-right: -20px; padding-right: 20px;}
         .filter-chip { padding: 8px 18px; background: var(--surface); border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 0.9rem; font-weight: 700; transition: 0.3s; border: 1px solid var(--glass-border); color: var(--text-muted); }
         .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 14px; }
 
         /* PREMIUM BOTTOM NAVIGATION DESIGN */
         .bottom-nav {
@@ -1466,78 +1469,54 @@
         }
 
         /* =========================================================
-           YOUTUBE-STYLE HARDWARE ACCELERATED SKELETONS & SHIMMERS
+           ULTRA FAST PULL TO REFRESH & SKELETON UI (YOUTUBE STYLE)
            ========================================================= */
-        .shimmer-anim {
-            background: var(--border-color);
-            background-image: linear-gradient(to right, var(--border-color) 0%, var(--glass-border) 20%, var(--border-color) 40%, var(--border-color) 100%);
-            background-repeat: no-repeat;
-            background-size: 800px 104px;
-            animation: placeholderShimmer 1.5s linear infinite forwards;
+        .skeleton-box {
+            background-color: var(--skeleton-bg);
+            background-image: linear-gradient(90deg, var(--skeleton-bg) 0px, var(--skeleton-hl) 60px, var(--skeleton-bg) 120px);
+            background-size: 200% 100%;
+            animation: shimmer-anim 1.5s infinite linear;
             will-change: background-position;
-            transform: translate3d(0, 0, 0);
-        }
-        [data-theme="dark"] .shimmer-anim {
-            background: #111111;
-            background-image: linear-gradient(to right, #111111 0%, #222222 20%, #111111 40%, #111111 100%);
-        }
-        @keyframes placeholderShimmer {
-            0% { background-position: -468px 0; }
-            100% { background-position: 468px 0; }
+            transform: translateZ(0); 
         }
 
-        /* Layout Skeleton Builders */
-        .sk-avatar { width: 40px; height: 40px; border-radius: 50%; }
-        .sk-avatar-lg { width: 80px; height: 80px; border-radius: 50%; }
-        .sk-text { height: 12px; border-radius: 6px; margin-bottom: 8px; }
-        .sk-text-sm { height: 8px; border-radius: 4px; margin-bottom: 6px; }
-        .sk-title { height: 16px; border-radius: 8px; margin-bottom: 12px; }
-        .sk-btn { height: 36px; border-radius: 18px; }
-        .sk-chip { height: 32px; border-radius: 16px; width: 80px; }
-        .sk-banner { height: 120px; border-radius: 0; width: 100%; }
-        .sk-rect { width: 100%; border-radius: 12px; }
+        @keyframes shimmer-anim {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
 
-        /* =========================================================
-           NATIVE PULL-TO-REFRESH CONTAINER
-           ========================================================= */
-        .ptr-container {
+        /* YouTube Style Pull To Refresh Spinner */
+        .ptr-spinner-container {
             position: fixed;
             top: -60px;
             left: 50%;
-            transform: translate3d(-50%, 0, 0);
-            width: 44px;
-            height: 44px;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 40px;
             background: var(--surface);
+            border: 1px solid var(--border-color);
             border-radius: 50%;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1000000;
-            opacity: 0;
-            transition: transform 0.1s ease, opacity 0.1s ease;
-            will-change: transform, opacity;
+            z-index: 100000;
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             pointer-events: none;
-        }
-        .ptr-spinner {
-            width: 22px;
-            height: 22px;
-            border: 3px solid var(--border-color);
-            border-top-color: var(--primary);
-            border-radius: 50%;
             will-change: transform;
         }
-        .ptr-refreshing .ptr-spinner {
+        .ptr-spinner-icon {
+            width: 22px;
+            height: 22px;
+            color: var(--primary);
+            transition: transform 0.1s linear;
+        }
+        .ptr-spinning .ptr-spinner-icon {
             animation: spin 0.8s linear infinite;
         }
     </style>
 </head>
 <body>
-
-    <!-- Native Pull to Refresh Indicator -->
-    <div id="ptr-indicator" class="ptr-container">
-        <div class="ptr-spinner"></div>
-    </div>
 
     <!-- Premium Audio Settings -->
     <audio id="startupSound" preload="auto">
@@ -1559,10 +1538,9 @@
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
 
-    <!-- Network Restore Loading Spinner -->
-    <div id="network-spinner-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:9999999; justify-content:center; align-items:center; flex-direction:column; color:white;">
-        <div style="width:48px; height:48px; border:4px solid rgba(255,255,255,0.2); border-top-color:var(--primary); border-radius:50%; animation:spin 1s linear infinite; margin-bottom:16px;"></div>
-        <p style="font-weight:700;">Reconnecting to Server...</p>
+    <!-- Native Pull To Refresh Spinner -->
+    <div id="pull-to-refresh-spinner" class="ptr-spinner-container">
+        <i class="fas fa-redo-alt ptr-spinner-icon"></i>
     </div>
 
     <!-- AUTHENTICATION SCREEN -->
@@ -2680,6 +2658,125 @@
 
     <script>
         // =========================================
+        // OFFLINE SKELETON UI GENERATORS
+        // =========================================
+        function generateHomeSkeleton() {
+            return `
+                <div style="padding: 12px 16px; margin-top: 10px;">
+                    <div class="skeleton-box" style="width:100%; aspect-ratio:16/9; border-radius:12px; margin-bottom:12px;"></div>
+                    <div style="display:flex; gap:12px; margin-bottom: 24px;">
+                        <div class="skeleton-box" style="width:40px; height:40px; border-radius:50%; flex-shrink:0;"></div>
+                        <div style="flex:1;">
+                            <div class="skeleton-box" style="width:85%; height:14px; border-radius:4px; margin-bottom:8px;"></div>
+                            <div class="skeleton-box" style="width:50%; height:12px; border-radius:4px;"></div>
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:24px;">
+                        <div class="skeleton-box" style="width:100%; aspect-ratio:2/3; border-radius:12px;"></div>
+                        <div class="skeleton-box" style="width:100%; aspect-ratio:2/3; border-radius:12px;"></div>
+                    </div>
+                    <div style="margin-bottom: 24px;">
+                        <div style="display:flex; gap:12px; margin-bottom:12px;">
+                            <div class="skeleton-box" style="width:40px; height:40px; border-radius:50%; flex-shrink:0;"></div>
+                            <div style="flex:1; justify-content:center; display:flex; flex-direction:column;">
+                                <div class="skeleton-box" style="width:40%; height:14px; border-radius:4px; margin-bottom:6px;"></div>
+                                <div class="skeleton-box" style="width:20%; height:10px; border-radius:4px;"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-box" style="width:100%; height:60px; border-radius:8px; margin-bottom:12px;"></div>
+                        <div class="skeleton-box" style="width:100%; aspect-ratio:1; border-radius:12px;"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateShortsSkeleton() {
+            return `
+                <div style="width:100%; height:100%; background:var(--bg-color); position:relative; overflow:hidden;">
+                    <div style="position:absolute; right:16px; bottom:100px; display:flex; flex-direction:column; gap:24px; align-items:center;">
+                        <div class="skeleton-box" style="width:46px; height:46px; border-radius:50%;"></div>
+                        <div class="skeleton-box" style="width:46px; height:46px; border-radius:50%;"></div>
+                        <div class="skeleton-box" style="width:46px; height:46px; border-radius:50%;"></div>
+                        <div class="skeleton-box" style="width:46px; height:46px; border-radius:50%;"></div>
+                    </div>
+                    <div style="position:absolute; left:16px; bottom:60px; width:70%;">
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                            <div class="skeleton-box" style="width:36px; height:36px; border-radius:50%;"></div>
+                            <div class="skeleton-box" style="width:120px; height:16px; border-radius:4px;"></div>
+                            <div class="skeleton-box" style="width:70px; height:26px; border-radius:16px;"></div>
+                        </div>
+                        <div class="skeleton-box" style="width:100%; height:14px; border-radius:4px; margin-bottom:8px;"></div>
+                        <div class="skeleton-box" style="width:70%; height:14px; border-radius:4px;"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateYouSkeleton() {
+            return `
+                <div style="padding: 16px;">
+                    <div class="skeleton-box" style="width:100%; height:130px; border-radius:24px; margin-bottom:24px;"></div>
+                    <div class="skeleton-box" style="width:100%; height:60px; border-radius:16px; margin-bottom:12px;"></div>
+                    <div class="skeleton-box" style="width:100%; height:60px; border-radius:16px; margin-bottom:12px;"></div>
+                    <div class="skeleton-box" style="width:100%; height:60px; border-radius:16px; margin-bottom:12px;"></div>
+                    <div class="skeleton-box" style="width:100%; height:60px; border-radius:16px; margin-bottom:12px;"></div>
+                </div>
+            `;
+        }
+
+        function generateSearchSkeleton() {
+            return `
+                <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 14px; margin-top: 10px;">
+                    <div class="skeleton-box" style="width:100%; aspect-ratio:2/3; border-radius:16px;"></div>
+                    <div class="skeleton-box" style="width:100%; aspect-ratio:2/3; border-radius:16px;"></div>
+                    <div class="skeleton-box" style="width:100%; aspect-ratio:2/3; border-radius:16px;"></div>
+                    <div class="skeleton-box" style="width:100%; aspect-ratio:2/3; border-radius:16px;"></div>
+                    <div class="skeleton-box" style="width:100%; aspect-ratio:2/3; border-radius:16px;"></div>
+                    <div class="skeleton-box" style="width:100%; aspect-ratio:2/3; border-radius:16px;"></div>
+                </div>
+            `;
+        }
+        
+        function renderAllSkeletons() {
+            const homeFeed = document.getElementById('home-feed-container');
+            const shortsSwiper = document.getElementById('shorts-swiper-container');
+            const searchResults = document.getElementById('search-results');
+            
+            if (homeFeed) homeFeed.innerHTML = generateHomeSkeleton();
+            if (shortsSwiper) shortsSwiper.innerHTML = generateShortsSkeleton();
+            if (searchResults) searchResults.innerHTML = generateSearchSkeleton();
+            
+            const youProfileCard = document.querySelector('.profile-card-you');
+            const youMenu = document.querySelector('.you-menu');
+            if (youProfileCard) youProfileCard.style.display = 'none';
+            if (youMenu) youMenu.style.display = 'none';
+            
+            let youSkeleton = document.getElementById('you-skeleton-container');
+            if (!youSkeleton) {
+                youSkeleton = document.createElement('div');
+                youSkeleton.id = 'you-skeleton-container';
+                const youTab = document.getElementById('you-tab');
+                if (youTab) youTab.appendChild(youSkeleton);
+            }
+            youSkeleton.innerHTML = generateYouSkeleton();
+            youSkeleton.style.display = 'block';
+        }
+
+        function restoreOnlineUI() {
+            const youProfileCard = document.querySelector('.profile-card-you');
+            const youMenu = document.querySelector('.you-menu');
+            const youSkeleton = document.getElementById('you-skeleton-container');
+            const searchResults = document.getElementById('search-results');
+            
+            if (youProfileCard) youProfileCard.style.display = 'block';
+            if (youMenu) youMenu.style.display = 'flex';
+            if (youSkeleton) youSkeleton.style.display = 'none';
+            if (searchResults && searchResults.innerHTML.includes('skeleton-box')) {
+                searchResults.innerHTML = '<p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding: 60px 0; font-weight: 500;">Search or use the mic to find movies.</p>';
+            }
+        }
+
+        // =========================================
         // AUTOMATIC & MANUAL THEME ENGINE
         // =========================================
         function applyTheme() {
@@ -2723,10 +2820,11 @@
 
         document.addEventListener("DOMContentLoaded", function() {
             applyTheme();
-            
-            // Delete cache load and check network immediately
+
             if (!navigator.onLine) {
-                window.setAppOnlineStatus(false);
+                renderAllSkeletons();
+            } else {
+                buildHomeFeed();
             }
 
             try {
@@ -2771,9 +2869,6 @@
                     });
                 });
             }
-
-            // Init Pull-to-refresh listeners on body
-            initPullToRefresh();
         });
         
         // =========================================================
@@ -2783,355 +2878,96 @@
         window.addEventListener('offline', () => { window.setAppOnlineStatus(false); });
 
         window.setAppOnlineStatus = async function(isOnline) {
-            const spinner = document.getElementById('network-spinner-overlay');
             if (isOnline) {
-                // 1. Force Firebase Connection Instantly
                 firebase.database().goOnline();
-                if(spinner) spinner.style.display = 'none';
-                showNotification("Network Restored! Syncing Live Data...", "success");
-                
+                restoreOnlineUI();
                 await syncOfflineLikes();
-                
-                // 2. Clear all Dead Listeners
-                db.ref('admin_panel/movies/user_uploads').off();
-                db.ref('admin_panel/movies/shorts').off();
-                db.ref('admin_panel/posts').off();
-                
-                const currentUser = auth.currentUser;
-                if (currentUser) {
-                    db.ref(`channels/${currentUser.uid}`).off();
-                    db.ref(`users/${currentUser.uid}`).off();
-                }
-                
-                // 3. Force Variables to -1 to trigger COMPLETE UI Rebuild (A-Z Update)
-                previousShortsCount = -1;
-                previousLongsCount = -1;
-                previousPostsCount = -1;
-                
-                // 4. Restart Live Data Feeds
-                startRealtimeFeedsListener(); 
-                
-                // 5. Update Profile, Analytics & Watch Page instantly
-                if (currentUser) {
-                    db.ref(`channels/${currentUser.uid}`).once('value', snap => {
-                        currentChannelData = snap.val();
-                        if(currentChannelData) {
-                            localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
-                        }
-                        initYouTabUI();
-                        
-                        const analyticsPage = document.getElementById('analytics-page');
-                        if (analyticsPage && analyticsPage.style.display === 'flex') {
-                            calculateChannelAnalytics();
-                        }
-                    });
-                }
-                
-                const moviePage = document.getElementById('full-movie-page');
-                if (moviePage && moviePage.style.display === 'block' && currentActiveMovie) {
-                    registerViewAndListen(currentActiveMovie.id);
-                }
-                
-                // 6. Resume Video Playback
-                const activeVideo = document.querySelector('.short-slide video[src]');
-                if(activeVideo && activeVideo.paused && activeVideo.readyState > 2) {
-                    activeVideo.play().catch(()=>{});
-                }
+                triggerUltraFastRefresh(); // Automatically fetch newest data silently
             } else {
-                // OFFLINE MODE
                 firebase.database().goOffline();
-                showNotification("Offline Mode. Showing Pre-loaded Skeletons.", "error");
-                
-                // Force layouts to display Shimmer skeletons instantly
-                buildHomeFeed(); 
-                buildShortsPage();
-                initYouTabUI();
+                renderAllSkeletons();
                 
                 const activeVideo = document.querySelector('.short-slide video[src]');
-                if(activeVideo && !activeVideo.paused) {
-                    activeVideo.pause();
-                    if(spinner) spinner.style.display = 'flex';
-                }
+                if(activeVideo && !activeVideo.paused) activeVideo.pause();
             }
         };
 
         // =========================================================
-        // UNIVERSAL PULL TO REFRESH LOGIC (NATIVE SMOOTHNESS)
+        // UNIVERSAL PULL TO REFRESH SYSTEM
         // =========================================================
         let ptrStartY = 0;
         let ptrCurrentY = 0;
-        let isPtrPulling = false;
-        let ptrThreshold = 85;
-        let ptrActive = false;
+        let isPulling = false;
+        const pullSpinner = document.getElementById('pull-to-refresh-spinner');
+        const pullIcon = pullSpinner.querySelector('.ptr-spinner-icon');
 
-        function getActiveScrollTop() {
-            // Check active modal first
-            const activeModal = Array.from(document.querySelectorAll('.premium-download-modal')).find(el => el.style.display === 'flex' || el.style.display === 'block');
-            if (activeModal) {
-                const scrollable = activeModal.querySelector('.download-modal-scrollable');
-                if (scrollable) return scrollable.scrollTop;
-                return activeModal.scrollTop;
+        document.addEventListener('touchstart', (e) => {
+            if (window.scrollY <= 1) { 
+                ptrStartY = e.touches[0].clientY;
+                isPulling = true;
+                pullSpinner.style.transition = 'none';
+                pullSpinner.classList.remove('ptr-spinning');
             }
+        }, { passive: true });
 
-            // Check fullscreen page
-            const activePage = Array.from(document.querySelectorAll('.fullscreen-page')).find(el => el.style.display === 'flex' || el.style.display === 'block');
-            if (activePage) {
-                return activePage.scrollTop;
+        document.addEventListener('touchmove', (e) => {
+            if (!isPulling) return;
+            ptrCurrentY = e.touches[0].clientY;
+            const diff = ptrCurrentY - ptrStartY;
+            
+            if (diff > 0 && window.scrollY <= 1) {
+                let moveY = Math.min(diff * 0.4, 80); 
+                pullSpinner.style.transform = `translate(-50%, ${moveY - 60}px)`;
+                pullIcon.style.transform = `rotate(${moveY * 4}deg)`;
             }
+        }, { passive: true });
 
-            // Default viewport scroll
-            return window.scrollY;
-        }
+        document.addEventListener('touchend', (e) => {
+            if (!isPulling) return;
+            isPulling = false;
+            
+            const diff = ptrCurrentY - ptrStartY;
+            pullSpinner.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
 
-        function initPullToRefresh() {
-            document.addEventListener('touchstart', function(e) {
-                if (getActiveScrollTop() === 0) {
-                    ptrStartY = e.touches[0].clientY;
-                    isPtrPulling = true;
-                } else {
-                    isPtrPulling = false;
-                }
-            }, { passive: true });
-
-            document.addEventListener('touchmove', function(e) {
-                if (!isPtrPulling || ptrActive) return;
-                ptrCurrentY = e.touches[0].clientY;
-                const pullDistance = ptrCurrentY - ptrStartY;
-
-                if (pullDistance > 0) {
-                    const ptrContainer = document.getElementById('ptr-indicator');
-                    if (ptrContainer) {
-                        ptrContainer.style.opacity = Math.min(1, pullDistance / ptrThreshold);
-                        const translateVal = Math.min(ptrThreshold + 20, pullDistance);
-                        ptrContainer.style.transform = `translate3d(-50%, ${translateVal}px, 0)`;
-                    }
-                }
-            }, { passive: true });
-
-            document.addEventListener('touchend', async function(e) {
-                if (!isPtrPulling || ptrActive) return;
-                isPtrPulling = false;
-
-                const pullDistance = ptrCurrentY - ptrStartY;
-                const ptrContainer = document.getElementById('ptr-indicator');
-
-                if (pullDistance >= ptrThreshold) {
-                    ptrActive = true;
-                    if (ptrContainer) {
-                        ptrContainer.classList.add('ptr-refreshing');
-                        ptrContainer.style.transform = `translate3d(-50%, ${ptrThreshold}px, 0)`;
-                        ptrContainer.style.opacity = '1';
-                    }
-                    
-                    // Trigger Live Sync Refresh Sequence
-                    await triggerUniversalRefresh();
-
-                    setTimeout(() => {
-                        if (ptrContainer) {
-                            ptrContainer.style.transform = `translate3d(-50%, 0, 0)`;
-                            ptrContainer.style.opacity = '0';
-                            ptrContainer.classList.remove('ptr-refreshing');
-                        }
-                        ptrActive = false;
-                    }, 800);
-                } else {
-                    if (ptrContainer) {
-                        ptrContainer.style.transform = `translate3d(-50%, 0, 0)`;
-                        ptrContainer.style.opacity = '0';
-                    }
-                }
-                ptrStartY = 0;
-                ptrCurrentY = 0;
-            });
-        }
-
-        async function triggerUniversalRefresh() {
-            if (!navigator.onLine) {
-                showNotification("Network Offline. Unable to Fetch Live Database.", "error");
-                return;
+            if (diff > 120 && window.scrollY <= 1) {
+                pullSpinner.style.transform = `translate(-50%, 30px)`;
+                pullSpinner.classList.add('ptr-spinning');
+                
+                triggerUltraFastRefresh();
+                
+                setTimeout(() => {
+                    pullSpinner.style.transform = `translate(-50%, -60px)`;
+                    pullSpinner.classList.remove('ptr-spinning');
+                }, 800);
+            } else {
+                pullSpinner.style.transform = `translate(-50%, -60px)`;
             }
             
-            showNotification("Syncing latest feed from server...", "success");
+            ptrStartY = 0;
+            ptrCurrentY = 0;
+        });
 
-            try {
-                // Prevent duplicate listeners
-                db.ref('admin_panel/movies/user_uploads').off();
-                db.ref('admin_panel/movies/shorts').off();
-                db.ref('admin_panel/posts').off();
-
-                const currentUser = auth.currentUser;
-                if (currentUser) {
-                    db.ref(`channels/${currentUser.uid}`).off();
-                    db.ref(`users/${currentUser.uid}`).off();
-                }
-
-                // Reset identifiers to force complete DOM rebuilding without caching
-                previousShortsCount = -1;
-                previousLongsCount = -1;
-                previousPostsCount = -1;
-
-                startRealtimeFeedsListener();
-
-                if (currentUser) {
-                    const chanSnap = await db.ref(`channels/${currentUser.uid}`).once('value');
-                    currentChannelData = chanSnap.val();
-                    if (currentChannelData) {
-                        localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
-                    }
-                    initYouTabUI();
-                    await calculateChannelAnalytics();
-                }
-
-                buildHomeFeed();
-                
-                const activeNav = document.querySelector('.nav-item.active');
-                if (activeNav) {
-                    const activeTabId = activeNav.id.replace('nav-', '');
-                    if (activeTabId === 'shorts') buildShortsPage();
-                    if (activeTabId === 'search') {
-                        const results = document.getElementById('search-results');
-                        if (results) results.innerHTML = getDiscoverSkeletons();
-                    }
-                }
-
-                showNotification("Live database update complete!", "success");
-            } catch (e) {
-                console.error("Refresh error caught safely:", e);
-                showNotification("Database request timed out.", "error");
+        function triggerUltraFastRefresh() {
+            if (navigator.vibrate) navigator.vibrate(20);
+            
+            if (!navigator.onLine) {
+                renderAllSkeletons();
+                return;
             }
-        }
 
-        // =========================================================
-        // SKELETON RENDER TEMPLATE DEFINITIONS
-        // =========================================================
-        function getHomeFeedSkeletons() {
-            return `
-                <div style="padding: 16px 0;">
-                    <!-- Long Video Skeleton -->
-                    <div style="margin-bottom: 24px; background: var(--surface); border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-                        <div class="shimmer-anim sk-rect" style="aspect-ratio: 16/9; border-radius: 0;"></div>
-                        <div style="padding: 14px 16px; display: flex; gap: 12px;">
-                            <div class="shimmer-anim sk-avatar"></div>
-                            <div style="flex-grow: 1;">
-                                <div class="shimmer-anim sk-title" style="width: 75%;"></div>
-                                <div class="shimmer-anim sk-text" style="width: 50%;"></div>
-                            </div>
-                        </div>
-                    </div>
+            previousShortsCount = -1;
+            previousLongsCount = -1;
+            previousPostsCount = -1;
+            
+            startRealtimeFeedsListener();
 
-                    <!-- Shorts Row Skeleton -->
-                    <div style="margin-bottom: 24px;">
-                        <div class="shimmer-anim sk-title" style="width: 100px; margin-bottom: 12px;"></div>
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
-                            <div class="shimmer-anim sk-rect" style="aspect-ratio: 2/3;"></div>
-                            <div class="shimmer-anim sk-rect" style="aspect-ratio: 2/3;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Community Post Skeleton -->
-                    <div style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <div class="shimmer-anim sk-avatar"></div>
-                                <div>
-                                    <div class="shimmer-anim sk-text" style="width: 100px;"></div>
-                                    <div class="shimmer-anim sk-text-sm" style="width: 60px;"></div>
-                                </div>
-                            </div>
-                            <div class="shimmer-anim sk-btn" style="width: 80px;"></div>
-                        </div>
-                        <div class="shimmer-anim sk-rect" style="aspect-ratio: 3/4; margin-bottom: 12px;"></div>
-                        <div style="display: flex; gap: 8px;">
-                            <div class="shimmer-anim sk-btn" style="flex: 1;"></div>
-                            <div class="shimmer-anim sk-btn" style="flex: 1;"></div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function getShortsSkeletons() {
-            return `
-                <div class="short-slide" style="height: 100%; width: 100%; background: #000000; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                    <div class="shimmer-anim" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; opacity: 0.3;"></div>
-                    
-                    <div class="short-right-actions" style="bottom: 54px; right: 12px;">
-                        <div class="short-action-container"><div class="shimmer-anim sk-avatar" style="background: #222; width: 44px; height: 44px; margin-bottom: 4px;"></div><div class="shimmer-anim sk-text-sm" style="background: #222; width: 24px;"></div></div>
-                        <div class="short-action-container"><div class="shimmer-anim sk-avatar" style="background: #222; width: 44px; height: 44px; margin-bottom: 4px;"></div><div class="shimmer-anim sk-text-sm" style="background: #222; width: 24px;"></div></div>
-                        <div class="short-action-container"><div class="shimmer-anim sk-avatar" style="background: #222; width: 44px; height: 44px; margin-bottom: 4px;"></div><div class="shimmer-anim sk-text-sm" style="background: #222; width: 24px;"></div></div>
-                        <div class="shimmer-anim sk-avatar" style="background: #222; width: 40px; height: 40px; margin-top: 6px;"></div>
-                    </div>
-
-                    <div class="short-bottom-info" style="bottom: 54px; left: 12px; right: 76px;">
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                            <div class="shimmer-anim sk-avatar" style="background: #222; width: 32px; height: 32px;"></div>
-                            <div class="shimmer-anim sk-text" style="background: #222; width: 80px; margin-bottom: 0;"></div>
-                            <div class="shimmer-anim sk-btn" style="background: #222; width: 80px; height: 28px;"></div>
-                        </div>
-                        <div class="shimmer-anim sk-text" style="background: #222; width: 150px;"></div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function getDiscoverSkeletons() {
-            return `
-                <div style="padding: 16px 0; width: 100%;">
-                    <div style="display: flex; gap: 10px; margin-bottom: 20px; overflow: hidden; width: 100%;">
-                        <div class="shimmer-anim sk-chip" style="flex-shrink: 0;"></div>
-                        <div class="shimmer-anim sk-chip" style="flex-shrink: 0;"></div>
-                        <div class="shimmer-anim sk-chip" style="flex-shrink: 0;"></div>
-                        <div class="shimmer-anim sk-chip" style="flex-shrink: 0;"></div>
-                    </div>
-                    <div class="movie-grid">
-                        <div style="display: flex; flex-direction: column; gap: 8px;">
-                            <div class="shimmer-anim sk-rect" style="aspect-ratio: 2/3;"></div>
-                            <div class="shimmer-anim sk-text" style="width: 80%;"></div>
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 8px;">
-                            <div class="shimmer-anim sk-rect" style="aspect-ratio: 2/3;"></div>
-                            <div class="shimmer-anim sk-text" style="width: 80%;"></div>
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 8px;">
-                            <div class="shimmer-anim sk-rect" style="aspect-ratio: 2/3;"></div>
-                            <div class="shimmer-anim sk-text" style="width: 80%;"></div>
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 8px;">
-                            <div class="shimmer-anim sk-rect" style="aspect-ratio: 2/3;"></div>
-                            <div class="shimmer-anim sk-text" style="width: 80%;"></div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function getYouSkeletons() {
-            return `
-                <div style="padding: 15px 0;">
-                    <div class="profile-card-you" style="margin-top: 15px; border: none; box-shadow: none;">
-                        <div class="profile-card-main">
-                            <div class="shimmer-anim sk-avatar-lg"></div>
-                            <div style="flex-grow: 1; margin-left: 16px;">
-                                <div class="shimmer-anim sk-title" style="width: 140px;"></div>
-                                <div class="shimmer-anim sk-text" style="width: 100px;"></div>
-                            </div>
-                        </div>
-                        <div style="margin-top: 20px;">
-                            <div class="shimmer-anim sk-btn" style="width: 100%;"></div>
-                        </div>
-                    </div>
-                    <div class="you-menu" style="border: none; box-shadow: none;">
-                        <div style="padding: 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color);">
-                            <div class="shimmer-anim sk-text" style="width: 150px; margin-bottom: 0;"></div>
-                            <div class="shimmer-anim sk-text-sm" style="width: 20px; margin-bottom: 0;"></div>
-                        </div>
-                        <div style="padding: 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color);">
-                            <div class="shimmer-anim sk-text" style="width: 150px; margin-bottom: 0;"></div>
-                            <div class="shimmer-anim sk-text-sm" style="width: 20px; margin-bottom: 0;"></div>
-                        </div>
-                    </div>
-                </div>
-            `;
+            const activeNav = document.querySelector('.nav-item.active');
+            if (activeNav) {
+                const tabId = activeNav.id.replace('nav-', '');
+                if (tabId === 'home') buildHomeFeed();
+                if (tabId === 'shorts') buildShortsPage();
+                if (tabId === 'you') initYouTabUI();
+            }
         }
 
         // =========================================
@@ -3235,9 +3071,6 @@
         const s3 = new AWS.S3({ params: { Bucket: 'flaynity-storage' } });
         const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-bcff9c709dbe44d7a50c78e9a0f9bd59.r2.dev";
 
-        // =========================================================
-        // S3 R2 OBJECT STORAGE MEDIA UPLOAD MODULE
-        // =========================================================
         async function uploadImageToR2(file, folder = "images") {
             if (!s3) throw new Error("R2 Client storage unit is not configured.");
             const uniqueId = "img_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
@@ -3399,38 +3232,6 @@
             }
         }
 
-        function handleAvatarClick() {
-            playUI('click');
-            const choice = confirm("Profile Options:\n\n[OK] - Upload Profile Picture\n[Cancel] - Log Out");
-            if (choice) {
-                const fileInput = document.createElement('input');
-                fileInput.type = 'file';
-                fileInput.accept = 'image/*';
-                fileInput.onchange = function() { uploadUserAvatarToR2Engine(fileInput); };
-                fileInput.click();
-            } else {
-                logout();
-            }
-        }
-
-        async function uploadUserAvatarToR2Engine(fileInput) {
-            const file = fileInput.files[0];
-            if (!file) return;
-
-            showNotification("Uploading profile picture...", "success");
-            try {
-                const secureUrl = await uploadImageToR2(file, "avatars");
-                const currentUser = auth.currentUser;
-                if (currentUser) {
-                    await currentUser.updateProfile({ photoURL: secureUrl });
-                    await db.ref(`users/${currentUser.uid}`).update({ photoURL: secureUrl });
-                    showNotification("Profile picture updated successfully!", "success");
-                }
-            } catch (err) {
-                showNotification("Upload failed.", "error");
-            }
-        }
-
         async function signInWithGoogle() {
             playUI('click');
             if (window.AndroidBridge && typeof window.AndroidBridge.triggerGoogleSignIn === 'function') {
@@ -3462,6 +3263,145 @@
         function logout() { 
             cleanupUserSessionData();
             auth.signOut(); 
+        }
+
+        // =========================================================
+        // REALTIME LISTENERS FOR ZERO-REFRESH FEED PROPAGATION
+        // =========================================================
+        let previousShortsCount = -1;
+        let previousLongsCount = -1;
+        let previousPostsCount = -1;
+
+        function startRealtimeFeedsListener() {
+            try {
+                db.ref('admin_panel/movies/user_uploads').off();
+                db.ref('admin_panel/movies/shorts').off();
+                db.ref('admin_panel/posts').off();
+
+                db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
+                    if (!navigator.onLine) return;
+                    const data = snap.val();
+                    allLongVideos = data ? Object.values(data) : [];
+                    allLongVideos.sort((a,b) => b.createdAt - a.createdAt);
+                    
+                    allLongVideos.forEach(m => {
+                        if (m && m.id && !allAdminMovies.find(x => x.id === m.id)) allAdminMovies.push(m);
+                    });
+
+                    if(allLongVideos.length !== previousLongsCount) {
+                        previousLongsCount = allLongVideos.length;
+                        buildHomeFeed();
+                    }
+                });
+
+                db.ref('admin_panel/movies/shorts').on('value', (snap) => {
+                    if (!navigator.onLine) return;
+                    const data = snap.val();
+                    allShorts = data ? Object.values(data) : [];
+                    allShorts.sort((a,b) => b.createdAt - a.createdAt);
+                    
+                    if(allShorts.length !== previousShortsCount) {
+                        previousShortsCount = allShorts.length;
+                        buildHomeFeed();
+                        const shortsTab = document.getElementById('shorts-tab');
+                        if (shortsTab && shortsTab.classList.contains('active')) {
+                            const activeShortId = document.querySelector('.short-slide video[src]')?.closest('.short-slide')?.getAttribute('data-shortid');
+                            buildShortsPage();
+                            if(activeShortId) {
+                                 setTimeout(() => {
+                                     const targetSlide = document.getElementById(`slide-short-${activeShortId}`);
+                                     if (targetSlide) targetSlide.scrollIntoView({block: 'start'});
+                                 }, 50);
+                            }
+                        }
+                    }
+                });
+
+                db.ref('admin_panel/posts').on('value', (snap) => {
+                    if (!navigator.onLine) return;
+                    const data = snap.val();
+                    allCommunityPosts = data ? Object.values(data) : [];
+                    allCommunityPosts.sort((a,b) => b.createdAt - a.createdAt);
+                    
+                    if (allCommunityPosts.length !== previousPostsCount) {
+                        previousPostsCount = allCommunityPosts.length;
+                        buildHomeFeed();
+                    }
+                });
+
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    db.ref(`channels/${currentUser.uid}`).on('value', (snapshot) => {
+                        try {
+                            currentChannelData = snapshot.val();
+                            if (currentChannelData) {
+                                localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                            }
+                            const activeNav = document.querySelector('.nav-item.active');
+                            if (activeNav && activeNav.id === 'nav-you') {
+                                initYouTabUI();
+                            }
+                            updateBottomNavAvatar();
+                        } catch (e) {}
+                    });
+
+                    db.ref(`users/${currentUser.uid}`).on('value', (snapshot) => {
+                        try {
+                            const userData = snapshot.val();
+                            const photoURL = userData?.photoURL || currentUser.photoURL || '';
+                            renderUserAvatar(photoURL, currentUser.email);
+                        } catch (e) {}
+                    });
+                }
+            } catch (err) {
+                console.error("Global database binding exception:", err);
+            }
+        }
+
+        const boundChannelListeners = {};
+        function bindLiveChannelUI(userId) {
+            if (!userId) return;
+            if (boundChannelListeners[userId]) {
+                if (navigator.onLine) {
+                    db.ref(`channels/${userId}`).once('value', (snap) => {
+                        updateChannelDOM(userId, snap.val());
+                    });
+                }
+                return;
+            }
+            boundChannelListeners[userId] = true;
+            if (navigator.onLine) {
+                db.ref(`channels/${userId}`).on('value', (snap) => {
+                    updateChannelDOM(userId, snap.val());
+                });
+            }
+        }
+
+        function updateChannelDOM(userId, data) {
+            if (!data) return;
+            const name = data.channelName || "Flaynity User";
+            const handle = data.handle || "handle";
+            const avatar = data.avatarUrl || "";
+
+            document.querySelectorAll(`.live-username-${userId}`).forEach(el => {
+                el.innerText = name;
+            });
+            document.querySelectorAll(`.live-handle-${userId}`).forEach(el => {
+                el.innerText = "@" + handle;
+            });
+            document.querySelectorAll(`.live-avatar-${userId}`).forEach(el => {
+                if (avatar) {
+                    el.innerHTML = `<img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                } else {
+                    const initial = name.charAt(0).toUpperCase();
+                    el.innerHTML = `<div style="width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--primary), #FF7A00); color: #fff; font-weight: 800; font-size: 0.9rem;">${initial}</div>`;
+                }
+            });
+            document.querySelectorAll(`.live-disc-avatar-${userId}`).forEach(el => {
+                if (avatar) {
+                    el.innerHTML = `<img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                }
+            });
         }
 
         // =========================================================
@@ -3866,164 +3806,6 @@
         }
 
         // =========================================================
-        // REALTIME LISTENERS FOR ZERO-REFRESH FEED PROPAGATION
-        // =========================================================
-        let previousShortsCount = -1;
-        let previousLongsCount = -1;
-        let previousPostsCount = -1;
-
-        function startRealtimeFeedsListener() {
-            try {
-                db.ref('admin_panel/movies/user_uploads').off();
-                db.ref('admin_panel/movies/shorts').off();
-                db.ref('admin_panel/posts').off();
-
-                db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
-                    try {
-                        const data = snap.val();
-                        allLongVideos = data ? Object.values(data) : [];
-                        allLongVideos.sort((a,b) => b.createdAt - a.createdAt);
-                        
-                        allLongVideos.forEach(m => {
-                            if (m && m.id && !allAdminMovies.find(x => x.id === m.id)) {
-                                allAdminMovies.push(m);
-                            }
-                        });
-
-                        if(allLongVideos.length !== previousLongsCount) {
-                            previousLongsCount = allLongVideos.length;
-                            buildHomeFeed();
-                        } else {
-                            allLongVideos.forEach(v => {
-                                const titleEl = document.querySelector(`.long-video-feed-card[onclick*="${v.id}"] .long-video-title`);
-                                if (titleEl) titleEl.innerText = escapeHTML(v.title);
-                            });
-                        }
-                    } catch (e) {}
-                });
-
-                db.ref('admin_panel/movies/shorts').on('value', (snap) => {
-                    try {
-                        const data = snap.val();
-                        allShorts = data ? Object.values(data) : [];
-                        allShorts.sort((a,b) => b.createdAt - a.createdAt);
-                        
-                        if(allShorts.length !== previousShortsCount) {
-                            previousShortsCount = allShorts.length;
-                            buildHomeFeed();
-                            const shortsTab = document.getElementById('shorts-tab');
-                            if (shortsTab && shortsTab.classList.contains('active')) {
-                                const activeShortId = document.querySelector('.short-slide video[src]')?.closest('.short-slide')?.getAttribute('data-shortid');
-                                buildShortsPage();
-                                if(activeShortId) {
-                                     setTimeout(() => {
-                                         const targetSlide = document.getElementById(`slide-short-${activeShortId}`);
-                                         if (targetSlide) targetSlide.scrollIntoView({block: 'start'});
-                                     }, 50);
-                                }
-                            }
-                        } else {
-                            allShorts.forEach(s => {
-                                const titleEl = document.querySelector(`#slide-short-${s.id} #short-title-val`);
-                                if(titleEl) titleEl.innerHTML = `${escapeHTML(s.title)} <span style="font-weight:400; font-size:0.8rem; color:#ccc; display:block;">Click to view description</span>`;
-                                const thumbEl = document.querySelector(`.short-home-card-2col[onclick*="${s.id}"] img`);
-                                if (thumbEl) thumbEl.src = s.poster;
-                            });
-                        }
-                    } catch (e) {}
-                });
-
-                db.ref('admin_panel/posts').on('value', (snap) => {
-                    try {
-                        const data = snap.val();
-                        allCommunityPosts = data ? Object.values(data) : [];
-                        allCommunityPosts.sort((a,b) => b.createdAt - a.createdAt);
-                        
-                        if (allCommunityPosts.length !== previousPostsCount) {
-                            previousPostsCount = allCommunityPosts.length;
-                            buildHomeFeed();
-                        }
-                    } catch (e) {}
-                });
-
-                const currentUser = auth.currentUser;
-                if (currentUser) {
-                    db.ref(`channels/${currentUser.uid}`).on('value', (snapshot) => {
-                        try {
-                            currentChannelData = snapshot.val();
-                            if (currentChannelData) {
-                                localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
-                            }
-                            const activeNav = document.querySelector('.nav-item.active');
-                            if (activeNav && activeNav.id === 'nav-you') {
-                                initYouTabUI();
-                            }
-                            updateBottomNavAvatar();
-                        } catch (e) {}
-                    });
-
-                    db.ref(`users/${currentUser.uid}`).on('value', (snapshot) => {
-                        try {
-                            const userData = snapshot.val();
-                            const photoURL = userData?.photoURL || currentUser.photoURL || '';
-                            renderUserAvatar(photoURL, currentUser.email);
-                        } catch (e) {}
-                    });
-                }
-            } catch (err) {
-                console.error("Global database binding exception:", err);
-            }
-        }
-
-        const boundChannelListeners = {};
-        function bindLiveChannelUI(userId) {
-            if (!userId) return;
-            
-            if (boundChannelListeners[userId]) {
-                if (navigator.onLine) {
-                    db.ref(`channels/${userId}`).once('value', (snap) => {
-                        updateChannelDOM(userId, snap.val());
-                    });
-                }
-                return;
-            }
-            
-            boundChannelListeners[userId] = true;
-            if (navigator.onLine) {
-                db.ref(`channels/${userId}`).on('value', (snap) => {
-                    updateChannelDOM(userId, snap.val());
-                });
-            }
-        }
-
-        function updateChannelDOM(userId, data) {
-            if (!data) return;
-            const name = data.channelName || "Flaynity User";
-            const handle = data.handle || "handle";
-            const avatar = data.avatarUrl || "";
-
-            document.querySelectorAll(`.live-username-${userId}`).forEach(el => {
-                el.innerText = name;
-            });
-            document.querySelectorAll(`.live-handle-${userId}`).forEach(el => {
-                el.innerText = "@" + handle;
-            });
-            document.querySelectorAll(`.live-avatar-${userId}`).forEach(el => {
-                if (avatar) {
-                    el.innerHTML = `<img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
-                } else {
-                    const initial = name.charAt(0).toUpperCase();
-                    el.innerHTML = `<div style="width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--primary), #FF7A00); color: #fff; font-weight: 800; font-size: 0.9rem;">${initial}</div>`;
-                }
-            });
-            document.querySelectorAll(`.live-disc-avatar-${userId}`).forEach(el => {
-                if (avatar) {
-                    el.innerHTML = `<img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
-                }
-            });
-        }
-
-        // =========================================================
         // COMMUNITY POST IMPLEMENTATION
         // =========================================================
         function handleImagesSelected(e) {
@@ -4181,23 +3963,12 @@
             buildHomeFeed();
         }
 
-        // =========================================================
-        // UNIFIED Real-time Scroll Feed Engine for Home Page
-        // =========================================================
         function buildHomeFeed() {
             const container = document.getElementById('home-feed-container');
             if (!container) return;
 
             if (!navigator.onLine) {
-                container.innerHTML = getHomeFeedSkeletons();
-                const chips = document.getElementById('global-category-chips');
-                if (chips) {
-                    chips.innerHTML = `
-                        <div class="shimmer-anim sk-chip" style="grid-column: 1;"></div>
-                        <div class="shimmer-anim sk-chip" style="grid-column: 2;"></div>
-                        <div class="shimmer-anim sk-chip" style="grid-column: 3;"></div>
-                    `;
-                }
+                container.innerHTML = generateHomeSkeleton();
                 return;
             }
 
@@ -4217,10 +3988,7 @@
                     container.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 40px 0; font-weight:700;">No Shorts available.</p>`;
                     return;
                 }
-                html += `
-                    <div class="shorts-section-container" style="margin-top: 10px;">
-                        <div class="shorts-home-grid-2col">
-                `;
+                html += `<div class="shorts-section-container" style="margin-top: 10px;"><div class="shorts-home-grid-2col">`;
                 shorts.forEach(s => {
                     if (s.userId) uniqueUserIds.add(s.userId);
                     html += `
@@ -4232,7 +4000,6 @@
                             </div>
                         </div>
                     `;
-                    
                     if(navigator.onLine) {
                         db.ref(`movie_stats/${s.id}/views`).once('value', (vSnap) => {
                             const viewsObj = vSnap.val() || {};
@@ -4244,7 +4011,6 @@
                 });
                 html += `</div></div>`;
                 container.innerHTML = html;
-                
                 uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
                 return;
             }
@@ -4259,27 +4025,18 @@
                     html += renderSinglePostSegmentUI(p);
                 });
                 container.innerHTML = html;
-                if(navigator.onLine) {
-                    posts.slice(0, postRenderLimit).forEach(p => {
-                        registerPostReactionsListener(p.id);
-                    });
-                }
-
+                if(navigator.onLine) posts.slice(0, postRenderLimit).forEach(p => registerPostReactionsListener(p.id));
                 uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
                 return;
             }
 
-            let shortIdx = 0;
-            let longIdx = 0;
-            let postIdx = 0;
-
+            let shortIdx = 0, longIdx = 0, postIdx = 0;
             if (shorts.length === 0 && longs.length === 0 && posts.length === 0) {
                 container.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 40px 0; font-weight:700;">No items in this category.</p>`;
                 return;
             }
 
             let postsToBind = [];
-
             while (longIdx < longs.length || shortIdx < shorts.length || postIdx < posts.length) {
                 if (shortIdx < shorts.length) {
                     const segmentShorts = shorts.slice(shortIdx, shortIdx + 6);
@@ -4287,14 +4044,12 @@
                     segmentShorts.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
                     html += renderShortsSegmentUI(segmentShorts);
                 }
-
                 if (longIdx < longs.length) {
                     const segmentLongs = longs.slice(longIdx, longIdx + 10);
                     longIdx += 10;
                     segmentLongs.forEach(l => { if (l.userId) uniqueUserIds.add(l.userId); });
                     html += renderLongVideosSegmentUI(segmentLongs);
                 }
-
                 if (postIdx < posts.length) {
                     const singlePost = posts[postIdx];
                     postIdx++;
@@ -4305,15 +4060,12 @@
             }
 
             container.innerHTML = html;
-            if(navigator.onLine) {
-                postsToBind.forEach(postId => registerPostReactionsListener(postId));
-            }
+            if(navigator.onLine) postsToBind.forEach(postId => registerPostReactionsListener(postId));
             uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
         }
 
         function renderShortsSegmentUI(segmentShorts) {
             if (segmentShorts.length === 0) return '';
-            
             const limitedShorts = segmentShorts.slice(0, 6);
             
             let html = `
@@ -4543,7 +4295,6 @@
 
         function openShortFromHome(shortId) {
             switchTab('shorts');
-            buildShortsPage();
             setTimeout(() => {
                 const targetSlide = document.getElementById(`slide-short-${shortId}`);
                 if (targetSlide) {
@@ -4581,170 +4332,6 @@
             triggerHapticFeedback();
             
             setTimeout(() => { heart.remove(); }, 800);
-        }
-
-        // =========================================================
-        // HIGH PERFORMANCE SHORTS BUILDER (SMART ALLOCATION)
-        // =========================================================
-        let hlsInstances = {}; 
-
-        function buildShortsPage() {
-            const container = document.getElementById('shorts-swiper-container');
-            if (!container) return;
-            
-            if (!navigator.onLine) {
-                container.innerHTML = getShortsSkeletons();
-                return;
-            }
-
-            let activeShortsList = allShorts;
-            if (activeShortsList.length === 0) {
-                container.innerHTML = `
-                    <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#FFFFFF;">
-                        <i class="fas fa-video-slash" style="font-size:3rem; margin-bottom:12px; color:var(--primary);"></i>
-                        <p style="font-size:1.1rem; font-weight:700;">No Shorts Available</p>
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '';
-            activeShortsList.forEach(s => {
-                const isLikedId = `short-like-btn-${s.id}`;
-                const likesCountId = `short-likes-count-${s.id}`;
-                const commentsCountId = `short-comments-count-${s.id}`;
-                const statsCacheKey = `flaynity_stats_cache_${s.id}`;
-
-                let cachedStats = { likes: 0, comments: 0 };
-                let offlineLikes = JSON.parse(localStorage.getItem('flaynity_offline_likes') || '{}');
-                let isLocallyLiked = !!offlineLikes[s.id];
-                try {
-                    cachedStats = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
-                } catch(e) {}
-
-                if(isLocallyLiked && cachedStats.likes === 0) cachedStats.likes = 1;
-
-                html += `
-                    <div class="short-slide" id="slide-short-${s.id}" data-shortid="${s.id}">
-                        <div class="short-buffer-spinner" id="short-spinner-${s.id}"></div>
-                        <div class="short-play-pause-overlay" id="short-pp-overlay-${s.id}"></div>
-
-                        <video class="short-video-el" loop playsinline webkit-playsinline></video>
-
-                        <div class="short-progress-container">
-                            <div class="short-progress-bar" id="short-progress-bar-${s.id}"></div>
-                        </div>
-
-                        <div class="short-right-actions">
-                            <div class="short-action-container">
-                                <button class="short-action-btn-tiktok" id="${isLikedId}" onclick="toggleShortLike('${s.id}')">
-                                    <i class="${isLocallyLiked ? 'fas fa-heart liked' : 'far fa-heart'}"></i>
-                                </button>
-                                <div class="short-action-label-tiktok" id="${likesCountId}">${formatCount(cachedStats.likes)}</div>
-                            </div>
-
-                            <div class="short-action-container">
-                                <button class="short-action-btn-tiktok-other" onclick="openShortComments('${s.id}')">
-                                    <i class="far fa-comment"></i>
-                                </button>
-                                <div class="short-action-label-tiktok" id="${commentsCountId}">${formatCount(cachedStats.comments)}</div>
-                            </div>
-
-                            <div class="short-action-container">
-                                <button class="short-action-btn-tiktok-other" onclick="triggerShortDownload('${s.id}')">
-                                    <i class="fas fa-download"></i>
-                                </button>
-                                <div class="short-action-label-tiktok">Save</div>
-                            </div>
-
-                            <div class="music-disc-container">
-                                <div class="music-disc-inner live-disc-avatar-${s.userId}" id="music-disc-${s.id}">
-                                    <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="short-bottom-info">
-                            <div class="short-channel-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-                                <div class="live-avatar-${s.userId}" style="width:32px; height:32px; border-radius:50%; border:2px solid #fff; overflow:hidden;"></div>
-                                <span class="short-channel-handle live-handle-${s.userId}" style="font-size:0.9rem; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8);">@${s.username || 'startube'}</span>
-                                <button class="short-subscribe-btn" id="short-sub-btn-${s.id}" onclick="toggleShortSubscribe('${s.userId}', this)">Subscribe</button>
-                            </div>
-                            
-                            <div class="short-title-wrap" onclick="openShortDescBottomSheet('${s.id}')" style="cursor:pointer;">
-                                <h2 id="short-title-val" style="font-size: 0.95rem; font-weight: 800; color: #ffffff; margin: 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
-                                    ${escapeHTML(s.title)} <span style="font-weight:400; font-size:0.8rem; color:#ccc; display:block;">Click to view description</span>
-                                </h2>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                if(navigator.onLine) {
-                    db.ref(`movie_stats/${s.id}`).on('value', (snapshot) => {
-                        const stats = snapshot.val() || {};
-                        const viewsObj = stats.views || {};
-                        const likesObj = stats.likes || {};
-                        const likesCount = Object.keys(likesObj).length;
-
-                        try {
-                            let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
-                            currCache.likes = likesCount;
-                            localStorage.setItem(statsCacheKey, JSON.stringify(currCache));
-                        } catch(e) {}
-
-                        const lblLikes = document.getElementById(likesCountId);
-                        if (lblLikes) lblLikes.innerText = formatCount(likesCount);
-
-                        const likeBtn = document.getElementById(isLikedId);
-                        if (likeBtn && auth.currentUser) {
-                            if (likesObj[auth.currentUser.uid]) {
-                                likeBtn.innerHTML = `<i class="fas fa-heart liked"></i>`;
-                            } else {
-                                likeBtn.innerHTML = `<i class="far fa-heart"></i>`;
-                            }
-                        }
-                    });
-
-                    db.ref(`movie_comments/${s.id}`).on('value', (snapshot) => {
-                        const commentsObj = snapshot.val() || {};
-                        const count = Object.keys(commentsObj).length;
-
-                        try {
-                            let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
-                            currCache.comments = count;
-                            localStorage.setItem(statsCacheKey, JSON.stringify(currCache));
-                        } catch(e) {}
-
-                        const lblComments = document.getElementById(commentsCountId);
-                        if (lblComments) lblComments.innerText = formatCount(count);
-                    });
-
-                    if (auth.currentUser) {
-                        db.ref(`subscribers/${s.userId}/${auth.currentUser.uid}`).on('value', (snapshot) => {
-                            const subBtn = document.getElementById(`short-sub-btn-${s.id}`);
-                            if (subBtn) {
-                                if (snapshot.exists()) {
-                                    subBtn.innerText = "Subscribed";
-                                    subBtn.style.background = "#4B5563";
-                                } else {
-                                    subBtn.innerText = "Subscribe";
-                                    subBtn.style.background = "var(--primary)";
-                                }
-                            }
-                        });
-                    }
-                }
-            });
-
-            container.innerHTML = `<div class="shorts-swiper">${html}</div>`;
-            initShortsObserver();
-            setupDoubleTapListeners();
-            bindShortsVideoEvents();
-
-            const uniqueUserIds = new Set();
-            activeShortsList.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
-            uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
         }
 
         // =========================================================
@@ -4805,6 +4392,7 @@
                 if (!video) return;
                 const shortId = slide.getAttribute('data-shortid');
 
+                // Hardware Decoder Optimization Tags
                 video.setAttribute('playsinline', '');
                 video.setAttribute('webkit-playsinline', '');
                 video.style.background = 'transparent';
@@ -4948,7 +4536,9 @@
                 
                 localStorage.setItem('flaynity_offline_likes', JSON.stringify(offlineLikes));
                 updateLikesDOMOffline(shortId);
-            } catch (e) {}
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         function updateLikesDOMOffline(shortId) {
@@ -5089,8 +4679,10 @@
 
         // =========================================================
         // ULTRA FAST PRE-LOAD ADJACENT CLIPS & SHORTS MEMORY ENGINE
+        // (Smart HLS Adaptive Streaming & Hardware Decoder)
         // =========================================================
         let currentActiveShortsIdx = -1;
+        let hlsInstances = {}; // Store HLS Engine instances globally
         
         function attachSmartAdaptiveSource(videoElement, url, shortId) {
             if (url && url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
@@ -5122,7 +4714,6 @@
                 if (!s) return;
 
                 if (idx >= activeIndex - 1 && idx <= activeIndex + 2) {
-                    
                     if (video.getAttribute('poster') !== s.poster) {
                         video.setAttribute('poster', s.poster);
                     }
@@ -5294,10 +4885,6 @@
 
                 if (activeTab === 'you') initYouTabUI();
                 if (activeTab === 'shorts') buildShortsPage();
-                if (activeTab === 'search' && !navigator.onLine) {
-                    const results = document.getElementById('search-results');
-                    if (results) results.innerHTML = getDiscoverSkeletons();
-                }
 
                 if (activePage) {
                     if (activePage === 'full-movie-page') {
@@ -5935,34 +5522,6 @@
             document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('active'));
             chipEl.classList.add('active');
             showUpcomingModal();
-        }
-
-        // =========================================
-        // YOU & CHANNEL PLATFORM WORKFLOW CONTROLS
-        // =========================================
-        function initYouTabUI() {
-            const wrap = document.getElementById('channel-action-box');
-            if (!wrap) return;
-
-            const user = auth.currentUser;
-            if (!user) return;
-
-            if(!navigator.onLine) {
-                const tabContent = document.getElementById('you-tab');
-                if (tabContent) {
-                    tabContent.innerHTML = getYouSkeletons();
-                }
-                return;
-            }
-
-            db.ref(`channels/${user.uid}`).on('value', (snapshot) => {
-                currentChannelData = snapshot.val();
-                
-                if (currentChannelData) {
-                    localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
-                }
-                renderYouTabWithData(currentChannelData, user, wrap);
-            });
         }
 
         function renderYouTabWithData(data, user, wrap) {

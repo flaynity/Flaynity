@@ -480,11 +480,11 @@
         #full-movie-page { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--bg-color); z-index: 2000; display: none; overflow-y: auto; animation: slideUpFade 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes slideUpFade { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        .back-btn { position: absolute; top: 12px; left: 12px; background: rgba(0, 0, 0, 0.5); border: none; color: #ffffff; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; z-index: 2010; transition: 0.3s; backdrop-filter: blur(5px); }
-        .back-btn:active { transform: scale(0.85); background: var(--primary); color: white; }
+        .back-btn { position: absolute; top: 20px; left: 20px; background: var(--surface); border: 1px solid var(--glass-border); color: var(--text-main); width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; z-index: 2010; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .back-btn:active { transform: scale(0.85); background: var(--primary); border-color: var(--primary); color: white; }
 
         .full-page-banner { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; border-bottom: 1px solid var(--glass-border); }
-        .video-container { width: 100%; height: 100%; background: #000; display: none; position: relative; border-bottom: 1px solid var(--glass-border); }
+        .video-container { width: 100%; aspect-ratio: 16 / 9; background: #000; display: none; position: relative; border-bottom: 1px solid var(--glass-border); }
         .video-container iframe, .video-container video { width: 100%; height: 100%; border: none; }
 
         .full-page-content { padding: 16px; }
@@ -1464,292 +1464,6 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
-
-        /* =========================================================
-           YOUTUBE STYLE STICKY LONG VIDEO PLAYER CSS
-           ========================================================= */
-        .watch-page-sticky-header {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            width: 100%;
-            aspect-ratio: 16/9;
-            background: #000000;
-            overflow: hidden;
-        }
-
-        .yt-custom-player-wrapper {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            background: #000000;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        .yt-custom-player-wrapper video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            display: block;
-        }
-
-        /* Overlay Controls */
-        .yt-controls-overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.45);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 12px 16px;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 25;
-        }
-
-        .yt-controls-overlay.show {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        /* Top Bar Inside Player */
-        .yt-top-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            color: #FFFFFF;
-        }
-
-        .yt-player-btn {
-            background: transparent;
-            border: none;
-            color: #FFFFFF;
-            font-size: 1.15rem;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .yt-player-btn:active {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .yt-player-title-head {
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: #FFFFFF;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            flex: 1;
-            margin: 0 12px;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-        }
-
-        /* Center Controls */
-        .yt-center-controls {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 28px;
-        }
-
-        .yt-control-btn {
-            background: rgba(0, 0, 0, 0.3);
-            border: none;
-            color: #FFFFFF;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: transform 0.15s, background 0.2s;
-        }
-
-        .yt-control-btn:active {
-            transform: scale(0.88);
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .yt-play-btn {
-            width: 56px;
-            height: 56px;
-            font-size: 1.6rem;
-            background: rgba(0, 0, 0, 0.5);
-        }
-
-        .yt-seek-btn {
-            width: 44px;
-            height: 44px;
-            font-size: 1.1rem;
-            position: relative;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .yt-seek-btn span {
-            font-size: 0.6rem;
-            font-weight: 800;
-        }
-
-        /* Bottom Bar Inside Player */
-        .yt-bottom-bar {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: #FFFFFF;
-        }
-
-        .yt-time-display {
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: #FFFFFF;
-            font-family: 'Plus Jakarta Sans', monospace;
-            white-space: nowrap;
-        }
-
-        .yt-progress-container {
-            flex: 1;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .yt-progress-bar-bg {
-            width: 100%;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 3px;
-            position: relative;
-            transition: height 0.15s ease;
-        }
-
-        .yt-progress-container:hover .yt-progress-bar-bg,
-        .yt-progress-container:active .yt-progress-bar-bg {
-            height: 5px;
-        }
-
-        .yt-progress-buffer {
-            position: absolute;
-            top: 0; left: 0; height: 100%;
-            background: rgba(255, 255, 255, 0.5);
-            width: 0%;
-            border-radius: 3px;
-        }
-
-        .yt-progress-fill {
-            position: absolute;
-            top: 0; left: 0; height: 100%;
-            background: #FF2E55;
-            width: 0%;
-            border-radius: 3px;
-        }
-
-        .yt-progress-scrubber {
-            position: absolute;
-            right: -6px;
-            top: 50%;
-            transform: translateY(-50%) scale(0);
-            width: 12px;
-            height: 12px;
-            background: #FF2E55;
-            border-radius: 50%;
-            transition: transform 0.15s ease;
-        }
-
-        .yt-progress-container:hover .yt-progress-scrubber,
-        .yt-progress-container:active .yt-progress-scrubber {
-            transform: translateY(-50%) scale(1);
-        }
-
-        /* Spinner */
-        .yt-spinner {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            display: none;
-            z-index: 20;
-            pointer-events: none;
-        }
-
-        .yt-spinner-ring {
-            width: 46px;
-            height: 46px;
-            border: 4px solid rgba(255, 255, 255, 0.2);
-            border-top-color: #FF2E55;
-            border-radius: 50%;
-            animation: spinnerSpin 0.8s linear infinite;
-        }
-
-        /* Seek Ripples */
-        .yt-seek-ripple {
-            position: absolute;
-            top: 0; bottom: 0;
-            width: 40%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.15);
-            opacity: 0;
-            pointer-events: none;
-            z-index: 15;
-            transition: opacity 0.3s ease;
-        }
-
-        .yt-seek-ripple.left {
-            left: 0;
-            border-radius: 0 100% 100% 0;
-        }
-
-        .yt-seek-ripple.right {
-            right: 0;
-            border-radius: 100% 0 0 100%;
-        }
-
-        .yt-seek-ripple.active {
-            opacity: 1;
-            animation: ytRipplePulse 0.6s ease forwards;
-        }
-
-        .yt-seek-icon-wrap {
-            color: #FFFFFF;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            font-size: 1.2rem;
-            font-weight: 800;
-        }
-
-        .yt-seek-icon-wrap span {
-            font-size: 0.75rem;
-            font-weight: 700;
-        }
-
-        @keyframes ytRipplePulse {
-            0% { transform: scale(0.9); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        /* Fullscreen Video Override */
-        .yt-custom-player-wrapper.is-fullscreen {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            z-index: 9999999 !important;
-        }
     </style>
 </head>
 <body>
@@ -1954,12 +1668,11 @@
 
     <!-- PREMIUM WATCH PAGE Layout -->
     <div id="full-movie-page">
-        <!-- Sticky Video Header Top Container -->
-        <div class="watch-page-sticky-header">
-            <button class="back-btn" onclick="executeBackAction(); playUI('click')">
-                <i class="fas fa-arrow-left"></i>
-            </button>
+        <button class="back-btn" onclick="executeBackAction(); playUI('click')">
+            <i class="fas fa-arrow-left"></i>
+        </button>
 
+        <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000000;">
             <div id="video-player-skeleton" style="position: absolute; top:0; left:0; width:100%; height:100%; background:#000000; display:flex; align-items:center; justify-content:center; z-index:11;">
                 <div style="width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
             </div>
@@ -2025,66 +1738,6 @@
                 <i class="fas fa-play-circle" style="color:var(--primary);"></i> Recommended Feed
             </div>
             <div id="yt-related-list" style="display:flex; flex-direction:column; gap:12px; padding-bottom: 60px;"></div>
-        </div>
-    </div>
-
-    <!-- YT PLAYER SETTINGS BOTTOM SHEET -->
-    <div id="yt-player-settings-sheet" class="premium-download-modal" style="z-index: 3500;">
-        <div class="premium-download-content" style="max-height: 60vh;">
-            <div class="drag-handle-line"></div>
-            <div class="download-modal-header">
-                <h3>Video Settings</h3>
-                <button class="close-download-modal" onclick="closeYtPlayerSettings()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="download-modal-scrollable" style="padding-bottom: 20px;">
-                <div class="format-option-row" onclick="openYtSpeedMenu()" style="padding: 16px;">
-                    <div class="format-left">
-                        <div class="format-icon" style="color: var(--primary);"><i class="fas fa-tachometer-alt"></i></div>
-                        <div>
-                            <span class="format-name" style="font-size: 0.95rem; font-weight: 800; display:block;">Playback Speed</span>
-                            <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;" id="yt-current-speed-label">Normal (1x)</span>
-                        </div>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.85rem;"></i>
-                </div>
-
-                <div class="format-option-row" onclick="openYtQualityMenu()" style="padding: 16px; margin-top: 8px;">
-                    <div class="format-left">
-                        <div class="format-icon" style="color: #10B981;"><i class="fas fa-sliders-h"></i></div>
-                        <div>
-                            <span class="format-name" style="font-size: 0.95rem; font-weight: 800; display:block;">Quality</span>
-                            <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;" id="yt-current-quality-label">Auto</span>
-                        </div>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.85rem;"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- YT PLAYBACK SPEED SHEET -->
-    <div id="yt-speed-sheet" class="premium-download-modal" style="z-index: 3600;">
-        <div class="premium-download-content" style="max-height: 60vh;">
-            <div class="drag-handle-line"></div>
-            <div class="download-modal-header">
-                <h3>Playback Speed</h3>
-                <button class="close-download-modal" onclick="closeYtSpeedMenu()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="download-modal-scrollable" style="padding-bottom: 20px;" id="yt-speed-options-container">
-            </div>
-        </div>
-    </div>
-
-    <!-- YT QUALITY SHEET -->
-    <div id="yt-quality-sheet" class="premium-download-modal" style="z-index: 3600;">
-        <div class="premium-download-content" style="max-height: 60vh;">
-            <div class="drag-handle-line"></div>
-            <div class="download-modal-header">
-                <h3>Quality</h3>
-                <button class="close-download-modal" onclick="closeYtQualityMenu()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="download-modal-scrollable" style="padding-bottom: 20px;" id="yt-quality-options-container">
-            </div>
         </div>
     </div>
 
@@ -3064,12 +2717,15 @@
         window.setAppOnlineStatus = async function(isOnline) {
             const spinner = document.getElementById('network-spinner-overlay');
             if (isOnline) {
+                // Force Firebase to reconnect INSTANTLY to sync all data A-Z
+                firebase.database().goOnline();
+                
                 if(spinner) spinner.style.display = 'none';
                 showNotification("Network Restored! Syncing Data...", "success");
                 
                 await syncOfflineLikes();
                 
-                // Clear old listeners before reattaching to prevent duplications
+                // Clear old listeners before reattaching to prevent duplications & memory leaks
                 db.ref('admin_panel/movies/user_uploads').off();
                 db.ref('admin_panel/movies/shorts').off();
                 db.ref('admin_panel/posts').off();
@@ -3080,23 +2736,27 @@
                     db.ref(`users/${currentUser.uid}`).off();
                 }
                 
+                // Reboot real-time listeners for instant refresh
                 startRealtimeFeedsListener(); 
                 
                 const activeNav = document.querySelector('.nav-item.active');
                 if (activeNav) {
                     const activeTabId = activeNav.id.replace('nav-', '');
-                    if (activeTabId === 'home') buildHomeFeed();
-                    if (activeTabId === 'shorts') buildShortsPage();
                     if (activeTabId === 'you') initYouTabUI();
                 }
                 
-                // Resume active videos
-                document.querySelectorAll('video').forEach(vid => {
-                    if(!vid.paused && vid.readyState > 2) {
-                        vid.play().catch(()=>{});
-                    }
-                });
+                // Refresh Analytics smoothly if active
+                if (currentUser && document.getElementById('analytics-page').style.display === 'flex') {
+                    calculateChannelAnalytics();
+                }
+                
+                // Resume active videos automatically smoothly
+                const activeVideo = document.querySelector('.short-slide video[src]');
+                if(activeVideo && activeVideo.paused && activeVideo.readyState > 2) {
+                    activeVideo.play().catch(()=>{});
+                }
             } else {
+                firebase.database().goOffline();
                 showNotification("Offline Mode. Showing Cached Data.", "error");
                 buildHomeFeed(); 
                 const shortsTab = document.getElementById('shorts-tab');
@@ -3104,7 +2764,7 @@
                     buildShortsPage();
                 }
                 
-                // Show spinner if video was streaming
+                // Show spinner if video was streaming and suddenly disconnected
                 const activeVideo = document.querySelector('.short-slide video[src]');
                 if(activeVideo && !activeVideo.paused) {
                     activeVideo.pause();
@@ -3248,6 +2908,7 @@
                 const cache = await caches.open('flaynity-shorts-cache');
                 const validUrls = shorts.map(s => s.videoLink).filter(Boolean);
                 
+                // Limit to LRU logic (Delete old caches not in the latest 50)
                 const keys = await cache.keys();
                 for (let request of keys) {
                     if (!validUrls.includes(request.url)) {
@@ -3255,12 +2916,18 @@
                     }
                 }
                 
-                for (let url of validUrls) {
-                    const match = await cache.match(url);
-                    if (!match) {
-                        fetch(url, { mode: 'no-cors' }).then(res => cache.put(url, res)).catch(e => {});
+                // Background fetch new caches without blocking UI thread
+                setTimeout(async () => {
+                    for (let url of validUrls) {
+                        const match = await cache.match(url);
+                        if (!match) {
+                            try {
+                                const res = await fetch(url, { mode: 'no-cors', cache: 'no-store' });
+                                if (res) await cache.put(url, res.clone());
+                            } catch(e) {}
+                        }
                     }
-                }
+                }, 2000); // 2-second delay to prioritize playback
             } catch (e) {
                 console.warn("Background cache failed:", e);
             }
@@ -3733,6 +3400,9 @@
 
                 await s3Upload.promise();
                 
+                // Simulate backend optimization step / Encoding logic
+                // Cloudflare Stream / backend converts MP4 to HLS / optimized MP4 automatically in production
+                
                 item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
                 item.status = "processing";
                 updateManagerUI();
@@ -3874,25 +3544,37 @@
         // =========================================================
         // REALTIME LISTENERS FOR ZERO-REFRESH FEED PROPAGATION
         // =========================================================
+        let previousShortsCount = -1;
+        let previousLongsCount = -1;
+        let previousPostsCount = -1;
+
         function startRealtimeFeedsListener() {
             try {
                 db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
                     try {
                         const data = snap.val();
-                        if (!data) {
-                            allLongVideos = [];
-                            buildHomeFeed();
-                            return;
-                        }
-                        allLongVideos = Object.values(data);
+                        allLongVideos = data ? Object.values(data) : [];
+                        allLongVideos.sort((a,b) => b.createdAt - a.createdAt);
+                        
                         localStorage.setItem('flaynity_offline_longs', JSON.stringify(allLongVideos));
-                        buildHomeFeed();
                         
                         allLongVideos.forEach(m => {
                             if (m && m.id && !allAdminMovies.find(x => x.id === m.id)) {
                                 allAdminMovies.push(m);
                             }
                         });
+
+                        // Rebuild strictly to prevent DOM wiping
+                        if(allLongVideos.length !== previousLongsCount) {
+                            previousLongsCount = allLongVideos.length;
+                            buildHomeFeed();
+                        } else {
+                            // Update quiet states manually
+                            allLongVideos.forEach(v => {
+                                const titleEl = document.querySelector(`.long-video-feed-card[onclick*="${v.id}"] .long-video-title`);
+                                if (titleEl) titleEl.innerText = escapeHTML(v.title);
+                            });
+                        }
                     } catch (e) {}
                 });
 
@@ -3902,14 +3584,34 @@
                         allShorts = data ? Object.values(data) : [];
                         allShorts.sort((a,b) => b.createdAt - a.createdAt);
                         
+                        // Limit Offline Cache to latest 50 items for LRU logic
                         const top50Shorts = allShorts.slice(0, 50);
                         localStorage.setItem('flaynity_offline_shorts', JSON.stringify(top50Shorts));
                         cacheMediaFiles(top50Shorts); 
                         
-                        buildHomeFeed();
-                        const shortsTab = document.getElementById('shorts-tab');
-                        if (shortsTab && shortsTab.classList.contains('active')) {
-                            buildShortsPage();
+                        // ZERO FREEZE LOGIC: Only full rebuild if length changes
+                        if(allShorts.length !== previousShortsCount) {
+                            previousShortsCount = allShorts.length;
+                            buildHomeFeed();
+                            const shortsTab = document.getElementById('shorts-tab');
+                            if (shortsTab && shortsTab.classList.contains('active')) {
+                                const activeShortId = document.querySelector('.short-slide video[src]')?.closest('.short-slide')?.getAttribute('data-shortid');
+                                buildShortsPage();
+                                if(activeShortId) {
+                                     setTimeout(() => {
+                                         const targetSlide = document.getElementById(`slide-short-${activeShortId}`);
+                                         if (targetSlide) targetSlide.scrollIntoView({block: 'start'});
+                                     }, 50);
+                                }
+                            }
+                        } else {
+                            // Quiet Metadata injection
+                            allShorts.forEach(s => {
+                                const titleEl = document.querySelector(`#slide-short-${s.id} #short-title-val`);
+                                if(titleEl) titleEl.innerHTML = `${escapeHTML(s.title)} <span style="font-weight:400; font-size:0.8rem; color:#ccc; display:block;">Click to view description</span>`;
+                                const thumbEl = document.querySelector(`.short-home-card-2col[onclick*="${s.id}"] img`);
+                                if (thumbEl) thumbEl.src = s.poster;
+                            });
                         }
                     } catch (e) {}
                 });
@@ -3920,9 +3622,14 @@
                         allCommunityPosts = data ? Object.values(data) : [];
                         allCommunityPosts.sort((a,b) => b.createdAt - a.createdAt);
                         
+                        // Limit Offline Cache to latest 20 items
                         localStorage.setItem('flaynity_offline_posts', JSON.stringify(allCommunityPosts.slice(0, 20)));
                         
-                        buildHomeFeed();
+                        // Zero Freeze Render for Posts
+                        if (allCommunityPosts.length !== previousPostsCount) {
+                            previousPostsCount = allCommunityPosts.length;
+                            buildHomeFeed();
+                        }
                     } catch (e) {}
                 });
 
@@ -3931,8 +3638,23 @@
                     db.ref(`channels/${currentUser.uid}`).on('value', (snapshot) => {
                         try {
                             currentChannelData = snapshot.val();
-                            initYouTabUI();
+                            if (currentChannelData) {
+                                localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                            }
+                            const activeNav = document.querySelector('.nav-item.active');
+                            if (activeNav && activeNav.id === 'nav-you') {
+                                initYouTabUI();
+                            }
                             updateBottomNavAvatar();
+                        } catch (e) {}
+                    });
+
+                    // Live User Profile Listener
+                    db.ref(`users/${currentUser.uid}`).on('value', (snapshot) => {
+                        try {
+                            const userData = snapshot.val();
+                            const photoURL = userData?.photoURL || currentUser.photoURL || '';
+                            renderUserAvatar(photoURL, currentUser.email);
                         } catch (e) {}
                     });
                 }
@@ -3946,16 +3668,20 @@
             if (!userId) return;
             
             if (boundChannelListeners[userId]) {
-                db.ref(`channels/${userId}`).once('value', (snap) => {
-                    updateChannelDOM(userId, snap.val());
-                });
+                if (navigator.onLine) {
+                    db.ref(`channels/${userId}`).once('value', (snap) => {
+                        updateChannelDOM(userId, snap.val());
+                    });
+                }
                 return;
             }
             
             boundChannelListeners[userId] = true;
-            db.ref(`channels/${userId}`).on('value', (snap) => {
-                updateChannelDOM(userId, snap.val());
-            });
+            if (navigator.onLine) {
+                db.ref(`channels/${userId}`).on('value', (snap) => {
+                    updateChannelDOM(userId, snap.val());
+                });
+            }
         }
 
         function updateChannelDOM(userId, data) {
@@ -3978,6 +3704,7 @@
                     el.innerHTML = `<div style="width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--primary), #FF7A00); color: #fff; font-weight: 800; font-size: 0.9rem;">${initial}</div>`;
                 }
             });
+            // Update rotating disc inner image with actual avatar
             document.querySelectorAll(`.live-disc-avatar-${userId}`).forEach(el => {
                 if (avatar) {
                     el.innerHTML = `<img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
@@ -4156,6 +3883,7 @@
             let longs = [...allLongVideos];
             let posts = [...allCommunityPosts];
 
+            // ⚠️ OFFLINE LOGIC: Hide long videos when offline, use ONLY cached Shorts & Posts
             if (!navigator.onLine) {
                 longs = []; 
                 shorts = JSON.parse(localStorage.getItem('flaynity_offline_shorts') || '[]');
@@ -4542,12 +4270,13 @@
         // =========================================================
         // HIGH PERFORMANCE SHORTS BUILDER (SMART ALLOCATION)
         // =========================================================
-        let hlsInstances = {}; 
+        let hlsInstances = {}; // Store HLS Engine instances globally
 
         function buildShortsPage() {
             const container = document.getElementById('shorts-swiper-container');
             if (!container) return;
             
+            // Offline Shorts Source
             let activeShortsList = allShorts;
             if (!navigator.onLine) {
                 activeShortsList = JSON.parse(localStorage.getItem('flaynity_offline_shorts') || '[]');
@@ -4570,6 +4299,7 @@
                 const commentsCountId = `short-comments-count-${s.id}`;
                 const statsCacheKey = `flaynity_stats_cache_${s.id}`;
 
+                // Instant cache load & Offline Sync Check
                 let cachedStats = { likes: 0, comments: 0 };
                 let offlineLikes = JSON.parse(localStorage.getItem('flaynity_offline_likes') || '{}');
                 let isLocallyLiked = !!offlineLikes[s.id];
@@ -4581,7 +4311,10 @@
 
                 html += `
                     <div class="short-slide" id="slide-short-${s.id}" data-shortid="${s.id}">
+                        <!-- Circular loading indicator -->
                         <div class="short-buffer-spinner" id="short-spinner-${s.id}"></div>
+                        
+                        <!-- Play/Pause smooth animated overlays -->
                         <div class="short-play-pause-overlay" id="short-pp-overlay-${s.id}"></div>
 
                         <video class="short-video-el" loop playsinline webkit-playsinline></video>
@@ -4612,6 +4345,7 @@
                                 <div class="short-action-label-tiktok">Save</div>
                             </div>
 
+                            <!-- Rotating Music Disc Icon with Avatar -->
                             <div class="music-disc-container">
                                 <div class="music-disc-inner live-disc-avatar-${s.userId}" id="music-disc-${s.id}">
                                     <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
@@ -4702,6 +4436,9 @@
             uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
         }
 
+        // =========================================================
+        // DYNAMIC SHORTS VIDEO PLAYER INTERACTION INTERFACE
+        // =========================================================
         function triggerPlayPauseIndicator(slide, actionType) {
             const overlay = slide.querySelector('.short-play-pause-overlay');
             if (!overlay) return;
@@ -4757,6 +4494,7 @@
                 if (!video) return;
                 const shortId = slide.getAttribute('data-shortid');
 
+                // Hardware Decoder Optimization Tags
                 video.setAttribute('playsinline', '');
                 video.setAttribute('webkit-playsinline', '');
                 video.style.background = 'transparent';
@@ -4861,6 +4599,9 @@
             };
         }
 
+        // =========================================================
+        // DOUBLE TAP & OFFLINE LIKE HANDLING ENGINE
+        // =========================================================
         function toggleShortLike(shortId, forceLike = false) {
             playUI('click');
             if (!auth.currentUser) { showNotification("Please sign in to Like", "error"); return; }
@@ -4942,6 +4683,7 @@
                 }
                 
                 localStorage.removeItem('flaynity_offline_likes');
+                console.log("Offline Likes Sync Complete!");
             } catch (e) {
                 console.error(e);
             }
@@ -4955,6 +4697,9 @@
             registerViewAndListen(shortId);
         }
 
+        // =========================================================
+        // SECURE DOWNLOAD SYSTEM IMPLEMENTATION
+        // =========================================================
         async function triggerFileDownload(url, filename) {
             if (!url) {
                 showNotification("Invalid download link.", "error");
@@ -4986,6 +4731,7 @@
                 
                 showNotification("Download completed successfully!", "success");
             } catch (err) {
+                console.warn("Direct blob download failed, falling back to direct anchor target:", err);
                 const a = document.createElement('a');
                 a.href = url;
                 a.target = "_blank";
@@ -5033,24 +4779,30 @@
             });
         }
 
+        // =========================================================
+        // ULTRA FAST PRE-LOAD ADJACENT CLIPS & SHORTS MEMORY ENGINE
+        // (Smart HLS Adaptive Streaming & Hardware Decoder)
+        // =========================================================
         let currentActiveShortsIdx = -1;
         
         function attachSmartAdaptiveSource(videoElement, url, shortId) {
+            // Check if HLS.js is supported and URL is M3U8 for Enterprise Streaming
             if (url && url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
                 if(hlsInstances[shortId]) {
                     hlsInstances[shortId].destroy();
                 }
                 const hls = new Hls({
-                    maxBufferLength: 30,         
-                    maxMaxBufferLength: 600,     
+                    maxBufferLength: 30,         // Smart Buffer (30 Seconds)
+                    maxMaxBufferLength: 600,     // Max Memory limit for buffer
                     enableWorker: true,
-                    lowLatencyMode: true,        
-                    capLevelToPlayerSize: true   
+                    lowLatencyMode: true,        // Fast start Progressive playback
+                    capLevelToPlayerSize: true   // Adaptive hardware optimization
                 });
                 hls.loadSource(url);
                 hls.attachMedia(videoElement);
                 hlsInstances[shortId] = hls;
             } else {
+                // Progressive MP4 Fallback
                 videoElement.src = url;
             }
         }
@@ -5064,12 +4816,14 @@
                 const s = allShorts.find(item => item.id === shortId);
                 if (!s) return;
 
+                // SMART PRELOAD LOGIC: Prev 5, Next 20 metadata/posters
                 if (idx >= activeIndex - 5 && idx <= activeIndex + 20) {
                     
                     if (video.getAttribute('poster') !== s.poster) {
-                        video.setAttribute('poster', s.poster); 
+                        video.setAttribute('poster', s.poster); // Instant Metadata
                     }
 
+                    // Strict Memory Range to attach heavy SRC or HLS (Prev 2, Next 3)
                     if (idx >= activeIndex - 2 && idx <= activeIndex + 3) {
                         if (!video.getAttribute('src') && !hlsInstances[shortId]) {
                             attachSmartAdaptiveSource(video, s.videoLink, shortId);
@@ -5090,6 +4844,7 @@
                             video.currentTime = 0;
                         }
                     } else {
+                        // Keep Poster but unload source to save RAM (LRU Memory Control)
                         video.pause();
                         video.removeAttribute('src');
                         video.removeAttribute('preload');
@@ -5100,6 +4855,7 @@
                         video.load();
                     }
                 } else {
+                    // Out of bounds completely
                     video.pause();
                     video.removeAttribute('src');
                     video.removeAttribute('poster');
@@ -5292,16 +5048,8 @@
         }
 
         // =========================================================
-        // YOUTUBE STYLE LONG VIDEO PLAYER ENGINE
+        // MOVIE DETAILS, STATISTICS & COMMENTS (HLS ADDED)
         // =========================================================
-        let ytControlsTimer = null;
-        let ytDoubleTapTimerLeft = null;
-        let ytDoubleTapTimerRight = null;
-        let ytSeekAccumulatorLeft = 0;
-        let ytSeekAccumulatorRight = 0;
-        let ytCurrentSpeed = 1.0;
-        let ytCurrentQuality = "Auto";
-
         async function openMoviePage(id, isTMDB = false) {
             playUI('click');
             if (!navigator.onLine) {
@@ -5375,384 +5123,19 @@
 
                 if(link.includes('youtube.com') || link.includes('youtu.be')) {
                     const ytId = extractVideoID(link);
-                    container.innerHTML = `<iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1&modestbranding=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen style="width:100%; height:100%; border:none;"></iframe>`;
+                    container.innerHTML = `<iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1&modestbranding=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
                 } else {
-                    container.innerHTML = `
-                        <div class="yt-custom-player-wrapper" id="yt-player-wrapper">
-                            <video id="premium-video-watch-el" playsinline webkit-playsinline></video>
-                            
-                            <div class="yt-spinner" id="yt-player-spinner">
-                                <div class="yt-spinner-ring"></div>
-                            </div>
-
-                            <div class="yt-seek-ripple left" id="yt-ripple-left">
-                                <div class="yt-seek-icon-wrap">
-                                    <i class="fas fa-backward"></i>
-                                    <span id="yt-ripple-left-text">10 seconds</span>
-                                </div>
-                            </div>
-                            <div class="yt-seek-ripple right" id="yt-ripple-right">
-                                <div class="yt-seek-icon-wrap">
-                                    <i class="fas fa-forward"></i>
-                                    <span id="yt-ripple-right-text">10 seconds</span>
-                                </div>
-                            </div>
-
-                            <div class="yt-controls-overlay show" id="yt-player-controls">
-                                <div class="yt-top-bar">
-                                    <div class="yt-player-title-head">${escapeHTML(currentActiveMovie.title || '')}</div>
-                                    <button class="yt-player-btn" onclick="event.stopPropagation(); openYtPlayerSettings();" title="Settings">
-                                        <i class="fas fa-cog"></i>
-                                    </button>
-                                </div>
-
-                                <div class="yt-center-controls">
-                                    <button class="yt-control-btn yt-seek-btn" onclick="event.stopPropagation(); seekYtVideo(-10);">
-                                        <i class="fas fa-undo-alt"></i>
-                                        <span>10s</span>
-                                    </button>
-                                    <button class="yt-control-btn yt-play-btn" id="yt-play-pause-btn" onclick="event.stopPropagation(); toggleYtPlayPause();">
-                                        <i class="fas fa-pause"></i>
-                                    </button>
-                                    <button class="yt-control-btn yt-seek-btn" onclick="event.stopPropagation(); seekYtVideo(10);">
-                                        <i class="fas fa-redo-alt"></i>
-                                        <span>10s</span>
-                                    </button>
-                                </div>
-
-                                <div class="yt-bottom-bar">
-                                    <span class="yt-time-display" id="yt-time-display">00:00 / 00:00</span>
-                                    <div class="yt-progress-container" id="yt-progress-container" onclick="event.stopPropagation(); scrubYtVideo(event);">
-                                        <div class="yt-progress-bar-bg">
-                                            <div class="yt-progress-buffer" id="yt-progress-buffer"></div>
-                                            <div class="yt-progress-fill" id="yt-progress-fill">
-                                                <div class="yt-progress-scrubber"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <button class="yt-player-btn" onclick="event.stopPropagation(); toggleYtPlayerFullscreen();" title="Fullscreen">
-                                        <i class="fas fa-expand" id="yt-fullscreen-icon"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-
-                    setupYtPlayerLogic(link);
-                }
-            }
-        }
-
-        function setupYtPlayerLogic(link) {
-            const videoEl = document.getElementById('premium-video-watch-el');
-            const wrapper = document.getElementById('yt-player-wrapper');
-            const controls = document.getElementById('yt-player-controls');
-            const playPauseBtn = document.getElementById('yt-play-pause-btn');
-            const timeDisplay = document.getElementById('yt-time-display');
-            const fill = document.getElementById('yt-progress-fill');
-            const buffer = document.getElementById('yt-progress-buffer');
-            const spinner = document.getElementById('yt-player-spinner');
-
-            if (!videoEl) return;
-
-            videoEl.playbackRate = ytCurrentSpeed;
-            videoEl.preservesPitch = true;
-
-            attachSmartAdaptiveSource(videoEl, link, 'long_video_main');
-
-            videoEl.play().catch(() => {
-                videoEl.muted = true;
-                videoEl.play().catch(() => {});
-            });
-
-            let lastTapTime = 0;
-            wrapper.onclick = function(e) {
-                if (e.target.closest('.yt-controls-overlay') && e.target !== controls) {
-                    return; 
-                }
-
-                const rect = wrapper.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const width = rect.width;
-                const now = Date.now();
-
-                if (now - lastTapTime < 300) {
-                    if (clickX > width * 0.6) {
-                        handleYtDoubleTap('right');
-                    } else if (clickX < width * 0.4) {
-                        handleYtDoubleTap('left');
+                    // Inject Video Tag for HLS or MP4
+                    container.innerHTML = `<video id="premium-video-watch-el" controls playsinline style="width:100%; height:100%; object-fit:contain;"></video>`;
+                    const videoEl = document.getElementById('premium-video-watch-el');
+                    
+                    if (videoEl) {
+                        attachSmartAdaptiveSource(videoEl, link, 'long_video_main');
+                        videoEl.play().catch(()=>{});
+                        videoEl.onended = () => { playNextRecommendedVideo(); };
                     }
-                } else {
-                    toggleYtPlayerControls();
                 }
-                lastTapTime = now;
-            };
-
-            videoEl.onplay = () => {
-                if (playPauseBtn) playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                resetYtControlsTimer();
-            };
-            videoEl.onpause = () => {
-                if (playPauseBtn) playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-                showYtPlayerControls();
-            };
-
-            videoEl.ontimeupdate = () => {
-                if (!videoEl.duration) return;
-                const cur = formatTimeFormatted(videoEl.currentTime);
-                const dur = formatTimeFormatted(videoEl.duration);
-                if (timeDisplay) timeDisplay.innerText = `${cur} / ${dur}`;
-                if (fill) fill.style.width = `${(videoEl.currentTime / videoEl.duration) * 100}%`;
-            };
-
-            videoEl.onprogress = () => {
-                if (videoEl.buffered.length > 0 && videoEl.duration) {
-                    const bufferedEnd = videoEl.buffered.end(videoEl.buffered.length - 1);
-                    if (buffer) buffer.style.width = `${(bufferedEnd / videoEl.duration) * 100}%`;
-                }
-            };
-
-            videoEl.onwaiting = () => { if (spinner) spinner.style.display = 'block'; };
-            videoEl.onplaying = () => { if (spinner) spinner.style.display = 'none'; };
-            videoEl.oncanplay = () => { if (spinner) spinner.style.display = 'none'; };
-
-            videoEl.onended = () => {
-                playNextRecommendedVideo();
-            };
-
-            resetYtControlsTimer();
-        }
-
-        function toggleYtPlayPause() {
-            const videoEl = document.getElementById('premium-video-watch-el');
-            if (!videoEl) return;
-            if (videoEl.paused) {
-                videoEl.play();
-            } else {
-                videoEl.pause();
             }
-        }
-
-        function seekYtVideo(seconds) {
-            const videoEl = document.getElementById('premium-video-watch-el');
-            if (!videoEl) return;
-            videoEl.currentTime = Math.max(0, Math.min(videoEl.duration || 0, videoEl.currentTime + seconds));
-            resetYtControlsTimer();
-        }
-
-        function scrubYtVideo(e) {
-            const videoEl = document.getElementById('premium-video-watch-el');
-            const container = document.getElementById('yt-progress-container');
-            if (!videoEl || !container || !videoEl.duration) return;
-            const rect = container.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const pct = Math.max(0, Math.min(1, clickX / rect.width));
-            videoEl.currentTime = pct * videoEl.duration;
-            resetYtControlsTimer();
-        }
-
-        function toggleYtPlayerControls() {
-            const controls = document.getElementById('yt-player-controls');
-            if (!controls) return;
-            if (controls.classList.contains('show')) {
-                hideYtPlayerControls();
-            } else {
-                showYtPlayerControls();
-            }
-        }
-
-        function showYtPlayerControls() {
-            const controls = document.getElementById('yt-player-controls');
-            if (controls) controls.classList.add('show');
-            resetYtControlsTimer();
-        }
-
-        function hideYtPlayerControls() {
-            const controls = document.getElementById('yt-player-controls');
-            const videoEl = document.getElementById('premium-video-watch-el');
-            if (controls && videoEl && !videoEl.paused) {
-                controls.classList.remove('show');
-            }
-        }
-
-        function resetYtControlsTimer() {
-            if (ytControlsTimer) clearTimeout(ytControlsTimer);
-            ytControlsTimer = setTimeout(() => {
-                hideYtPlayerControls();
-            }, 2000);
-        }
-
-        function handleYtDoubleTap(side) {
-            const videoEl = document.getElementById('premium-video-watch-el');
-            if (!videoEl) return;
-
-            if (side === 'right') {
-                if (ytDoubleTapTimerRight) clearTimeout(ytDoubleTapTimerRight);
-                ytSeekAccumulatorRight += 10;
-                seekYtVideo(10);
-                
-                const ripple = document.getElementById('yt-ripple-right');
-                const txt = document.getElementById('yt-ripple-right-text');
-                if (txt) txt.innerText = `${ytSeekAccumulatorRight} seconds`;
-                if (ripple) {
-                    ripple.classList.remove('active');
-                    void ripple.offsetWidth;
-                    ripple.classList.add('active');
-                }
-
-                ytDoubleTapTimerRight = setTimeout(() => {
-                    ytSeekAccumulatorRight = 0;
-                    if (ripple) ripple.classList.remove('active');
-                }, 1500);
-            } else if (side === 'left') {
-                if (ytDoubleTapTimerLeft) clearTimeout(ytDoubleTapTimerLeft);
-                ytSeekAccumulatorLeft += 10;
-                seekYtVideo(-10);
-
-                const ripple = document.getElementById('yt-ripple-left');
-                const txt = document.getElementById('yt-ripple-left-text');
-                if (txt) txt.innerText = `${ytSeekAccumulatorLeft} seconds`;
-                if (ripple) {
-                    ripple.classList.remove('active');
-                    void ripple.offsetWidth;
-                    ripple.classList.add('active');
-                }
-
-                ytDoubleTapTimerLeft = setTimeout(() => {
-                    ytSeekAccumulatorLeft = 0;
-                    if (ripple) ripple.classList.remove('active');
-                }, 1500);
-            }
-        }
-
-        function formatTimeFormatted(sec) {
-            if (isNaN(sec) || sec === null) return "00:00";
-            const m = Math.floor(sec / 60);
-            const s = Math.floor(sec % 60);
-            const h = Math.floor(m / 60);
-            const displayM = m % 60;
-
-            const padS = s < 10 ? '0' + s : s;
-            const padM = displayM < 10 ? '0' + displayM : displayM;
-
-            if (h > 0) {
-                const padH = h < 10 ? '0' + h : h;
-                return `${padH}:${padM}:${padS}`;
-            }
-            return `${padM}:${padS}`;
-        }
-
-        function toggleYtPlayerFullscreen() {
-            const wrapper = document.getElementById('yt-player-wrapper');
-            const icon = document.getElementById('yt-fullscreen-icon');
-            if (!wrapper) return;
-
-            if (wrapper.classList.contains('is-fullscreen')) {
-                wrapper.classList.remove('is-fullscreen');
-                if (icon) icon.className = "fas fa-expand";
-            } else {
-                wrapper.classList.add('is-fullscreen');
-                if (icon) icon.className = "fas fa-compress";
-            }
-        }
-
-        function openYtPlayerSettings() {
-            playUI('click');
-            AppNavigation.pushModal('yt-player-settings-sheet');
-        }
-
-        function closeYtPlayerSettings() {
-            AppNavigation.pop();
-        }
-
-        function openYtSpeedMenu() {
-            playUI('click');
-            closeYtPlayerSettings();
-            
-            const container = document.getElementById('yt-speed-options-container');
-            if (!container) return;
-
-            const speeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
-            container.innerHTML = speeds.map(s => {
-                const isSelected = ytCurrentSpeed === s;
-                const label = s === 1.0 ? "Normal (1x)" : `${s}x`;
-                return `
-                    <div class="format-option-row" onclick="setYtPlaybackSpeed(${s})" style="padding:16px;">
-                        <div class="format-left">
-                            <span class="format-name" style="font-weight:${isSelected ? '800':'600'}; color:${isSelected ? 'var(--primary)':'var(--text-main)'}">${label}</span>
-                        </div>
-                        ${isSelected ? '<i class="fas fa-check" style="color:var(--primary);"></i>' : ''}
-                    </div>
-                `;
-            }).join('');
-
-            AppNavigation.pushModal('yt-speed-sheet');
-        }
-
-        function closeYtSpeedMenu() {
-            AppNavigation.pop();
-        }
-
-        function setYtPlaybackSpeed(speed) {
-            playUI('click');
-            ytCurrentSpeed = speed;
-            const videoEl = document.getElementById('premium-video-watch-el');
-            if (videoEl) {
-                videoEl.playbackRate = speed;
-            }
-            const lbl = document.getElementById('yt-current-speed-label');
-            if (lbl) lbl.innerText = speed === 1.0 ? "Normal (1x)" : `${speed}x`;
-            closeYtSpeedMenu();
-            showNotification(`Playback speed: ${speed}x`, "success");
-        }
-
-        function openYtQualityMenu() {
-            playUI('click');
-            closeYtPlayerSettings();
-
-            const container = document.getElementById('yt-quality-options-container');
-            if (!container) return;
-
-            let nativeRes = currentActiveMovie ? (currentActiveMovie.resolution || "1080x1920") : "1080p";
-            let maxP = 1080;
-            if (nativeRes.includes("720") || nativeRes === "720p") maxP = 720;
-            else if (nativeRes.includes("360") || nativeRes === "360p") maxP = 360;
-            else if (nativeRes.includes("144") || nativeRes === "144p") maxP = 144;
-
-            const qualities = [
-                { p: 144, label: "Low (144p)" },
-                { p: 360, label: "Fast (360p)" },
-                { p: 720, label: "High Quality (720p)" },
-                { p: 1080, label: "Premium (1080p)" }
-            ];
-
-            container.innerHTML = qualities.map(q => {
-                const isLocked = q.p > maxP;
-                const isSelected = ytCurrentQuality === `${q.p}p` || (ytCurrentQuality === "Auto" && q.p === maxP);
-                return `
-                    <div class="format-option-row" onclick="${isLocked ? '' : `setYtQuality('${q.p}p')`}" style="padding:16px; opacity:${isLocked ? '0.45' : '1'}; cursor:${isLocked ? 'not-allowed' : 'pointer'}">
-                        <div class="format-left">
-                            <span class="format-name" style="font-weight:${isSelected ? '800':'600'}; color:${isSelected ? 'var(--primary)':'var(--text-main)'}">${q.label}</span>
-                        </div>
-                        ${isLocked ? '<i class="fas fa-lock" style="color:var(--text-muted);"></i>' : (isSelected ? '<i class="fas fa-check" style="color:var(--primary);"></i>' : '')}
-                    </div>
-                `;
-            }).join('');
-
-            AppNavigation.pushModal('yt-quality-sheet');
-        }
-
-        function closeYtQualityMenu() {
-            AppNavigation.pop();
-        }
-
-        function setYtQuality(res) {
-            playUI('click');
-            ytCurrentQuality = res;
-            const lbl = document.getElementById('yt-current-quality-label');
-            if (lbl) lbl.innerText = res;
-            closeYtQualityMenu();
-            showNotification(`Quality changed to ${res}`, "success");
         }
 
         function playNextRecommendedVideo() {
@@ -5820,7 +5203,7 @@
             const timeEl = document.getElementById('movie-detail-upload-time');
             if (timeEl) timeEl.innerText = uploadTimeText;
 
-            if(!navigator.onLine) return; 
+            if(!navigator.onLine) return; // Skip realtime listeners if offline
 
             activeStatsRef = db.ref(`movie_stats/${movieId}`);
             activeStatsRef.on('value', (snapshot) => {

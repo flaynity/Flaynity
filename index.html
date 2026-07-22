@@ -1464,9 +1464,80 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+
+        /* =========================================================
+           YOUTUBE-STYLE HARDWARE ACCELERATED SKELETONS & SHIMMERS
+           ========================================================= */
+        .shimmer-anim {
+            background: var(--border-color);
+            background-image: linear-gradient(to right, var(--border-color) 0%, var(--glass-border) 20%, var(--border-color) 40%, var(--border-color) 100%);
+            background-repeat: no-repeat;
+            background-size: 800px 104px;
+            animation: placeholderShimmer 1.5s linear infinite forwards;
+            will-change: background-position;
+            transform: translate3d(0, 0, 0);
+        }
+        [data-theme="dark"] .shimmer-anim {
+            background: #111111;
+            background-image: linear-gradient(to right, #111111 0%, #222222 20%, #111111 40%, #111111 100%);
+        }
+        @keyframes placeholderShimmer {
+            0% { background-position: -468px 0; }
+            100% { background-position: 468px 0; }
+        }
+
+        /* Layout Skeleton Builders */
+        .sk-avatar { width: 40px; height: 40px; border-radius: 50%; }
+        .sk-avatar-lg { width: 80px; height: 80px; border-radius: 50%; }
+        .sk-text { height: 12px; border-radius: 6px; margin-bottom: 8px; }
+        .sk-text-sm { height: 8px; border-radius: 4px; margin-bottom: 6px; }
+        .sk-title { height: 16px; border-radius: 8px; margin-bottom: 12px; }
+        .sk-btn { height: 36px; border-radius: 18px; }
+        .sk-chip { height: 32px; border-radius: 16px; width: 80px; }
+        .sk-banner { height: 120px; border-radius: 0; width: 100%; }
+        .sk-rect { width: 100%; border-radius: 12px; }
+
+        /* =========================================================
+           NATIVE PULL-TO-REFRESH CONTAINER
+           ========================================================= */
+        .ptr-container {
+            position: fixed;
+            top: -60px;
+            left: 50%;
+            transform: translate3d(-50%, 0, 0);
+            width: 44px;
+            height: 44px;
+            background: var(--surface);
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000000;
+            opacity: 0;
+            transition: transform 0.1s ease, opacity 0.1s ease;
+            will-change: transform, opacity;
+            pointer-events: none;
+        }
+        .ptr-spinner {
+            width: 22px;
+            height: 22px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            will-change: transform;
+        }
+        .ptr-refreshing .ptr-spinner {
+            animation: spin 0.8s linear infinite;
+        }
     </style>
 </head>
 <body>
+
+    <!-- Native Pull to Refresh Indicator -->
+    <div id="ptr-indicator" class="ptr-container">
+        <div class="ptr-spinner"></div>
+    </div>
 
     <!-- Premium Audio Settings -->
     <audio id="startupSound" preload="auto">
@@ -2653,16 +2724,10 @@
         document.addEventListener("DOMContentLoaded", function() {
             applyTheme();
             
-            // Offline caches instant load
-            try {
-                const cachedPosts = localStorage.getItem('flaynity_offline_posts');
-                const cachedShorts = localStorage.getItem('flaynity_offline_shorts');
-                const cachedLongs = localStorage.getItem('flaynity_offline_longs');
-                if (cachedPosts) allCommunityPosts = JSON.parse(cachedPosts);
-                if (cachedShorts) allShorts = JSON.parse(cachedShorts);
-                if (cachedLongs) allLongVideos = JSON.parse(cachedLongs);
-                buildHomeFeed();
-            } catch (e) {}
+            // Delete cache load and check network immediately
+            if (!navigator.onLine) {
+                window.setAppOnlineStatus(false);
+            }
 
             try {
                 const sound = document.getElementById("startupSound");
@@ -2706,6 +2771,9 @@
                     });
                 });
             }
+
+            // Init Pull-to-refresh listeners on body
+            initPullToRefresh();
         });
         
         // =========================================================
@@ -2772,13 +2840,12 @@
             } else {
                 // OFFLINE MODE
                 firebase.database().goOffline();
-                showNotification("Offline Mode. Showing Cached Data.", "error");
+                showNotification("Offline Mode. Showing Pre-loaded Skeletons.", "error");
                 
+                // Force layouts to display Shimmer skeletons instantly
                 buildHomeFeed(); 
-                const shortsTab = document.getElementById('shorts-tab');
-                if (shortsTab && shortsTab.classList.contains('active')) {
-                    buildShortsPage();
-                }
+                buildShortsPage();
+                initYouTabUI();
                 
                 const activeVideo = document.querySelector('.short-slide video[src]');
                 if(activeVideo && !activeVideo.paused) {
@@ -2787,6 +2854,285 @@
                 }
             }
         };
+
+        // =========================================================
+        // UNIVERSAL PULL TO REFRESH LOGIC (NATIVE SMOOTHNESS)
+        // =========================================================
+        let ptrStartY = 0;
+        let ptrCurrentY = 0;
+        let isPtrPulling = false;
+        let ptrThreshold = 85;
+        let ptrActive = false;
+
+        function getActiveScrollTop() {
+            // Check active modal first
+            const activeModal = Array.from(document.querySelectorAll('.premium-download-modal')).find(el => el.style.display === 'flex' || el.style.display === 'block');
+            if (activeModal) {
+                const scrollable = activeModal.querySelector('.download-modal-scrollable');
+                if (scrollable) return scrollable.scrollTop;
+                return activeModal.scrollTop;
+            }
+
+            // Check fullscreen page
+            const activePage = Array.from(document.querySelectorAll('.fullscreen-page')).find(el => el.style.display === 'flex' || el.style.display === 'block');
+            if (activePage) {
+                return activePage.scrollTop;
+            }
+
+            // Default viewport scroll
+            return window.scrollY;
+        }
+
+        function initPullToRefresh() {
+            document.addEventListener('touchstart', function(e) {
+                if (getActiveScrollTop() === 0) {
+                    ptrStartY = e.touches[0].clientY;
+                    isPtrPulling = true;
+                } else {
+                    isPtrPulling = false;
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchmove', function(e) {
+                if (!isPtrPulling || ptrActive) return;
+                ptrCurrentY = e.touches[0].clientY;
+                const pullDistance = ptrCurrentY - ptrStartY;
+
+                if (pullDistance > 0) {
+                    const ptrContainer = document.getElementById('ptr-indicator');
+                    if (ptrContainer) {
+                        ptrContainer.style.opacity = Math.min(1, pullDistance / ptrThreshold);
+                        const translateVal = Math.min(ptrThreshold + 20, pullDistance);
+                        ptrContainer.style.transform = `translate3d(-50%, ${translateVal}px, 0)`;
+                    }
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchend', async function(e) {
+                if (!isPtrPulling || ptrActive) return;
+                isPtrPulling = false;
+
+                const pullDistance = ptrCurrentY - ptrStartY;
+                const ptrContainer = document.getElementById('ptr-indicator');
+
+                if (pullDistance >= ptrThreshold) {
+                    ptrActive = true;
+                    if (ptrContainer) {
+                        ptrContainer.classList.add('ptr-refreshing');
+                        ptrContainer.style.transform = `translate3d(-50%, ${ptrThreshold}px, 0)`;
+                        ptrContainer.style.opacity = '1';
+                    }
+                    
+                    // Trigger Live Sync Refresh Sequence
+                    await triggerUniversalRefresh();
+
+                    setTimeout(() => {
+                        if (ptrContainer) {
+                            ptrContainer.style.transform = `translate3d(-50%, 0, 0)`;
+                            ptrContainer.style.opacity = '0';
+                            ptrContainer.classList.remove('ptr-refreshing');
+                        }
+                        ptrActive = false;
+                    }, 800);
+                } else {
+                    if (ptrContainer) {
+                        ptrContainer.style.transform = `translate3d(-50%, 0, 0)`;
+                        ptrContainer.style.opacity = '0';
+                    }
+                }
+                ptrStartY = 0;
+                ptrCurrentY = 0;
+            });
+        }
+
+        async function triggerUniversalRefresh() {
+            if (!navigator.onLine) {
+                showNotification("Network Offline. Unable to Fetch Live Database.", "error");
+                return;
+            }
+            
+            showNotification("Syncing latest feed from server...", "success");
+
+            try {
+                // Prevent duplicate listeners
+                db.ref('admin_panel/movies/user_uploads').off();
+                db.ref('admin_panel/movies/shorts').off();
+                db.ref('admin_panel/posts').off();
+
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    db.ref(`channels/${currentUser.uid}`).off();
+                    db.ref(`users/${currentUser.uid}`).off();
+                }
+
+                // Reset identifiers to force complete DOM rebuilding without caching
+                previousShortsCount = -1;
+                previousLongsCount = -1;
+                previousPostsCount = -1;
+
+                startRealtimeFeedsListener();
+
+                if (currentUser) {
+                    const chanSnap = await db.ref(`channels/${currentUser.uid}`).once('value');
+                    currentChannelData = chanSnap.val();
+                    if (currentChannelData) {
+                        localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                    }
+                    initYouTabUI();
+                    await calculateChannelAnalytics();
+                }
+
+                buildHomeFeed();
+                
+                const activeNav = document.querySelector('.nav-item.active');
+                if (activeNav) {
+                    const activeTabId = activeNav.id.replace('nav-', '');
+                    if (activeTabId === 'shorts') buildShortsPage();
+                    if (activeTabId === 'search') {
+                        const results = document.getElementById('search-results');
+                        if (results) results.innerHTML = getDiscoverSkeletons();
+                    }
+                }
+
+                showNotification("Live database update complete!", "success");
+            } catch (e) {
+                console.error("Refresh error caught safely:", e);
+                showNotification("Database request timed out.", "error");
+            }
+        }
+
+        // =========================================================
+        // SKELETON RENDER TEMPLATE DEFINITIONS
+        // =========================================================
+        function getHomeFeedSkeletons() {
+            return `
+                <div style="padding: 16px 0;">
+                    <!-- Long Video Skeleton -->
+                    <div style="margin-bottom: 24px; background: var(--surface); border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+                        <div class="shimmer-anim sk-rect" style="aspect-ratio: 16/9; border-radius: 0;"></div>
+                        <div style="padding: 14px 16px; display: flex; gap: 12px;">
+                            <div class="shimmer-anim sk-avatar"></div>
+                            <div style="flex-grow: 1;">
+                                <div class="shimmer-anim sk-title" style="width: 75%;"></div>
+                                <div class="shimmer-anim sk-text" style="width: 50%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shorts Row Skeleton -->
+                    <div style="margin-bottom: 24px;">
+                        <div class="shimmer-anim sk-title" style="width: 100px; margin-bottom: 12px;"></div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                            <div class="shimmer-anim sk-rect" style="aspect-ratio: 2/3;"></div>
+                            <div class="shimmer-anim sk-rect" style="aspect-ratio: 2/3;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Community Post Skeleton -->
+                    <div style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="shimmer-anim sk-avatar"></div>
+                                <div>
+                                    <div class="shimmer-anim sk-text" style="width: 100px;"></div>
+                                    <div class="shimmer-anim sk-text-sm" style="width: 60px;"></div>
+                                </div>
+                            </div>
+                            <div class="shimmer-anim sk-btn" style="width: 80px;"></div>
+                        </div>
+                        <div class="shimmer-anim sk-rect" style="aspect-ratio: 3/4; margin-bottom: 12px;"></div>
+                        <div style="display: flex; gap: 8px;">
+                            <div class="shimmer-anim sk-btn" style="flex: 1;"></div>
+                            <div class="shimmer-anim sk-btn" style="flex: 1;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getShortsSkeletons() {
+            return `
+                <div class="short-slide" style="height: 100%; width: 100%; background: #000000; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                    <div class="shimmer-anim" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; opacity: 0.3;"></div>
+                    
+                    <div class="short-right-actions" style="bottom: 54px; right: 12px;">
+                        <div class="short-action-container"><div class="shimmer-anim sk-avatar" style="background: #222; width: 44px; height: 44px; margin-bottom: 4px;"></div><div class="shimmer-anim sk-text-sm" style="background: #222; width: 24px;"></div></div>
+                        <div class="short-action-container"><div class="shimmer-anim sk-avatar" style="background: #222; width: 44px; height: 44px; margin-bottom: 4px;"></div><div class="shimmer-anim sk-text-sm" style="background: #222; width: 24px;"></div></div>
+                        <div class="short-action-container"><div class="shimmer-anim sk-avatar" style="background: #222; width: 44px; height: 44px; margin-bottom: 4px;"></div><div class="shimmer-anim sk-text-sm" style="background: #222; width: 24px;"></div></div>
+                        <div class="shimmer-anim sk-avatar" style="background: #222; width: 40px; height: 40px; margin-top: 6px;"></div>
+                    </div>
+
+                    <div class="short-bottom-info" style="bottom: 54px; left: 12px; right: 76px;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                            <div class="shimmer-anim sk-avatar" style="background: #222; width: 32px; height: 32px;"></div>
+                            <div class="shimmer-anim sk-text" style="background: #222; width: 80px; margin-bottom: 0;"></div>
+                            <div class="shimmer-anim sk-btn" style="background: #222; width: 80px; height: 28px;"></div>
+                        </div>
+                        <div class="shimmer-anim sk-text" style="background: #222; width: 150px;"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getDiscoverSkeletons() {
+            return `
+                <div style="padding: 16px 0; width: 100%;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px; overflow: hidden; width: 100%;">
+                        <div class="shimmer-anim sk-chip" style="flex-shrink: 0;"></div>
+                        <div class="shimmer-anim sk-chip" style="flex-shrink: 0;"></div>
+                        <div class="shimmer-anim sk-chip" style="flex-shrink: 0;"></div>
+                        <div class="shimmer-anim sk-chip" style="flex-shrink: 0;"></div>
+                    </div>
+                    <div class="movie-grid">
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <div class="shimmer-anim sk-rect" style="aspect-ratio: 2/3;"></div>
+                            <div class="shimmer-anim sk-text" style="width: 80%;"></div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <div class="shimmer-anim sk-rect" style="aspect-ratio: 2/3;"></div>
+                            <div class="shimmer-anim sk-text" style="width: 80%;"></div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <div class="shimmer-anim sk-rect" style="aspect-ratio: 2/3;"></div>
+                            <div class="shimmer-anim sk-text" style="width: 80%;"></div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <div class="shimmer-anim sk-rect" style="aspect-ratio: 2/3;"></div>
+                            <div class="shimmer-anim sk-text" style="width: 80%;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getYouSkeletons() {
+            return `
+                <div style="padding: 15px 0;">
+                    <div class="profile-card-you" style="margin-top: 15px; border: none; box-shadow: none;">
+                        <div class="profile-card-main">
+                            <div class="shimmer-anim sk-avatar-lg"></div>
+                            <div style="flex-grow: 1; margin-left: 16px;">
+                                <div class="shimmer-anim sk-title" style="width: 140px;"></div>
+                                <div class="shimmer-anim sk-text" style="width: 100px;"></div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <div class="shimmer-anim sk-btn" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                    <div class="you-menu" style="border: none; box-shadow: none;">
+                        <div style="padding: 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color);">
+                            <div class="shimmer-anim sk-text" style="width: 150px; margin-bottom: 0;"></div>
+                            <div class="shimmer-anim sk-text-sm" style="width: 20px; margin-bottom: 0;"></div>
+                        </div>
+                        <div style="padding: 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color);">
+                            <div class="shimmer-anim sk-text" style="width: 150px; margin-bottom: 0;"></div>
+                            <div class="shimmer-anim sk-text-sm" style="width: 20px; margin-bottom: 0;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
         // =========================================
         // UI SOUND ENGINE
@@ -2912,40 +3258,6 @@
                 u8arr[n] = bstr.charCodeAt(n);
             }
             return new Blob([u8arr], {type:mime});
-        }
-
-        // =========================================================
-        // BACKGROUND CACHE API SYSTEM FOR ULTRA-FAST OFFLINE SHORTS
-        // =========================================================
-        async function cacheMediaFiles(shorts) {
-            if (!window.caches) return;
-            try {
-                const cache = await caches.open('flaynity-shorts-cache');
-                const validUrls = shorts.map(s => s.videoLink).filter(Boolean);
-                
-                // Limit to LRU logic (Delete old caches not in the latest 50)
-                const keys = await cache.keys();
-                for (let request of keys) {
-                    if (!validUrls.includes(request.url)) {
-                        await cache.delete(request);
-                    }
-                }
-                
-                // Background fetch new caches without blocking UI thread
-                setTimeout(async () => {
-                    for (let url of validUrls) {
-                        const match = await cache.match(url);
-                        if (!match) {
-                            try {
-                                const res = await fetch(url, { mode: 'no-cors', cache: 'no-store' });
-                                if (res) await cache.put(url, res.clone());
-                            } catch(e) {}
-                        }
-                    }
-                }, 2000); // 2-second delay to prioritize playback
-            } catch (e) {
-                console.warn("Background cache failed:", e);
-            }
         }
 
         // =========================================
@@ -3415,9 +3727,6 @@
 
                 await s3Upload.promise();
                 
-                // Simulate backend optimization step / Encoding logic
-                // Cloudflare Stream / backend converts MP4 to HLS / optimized MP4 automatically in production
-                
                 item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
                 item.status = "processing";
                 updateManagerUI();
@@ -3565,13 +3874,15 @@
 
         function startRealtimeFeedsListener() {
             try {
+                db.ref('admin_panel/movies/user_uploads').off();
+                db.ref('admin_panel/movies/shorts').off();
+                db.ref('admin_panel/posts').off();
+
                 db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
                     try {
                         const data = snap.val();
                         allLongVideos = data ? Object.values(data) : [];
                         allLongVideos.sort((a,b) => b.createdAt - a.createdAt);
-                        
-                        localStorage.setItem('flaynity_offline_longs', JSON.stringify(allLongVideos));
                         
                         allLongVideos.forEach(m => {
                             if (m && m.id && !allAdminMovies.find(x => x.id === m.id)) {
@@ -3579,12 +3890,10 @@
                             }
                         });
 
-                        // Rebuild strictly to prevent DOM wiping
                         if(allLongVideos.length !== previousLongsCount) {
                             previousLongsCount = allLongVideos.length;
                             buildHomeFeed();
                         } else {
-                            // Update quiet states manually
                             allLongVideos.forEach(v => {
                                 const titleEl = document.querySelector(`.long-video-feed-card[onclick*="${v.id}"] .long-video-title`);
                                 if (titleEl) titleEl.innerText = escapeHTML(v.title);
@@ -3599,12 +3908,6 @@
                         allShorts = data ? Object.values(data) : [];
                         allShorts.sort((a,b) => b.createdAt - a.createdAt);
                         
-                        // Limit Offline Cache to latest 50 items for LRU logic
-                        const top50Shorts = allShorts.slice(0, 50);
-                        localStorage.setItem('flaynity_offline_shorts', JSON.stringify(top50Shorts));
-                        cacheMediaFiles(top50Shorts); 
-                        
-                        // ZERO FREEZE LOGIC: Only full rebuild if length changes
                         if(allShorts.length !== previousShortsCount) {
                             previousShortsCount = allShorts.length;
                             buildHomeFeed();
@@ -3620,7 +3923,6 @@
                                 }
                             }
                         } else {
-                            // Quiet Metadata injection
                             allShorts.forEach(s => {
                                 const titleEl = document.querySelector(`#slide-short-${s.id} #short-title-val`);
                                 if(titleEl) titleEl.innerHTML = `${escapeHTML(s.title)} <span style="font-weight:400; font-size:0.8rem; color:#ccc; display:block;">Click to view description</span>`;
@@ -3637,10 +3939,6 @@
                         allCommunityPosts = data ? Object.values(data) : [];
                         allCommunityPosts.sort((a,b) => b.createdAt - a.createdAt);
                         
-                        // Limit Offline Cache to latest 20 items
-                        localStorage.setItem('flaynity_offline_posts', JSON.stringify(allCommunityPosts.slice(0, 20)));
-                        
-                        // Zero Freeze Render for Posts
                         if (allCommunityPosts.length !== previousPostsCount) {
                             previousPostsCount = allCommunityPosts.length;
                             buildHomeFeed();
@@ -3664,7 +3962,6 @@
                         } catch (e) {}
                     });
 
-                    // Live User Profile Listener
                     db.ref(`users/${currentUser.uid}`).on('value', (snapshot) => {
                         try {
                             const userData = snapshot.val();
@@ -3719,7 +4016,6 @@
                     el.innerHTML = `<div style="width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--primary), #FF7A00); color: #fff; font-weight: 800; font-size: 0.9rem;">${initial}</div>`;
                 }
             });
-            // Update rotating disc inner image with actual avatar
             document.querySelectorAll(`.live-disc-avatar-${userId}`).forEach(el => {
                 if (avatar) {
                     el.innerHTML = `<img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
@@ -3892,18 +4188,23 @@
             const container = document.getElementById('home-feed-container');
             if (!container) return;
 
-            let html = '';
+            if (!navigator.onLine) {
+                container.innerHTML = getHomeFeedSkeletons();
+                const chips = document.getElementById('global-category-chips');
+                if (chips) {
+                    chips.innerHTML = `
+                        <div class="shimmer-anim sk-chip" style="grid-column: 1;"></div>
+                        <div class="shimmer-anim sk-chip" style="grid-column: 2;"></div>
+                        <div class="shimmer-anim sk-chip" style="grid-column: 3;"></div>
+                    `;
+                }
+                return;
+            }
 
+            let html = '';
             let shorts = [...allShorts];
             let longs = [...allLongVideos];
             let posts = [...allCommunityPosts];
-
-            // ⚠️ OFFLINE LOGIC: Hide long videos when offline, use ONLY cached Shorts & Posts
-            if (!navigator.onLine) {
-                longs = []; 
-                shorts = JSON.parse(localStorage.getItem('flaynity_offline_shorts') || '[]');
-                posts = JSON.parse(localStorage.getItem('flaynity_offline_posts') || '[]');
-            }
 
             shorts.sort((a,b) => b.createdAt - a.createdAt);
             longs.sort((a,b) => b.createdAt - a.createdAt);
@@ -4285,18 +4586,18 @@
         // =========================================================
         // HIGH PERFORMANCE SHORTS BUILDER (SMART ALLOCATION)
         // =========================================================
-        let hlsInstances = {}; // Store HLS Engine instances globally
+        let hlsInstances = {}; 
 
         function buildShortsPage() {
             const container = document.getElementById('shorts-swiper-container');
             if (!container) return;
             
-            // Offline Shorts Source
-            let activeShortsList = allShorts;
             if (!navigator.onLine) {
-                activeShortsList = JSON.parse(localStorage.getItem('flaynity_offline_shorts') || '[]');
+                container.innerHTML = getShortsSkeletons();
+                return;
             }
 
+            let activeShortsList = allShorts;
             if (activeShortsList.length === 0) {
                 container.innerHTML = `
                     <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#FFFFFF;">
@@ -4314,7 +4615,6 @@
                 const commentsCountId = `short-comments-count-${s.id}`;
                 const statsCacheKey = `flaynity_stats_cache_${s.id}`;
 
-                // Instant cache load & Offline Sync Check
                 let cachedStats = { likes: 0, comments: 0 };
                 let offlineLikes = JSON.parse(localStorage.getItem('flaynity_offline_likes') || '{}');
                 let isLocallyLiked = !!offlineLikes[s.id];
@@ -4326,10 +4626,7 @@
 
                 html += `
                     <div class="short-slide" id="slide-short-${s.id}" data-shortid="${s.id}">
-                        <!-- Circular loading indicator -->
                         <div class="short-buffer-spinner" id="short-spinner-${s.id}"></div>
-                        
-                        <!-- Play/Pause smooth animated overlays -->
                         <div class="short-play-pause-overlay" id="short-pp-overlay-${s.id}"></div>
 
                         <video class="short-video-el" loop playsinline webkit-playsinline></video>
@@ -4360,7 +4657,6 @@
                                 <div class="short-action-label-tiktok">Save</div>
                             </div>
 
-                            <!-- Rotating Music Disc Icon with Avatar -->
                             <div class="music-disc-container">
                                 <div class="music-disc-inner live-disc-avatar-${s.userId}" id="music-disc-${s.id}">
                                     <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
@@ -4509,7 +4805,6 @@
                 if (!video) return;
                 const shortId = slide.getAttribute('data-shortid');
 
-                // Hardware Decoder Optimization Tags
                 video.setAttribute('playsinline', '');
                 video.setAttribute('webkit-playsinline', '');
                 video.style.background = 'transparent';
@@ -4653,9 +4948,7 @@
                 
                 localStorage.setItem('flaynity_offline_likes', JSON.stringify(offlineLikes));
                 updateLikesDOMOffline(shortId);
-            } catch (e) {
-                console.error(e);
-            }
+            } catch (e) {}
         }
 
         function updateLikesDOMOffline(shortId) {
@@ -4796,7 +5089,6 @@
 
         // =========================================================
         // ULTRA FAST PRE-LOAD ADJACENT CLIPS & SHORTS MEMORY ENGINE
-        // (Smart HLS Adaptive Streaming & Hardware Decoder)
         // =========================================================
         let currentActiveShortsIdx = -1;
         
@@ -4829,7 +5121,6 @@
                 const s = allShorts.find(item => item.id === shortId);
                 if (!s) return;
 
-                // 🚀 LIMIT PRELOAD TO ONLY CURRENT, 1 PREV AND 2 NEXT (Saves Bandwidth)
                 if (idx >= activeIndex - 1 && idx <= activeIndex + 2) {
                     
                     if (video.getAttribute('poster') !== s.poster) {
@@ -4838,12 +5129,11 @@
 
                     if (!video.getAttribute('src') && !hlsInstances[shortId]) {
                         attachSmartAdaptiveSource(video, s.videoLink, shortId);
-                        // 🔥 FIX: Prevent all videos downloading at once. Only Active video uses 'auto'
                         video.preload = (idx === activeIndex) ? "auto" : "metadata";
                     }
 
                     if (idx === activeIndex) {
-                        video.preload = "auto"; // Download priority to current video
+                        video.preload = "auto"; 
                         video.muted = false;
                         let playPromise = video.play();
                         if (playPromise !== undefined) {
@@ -4853,12 +5143,11 @@
                             });
                         }
                     } else {
-                        video.preload = "metadata"; // Stops background full download
+                        video.preload = "metadata"; 
                         video.pause();
                         video.currentTime = 0;
                     }
                 } else {
-                    // Completely unload video source for items out of range to free RAM
                     video.pause();
                     video.removeAttribute('src');
                     video.removeAttribute('preload');
@@ -5005,6 +5294,10 @@
 
                 if (activeTab === 'you') initYouTabUI();
                 if (activeTab === 'shorts') buildShortsPage();
+                if (activeTab === 'search' && !navigator.onLine) {
+                    const results = document.getElementById('search-results');
+                    if (results) results.innerHTML = getDiscoverSkeletons();
+                }
 
                 if (activePage) {
                     if (activePage === 'full-movie-page') {
@@ -5128,7 +5421,6 @@
                     const ytId = extractVideoID(link);
                     container.innerHTML = `<iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1&modestbranding=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
                 } else {
-                    // Inject Video Tag for HLS or MP4
                     container.innerHTML = `<video id="premium-video-watch-el" controls playsinline style="width:100%; height:100%; object-fit:contain;"></video>`;
                     const videoEl = document.getElementById('premium-video-watch-el');
                     
@@ -5206,7 +5498,7 @@
             const timeEl = document.getElementById('movie-detail-upload-time');
             if (timeEl) timeEl.innerText = uploadTimeText;
 
-            if(!navigator.onLine) return; // Skip realtime listeners if offline
+            if(!navigator.onLine) return; 
 
             activeStatsRef = db.ref(`movie_stats/${movieId}`);
             activeStatsRef.on('value', (snapshot) => {
@@ -5655,8 +5947,11 @@
             const user = auth.currentUser;
             if (!user) return;
 
-            if(!navigator.onLine && currentChannelData) {
-                renderYouTabWithData(currentChannelData, user, wrap);
+            if(!navigator.onLine) {
+                const tabContent = document.getElementById('you-tab');
+                if (tabContent) {
+                    tabContent.innerHTML = getYouSkeletons();
+                }
                 return;
             }
 

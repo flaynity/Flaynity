@@ -2911,42 +2911,14 @@
                 
                 await syncOfflineLikes();
                 
-                db.ref('admin_panel/movies/user_uploads').off();
-                db.ref('admin_panel/movies/shorts').off();
-                db.ref('admin_panel/posts').off();
-                
-                const currentUser = auth.currentUser;
-                if (currentUser) {
-                    db.ref(`channels/${currentUser.uid}`).off();
-                    db.ref(`users/${currentUser.uid}`).off();
-                }
-                
-                previousShortsCount = -1;
-                previousLongsCount = -1;
-                previousPostsCount = -1;
-                
-                startRealtimeFeedsListener(); 
+                // Trigger a full universal refresh to clear cached data and fetch newest feeds dynamically
+                await triggerUniversalPullToRefresh(); 
 
                 // Resume any pending/paused uploads automatically when network is back
                 const waitingUploads = uploadQueue.filter(i => i.status === 'paused' || i.status === 'waiting');
                 if (waitingUploads.length > 0) {
                     waitingUploads.forEach(item => { item.status = 'waiting'; });
                     triggerNextActiveUpload();
-                }
-                
-                if (currentUser) {
-                    db.ref(`channels/${currentUser.uid}`).once('value', snap => {
-                        currentChannelData = snap.val();
-                        if(currentChannelData) {
-                            localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
-                        }
-                        initYouTabUI();
-                        
-                        const analyticsPage = document.getElementById('analytics-page');
-                        if (analyticsPage && (analyticsPage.style.display === 'flex' || analyticsPage.style.display === 'block')) {
-                            calculateChannelAnalytics();
-                        }
-                    });
                 }
                 
                 const moviePage = document.getElementById('full-movie-page');
@@ -3114,10 +3086,14 @@
             }
 
             try {
-                // Detach listeners to prevent stacking
-                db.ref('admin_panel/movies/user_uploads').off();
-                db.ref('admin_panel/movies/shorts').off();
-                db.ref('admin_panel/posts').off();
+                // Clear UI to enforce Feed Replacement without displaying duplicate cache
+                const homeContainer = document.getElementById('home-feed-container');
+                if (homeContainer) homeContainer.innerHTML = getHomeSkeletonHTML();
+
+                // Detach listeners to prevent stacking and memory leaks
+                db.ref('admin_panel/movies/user_uploads').off('value');
+                db.ref('admin_panel/movies/shorts').off('value');
+                db.ref('admin_panel/posts').off('value');
 
                 previousShortsCount = -1;
                 previousLongsCount = -1;
@@ -3128,48 +3104,27 @@
                 allShorts = [];
                 allCommunityPosts = [];
 
-                // Fetch fresh DB data snapshots
-                const [longsSnap, shortsSnap, postsSnap] = await Promise.all([
-                    db.ref('admin_panel/movies/user_uploads').once('value'),
-                    db.ref('admin_panel/movies/shorts').once('value'),
-                    db.ref('admin_panel/posts').once('value')
-                ]);
-
-                const longsData = longsSnap.val();
-                allLongVideos = longsData ? Object.values(longsData) : [];
-                allLongVideos.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-                const shortsData = shortsSnap.val();
-                allShorts = shortsData ? Object.values(shortsData) : [];
-                allShorts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-                const postsData = postsSnap.val();
-                allCommunityPosts = postsData ? Object.values(postsData) : [];
-                allCommunityPosts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-                // Re-bind listeners
+                // Re-bind listeners (This automatically downloads the latest DB state and re-renders perfectly)
                 startRealtimeFeedsListener();
 
                 // Sync current channel & session info
                 const currentUser = auth.currentUser;
                 if (currentUser) {
-                    const snap = await db.ref(`channels/${currentUser.uid}`).once('value');
-                    currentChannelData = snap.val();
-                    if (currentChannelData) {
-                        localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
-                    }
-                    initYouTabUI();
-                    
-                    const analyticsPage = document.getElementById('analytics-page');
-                    if (analyticsPage && (analyticsPage.style.display === 'flex' || analyticsPage.style.display === 'block')) {
-                        calculateChannelAnalytics();
-                    }
+                    db.ref(`channels/${currentUser.uid}`).once('value').then(snap => {
+                        currentChannelData = snap.val();
+                        if (currentChannelData) {
+                            localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                        }
+                        initYouTabUI();
+                        
+                        const analyticsPage = document.getElementById('analytics-page');
+                        if (analyticsPage && (analyticsPage.style.display === 'flex' || analyticsPage.style.display === 'block')) {
+                            calculateChannelAnalytics();
+                        }
+                    });
                 }
 
-                // Force feed re-render
-                buildHomeFeed();
-
-                showNotification("Feed Updated!", "success");
+                showNotification("Feed Updated Successfully!", "success");
             } catch (e) {
                 console.error("PTR Refresh Exception:", e);
                 showNotification("Refresh failed: " + e.message, "error");
@@ -3392,14 +3347,14 @@
             const managerList = document.getElementById('manager-items-list');
             if (managerList) managerList.innerHTML = '';
 
-            if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
-            if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }
-            if (activeChannelVideosListener) { activeChannelVideosListener.off(); activeChannelVideosListener = null; }
-            if (activeChannelShortsListener) { activeChannelShortsListener.off(); activeChannelShortsListener = null; }
-            if (activeChannelPostsListener) { activeChannelPostsListener.off(); activeChannelPostsListener = null; }
+            if (activeStatsRef) { activeStatsRef.off('value'); activeStatsRef = null; }
+            if (activeCommentsRef) { activeCommentsRef.off('value'); activeCommentsRef = null; }
+            if (activeChannelVideosListener) { activeChannelVideosListener.off('value'); activeChannelVideosListener = null; }
+            if (activeChannelShortsListener) { activeChannelShortsListener.off('value'); activeChannelShortsListener = null; }
+            if (activeChannelPostsListener) { activeChannelPostsListener.off('value'); activeChannelPostsListener = null; }
 
             Object.keys(boundChannelListeners).forEach(userId => {
-                db.ref(`channels/${userId}`).off();
+                db.ref(`channels/${userId}`).off('value');
                 delete boundChannelListeners[userId];
             });
         }
@@ -3526,7 +3481,7 @@
         // =========================================================
         let uploadQueue = [];
         let activeUploadsCount = 0;
-        const MAX_CONCURRENT_UPLOADS = 3; // প্যারালল ৩টি আপলোড সাপোর্ট
+        const MAX_CONCURRENT_UPLOADS = 3; 
 
         // Queue Watchdog Engine: আটকে থাকা WAITING ফাইলগুলোকে সচল করার জন্য
         setInterval(() => {
@@ -3609,7 +3564,6 @@
                 thumbUrl: "",
                 videoUrl: "",
                 s3UploadRef: null,
-                retryCount: 0,
                 createdAt: Date.now()
             };
 
@@ -3619,6 +3573,56 @@
             currentDetailItem = queueItem;
             openDetailsSheet(queueItem);
             e.target.value = ""; 
+        }
+
+        // =========================================================
+        // VIDEO FRAME CAPTURE & METADATA EXTRACTOR
+        // =========================================================
+        function captureFrameAndDuration(file) {
+            return new Promise((resolve) => {
+                try {
+                    const video = document.createElement('video');
+                    video.preload = 'metadata';
+                    video.src = URL.createObjectURL(file);
+                    
+                    video.onloadedmetadata = () => {
+                        video.currentTime = Math.min(1, video.duration / 2);
+                    };
+                    
+                    video.onseeked = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                        canvas.toBlob((blob) => {
+                            URL.revokeObjectURL(video.src);
+                            resolve({ duration: video.duration, dataUrl: dataUrl, blob: blob });
+                        }, 'image/jpeg', 0.8);
+                    };
+                    
+                    video.onerror = () => {
+                        resolve({ duration: 60, dataUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop", blob: null });
+                    };
+                } catch (e) {
+                    resolve({ duration: 60, dataUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop", blob: null });
+                }
+            });
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds || isNaN(seconds)) return "00:00";
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+        }
+
+        function extractHashtags(text) {
+            if (!text) return [];
+            const matches = text.match(/#[\w]+/g);
+            return matches ? matches : [];
         }
 
         async function triggerNextActiveUpload() {
@@ -3680,7 +3684,6 @@
                 
                 item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
                 item.status = "processing";
-                item.retryCount = 0;
                 updateManagerUI();
 
                 await runPostUploadProcessingSequence(item);
@@ -3694,17 +3697,11 @@
                     showNotification("Connection lost. Upload paused.", "error");
                 } else {
                     console.error("Upload error: ", err);
-                    item.retryCount = (item.retryCount || 0) + 1;
                     
-                    if (item.retryCount <= 5) {
-                        item.status = "waiting";
-                        updateManagerUI();
-                        showNotification(`Network hiccup. Retrying (${item.retryCount}/5)...`, "error");
-                    } else {
-                        item.status = "failed";
-                        updateManagerUI();
-                        showNotification(`Upload failed: ${err.message}`, "error");
-                    }
+                    // Fixed: Removed Retry Limit (0/5) completely. Now it supports unlimited seamless auto-resume.
+                    item.status = "waiting";
+                    updateManagerUI();
+                    showNotification(`Network hiccup. Automatically resuming upload...`, "error");
                 }
             } finally {
                 activeUploadsCount = Math.max(0, activeUploadsCount - 1);
@@ -3803,27 +3800,7 @@
                 
             await db.ref(targetPath).set(moviePayload);
 
-            // Step 2: Zero-Delay Local Feed Update (< 0.1 Seconds)
-            if (item.type === 'video-short') {
-                const idx = allShorts.findIndex(s => s.id === item.id);
-                if (idx !== -1) allShorts[idx] = moviePayload;
-                else allShorts.unshift(moviePayload);
-                
-                buildShortsPage();
-            } else {
-                const idx = allLongVideos.findIndex(v => v.id === item.id);
-                if (idx !== -1) allLongVideos[idx] = moviePayload;
-                else allLongVideos.unshift(moviePayload);
-            }
-
-            // Step 3: Instant A-Z Screen Refresh
-            buildHomeFeed();
-
-            const activePage = AppNavigation.current();
-            if (activePage && activePage.id === 'view-channel-page') {
-                if (item.type === 'video-short') renderChannelShorts(user.uid);
-                else renderChannelVideos(user.uid);
-            }
+            // Realtime Listener will catch this update automatically, NO need to manually inject or refresh!
         }
 
         // =========================================================
@@ -3835,6 +3812,11 @@
 
         function startRealtimeFeedsListener() {
             try {
+                // Ensure no duplicate listeners
+                db.ref('admin_panel/movies/user_uploads').off('value');
+                db.ref('admin_panel/movies/shorts').off('value');
+                db.ref('admin_panel/posts').off('value');
+
                 db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
                     try {
                         const data = snap.val();
@@ -3938,7 +3920,7 @@
             
             if (boundChannelListeners[userId]) {
                 if (navigator.onLine) {
-                    db.ref(`channels/${userId}`).once('value', (snap) => {
+                    db.ref(`channels/${userId}`).once('value').then((snap) => {
                         updateChannelDOM(userId, snap.val());
                     });
                 }
@@ -4113,8 +4095,6 @@
                 const hideLikesCb = document.getElementById('post-hide-likes');
                 if (hideLikesCb) hideLikesCb.checked = false;
 
-                buildHomeFeed();
-
             } catch (err) {
                 showNotification("Failed to publish: " + err.message, "error");
             } finally {
@@ -4144,7 +4124,6 @@
             const container = document.getElementById('home-feed-container');
             if (!container) return;
 
-            // ⚠️ STRICT REQUIREMENT: If offline, show ONLY Animated Skeletons (NO cached text, images, or cards)
             if (!navigator.onLine) {
                 container.innerHTML = getHomeSkeletonHTML();
                 return;
@@ -4183,7 +4162,7 @@
                         </div>
                     `;
                     
-                    db.ref(`movie_stats/${s.id}/views`).once('value', (vSnap) => {
+                    db.ref(`movie_stats/${s.id}/views`).once('value').then((vSnap) => {
                         const viewsObj = vSnap.val() || {};
                         const count = Object.keys(viewsObj).length;
                         const label = document.getElementById(`home-short-views-${s.id}`);
@@ -4282,7 +4261,7 @@
                     </div>
                 `;
                 
-                db.ref(`movie_stats/${s.id}/views`).once('value', (vSnap) => {
+                db.ref(`movie_stats/${s.id}/views`).once('value').then((vSnap) => {
                     const viewsObj = vSnap.val() || {};
                     const count = Object.keys(viewsObj).length;
                     const label = document.getElementById(`home-short-views-${s.id}`);
@@ -4329,7 +4308,7 @@
                     </div>
                 `;
 
-                db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
+                db.ref(`movie_stats/${v.id}/views`).once('value').then((vSnap) => {
                     const viewsObj = vSnap.val() || {};
                     const count = Object.keys(viewsObj).length;
                     const label = document.getElementById(viewsId);
@@ -4532,7 +4511,6 @@
             const container = document.getElementById('shorts-swiper-container');
             if (!container) return;
             
-            // ⚠️ STRICT REQUIREMENT: If offline, show ONLY Animated Skeletons (NO cached items)
             if (!navigator.onLine) {
                 container.innerHTML = getShortsSkeletonHTML();
                 return;
@@ -4782,7 +4760,7 @@
             document.getElementById('short-sheet-uploaded').innerText = getRelativeTime(s.createdAt);
 
             if(navigator.onLine) {
-                db.ref(`movie_stats/${shortId}`).once('value', (snapshot) => {
+                db.ref(`movie_stats/${shortId}`).once('value').then((snapshot) => {
                     const stats = snapshot.val() || {};
                     const viewsObj = stats.views || {};
                     const likesObj = stats.likes || {};
@@ -4852,7 +4830,7 @@
             }
 
             const ref = db.ref(`movie_stats/${shortId}/likes/${userId}`);
-            ref.once('value', (snap) => {
+            ref.once('value').then((snap) => {
                 if (snap.exists()) {
                     if (!forceLike) ref.remove(); 
                 } else {
@@ -4999,15 +4977,15 @@
             const userSubRef = db.ref(`subscribers/${channelId}/${auth.currentUser.uid}`);
             const channelSubCountRef = db.ref(`channels/${channelId}/subscribersCount`);
             
-            userSubRef.once('value', (snap) => {
+            userSubRef.once('value').then(async (snap) => {
                 if (snap.exists()) {
-                    userSubRef.remove();
+                    await userSubRef.remove();
                     channelSubCountRef.transaction((currentCount) => {
                         return (currentCount || 1) - 1;
                     });
                     showNotification("Unsubscribed from channel.", "success");
                 } else {
-                    userSubRef.set(true);
+                    await userSubRef.set(true);
                     channelSubCountRef.transaction((currentCount) => {
                         return (currentCount || 0) + 1;
                     });
@@ -5236,8 +5214,8 @@
                     document.body.style.overflow = 'auto';
                     const container = document.getElementById('video-player-container');
                     if (container) container.innerHTML = '';
-                    if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
-                    if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }
+                    if (activeStatsRef) { activeStatsRef.off('value'); activeStatsRef = null; }
+                    if (activeCommentsRef) { activeCommentsRef.off('value'); activeCommentsRef = null; }
                 }
 
                 activeModals.forEach(modalId => {
@@ -5281,8 +5259,8 @@
                 window.AndroidBridge.showMovieClickInterstitial(); 
             }
 
-            if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
-            if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }
+            if (activeStatsRef) { activeStatsRef.off('value'); activeStatsRef = null; }
+            if (activeCommentsRef) { activeCommentsRef.off('value'); activeCommentsRef = null; }
 
             const playerContainer = document.getElementById('video-player-container');
             const skeleton = document.getElementById('video-player-skeleton');
@@ -5499,7 +5477,7 @@
             const userSubRef = db.ref(`subscribers/${channelId}/${auth.currentUser.uid}`);
             const channelSubCountRef = db.ref(`channels/${channelId}/subscribersCount`);
 
-            userSubRef.once('value', async (snap) => {
+            userSubRef.once('value').then(async (snap) => {
                 if (snap.exists()) {
                     await userSubRef.remove();
                     channelSubCountRef.transaction((currentCount) => {
@@ -5526,7 +5504,7 @@
             const likeRef = db.ref(`movie_stats/${movieId}/likes/${userId}`);
             const dislikeRef = db.ref(`movie_stats/${movieId}/dislikes/${userId}`);
             
-            likeRef.once('value', (snap) => {
+            likeRef.once('value').then((snap) => {
                 if (snap.exists()) {
                     likeRef.remove();
                 } else {
@@ -5546,7 +5524,7 @@
             const likeRef = db.ref(`movie_stats/${movieId}/likes/${userId}`);
             const dislikeRef = db.ref(`movie_stats/${movieId}/dislikes/${userId}`);
             
-            dislikeRef.once('value', (snap) => {
+            dislikeRef.once('value').then((snap) => {
                 if (snap.exists()) {
                     dislikeRef.remove();
                 } else {
@@ -5561,7 +5539,7 @@
             const currentU = auth.currentUser;
             const avatarEl = document.getElementById('comment-user-avatar');
             if (currentU && avatarEl && navigator.onLine) {
-                db.ref(`users/${currentU.uid}`).once('value', (snap) => {
+                db.ref(`users/${currentU.uid}`).once('value').then((snap) => {
                     const uData = snap.val();
                     const photo = uData?.photoURL || currentU.photoURL || '';
                     if (photo) {
@@ -5588,7 +5566,7 @@
             const userId = auth.currentUser.uid;
             const movieId = currentActiveMovie.id;
 
-            db.ref(`users/${userId}`).once('value', (snap) => {
+            db.ref(`users/${userId}`).once('value').then((snap) => {
                 const uData = snap.val() || {};
                 const username = uData.username || auth.currentUser.email.split('@')[0];
                 const avatar = currentChannelData?.avatarUrl || auth.currentUser.photoURL || "";
@@ -5678,7 +5656,7 @@
             
             if(navigator.onLine) {
                 const movieId = currentActiveMovie.id;
-                db.ref(`movie_stats/${movieId}`).once('value', (snap) => {
+                db.ref(`movie_stats/${movieId}`).once('value').then((snap) => {
                     const stats = snap.val() || {};
                     const likesCount = Object.keys(stats.likes || {}).length;
                     const viewsCount = Object.keys(stats.views || {}).length;
@@ -5760,7 +5738,7 @@
                 `;
 
                 if(navigator.onLine) {
-                    db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
+                    db.ref(`movie_stats/${v.id}/views`).once('value').then((vSnap) => {
                         const viewsObj = vSnap.val() || {};
                         const count = Object.keys(viewsObj).length;
                         const label = document.getElementById(viewsId);
@@ -6054,7 +6032,7 @@
             feedback.innerHTML = `<span style="color:var(--text-muted); font-weight: 700;"><i class="fas fa-spinner fa-spin"></i> Checking availability...</span>`;
             
             handleCheckTimeout = setTimeout(() => {
-                db.ref(`handles/${handle}`).once('value', (snapshot) => {
+                db.ref(`handles/${handle}`).once('value').then((snapshot) => {
                     if (snapshot.exists()) {
                         feedback.innerHTML = `<span style="color:#EF4444; font-weight: 700;"><i class="fas fa-times-circle"></i> Handle Already Taken</span>`;
                         btn.disabled = true;
@@ -6242,7 +6220,7 @@
         function renderChannelVideos(userId) {
             const grid = document.getElementById('channel-videos-grid');
             if (!grid) return;
-            if (activeChannelVideosListener) { activeChannelVideosListener.off(); }
+            if (activeChannelVideosListener) { activeChannelVideosListener.off('value'); }
             
             activeChannelVideosListener = db.ref('admin_panel/movies/user_uploads');
             activeChannelVideosListener.on('value', (snap) => {
@@ -6274,7 +6252,7 @@
 
                 if(navigator.onLine) {
                     list.forEach(m => {
-                        db.ref(`movie_stats/${m.id}/views`).once('value', (vSnap) => {
+                        db.ref(`movie_stats/${m.id}/views`).once('value').then((vSnap) => {
                             const viewsObj = vSnap.val() || {};
                             const count = Object.keys(viewsObj).length;
                             const label = document.getElementById(`chan-vid-views-${m.id}`);
@@ -6288,7 +6266,7 @@
         function renderChannelShorts(userId) {
             const grid = document.getElementById('channel-shorts-grid');
             if (!grid) return;
-            if (activeChannelShortsListener) { activeChannelShortsListener.off(); }
+            if (activeChannelShortsListener) { activeChannelShortsListener.off('value'); }
 
             activeChannelShortsListener = db.ref('admin_panel/movies/shorts');
             activeChannelShortsListener.on('value', (snap) => {
@@ -6312,7 +6290,7 @@
 
                 if(navigator.onLine) {
                     list.forEach(m => {
-                        db.ref(`movie_stats/${m.id}/views`).once('value', (vSnap) => {
+                        db.ref(`movie_stats/${m.id}/views`).once('value').then((vSnap) => {
                             const viewsObj = vSnap.val() || {};
                             const count = Object.keys(viewsObj).length;
                             const label = document.getElementById(`chan-short-views-${m.id}`);
@@ -6326,7 +6304,7 @@
         function renderChannelPosts(userId) {
             const grid = document.getElementById('channel-posts-feed');
             if (!grid) return;
-            if (activeChannelPostsListener) { activeChannelPostsListener.off(); }
+            if (activeChannelPostsListener) { activeChannelPostsListener.off('value'); }
 
             activeChannelPostsListener = db.ref('admin_panel/posts');
             activeChannelPostsListener.on('value', (snap) => {
@@ -7218,7 +7196,7 @@
                 return;
             }
             const userId = auth.currentUser.uid;
-            db.ref(`post_reactions/${postId}/${userId}`).once('value', (snap) => {
+            db.ref(`post_reactions/${postId}/${userId}`).once('value').then((snap) => {
                 if (snap.exists() && snap.val().type === 'love') {
                     db.ref(`post_reactions/${postId}/${userId}`).remove();
                 } else {
@@ -7365,7 +7343,7 @@
             const postId = activeReactedPostId;
             if (!postId) return;
 
-            db.ref(`post_reactions/${postId}`).once('value', (snapshot) => {
+            db.ref(`post_reactions/${postId}`).once('value').then((snapshot) => {
                 const reactions = snapshot.val() || {};
                 
                 const reactionCounts = { all: 0, love: 0, like: 0, care: 0, haha: 0, wow: 0, sad: 0, angry: 0 };

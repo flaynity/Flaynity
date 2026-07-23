@@ -155,7 +155,7 @@
             align-items: center;
             justify-content: center;
             z-index: 99999;
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s;
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease;
             opacity: 0;
             pointer-events: none;
         }
@@ -2926,6 +2926,13 @@
                 previousPostsCount = -1;
                 
                 startRealtimeFeedsListener(); 
+
+                // Resume any pending/paused uploads automatically when network is back
+                const waitingUploads = uploadQueue.filter(i => i.status === 'paused' || i.status === 'waiting');
+                if (waitingUploads.length > 0) {
+                    waitingUploads.forEach(item => { item.status = 'waiting'; });
+                    triggerNextActiveUpload();
+                }
                 
                 if (currentUser) {
                     db.ref(`channels/${currentUser.uid}`).once('value', snap => {
@@ -2936,7 +2943,7 @@
                         initYouTabUI();
                         
                         const analyticsPage = document.getElementById('analytics-page');
-                        if (analyticsPage && analyticsPage.style.display === 'flex') {
+                        if (analyticsPage && (analyticsPage.style.display === 'flex' || analyticsPage.style.display === 'block')) {
                             calculateChannelAnalytics();
                         }
                     });
@@ -2969,16 +2976,50 @@
         // UNIVERSAL NATIVE YOUTUBE-STYLE PULL TO REFRESH ENGINE
         // =========================================================
         let touchStartY = 0;
+        let touchStartX = 0;
         let touchMoveY = 0;
         let isPTRActive = false;
+        let isRefreshingNow = false;
+
+        function isPTRAllowedOnCurrentView() {
+            // Disallow PTR if a modal, full page, preview, or non-feed container is visible
+            const modalsOpen = document.querySelectorAll('.fullscreen-page[style*="display: flex"], .fullscreen-page[style*="display: block"], .premium-download-modal[style*="display: flex"], #full-movie-page[style*="display: block"], #theme-popup-menu[style*="display: flex"], #full-image-preview-overlay[style*="display: flex"]');
+            if (modalsOpen.length > 0) {
+                // Special check: view-channel-page allows PTR if scrolled to top
+                const viewChannel = document.getElementById('view-channel-page');
+                if (viewChannel && (viewChannel.style.display === 'flex' || viewChannel.style.display === 'block')) {
+                    return viewChannel.scrollTop <= 0;
+                }
+                return false;
+            }
+
+            // Check currently active nav tab
+            const activeNav = document.querySelector('.nav-item.active');
+            if (!activeNav) return false;
+            const activeTabId = activeNav.id.replace('nav-', '');
+
+            // Allowed tabs: home, search, you
+            if (activeTabId === 'home') {
+                return window.scrollY <= 0 && document.documentElement.scrollTop <= 0;
+            } else if (activeTabId === 'search') {
+                return window.scrollY <= 0 && document.documentElement.scrollTop <= 0;
+            } else if (activeTabId === 'you') {
+                return window.scrollY <= 0 && document.documentElement.scrollTop <= 0;
+            }
+
+            return false;
+        }
 
         function initPullToRefresh() {
             const ptrIndicator = document.getElementById('ptr-indicator');
             const ptrSpinner = document.getElementById('ptr-spinner');
 
             document.addEventListener('touchstart', (e) => {
-                if (window.scrollY === 0) {
+                if (isRefreshingNow) return;
+                if (isPTRAllowedOnCurrentView()) {
                     touchStartY = e.touches[0].clientY;
+                    touchStartX = e.touches[0].clientX;
+                    touchMoveY = touchStartY;
                     isPTRActive = true;
                 } else {
                     isPTRActive = false;
@@ -2986,27 +3027,54 @@
             }, { passive: true });
 
             document.addEventListener('touchmove', (e) => {
-                if (!isPTRActive || window.scrollY > 0) return;
-                touchMoveY = e.touches[0].clientY;
-                const distance = touchMoveY - touchStartY;
-
-                if (distance > 0 && distance < 180) {
-                    const pullFactor = distance * 0.45;
+                if (!isPTRActive || isRefreshingNow) return;
+                
+                if (!isPTRAllowedOnCurrentView()) {
+                    isPTRActive = false;
                     if (ptrIndicator) {
-                        ptrIndicator.style.opacity = Math.min(1, pullFactor / 40);
-                        ptrIndicator.style.transform = `translateX(-50%) translateY(${pullFactor - 60}px)`;
+                        ptrIndicator.style.transform = `translateX(-50%) translateY(-70px)`;
+                        ptrIndicator.style.opacity = '0';
+                    }
+                    return;
+                }
+
+                const currentY = e.touches[0].clientY;
+                const currentX = e.touches[0].clientX;
+                const deltaY = currentY - touchStartY;
+                const deltaX = Math.abs(currentX - touchStartX);
+
+                // Require vertical dragging and discourage accidental side-swipes
+                if (deltaY > 20 && deltaY > deltaX * 1.5) {
+                    touchMoveY = currentY;
+                    const pullDistance = (deltaY - 20) * 0.45;
+
+                    if (ptrIndicator) {
+                        ptrIndicator.style.opacity = Math.min(1, pullDistance / 40);
+                        ptrIndicator.style.transform = `translateX(-50%) translateY(${pullDistance - 65}px)`;
                     }
                     if (ptrSpinner) {
-                        ptrSpinner.style.transform = `rotate(${distance * 2}deg)`;
+                        ptrSpinner.style.transform = `rotate(${pullDistance * 3}deg)`;
+                    }
+                } else if (deltaY < 0) {
+                    isPTRActive = false;
+                    if (ptrIndicator) {
+                        ptrIndicator.style.transform = `translateX(-50%) translateY(-70px)`;
+                        ptrIndicator.style.opacity = '0';
                     }
                 }
             }, { passive: true });
 
             document.addEventListener('touchend', () => {
-                if (!isPTRActive) return;
-                const distance = touchMoveY - touchStartY;
+                if (!isPTRActive || isRefreshingNow) {
+                    isPTRActive = false;
+                    return;
+                }
                 
-                if (distance > 100) {
+                const deltaY = touchMoveY - touchStartY;
+                isPTRActive = false;
+
+                if (deltaY > 90) { // Intentional pull threshold
+                    isRefreshingNow = true;
                     if (ptrIndicator) {
                         ptrIndicator.style.transform = `translateX(-50%) translateY(20px)`;
                         ptrIndicator.style.opacity = '1';
@@ -3015,7 +3083,7 @@
                         ptrSpinner.classList.add('ptr-spinning');
                     }
 
-                    triggerUniversalPullToRefresh().then(() => {
+                    triggerUniversalPullToRefresh().finally(() => {
                         setTimeout(() => {
                             if (ptrIndicator) {
                                 ptrIndicator.style.transform = `translateX(-50%) translateY(-70px)`;
@@ -3024,7 +3092,8 @@
                             if (ptrSpinner) {
                                 ptrSpinner.classList.remove('ptr-spinning');
                             }
-                        }, 500);
+                            isRefreshingNow = false;
+                        }, 400);
                     });
                 } else {
                     if (ptrIndicator) {
@@ -3034,7 +3103,6 @@
                 }
                 touchStartY = 0;
                 touchMoveY = 0;
-                isPTRActive = false;
             });
         }
 
@@ -3046,6 +3114,7 @@
             }
 
             try {
+                // Detach listeners to prevent stacking
                 db.ref('admin_panel/movies/user_uploads').off();
                 db.ref('admin_panel/movies/shorts').off();
                 db.ref('admin_panel/posts').off();
@@ -3054,23 +3123,56 @@
                 previousLongsCount = -1;
                 previousPostsCount = -1;
 
+                // Clear feed state arrays for complete replacement
+                allLongVideos = [];
+                allShorts = [];
+                allCommunityPosts = [];
+
+                // Fetch fresh DB data snapshots
+                const [longsSnap, shortsSnap, postsSnap] = await Promise.all([
+                    db.ref('admin_panel/movies/user_uploads').once('value'),
+                    db.ref('admin_panel/movies/shorts').once('value'),
+                    db.ref('admin_panel/posts').once('value')
+                ]);
+
+                const longsData = longsSnap.val();
+                allLongVideos = longsData ? Object.values(longsData) : [];
+                allLongVideos.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+                const shortsData = shortsSnap.val();
+                allShorts = shortsData ? Object.values(shortsData) : [];
+                allShorts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+                const postsData = postsSnap.val();
+                allCommunityPosts = postsData ? Object.values(postsData) : [];
+                allCommunityPosts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+                // Re-bind listeners
                 startRealtimeFeedsListener();
 
+                // Sync current channel & session info
                 const currentUser = auth.currentUser;
                 if (currentUser) {
                     const snap = await db.ref(`channels/${currentUser.uid}`).once('value');
                     currentChannelData = snap.val();
+                    if (currentChannelData) {
+                        localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                    }
                     initYouTabUI();
                     
                     const analyticsPage = document.getElementById('analytics-page');
-                    if (analyticsPage && analyticsPage.style.display === 'flex') {
+                    if (analyticsPage && (analyticsPage.style.display === 'flex' || analyticsPage.style.display === 'block')) {
                         calculateChannelAnalytics();
                     }
                 }
 
+                // Force feed re-render
+                buildHomeFeed();
+
                 showNotification("Feed Updated!", "success");
             } catch (e) {
                 console.error("PTR Refresh Exception:", e);
+                showNotification("Refresh failed: " + e.message, "error");
             }
         }
 
@@ -3168,7 +3270,13 @@
             secretAccessKey: "33902a8ed31914daf36aa6d6f7a715d93ab1cad856cb7eb286edb05e0fe87763",
             endpoint: "https://b3741135bd1f3e96b6744f11e6a0600.r2.cloudflarestorage.com",
             s3ForcePathStyle: true,
-            signatureVersion: 'v4'
+            signatureVersion: 'v4',
+            region: 'auto',
+            maxRetries: 5,
+            httpOptions: {
+                timeout: 300000, // 5 minute timeout per chunk
+                connectTimeout: 30000
+            }
         };
         
         AWS.config.update(R2_CONFIG);
@@ -3178,7 +3286,7 @@
         // =========================================================
         // S3 R2 OBJECT STORAGE MEDIA UPLOAD MODULE
         // =========================================================
-        async function uploadImageToR2(file, folder = "images") {
+        async function uploadImageToR2(file, folder = "images", retries = 3) {
             if (!s3) throw new Error("R2 Client storage unit is not configured.");
             const uniqueId = "img_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
             const fileKey = `uploads/${folder}/${uniqueId}_${file.name.replace(/\s+/g, '_')}`;
@@ -3187,8 +3295,17 @@
                 Body: file,
                 ContentType: file.type || "image/jpeg"
             };
-            await s3.putObject(params).promise();
-            return `${PUBLIC_R2_DOMAIN_PREFIX}/${fileKey}`;
+
+            for (let attempt = 1; attempt <= retries; attempt++) {
+                try {
+                    await s3.putObject(params).promise();
+                    return `${PUBLIC_R2_DOMAIN_PREFIX}/${fileKey}`;
+                } catch (err) {
+                    console.warn(`R2 Image Upload attempt ${attempt} failed:`, err);
+                    if (attempt === retries) throw err;
+                    await new Promise(res => setTimeout(res, 1000 * Math.pow(2, attempt)));
+                }
+            }
         }
 
         function dataURLtoBlob(dataurl) {
@@ -3460,7 +3577,7 @@
             }
 
             const uniqueId = "st_" + Date.now() + "_" + Math.floor(Math.random()*1000);
-            const fileKey = `uploads/${uniqueId}/${file.name}`;
+            const fileKey = `uploads/${uniqueId}/${file.name.replace(/\s+/g, '_')}`;
             
             const queueItem = {
                 id: uniqueId,
@@ -3483,6 +3600,7 @@
                 thumbUrl: "",
                 videoUrl: "",
                 s3UploadRef: null,
+                retryCount: 0,
                 createdAt: Date.now()
             };
 
@@ -3623,6 +3741,7 @@
         }
 
         async function triggerNextActiveUpload() {
+            if (!navigator.onLine) return;
             const waitingItems = uploadQueue.filter(item => item.status === 'waiting');
             if (waitingItems.length === 0) return;
 
@@ -3634,8 +3753,16 @@
         }
 
         async function startS3DirectUpload(item) {
+            if (!navigator.onLine) {
+                item.status = "paused";
+                updateManagerUI();
+                showNotification("Offline: Upload paused.", "error");
+                activeUploadsCount--;
+                return;
+            }
+
             item.status = "uploading";
-            item.progress = 0;
+            item.progress = item.progress || 0;
             updateManagerUI();
 
             const startTime = Date.now();
@@ -3647,6 +3774,7 @@
                     ContentType: item.file.type || 'video/mp4'
                 };
                 
+                // 5MB part size for multipart stability on slow or variable networks
                 const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
 
                 const s3Upload = s3.upload(params, uploadOpts);
@@ -3669,21 +3797,39 @@
                 
                 item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
                 item.status = "processing";
+                item.retryCount = 0;
                 updateManagerUI();
 
                 await runPostUploadProcessingSequence(item);
 
             } catch (err) {
                 if (item.status === 'paused') {
-                    console.log("Upload paused safely.");
+                    console.log("Upload paused safely by user or system.");
+                } else if (!navigator.onLine) {
+                    item.status = "paused";
+                    updateManagerUI();
+                    showNotification("Connection lost. Upload will resume automatically when online.", "error");
                 } else {
                     console.error("Upload error details: ", err);
-                    item.status = "failed";
-                    updateManagerUI();
-                    showNotification(`Upload failed: ${err.message}`, "error");
+                    item.retryCount = (item.retryCount || 0) + 1;
+                    
+                    if (item.retryCount <= 5) {
+                        item.status = "waiting";
+                        updateManagerUI();
+                        showNotification(`Network error. Auto retrying upload (${item.retryCount}/5)...`, "error");
+                        setTimeout(() => {
+                            activeUploadsCount--;
+                            triggerNextActiveUpload();
+                        }, 2000 * item.retryCount);
+                        return;
+                    } else {
+                        item.status = "failed";
+                        updateManagerUI();
+                        showNotification(`Upload failed after retries: ${err.message}`, "error");
+                    }
                 }
             } finally {
-                activeUploadsCount--;
+                activeUploadsCount = Math.max(0, activeUploadsCount - 1);
                 triggerNextActiveUpload();
             }
         }
@@ -3694,10 +3840,10 @@
             updateManagerUI();
 
             const phases = [
-                { msg: "Processing Video...", duration: 1200 },
-                { msg: "Generating Thumbnail...", duration: 800 },
-                { msg: "Encoding Fast Start...", duration: 800 },
-                { msg: "Preparing HD Delivery...", duration: 600 }
+                { msg: "Processing Video...", duration: 800 },
+                { msg: "Generating Thumbnail...", duration: 600 },
+                { msg: "Encoding Fast Start...", duration: 600 },
+                { msg: "Preparing Delivery...", duration: 400 }
             ];
 
             try {
@@ -3803,6 +3949,16 @@
             } else {
                 await db.ref(`admin_panel/movies/user_uploads/${item.id}`).set(moviePayload);
             }
+
+            // Immediately update feeds & channel UI without requiring restart or manual refresh
+            buildHomeFeed();
+            if (item.type === 'video-short') {
+                buildShortsPage();
+            }
+            const activePage = AppNavigation.current();
+            if (activePage && activePage.id === 'view-channel-page') {
+                openViewChannelPage();
+            }
         }
 
         // =========================================================
@@ -3818,7 +3974,7 @@
                     try {
                         const data = snap.val();
                         allLongVideos = data ? Object.values(data) : [];
-                        allLongVideos.sort((a,b) => b.createdAt - a.createdAt);
+                        allLongVideos.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                         
                         allLongVideos.forEach(m => {
                             if (m && m.id && !allAdminMovies.find(x => x.id === m.id)) {
@@ -3842,7 +3998,7 @@
                     try {
                         const data = snap.val();
                         allShorts = data ? Object.values(data) : [];
-                        allShorts.sort((a,b) => b.createdAt - a.createdAt);
+                        allShorts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                         
                         if(allShorts.length !== previousShortsCount) {
                             previousShortsCount = allShorts.length;
@@ -3873,7 +4029,7 @@
                     try {
                         const data = snap.val();
                         allCommunityPosts = data ? Object.values(data) : [];
-                        allCommunityPosts.sort((a,b) => b.createdAt - a.createdAt);
+                        allCommunityPosts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                         
                         if (allCommunityPosts.length !== previousPostsCount) {
                             previousPostsCount = allCommunityPosts.length;
@@ -4092,6 +4248,8 @@
                 const hideLikesCb = document.getElementById('post-hide-likes');
                 if (hideLikesCb) hideLikesCb.checked = false;
 
+                buildHomeFeed();
+
             } catch (err) {
                 showNotification("Failed to publish: " + err.message, "error");
             } finally {
@@ -4133,9 +4291,9 @@
             let longs = [...allLongVideos];
             let posts = [...allCommunityPosts];
 
-            shorts.sort((a,b) => b.createdAt - a.createdAt);
-            longs.sort((a,b) => b.createdAt - a.createdAt);
-            posts.sort((a,b) => b.createdAt - a.createdAt);
+            shorts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+            longs.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+            posts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
 
             const uniqueUserIds = new Set();
 
@@ -5699,7 +5857,7 @@
                 return;
             }
 
-            longvids.sort((a, b) => b.createdAt - a.createdAt);
+            longvids.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
             const limit = Math.min(longvids.length, watchRecommendedLimit);
             const itemsToRender = longvids.slice(0, limit);
@@ -6584,8 +6742,8 @@
             const nameEl = document.getElementById('analytics-channel-name');
             const infoEl = document.getElementById('analytics-channel-subscribers');
 
-            if (avatarEl) avatarEl.src = currentChannelData.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop";
-            if (nameEl) nameEl.innerText = currentChannelData.channelName;
+            if (avatarEl) avatarEl.src = currentChannelData ? (currentChannelData.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop") : "";
+            if (nameEl) nameEl.innerText = currentChannelData ? currentChannelData.channelName : "Channel";
             if (infoEl) infoEl.innerText = formatCount(subsCount) + " Subscribers";
 
             updateMonetizationEligibility(subsCount, watchHours, totalViews);

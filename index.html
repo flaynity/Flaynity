@@ -3522,11 +3522,21 @@
         }
 
         // =========================================================
-        // ROBUST MULTIPART CONCURRENT UPLOAD QUEUE
+        // FAST PARALLEL UPLOAD ENGINE & WATCHDOG (WAITING ISSUE FIX)
         // =========================================================
         let uploadQueue = [];
         let activeUploadsCount = 0;
-        const MAX_CONCURRENT_UPLOADS = 3; 
+        const MAX_CONCURRENT_UPLOADS = 3; // প্যারালল ৩টি আপলোড সাপোর্ট
+
+        // Queue Watchdog Engine: আটকে থাকা WAITING ফাইলগুলোকে সচল করার জন্য
+        setInterval(() => {
+            if (!navigator.onLine) return;
+            const hasWaiting = uploadQueue.some(item => item.status === 'waiting');
+            if (hasWaiting && activeUploadsCount < MAX_CONCURRENT_UPLOADS) {
+                console.log("[Watchdog] Triggering queued uploads...");
+                triggerNextActiveUpload();
+            }
+        }, 3000);
 
         function triggerFilePicker(type) {
             AppNavigation.pop(); 
@@ -3568,7 +3578,6 @@
                 frameMeta = await captureFrameAndDuration(file);
             } catch (err) {
                 console.warn("Using metadata fallback safely.", err);
-                showNotification("Generating default placeholders.", "success");
             }
 
             if (type === 'video-short' && frameMeta.duration > 180) {
@@ -3612,143 +3621,17 @@
             e.target.value = ""; 
         }
 
-        function captureFrameAndDuration(file) {
-            return new Promise((resolve) => {
-                const video = document.createElement('video');
-                video.preload = 'auto'; 
-                video.muted = true; 
-                video.playsInline = true;
-                
-                const objectUrl = URL.createObjectURL(file);
-                video.src = objectUrl;
-
-                const fallbackData = { 
-                    duration: 60, 
-                    dataUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop", 
-                    blob: null 
-                };
-
-                const safetyTimeout = setTimeout(() => {
-                    resolve(fallbackData);
-                }, 10000);
-
-                video.onloadedmetadata = () => {
-                    const duration = video.duration || 60;
-                    const seekTimes = [duration * 0.15, duration * 0.40, duration * 0.70];
-                    let bestFrame = null;
-                    let bestScore = -1;
-                    let currentSeekIndex = 0;
-
-                    const analyzeFrame = () => {
-                        try {
-                            const canvas = document.createElement('canvas');
-                            canvas.width = video.videoWidth || 1280;
-                            canvas.height = video.videoHeight || 720;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                            const sampleCanvas = document.createElement('canvas');
-                            sampleCanvas.width = 32;
-                            sampleCanvas.height = 32;
-                            const sCtx = sampleCanvas.getContext('2d');
-                            sCtx.drawImage(canvas, 0, 0, 32, 32);
-                            const imgData = sCtx.getImageData(0, 0, 32, 32).data;
-
-                            let totalBrightness = 0;
-                            let minVal = 255;
-                            let maxVal = 0;
-                            const len = imgData.length;
-
-                            for (let i = 0; i < len; i += 4) {
-                                const r = imgData[i];
-                                const g = imgData[i+1];
-                                const b = imgData[i+2];
-                                const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-                                totalBrightness += brightness;
-                                if (brightness < minVal) minVal = brightness;
-                                if (brightness > maxVal) maxVal = brightness;
-                            }
-
-                            const avgBrightness = totalBrightness / (32 * 32);
-                            const range = maxVal - minVal; 
-
-                            let score = range; 
-                            if (avgBrightness < 40 || avgBrightness > 220) {
-                                score -= 150; 
-                            }
-
-                            if (score > bestScore || bestFrame === null) {
-                                bestScore = score;
-                                bestFrame = { canvas: canvas, avgBrightness: avgBrightness };
-                            }
-                        } catch (e) {
-                            console.error("Frame analysis error: ", e);
-                        }
-
-                        currentSeekIndex++;
-                        if (currentSeekIndex < seekTimes.length) {
-                            video.currentTime = seekTimes[currentSeekIndex];
-                        } else {
-                            finishGeneration();
-                        }
-                    };
-
-                    const finishGeneration = () => {
-                        try {
-                            if (bestFrame && bestFrame.canvas) {
-                                bestFrame.canvas.toBlob((blob) => {
-                                    clearTimeout(safetyTimeout);
-                                    resolve({
-                                        blob: blob,
-                                        dataUrl: bestFrame.canvas.toDataURL('image/jpeg', 0.90),
-                                        duration: duration
-                                    });
-                                }, 'image/jpeg', 0.90);
-                            } else {
-                                clearTimeout(safetyTimeout);
-                                resolve(fallbackData);
-                            }
-                        } catch (e) {
-                            clearTimeout(safetyTimeout);
-                            resolve(fallbackData);
-                        }
-                    };
-
-                    video.onseeked = analyzeFrame;
-                    video.currentTime = seekTimes[0];
-                };
-
-                video.onerror = () => {
-                    clearTimeout(safetyTimeout);
-                    resolve(fallbackData);
-                };
-            });
-        }
-
-        function handleCustomThumbSelected(e) {
-            const file = e.target.files[0];
-            if (!file || !currentDetailItem) return;
-            
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                currentDetailItem.thumbDataUrl = event.target.result;
-                currentDetailItem.thumbBlob = file; 
-                const dThumb = document.getElementById('details-thumb-img');
-                if (dThumb) dThumb.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-            e.target.value = "";
-        }
-
         async function triggerNextActiveUpload() {
             if (!navigator.onLine) return;
-            const waitingItems = uploadQueue.filter(item => item.status === 'waiting');
-            if (waitingItems.length === 0) return;
 
-            while (activeUploadsCount < MAX_CONCURRENT_UPLOADS && waitingItems.length > 0) {
-                const item = waitingItems.shift();
-                activeUploadsCount++;
-                startS3DirectUpload(item);
+            for (let i = 0; i < uploadQueue.length; i++) {
+                if (activeUploadsCount >= MAX_CONCURRENT_UPLOADS) break;
+                
+                const item = uploadQueue[i];
+                if (item.status === 'waiting') {
+                    activeUploadsCount++;
+                    startS3DirectUpload(item);
+                }
             }
         }
 
@@ -3757,7 +3640,7 @@
                 item.status = "paused";
                 updateManagerUI();
                 showNotification("Offline: Upload paused.", "error");
-                activeUploadsCount--;
+                activeUploadsCount = Math.max(0, activeUploadsCount - 1);
                 return;
             }
 
@@ -3774,7 +3657,7 @@
                     ContentType: item.file.type || 'video/mp4'
                 };
                 
-                // 5MB part size for multipart stability on slow or variable networks
+                // 5MB optimized multipart chunk size
                 const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
 
                 const s3Upload = s3.upload(params, uploadOpts);
@@ -3804,28 +3687,23 @@
 
             } catch (err) {
                 if (item.status === 'paused') {
-                    console.log("Upload paused safely by user or system.");
+                    console.log("Upload paused safely.");
                 } else if (!navigator.onLine) {
                     item.status = "paused";
                     updateManagerUI();
-                    showNotification("Connection lost. Upload will resume automatically when online.", "error");
+                    showNotification("Connection lost. Upload paused.", "error");
                 } else {
-                    console.error("Upload error details: ", err);
+                    console.error("Upload error: ", err);
                     item.retryCount = (item.retryCount || 0) + 1;
                     
                     if (item.retryCount <= 5) {
                         item.status = "waiting";
                         updateManagerUI();
-                        showNotification(`Network error. Auto retrying upload (${item.retryCount}/5)...`, "error");
-                        setTimeout(() => {
-                            activeUploadsCount--;
-                            triggerNextActiveUpload();
-                        }, 2000 * item.retryCount);
-                        return;
+                        showNotification(`Network hiccup. Retrying (${item.retryCount}/5)...`, "error");
                     } else {
                         item.status = "failed";
                         updateManagerUI();
-                        showNotification(`Upload failed after retries: ${err.message}`, "error");
+                        showNotification(`Upload failed: ${err.message}`, "error");
                     }
                 }
             } finally {
@@ -3838,13 +3716,6 @@
             item.status = "processing";
             item.progress = 0;
             updateManagerUI();
-
-            const phases = [
-                { msg: "Processing Video...", duration: 800 },
-                { msg: "Generating Thumbnail...", duration: 600 },
-                { msg: "Encoding Fast Start...", duration: 600 },
-                { msg: "Preparing Delivery...", duration: 400 }
-            ];
 
             try {
                 let finalThumbBlob = item.thumbBlob;
@@ -3860,39 +3731,23 @@
                     item.thumbUrl = item.thumbDataUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
                 }
 
-                for (let i = 0; i < phases.length; i++) {
-                    item.processingMsg = phases[i].msg;
-                    item.progress = Math.round(((i + 1) / phases.length) * 100);
-                    updateManagerUI();
-                    await new Promise(resolve => setTimeout(resolve, phases[i].duration));
-                }
+                item.processingMsg = "Publishing Feed...";
+                item.progress = 100;
+                updateManagerUI();
 
+                // ⚡ INSTANT PUBLISH ENGINE ⚡
                 await pushVideoMetadataToDatabase(item);
 
                 item.status = "completed";
-                item.progress = 100;
                 updateManagerUI();
                 saveQueueStateToLocalStorage();
-                showNotification(`"${item.title}" is published!`, "success");
+                showNotification(`"${item.title}" is published instantly!`, "success");
 
             } catch (err) {
                 item.status = "failed";
                 updateManagerUI();
-                showNotification("Post-processing failure: " + err.message, "error");
+                showNotification("Post-processing error: " + err.message, "error");
             }
-        }
-
-        function extractHashtags(text) {
-            if(!text) return [];
-            const matches = text.match(/#(\w+)/g);
-            return matches ? matches.map(t => t.replace('#', '')) : [];
-        }
-
-        function formatDuration(seconds) {
-            if (isNaN(seconds) || seconds === null) return "10:00";
-            const mins = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
         }
 
         async function pushVideoMetadataToDatabase(item) {
@@ -3941,23 +3796,33 @@
                 createdAt: Date.now()
             };
 
+            // Step 1: Save Metadata to Firebase Realtime Database
+            const targetPath = item.type === 'video-short' 
+                ? `admin_panel/movies/shorts/${item.id}` 
+                : `admin_panel/movies/user_uploads/${item.id}`;
+                
+            await db.ref(targetPath).set(moviePayload);
+
+            // Step 2: Zero-Delay Local Feed Update (< 0.1 Seconds)
             if (item.type === 'video-short') {
-                if (!moviePayload.description.includes('#')) {
-                    moviePayload.description += " #startube #short #viral";
-                }
-                await db.ref(`admin_panel/movies/shorts/${item.id}`).set(moviePayload);
+                const idx = allShorts.findIndex(s => s.id === item.id);
+                if (idx !== -1) allShorts[idx] = moviePayload;
+                else allShorts.unshift(moviePayload);
+                
+                buildShortsPage();
             } else {
-                await db.ref(`admin_panel/movies/user_uploads/${item.id}`).set(moviePayload);
+                const idx = allLongVideos.findIndex(v => v.id === item.id);
+                if (idx !== -1) allLongVideos[idx] = moviePayload;
+                else allLongVideos.unshift(moviePayload);
             }
 
-            // Immediately update feeds & channel UI without requiring restart or manual refresh
+            // Step 3: Instant A-Z Screen Refresh
             buildHomeFeed();
-            if (item.type === 'video-short') {
-                buildShortsPage();
-            }
+
             const activePage = AppNavigation.current();
             if (activePage && activePage.id === 'view-channel-page') {
-                openViewChannelPage();
+                if (item.type === 'video-short') renderChannelShorts(user.uid);
+                else renderChannelVideos(user.uid);
             }
         }
 

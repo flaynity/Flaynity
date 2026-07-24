@@ -2017,7 +2017,7 @@
                 <div id="hashtags-selector-wrapper" style="display: none;">
                     <span class="format-section-title">Popular Hashtags</span>
                     <div class="upload-badge-grid">
-                        <div class="upload-badge" onclick="appendHashtag('#startube', this)">#startube</div>
+                        <div class="upload-badge" onclick="appendHashtag('#flaynity', this)">#flaynity</div>
                         <div class="upload-badge" onclick="appendHashtag('#short', this)">#short</div>
                         <div class="upload-badge" onclick="appendHashtag('#viral', this)">#viral</div>
                         <div class="upload-badge" onclick="appendHashtag('#shortsvideo', this)">#shortsvideo</div>
@@ -2899,18 +2899,28 @@
         // =========================================================
         // OFFLINE -> ONLINE AUTO SYNC & NETWORK MONITORING
         // =========================================================
+        // Debounce guard: prevent rapid online/offline flapping from firing multiple syncs
+        let _networkOnlineDebounceTimer = null;
+
         window.addEventListener('online', () => { window.FlaynityNetworkOnline(); });
         window.addEventListener('offline', () => { window.FlaynityNetworkOffline(); });
 
         window.FlaynityNetworkOnline = function() {
             if (!navigator.onLine) return;
+
+            // Debounce: ignore if another online event fires within 1.5 s
+            if (_networkOnlineDebounceTimer) return;
+            _networkOnlineDebounceTimer = setTimeout(() => {
+                _networkOnlineDebounceTimer = null;
+            }, 1500);
+
             const spinner = document.getElementById('network-spinner-overlay');
             if (spinner) spinner.style.display = 'none';
 
-            firebase.database().goOnline();
+            try { firebase.database().goOnline(); } catch(e) {}
             showNotification("Network Restored! Syncing Live Data...", "success");
 
-            // Automatically resume queued uploads
+            // Automatically resume queued uploads (mark paused → waiting)
             const waitingUploads = uploadQueue.filter(i => i.status === 'paused' || i.status === 'waiting');
             if (waitingUploads.length > 0) {
                 waitingUploads.forEach(item => { item.status = 'waiting'; });
@@ -2925,21 +2935,30 @@
 
             // Resume any visible video
             const activeVideo = document.querySelector('.short-slide video[src]');
-            if(activeVideo && activeVideo.paused && activeVideo.readyState > 2) {
-                activeVideo.play().catch(()=>{});
+            if (activeVideo && activeVideo.paused && activeVideo.readyState > 2) {
+                activeVideo.play().catch(() => {});
             }
         };
 
         window.FlaynityNetworkOffline = function() {
-            firebase.database().goOffline();
+            try { firebase.database().goOffline(); } catch(e) {}
             showNotification("Offline Mode. Showing Skeletons.", "error");
 
             renderAllSkeletons();
 
             const activeVideo = document.querySelector('.short-slide video[src]');
-            if(activeVideo && !activeVideo.paused) {
+            if (activeVideo && !activeVideo.paused) {
                 activeVideo.pause();
             }
+        };
+
+        // Called by MainActivity.onResume via AndroidBridge to trigger a background refresh
+        // when the app returns to the foreground after being backgrounded.
+        window.FlaynityNativeRefresh = function() {
+            if (!navigator.onLine) return;
+            // Only refresh if not already in progress
+            if (SyncManager.isRefreshing) return;
+            SyncManager.refreshEverything();
         };
 
         // =========================================================
@@ -2952,64 +2971,64 @@
                 this.isRefreshing = true;
 
                 try {
-                    // Detach all global listeners to prevent duplication memory leaks
-                    db.ref('admin_panel/movies/user_uploads').off();
-                    db.ref('admin_panel/movies/shorts').off();
-                    db.ref('admin_panel/posts').off();
+                    // ── Step 1: Tear down ALL existing global feed listeners ──────────
+                    // This prevents duplicate .on() callbacks accumulating across calls.
+                    _detachAllGlobalFeedListeners();
 
-                    Object.keys(boundChannelListeners).forEach(uid => {
-                        db.ref(`channels/${uid}`).off();
-                    });
-                    for (let key in boundChannelListeners) delete boundChannelListeners[key];
-
+                    // Reset count sentinels so the re-attached listeners always rebuild
                     previousShortsCount = -1;
-                    previousLongsCount = -1;
-                    previousPostsCount = -1;
+                    previousLongsCount  = -1;
+                    previousPostsCount  = -1;
 
-                    // Fetch user info silently
+                    // ── Step 2: Refresh current user profile silently ─────────────────
                     await this.refreshProfile();
 
-                    // Re-attach realtime listeners securely
-                    startRealtimeFeedsListener();
-
-                    // explicitly wait for data BEFORE clearing Skeletons
+                    // ── Step 3: Fetch fresh data snapshots before rebuilding UI ───────
                     const [longsSnap, shortsSnap, postsSnap] = await Promise.all([
                         db.ref('admin_panel/movies/user_uploads').once('value'),
                         db.ref('admin_panel/movies/shorts').once('value'),
                         db.ref('admin_panel/posts').once('value')
                     ]);
 
-                    allLongVideos = longsSnap.val() ? Object.values(longsSnap.val()) : [];
-                    allShorts = shortsSnap.val() ? Object.values(shortsSnap.val()) : [];
-                    allCommunityPosts = postsSnap.val() ? Object.values(postsSnap.val()) : [];
+                    allLongVideos      = longsSnap.val()  ? Object.values(longsSnap.val())  : [];
+                    allShorts          = shortsSnap.val() ? Object.values(shortsSnap.val()) : [];
+                    allCommunityPosts  = postsSnap.val()  ? Object.values(postsSnap.val())  : [];
 
+                    // ── Step 4: Re-attach realtime listeners (after data is loaded) ───
+                    startRealtimeFeedsListener();
+
+                    // ── Step 5: Rebuild UI ────────────────────────────────────────────
                     buildHomeFeed();
-                    
+
                     const shortsTab = document.getElementById('shorts-tab');
-                    if(shortsTab && shortsTab.classList.contains('active')) buildShortsPage();
+                    if (shortsTab && shortsTab.classList.contains('active')) buildShortsPage();
 
                     this.refreshAnalytics();
 
                 } catch (err) {
                     console.error("SyncManager Execution Error:", err);
                 } finally {
+                    // Always release the lock so future calls are not permanently blocked
                     this.isRefreshing = false;
                 }
             },
+
             refreshProfile: async function() {
                 const currentUser = auth.currentUser;
                 if (currentUser) {
-                    db.ref(`channels/${currentUser.uid}`).off();
-                    db.ref(`users/${currentUser.uid}`).off();
+                    // Detach stale per-user listeners before re-fetching
+                    try { db.ref(`channels/${currentUser.uid}`).off(); } catch(e) {}
+                    try { db.ref(`users/${currentUser.uid}`).off(); } catch(e) {}
 
                     const snap = await db.ref(`channels/${currentUser.uid}`).once('value');
                     currentChannelData = snap.val();
-                    if(currentChannelData) {
+                    if (currentChannelData) {
                         localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
                     }
                     initYouTabUI();
                 }
             },
+
             refreshAnalytics: function() {
                 const analyticsPage = document.getElementById('analytics-page');
                 if (analyticsPage && (analyticsPage.style.display === 'flex' || analyticsPage.style.display === 'block')) {
@@ -3017,6 +3036,33 @@
                 }
             }
         };
+
+        // ── Helper: detach every global feed listener in one place ────────────────
+        // Called by SyncManager and cleanupUserSessionData to avoid duplication.
+        function _detachAllGlobalFeedListeners() {
+            try { db.ref('admin_panel/movies/user_uploads').off(); } catch(e) {}
+            try { db.ref('admin_panel/movies/shorts').off(); } catch(e) {}
+            try { db.ref('admin_panel/posts').off(); } catch(e) {}
+
+            // Detach per-channel live-UI listeners
+            Object.keys(boundChannelListeners).forEach(uid => {
+                try { db.ref(`channels/${uid}`).off(); } catch(e) {}
+            });
+            for (let key in boundChannelListeners) delete boundChannelListeners[key];
+
+            // Detach per-post reaction listeners
+            _detachAllPostReactionListeners();
+        }
+
+        // Track which post-reaction listeners are active so we can clean them up
+        const _boundPostReactionListeners = {};
+        function _detachAllPostReactionListeners() {
+            Object.keys(_boundPostReactionListeners).forEach(postId => {
+                try { db.ref(`post_reactions/${postId}`).off(); } catch(e) {}
+                try { db.ref(`movie_comments/${postId}`).off(); } catch(e) {}
+            });
+            for (let key in _boundPostReactionListeners) delete _boundPostReactionListeners[key];
+        }
 
         // =========================================================
         // UNIVERSAL NATIVE YOUTUBE-STYLE PULL TO REFRESH ENGINE
@@ -3163,6 +3209,8 @@
                 console.error("PTR Refresh Exception:", e);
                 showNotification("Refresh failed: " + e.message, "error");
             }
+            // Note: isRefreshingNow is reset in the touchend .finally() block,
+            // so we do not reset it here to avoid a double-reset race.
         }
 
         // =========================================
@@ -3317,7 +3365,7 @@
         let currentDetailItem = null;
 
         function getSavedAccounts() {
-            try { return JSON.parse(localStorage.getItem('startube_saved_accounts')) || []; } catch(e) { return []; }
+            try { return JSON.parse(localStorage.getItem('flaynity_saved_accounts')) || []; } catch(e) { return []; }
         }
 
         function saveAccountToList(user) {
@@ -3332,11 +3380,11 @@
                         displayName: user.displayName || user.email.split('@')[0],
                         photoURL: user.photoURL || ""
                     });
-                    localStorage.setItem('startube_saved_accounts', JSON.stringify(accounts));
+                    localStorage.setItem('flaynity_saved_accounts', JSON.stringify(accounts));
                 } else {
                     exists.displayName = user.displayName || user.email.split('@')[0];
                     exists.photoURL = user.photoURL || "";
-                    localStorage.setItem('startube_saved_accounts', JSON.stringify(accounts));
+                    localStorage.setItem('flaynity_saved_accounts', JSON.stringify(accounts));
                 }
             } catch (e) {}
         }
@@ -3354,7 +3402,7 @@
             allLongVideos = [];
             allCommunityPosts = [];
             uploadQueue = [];
-            localStorage.removeItem('startube_upload_queue_v2'); 
+            localStorage.removeItem('flaynity_upload_queue_v2'); 
             localStorage.removeItem('flaynity_user_session_cache');
 
             const homeFeed = document.getElementById('home-feed-container');
@@ -3381,29 +3429,32 @@
             const managerList = document.getElementById('manager-items-list');
             if (managerList) managerList.innerHTML = '';
 
-            if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
-            if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }
-            if (activeChannelVideosListener) { activeChannelVideosListener.off(); activeChannelVideosListener = null; }
-            if (activeChannelShortsListener) { activeChannelShortsListener.off(); activeChannelShortsListener = null; }
-            if (activeChannelPostsListener) { activeChannelPostsListener.off(); activeChannelPostsListener = null; }
+            if (activeStatsRef) { try { activeStatsRef.off(); } catch(e) {} activeStatsRef = null; }
+            if (activeCommentsRef) { try { activeCommentsRef.off(); } catch(e) {} activeCommentsRef = null; }
+            if (activeChannelVideosListener) { try { activeChannelVideosListener.off(); } catch(e) {} activeChannelVideosListener = null; }
+            if (activeChannelShortsListener) { try { activeChannelShortsListener.off(); } catch(e) {} activeChannelShortsListener = null; }
+            if (activeChannelPostsListener) { try { activeChannelPostsListener.off(); } catch(e) {} activeChannelPostsListener = null; }
 
-            Object.keys(boundChannelListeners).forEach(userId => {
-                db.ref(`channels/${userId}`).off();
-                delete boundChannelListeners[userId];
-            });
+            // Use shared helper to detach all global feed + channel + post-reaction listeners
+            _detachAllGlobalFeedListeners();
+            _feedListenersAttached = false;
+
+            // Reset SyncManager lock in case it was stuck
+            SyncManager.isRefreshing = false;
         }
 
         auth.onAuthStateChanged((user) => {
             try {
-                if (user) { 
+                if (user) {
                     document.body.classList.remove('auth-active');
                     const authScr = document.getElementById('auth-screen');
                     const appScr = document.getElementById('app-screen');
-                    if (authScr) authScr.style.display = 'none'; 
+                    if (authScr) authScr.style.display = 'none';
                     if (appScr) appScr.style.display = 'block';
-                    
+
                     saveAccountToList(user);
 
+                    // Attach user-avatar listener (safe: only once per sign-in)
                     db.ref(`users/${user.uid}`).on('value', (snapshot) => {
                         try {
                             const userData = snapshot.val();
@@ -3411,7 +3462,10 @@
                             renderUserAvatar(photoURL, user.email);
                         } catch (e) {}
                     });
-                    
+
+                    // Reset feed-listener flag so startRealtimeFeedsListener
+                    // cleanly re-attaches after a sign-out / sign-in cycle.
+                    _feedListenersAttached = false;
                     startRealtimeFeedsListener();
                     restoreQueueFromLocalStorage();
 
@@ -3420,13 +3474,14 @@
                         const activeTabId = activeNav.id.replace('nav-', '');
                         adjustHeaderForActiveTab(activeTabId);
                     }
-                } else { 
+                } else {
+                    // cleanupUserSessionData already resets _feedListenersAttached
                     cleanupUserSessionData();
                     document.body.classList.add('auth-active');
                     const appScr = document.getElementById('app-screen');
                     const authScr = document.getElementById('auth-screen');
-                    if (appScr) appScr.style.display = 'none'; 
-                    if (authScr) authScr.style.display = 'flex'; 
+                    if (appScr) appScr.style.display = 'none';
+                    if (authScr) authScr.style.display = 'flex';
                 }
             } catch (e) {
                 console.error("Auth status sync error:", e);
@@ -3821,9 +3876,19 @@
         let previousShortsCount = -1;
         let previousLongsCount = -1;
         let previousPostsCount = -1;
+        let _feedListenersAttached = false; // guard against duplicate attachment
 
         function startRealtimeFeedsListener() {
+            // Detach any existing listeners before re-attaching to prevent duplicates
+            if (_feedListenersAttached) {
+                try { db.ref('admin_panel/movies/user_uploads').off(); } catch(e) {}
+                try { db.ref('admin_panel/movies/shorts').off(); } catch(e) {}
+                try { db.ref('admin_panel/posts').off(); } catch(e) {}
+                _feedListenersAttached = false;
+            }
+
             try {
+                _feedListenersAttached = true;
                 db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
                     try {
                         const data = snap.val();
@@ -3924,22 +3989,16 @@
         const boundChannelListeners = {};
         function bindLiveChannelUI(userId) {
             if (!userId) return;
-            
-            if (boundChannelListeners[userId]) {
-                if (navigator.onLine) {
-                    db.ref(`channels/${userId}`).once('value', (snap) => {
-                        updateChannelDOM(userId, snap.val());
-                    });
-                }
-                return;
-            }
-            
+
+            // Already have a live listener for this user — skip to avoid duplicates
+            if (boundChannelListeners[userId]) return;
+
+            if (!navigator.onLine) return;
+
             boundChannelListeners[userId] = true;
-            if (navigator.onLine) {
-                db.ref(`channels/${userId}`).on('value', (snap) => {
-                    updateChannelDOM(userId, snap.val());
-                });
-            }
+            db.ref(`channels/${userId}`).on('value', (snap) => {
+                updateChannelDOM(userId, snap.val());
+            });
         }
 
         function updateChannelDOM(userId, data) {
@@ -4593,7 +4652,7 @@
                         <div class="short-bottom-info">
                             <div class="short-channel-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
                                 <div class="live-avatar-${s.userId}" style="width:32px; height:32px; border-radius:50%; border:2px solid #fff; overflow:hidden;"></div>
-                                <span class="short-channel-handle live-handle-${s.userId}" style="font-size:0.9rem; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8);">@${s.username || 'startube'}</span>
+                                <span class="short-channel-handle live-handle-${s.userId}" style="font-size:0.9rem; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8);">@${s.username || 'flaynity'}</span>
                                 <button class="short-subscribe-btn" id="short-sub-btn-${s.id}" onclick="toggleShortSubscribe('${s.userId}', this)">Subscribe</button>
                             </div>
                             
@@ -4763,7 +4822,7 @@
             document.getElementById('short-sheet-full-title').innerText = s.title;
             
             const hashtagRegex = /#\w+/g;
-            const hashtags = s.description.match(hashtagRegex) ? s.description.match(hashtagRegex).join(' ') : '#shorts #startube';
+            const hashtags = s.description.match(hashtagRegex) ? s.description.match(hashtagRegex).join(' ') : '#shorts #flaynity';
             const plainDescription = s.description.replace(hashtagRegex, '').trim();
             
             document.getElementById('short-sheet-hashtags').innerText = hashtags;
@@ -5849,14 +5908,21 @@
             const user = auth.currentUser;
             if (!user) return;
 
-            if(!navigator.onLine) {
-                wrap.innerHTML = `<div class="skel-box" style="width: 100%; height: 48px; border-radius: 20px;"></div>`;
+            if (!navigator.onLine) {
+                // Render from cache if available, otherwise show skeleton
+                if (currentChannelData) {
+                    renderYouTabWithData(currentChannelData, user, wrap);
+                } else {
+                    wrap.innerHTML = `<div class="skel-box" style="width: 100%; height: 48px; border-radius: 20px;"></div>`;
+                }
                 return;
             }
 
-            db.ref(`channels/${user.uid}`).on('value', (snapshot) => {
+            // Use .once() to avoid stacking duplicate persistent listeners each time
+            // the You tab is opened. The global startRealtimeFeedsListener already
+            // maintains a live channel listener for the current user.
+            db.ref(`channels/${user.uid}`).once('value', (snapshot) => {
                 currentChannelData = snapshot.val();
-                
                 if (currentChannelData) {
                     localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
                 }
@@ -7079,7 +7145,7 @@
                     delete copy.s3UploadRef;
                     return copy;
                 });
-                localStorage.setItem('startube_upload_queue_v2', JSON.stringify(serializableQueue));
+                localStorage.setItem('flaynity_upload_queue_v2', JSON.stringify(serializableQueue));
             } catch (e) {
                 console.warn("Could not save upload queue state to LocalStorage:", e);
             }
@@ -7087,7 +7153,7 @@
 
         function restoreQueueFromLocalStorage() {
             try {
-                const data = localStorage.getItem('startube_upload_queue_v2');
+                const data = localStorage.getItem('flaynity_upload_queue_v2');
                 if (data) {
                     const saved = JSON.parse(data);
                     uploadQueue = saved.map(item => {
@@ -7254,6 +7320,10 @@
         }
 
         function registerPostReactionsListener(postId) {
+            // Guard: only attach once per postId to prevent duplicate listeners
+            if (_boundPostReactionListeners[postId]) return;
+            _boundPostReactionListeners[postId] = true;
+
             db.ref(`post_reactions/${postId}`).on('value', (snapshot) => {
                 const reactions = snapshot.val() || {};
                 const totalReactions = Object.keys(reactions).length;

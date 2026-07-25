@@ -9,35 +9,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800;900&family=Cinzel:wght=600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Firebase Compat Libraries (loaded ONCE – engine guards duplicate init) -->
+    <!-- Firebase Compat Libraries -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
-
-    <!-- ── Flaynity Engine: inject Firebase config BEFORE engine loads ── -->
-    <script>
-        // This object is read by engine/firebase-engine.js to initialize Firebase.
-        // It is defined here (in the HTML) so the API key stays in one place.
-        window.FLAYNITY_FIREBASE_CONFIG = {
-            apiKey:            "AIzaSyBqXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-            authDomain:        "flaynity-app.firebaseapp.com",
-            databaseURL:       "https://flaynity-app-default-rtdb.firebaseio.com",
-            projectId:         "flaynity-app",
-            storageBucket:     "flaynity-app.firebasestorage.app",
-            messagingSenderId: "587469287255",
-            appId:             "1:587469287255:web:6ec177b0c1c802efc95812",
-            measurementId:     "G-HPMF5TPJB2"
-        };
-    </script>
-
-    <!-- ── Flaynity Modular Engine (order matters) ── -->
-    <script src="/engine/firebase-engine.js"></script>
-    <script src="/engine/network-manager.js"></script>
-    <script src="/engine/sync-manager.js"></script>
-    <script src="/engine/offline-manager.js"></script>
-    <script src="/engine/feed-manager.js"></script>
-    <script src="/engine/upload-manager.js"></script>
-    <script src="/engine/refresh-manager.js"></script>
 
     <!-- AWS SDK for Cloudflare R2 Uploads -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.1400.0/aws-sdk.min.js"></script>
@@ -2918,25 +2893,325 @@
                 });
             }
 
-            // Pull-to-refresh is initialized by engine/refresh-manager.js automatically.
-            // RefreshManager.init() is called on DOMContentLoaded by that module.
+            initPullToRefresh();
         });
         
         // =========================================================
-        // NETWORK EVENTS – handled by engine/network-manager.js
-        // FlaynityNetworkOnline / FlaynityNetworkOffline / FlaynityNativeRefresh
-        // are defined in engine/network-manager.js and wired to the engine.
+        // OFFLINE -> ONLINE AUTO SYNC & NETWORK MONITORING
         // =========================================================
+        // Debounce guard: prevent rapid online/offline flapping from firing multiple syncs
+        let _networkOnlineDebounceTimer = null;
+
+        window.addEventListener('online', () => { window.FlaynityNetworkOnline(); });
+        window.addEventListener('offline', () => { window.FlaynityNetworkOffline(); });
+
+        window.FlaynityNetworkOnline = function() {
+            if (!navigator.onLine) return;
+
+            // Debounce: ignore if another online event fires within 1.5 s
+            if (_networkOnlineDebounceTimer) return;
+            _networkOnlineDebounceTimer = setTimeout(() => {
+                _networkOnlineDebounceTimer = null;
+            }, 1500);
+
+            const spinner = document.getElementById('network-spinner-overlay');
+            if (spinner) spinner.style.display = 'none';
+
+            try { firebase.database().goOnline(); } catch(e) {}
+            showNotification("Network Restored! Syncing Live Data...", "success");
+
+            // Automatically resume queued uploads (mark paused → waiting)
+            const waitingUploads = uploadQueue.filter(i => i.status === 'paused' || i.status === 'waiting');
+            if (waitingUploads.length > 0) {
+                waitingUploads.forEach(item => { item.status = 'waiting'; });
+                triggerNextActiveUpload();
+            }
+
+            // Sync offline cached likes to the cloud
+            syncOfflineLikes();
+
+            // Perform a secure background re-render without reloading WebView
+            SyncManager.refreshEverything();
+
+            // Resume any visible video
+            const activeVideo = document.querySelector('.short-slide video[src]');
+            if (activeVideo && activeVideo.paused && activeVideo.readyState > 2) {
+                activeVideo.play().catch(() => {});
+            }
+        };
+
+        window.FlaynityNetworkOffline = function() {
+            try { firebase.database().goOffline(); } catch(e) {}
+            showNotification("Offline Mode. Showing Skeletons.", "error");
+
+            renderAllSkeletons();
+
+            const activeVideo = document.querySelector('.short-slide video[src]');
+            if (activeVideo && !activeVideo.paused) {
+                activeVideo.pause();
+            }
+        };
+
+        // Called by MainActivity.onResume via AndroidBridge to trigger a background refresh
+        // when the app returns to the foreground after being backgrounded.
+        window.FlaynityNativeRefresh = function() {
+            if (!navigator.onLine) return;
+            // Only refresh if not already in progress
+            if (SyncManager.isRefreshing) return;
+            SyncManager.refreshEverything();
+        };
 
         // =========================================================
-        // SYNC MANAGER – handled by engine/sync-manager.js
-        // SyncManager.refreshEverything() is defined there.
+        // GLOBAL SYNC MANAGER (No-Reload Synchronization Engine)
         // =========================================================
+        const SyncManager = {
+            isRefreshing: false,
+            refreshEverything: async function() {
+                if (this.isRefreshing || !navigator.onLine) return;
+                this.isRefreshing = true;
+
+                try {
+                    // ── Step 1: Tear down ALL existing global feed listeners ──────────
+                    // This prevents duplicate .on() callbacks accumulating across calls.
+                    _detachAllGlobalFeedListeners();
+
+                    // Reset count sentinels so the re-attached listeners always rebuild
+                    previousShortsCount = -1;
+                    previousLongsCount  = -1;
+                    previousPostsCount  = -1;
+
+                    // ── Step 2: Refresh current user profile silently ─────────────────
+                    await this.refreshProfile();
+
+                    // ── Step 3: Fetch fresh data snapshots before rebuilding UI ───────
+                    const [longsSnap, shortsSnap, postsSnap] = await Promise.all([
+                        db.ref('admin_panel/movies/user_uploads').once('value'),
+                        db.ref('admin_panel/movies/shorts').once('value'),
+                        db.ref('admin_panel/posts').once('value')
+                    ]);
+
+                    allLongVideos      = longsSnap.val()  ? Object.values(longsSnap.val())  : [];
+                    allShorts          = shortsSnap.val() ? Object.values(shortsSnap.val()) : [];
+                    allCommunityPosts  = postsSnap.val()  ? Object.values(postsSnap.val())  : [];
+
+                    // ── Step 4: Re-attach realtime listeners (after data is loaded) ───
+                    startRealtimeFeedsListener();
+
+                    // ── Step 5: Rebuild UI ────────────────────────────────────────────
+                    buildHomeFeed();
+
+                    const shortsTab = document.getElementById('shorts-tab');
+                    if (shortsTab && shortsTab.classList.contains('active')) buildShortsPage();
+
+                    this.refreshAnalytics();
+
+                } catch (err) {
+                    console.error("SyncManager Execution Error:", err);
+                } finally {
+                    // Always release the lock so future calls are not permanently blocked
+                    this.isRefreshing = false;
+                }
+            },
+
+            refreshProfile: async function() {
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    // Detach stale per-user listeners before re-fetching
+                    try { db.ref(`channels/${currentUser.uid}`).off(); } catch(e) {}
+                    try { db.ref(`users/${currentUser.uid}`).off(); } catch(e) {}
+
+                    const snap = await db.ref(`channels/${currentUser.uid}`).once('value');
+                    currentChannelData = snap.val();
+                    if (currentChannelData) {
+                        localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                    }
+                    initYouTabUI();
+                }
+            },
+
+            refreshAnalytics: function() {
+                const analyticsPage = document.getElementById('analytics-page');
+                if (analyticsPage && (analyticsPage.style.display === 'flex' || analyticsPage.style.display === 'block')) {
+                    calculateChannelAnalytics();
+                }
+            }
+        };
+
+        // ── Helper: detach every global feed listener in one place ────────────────
+        // Called by SyncManager and cleanupUserSessionData to avoid duplication.
+        function _detachAllGlobalFeedListeners() {
+            try { db.ref('admin_panel/movies/user_uploads').off(); } catch(e) {}
+            try { db.ref('admin_panel/movies/shorts').off(); } catch(e) {}
+            try { db.ref('admin_panel/posts').off(); } catch(e) {}
+
+            // Detach per-channel live-UI listeners
+            Object.keys(boundChannelListeners).forEach(uid => {
+                try { db.ref(`channels/${uid}`).off(); } catch(e) {}
+            });
+            for (let key in boundChannelListeners) delete boundChannelListeners[key];
+
+            // Detach per-post reaction listeners
+            _detachAllPostReactionListeners();
+        }
+
+        // Track which post-reaction listeners are active so we can clean them up
+        const _boundPostReactionListeners = {};
+        function _detachAllPostReactionListeners() {
+            Object.keys(_boundPostReactionListeners).forEach(postId => {
+                try { db.ref(`post_reactions/${postId}`).off(); } catch(e) {}
+                try { db.ref(`movie_comments/${postId}`).off(); } catch(e) {}
+            });
+            for (let key in _boundPostReactionListeners) delete _boundPostReactionListeners[key];
+        }
 
         // =========================================================
-        // PULL-TO-REFRESH – handled by engine/refresh-manager.js
-        // RefreshManager.init() is called automatically by that module.
+        // UNIVERSAL NATIVE YOUTUBE-STYLE PULL TO REFRESH ENGINE
         // =========================================================
+        let touchStartY = 0;
+        let touchStartX = 0;
+        let touchMoveY = 0;
+        let isPTRActive = false;
+        let isRefreshingNow = false;
+
+        function isPTRAllowedOnCurrentView() {
+            const modalsOpen = document.querySelectorAll('.fullscreen-page[style*="display: flex"], .fullscreen-page[style*="display: block"], .premium-download-modal[style*="display: flex"], #full-movie-page[style*="display: block"], #theme-popup-menu[style*="display: flex"], #full-image-preview-overlay[style*="display: flex"]');
+            if (modalsOpen.length > 0) {
+                const viewChannel = document.getElementById('view-channel-page');
+                if (viewChannel && (viewChannel.style.display === 'flex' || viewChannel.style.display === 'block')) {
+                    return viewChannel.scrollTop <= 0;
+                }
+                return false;
+            }
+
+            const activeNav = document.querySelector('.nav-item.active');
+            if (!activeNav) return false;
+            const activeTabId = activeNav.id.replace('nav-', '');
+
+            if (activeTabId === 'home') {
+                return window.scrollY <= 0 && document.documentElement.scrollTop <= 0;
+            } else if (activeTabId === 'search') {
+                return window.scrollY <= 0 && document.documentElement.scrollTop <= 0;
+            } else if (activeTabId === 'you') {
+                return window.scrollY <= 0 && document.documentElement.scrollTop <= 0;
+            }
+
+            return false;
+        }
+
+        function initPullToRefresh() {
+            const ptrIndicator = document.getElementById('ptr-indicator');
+            const ptrSpinner = document.getElementById('ptr-spinner');
+
+            document.addEventListener('touchstart', (e) => {
+                if (isRefreshingNow) return;
+                if (isPTRAllowedOnCurrentView()) {
+                    touchStartY = e.touches[0].clientY;
+                    touchStartX = e.touches[0].clientX;
+                    touchMoveY = touchStartY;
+                    isPTRActive = true;
+                } else {
+                    isPTRActive = false;
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchmove', (e) => {
+                if (!isPTRActive || isRefreshingNow) return;
+                
+                if (!isPTRAllowedOnCurrentView()) {
+                    isPTRActive = false;
+                    if (ptrIndicator) {
+                        ptrIndicator.style.transform = `translateX(-50%) translateY(-70px)`;
+                        ptrIndicator.style.opacity = '0';
+                    }
+                    return;
+                }
+
+                const currentY = e.touches[0].clientY;
+                const currentX = e.touches[0].clientX;
+                const deltaY = currentY - touchStartY;
+                const deltaX = Math.abs(currentX - touchStartX);
+
+                // Require vertical dragging and discourage accidental side-swipes
+                if (deltaY > 20 && deltaY > deltaX * 1.5) {
+                    touchMoveY = currentY;
+                    const pullDistance = (deltaY - 20) * 0.45;
+
+                    if (ptrIndicator) {
+                        ptrIndicator.style.opacity = Math.min(1, pullDistance / 40);
+                        ptrIndicator.style.transform = `translateX(-50%) translateY(${pullDistance - 65}px)`;
+                    }
+                    if (ptrSpinner) {
+                        ptrSpinner.style.transform = `rotate(${pullDistance * 3}deg)`;
+                    }
+                } else if (deltaY < 0) {
+                    isPTRActive = false;
+                    if (ptrIndicator) {
+                        ptrIndicator.style.transform = `translateX(-50%) translateY(-70px)`;
+                        ptrIndicator.style.opacity = '0';
+                    }
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchend', () => {
+                if (!isPTRActive || isRefreshingNow) {
+                    isPTRActive = false;
+                    return;
+                }
+                
+                const deltaY = touchMoveY - touchStartY;
+                isPTRActive = false;
+
+                if (deltaY > 90) { // Intentional pull threshold reached
+                    isRefreshingNow = true;
+                    if (ptrIndicator) {
+                        ptrIndicator.style.transform = `translateX(-50%) translateY(20px)`;
+                        ptrIndicator.style.opacity = '1';
+                    }
+                    if (ptrSpinner) {
+                        ptrSpinner.classList.add('ptr-spinning');
+                    }
+
+                    triggerUniversalPullToRefresh().finally(() => {
+                        setTimeout(() => {
+                            if (ptrIndicator) {
+                                ptrIndicator.style.transform = `translateX(-50%) translateY(-70px)`;
+                                ptrIndicator.style.opacity = '0';
+                            }
+                            if (ptrSpinner) {
+                                ptrSpinner.classList.remove('ptr-spinning');
+                            }
+                            isRefreshingNow = false;
+                        }, 400);
+                    });
+                } else {
+                    if (ptrIndicator) {
+                        ptrIndicator.style.transform = `translateX(-50%) translateY(-70px)`;
+                        ptrIndicator.style.opacity = '0';
+                    }
+                }
+                touchStartY = 0;
+                touchMoveY = 0;
+            });
+        }
+
+        async function triggerUniversalPullToRefresh() {
+            playUI('click');
+            if (!navigator.onLine) {
+                showNotification("Offline - Cannot Refresh", "error");
+                return;
+            }
+
+            try {
+                // Trigger the core SyncManager to update entire app state silently
+                await SyncManager.refreshEverything();
+                showNotification("Feed Updated!", "success");
+            } catch (e) {
+                console.error("PTR Refresh Exception:", e);
+                showNotification("Refresh failed: " + e.message, "error");
+            }
+            // Note: isRefreshingNow is reset in the touchend .finally() block,
+            // so we do not reset it here to avoid a double-reset race.
+        }
 
         // =========================================
         // UI SOUND ENGINE
@@ -2975,15 +3250,31 @@
             }, duration);
         }
 
-
         // =========================================
-        // FIREBASE ENGINE BRIDGE
-        // ─────────────────────────────────────────
-        // Firebase is initialized ONCE by engine/firebase-engine.js.
-        // These aliases keep all legacy code working without changes.
+        // FIREBASE SETUP
         // =========================================
-        const auth = window.FlaynityAuth;
-        const db   = window.FlaynityDB;
+        const firebaseConfig = {
+            apiKey: "AIzaSyCiUTQp_QDSbBIOGJXKI7jJmzQHPu8L14I",
+            authDomain: "flaynity-app.firebaseapp.com",
+            databaseURL: "https://flaynity-app-default-rtdb.firebaseio.com",
+            projectId: "flaynity-app",
+            storageBucket: "flaynity-app.firebasestorage.app",
+            messagingSenderId: "587469287255",
+            appId: "1:587469287255:web:6ec177b0c1c802efc95812",
+            measurementId: "G-HPMF5TPJB2"
+        };
+        
+        try {
+            firebase.initializeApp(firebaseConfig);
+            firebase.database().enablePersistence().catch(err => {
+                console.warn("Offline persistence activation bypassed: ", err.code);
+            });
+        } catch (e) {
+            console.error("Firebase config crash prevented:", e);
+        }
+        
+        const auth = firebase.auth();
+        const db = firebase.database();
         const googleProvider = new firebase.auth.GoogleAuthProvider();
 
         const API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb'; 
@@ -3001,20 +3292,12 @@
         // =========================================
         // DYNAMIC FEED DATA VARIABLES
         // =========================================
-        // ── Feed data stores (kept in sync by FeedManager) ──
-        let allShorts         = [];
-        let allLongVideos     = [];
+        let allShorts = [];
+        let allLongVideos = [];
         let allCommunityPosts = [];
-        let allAdminMovies    = [];
-        let activeHomeCategory    = "All";
+        let activeHomeCategory = "All";
         let watchRecommendedLimit = 10;
-        let postRenderLimit       = 30;
-
-        // Expose to engine modules
-        window.allShorts         = allShorts;
-        window.allLongVideos     = allLongVideos;
-        window.allCommunityPosts = allCommunityPosts;
-        window.allAdminMovies    = allAdminMovies;
+        let postRenderLimit = 30;
 
         // =========================================================
         // CLOUDFLARE R2 S3 SDK CONFIGURATIONS
@@ -3107,14 +3390,6 @@
         }
 
         function cleanupUserSessionData() {
-            // ── Engine: detach ALL Firebase listeners in one call ──
-            if (typeof ListenerManager !== 'undefined') ListenerManager.detachAll();
-            if (typeof FeedManager !== 'undefined') FeedManager.resetSentinels();
-            if (typeof SyncManager !== 'undefined' && SyncManager.isRefreshing()) {
-                // Reset the lock so future calls are not permanently blocked
-                // (SyncManager exposes isRefreshing() but not a reset; the finally block handles it)
-            }
-
             currentChannelData = null;
             tempCreateAvatarUrl = "";
             tempEditAvatarUrl = "";
@@ -3127,8 +3402,7 @@
             allLongVideos = [];
             allCommunityPosts = [];
             uploadQueue = [];
-            localStorage.removeItem('flaynity_upload_queue_v2');
-            localStorage.removeItem('flaynity_upload_queue_v3');
+            localStorage.removeItem('flaynity_upload_queue_v2'); 
             localStorage.removeItem('flaynity_user_session_cache');
 
             const homeFeed = document.getElementById('home-feed-container');
@@ -3155,46 +3429,63 @@
             const managerList = document.getElementById('manager-items-list');
             if (managerList) managerList.innerHTML = '';
 
-            // All listeners cleaned up by ListenerManager.detachAll() above
+            if (activeStatsRef) { try { activeStatsRef.off(); } catch(e) {} activeStatsRef = null; }
+            if (activeCommentsRef) { try { activeCommentsRef.off(); } catch(e) {} activeCommentsRef = null; }
+            if (activeChannelVideosListener) { try { activeChannelVideosListener.off(); } catch(e) {} activeChannelVideosListener = null; }
+            if (activeChannelShortsListener) { try { activeChannelShortsListener.off(); } catch(e) {} activeChannelShortsListener = null; }
+            if (activeChannelPostsListener) { try { activeChannelPostsListener.off(); } catch(e) {} activeChannelPostsListener = null; }
 
-            // Engine: detach all listeners via ListenerManager
-            if (typeof ListenerManager !== 'undefined') ListenerManager.detachAll();
-            if (typeof FeedManager !== 'undefined') FeedManager.resetSentinels();
+            // Use shared helper to detach all global feed + channel + post-reaction listeners
+            _detachAllGlobalFeedListeners();
+            _feedListenersAttached = false;
+
+            // Reset SyncManager lock in case it was stuck
+            SyncManager.isRefreshing = false;
         }
 
-        // =========================================================
-        // AUTH STATE – handled by engine/firebase-engine.js AuthManager
-        // =========================================================
-        AuthManager.onSignIn(function(user) {
+        auth.onAuthStateChanged((user) => {
             try {
-                document.body.classList.remove('auth-active');
-                const authScr = document.getElementById('auth-screen');
-                const appScr  = document.getElementById('app-screen');
-                if (authScr) authScr.style.display = 'none';
-                if (appScr)  appScr.style.display  = 'block';
+                if (user) {
+                    document.body.classList.remove('auth-active');
+                    const authScr = document.getElementById('auth-screen');
+                    const appScr = document.getElementById('app-screen');
+                    if (authScr) authScr.style.display = 'none';
+                    if (appScr) appScr.style.display = 'block';
 
-                saveAccountToList(user);
+                    saveAccountToList(user);
 
-                // Re-attach all feed listeners (engine guards duplicates)
-                FeedManager.startRealtimeListeners();
-                UploadManager.init();
+                    // Attach user-avatar listener (safe: only once per sign-in)
+                    db.ref(`users/${user.uid}`).on('value', (snapshot) => {
+                        try {
+                            const userData = snapshot.val();
+                            const photoURL = userData?.photoURL || user.photoURL || '';
+                            renderUserAvatar(photoURL, user.email);
+                        } catch (e) {}
+                    });
 
-                const activeNav = document.querySelector('.nav-item.active');
-                if (activeNav) {
-                    adjustHeaderForActiveTab(activeNav.id.replace('nav-', ''));
+                    // Reset feed-listener flag so startRealtimeFeedsListener
+                    // cleanly re-attaches after a sign-out / sign-in cycle.
+                    _feedListenersAttached = false;
+                    startRealtimeFeedsListener();
+                    restoreQueueFromLocalStorage();
+
+                    const activeNav = document.querySelector('.nav-item.active');
+                    if (activeNav) {
+                        const activeTabId = activeNav.id.replace('nav-', '');
+                        adjustHeaderForActiveTab(activeTabId);
+                    }
+                } else {
+                    // cleanupUserSessionData already resets _feedListenersAttached
+                    cleanupUserSessionData();
+                    document.body.classList.add('auth-active');
+                    const appScr = document.getElementById('app-screen');
+                    const authScr = document.getElementById('auth-screen');
+                    if (appScr) appScr.style.display = 'none';
+                    if (authScr) authScr.style.display = 'flex';
                 }
-            } catch (e) { console.error('[Auth] signIn handler error:', e); }
-        });
-
-        AuthManager.onSignOut(function() {
-            try {
-                cleanupUserSessionData();
-                document.body.classList.add('auth-active');
-                const appScr  = document.getElementById('app-screen');
-                const authScr = document.getElementById('auth-screen');
-                if (appScr)  appScr.style.display  = 'none';
-                if (authScr) authScr.style.display  = 'flex';
-            } catch (e) { console.error('[Auth] signOut handler error:', e); }
+            } catch (e) {
+                console.error("Auth status sync error:", e);
+            }
         });
 
         function renderUserAvatar(photoURL, email) {
@@ -3366,50 +3657,375 @@
                 createdAt: Date.now()
             };
 
-            // Enqueue via UploadManager (IndexedDB persistence)
-            if (typeof UploadManager !== 'undefined') {
-                UploadManager.enqueue(queueItem);
-            } else {
-                uploadQueue.push(queueItem);
-            }
+            uploadQueue.push(queueItem);
+            saveQueueStateToLocalStorage(); 
 
             currentDetailItem = queueItem;
             openDetailsSheet(queueItem);
-            e.target.value = "";
+            e.target.value = ""; 
         }
 
-        // Legacy shim – delegates to UploadManager
         async function triggerNextActiveUpload() {
-            if (typeof UploadManager !== 'undefined') UploadManager.triggerNext();
-        }
-        }
+            if (!navigator.onLine) return;
 
-        // startS3DirectUpload – handled by engine/upload-manager.js
-        async function startS3DirectUpload(item) {
-            if (typeof UploadManager !== 'undefined') {
-                await UploadManager.enqueue(item);
-                UploadManager.triggerNext();
+            for (let i = 0; i < uploadQueue.length; i++) {
+                if (activeUploadsCount >= MAX_CONCURRENT_UPLOADS) break;
+                
+                const item = uploadQueue[i];
+                if (item.status === 'waiting') {
+                    activeUploadsCount++;
+                    startS3DirectUpload(item);
+                }
             }
         }
+
+        async function startS3DirectUpload(item) {
+            if (!navigator.onLine) {
+                item.status = "paused";
+                updateManagerUI();
+                showNotification("Offline: Upload paused.", "error");
+                activeUploadsCount = Math.max(0, activeUploadsCount - 1);
+                return;
+            }
+
+            item.status = "uploading";
+            item.progress = item.progress || 0;
+            updateManagerUI();
+
+            const startTime = Date.now();
+
+            try {
+                const params = {
+                    Key: item.key,
+                    Body: item.file,
+                    ContentType: item.file.type || 'video/mp4'
+                };
+                
+                // 5MB optimized multipart chunk size
+                const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
+
+                const s3Upload = s3.upload(params, uploadOpts);
+                item.s3UploadRef = s3Upload;
+
+                s3Upload.on('httpUploadProgress', (evt) => {
+                    if (item.status !== 'uploading') return; 
+                    const pct = Math.round((evt.loaded / evt.total) * 100);
+                    item.progress = pct;
+
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    if (elapsed > 0) {
+                        item.speed = evt.loaded / elapsed; 
+                        item.eta = (evt.total - evt.loaded) / item.speed;
+                    }
+                    updateManagerUI();
+                });
+
+                await s3Upload.promise();
+                
+                item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
+                item.status = "processing";
+                item.retryCount = 0;
+                updateManagerUI();
+
+                await runPostUploadProcessingSequence(item);
+
+            } catch (err) {
+                if (item.status === 'paused') {
+                    console.log("Upload paused safely.");
+                } else if (!navigator.onLine) {
+                    item.status = "paused";
+                    updateManagerUI();
+                    showNotification("Connection lost. Upload paused.", "error");
+                } else {
+                    console.error("Upload error: ", err);
+                    item.retryCount = (item.retryCount || 0) + 1;
+                    
+                    if (item.retryCount <= 5) {
+                        item.status = "waiting";
+                        updateManagerUI();
+                        showNotification(`Network hiccup. Retrying (${item.retryCount}/5)...`, "error");
+                    } else {
+                        item.status = "failed";
+                        updateManagerUI();
+                        showNotification(`Upload failed: ${err.message}`, "error");
+                    }
+                }
+            } finally {
+                activeUploadsCount = Math.max(0, activeUploadsCount - 1);
+                triggerNextActiveUpload();
+            }
         }
 
-        // runPostUploadProcessingSequence – handled by engine/upload-manager.js
         async function runPostUploadProcessingSequence(item) {
-            // No-op: UploadManager handles post-processing internally
+            item.status = "processing";
+            item.progress = 0;
+            updateManagerUI();
+
+            try {
+                let finalThumbBlob = item.thumbBlob;
+                if (!finalThumbBlob && item.thumbDataUrl && item.thumbDataUrl.startsWith('data:')) {
+                    try { finalThumbBlob = dataURLtoBlob(item.thumbDataUrl); } catch (e) {}
+                }
+
+                if (finalThumbBlob && s3) {
+                    const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg" };
+                    await s3.putObject(thumbParams).promise();
+                    item.thumbUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
+                } else {
+                    item.thumbUrl = item.thumbDataUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
+                }
+
+                item.processingMsg = "Publishing Feed...";
+                item.progress = 100;
+                updateManagerUI();
+
+                // ⚡ INSTANT PUBLISH ENGINE ⚡
+                await pushVideoMetadataToDatabase(item);
+
+                item.status = "completed";
+                updateManagerUI();
+                saveQueueStateToLocalStorage();
+                showNotification(`"${item.title}" is published instantly!`, "success");
+
+            } catch (err) {
+                item.status = "failed";
+                updateManagerUI();
+                showNotification("Post-processing error: " + err.message, "error");
+            }
         }
 
-        // pushVideoMetadataToDatabase – handled by engine/upload-manager.js
         async function pushVideoMetadataToDatabase(item) {
-            // No-op: UploadManager._publishMetadata() handles this internally
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const userSnap = await db.ref(`users/${user.uid}`).once('value');
+            const uData = userSnap.val() || {};
+            const username = uData.username || user.email.split('@')[0];
+
+            const resolution = item.type === 'video-short' ? "1080x1920" : "1920x1080";
+            const hashtags = extractHashtags(item.description);
+
+            const moviePayload = {
+                id: item.id,
+                userId: user.uid,
+                channelId: user.uid,
+                title: item.title,
+                description: item.description,
+                tags: hashtags,
+                category: currentChannelData?.category || "Entertainment",
+                duration: formatDuration(item.duration),
+                resolution: resolution,
+                poster: item.thumbUrl || item.thumbDataUrl || "",
+                banner: item.thumbUrl || item.thumbDataUrl || "",
+                videoLink: item.videoUrl,
+                uploadTime: Date.now(),
+                updateTime: Date.now(),
+                visibility: item.visibility,
+                status: "published",
+                views: 0,
+                likes: 0,
+                comments: 0,
+                shares: 0,
+                subscribers: currentChannelData?.subscribersCount || 0,
+                isShort: item.type === 'video-short',
+                isPost: false,
+                language: "English",
+                location: "Global",
+                rating: "8.5",
+                releaseDate: new Date().getFullYear().toString(),
+                allowComments: item.allowComments,
+                showLikes: item.showLikes,
+                username: username,
+                channelAvatar: currentChannelData?.avatarUrl || user.photoURL || "",
+                createdAt: Date.now()
+            };
+
+            // Step 1: Save Metadata to Firebase Realtime Database
+            const targetPath = item.type === 'video-short' 
+                ? `admin_panel/movies/shorts/${item.id}` 
+                : `admin_panel/movies/user_uploads/${item.id}`;
+                
+            await db.ref(targetPath).set(moviePayload);
+
+            // Step 2: Zero-Delay Local Feed Update (< 0.1 Seconds)
+            if (item.type === 'video-short') {
+                const idx = allShorts.findIndex(s => s.id === item.id);
+                if (idx !== -1) allShorts[idx] = moviePayload;
+                else allShorts.unshift(moviePayload);
+                
+                buildShortsPage();
+            } else {
+                const idx = allLongVideos.findIndex(v => v.id === item.id);
+                if (idx !== -1) allLongVideos[idx] = moviePayload;
+                else allLongVideos.unshift(moviePayload);
+            }
+
+            // Step 3: Instant A-Z Screen Refresh
+            buildHomeFeed();
+
+            const activePage = AppNavigation.current();
+            if (activePage && activePage.id === 'view-channel-page') {
+                if (item.type === 'video-short') renderChannelShorts(user.uid);
+                else renderChannelVideos(user.uid);
+            }
         }
 
         // =========================================================
-        // REALTIME LISTENERS – handled by engine/feed-manager.js
-        // FeedManager.startRealtimeListeners() / bindLiveChannelUI()
+        // REALTIME LISTENERS FOR ZERO-REFRESH FEED PROPAGATION
         // =========================================================
-        // Legacy shim: keep bindLiveChannelUI callable from existing UI code
+        let previousShortsCount = -1;
+        let previousLongsCount = -1;
+        let previousPostsCount = -1;
+        let _feedListenersAttached = false; // guard against duplicate attachment
+
+        function startRealtimeFeedsListener() {
+            // Detach any existing listeners before re-attaching to prevent duplicates
+            if (_feedListenersAttached) {
+                try { db.ref('admin_panel/movies/user_uploads').off(); } catch(e) {}
+                try { db.ref('admin_panel/movies/shorts').off(); } catch(e) {}
+                try { db.ref('admin_panel/posts').off(); } catch(e) {}
+                _feedListenersAttached = false;
+            }
+
+            try {
+                _feedListenersAttached = true;
+                db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
+                    try {
+                        const data = snap.val();
+                        allLongVideos = data ? Object.values(data) : [];
+                        allLongVideos.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                        
+                        allLongVideos.forEach(m => {
+                            if (m && m.id && !allAdminMovies.find(x => x.id === m.id)) {
+                                allAdminMovies.push(m);
+                            }
+                        });
+
+                        if(allLongVideos.length !== previousLongsCount) {
+                            previousLongsCount = allLongVideos.length;
+                            buildHomeFeed();
+                        } else {
+                            allLongVideos.forEach(v => {
+                                const titleEl = document.querySelector(`.long-video-feed-card[onclick*="${v.id}"] .long-video-title`);
+                                if (titleEl) titleEl.innerText = escapeHTML(v.title);
+                            });
+                        }
+                    } catch (e) {}
+                });
+
+                db.ref('admin_panel/movies/shorts').on('value', (snap) => {
+                    try {
+                        const data = snap.val();
+                        allShorts = data ? Object.values(data) : [];
+                        allShorts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                        
+                        if(allShorts.length !== previousShortsCount) {
+                            previousShortsCount = allShorts.length;
+                            buildHomeFeed();
+                            const shortsTab = document.getElementById('shorts-tab');
+                            if (shortsTab && shortsTab.classList.contains('active')) {
+                                const activeShortId = document.querySelector('.short-slide video[src]')?.closest('.short-slide')?.getAttribute('data-shortid');
+                                buildShortsPage();
+                                if(activeShortId) {
+                                     setTimeout(() => {
+                                         const targetSlide = document.getElementById(`slide-short-${activeShortId}`);
+                                         if (targetSlide) targetSlide.scrollIntoView({block: 'start'});
+                                     }, 50);
+                                }
+                            }
+                        } else {
+                            allShorts.forEach(s => {
+                                const titleEl = document.querySelector(`#slide-short-${s.id} #short-title-val`);
+                                if(titleEl) titleEl.innerHTML = `${escapeHTML(s.title)} <span style="font-weight:400; font-size:0.8rem; color:#ccc; display:block;">Click to view description</span>`;
+                                const thumbEl = document.querySelector(`.short-home-card-2col[onclick*="${s.id}"] img`);
+                                if (thumbEl) thumbEl.src = s.poster;
+                            });
+                        }
+                    } catch (e) {}
+                });
+
+                db.ref('admin_panel/posts').on('value', (snap) => {
+                    try {
+                        const data = snap.val();
+                        allCommunityPosts = data ? Object.values(data) : [];
+                        allCommunityPosts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                        
+                        if (allCommunityPosts.length !== previousPostsCount) {
+                            previousPostsCount = allCommunityPosts.length;
+                            buildHomeFeed();
+                        }
+                    } catch (e) {}
+                });
+
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    db.ref(`channels/${currentUser.uid}`).on('value', (snapshot) => {
+                        try {
+                            currentChannelData = snapshot.val();
+                            if (currentChannelData) {
+                                localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                            }
+                            const activeNav = document.querySelector('.nav-item.active');
+                            if (activeNav && activeNav.id === 'nav-you') {
+                                initYouTabUI();
+                            }
+                            updateBottomNavAvatar();
+                        } catch (e) {}
+                    });
+
+                    db.ref(`users/${currentUser.uid}`).on('value', (snapshot) => {
+                        try {
+                            const userData = snapshot.val();
+                            const photoURL = userData?.photoURL || currentUser.photoURL || '';
+                            renderUserAvatar(photoURL, currentUser.email);
+                        } catch (e) {}
+                    });
+                }
+            } catch (err) {
+                console.error("Global database binding exception:", err);
+            }
+        }
+
+        const boundChannelListeners = {};
         function bindLiveChannelUI(userId) {
-            if (typeof FeedManager !== 'undefined') FeedManager.bindLiveChannelUI(userId);
+            if (!userId) return;
+
+            // Already have a live listener for this user — skip to avoid duplicates
+            if (boundChannelListeners[userId]) return;
+
+            if (!navigator.onLine) return;
+
+            boundChannelListeners[userId] = true;
+            db.ref(`channels/${userId}`).on('value', (snap) => {
+                updateChannelDOM(userId, snap.val());
+            });
+        }
+
+        function updateChannelDOM(userId, data) {
+            if (!data) return;
+            const name = data.channelName || "Flaynity User";
+            const handle = data.handle || "handle";
+            const avatar = data.avatarUrl || "";
+
+            document.querySelectorAll(`.live-username-${userId}`).forEach(el => {
+                el.innerText = name;
+            });
+            document.querySelectorAll(`.live-handle-${userId}`).forEach(el => {
+                el.innerText = "@" + handle;
+            });
+            document.querySelectorAll(`.live-avatar-${userId}`).forEach(el => {
+                if (avatar) {
+                    el.innerHTML = `<img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                } else {
+                    const initial = name.charAt(0).toUpperCase();
+                    el.innerHTML = `<div style="width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--primary), #FF7A00); color: #fff; font-weight: 800; font-size: 0.9rem;">${initial}</div>`;
+                }
+            });
+            document.querySelectorAll(`.live-disc-avatar-${userId}`).forEach(el => {
+                if (avatar) {
+                    el.innerHTML = `<img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                }
+            });
         }
 
         // =========================================================
@@ -3799,25 +4415,20 @@
             const subUserId = post.userId;
             
             if (auth.currentUser && navigator.onLine) {
-                ListenerManager.attach(
-                    `feed/post-sub/${subUserId}`,
-                    db.ref(`subscribers/${subUserId}/${auth.currentUser.uid}`),
-                    'value',
-                    (snapshot) => {
-                        const btn = document.getElementById(subBtnId);
-                        if (btn) {
-                            if (snapshot.exists()) {
-                                btn.innerText = "Subscribed";
-                                btn.style.color = "var(--text-muted)";
-                                btn.style.borderColor = "var(--border-color)";
-                            } else {
-                                btn.innerText = "Subscribe";
-                                btn.style.color = "var(--primary)";
-                                btn.style.borderColor = "var(--primary)";
-                            }
+                db.ref(`subscribers/${subUserId}/${auth.currentUser.uid}`).on('value', (snapshot) => {
+                    const btn = document.getElementById(subBtnId);
+                    if (btn) {
+                        if (snapshot.exists()) {
+                            btn.innerText = "Subscribed";
+                            btn.style.color = "var(--text-muted)";
+                            btn.style.borderColor = "var(--border-color)";
+                        } else {
+                            btn.innerText = "Subscribe";
+                            btn.style.color = "var(--primary)";
+                            btn.style.borderColor = "var(--primary)";
                         }
                     }
-                );
+                });
             }
 
             const avatarHtml = `<div class="live-avatar-${post.userId}" style="width:40px; height:40px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
@@ -3975,7 +4586,7 @@
                 return;
             }
 
-            let activeShortsList = window.allShorts || allShorts;
+            let activeShortsList = allShorts;
 
             if (activeShortsList.length === 0) {
                 container.innerHTML = getShortsSkeletonHTML();
@@ -4054,7 +4665,7 @@
                     </div>
                 `;
 
-                ListenerManager.attach(`feed/short-stats/${s.id}`, db.ref(`movie_stats/${s.id}`), 'value', (snapshot) => {
+                db.ref(`movie_stats/${s.id}`).on('value', (snapshot) => {
                     const stats = snapshot.val() || {};
                     const viewsObj = stats.views || {};
                     const likesObj = stats.likes || {};
@@ -4079,7 +4690,7 @@
                     }
                 });
 
-                ListenerManager.attach(`feed/short-comments/${s.id}`, db.ref(`movie_comments/${s.id}`), 'value', (snapshot) => {
+                db.ref(`movie_comments/${s.id}`).on('value', (snapshot) => {
                     const commentsObj = snapshot.val() || {};
                     const count = Object.keys(commentsObj).length;
 
@@ -4094,23 +4705,18 @@
                 });
 
                 if (auth.currentUser) {
-                    ListenerManager.attach(
-                        `feed/short-sub/${s.userId}`,
-                        db.ref(`subscribers/${s.userId}/${auth.currentUser.uid}`),
-                        'value',
-                        (snapshot) => {
-                            const subBtn = document.getElementById(`short-sub-btn-${s.id}`);
-                            if (subBtn) {
-                                if (snapshot.exists()) {
-                                    subBtn.innerText = "Subscribed";
-                                    subBtn.style.background = "#4B5563";
-                                } else {
-                                    subBtn.innerText = "Subscribe";
-                                    subBtn.style.background = "var(--primary)";
-                                }
+                    db.ref(`subscribers/${s.userId}/${auth.currentUser.uid}`).on('value', (snapshot) => {
+                        const subBtn = document.getElementById(`short-sub-btn-${s.id}`);
+                        if (subBtn) {
+                            if (snapshot.exists()) {
+                                subBtn.innerText = "Subscribed";
+                                subBtn.style.background = "#4B5563";
+                            } else {
+                                subBtn.innerText = "Subscribe";
+                                subBtn.style.background = "var(--primary)";
                             }
                         }
-                    );
+                    });
                 }
             });
 
@@ -4678,7 +5284,8 @@
                     document.body.style.overflow = 'auto';
                     const container = document.getElementById('video-player-container');
                     if (container) container.innerHTML = '';
-                    ListenerManager.detachByPrefix('stats/');
+                    if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
+                    if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }
                 }
 
                 activeModals.forEach(modalId => {
@@ -4722,7 +5329,8 @@
                 window.AndroidBridge.showMovieClickInterstitial(); 
             }
 
-            ListenerManager.detachByPrefix('stats/');
+            if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
+            if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }
 
             const playerContainer = document.getElementById('video-player-container');
             const skeleton = document.getElementById('video-player-skeleton');
@@ -4853,11 +5461,8 @@
 
             if(!navigator.onLine) return;
 
-            ListenerManager.attach(
-                `stats/movie/${movieId}`,
-                db.ref(`movie_stats/${movieId}`),
-                'value',
-                (snapshot) => {
+            activeStatsRef = db.ref(`movie_stats/${movieId}`);
+            activeStatsRef.on('value', (snapshot) => {
                 const stats = snapshot.val() || {};
                 const viewsObj = stats.views || {};
                 const likesObj = stats.likes || {};
@@ -4890,11 +5495,8 @@
                 }
             });
 
-            ListenerManager.attach(
-                `stats/comments/${movieId}`,
-                db.ref(`movie_comments/${movieId}`),
-                'value',
-                (snapshot) => {
+            activeCommentsRef = db.ref(`movie_comments/${movieId}`);
+            activeCommentsRef.on('value', (snapshot) => {
                 const commentsObj = snapshot.val() || {};
                 const totalComments = Object.keys(commentsObj).length;
                 
@@ -4910,37 +5512,28 @@
 
         function loadChannelMetaForWatchPage(channelId) {
             if (!channelId || !navigator.onLine) return;
-            ListenerManager.attach(
-                `stats/watch-channel/${channelId}`,
-                db.ref(`channels/${channelId}`),
-                'value',
-                (snap) => {
-                    const data = snap.val() || {};
-                    const avatarImg = document.getElementById('movie-channel-avatar');
-                    if (avatarImg) avatarImg.src = data.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop";
-                }
-            );
+            db.ref(`channels/${channelId}`).on('value', (snap) => {
+                const data = snap.val() || {};
+                const avatarImg = document.getElementById('movie-channel-avatar');
+
+                if (avatarImg) avatarImg.src = data.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop";
+            });
 
             if (auth.currentUser) {
-                ListenerManager.attach(
-                    `stats/watch-sub/${channelId}`,
-                    db.ref(`subscribers/${channelId}/${auth.currentUser.uid}`),
-                    'value',
-                    (snap) => {
-                        const btn = document.getElementById('movie-subscribe-btn');
-                        if (btn) {
-                            if (snap.exists()) {
-                                btn.innerText = "Subscribed";
-                                btn.style.background = "var(--border-color)";
-                                btn.style.color = "var(--text-main)";
-                            } else {
-                                btn.innerText = "Subscribe";
-                                btn.style.background = "var(--text-main)";
-                                btn.style.color = "var(--surface)";
-                            }
+                db.ref(`subscribers/${channelId}/${auth.currentUser.uid}`).on('value', (snap) => {
+                    const btn = document.getElementById('movie-subscribe-btn');
+                    if (btn) {
+                        if (snap.exists()) {
+                            btn.innerText = "Subscribed";
+                            btn.style.background = "var(--border-color)";
+                            btn.style.color = "var(--text-main)";
+                        } else {
+                            btn.innerText = "Subscribe";
+                            btn.style.background = "var(--text-main)";
+                            btn.style.color = "var(--surface)";
                         }
                     }
-                );
+                });
             }
         }
 
@@ -5704,11 +6297,10 @@
         function renderChannelVideos(userId) {
             const grid = document.getElementById('channel-videos-grid');
             if (!grid) return;
-            ListenerManager.attach(
-                'channel/videos/' + userId,
-                db.ref('admin_panel/movies/user_uploads'),
-                'value',
-                (snap) => {
+            if (activeChannelVideosListener) { activeChannelVideosListener.off(); }
+            
+            activeChannelVideosListener = db.ref('admin_panel/movies/user_uploads');
+            activeChannelVideosListener.on('value', (snap) => {
                 const data = snap.val();
                 if (!data) {
                     grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No uploaded videos yet.</p>`;
@@ -5751,11 +6343,10 @@
         function renderChannelShorts(userId) {
             const grid = document.getElementById('channel-shorts-grid');
             if (!grid) return;
-            ListenerManager.attach(
-                'channel/shorts/' + userId,
-                db.ref('admin_panel/movies/shorts'),
-                'value',
-                (snap) => {
+            if (activeChannelShortsListener) { activeChannelShortsListener.off(); }
+
+            activeChannelShortsListener = db.ref('admin_panel/movies/shorts');
+            activeChannelShortsListener.on('value', (snap) => {
                 const data = snap.val();
                 if (!data) {
                     grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No shorts uploaded yet.</p>`;
@@ -5790,11 +6381,10 @@
         function renderChannelPosts(userId) {
             const grid = document.getElementById('channel-posts-feed');
             if (!grid) return;
-            ListenerManager.attach(
-                'channel/posts/' + userId,
-                db.ref('admin_panel/posts'),
-                'value',
-                (snap) => {
+            if (activeChannelPostsListener) { activeChannelPostsListener.off(); }
+
+            activeChannelPostsListener = db.ref('admin_panel/posts');
+            activeChannelPostsListener.on('value', (snap) => {
                 const data = snap.val();
                 if (!data) {
                     grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No posts yet.</p>`;
@@ -6350,12 +6940,10 @@
         function handleSaveDraftAction() {
             playUI('click');
             syncDetailsFormToState();
-            currentDetailItem.status = "draft";
-            if (typeof UploadManager !== 'undefined') {
-                UploadManager.updateItem(currentDetailItem.id, currentDetailItem);
-            }
+            currentDetailItem.status = "draft"; 
+            saveQueueStateToLocalStorage();
             showNotification("Draft saved successfully!", "success");
-            AppNavigation.pop();
+            AppNavigation.pop(); 
             openUploadManager();
         }
 
@@ -6376,15 +6964,11 @@
             playUI('click');
             syncDetailsFormToState();
             currentDetailItem.status = "waiting";
-            // Persist via UploadManager (IndexedDB)
-            if (typeof UploadManager !== 'undefined') {
-                UploadManager.updateItem(currentDetailItem.id, currentDetailItem).then(() => {
-                    UploadManager.triggerNext();
-                });
-            }
-            AppNavigation.pop();
+            saveQueueStateToLocalStorage();
+            AppNavigation.pop(); 
             showNotification("Added to Upload Queue", "success");
             openUploadManager();
+            triggerNextActiveUpload();
         }
 
         let currentManagerTab = "uploading";
@@ -6485,12 +7069,48 @@
 
         function pauseQueueItem(id) {
             playUI('click');
-            if (typeof UploadManager !== 'undefined') UploadManager.pause(id);
+            const item = uploadQueue.find(i => i.id === id);
+            if (item) {
+                item.status = "paused";
+                if (item.s3UploadRef) {
+                    try { item.s3UploadRef.abort(); } catch(e) {}
+                    item.s3UploadRef = null;
+                }
+                saveQueueStateToLocalStorage();
+                updateManagerUI();
+                triggerNextActiveUpload();
+            }
         }
 
         function resumeQueueItem(id) {
             playUI('click');
-            if (typeof UploadManager !== 'undefined') UploadManager.resume(id);
+            const item = uploadQueue.find(i => i.id === id);
+            if (!item) return;
+
+            if (!item.file) {
+                const picker = document.getElementById('video-file-input');
+                if (picker) {
+                    picker.dataset.uploadType = item.type;
+                    picker.onchange = function(e) {
+                        const file = e.target.files[0];
+                        if (file) {
+                            item.file = file;
+                            item.status = "waiting";
+                            saveQueueStateToLocalStorage();
+                            updateManagerUI();
+                            triggerNextActiveUpload();
+                        }
+                    };
+                    picker.click();
+                }
+                showNotification("Please select the original file to resume upload", "success");
+                return;
+            }
+
+            item.status = "waiting";
+            saveQueueStateToLocalStorage();
+            updateManagerUI();
+            triggerNextActiveUpload();
         }
 
         function continueDraftQueueItem(id) {
@@ -6505,18 +7125,51 @@
         function deleteQueueItem(id) {
             playUI('click');
             if (confirm("Are you sure you want to remove this upload entry?")) {
-                if (typeof UploadManager !== 'undefined') UploadManager.remove(id);
+                const item = uploadQueue.find(i => i.id === id);
+                if (item && item.s3UploadRef) {
+                    try { item.s3UploadRef.abort(); } catch(e) {}
+                }
+                uploadQueue = uploadQueue.filter(i => i.id !== id);
+                saveQueueStateToLocalStorage();
+                updateManagerUI();
+                triggerNextActiveUpload();
             }
         }
 
-        // Legacy shim
         function saveQueueStateToLocalStorage() {
-            // Handled by UploadManager (IndexedDB + localStorage fallback)
+            try {
+                const serializableQueue = uploadQueue.map(item => {
+                    const copy = { ...item };
+                    delete copy.file; 
+                    delete copy.thumbBlob;
+                    delete copy.s3UploadRef;
+                    return copy;
+                });
+                localStorage.setItem('flaynity_upload_queue_v2', JSON.stringify(serializableQueue));
+            } catch (e) {
+                console.warn("Could not save upload queue state to LocalStorage:", e);
+            }
         }
 
-        // Legacy shim
         function restoreQueueFromLocalStorage() {
-            // Handled by UploadManager.init() (IndexedDB + localStorage fallback)
+            try {
+                const data = localStorage.getItem('flaynity_upload_queue_v2');
+                if (data) {
+                    const saved = JSON.parse(data);
+                    uploadQueue = saved.map(item => {
+                        item.file = null; 
+                        item.thumbBlob = null;
+                        item.s3UploadRef = null;
+                        if (item.status === 'uploading' || item.status === 'waiting' || item.status === 'processing') {
+                            item.status = 'paused';
+                        }
+                        return item;
+                    });
+                    updateManagerUI();
+                }
+            } catch (e) {
+                console.warn("Could not restore upload queue state:", e);
+            }
         }
 
         // =========================================
@@ -6666,22 +7319,77 @@
             setTimeout(() => { floatEl.remove(); }, 1200);
         }
 
-        // registerPostReactionsListener – delegates to FeedManager (engine handles deduplication)
         function registerPostReactionsListener(postId) {
-            if (typeof FeedManager !== 'undefined') {
-                FeedManager.registerPostReactionsListener(postId);
-            }
+            // Guard: only attach once per postId to prevent duplicate listeners
+            if (_boundPostReactionListeners[postId]) return;
+            _boundPostReactionListeners[postId] = true;
+
+            db.ref(`post_reactions/${postId}`).on('value', (snapshot) => {
+                const reactions = snapshot.val() || {};
+                const totalReactions = Object.keys(reactions).length;
+                
+                const reactionCounts = { love: 0, like: 0, care: 0, haha: 0, wow: 0, sad: 0, angry: 0 };
+                Object.values(reactions).forEach(r => {
+                    if (r && r.type && reactionCounts[r.type] !== undefined) {
+                        reactionCounts[r.type]++;
+                    }
+                });
+
+                const sortedTypes = Object.keys(reactionCounts)
+                    .filter(t => reactionCounts[t] > 0)
+                    .sort((a,b) => reactionCounts[b] - reactionCounts[a])
+                    .slice(0, 3);
+
+                const topEmojisEl = document.getElementById(`post-top-emojis-${postId}`);
+                if (topEmojisEl) {
+                    topEmojisEl.innerHTML = sortedTypes.map(t => reactionEmojis[t]).join('');
+                }
+
+                const totalReactionsEl = document.getElementById(`post-total-reactions-${postId}`);
+                if (totalReactionsEl) {
+                    totalReactionsEl.innerText = `${totalReactions} Reaction${totalReactions === 1 ? '' : 's'}`;
+                }
+
+                const loveBtn = document.getElementById(`post-love-btn-${postId}`);
+                const loveIcon = document.getElementById(`love-icon-${postId}`);
+                const loveText = document.getElementById(`love-text-${postId}`);
+
+                if (loveBtn && auth.currentUser) {
+                    const myReact = reactions[auth.currentUser.uid];
+                    if (myReact) {
+                        const type = myReact.type;
+                        if (loveIcon) {
+                            loveIcon.className = 'love-icon-element';
+                            loveIcon.innerText = reactionEmojis[type];
+                            loveIcon.style.fontSize = '1.25rem';
+                        }
+                        if (loveText) {
+                            loveText.innerText = reactionLabels[type];
+                            loveText.style.color = reactionColors[type];
+                        }
+                    } else {
+                        if (loveIcon) {
+                            loveIcon.className = 'far fa-heart love-icon-element';
+                            loveIcon.innerText = '';
+                            loveIcon.style.fontSize = '';
+                        }
+                        if (loveText) {
+                            loveText.innerText = 'Love';
+                            loveText.style.color = '';
+                        }
+                    }
+                }
+            });
+
+            db.ref(`movie_comments/${postId}`).on('value', (snapshot) => {
+                const comments = snapshot.val() || {};
+                const totalComments = Object.keys(comments).length;
+                const totalCommentsEl = document.getElementById(`post-total-comments-${postId}`);
+                if (totalCommentsEl) {
+                    totalCommentsEl.innerText = `${totalComments} Comment${totalComments === 1 ? '' : 's'}`;
+                }
+            });
         }
-
-
-        // ── Bridge: FeedManager calls this when post reactions update ──
-        function _handlePostReactionsUpdate(postId, reactions) {
-            const totalReactions = Object.keys(reactions).length;
-
-            const reactionCounts = { love: 0, like: 0, care: 0, haha: 0, wow: 0, sad: 0, angry: 0 };
-            Object.values(reactions).forEach(r => {
-                if (r && r.type && reactionCounts[r.type] !== undefined) reactionCounts[r.type]++;
-
 
         function openCommentsForPost(postId) {
             playUI('click');

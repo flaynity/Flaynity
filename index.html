@@ -2961,6 +2961,16 @@
             SyncManager.refreshEverything();
         };
 
+        // Remove duplicate feed entries by id (Duplicate Data Prevention)
+        function dedupeById(list) {
+            const seen = {};
+            return (list || []).filter(item => {
+                if (!item || !item.id || seen[item.id]) return false;
+                seen[item.id] = true;
+                return true;
+            });
+        }
+
         // =========================================================
         // GLOBAL SYNC MANAGER (No-Reload Synchronization Engine)
         // =========================================================
@@ -2990,9 +3000,9 @@
                         db.ref('admin_panel/posts').once('value')
                     ]);
 
-                    allLongVideos      = longsSnap.val()  ? Object.values(longsSnap.val())  : [];
-                    allShorts          = shortsSnap.val() ? Object.values(shortsSnap.val()) : [];
-                    allCommunityPosts  = postsSnap.val()  ? Object.values(postsSnap.val())  : [];
+                    allLongVideos      = dedupeById(longsSnap.val()  ? Object.values(longsSnap.val())  : []);
+                    allShorts          = dedupeById(shortsSnap.val() ? Object.values(shortsSnap.val()) : []);
+                    allCommunityPosts  = dedupeById(postsSnap.val()  ? Object.values(postsSnap.val())  : []);
 
                     // ── Step 4: Re-attach realtime listeners (after data is loaded) ───
                     startRealtimeFeedsListener();
@@ -3004,6 +3014,20 @@
                     if (shortsTab && shortsTab.classList.contains('active')) buildShortsPage();
 
                     this.refreshAnalytics();
+
+                    // Universal Refresh: also update any other open page live
+                    const channelPage = document.getElementById('view-channel-page');
+                    if (auth.currentUser && channelPage && channelPage.style.display === 'flex') {
+                        const uid = auth.currentUser.uid;
+                        if (activeChannelTab === 'videos') renderChannelVideos(uid);
+                        else if (activeChannelTab === 'shorts') renderChannelShorts(uid);
+                        else if (activeChannelTab === 'posts') renderChannelPosts(uid);
+                    }
+
+                    const moviePage = document.getElementById('full-movie-page');
+                    if (moviePage && moviePage.style.display === 'block') {
+                        renderMovieWatchRecommendedFeed();
+                    }
 
                 } catch (err) {
                     console.error("SyncManager Execution Error:", err);
@@ -3052,6 +3076,9 @@
 
             // Detach per-post reaction listeners
             _detachAllPostReactionListeners();
+
+            // Detach per-short stats/comments listeners
+            _detachAllShortStatListeners();
         }
 
         // Track which post-reaction listeners are active so we can clean them up
@@ -3062,6 +3089,16 @@
                 try { db.ref(`movie_comments/${postId}`).off(); } catch(e) {}
             });
             for (let key in _boundPostReactionListeners) delete _boundPostReactionListeners[key];
+        }
+
+        // Track per-short stats/comments listeners so rebuilds never duplicate them
+        const _boundShortStatIds = {};
+        function _detachAllShortStatListeners() {
+            Object.keys(_boundShortStatIds).forEach(shortId => {
+                try { db.ref(`movie_stats/${shortId}`).off(); } catch(e) {}
+                try { db.ref(`movie_comments/${shortId}`).off(); } catch(e) {}
+            });
+            for (let key in _boundShortStatIds) delete _boundShortStatIds[key];
         }
 
         // =========================================================
@@ -3266,16 +3303,44 @@
         
         try {
             firebase.initializeApp(firebaseConfig);
-            firebase.database().enablePersistence().catch(err => {
-                console.warn("Offline persistence activation bypassed: ", err.code);
-            });
         } catch (e) {
             console.error("Firebase config crash prevented:", e);
         }
-        
+
         const auth = firebase.auth();
         const db = firebase.database();
         const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+        // =========================================================
+        // ROBUST CONNECTIVITY MONITOR (WebView-safe Offline -> Online Sync)
+        // Some WebViews never fire the window 'online'/'offline' events,
+        // so we also poll navigator.onLine AND watch Firebase's own
+        // connection state to guarantee automatic re-sync everywhere.
+        // =========================================================
+        let _lastKnownOnlineState = navigator.onLine;
+        setInterval(() => {
+            const nowOnline = navigator.onLine;
+            if (nowOnline !== _lastKnownOnlineState) {
+                _lastKnownOnlineState = nowOnline;
+                if (nowOnline) window.FlaynityNetworkOnline();
+                else window.FlaynityNetworkOffline();
+            }
+        }, 2000);
+
+        let _fbDisconnectedAt = 0;
+        try {
+            db.ref('.info/connected').on('value', (snap) => {
+                if (snap.val() === true) {
+                    // Only treat as a reconnect if we were disconnected for a while
+                    if (_fbDisconnectedAt && (Date.now() - _fbDisconnectedAt) > 3000) {
+                        window.FlaynityNetworkOnline();
+                    }
+                    _fbDisconnectedAt = 0;
+                } else {
+                    _fbDisconnectedAt = Date.now();
+                }
+            });
+        } catch (e) {}
 
         const API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb'; 
         const BASE_URL = 'https://api.themoviedb.org/3';
@@ -3572,12 +3637,18 @@
         let activeUploadsCount = 0;
         const MAX_CONCURRENT_UPLOADS = 3; // প্যারালল ৩টি আপলোড সাপোর্ট
 
-        // Queue Watchdog Engine: আটকে থাকা WAITING ফাইলগুলোকে সচল করার জন্য
+        // Queue Watchdog Engine: keeps WAITING items moving and removes deadlocks
         setInterval(() => {
             if (!navigator.onLine) return;
-            const hasWaiting = uploadQueue.some(item => item.status === 'waiting');
+
+            // Reconcile the active counter with reality to prevent queue deadlock
+            const actuallyUploading = uploadQueue.filter(i => i.status === 'uploading').length;
+            if (activeUploadsCount !== actuallyUploading) {
+                activeUploadsCount = actuallyUploading;
+            }
+
+            const hasWaiting = uploadQueue.some(item => item.status === 'waiting' && (!item.nextRetryAt || Date.now() >= item.nextRetryAt));
             if (hasWaiting && activeUploadsCount < MAX_CONCURRENT_UPLOADS) {
-                console.log("[Watchdog] Triggering queued uploads...");
                 triggerNextActiveUpload();
             }
         }, 3000);
@@ -3593,6 +3664,94 @@
             } else if (type === 'post-image') {
                 openPostSheet();
             }
+        }
+
+        // =========================================================
+        // VIDEO FRAME CAPTURE & METADATA HELPERS (Fast Publish Fix)
+        // These were missing and caused every Publish to fail with
+        // "Post-processing error: ... is not defined".
+        // =========================================================
+        function captureFrameAndDuration(file) {
+            return new Promise((resolve, reject) => {
+                const videoEl = document.createElement('video');
+                const objectUrl = URL.createObjectURL(file);
+                videoEl.preload = 'metadata';
+                videoEl.muted = true;
+                videoEl.playsInline = true;
+                videoEl.src = objectUrl;
+
+                const cleanup = () => {
+                    try { URL.revokeObjectURL(objectUrl); } catch (e) {}
+                    videoEl.removeAttribute('src');
+                    try { videoEl.load(); } catch (e) {}
+                };
+
+                const failTimer = setTimeout(() => {
+                    cleanup();
+                    reject(new Error('Frame capture timed out'));
+                }, 15000);
+
+                videoEl.onloadedmetadata = () => {
+                    const duration = isFinite(videoEl.duration) && videoEl.duration > 0 ? videoEl.duration : 60;
+                    videoEl.currentTime = Math.min(1, duration / 2);
+
+                    videoEl.onseeked = () => {
+                        try {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = videoEl.videoWidth || 640;
+                            canvas.height = videoEl.videoHeight || 360;
+                            canvas.getContext('2d').drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                            canvas.toBlob((blob) => {
+                                clearTimeout(failTimer);
+                                cleanup();
+                                resolve({ duration: duration, dataUrl: dataUrl, blob: blob });
+                            }, 'image/jpeg', 0.82);
+                        } catch (err) {
+                            clearTimeout(failTimer);
+                            cleanup();
+                            reject(err);
+                        }
+                    };
+                };
+
+                videoEl.onerror = () => {
+                    clearTimeout(failTimer);
+                    cleanup();
+                    reject(new Error('Unable to read video metadata'));
+                };
+            });
+        }
+
+        function formatDuration(totalSeconds) {
+            const secs = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+            const h = Math.floor(secs / 3600);
+            const m = Math.floor((secs % 3600) / 60);
+            const s = secs % 60;
+            if (h > 0) return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+            return m + ':' + String(s).padStart(2, '0');
+        }
+
+        function extractHashtags(text) {
+            if (!text) return [];
+            const matches = String(text).match(/#[A-Za-z0-9_\u0980-\u09FF]+/g);
+            return matches ? matches.map(t => t.toLowerCase()) : [];
+        }
+
+        function handleCustomThumbSelected(e) {
+            const file = e.target.files[0];
+            if (!file || !currentDetailItem) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                currentDetailItem.thumbDataUrl = ev.target.result;
+                currentDetailItem.thumbBlob = file;
+                const tImg = document.getElementById('details-thumb-img');
+                if (tImg) tImg.src = ev.target.result;
+                saveQueueStateToLocalStorage();
+                showNotification('Custom thumbnail applied!', 'success');
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
         }
 
         async function handleFileSelected(e) {
@@ -3670,9 +3829,11 @@
 
             for (let i = 0; i < uploadQueue.length; i++) {
                 if (activeUploadsCount >= MAX_CONCURRENT_UPLOADS) break;
-                
+
                 const item = uploadQueue[i];
-                if (item.status === 'waiting') {
+                // Skip items still inside their retry backoff window
+                if (item.status === 'waiting' && (!item.nextRetryAt || Date.now() >= item.nextRetryAt)) {
+                    item.nextRetryAt = 0;
                     activeUploadsCount++;
                     startS3DirectUpload(item);
                 }
@@ -3738,16 +3899,22 @@
                     showNotification("Connection lost. Upload paused.", "error");
                 } else {
                     console.error("Upload error: ", err);
-                    item.retryCount = (item.retryCount || 0) + 1;
-                    
-                    if (item.retryCount <= 5) {
-                        item.status = "waiting";
-                        updateManagerUI();
-                        showNotification(`Network hiccup. Retrying (${item.retryCount}/5)...`, "error");
-                    } else {
+                    const permanent = err && (err.statusCode === 401 || err.statusCode === 403 ||
+                        err.code === 'CredentialsError' || err.code === 'InvalidAccessKeyId' ||
+                        err.code === 'SignatureDoesNotMatch' || err.code === 'AccessDenied');
+
+                    if (permanent) {
                         item.status = "failed";
                         updateManagerUI();
                         showNotification(`Upload failed: ${err.message}`, "error");
+                    } else {
+                        // Silent unlimited auto-retry with exponential backoff (no error toast)
+                        item.retryCount = (item.retryCount || 0) + 1;
+                        const backoffMs = Math.min(30000, 1000 * Math.pow(2, Math.min(item.retryCount, 5)));
+                        item.nextRetryAt = Date.now() + backoffMs;
+                        item.status = "waiting";
+                        saveQueueStateToLocalStorage();
+                        updateManagerUI();
                     }
                 }
             } finally {
@@ -3892,7 +4059,7 @@
                 db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
                     try {
                         const data = snap.val();
-                        allLongVideos = data ? Object.values(data) : [];
+                        allLongVideos = data ? dedupeById(Object.values(data)) : [];
                         allLongVideos.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                         
                         allLongVideos.forEach(m => {
@@ -3916,7 +4083,7 @@
                 db.ref('admin_panel/movies/shorts').on('value', (snap) => {
                     try {
                         const data = snap.val();
-                        allShorts = data ? Object.values(data) : [];
+                        allShorts = data ? dedupeById(Object.values(data)) : [];
                         allShorts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                         
                         if(allShorts.length !== previousShortsCount) {
@@ -3947,7 +4114,7 @@
                 db.ref('admin_panel/posts').on('value', (snap) => {
                     try {
                         const data = snap.val();
-                        allCommunityPosts = data ? Object.values(data) : [];
+                        allCommunityPosts = data ? dedupeById(Object.values(data)) : [];
                         allCommunityPosts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                         
                         if (allCommunityPosts.length !== previousPostsCount) {
@@ -4586,6 +4753,9 @@
                 return;
             }
 
+            // Detach previous per-short listeners to prevent duplicates & memory leaks
+            _detachAllShortStatListeners();
+
             let activeShortsList = allShorts;
 
             if (activeShortsList.length === 0) {
@@ -4665,6 +4835,7 @@
                     </div>
                 `;
 
+                _boundShortStatIds[s.id] = true;
                 db.ref(`movie_stats/${s.id}`).on('value', (snapshot) => {
                     const stats = snapshot.val() || {};
                     const viewsObj = stats.views || {};
@@ -5069,7 +5240,22 @@
         // =========================================================
         let currentActiveShortsIdx = -1;
         
+        // Always stream media through the Cloudflare CDN public domain,
+        // never through the raw R2 storage endpoint.
+        function toCDNUrl(url) {
+            if (!url) return url;
+            try {
+                if (url.indexOf('r2.cloudflarestorage.com') !== -1) {
+                    const u = new URL(url);
+                    const path = u.pathname.replace(/^\/flaynity-storage/, '');
+                    return PUBLIC_R2_DOMAIN_PREFIX + path;
+                }
+            } catch (e) {}
+            return url;
+        }
+
         function attachSmartAdaptiveSource(videoElement, url, shortId) {
+            url = toCDNUrl(url);
             if (url && url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
                 if(hlsInstances[shortId]) {
                     hlsInstances[shortId].destroy();

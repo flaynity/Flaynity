@@ -1,0 +1,32 @@
+<div class="tab-content" id="shorts-tab" style="padding:0;">
+<div id="shorts-swiper-container" style="height:100%; width:100%;"></div>
+</div>
+
+<div class="premium-download-modal" id="short-desc-bottom-sheet" style="z-index: 1900;">
+<div class="premium-download-content" style="max-height: 50vh;">
+<div class="drag-handle-line" id="short-desc-drag-handle"></div>
+<div class="download-modal-header">
+<h3>Description</h3>
+<button class="close-download-modal" onclick="closeShortDescBottomSheet()"><i class="fas fa-times"></i></button>
+</div>
+<div class="download-modal-scrollable" style="padding-bottom: 24px;">
+<h2 id="short-sheet-full-title" style="font-size: 1.15rem; font-weight: 800; margin: 0 0 8px 0; color: var(--text-main);">Title</h2>
+<p id="short-sheet-hashtags" style="font-size: 0.9rem; color: var(--primary); font-weight: 700; margin: 0 0 12px 0;">Hashtags</p>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: var(--bg-color); padding: 12px; border-radius: 12px; margin-bottom: 16px;">
+<div style="text-align: center;">
+<span style="font-size: 0.72rem; color: var(--text-muted); display: block; font-weight: 700;">Views</span>
+<span id="short-sheet-views" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">0</span>
+</div>
+<div style="text-align: center; border-left: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border);">
+<span style="font-size: 0.72rem; color: var(--text-muted); display: block; font-weight: 700;">Likes</span>
+<span id="short-sheet-likes" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">0</span>
+</div>
+<div style="text-align: center;">
+<span style="font-size: 0.72rem; color: var(--text-muted); display: block; font-weight: 700;">Uploaded</span>
+<span id="short-sheet-uploaded" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">Just Now</span>
+</div>
+</div>
+<p id="short-sheet-description" style="font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); white-space: pre-wrap; margin: 0;"></p>
+</div>
+</div>
+</div>

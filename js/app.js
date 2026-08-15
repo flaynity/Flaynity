@@ -350,7 +350,7 @@
         };
 
         window.FlaynityNetworkOffline = function() {
-            /* Do not force Firebase offline; allow automatic RTDB reconnect. */
+            try { firebase.database().goOffline(); } catch(e) {}
             showNotification("Offline Mode. Showing Skeletons.", "error");
 
             renderAllSkeletons();
@@ -5461,82 +5461,437 @@
 
 })();
 
-/* ================================================================
-   FLAYNITY FINAL JS-ONLY AUTHORITATIVE SYNC CONTROLLER
-   Single owner for Pull-to-Refresh, RTDB feed listeners,
-   Offline -> Online recovery and feed rendering.
-   MainActivity.java is NOT required for these systems.
-   ================================================================ */
+
+/* ============================================================
+   FLAYNITY FINAL REALTIME / OFFLINE / UPLOAD CONTROLLER
+   JS-ONLY AUTHORITY
+   ------------------------------------------------------------
+   This controller intentionally owns:
+   - RTDB feed listeners
+   - browser offline/online recovery
+   - Firebase .info/connected recovery
+   - Pull-to-refresh
+   - You/channel live session rendering
+   - upload queue wake-up
+   It does not require MainActivity network callbacks.
+   ============================================================ */
 (function () {
     'use strict';
-    const S = window.__FLAYNITY_FINAL_SYNC__ || (window.__FLAYNITY_FINAL_SYNC__ = {
-        initialized:false, refreshing:false, reconnecting:false, renderQueued:false,
-        online:navigator.onLine, generation:0
+
+    const F = window.__FLAYNITY_FINAL__ || (window.__FLAYNITY_FINAL__ = {
+        started: false,
+        authUser: null,
+        feedRefs: {},
+        connectedRef: null,
+        connectedCb: null,
+        onlineTimer: null,
+        reconnecting: false,
+        refreshing: false,
+        renderTimer: null,
+        lastGeneration: 0,
+        youRef: null,
+        youCb: null
     });
-    const PATHS = ['admin_panel/movies/user_uploads','admin_panel/movies/shorts','admin_panel/posts'];
-    const callbacks = Object.create(null);
-    const waitFrame = () => new Promise(r => requestAnimationFrame ? requestAnimationFrame(r) : setTimeout(r,0));
-    const dbx = () => window.db || (window.firebase && firebase.database ? firebase.database() : null);
-    const log = (x,e) => { try { console.error('[Flaynity Final Sync] '+x,e); } catch(_){} };
 
-    function uniqueNewest(v){
-        const m=new Map();
-        (Array.isArray(v)?v:[]).forEach(x=>{if(!x)return;const id=x.id||x.key;if(id)m.set(String(id),x);});
-        return [...m.values()].sort((a,b)=>Number(b.createdAt||b.uploadTime||b.updateTime||0)-Number(a.createdAt||a.uploadTime||a.updateTime||0));
-    }
-    function detach(){
-        const d=dbx(); if(!d)return;
-        PATHS.forEach(p=>{try{d.ref(p).off();}catch(_){} delete callbacks[p];});
-    }
-    function render(){
-        if(S.renderQueued)return;
-        S.renderQueued=true;
-        const run=()=>{S.renderQueued=false;try{
-            if(typeof buildHomeFeed==='function')buildHomeFeed();
-            const st=document.getElementById('shorts-tab');
-            if(st&&st.classList.contains('active')&&typeof buildShortsPage==='function')buildShortsPage();
-            if(typeof initLazyMedia==='function')initLazyMedia();
-            if(typeof initShortsObserver==='function')initShortsObserver();
-            if(typeof updateBottomNavAvatar==='function')updateBottomNavAvatar();
-            if(typeof initYouTabUI==='function')initYouTabUI();
-        }catch(e){log('render',e);}};
-        requestAnimationFrame?requestAnimationFrame(run):setTimeout(run,0);
-    }
-    function attach(){
-        const d=dbx();if(!d)return false;
-        const bind=(p,fn)=>{if(callbacks[p])return;const cb=snap=>{try{fn(uniqueNewest(snap.val()?Object.values(snap.val()):[]));render();}catch(e){log(p,e);}};callbacks[p]=cb;d.ref(p).on('value',cb);};
-        bind(PATHS[0],v=>{allLongVideos=v;});
-        bind(PATHS[1],v=>{allShorts=v;});
-        bind(PATHS[2],v=>{allCommunityPosts=v;});
-        return true;
-    }
-    function waitConnected(ms){
-        const d=dbx();if(!d)return Promise.resolve(false);
-        return new Promise(resolve=>{let done=false,cb;const finish=x=>{if(done)return;done=true;try{d.ref('.info/connected').off('value',cb);}catch(_){}resolve(x);};cb=s=>{if(s.val()===true)finish(true);};try{d.ref('.info/connected').on('value',cb);}catch(_){finish(false);}setTimeout(()=>finish(false),ms||8000);});
-    }
-    function hidePTR(){try{const i=document.getElementById('ptr-indicator'),s=document.getElementById('ptr-spinner');if(i){i.style.opacity='0';i.style.transform='translateX(-50%) translateY(-70px)';}if(s)s.classList.remove('ptr-spinning');}catch(_){} }
-    async function refresh(){
-        if(S.refreshing||!navigator.onLine){hidePTR();return false;}S.refreshing=true;const g=++S.generation;
-        try{try{firebase.database().goOnline();}catch(_){}attach();if(typeof clearFeedContainers==='function')clearFeedContainers();await waitConnected(8000);if(g!==S.generation)return false;await waitFrame();render();await waitFrame();return true;}
-        catch(e){log('refresh',e);return false;}finally{S.refreshing=false;hidePTR();}
-    }
-    async function reconnect(){
-        if(!navigator.onLine||S.reconnecting)return;S.reconnecting=true;S.online=true;
-        try{try{firebase.database().goOnline();}catch(_){}document.body.classList.remove('app-offline');attach();await waitConnected(8000);render();try{if(typeof syncOfflineLikes==='function')await syncOfflineLikes();}catch(e){log('likes',e);}try{if(Array.isArray(uploadQueue)){uploadQueue.forEach(x=>{if(x&&(x.status==='paused'||x.status==='waiting'))x.status='waiting';});if(typeof saveQueueStateToLocalStorage==='function')saveQueueStateToLocalStorage();if(typeof triggerNextActiveUpload==='function')triggerNextActiveUpload();}}catch(e){log('upload resume',e);}}
-        catch(e){log('reconnect',e);}finally{S.reconnecting=false;}
-    }
-    window.addEventListener('online',reconnect,{passive:true});
-    window.addEventListener('offline',()=>{S.online=false;try{document.body.classList.add('app-offline');document.querySelectorAll('.short-slide video').forEach(v=>v.pause());}catch(_){}try{if(Array.isArray(uploadQueue)){uploadQueue.forEach(x=>{if(x&&(x.status==='uploading'||x.status==='waiting')){try{x.s3UploadRef&&x.s3UploadRef.abort();}catch(_){}x.status='paused';}});if(typeof saveQueueStateToLocalStorage==='function')saveQueueStateToLocalStorage();if(typeof updateManagerUI==='function')updateManagerUI();}}catch(_){}},{passive:true});
-    const d=dbx();if(d)d.ref('.info/connected').on('value',s=>{if(s.val()===true)reconnect();else try{document.body.classList.add('app-offline');}catch(_){} });
+    const FEEDS = {
+        long: 'admin_panel/movies/user_uploads',
+        shorts: 'admin_panel/movies/shorts',
+        posts: 'admin_panel/posts'
+    };
 
-    try{startRealtimeFeedsListener=function(){attach();};}catch(_){}
-    try{SyncManager.refreshEverything=refresh;}catch(_){}
-    try{triggerUniversalPullToRefresh=async function(){if(typeof playUI==='function')try{playUI('click');}catch(_){}return refresh();};}catch(_){}
-    window.FlaynityNetworkOnline=reconnect;
-    window.FlaynityNetworkOffline=()=>{S.online=false;try{document.body.classList.add('app-offline');}catch(_){} };
-    window.FlaynityNativeRefresh=()=>navigator.onLine?refresh():false;
-    window.FlaynityUniversalRefresh=refresh;
+    function log() {
+        try { console.warn.apply(console, ['[Flaynity Final Sync]'].concat([].slice.call(arguments))); } catch (_) {}
+    }
 
-    function boot(){if(S.initialized)return;S.initialized=true;try{detach();}catch(_){}attach();if(navigator.onLine)reconnect();}
-    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else setTimeout(boot,0);
+    function hasFirebase() {
+        return !!(window.firebase && window.db && typeof db.ref === 'function');
+    }
+
+    function safeUnique(value) {
+        const map = new Map();
+        const arr = value && typeof value === 'object' ? Object.values(value) : [];
+        arr.forEach(item => {
+            if (!item) return;
+            const id = item.id || item.key;
+            if (!id) return;
+            map.set(String(id), item);
+        });
+        return Array.from(map.values()).sort((a,b) =>
+            Number(b.createdAt || b.uploadTime || b.updateTime || 0) -
+            Number(a.createdAt || a.uploadTime || a.updateTime || 0)
+        );
+    }
+
+    function renderFeeds(force) {
+        if (F.renderTimer) return;
+        F.renderTimer = setTimeout(() => {
+            F.renderTimer = null;
+            try {
+                // Never leave the user on a skeleton after the connection returns.
+                if (!navigator.onLine && !force) return;
+
+                if (typeof buildHomeFeed === 'function') buildHomeFeed();
+
+                const shortsTab = document.getElementById('shorts-tab');
+                if (shortsTab && shortsTab.classList.contains('active') &&
+                    typeof buildShortsPage === 'function') {
+                    buildShortsPage();
+                }
+
+                if (typeof initYouTabUI === 'function' &&
+                    document.getElementById('channel-action-box')) {
+                    initYouTabUI();
+                }
+
+                if (typeof updateBottomNavAvatar === 'function') {
+                    try { updateBottomNavAvatar(); } catch (_) {}
+                }
+
+                if (typeof initShortsObserver === 'function') {
+                    try { initShortsObserver(); } catch (_) {}
+                }
+            } catch (e) {
+                log('render error', e);
+            }
+        }, 0);
+    }
+
+    function detachFeedOnly() {
+        if (!hasFirebase()) return;
+        Object.keys(FEEDS).forEach(k => {
+            const ref = db.ref(FEEDS[k]);
+            const cb = F.feedRefs[k];
+            if (cb) {
+                try { ref.off('value', cb); } catch (_) {}
+            }
+            // Remove legacy listeners on these exact feed nodes. This is
+            // intentional: these three paths must have one authoritative owner.
+            try { ref.off('value'); } catch (_) {}
+            delete F.feedRefs[k];
+        });
+    }
+
+    function attachFeeds() {
+        if (!hasFirebase()) return false;
+
+        // Remove every previous listener on the authoritative feed paths,
+        // including listeners created by the legacy refresh manager.
+        detachFeedOnly();
+
+        const longRef = db.ref(FEEDS.long);
+        const shortsRef = db.ref(FEEDS.shorts);
+        const postsRef = db.ref(FEEDS.posts);
+
+        F.feedRefs.long = snap => {
+            allLongVideos = safeUnique(snap.val());
+            try {
+                if (Array.isArray(allAdminMovies)) {
+                    const map = new Map(allAdminMovies.filter(Boolean).map(x => [String(x.id), x]));
+                    allLongVideos.forEach(x => map.set(String(x.id), x));
+                    allAdminMovies = Array.from(map.values());
+                }
+            } catch (_) {}
+            renderFeeds(false);
+        };
+
+        F.feedRefs.shorts = snap => {
+            allShorts = safeUnique(snap.val());
+            renderFeeds(false);
+        };
+
+        F.feedRefs.posts = snap => {
+            allCommunityPosts = safeUnique(snap.val());
+            renderFeeds(false);
+        };
+
+        try {
+            longRef.on('value', F.feedRefs.long);
+            shortsRef.on('value', F.feedRefs.shorts);
+            postsRef.on('value', F.feedRefs.posts);
+            return true;
+        } catch (e) {
+            log('attach feed failed', e);
+            return false;
+        }
+    }
+
+    function detachConnected() {
+        if (!hasFirebase() || !F.connectedRef || !F.connectedCb) return;
+        try { F.connectedRef.off('value', F.connectedCb); } catch (_) {}
+        F.connectedRef = null;
+        F.connectedCb = null;
+    }
+
+    function attachConnected() {
+        if (!hasFirebase()) return;
+        detachConnected();
+
+        F.connectedRef = db.ref('.info/connected');
+        F.connectedCb = snap => {
+            const connected = snap.val() === true;
+            document.body.classList.toggle('app-offline', !connected);
+
+            if (connected) {
+                // Firebase is actually connected, not merely navigator.onLine.
+                reconnect('firebase-connected');
+            }
+        };
+
+        try { F.connectedRef.on('value', F.connectedCb); }
+        catch (e) { log('connection listener failed', e); }
+    }
+
+    function ensureOnline() {
+        try { firebase.database().goOnline(); } catch (_) {}
+    }
+
+    async function reconnect(reason) {
+        if (!navigator.onLine || F.reconnecting) return;
+        F.reconnecting = true;
+
+        try {
+            ensureOnline();
+            document.body.classList.remove('app-offline');
+
+            // Re-attach before rendering. RTDB immediately delivers current
+            // server/local state through the value listeners.
+            attachFeeds();
+
+            // Wait at least two frames so callbacks can update arrays before UI.
+            await new Promise(r => requestAnimationFrame(() =>
+                requestAnimationFrame(r)));
+
+            renderFeeds(true);
+
+            // Resume pending uploads. Never depend on MainActivity.
+            try {
+                if (Array.isArray(uploadQueue)) {
+                    uploadQueue.forEach(item => {
+                        if (item && item.file && item.status === 'paused') item.status = 'waiting';
+                    });
+                    if (typeof saveQueueStateToLocalStorage === 'function') saveQueueStateToLocalStorage();
+                    if (typeof triggerNextActiveUpload === 'function') triggerNextActiveUpload();
+                }
+            } catch (_) {}
+
+            try {
+                if (typeof syncOfflineLikes === 'function') await syncOfflineLikes();
+            } catch (_) {}
+
+            log('reconnected:', reason);
+        } catch (e) {
+            log('reconnect error:', e);
+        } finally {
+            F.reconnecting = false;
+        }
+    }
+
+    async function refreshNow() {
+        if (F.refreshing) return false;
+
+        if (!navigator.onLine) {
+            try { hidePTR(); } catch (_) {}
+            return false;
+        }
+
+        F.refreshing = true;
+        const generation = ++F.lastGeneration;
+
+        try {
+            ensureOnline();
+
+            // Clear only the visible feed DOM. Firebase remains the source of truth.
+            const ids = ['home-feed-container', 'shorts-feed-container', 'discover-feed-container'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                try { el.querySelectorAll('video').forEach(v => v.pause()); } catch (_) {}
+                try { el.replaceChildren(); } catch (_) { el.innerHTML = ''; }
+            });
+
+            // Do not use .once() here. The authoritative listeners will deliver
+            // the latest server snapshot and replace the arrays.
+            attachFeeds();
+
+            await new Promise(r => requestAnimationFrame(() =>
+                requestAnimationFrame(r)));
+
+            if (generation !== F.lastGeneration) return false;
+            renderFeeds(true);
+            return true;
+        } catch (e) {
+            log('pull refresh error:', e);
+            return false;
+        } finally {
+            F.refreshing = false;
+            try { hidePTR(); } catch (_) {}
+        }
+    }
+
+    function liveYou(user) {
+        const wrap = document.getElementById('channel-action-box');
+        if (!wrap || !user || !hasFirebase()) return;
+
+        if (F.youRef && F.youCb) {
+            try { F.youRef.off('value', F.youCb); } catch (_) {}
+        }
+
+        F.youRef = db.ref('channels/' + user.uid);
+        F.youCb = snap => {
+            currentChannelData = snap.val() || null;
+
+            if (currentChannelData) {
+                try {
+                    localStorage.setItem(
+                        'flaynity_user_session_cache',
+                        JSON.stringify(currentChannelData)
+                    );
+                } catch (_) {}
+            }
+
+            try { renderYouTabWithData(currentChannelData, user, wrap); }
+            catch (e) { log('You render error:', e); }
+
+            // Also update the channel view data immediately.
+            try { updateBottomNavAvatar(); } catch (_) {}
+        };
+
+        try {
+            F.youRef.on('value', F.youCb);
+        } catch (e) {
+            log('You listener failed:', e);
+        }
+    }
+
+    // Replace the old You initializer with a persistent listener.
+    // No "Loading Session..." state is intentionally written here.
+    window.__flaynityInitYouLive = function () {
+        const user = auth && auth.currentUser;
+        const wrap = document.getElementById('channel-action-box');
+        if (!user || !wrap) return;
+
+        // Render cached profile immediately if available.
+        if (currentChannelData) {
+            try { renderYouTabWithData(currentChannelData, user, wrap); } catch (_) {}
+        } else {
+            try {
+                const cached = localStorage.getItem('flaynity_user_session_cache');
+                if (cached) {
+                    currentChannelData = JSON.parse(cached);
+                    renderYouTabWithData(currentChannelData, user, wrap);
+                }
+            } catch (_) {}
+        }
+
+        liveYou(user);
+    };
+
+    // Override the lexical initializer used by navigation.
+    try {
+        initYouTabUI = window.__flaynityInitYouLive;
+    } catch (_) {}
+
+    // Remove "Loading Session..." from DOM whenever modular page fragments arrive.
+    function clearLoadingSessionText() {
+        document.querySelectorAll('#you-fullname-txt').forEach(el => {
+            if (el.textContent.trim() === 'Loading Session...') el.textContent = '';
+        });
+        document.querySelectorAll('#you-email-txt').forEach(el => {
+            if (el.textContent.trim() === '...') el.textContent = '';
+        });
+    }
+
+    // Auth is the boundary for feed/session listeners.
+    function bindAuth() {
+        if (!window.auth || F.authBound) return;
+        F.authBound = true;
+
+        auth.onAuthStateChanged(user => {
+            F.authUser = user || null;
+
+            if (!user) {
+                detachFeedOnly();
+                if (F.youRef && F.youCb) {
+                    try { F.youRef.off('value', F.youCb); } catch (_) {}
+                }
+                F.youRef = null;
+                F.youCb = null;
+                return;
+            }
+
+            // Authenticated session: one authoritative listener set.
+            attachFeeds();
+            attachConnected();
+            window.__flaynityInitYouLive();
+
+            if (navigator.onLine) reconnect('auth-ready');
+        });
+    }
+
+    // Browser network events are the only native-independent offline/online source.
+    function bindBrowserNetwork() {
+        if (F.networkBound) return;
+        F.networkBound = true;
+
+        window.addEventListener('offline', () => {
+            document.body.classList.add('app-offline');
+            try { document.querySelectorAll('video').forEach(v => v.pause()); } catch (_) {}
+        }, { passive: true });
+
+        window.addEventListener('online', () => {
+            clearTimeout(F.onlineTimer);
+            F.onlineTimer = setTimeout(() => reconnect('browser-online'), 150);
+        }, { passive: true });
+    }
+
+    // Replace the old refresh entry point so Pull-to-Refresh no longer invokes
+    // the legacy .once() / listener teardown implementation.
+    try {
+        triggerUniversalPullToRefresh = refreshNow;
+    } catch (_) {}
+    try {
+        SyncManager.refreshEverything = refreshNow;
+    } catch (_) {}
+
+    // Make these functions safe for any remaining WebView/legacy caller, while
+    // keeping the system fully functional without those callers.
+    window.FlaynityNetworkOnline = () => reconnect('legacy-callback');
+    window.FlaynityNativeRefresh = () => reconnect('legacy-callback');
+    window.FlaynityNetworkOffline = () => {
+        document.body.classList.add('app-offline');
+    };
+
+    function start() {
+        if (F.started) return;
+        F.started = true;
+
+        clearLoadingSessionText();
+        bindBrowserNetwork();
+        bindAuth();
+
+        // Firebase/Auth may be initialized slightly after this block.
+        // Retry briefly without creating duplicate listeners.
+        let attempts = 0;
+        const waitForAuth = () => {
+            attempts++;
+            if (window.auth && window.db) {
+                bindAuth();
+                if (auth.currentUser) {
+                    attachFeeds();
+                    attachConnected();
+                    window.__flaynityInitYouLive();
+                    if (navigator.onLine) reconnect('startup');
+                }
+                return;
+            }
+            if (attempts < 50) setTimeout(waitForAuth, 200);
+        };
+        waitForAuth();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', start, { once: true });
+    } else {
+        start();
+    }
 })();

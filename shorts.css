@@ -1,0 +1,33 @@
+.tab-content { display: none; padding: 0 16px; animation: fadeTab 0.4s ease; }
+
+.tab-content.active { display: block; }
+
+.premium-download-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(15px); z-index: 3000; display: none; align-items: flex-end; animation: fadeIn 0.3s ease; }
+
+.premium-download-content { background: var(--surface); width: 100%; max-height: 85vh; border-radius: 32px 32px 0 0; padding: 24px; display: flex; flex-direction: column; box-shadow: 0 -15px 40px rgba(0, 0, 0, 0.12); animation: slideUpModal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.15); }
+
+.drag-handle-line { width: 45px; height: 5px; background: var(--border-color); border-radius: 10px; margin: 0 auto 18px; }
+
+.download-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+
+.download-modal-header h3 { font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin: 0; }
+
+.close-download-modal { background: var(--bg-color); border: none; color: var(--text-muted); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+.download-modal-scrollable { overflow-y: auto; flex-grow: 1; padding-right: 4px; margin-bottom: 20px; }
+
+.download-modal-scrollable::-webkit-scrollbar { width: 4px; }
+
+.download-modal-scrollable::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+
+#shorts-tab {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: calc(100vh - 48px); 
+            background: #000000 !important;
+            color: #FFFFFF !important;
+            z-index: 500;
+            overflow: hidden;
+        }

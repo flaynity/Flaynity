@@ -316,6 +316,8 @@
 
         window.FlaynityNetworkOnline = function() {
             if (!navigator.onLine) return;
+
+            // Debounce: ignore if another online event fires within 1.5 s
             if (_networkOnlineDebounceTimer) return;
             _networkOnlineDebounceTimer = setTimeout(() => {
                 _networkOnlineDebounceTimer = null;
@@ -325,21 +327,22 @@
             if (spinner) spinner.style.display = 'none';
 
             try { firebase.database().goOnline(); } catch(e) {}
-            try { document.body.classList.remove('app-offline'); } catch(e) {}
+            showNotification("Network Restored! Syncing Live Data...", "success");
 
-            try {
-                uploadQueue.forEach(item => {
-                    if (item && (item.status === 'paused' || item.status === 'waiting')) {
-                        item.status = 'waiting';
-                    }
-                });
-                saveQueueStateToLocalStorage();
+            // Automatically resume queued uploads (mark paused → waiting)
+            const waitingUploads = uploadQueue.filter(i => i.status === 'paused' || i.status === 'waiting');
+            if (waitingUploads.length > 0) {
+                waitingUploads.forEach(item => { item.status = 'waiting'; });
                 triggerNextActiveUpload();
-            } catch(e) {}
+            }
 
-            try { syncOfflineLikes(); } catch(e) {}
-            try { SyncManager.refreshEverything(); } catch(e) {}
+            // Sync offline cached likes to the cloud
+            syncOfflineLikes();
 
+            // Perform a secure background re-render without reloading WebView
+            SyncManager.refreshEverything();
+
+            // Resume any visible video
             const activeVideo = document.querySelector('.short-slide video[src]');
             if (activeVideo && activeVideo.paused && activeVideo.readyState > 2) {
                 activeVideo.play().catch(() => {});
@@ -347,30 +350,23 @@
         };
 
         window.FlaynityNetworkOffline = function() {
-            try { document.body.classList.add('app-offline'); } catch(e) {}
+            try { firebase.database().goOffline(); } catch(e) {}
+            showNotification("Offline Mode. Showing Skeletons.", "error");
 
-            // Keep Firebase reconnectable. Do not force the SDK offline.
-            try {
-                uploadQueue.forEach(item => {
-                    if (item && (item.status === 'uploading' || item.status === 'waiting')) {
-                        if (item.s3UploadRef) { try { item.s3UploadRef.abort(); } catch(_) {} }
-                        item.status = 'paused';
-                    }
-                });
-                saveQueueStateToLocalStorage();
-                updateManagerUI();
-            } catch(e) {}
+            renderAllSkeletons();
 
             const activeVideo = document.querySelector('.short-slide video[src]');
-            if (activeVideo && !activeVideo.paused) activeVideo.pause();
+            if (activeVideo && !activeVideo.paused) {
+                activeVideo.pause();
+            }
         };
 
         // Called by MainActivity.onResume via AndroidBridge to trigger a background refresh
         // when the app returns to the foreground after being backgrounded.
         window.FlaynityNativeRefresh = function() {
             if (!navigator.onLine) return;
+            // Only refresh if not already in progress
             if (SyncManager.isRefreshing) return;
-            try { firebase.database().goOnline(); } catch(e) {}
             SyncManager.refreshEverything();
         };
 
@@ -5463,4 +5459,402 @@
         } catch (e) { safeLog('Stability Boot', e); }
     }, 0);
 
+})();
+
+
+/* ================================================================
+   FLAYNITY FINAL REALTIME CONTROLLER
+   Fixes the previous stability patch's window.db mistake and makes
+   feed refresh listener-authoritative. No UI/classes/IDs are changed.
+   ================================================================ */
+(function () {
+    'use strict';
+
+    const RT = window.__FLAYNITY_FINAL_RT__ || (window.__FLAYNITY_FINAL_RT__ = {
+        feedListeners: new Map(),
+        refreshLock: false,
+        reconnectLock: false,
+        renderQueued: false,
+        online: navigator.onLine,
+        generation: 0,
+        uploadRunning: false,
+        maxUploads: 3
+    });
+
+    const FEED_PATHS = [
+        'admin_panel/movies/user_uploads',
+        'admin_panel/movies/shorts',
+        'admin_panel/posts'
+    ];
+
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const nextPaint = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    function log(tag, err) {
+        try { console.error('[Flaynity Final RT] ' + tag, err); } catch (_) {}
+    }
+
+    function dedupeSort(value) {
+        const map = new Map();
+        const arr = value && typeof value === 'object' ? Object.values(value) : (Array.isArray(value) ? value : []);
+        arr.forEach(item => {
+            if (!item) return;
+            const id = item.id || item.key;
+            if (!id) return;
+            map.set(String(id), item);
+        });
+        return Array.from(map.values()).sort((a, b) => {
+            const ta = Number(a.createdAt || a.uploadTime || a.updateTime || 0);
+            const tb = Number(b.createdAt || b.uploadTime || b.updateTime || 0);
+            return tb - ta;
+        });
+    }
+
+    function detachFeedListeners() {
+        FEED_PATHS.forEach(path => {
+            const cb = RT.feedListeners.get(path);
+            if (cb) {
+                try { db.ref(path).off('value', cb); } catch (e) { log('detach ' + path, e); }
+                RT.feedListeners.delete(path);
+            }
+        });
+    }
+
+    function renderFeeds(shortsChanged) {
+        if (RT.renderQueued) return;
+        RT.renderQueued = true;
+        requestAnimationFrame(() => {
+            RT.renderQueued = false;
+            try {
+                if (!navigator.onLine) return;
+                allLongVideos = dedupeSort(allLongVideos);
+                allShorts = dedupeSort(allShorts);
+                allCommunityPosts = dedupeSort(allCommunityPosts);
+                buildHomeFeed();
+                if (shortsChanged) {
+                    const tab = document.getElementById('shorts-tab');
+                    if (tab && tab.classList.contains('active')) buildShortsPage();
+                }
+                try { initLazyMedia(); } catch (_) {}
+                try { initShortsObserver(); } catch (_) {}
+            } catch (e) { log('renderFeeds', e); }
+        });
+    }
+
+    function attachFeedListeners(waitForInitial) {
+        const initial = {};
+        const waiters = waitForInitial ? FEED_PATHS.map(path => new Promise(resolve => {
+            initial[path] = resolve;
+        })) : [];
+
+        // IMPORTANT: use the actual lexical Firebase `db`, not window.db.
+        FEED_PATHS.forEach(path => {
+            const old = RT.feedListeners.get(path);
+            if (old) {
+                try { db.ref(path).off('value', old); } catch (_) {}
+                RT.feedListeners.delete(path);
+            }
+
+            const cb = snap => {
+                try {
+                    const data = snap.val();
+                    if (path === FEED_PATHS[0]) {
+                        allLongVideos = dedupeSort(data);
+                        try {
+                            const map = new Map((Array.isArray(allAdminMovies) ? allAdminMovies : []).filter(Boolean).map(x => [String(x.id), x]));
+                            allLongVideos.forEach(x => map.set(String(x.id), x));
+                            allAdminMovies = Array.from(map.values());
+                        } catch (_) {}
+                    } else if (path === FEED_PATHS[1]) {
+                        allShorts = dedupeSort(data);
+                    } else {
+                        allCommunityPosts = dedupeSort(data);
+                    }
+                    if (initial[path]) {
+                        initial[path]();
+                        delete initial[path];
+                    }
+                    renderFeeds(path === FEED_PATHS[1]);
+                } catch (e) { log('listener ' + path, e); }
+            };
+
+            try {
+                db.ref(path).on('value', cb);
+                RT.feedListeners.set(path, cb);
+            } catch (e) { log('attach ' + path, e); }
+        });
+
+        return Promise.race([
+            Promise.all(waiters),
+            sleep(10000)
+        ]);
+    }
+
+    function clearOnlyFeedUI() {
+        ['home-feed-container', 'shorts-swiper-container'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            try { el.querySelectorAll('video').forEach(v => v.pause()); } catch (_) {}
+            el.innerHTML = '';
+        });
+    }
+
+    function hideRefreshIndicator() {
+        const indicator = document.getElementById('ptr-indicator') || document.getElementById('ptr-container');
+        const spinner = document.getElementById('ptr-spinner');
+        if (indicator) {
+            indicator.style.opacity = '0';
+            indicator.style.transform = 'translateX(-50%) translateY(-70px)';
+        }
+        if (spinner) spinner.classList.remove('ptr-spinning');
+    }
+
+    async function authoritativeRefresh() {
+        if (RT.refreshLock) return false;
+        if (!navigator.onLine) {
+            hideRefreshIndicator();
+            return false;
+        }
+
+        RT.refreshLock = true;
+        const generation = ++RT.generation;
+        try {
+            try { firebase.database().goOnline(); } catch (_) {}
+
+            // Remove stale listeners first so old snapshots cannot render after refresh.
+            detachFeedListeners();
+
+            // Remove old UI/state before receiving the fresh RTDB snapshot.
+            allLongVideos = [];
+            allShorts = [];
+            allCommunityPosts = [];
+            previousLongsCount = -1;
+            previousShortsCount = -1;
+            previousPostsCount = -1;
+            clearOnlyFeedUI();
+
+            await nextPaint();
+            if (generation !== RT.generation) return false;
+
+            // The refresh is COMPLETE only after RTDB value listeners deliver the
+            // current database state. No .once() feed fetch is used.
+            await attachFeedListeners(true);
+            if (generation !== RT.generation) return false;
+
+            allLongVideos = dedupeSort(allLongVideos);
+            allShorts = dedupeSort(allShorts);
+            allCommunityPosts = dedupeSort(allCommunityPosts);
+
+            buildHomeFeed();
+            const shortsTab = document.getElementById('shorts-tab');
+            if (shortsTab && shortsTab.classList.contains('active')) buildShortsPage();
+            try { initYouTabUI(); } catch (_) {}
+            try { calculateChannelAnalytics(); } catch (_) {}
+            try { initLazyMedia(); } catch (_) {}
+            await nextPaint();
+            return true;
+        } catch (e) {
+            log('authoritativeRefresh', e);
+            return false;
+        } finally {
+            RT.refreshLock = false;
+            hideRefreshIndicator();
+        }
+    }
+
+    async function reconnect() {
+        if (!navigator.onLine || RT.reconnectLock) return;
+        RT.reconnectLock = true;
+        RT.online = true;
+        try {
+            // Never force Firebase offline. Firebase handles its own connection state.
+            try { firebase.database().goOnline(); } catch (_) {}
+            document.body.classList.remove('app-offline');
+
+            // Reattach exactly once and let value listeners deliver the latest state.
+            await attachFeedListeners(true);
+
+            try { await syncOfflineLikes(); } catch (_) {}
+            try {
+                uploadQueue.forEach(item => {
+                    if (item && item.status === 'paused' && item.file) item.status = 'waiting';
+                });
+                saveQueueStateToLocalStorage();
+                triggerNextActiveUpload();
+            } catch (_) {}
+
+            renderFeeds(true);
+        } catch (e) { log('reconnect', e); }
+        finally { RT.reconnectLock = false; }
+    }
+
+    function goOfflineUI() {
+        RT.online = false;
+        document.body.classList.add('app-offline');
+        try { document.querySelectorAll('.short-slide video').forEach(v => v.pause()); } catch (_) {}
+        try {
+            uploadQueue.forEach(item => {
+                if (!item) return;
+                if (item.s3UploadRef) { try { item.s3UploadRef.abort(); } catch (_) {} }
+                if (item.status === 'uploading' || item.status === 'waiting') item.status = 'paused';
+            });
+            saveQueueStateToLocalStorage();
+            updateManagerUI();
+        } catch (_) {}
+        // Do NOT call firebase.database().goOffline().
+    }
+
+    // Final native/browser network hooks.
+    window.FlaynityNetworkOnline = reconnect;
+    window.FlaynityNetworkOffline = goOfflineUI;
+    window.FlaynityNativeRefresh = () => navigator.onLine ? reconnect() : false;
+
+    window.addEventListener('online', reconnect, { passive: true });
+    window.addEventListener('offline', goOfflineUI, { passive: true });
+
+    // Firebase connection status is authoritative, but it does not disable Firebase.
+    try {
+        const connectedRef = db.ref('.info/connected');
+        connectedRef.off('value');
+        connectedRef.on('value', snap => {
+            const connected = snap.val() === true;
+            if (connected) {
+                document.body.classList.remove('app-offline');
+                reconnect();
+            } else if (!navigator.onLine) {
+                document.body.classList.add('app-offline');
+            }
+        });
+    } catch (e) { log('connection listener', e); }
+
+    // Replace the old global listener entry point.
+    try {
+        startRealtimeFeedsListener = function () {
+            return attachFeedListeners(false);
+        };
+    } catch (e) { log('startRealtimeFeedsListener override', e); }
+
+    // Replace refresh entry point used by the existing PTR UI.
+    try {
+        triggerUniversalPullToRefresh = async function () {
+            try { if (typeof playUI === 'function') playUI('click'); } catch (_) {}
+            const ok = await authoritativeRefresh();
+            if (ok) {
+                try { showNotification('Feed Updated!', 'success'); } catch (_) {}
+            }
+            return ok;
+        };
+    } catch (e) { log('PTR override', e); }
+
+    try {
+        SyncManager.refreshEverything = authoritativeRefresh;
+    } catch (e) { log('SyncManager override', e); }
+
+    // Upload queue: R2 -> RTDB metadata. Firebase listeners publish it everywhere.
+    async function uploadItemProduction(item) {
+        if (!item || item.status === 'completed') return;
+        if (!item.file) throw new Error('Original media file is missing.');
+        if (!navigator.onLine) { item.status = 'paused'; return; }
+
+        const maxAttempts = 10;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                item.status = 'uploading';
+                item.processingMsg = 'Uploading media...';
+                updateManagerUI();
+
+                const upload = s3.upload({
+                    Key: item.key,
+                    Body: item.file,
+                    ContentType: item.file.type || 'video/mp4'
+                }, { partSize: 8 * 1024 * 1024, queueSize: 2 });
+                item.s3UploadRef = upload;
+
+                upload.on('httpUploadProgress', evt => {
+                    if (item.status !== 'uploading') return;
+                    item.progress = evt.total ? Math.round((evt.loaded / evt.total) * 90) : item.progress;
+                    updateManagerUI();
+                });
+
+                await upload.promise();
+                item.s3UploadRef = null;
+                item.videoUrl = (typeof normalizeMediaUrl === 'function') ? normalizeMediaUrl('', item.key) : `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
+
+                if (item.thumbBlob && item.thumbKey) {
+                    await s3.putObject({
+                        Body: item.thumbBlob,
+                        Key: item.thumbKey,
+                        ContentType: 'image/jpeg'
+                    }).promise();
+                    item.thumbUrl = (typeof normalizeMediaUrl === 'function') ? normalizeMediaUrl('', item.thumbKey) : `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
+                } else {
+                    item.thumbUrl = item.thumbDataUrl || '';
+                }
+
+                item.processingMsg = 'Saving metadata...';
+                item.progress = 98;
+                updateManagerUI();
+
+                // This is the ONLY publish point: R2 must complete before RTDB metadata.
+                await pushVideoMetadataToDatabase(item);
+                item.status = 'completed';
+                item.progress = 100;
+                item.retryCount = 0;
+                item.errorMessage = '';
+                saveQueueStateToLocalStorage();
+                updateManagerUI();
+                return;
+            } catch (e) {
+                try { if (item.s3UploadRef) item.s3UploadRef.abort(); } catch (_) {}
+                item.s3UploadRef = null;
+                if (!navigator.onLine) {
+                    item.status = 'paused';
+                    item.errorMessage = 'Waiting for internet connection.';
+                    updateManagerUI();
+                    return;
+                }
+                item.status = 'waiting';
+                item.retryCount = attempt;
+                item.errorMessage = e && e.message ? e.message : 'Temporary upload error.';
+                updateManagerUI();
+                if (attempt >= maxAttempts) {
+                    item.status = 'failed';
+                    updateManagerUI();
+                    log('uploadItemProduction', e);
+                    return;
+                }
+                await sleep(Math.min(30000, 1000 * Math.pow(2, attempt - 1)));
+            }
+        }
+    }
+
+    try {
+        startS3DirectUpload = uploadItemProduction;
+        triggerNextActiveUpload = function () {
+            if (RT.uploadRunning || !navigator.onLine) return;
+            RT.uploadRunning = true;
+            (async () => {
+                try {
+                    while (navigator.onLine) {
+                        const jobs = uploadQueue.filter(i => i && i.status === 'waiting');
+                        if (!jobs.length) break;
+                        const batch = jobs.slice(0, RT.maxUploads);
+                        await Promise.allSettled(batch.map(uploadItemProduction));
+                        saveQueueStateToLocalStorage();
+                        updateManagerUI();
+                    }
+                } finally {
+                    RT.uploadRunning = false;
+                }
+            })();
+        };
+    } catch (e) { log('upload override', e); }
+
+    // Start authoritative listeners after the whole script has initialized.
+    setTimeout(() => {
+        try {
+            attachFeedListeners(false);
+            if (navigator.onLine) reconnect();
+        } catch (e) { log('final boot', e); }
+    }, 0);
 })();

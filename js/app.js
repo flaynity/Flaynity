@@ -1,3 +1,56 @@
+/* Flaynity modular runtime loader — loads separated HTML/CSS before the original app code runs. */
+(function () {
+    'use strict';
+
+    var appRoot = document.getElementById('app');
+    if (!appRoot) {
+        throw new Error('Flaynity: #app root container was not found.');
+    }
+
+    var cssFiles = [
+        'css/home.css',
+        'css/shorts.css',
+        'css/create-content.css',
+        'css/discover.css',
+        'css/you.css'
+    ];
+
+    cssFiles.forEach(function (href) {
+        if (!document.querySelector('link[data-flaynity-css="' + href + '"]')) {
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            link.setAttribute('data-flaynity-css', href);
+            document.head.appendChild(link);
+        }
+    });
+
+    var pageFiles = [
+        'pages/home.html',
+        'pages/shorts.html',
+        'pages/create-content.html',
+        'pages/discover.html',
+        'pages/you.html'
+    ];
+
+    function loadFragmentSync(url) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, false);
+        xhr.send(null);
+        if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 0) {
+            return xhr.responseText || '';
+        }
+        throw new Error('Flaynity: failed to load ' + url + ' (HTTP ' + xhr.status + ').');
+    }
+
+    var html = '';
+    pageFiles.forEach(function (file) {
+        html += loadFragmentSync(file) + '\n';
+    });
+    appRoot.innerHTML = html;
+    window.__FLAYNITY_MODULAR_LOADER_READY__ = true;
+}());
+
         (function() {
             try {
                 let pref = localStorage.getItem('flaynity-theme-pref') || 'light';

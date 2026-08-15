@@ -306,69 +306,10 @@
         });
         
         // =========================================================
-        // OFFLINE -> ONLINE AUTO SYNC & NETWORK MONITORING
+        // Firebase sync / Pull-to-Refresh / Offline->Online is owned
+        // entirely by the JavaScript production sync engine at EOF.
+        // No MainActivity network callback is used.
         // =========================================================
-        // Debounce guard: prevent rapid online/offline flapping from firing multiple syncs
-        let _networkOnlineDebounceTimer = null;
-
-        window.addEventListener('online', () => { window.FlaynityNetworkOnline(); });
-        window.addEventListener('offline', () => { window.FlaynityNetworkOffline(); });
-
-        window.FlaynityNetworkOnline = function() {
-            if (!navigator.onLine) return;
-
-            // Debounce: ignore if another online event fires within 1.5 s
-            if (_networkOnlineDebounceTimer) return;
-            _networkOnlineDebounceTimer = setTimeout(() => {
-                _networkOnlineDebounceTimer = null;
-            }, 1500);
-
-            const spinner = document.getElementById('network-spinner-overlay');
-            if (spinner) spinner.style.display = 'none';
-
-            try { firebase.database().goOnline(); } catch(e) {}
-            showNotification("Network Restored! Syncing Live Data...", "success");
-
-            // Automatically resume queued uploads (mark paused → waiting)
-            const waitingUploads = uploadQueue.filter(i => i.status === 'paused' || i.status === 'waiting');
-            if (waitingUploads.length > 0) {
-                waitingUploads.forEach(item => { item.status = 'waiting'; });
-                triggerNextActiveUpload();
-            }
-
-            // Sync offline cached likes to the cloud
-            syncOfflineLikes();
-
-            // Perform a secure background re-render without reloading WebView
-            SyncManager.refreshEverything();
-
-            // Resume any visible video
-            const activeVideo = document.querySelector('.short-slide video[src]');
-            if (activeVideo && activeVideo.paused && activeVideo.readyState > 2) {
-                activeVideo.play().catch(() => {});
-            }
-        };
-
-        window.FlaynityNetworkOffline = function() {
-            try { firebase.database().goOffline(); } catch(e) {}
-            showNotification("Offline Mode. Showing Skeletons.", "error");
-
-            renderAllSkeletons();
-
-            const activeVideo = document.querySelector('.short-slide video[src]');
-            if (activeVideo && !activeVideo.paused) {
-                activeVideo.pause();
-            }
-        };
-
-        // Called by MainActivity.onResume via AndroidBridge to trigger a background refresh
-        // when the app returns to the foreground after being backgrounded.
-        window.FlaynityNativeRefresh = function() {
-            if (!navigator.onLine) return;
-            // Only refresh if not already in progress
-            if (SyncManager.isRefreshing) return;
-            SyncManager.refreshEverything();
-        };
 
         // =========================================================
         // GLOBAL SYNC MANAGER (No-Reload Synchronization Engine)
@@ -4946,36 +4887,47 @@
         }
     
 /* ================================================================
-   FLAYNITY PRODUCTION STABILITY PATCH
-   Feed / Realtime / Offline->Online / Upload / Download / PTR
-   This patch preserves existing UI and existing IDs/classes.
+   FLAYNITY JAVASCRIPT-ONLY PRODUCTION SYNC ENGINE
+   Pull-to-Refresh / Firebase Realtime / Offline->Online / Upload
+   / Feed Replacement / Background Refresh
+
+   IMPORTANT:
+   - No MainActivity network callback is required.
+   - No AndroidBridge is used for these sync/refresh systems.
+   - Firebase RTDB listeners are the source of truth for feed state.
+   - Refresh never uses .once('value') for feed data.
    ================================================================ */
 (function () {
     'use strict';
 
-    const FP = window.__FLAYNITY_STABILITY__ || (window.__FLAYNITY_STABILITY__ = {
+    const JS_SYNC = window.__FLAYNITY_JS_SYNC__ || (window.__FLAYNITY_JS_SYNC__ = {
         listeners: new Map(),
-        feedReady: false,
+        attached: false,
         refreshRunning: false,
         reconnectRunning: false,
         renderQueued: false,
         generation: 0,
+        online: navigator.onLine,
+        connected: false,
         uploadRunning: false,
-        uploadRetryTimers: new Map(),
         downloadRunning: false,
         downloadQueue: [],
         downloadActive: 0,
         maxParallelUploads: 3,
-        maxParallelDownloads: 3,
-        online: navigator.onLine
+        maxParallelDownloads: 3
     });
 
-    const safeLog = (tag, err) => {
-        try { console.error('[Flaynity ' + tag + ']', err); } catch (_) {}
-    };
+    const FEED_PATHS = [
+        'admin_panel/movies/user_uploads',
+        'admin_panel/movies/shorts',
+        'admin_panel/posts'
+    ];
 
-    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-    const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    function log(tag, error) {
+        try { console.error('[Flaynity JS Sync] ' + tag, error); } catch (_) {}
+    }
 
     function uniqueNewest(list) {
         const map = new Map();
@@ -4986,100 +4938,45 @@
             map.set(String(id), item);
         });
         return Array.from(map.values()).sort((a, b) =>
-            Number(b.createdAt || b.uploadTime || b.updateTime || 0) -
-            Number(a.createdAt || a.uploadTime || a.updateTime || 0)
+            Number(b.createdAt || b.uploadTime || b.updateTime || b.timestamp || 0) -
+            Number(a.createdAt || a.uploadTime || a.updateTime || a.timestamp || 0)
         );
     }
 
-    function addListener(path, event, callback) {
-        if (!window.db) return;
-        const key = path + '|' + event;
-        const old = FP.listeners.get(key);
-        if (old) {
-            try { db.ref(path).off(event, old); } catch (_) {}
-        }
-        try {
-            db.ref(path).on(event, callback);
-            FP.listeners.set(key, callback);
-        } catch (e) {
-            safeLog('Firebase Listener ' + path, e);
-        }
-    }
+    function clearFeedUI() {
+        const ids = [
+            'home-feed-container',
+            'shorts-feed-container',
+            'discover-feed-container'
+        ];
 
-    function removeFeedListenersOnly() {
-        ['admin_panel/movies/user_uploads', 'admin_panel/movies/shorts', 'admin_panel/posts'].forEach(path => {
-            const key = path + '|value';
-            const cb = FP.listeners.get(key);
-            if (cb) {
-                try { db.ref(path).off('value', cb); } catch (_) {}
-                FP.listeners.delete(key);
-            }
-        });
-    }
-
-    function attachAuthoritativeFeedListeners() {
-        if (!window.db) return;
-
-        addListener('admin_panel/movies/user_uploads', 'value', snap => {
-            allLongVideos = uniqueNewest(snap.val() ? Object.values(snap.val()) : []);
-            try {
-                if (Array.isArray(allAdminMovies)) {
-                    const map = new Map(allAdminMovies.filter(Boolean).map(x => [String(x.id), x]));
-                    allLongVideos.forEach(x => map.set(String(x.id), x));
-                    allAdminMovies = Array.from(map.values());
-                }
-            } catch (_) {}
-            queueFeedRender();
-        });
-
-        addListener('admin_panel/movies/shorts', 'value', snap => {
-            allShorts = uniqueNewest(snap.val() ? Object.values(snap.val()) : []);
-            queueFeedRender(true);
-        });
-
-        addListener('admin_panel/posts', 'value', snap => {
-            allCommunityPosts = uniqueNewest(snap.val() ? Object.values(snap.val()) : []);
-            queueFeedRender();
-        });
-
-        FP.feedReady = true;
-    }
-
-    function queueFeedRender(shortsChanged) {
-        if (FP.renderQueued) return;
-        FP.renderQueued = true;
-        requestAnimationFrame(() => {
-            FP.renderQueued = false;
-            try {
-                if (navigator.onLine) {
-                    buildHomeFeed();
-                    if (shortsChanged) {
-                        const tab = document.getElementById('shorts-tab');
-                        if (tab && tab.classList.contains('active')) buildShortsPage();
-                    }
-                }
-                if (typeof initShortsObserver === 'function') initShortsObserver();
-            } catch (e) { safeLog('Feed Render', e); }
-        });
-    }
-
-    function clearFeedContainers() {
-        const ids = ['home-feed-container', 'shorts-feed-container', 'discover-feed-container'];
         ids.forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
-            try { el.querySelectorAll('video').forEach(v => v.pause()); } catch (_) {}
-            try { el.replaceChildren(); } catch (_) { el.innerHTML = ''; }
+            try {
+                el.querySelectorAll('video').forEach(v => {
+                    try { v.pause(); } catch (_) {}
+                    try { v.removeAttribute('src'); } catch (_) {}
+                });
+            } catch (_) {}
+            try { el.replaceChildren(); }
+            catch (_) { el.innerHTML = ''; }
         });
-        const swiper = document.querySelector('#shorts-tab .shorts-swiper');
-        if (swiper) {
-            try { swiper.replaceChildren(); } catch (_) { swiper.innerHTML = ''; }
-        }
+
+        document.querySelectorAll('.shorts-swiper').forEach(el => {
+            try { el.replaceChildren(); }
+            catch (_) { el.innerHTML = ''; }
+        });
     }
 
-    function hidePTR() {
-        const indicator = document.getElementById('ptr-indicator') || document.getElementById('ptr-container') || document.querySelector('.ptr-container');
+    function hidePTRIndicator() {
+        const indicator =
+            document.getElementById('ptr-indicator') ||
+            document.getElementById('ptr-container') ||
+            document.querySelector('.ptr-container');
+
         const spinner = document.getElementById('ptr-spinner');
+
         if (indicator) {
             indicator.style.opacity = '0';
             indicator.style.transform = 'translateX(-50%) translateY(-70px)';
@@ -5087,74 +4984,442 @@
         if (spinner) spinner.classList.remove('ptr-spinning');
     }
 
-    // Replace the legacy refresh manager with listener-owned state.
-    try {
-        SyncManager.refreshEverything = async function () {
-            if (FP.refreshRunning || !navigator.onLine) return false;
-            FP.refreshRunning = true;
-            const generation = ++FP.generation;
+    function scheduleRender(shortsChanged) {
+        if (JS_SYNC.renderQueued) return;
+        JS_SYNC.renderQueued = true;
+
+        requestAnimationFrame(() => {
+            JS_SYNC.renderQueued = false;
+
             try {
-                try { firebase.database().goOnline(); } catch (_) {}
-                attachAuthoritativeFeedListeners();
-                await frame();
-                if (generation !== FP.generation) return false;
+                if (typeof buildHomeFeed === 'function') buildHomeFeed();
 
-                clearFeedContainers();
-                await frame();
-
-                // RTDB .on('value') owns the arrays. Do not issue duplicate .once() feed reads.
-                buildHomeFeed();
                 const shortsTab = document.getElementById('shorts-tab');
-                if (shortsTab && shortsTab.classList.contains('active')) buildShortsPage();
-                try { initYouTabUI(); } catch (_) {}
-                try { calculateChannelAnalytics(); } catch (_) {}
-                return true;
+                if (shortsChanged &&
+                    shortsTab &&
+                    shortsTab.classList.contains('active') &&
+                    typeof buildShortsPage === 'function') {
+                    buildShortsPage();
+                }
+
+                if (typeof initYouTabUI === 'function') {
+                    try { initYouTabUI(); } catch (_) {}
+                }
+
+                if (typeof calculateChannelAnalytics === 'function') {
+                    try { calculateChannelAnalytics(); } catch (_) {}
+                }
+
+                if (typeof initLazyMedia === 'function') {
+                    try { initLazyMedia(); } catch (_) {}
+                }
+
+                if (typeof initShortsObserver === 'function') {
+                    try { initShortsObserver(); } catch (_) {}
+                }
             } catch (e) {
-                safeLog('Refresh', e);
-                return false;
-            } finally {
-                FP.refreshRunning = false;
-                hidePTR();
+                log('render', e);
+            }
+        });
+    }
+
+    function detachOurListener(path) {
+        const entry = JS_SYNC.listeners.get(path);
+        if (!entry || !window.db) return;
+
+        try {
+            db.ref(path).off('value', entry.callback);
+        } catch (_) {}
+
+        JS_SYNC.listeners.delete(path);
+    }
+
+    function detachFeedListeners() {
+        FEED_PATHS.forEach(detachOurListener);
+        JS_SYNC.attached = false;
+    }
+
+    function attachFeedListeners() {
+        if (!window.db) return;
+
+        // Remove only listeners owned by this controller.
+        FEED_PATHS.forEach(detachOurListener);
+
+        const generation = ++JS_SYNC.generation;
+
+        const attach = (path, handler) => {
+            const callback = snapshot => {
+                // Ignore callbacks belonging to an obsolete refresh generation.
+                if (generation !== JS_SYNC.generation) return;
+
+                try { handler(snapshot); }
+                catch (e) { log(path, e); }
+            };
+
+            try {
+                db.ref(path).on('value', callback);
+                JS_SYNC.listeners.set(path, { callback, generation });
+            } catch (e) {
+                log('attach ' + path, e);
             }
         };
-    } catch (e) { safeLog('SyncManager Patch', e); }
 
-    // Make every existing lexical call to this function use the authoritative listener set.
+        attach('admin_panel/movies/user_uploads', snapshot => {
+            const value = snapshot.val();
+            allLongVideos = uniqueNewest(value ? Object.values(value) : []);
+
+            try {
+                if (Array.isArray(allAdminMovies)) {
+                    const map = new Map(
+                        allAdminMovies
+                            .filter(Boolean)
+                            .map(x => [String(x.id), x])
+                    );
+
+                    allLongVideos.forEach(x => {
+                        if (x && x.id) map.set(String(x.id), x);
+                    });
+
+                    allAdminMovies = Array.from(map.values());
+                }
+            } catch (_) {}
+
+            scheduleRender(false);
+        });
+
+        attach('admin_panel/movies/shorts', snapshot => {
+            const value = snapshot.val();
+            allShorts = uniqueNewest(value ? Object.values(value) : []);
+            scheduleRender(true);
+        });
+
+        attach('admin_panel/posts', snapshot => {
+            const value = snapshot.val();
+            allCommunityPosts = uniqueNewest(value ? Object.values(value) : []);
+            scheduleRender(false);
+        });
+
+        JS_SYNC.attached = true;
+    }
+
+    function waitForFirebaseConnection(timeout = 10000) {
+        if (!window.db) return Promise.resolve(false);
+
+        return new Promise(resolve => {
+            let finished = false;
+            const timer = setTimeout(() => {
+                if (finished) return;
+                finished = true;
+                try { db.ref('.info/connected').off('value', callback); } catch (_) {}
+                resolve(false);
+            }, timeout);
+
+            const callback = snapshot => {
+                const connected = snapshot.val() === true;
+                JS_SYNC.connected = connected;
+
+                if (!connected || finished) return;
+
+                finished = true;
+                clearTimeout(timer);
+                try { db.ref('.info/connected').off('value', callback); } catch (_) {}
+                resolve(true);
+            };
+
+            try {
+                db.ref('.info/connected').on('value', callback);
+            } catch (e) {
+                clearTimeout(timer);
+                resolve(false);
+            }
+        });
+    }
+
+    async function waitForFeedCallbacks(timeout = 10000) {
+        // Listener callbacks are the only feed source. This wait simply gives
+        // the three value listeners time to receive their latest state.
+        const start = Date.now();
+
+        while (Date.now() - start < timeout) {
+            const ready =
+                Array.isArray(allLongVideos) &&
+                Array.isArray(allShorts) &&
+                Array.isArray(allCommunityPosts);
+
+            if (ready) return true;
+            await sleep(50);
+        }
+
+        return false;
+    }
+
+    async function refreshAllFromListeners(reason) {
+        if (JS_SYNC.refreshRunning || !navigator.onLine) {
+            hidePTRIndicator();
+            return false;
+        }
+
+        JS_SYNC.refreshRunning = true;
+        const refreshGeneration = ++JS_SYNC.generation;
+
+        try {
+            try { firebase.database().goOnline(); } catch (_) {}
+
+            // 1. Remove old visible feed immediately.
+            clearFeedUI();
+
+            // 2. Reset only the feed state owned by this listener controller.
+            allLongVideos = [];
+            allShorts = [];
+            allCommunityPosts = [];
+
+            // 3. Reattach exactly one listener per feed path.
+            attachFeedListeners();
+
+            // 4. Wait for actual Firebase connectivity when possible.
+            await waitForFirebaseConnection(8000);
+
+            // 5. Let RTDB value listeners deliver the current server/cache state.
+            await waitForFeedCallbacks(8000);
+
+            if (refreshGeneration !== JS_SYNC.generation) return false;
+
+            // 6. Replace the cleared UI with listener-owned latest state.
+            if (typeof buildHomeFeed === 'function') buildHomeFeed();
+
+            const shortsTab = document.getElementById('shorts-tab');
+            if (shortsTab &&
+                shortsTab.classList.contains('active') &&
+                typeof buildShortsPage === 'function') {
+                buildShortsPage();
+            }
+
+            try {
+                if (typeof initYouTabUI === 'function') initYouTabUI();
+            } catch (_) {}
+
+            try {
+                if (typeof calculateChannelAnalytics === 'function') {
+                    calculateChannelAnalytics();
+                }
+            } catch (_) {}
+
+            if (typeof initLazyMedia === 'function') {
+                try { initLazyMedia(); } catch (_) {}
+            }
+
+            return true;
+        } catch (e) {
+            log('refresh ' + reason, e);
+            return false;
+        } finally {
+            JS_SYNC.refreshRunning = false;
+            hidePTRIndicator();
+        }
+    }
+
+    // -------------------------------------------------------------
+    // Firebase realtime connection — JavaScript/browser only.
+    // -------------------------------------------------------------
+    function handleOnline() {
+        if (!navigator.onLine || JS_SYNC.reconnectRunning) return;
+
+        JS_SYNC.online = true;
+        JS_SYNC.reconnectRunning = true;
+
+        (async () => {
+            try {
+                try { firebase.database().goOnline(); } catch (_) {}
+
+                document.body.classList.remove('app-offline');
+
+                attachFeedListeners();
+                await waitForFirebaseConnection(8000);
+
+                try {
+                    if (typeof syncOfflineLikes === 'function') {
+                        await syncOfflineLikes();
+                    }
+                } catch (e) {
+                    log('offline likes sync', e);
+                }
+
+                try {
+                    if (Array.isArray(uploadQueue)) {
+                        uploadQueue.forEach(item => {
+                            if (item && item.status === 'paused' && item.file) {
+                                item.status = 'waiting';
+                            }
+                        });
+                        if (typeof saveQueueStateToLocalStorage === 'function') {
+                            saveQueueStateToLocalStorage();
+                        }
+                        if (typeof triggerNextActiveUpload === 'function') {
+                            triggerNextActiveUpload();
+                        }
+                    }
+                } catch (e) {
+                    log('upload resume', e);
+                }
+
+                scheduleRender(true);
+            } catch (e) {
+                log('online sync', e);
+            } finally {
+                JS_SYNC.reconnectRunning = false;
+            }
+        })();
+    }
+
+    function handleOffline() {
+        JS_SYNC.online = false;
+        JS_SYNC.connected = false;
+
+        try { document.body.classList.add('app-offline'); } catch (_) {}
+
+        // Keep Firebase reconnectable; the SDK handles its own recovery.
+
+        try {
+            document.querySelectorAll('.short-slide video').forEach(video => {
+                try { video.pause(); } catch (_) {}
+            });
+        } catch (_) {}
+
+        try {
+            if (Array.isArray(uploadQueue)) {
+                uploadQueue.forEach(item => {
+                    if (!item) return;
+
+                    if (item.status === 'uploading' || item.status === 'waiting') {
+                        try {
+                            if (item.s3UploadRef) item.s3UploadRef.abort();
+                        } catch (_) {}
+
+                        item.status = 'paused';
+                    }
+                });
+
+                if (typeof saveQueueStateToLocalStorage === 'function') {
+                    saveQueueStateToLocalStorage();
+                }
+                if (typeof updateManagerUI === 'function') {
+                    updateManagerUI();
+                }
+            }
+        } catch (e) {
+            log('offline upload pause', e);
+        }
+    }
+
+    window.addEventListener('online', handleOnline, { passive: true });
+    window.addEventListener('offline', handleOffline, { passive: true });
+
+    // Firebase itself is authoritative after browser connectivity.
+    if (window.db) {
+        try {
+            db.ref('.info/connected').on('value', snapshot => {
+                const connected = snapshot.val() === true;
+                JS_SYNC.connected = connected;
+
+                if (connected) {
+                    JS_SYNC.online = true;
+                    document.body.classList.remove('app-offline');
+                    attachFeedListeners();
+                    scheduleRender(true);
+                } else if (!navigator.onLine) {
+                    JS_SYNC.online = false;
+                    document.body.classList.add('app-offline');
+                }
+            });
+        } catch (e) {
+            log('connection listener', e);
+        }
+    }
+
+    // -------------------------------------------------------------
+    // Existing app entry points now route into the JS-only engine.
+    // No MainActivity callback is required.
+    // -------------------------------------------------------------
     try {
         startRealtimeFeedsListener = function () {
-            attachAuthoritativeFeedListeners();
+            attachFeedListeners();
         };
-    } catch (e) { safeLog('Listener Function Patch', e); }
+    } catch (e) {
+        log('startRealtimeFeedsListener override', e);
+    }
 
-    // ---------------------------
+    try {
+        triggerUniversalPullToRefresh = function () {
+            try {
+                if (typeof playUI === 'function') playUI('click');
+            } catch (_) {}
+
+            return refreshAllFromListeners('pull-to-refresh');
+        };
+    } catch (e) {
+        log('PTR override', e);
+    }
+
+    try {
+        SyncManager.refreshEverything = function () {
+            return refreshAllFromListeners('universal-refresh');
+        };
+        SyncManager.isRefreshing = false;
+    } catch (e) {
+        log('SyncManager override', e);
+    }
+
+    // Browser-side compatibility entry points only.
+    window.FlaynityNetworkOnline = handleOnline;
+    window.FlaynityNetworkOffline = handleOffline;
+
+    // Native Activity refresh callbacks are intentionally not used.
+
+    // -------------------------------------------------------------
     // CDN URL normalization
-    // ---------------------------
+    // -------------------------------------------------------------
     function getCdnBase() {
         const configured = window.FLAYNITY_CDN_BASE_URL || '';
-        if (configured) return String(configured).replace(/\/+$/, '');
+
+        if (configured) {
+            return String(configured).replace(/\/+$/, '');
+        }
+
         try {
             const saved = localStorage.getItem('flaynity_cdn_base_url');
             if (saved) return String(saved).replace(/\/+$/, '');
         } catch (_) {}
+
         return String(PUBLIC_R2_DOMAIN_PREFIX || '').replace(/\/+$/, '');
     }
 
     function isR2Direct(url) {
         try {
             const host = new URL(url).hostname.toLowerCase();
-            return host.includes('.r2.cloudflarestorage.com') || host.endsWith('.r2.dev');
-        } catch (_) { return false; }
+            return host.includes('.r2.cloudflarestorage.com') ||
+                   host.endsWith('.r2.dev');
+        } catch (_) {
+            return false;
+        }
     }
 
     function toCdnUrl(keyOrUrl) {
         if (!keyOrUrl) return '';
+
         const value = String(keyOrUrl);
-        if (!/^https?:\/\//i.test(value)) return getCdnBase() + '/' + value.replace(/^\/+/, '');
+
+        if (!/^https?:\/\//i.test(value)) {
+            return getCdnBase() + '/' + value.replace(/^\/+/, '');
+        }
+
         if (!isR2Direct(value)) return value;
+
         try {
             const u = new URL(value);
             return getCdnBase() + '/' + u.pathname.replace(/^\/+/, '');
-        } catch (_) { return value; }
+        } catch (_) {
+            return value;
+        }
     }
 
     function normalizeMediaUrl(url, key) {
@@ -5162,49 +5427,80 @@
         return toCdnUrl(key || url);
     }
 
-    // ---------------------------
-    // Upload queue: unlimited queue, bounded parallel execution, no retry toast.
-    // ---------------------------
-    async function uploadOneWithRetry(item) {
+    // -------------------------------------------------------------
+    // Upload scheduler — JS only, unlimited queue, bounded workers.
+    // R2 -> RTDB metadata. No legacy retry toast.
+    // -------------------------------------------------------------
+    async function uploadOne(item) {
         if (!item || item.status === 'completed') return;
         if (!item.file) throw new Error('Original media file is missing.');
         if (!navigator.onLine) throw new Error('OFFLINE');
 
-        const maxAttempts = 8;
         let attempt = 0;
-        while (attempt < maxAttempts) {
+
+        while (navigator.onLine) {
             attempt++;
+
             try {
                 item.status = 'uploading';
                 item.processingMsg = 'Uploading media...';
                 item.progress = Math.max(1, item.progress || 1);
-                updateManagerUI();
+
+                if (typeof updateManagerUI === 'function') updateManagerUI();
 
                 const params = {
                     Key: item.key,
                     Body: item.file,
                     ContentType: item.file.type || 'video/mp4'
                 };
-                const upload = s3.upload(params, { partSize: 8 * 1024 * 1024, queueSize: 2 });
-                item.s3UploadRef = upload;
-                const started = Date.now();
-                upload.on('httpUploadProgress', evt => {
-                    if (item.status !== 'uploading') return;
-                    const pct = evt.total ? Math.round((evt.loaded / evt.total) * 88) : item.progress;
-                    const seconds = Math.max(0.001, (Date.now() - started) / 1000);
-                    item.progress = pct;
-                    item.speed = evt.loaded / seconds;
-                    item.eta = evt.total && evt.loaded ? (evt.total - evt.loaded) / Math.max(1, evt.loaded / seconds) : 0;
-                    updateManagerUI();
+
+                const upload = s3.upload(params, {
+                    partSize: 8 * 1024 * 1024,
+                    queueSize: 2
                 });
+
+                item.s3UploadRef = upload;
+
+                const started = Date.now();
+
+                upload.on('httpUploadProgress', event => {
+                    if (item.status !== 'uploading') return;
+
+                    const pct = event.total
+                        ? Math.round((event.loaded / event.total) * 88)
+                        : item.progress;
+
+                    const seconds = Math.max(
+                        0.001,
+                        (Date.now() - started) / 1000
+                    );
+
+                    item.progress = pct;
+                    item.speed = event.loaded / seconds;
+                    item.eta = event.total && event.loaded
+                        ? (event.total - event.loaded) /
+                          Math.max(1, event.loaded / seconds)
+                        : 0;
+
+                    try {
+                        if (typeof updateManagerUI === 'function') {
+                            updateManagerUI();
+                        }
+                    } catch (_) {}
+                });
+
                 await upload.promise();
 
                 item.videoUrl = toCdnUrl(item.key);
                 item.cdnUrl = item.videoUrl;
+
                 item.status = 'processing';
                 item.processingMsg = 'Uploading thumbnail...';
                 item.progress = 92;
-                updateManagerUI();
+
+                if (typeof updateManagerUI === 'function') {
+                    updateManagerUI();
+                }
 
                 if (item.thumbBlob) {
                     await s3.putObject({
@@ -5212,6 +5508,7 @@
                         Key: item.thumbKey,
                         ContentType: 'image/jpeg'
                     }).promise();
+
                     item.thumbUrl = toCdnUrl(item.thumbKey);
                 } else {
                     item.thumbUrl = item.thumbDataUrl || '';
@@ -5219,136 +5516,220 @@
 
                 item.processingMsg = 'Publishing metadata...';
                 item.progress = 98;
-                updateManagerUI();
 
                 await pushVideoMetadataToDatabase(item);
+
                 item.status = 'completed';
                 item.retryCount = 0;
                 item.errorMessage = '';
                 item.progress = 100;
                 item.s3UploadRef = null;
-                saveQueueStateToLocalStorage();
-                updateManagerUI();
+
+                if (typeof saveQueueStateToLocalStorage === 'function') {
+                    saveQueueStateToLocalStorage();
+                }
+
+                if (typeof updateManagerUI === 'function') {
+                    updateManagerUI();
+                }
+
                 return;
-            } catch (err) {
-                try { if (item.s3UploadRef) item.s3UploadRef.abort(); } catch (_) {}
+            } catch (error) {
+                try {
+                    if (item.s3UploadRef) item.s3UploadRef.abort();
+                } catch (_) {}
+
                 item.s3UploadRef = null;
 
-                if (!navigator.onLine || err?.message === 'OFFLINE') {
+                if (!navigator.onLine || error?.message === 'OFFLINE') {
                     item.status = 'paused';
                     item.errorMessage = 'Waiting for internet connection.';
-                    updateManagerUI();
+
+                    if (typeof updateManagerUI === 'function') {
+                        updateManagerUI();
+                    }
                     return;
                 }
 
-                item.retryCount = attempt;
                 item.status = 'waiting';
-                item.errorMessage = err?.message || 'Upload temporarily failed.';
-                updateManagerUI();
+                item.retryCount = attempt;
+                item.errorMessage =
+                    error?.message || 'Upload temporarily failed.';
 
-                if (attempt >= maxAttempts) {
-                    item.status = 'failed';
+                if (typeof updateManagerUI === 'function') {
                     updateManagerUI();
-                    safeLog('Upload', err);
-                    return;
                 }
 
-                // Silent retry; the old "Network hiccup. Retrying (0/5)..." notification is never shown.
-                await wait(Math.min(30000, 1000 * Math.pow(2, attempt - 1)));
-                if (!navigator.onLine) {
-                    item.status = 'paused';
-                    updateManagerUI();
-                    return;
-                }
+                // Silent transient retry. No "Network hiccup. Retrying (0/5)" UI.
+                await sleep(Math.min(30000, 1000 * Math.pow(2, Math.min(attempt - 1, 5))));
             }
         }
+
+        item.status = 'paused';
     }
 
     try {
-        startS3DirectUpload = function (item) { return uploadOneWithRetry(item); };
+        startS3DirectUpload = function (item) {
+            return uploadOne(item);
+        };
+
         triggerNextActiveUpload = function () {
-            if (FP.uploadRunning || !navigator.onLine) return;
-            FP.uploadRunning = true;
+            if (JS_SYNC.uploadRunning || !navigator.onLine) return;
+
+            JS_SYNC.uploadRunning = true;
+
             (async () => {
                 try {
                     while (navigator.onLine) {
-                        const candidates = uploadQueue.filter(i => i && i.status === 'waiting');
-                        if (!candidates.length) break;
-                        const batch = candidates.slice(0, FP.maxParallelUploads);
-                        await Promise.allSettled(batch.map(item => uploadOneWithRetry(item)));
-                        saveQueueStateToLocalStorage();
-                        updateManagerUI();
+                        const waiting = uploadQueue.filter(item =>
+                            item &&
+                            item.status === 'waiting' &&
+                            (!item.nextRetryAt || item.nextRetryAt <= Date.now())
+                        );
+
+                        if (!waiting.length) break;
+
+                        const batch = waiting.slice(
+                            0,
+                            JS_SYNC.maxParallelUploads
+                        );
+
+                        await Promise.allSettled(
+                            batch.map(item => uploadOne(item))
+                        );
+
+                        if (typeof saveQueueStateToLocalStorage === 'function') {
+                            saveQueueStateToLocalStorage();
+                        }
+
+                        if (typeof updateManagerUI === 'function') {
+                            updateManagerUI();
+                        }
                     }
-                } catch (e) { safeLog('Upload Queue', e); }
-                finally { FP.uploadRunning = false; }
+                } catch (e) {
+                    log('upload scheduler', e);
+                } finally {
+                    JS_SYNC.uploadRunning = false;
+                }
             })();
         };
-    } catch (e) { safeLog('Upload Patch', e); }
+    } catch (e) {
+        log('upload override', e);
+    }
 
-    // Ensure the metadata saved to RTDB always references CDN playback URLs.
+    // Always save CDN playback URLs to metadata.
     try {
         const originalPushMetadata = pushVideoMetadataToDatabase;
+
         pushVideoMetadataToDatabase = async function (item) {
             item.videoUrl = normalizeMediaUrl(item.videoUrl, item.key);
             item.thumbUrl = normalizeMediaUrl(item.thumbUrl, item.thumbKey);
             return originalPushMetadata(item);
         };
-    } catch (e) { safeLog('Metadata Patch', e); }
+    } catch (e) {
+        log('metadata CDN override', e);
+    }
 
-    // ---------------------------
-    // Download queue
-    // ---------------------------
+    // -------------------------------------------------------------
+    // Download queue. Download is independent of refresh/sync.
+    // It may use the existing AndroidBridge download method.
+    // -------------------------------------------------------------
     async function downloadOne(job) {
         if (!job || !job.url) return;
+
         const filename = job.filename || 'flaynity_video.mp4';
 
-        if (window.AndroidBridge && typeof window.AndroidBridge.downloadVideo === 'function') {
-            const posterUrl = currentActiveMovie ? (currentActiveMovie.poster || '') : '';
-            window.AndroidBridge.downloadVideo(job.url, filename, posterUrl);
+        if (window.AndroidBridge &&
+            typeof window.AndroidBridge.downloadVideo === 'function') {
+            const posterUrl =
+                typeof currentActiveMovie !== 'undefined' &&
+                currentActiveMovie
+                    ? (currentActiveMovie.poster || '')
+                    : '';
+
+            window.AndroidBridge.downloadVideo(
+                job.url,
+                filename,
+                posterUrl
+            );
             return;
         }
 
         if (!navigator.onLine) throw new Error('OFFLINE');
 
-        const maxAttempts = 8;
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        let attempt = 0;
+
+        while (navigator.onLine) {
+            attempt++;
+
             try {
-                const response = await fetch(job.url, { method: 'GET', mode: 'cors', cache: 'no-store' });
-                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const response = await fetch(job.url, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-store'
+                });
+
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+
                 const blob = await response.blob();
                 const blobUrl = URL.createObjectURL(blob);
+
                 const a = document.createElement('a');
                 a.href = blobUrl;
                 a.download = filename;
                 a.rel = 'noopener';
+
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
-                setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+
+                setTimeout(() => {
+                    try { URL.revokeObjectURL(blobUrl); } catch (_) {}
+                }, 5000);
+
                 return;
-            } catch (e) {
+            } catch (error) {
                 if (!navigator.onLine) throw new Error('OFFLINE');
-                if (attempt >= maxAttempts) throw e;
-                await wait(Math.min(30000, 1000 * Math.pow(2, attempt - 1)));
+
+                await sleep(
+                    Math.min(
+                        30000,
+                        1000 * Math.pow(2, Math.min(attempt - 1, 5))
+                    )
+                );
             }
         }
     }
 
     function runDownloadQueue() {
-        if (FP.downloadRunning) return;
-        FP.downloadRunning = true;
+        if (JS_SYNC.downloadRunning) return;
+
+        JS_SYNC.downloadRunning = true;
+
         (async () => {
             try {
-                while (FP.downloadActive < FP.maxParallelDownloads && FP.downloadQueue.length) {
-                    const job = FP.downloadQueue.shift();
-                    FP.downloadActive++;
-                    downloadOne(job).catch(e => safeLog('Download', e)).finally(() => {
-                        FP.downloadActive = Math.max(0, FP.downloadActive - 1);
-                        runDownloadQueue();
-                    });
+                while (
+                    JS_SYNC.downloadActive <
+                        JS_SYNC.maxParallelDownloads &&
+                    JS_SYNC.downloadQueue.length
+                ) {
+                    const job = JS_SYNC.downloadQueue.shift();
+                    JS_SYNC.downloadActive++;
+
+                    downloadOne(job)
+                        .catch(error => log('download', error))
+                        .finally(() => {
+                            JS_SYNC.downloadActive = Math.max(
+                                0,
+                                JS_SYNC.downloadActive - 1
+                            );
+                            runDownloadQueue();
+                        });
                 }
             } finally {
-                FP.downloadRunning = false;
+                JS_SYNC.downloadRunning = false;
             }
         })();
     }
@@ -5356,505 +5737,52 @@
     try {
         triggerFileDownload = async function (url, filename) {
             if (!url) {
-                showNotification('Invalid download link.', 'error');
+                if (typeof showNotification === 'function') {
+                    showNotification('Invalid download link.', 'error');
+                }
                 return;
             }
-            const cdn = normalizeMediaUrl(url);
-            FP.downloadQueue.push({ url: cdn, filename: filename || 'flaynity_video.mp4' });
+
+            JS_SYNC.downloadQueue.push({
+                url: normalizeMediaUrl(url),
+                filename: filename || 'flaynity_video.mp4'
+            });
+
             runDownloadQueue();
         };
-    } catch (e) { safeLog('Download Patch', e); }
-
-    // ---------------------------
-    // Offline -> Online: never force Firebase permanently offline.
-    // ---------------------------
-    async function reconnectAndSync() {
-        if (!navigator.onLine || FP.reconnectRunning) return;
-        FP.reconnectRunning = true;
-        FP.online = true;
-        try {
-            try { firebase.database().goOnline(); } catch (_) {}
-            document.body.classList.remove('app-offline');
-            attachAuthoritativeFeedListeners();
-            await frame();
-            try { await syncOfflineLikes(); } catch (_) {}
-            try {
-                uploadQueue.forEach(item => {
-                    if (item && item.status === 'paused' && item.file) item.status = 'waiting';
-                });
-                saveQueueStateToLocalStorage();
-                triggerNextActiveUpload();
-            } catch (_) {}
-            queueFeedRender(true);
-        } catch (e) { safeLog('Reconnect', e); }
-        finally { FP.reconnectRunning = false; }
+    } catch (e) {
+        log('download override', e);
     }
 
-    window.addEventListener('online', reconnectAndSync, { passive: true });
-    window.addEventListener('offline', () => {
-        FP.online = false;
-        document.body.classList.add('app-offline');
-        // Do NOT call firebase.database().goOffline(). Let Firebase recover naturally.
-        try { document.querySelectorAll('.short-slide video').forEach(v => v.pause()); } catch (_) {}
+    // -------------------------------------------------------------
+    // Initial boot.
+    // -------------------------------------------------------------
+    setTimeout(() => {
         try {
-            uploadQueue.forEach(item => {
-                if (item && (item.status === 'uploading' || item.status === 'waiting')) {
-                    if (item.s3UploadRef) { try { item.s3UploadRef.abort(); } catch (_) {} }
-                    item.status = 'paused';
-                }
+            // Remove only legacy global feed listeners once, then this
+            // controller becomes the sole owner of these three feed paths.
+            FEED_PATHS.forEach(path => {
+                try { db.ref(path).off('value'); } catch (_) {}
             });
-            saveQueueStateToLocalStorage();
-            updateManagerUI();
-        } catch (_) {}
+
+            attachFeedListeners();
+
+            if (navigator.onLine) {
+                handleOnline();
+                try {
+                    if (typeof triggerNextActiveUpload === 'function') {
+                        triggerNextActiveUpload();
+                    }
+                } catch (_) {}
+            }
+        } catch (e) {
+            log('boot', e);
+        }
+    }, 0);
+
+    // Cleanup only our own listeners when the page is actually unloaded.
+    window.addEventListener('pagehide', () => {
+        try { detachFeedListeners(); } catch (_) {}
     }, { passive: true });
 
-    try {
-        window.FlaynityNetworkOnline = reconnectAndSync;
-        window.FlaynityNativeRefresh = () => {
-            if (navigator.onLine) return reconnectAndSync();
-        };
-        window.FlaynityNetworkOffline = () => {
-            FP.online = false;
-            document.body.classList.add('app-offline');
-        };
-    } catch (_) {}
-
-    // Firebase's actual connection state is authoritative.
-    if (window.db) {
-        addListener('.info/connected', 'value', snap => {
-            const connected = snap.val() === true;
-            if (connected) reconnectAndSync();
-            else document.body.classList.add('app-offline');
-        });
-    }
-
-    // ---------------------------
-    // Pull-to-refresh: clear -> listener-owned latest state -> render.
-    // ---------------------------
-    try {
-        triggerUniversalPullToRefresh = async function () {
-            if (FP.refreshRunning) return;
-            if (!navigator.onLine) {
-                hidePTR();
-                showNotification('No internet connection.', 'error');
-                return false;
-            }
-            if (typeof playUI === 'function') { try { playUI('click'); } catch (_) {} }
-            return SyncManager.refreshEverything();
-        };
-    } catch (e) { safeLog('PTR Patch', e); }
-
-    // Fix duplicate per-render channel/stat listeners by relying on the existing
-    // active refs where the app already exposes them; feed listeners are authoritative above.
-    // No UI/design/classes/IDs are changed by this patch.
-
-    // Startup: attach exactly once and resume queue when possible.
-    setTimeout(() => {
-        try {
-            attachAuthoritativeFeedListeners();
-            if (navigator.onLine) {
-                reconnectAndSync();
-                triggerNextActiveUpload();
-            }
-        } catch (e) { safeLog('Stability Boot', e); }
-    }, 0);
-
-})();
-
-
-/* ================================================================
-   FLAYNITY FINAL REALTIME CONTROLLER
-   Fixes the previous stability patch's window.db mistake and makes
-   feed refresh listener-authoritative. No UI/classes/IDs are changed.
-   ================================================================ */
-(function () {
-    'use strict';
-
-    const RT = window.__FLAYNITY_FINAL_RT__ || (window.__FLAYNITY_FINAL_RT__ = {
-        feedListeners: new Map(),
-        refreshLock: false,
-        reconnectLock: false,
-        renderQueued: false,
-        online: navigator.onLine,
-        generation: 0,
-        uploadRunning: false,
-        maxUploads: 3
-    });
-
-    const FEED_PATHS = [
-        'admin_panel/movies/user_uploads',
-        'admin_panel/movies/shorts',
-        'admin_panel/posts'
-    ];
-
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
-    const nextPaint = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-    function log(tag, err) {
-        try { console.error('[Flaynity Final RT] ' + tag, err); } catch (_) {}
-    }
-
-    function dedupeSort(value) {
-        const map = new Map();
-        const arr = value && typeof value === 'object' ? Object.values(value) : (Array.isArray(value) ? value : []);
-        arr.forEach(item => {
-            if (!item) return;
-            const id = item.id || item.key;
-            if (!id) return;
-            map.set(String(id), item);
-        });
-        return Array.from(map.values()).sort((a, b) => {
-            const ta = Number(a.createdAt || a.uploadTime || a.updateTime || 0);
-            const tb = Number(b.createdAt || b.uploadTime || b.updateTime || 0);
-            return tb - ta;
-        });
-    }
-
-    function detachFeedListeners() {
-        FEED_PATHS.forEach(path => {
-            const cb = RT.feedListeners.get(path);
-            if (cb) {
-                try { db.ref(path).off('value', cb); } catch (e) { log('detach ' + path, e); }
-                RT.feedListeners.delete(path);
-            }
-        });
-    }
-
-    function renderFeeds(shortsChanged) {
-        if (RT.renderQueued) return;
-        RT.renderQueued = true;
-        requestAnimationFrame(() => {
-            RT.renderQueued = false;
-            try {
-                if (!navigator.onLine) return;
-                allLongVideos = dedupeSort(allLongVideos);
-                allShorts = dedupeSort(allShorts);
-                allCommunityPosts = dedupeSort(allCommunityPosts);
-                buildHomeFeed();
-                if (shortsChanged) {
-                    const tab = document.getElementById('shorts-tab');
-                    if (tab && tab.classList.contains('active')) buildShortsPage();
-                }
-                try { initLazyMedia(); } catch (_) {}
-                try { initShortsObserver(); } catch (_) {}
-            } catch (e) { log('renderFeeds', e); }
-        });
-    }
-
-    function attachFeedListeners(waitForInitial) {
-        const initial = {};
-        const waiters = waitForInitial ? FEED_PATHS.map(path => new Promise(resolve => {
-            initial[path] = resolve;
-        })) : [];
-
-        // IMPORTANT: use the actual lexical Firebase `db`, not window.db.
-        FEED_PATHS.forEach(path => {
-            const old = RT.feedListeners.get(path);
-            if (old) {
-                try { db.ref(path).off('value', old); } catch (_) {}
-                RT.feedListeners.delete(path);
-            }
-
-            const cb = snap => {
-                try {
-                    const data = snap.val();
-                    if (path === FEED_PATHS[0]) {
-                        allLongVideos = dedupeSort(data);
-                        try {
-                            const map = new Map((Array.isArray(allAdminMovies) ? allAdminMovies : []).filter(Boolean).map(x => [String(x.id), x]));
-                            allLongVideos.forEach(x => map.set(String(x.id), x));
-                            allAdminMovies = Array.from(map.values());
-                        } catch (_) {}
-                    } else if (path === FEED_PATHS[1]) {
-                        allShorts = dedupeSort(data);
-                    } else {
-                        allCommunityPosts = dedupeSort(data);
-                    }
-                    if (initial[path]) {
-                        initial[path]();
-                        delete initial[path];
-                    }
-                    renderFeeds(path === FEED_PATHS[1]);
-                } catch (e) { log('listener ' + path, e); }
-            };
-
-            try {
-                db.ref(path).on('value', cb);
-                RT.feedListeners.set(path, cb);
-            } catch (e) { log('attach ' + path, e); }
-        });
-
-        return Promise.race([
-            Promise.all(waiters),
-            sleep(10000)
-        ]);
-    }
-
-    function clearOnlyFeedUI() {
-        ['home-feed-container', 'shorts-swiper-container'].forEach(id => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            try { el.querySelectorAll('video').forEach(v => v.pause()); } catch (_) {}
-            el.innerHTML = '';
-        });
-    }
-
-    function hideRefreshIndicator() {
-        const indicator = document.getElementById('ptr-indicator') || document.getElementById('ptr-container');
-        const spinner = document.getElementById('ptr-spinner');
-        if (indicator) {
-            indicator.style.opacity = '0';
-            indicator.style.transform = 'translateX(-50%) translateY(-70px)';
-        }
-        if (spinner) spinner.classList.remove('ptr-spinning');
-    }
-
-    async function authoritativeRefresh() {
-        if (RT.refreshLock) return false;
-        if (!navigator.onLine) {
-            hideRefreshIndicator();
-            return false;
-        }
-
-        RT.refreshLock = true;
-        const generation = ++RT.generation;
-        try {
-            try { firebase.database().goOnline(); } catch (_) {}
-
-            // Remove stale listeners first so old snapshots cannot render after refresh.
-            detachFeedListeners();
-
-            // Remove old UI/state before receiving the fresh RTDB snapshot.
-            allLongVideos = [];
-            allShorts = [];
-            allCommunityPosts = [];
-            previousLongsCount = -1;
-            previousShortsCount = -1;
-            previousPostsCount = -1;
-            clearOnlyFeedUI();
-
-            await nextPaint();
-            if (generation !== RT.generation) return false;
-
-            // The refresh is COMPLETE only after RTDB value listeners deliver the
-            // current database state. No .once() feed fetch is used.
-            await attachFeedListeners(true);
-            if (generation !== RT.generation) return false;
-
-            allLongVideos = dedupeSort(allLongVideos);
-            allShorts = dedupeSort(allShorts);
-            allCommunityPosts = dedupeSort(allCommunityPosts);
-
-            buildHomeFeed();
-            const shortsTab = document.getElementById('shorts-tab');
-            if (shortsTab && shortsTab.classList.contains('active')) buildShortsPage();
-            try { initYouTabUI(); } catch (_) {}
-            try { calculateChannelAnalytics(); } catch (_) {}
-            try { initLazyMedia(); } catch (_) {}
-            await nextPaint();
-            return true;
-        } catch (e) {
-            log('authoritativeRefresh', e);
-            return false;
-        } finally {
-            RT.refreshLock = false;
-            hideRefreshIndicator();
-        }
-    }
-
-    async function reconnect() {
-        if (!navigator.onLine || RT.reconnectLock) return;
-        RT.reconnectLock = true;
-        RT.online = true;
-        try {
-            // Never force Firebase offline. Firebase handles its own connection state.
-            try { firebase.database().goOnline(); } catch (_) {}
-            document.body.classList.remove('app-offline');
-
-            // Reattach exactly once and let value listeners deliver the latest state.
-            await attachFeedListeners(true);
-
-            try { await syncOfflineLikes(); } catch (_) {}
-            try {
-                uploadQueue.forEach(item => {
-                    if (item && item.status === 'paused' && item.file) item.status = 'waiting';
-                });
-                saveQueueStateToLocalStorage();
-                triggerNextActiveUpload();
-            } catch (_) {}
-
-            renderFeeds(true);
-        } catch (e) { log('reconnect', e); }
-        finally { RT.reconnectLock = false; }
-    }
-
-    function goOfflineUI() {
-        RT.online = false;
-        document.body.classList.add('app-offline');
-        try { document.querySelectorAll('.short-slide video').forEach(v => v.pause()); } catch (_) {}
-        try {
-            uploadQueue.forEach(item => {
-                if (!item) return;
-                if (item.s3UploadRef) { try { item.s3UploadRef.abort(); } catch (_) {} }
-                if (item.status === 'uploading' || item.status === 'waiting') item.status = 'paused';
-            });
-            saveQueueStateToLocalStorage();
-            updateManagerUI();
-        } catch (_) {}
-        // Do NOT call firebase.database().goOffline().
-    }
-
-    // Final native/browser network hooks.
-    window.FlaynityNetworkOnline = reconnect;
-    window.FlaynityNetworkOffline = goOfflineUI;
-    window.FlaynityNativeRefresh = () => navigator.onLine ? reconnect() : false;
-
-    window.addEventListener('online', reconnect, { passive: true });
-    window.addEventListener('offline', goOfflineUI, { passive: true });
-
-    // Firebase connection status is authoritative, but it does not disable Firebase.
-    try {
-        const connectedRef = db.ref('.info/connected');
-        connectedRef.off('value');
-        connectedRef.on('value', snap => {
-            const connected = snap.val() === true;
-            if (connected) {
-                document.body.classList.remove('app-offline');
-                reconnect();
-            } else if (!navigator.onLine) {
-                document.body.classList.add('app-offline');
-            }
-        });
-    } catch (e) { log('connection listener', e); }
-
-    // Replace the old global listener entry point.
-    try {
-        startRealtimeFeedsListener = function () {
-            return attachFeedListeners(false);
-        };
-    } catch (e) { log('startRealtimeFeedsListener override', e); }
-
-    // Replace refresh entry point used by the existing PTR UI.
-    try {
-        triggerUniversalPullToRefresh = async function () {
-            try { if (typeof playUI === 'function') playUI('click'); } catch (_) {}
-            const ok = await authoritativeRefresh();
-            if (ok) {
-                try { showNotification('Feed Updated!', 'success'); } catch (_) {}
-            }
-            return ok;
-        };
-    } catch (e) { log('PTR override', e); }
-
-    try {
-        SyncManager.refreshEverything = authoritativeRefresh;
-    } catch (e) { log('SyncManager override', e); }
-
-    // Upload queue: R2 -> RTDB metadata. Firebase listeners publish it everywhere.
-    async function uploadItemProduction(item) {
-        if (!item || item.status === 'completed') return;
-        if (!item.file) throw new Error('Original media file is missing.');
-        if (!navigator.onLine) { item.status = 'paused'; return; }
-
-        const maxAttempts = 10;
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-            try {
-                item.status = 'uploading';
-                item.processingMsg = 'Uploading media...';
-                updateManagerUI();
-
-                const upload = s3.upload({
-                    Key: item.key,
-                    Body: item.file,
-                    ContentType: item.file.type || 'video/mp4'
-                }, { partSize: 8 * 1024 * 1024, queueSize: 2 });
-                item.s3UploadRef = upload;
-
-                upload.on('httpUploadProgress', evt => {
-                    if (item.status !== 'uploading') return;
-                    item.progress = evt.total ? Math.round((evt.loaded / evt.total) * 90) : item.progress;
-                    updateManagerUI();
-                });
-
-                await upload.promise();
-                item.s3UploadRef = null;
-                item.videoUrl = (typeof normalizeMediaUrl === 'function') ? normalizeMediaUrl('', item.key) : `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
-
-                if (item.thumbBlob && item.thumbKey) {
-                    await s3.putObject({
-                        Body: item.thumbBlob,
-                        Key: item.thumbKey,
-                        ContentType: 'image/jpeg'
-                    }).promise();
-                    item.thumbUrl = (typeof normalizeMediaUrl === 'function') ? normalizeMediaUrl('', item.thumbKey) : `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
-                } else {
-                    item.thumbUrl = item.thumbDataUrl || '';
-                }
-
-                item.processingMsg = 'Saving metadata...';
-                item.progress = 98;
-                updateManagerUI();
-
-                // This is the ONLY publish point: R2 must complete before RTDB metadata.
-                await pushVideoMetadataToDatabase(item);
-                item.status = 'completed';
-                item.progress = 100;
-                item.retryCount = 0;
-                item.errorMessage = '';
-                saveQueueStateToLocalStorage();
-                updateManagerUI();
-                return;
-            } catch (e) {
-                try { if (item.s3UploadRef) item.s3UploadRef.abort(); } catch (_) {}
-                item.s3UploadRef = null;
-                if (!navigator.onLine) {
-                    item.status = 'paused';
-                    item.errorMessage = 'Waiting for internet connection.';
-                    updateManagerUI();
-                    return;
-                }
-                item.status = 'waiting';
-                item.retryCount = attempt;
-                item.errorMessage = e && e.message ? e.message : 'Temporary upload error.';
-                updateManagerUI();
-                if (attempt >= maxAttempts) {
-                    item.status = 'failed';
-                    updateManagerUI();
-                    log('uploadItemProduction', e);
-                    return;
-                }
-                await sleep(Math.min(30000, 1000 * Math.pow(2, attempt - 1)));
-            }
-        }
-    }
-
-    try {
-        startS3DirectUpload = uploadItemProduction;
-        triggerNextActiveUpload = function () {
-            if (RT.uploadRunning || !navigator.onLine) return;
-            RT.uploadRunning = true;
-            (async () => {
-                try {
-                    while (navigator.onLine) {
-                        const jobs = uploadQueue.filter(i => i && i.status === 'waiting');
-                        if (!jobs.length) break;
-                        const batch = jobs.slice(0, RT.maxUploads);
-                        await Promise.allSettled(batch.map(uploadItemProduction));
-                        saveQueueStateToLocalStorage();
-                        updateManagerUI();
-                    }
-                } finally {
-                    RT.uploadRunning = false;
-                }
-            })();
-        };
-    } catch (e) { log('upload override', e); }
-
-    // Start authoritative listeners after the whole script has initialized.
-    setTimeout(() => {
-        try {
-            attachFeedListeners(false);
-            if (navigator.onLine) reconnect();
-        } catch (e) { log('final boot', e); }
-    }, 0);
 })();

@@ -316,8 +316,6 @@
 
         window.FlaynityNetworkOnline = function() {
             if (!navigator.onLine) return;
-
-            // Debounce: ignore if another online event fires within 1.5 s
             if (_networkOnlineDebounceTimer) return;
             _networkOnlineDebounceTimer = setTimeout(() => {
                 _networkOnlineDebounceTimer = null;
@@ -327,22 +325,21 @@
             if (spinner) spinner.style.display = 'none';
 
             try { firebase.database().goOnline(); } catch(e) {}
-            showNotification("Network Restored! Syncing Live Data...", "success");
+            try { document.body.classList.remove('app-offline'); } catch(e) {}
 
-            // Automatically resume queued uploads (mark paused → waiting)
-            const waitingUploads = uploadQueue.filter(i => i.status === 'paused' || i.status === 'waiting');
-            if (waitingUploads.length > 0) {
-                waitingUploads.forEach(item => { item.status = 'waiting'; });
+            try {
+                uploadQueue.forEach(item => {
+                    if (item && (item.status === 'paused' || item.status === 'waiting')) {
+                        item.status = 'waiting';
+                    }
+                });
+                saveQueueStateToLocalStorage();
                 triggerNextActiveUpload();
-            }
+            } catch(e) {}
 
-            // Sync offline cached likes to the cloud
-            syncOfflineLikes();
+            try { syncOfflineLikes(); } catch(e) {}
+            try { SyncManager.refreshEverything(); } catch(e) {}
 
-            // Perform a secure background re-render without reloading WebView
-            SyncManager.refreshEverything();
-
-            // Resume any visible video
             const activeVideo = document.querySelector('.short-slide video[src]');
             if (activeVideo && activeVideo.paused && activeVideo.readyState > 2) {
                 activeVideo.play().catch(() => {});
@@ -350,23 +347,30 @@
         };
 
         window.FlaynityNetworkOffline = function() {
-            try { firebase.database().goOffline(); } catch(e) {}
-            showNotification("Offline Mode. Showing Skeletons.", "error");
+            try { document.body.classList.add('app-offline'); } catch(e) {}
 
-            renderAllSkeletons();
+            // Keep Firebase reconnectable. Do not force the SDK offline.
+            try {
+                uploadQueue.forEach(item => {
+                    if (item && (item.status === 'uploading' || item.status === 'waiting')) {
+                        if (item.s3UploadRef) { try { item.s3UploadRef.abort(); } catch(_) {} }
+                        item.status = 'paused';
+                    }
+                });
+                saveQueueStateToLocalStorage();
+                updateManagerUI();
+            } catch(e) {}
 
             const activeVideo = document.querySelector('.short-slide video[src]');
-            if (activeVideo && !activeVideo.paused) {
-                activeVideo.pause();
-            }
+            if (activeVideo && !activeVideo.paused) activeVideo.pause();
         };
 
         // Called by MainActivity.onResume via AndroidBridge to trigger a background refresh
         // when the app returns to the foreground after being backgrounded.
         window.FlaynityNativeRefresh = function() {
             if (!navigator.onLine) return;
-            // Only refresh if not already in progress
             if (SyncManager.isRefreshing) return;
+            try { firebase.database().goOnline(); } catch(e) {}
             SyncManager.refreshEverything();
         };
 
@@ -4945,3 +4949,518 @@
             AppNavigation.pop();
         }
     
+/* ================================================================
+   FLAYNITY PRODUCTION STABILITY PATCH
+   Feed / Realtime / Offline->Online / Upload / Download / PTR
+   This patch preserves existing UI and existing IDs/classes.
+   ================================================================ */
+(function () {
+    'use strict';
+
+    const FP = window.__FLAYNITY_STABILITY__ || (window.__FLAYNITY_STABILITY__ = {
+        listeners: new Map(),
+        feedReady: false,
+        refreshRunning: false,
+        reconnectRunning: false,
+        renderQueued: false,
+        generation: 0,
+        uploadRunning: false,
+        uploadRetryTimers: new Map(),
+        downloadRunning: false,
+        downloadQueue: [],
+        downloadActive: 0,
+        maxParallelUploads: 3,
+        maxParallelDownloads: 3,
+        online: navigator.onLine
+    });
+
+    const safeLog = (tag, err) => {
+        try { console.error('[Flaynity ' + tag + ']', err); } catch (_) {}
+    };
+
+    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    function uniqueNewest(list) {
+        const map = new Map();
+        (Array.isArray(list) ? list : []).forEach(item => {
+            if (!item) return;
+            const id = item.id || item.key;
+            if (!id) return;
+            map.set(String(id), item);
+        });
+        return Array.from(map.values()).sort((a, b) =>
+            Number(b.createdAt || b.uploadTime || b.updateTime || 0) -
+            Number(a.createdAt || a.uploadTime || a.updateTime || 0)
+        );
+    }
+
+    function addListener(path, event, callback) {
+        if (!window.db) return;
+        const key = path + '|' + event;
+        const old = FP.listeners.get(key);
+        if (old) {
+            try { db.ref(path).off(event, old); } catch (_) {}
+        }
+        try {
+            db.ref(path).on(event, callback);
+            FP.listeners.set(key, callback);
+        } catch (e) {
+            safeLog('Firebase Listener ' + path, e);
+        }
+    }
+
+    function removeFeedListenersOnly() {
+        ['admin_panel/movies/user_uploads', 'admin_panel/movies/shorts', 'admin_panel/posts'].forEach(path => {
+            const key = path + '|value';
+            const cb = FP.listeners.get(key);
+            if (cb) {
+                try { db.ref(path).off('value', cb); } catch (_) {}
+                FP.listeners.delete(key);
+            }
+        });
+    }
+
+    function attachAuthoritativeFeedListeners() {
+        if (!window.db) return;
+
+        addListener('admin_panel/movies/user_uploads', 'value', snap => {
+            allLongVideos = uniqueNewest(snap.val() ? Object.values(snap.val()) : []);
+            try {
+                if (Array.isArray(allAdminMovies)) {
+                    const map = new Map(allAdminMovies.filter(Boolean).map(x => [String(x.id), x]));
+                    allLongVideos.forEach(x => map.set(String(x.id), x));
+                    allAdminMovies = Array.from(map.values());
+                }
+            } catch (_) {}
+            queueFeedRender();
+        });
+
+        addListener('admin_panel/movies/shorts', 'value', snap => {
+            allShorts = uniqueNewest(snap.val() ? Object.values(snap.val()) : []);
+            queueFeedRender(true);
+        });
+
+        addListener('admin_panel/posts', 'value', snap => {
+            allCommunityPosts = uniqueNewest(snap.val() ? Object.values(snap.val()) : []);
+            queueFeedRender();
+        });
+
+        FP.feedReady = true;
+    }
+
+    function queueFeedRender(shortsChanged) {
+        if (FP.renderQueued) return;
+        FP.renderQueued = true;
+        requestAnimationFrame(() => {
+            FP.renderQueued = false;
+            try {
+                if (navigator.onLine) {
+                    buildHomeFeed();
+                    if (shortsChanged) {
+                        const tab = document.getElementById('shorts-tab');
+                        if (tab && tab.classList.contains('active')) buildShortsPage();
+                    }
+                }
+                if (typeof initShortsObserver === 'function') initShortsObserver();
+            } catch (e) { safeLog('Feed Render', e); }
+        });
+    }
+
+    function clearFeedContainers() {
+        const ids = ['home-feed-container', 'shorts-feed-container', 'discover-feed-container'];
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            try { el.querySelectorAll('video').forEach(v => v.pause()); } catch (_) {}
+            try { el.replaceChildren(); } catch (_) { el.innerHTML = ''; }
+        });
+        const swiper = document.querySelector('#shorts-tab .shorts-swiper');
+        if (swiper) {
+            try { swiper.replaceChildren(); } catch (_) { swiper.innerHTML = ''; }
+        }
+    }
+
+    function hidePTR() {
+        const indicator = document.getElementById('ptr-indicator') || document.getElementById('ptr-container') || document.querySelector('.ptr-container');
+        const spinner = document.getElementById('ptr-spinner');
+        if (indicator) {
+            indicator.style.opacity = '0';
+            indicator.style.transform = 'translateX(-50%) translateY(-70px)';
+        }
+        if (spinner) spinner.classList.remove('ptr-spinning');
+    }
+
+    // Replace the legacy refresh manager with listener-owned state.
+    try {
+        SyncManager.refreshEverything = async function () {
+            if (FP.refreshRunning || !navigator.onLine) return false;
+            FP.refreshRunning = true;
+            const generation = ++FP.generation;
+            try {
+                try { firebase.database().goOnline(); } catch (_) {}
+                attachAuthoritativeFeedListeners();
+                await frame();
+                if (generation !== FP.generation) return false;
+
+                clearFeedContainers();
+                await frame();
+
+                // RTDB .on('value') owns the arrays. Do not issue duplicate .once() feed reads.
+                buildHomeFeed();
+                const shortsTab = document.getElementById('shorts-tab');
+                if (shortsTab && shortsTab.classList.contains('active')) buildShortsPage();
+                try { initYouTabUI(); } catch (_) {}
+                try { calculateChannelAnalytics(); } catch (_) {}
+                return true;
+            } catch (e) {
+                safeLog('Refresh', e);
+                return false;
+            } finally {
+                FP.refreshRunning = false;
+                hidePTR();
+            }
+        };
+    } catch (e) { safeLog('SyncManager Patch', e); }
+
+    // Make every existing lexical call to this function use the authoritative listener set.
+    try {
+        startRealtimeFeedsListener = function () {
+            attachAuthoritativeFeedListeners();
+        };
+    } catch (e) { safeLog('Listener Function Patch', e); }
+
+    // ---------------------------
+    // CDN URL normalization
+    // ---------------------------
+    function getCdnBase() {
+        const configured = window.FLAYNITY_CDN_BASE_URL || '';
+        if (configured) return String(configured).replace(/\/+$/, '');
+        try {
+            const saved = localStorage.getItem('flaynity_cdn_base_url');
+            if (saved) return String(saved).replace(/\/+$/, '');
+        } catch (_) {}
+        return String(PUBLIC_R2_DOMAIN_PREFIX || '').replace(/\/+$/, '');
+    }
+
+    function isR2Direct(url) {
+        try {
+            const host = new URL(url).hostname.toLowerCase();
+            return host.includes('.r2.cloudflarestorage.com') || host.endsWith('.r2.dev');
+        } catch (_) { return false; }
+    }
+
+    function toCdnUrl(keyOrUrl) {
+        if (!keyOrUrl) return '';
+        const value = String(keyOrUrl);
+        if (!/^https?:\/\//i.test(value)) return getCdnBase() + '/' + value.replace(/^\/+/, '');
+        if (!isR2Direct(value)) return value;
+        try {
+            const u = new URL(value);
+            return getCdnBase() + '/' + u.pathname.replace(/^\/+/, '');
+        } catch (_) { return value; }
+    }
+
+    function normalizeMediaUrl(url, key) {
+        if (url && !isR2Direct(url)) return url;
+        return toCdnUrl(key || url);
+    }
+
+    // ---------------------------
+    // Upload queue: unlimited queue, bounded parallel execution, no retry toast.
+    // ---------------------------
+    async function uploadOneWithRetry(item) {
+        if (!item || item.status === 'completed') return;
+        if (!item.file) throw new Error('Original media file is missing.');
+        if (!navigator.onLine) throw new Error('OFFLINE');
+
+        const maxAttempts = 8;
+        let attempt = 0;
+        while (attempt < maxAttempts) {
+            attempt++;
+            try {
+                item.status = 'uploading';
+                item.processingMsg = 'Uploading media...';
+                item.progress = Math.max(1, item.progress || 1);
+                updateManagerUI();
+
+                const params = {
+                    Key: item.key,
+                    Body: item.file,
+                    ContentType: item.file.type || 'video/mp4'
+                };
+                const upload = s3.upload(params, { partSize: 8 * 1024 * 1024, queueSize: 2 });
+                item.s3UploadRef = upload;
+                const started = Date.now();
+                upload.on('httpUploadProgress', evt => {
+                    if (item.status !== 'uploading') return;
+                    const pct = evt.total ? Math.round((evt.loaded / evt.total) * 88) : item.progress;
+                    const seconds = Math.max(0.001, (Date.now() - started) / 1000);
+                    item.progress = pct;
+                    item.speed = evt.loaded / seconds;
+                    item.eta = evt.total && evt.loaded ? (evt.total - evt.loaded) / Math.max(1, evt.loaded / seconds) : 0;
+                    updateManagerUI();
+                });
+                await upload.promise();
+
+                item.videoUrl = toCdnUrl(item.key);
+                item.cdnUrl = item.videoUrl;
+                item.status = 'processing';
+                item.processingMsg = 'Uploading thumbnail...';
+                item.progress = 92;
+                updateManagerUI();
+
+                if (item.thumbBlob) {
+                    await s3.putObject({
+                        Body: item.thumbBlob,
+                        Key: item.thumbKey,
+                        ContentType: 'image/jpeg'
+                    }).promise();
+                    item.thumbUrl = toCdnUrl(item.thumbKey);
+                } else {
+                    item.thumbUrl = item.thumbDataUrl || '';
+                }
+
+                item.processingMsg = 'Publishing metadata...';
+                item.progress = 98;
+                updateManagerUI();
+
+                await pushVideoMetadataToDatabase(item);
+                item.status = 'completed';
+                item.retryCount = 0;
+                item.errorMessage = '';
+                item.progress = 100;
+                item.s3UploadRef = null;
+                saveQueueStateToLocalStorage();
+                updateManagerUI();
+                return;
+            } catch (err) {
+                try { if (item.s3UploadRef) item.s3UploadRef.abort(); } catch (_) {}
+                item.s3UploadRef = null;
+
+                if (!navigator.onLine || err?.message === 'OFFLINE') {
+                    item.status = 'paused';
+                    item.errorMessage = 'Waiting for internet connection.';
+                    updateManagerUI();
+                    return;
+                }
+
+                item.retryCount = attempt;
+                item.status = 'waiting';
+                item.errorMessage = err?.message || 'Upload temporarily failed.';
+                updateManagerUI();
+
+                if (attempt >= maxAttempts) {
+                    item.status = 'failed';
+                    updateManagerUI();
+                    safeLog('Upload', err);
+                    return;
+                }
+
+                // Silent retry; the old "Network hiccup. Retrying (0/5)..." notification is never shown.
+                await wait(Math.min(30000, 1000 * Math.pow(2, attempt - 1)));
+                if (!navigator.onLine) {
+                    item.status = 'paused';
+                    updateManagerUI();
+                    return;
+                }
+            }
+        }
+    }
+
+    try {
+        startS3DirectUpload = function (item) { return uploadOneWithRetry(item); };
+        triggerNextActiveUpload = function () {
+            if (FP.uploadRunning || !navigator.onLine) return;
+            FP.uploadRunning = true;
+            (async () => {
+                try {
+                    while (navigator.onLine) {
+                        const candidates = uploadQueue.filter(i => i && i.status === 'waiting');
+                        if (!candidates.length) break;
+                        const batch = candidates.slice(0, FP.maxParallelUploads);
+                        await Promise.allSettled(batch.map(item => uploadOneWithRetry(item)));
+                        saveQueueStateToLocalStorage();
+                        updateManagerUI();
+                    }
+                } catch (e) { safeLog('Upload Queue', e); }
+                finally { FP.uploadRunning = false; }
+            })();
+        };
+    } catch (e) { safeLog('Upload Patch', e); }
+
+    // Ensure the metadata saved to RTDB always references CDN playback URLs.
+    try {
+        const originalPushMetadata = pushVideoMetadataToDatabase;
+        pushVideoMetadataToDatabase = async function (item) {
+            item.videoUrl = normalizeMediaUrl(item.videoUrl, item.key);
+            item.thumbUrl = normalizeMediaUrl(item.thumbUrl, item.thumbKey);
+            return originalPushMetadata(item);
+        };
+    } catch (e) { safeLog('Metadata Patch', e); }
+
+    // ---------------------------
+    // Download queue
+    // ---------------------------
+    async function downloadOne(job) {
+        if (!job || !job.url) return;
+        const filename = job.filename || 'flaynity_video.mp4';
+
+        if (window.AndroidBridge && typeof window.AndroidBridge.downloadVideo === 'function') {
+            const posterUrl = currentActiveMovie ? (currentActiveMovie.poster || '') : '';
+            window.AndroidBridge.downloadVideo(job.url, filename, posterUrl);
+            return;
+        }
+
+        if (!navigator.onLine) throw new Error('OFFLINE');
+
+        const maxAttempts = 8;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const response = await fetch(job.url, { method: 'GET', mode: 'cors', cache: 'no-store' });
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = filename;
+                a.rel = 'noopener';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+                return;
+            } catch (e) {
+                if (!navigator.onLine) throw new Error('OFFLINE');
+                if (attempt >= maxAttempts) throw e;
+                await wait(Math.min(30000, 1000 * Math.pow(2, attempt - 1)));
+            }
+        }
+    }
+
+    function runDownloadQueue() {
+        if (FP.downloadRunning) return;
+        FP.downloadRunning = true;
+        (async () => {
+            try {
+                while (FP.downloadActive < FP.maxParallelDownloads && FP.downloadQueue.length) {
+                    const job = FP.downloadQueue.shift();
+                    FP.downloadActive++;
+                    downloadOne(job).catch(e => safeLog('Download', e)).finally(() => {
+                        FP.downloadActive = Math.max(0, FP.downloadActive - 1);
+                        runDownloadQueue();
+                    });
+                }
+            } finally {
+                FP.downloadRunning = false;
+            }
+        })();
+    }
+
+    try {
+        triggerFileDownload = async function (url, filename) {
+            if (!url) {
+                showNotification('Invalid download link.', 'error');
+                return;
+            }
+            const cdn = normalizeMediaUrl(url);
+            FP.downloadQueue.push({ url: cdn, filename: filename || 'flaynity_video.mp4' });
+            runDownloadQueue();
+        };
+    } catch (e) { safeLog('Download Patch', e); }
+
+    // ---------------------------
+    // Offline -> Online: never force Firebase permanently offline.
+    // ---------------------------
+    async function reconnectAndSync() {
+        if (!navigator.onLine || FP.reconnectRunning) return;
+        FP.reconnectRunning = true;
+        FP.online = true;
+        try {
+            try { firebase.database().goOnline(); } catch (_) {}
+            document.body.classList.remove('app-offline');
+            attachAuthoritativeFeedListeners();
+            await frame();
+            try { await syncOfflineLikes(); } catch (_) {}
+            try {
+                uploadQueue.forEach(item => {
+                    if (item && item.status === 'paused' && item.file) item.status = 'waiting';
+                });
+                saveQueueStateToLocalStorage();
+                triggerNextActiveUpload();
+            } catch (_) {}
+            queueFeedRender(true);
+        } catch (e) { safeLog('Reconnect', e); }
+        finally { FP.reconnectRunning = false; }
+    }
+
+    window.addEventListener('online', reconnectAndSync, { passive: true });
+    window.addEventListener('offline', () => {
+        FP.online = false;
+        document.body.classList.add('app-offline');
+        // Do NOT call firebase.database().goOffline(). Let Firebase recover naturally.
+        try { document.querySelectorAll('.short-slide video').forEach(v => v.pause()); } catch (_) {}
+        try {
+            uploadQueue.forEach(item => {
+                if (item && (item.status === 'uploading' || item.status === 'waiting')) {
+                    if (item.s3UploadRef) { try { item.s3UploadRef.abort(); } catch (_) {} }
+                    item.status = 'paused';
+                }
+            });
+            saveQueueStateToLocalStorage();
+            updateManagerUI();
+        } catch (_) {}
+    }, { passive: true });
+
+    try {
+        window.FlaynityNetworkOnline = reconnectAndSync;
+        window.FlaynityNativeRefresh = () => {
+            if (navigator.onLine) return reconnectAndSync();
+        };
+        window.FlaynityNetworkOffline = () => {
+            FP.online = false;
+            document.body.classList.add('app-offline');
+        };
+    } catch (_) {}
+
+    // Firebase's actual connection state is authoritative.
+    if (window.db) {
+        addListener('.info/connected', 'value', snap => {
+            const connected = snap.val() === true;
+            if (connected) reconnectAndSync();
+            else document.body.classList.add('app-offline');
+        });
+    }
+
+    // ---------------------------
+    // Pull-to-refresh: clear -> listener-owned latest state -> render.
+    // ---------------------------
+    try {
+        triggerUniversalPullToRefresh = async function () {
+            if (FP.refreshRunning) return;
+            if (!navigator.onLine) {
+                hidePTR();
+                showNotification('No internet connection.', 'error');
+                return false;
+            }
+            if (typeof playUI === 'function') { try { playUI('click'); } catch (_) {} }
+            return SyncManager.refreshEverything();
+        };
+    } catch (e) { safeLog('PTR Patch', e); }
+
+    // Fix duplicate per-render channel/stat listeners by relying on the existing
+    // active refs where the app already exposes them; feed listeners are authoritative above.
+    // No UI/design/classes/IDs are changed by this patch.
+
+    // Startup: attach exactly once and resume queue when possible.
+    setTimeout(() => {
+        try {
+            attachAuthoritativeFeedListeners();
+            if (navigator.onLine) {
+                reconnectAndSync();
+                triggerNextActiveUpload();
+            }
+        } catch (e) { safeLog('Stability Boot', e); }
+    }, 0);
+
+})();

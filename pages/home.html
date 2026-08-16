@@ -1,392 +1,108 @@
 <style>
-    /* =========================================
-       1. GLOBAL MOBILE SIZING & DEEP COLORS
-       ========================================= */
-    :root {
-        --deep-white: #FFFFFF;
-        --deep-black: #000000;
-        --deep-accent: #FF004D;
-        --deep-gray-bg: #EFEFEF; 
-        --border-color: #E0E0E0;
-    }
-
-    * { box-sizing: border-box; }
-
-    /* Strict Mobile Viewport Fix */
-    .home-container { 
-        width: 100%; 
-        height: 100%; 
-        max-width: 100vw;
-        display: flex; 
-        flex-direction: column; 
-        background: var(--deep-white); 
-        position: relative; 
-        overflow: hidden; 
+    /* Home Page Specific Scoped CSS */
+    .home-container {
+        width: 100%; height: 100%; display: flex; flex-direction: column; position: relative;
     }
     
-    /* Top Bar - Pure White, Pure Black Icons */
-    .top-bar { 
-        display: flex; justify-content: space-between; align-items: center; 
-        padding: 14px 16px; background: var(--deep-white); 
-        border-bottom: 1px solid var(--border-color); 
-        flex: 0 0 auto; 
-    }
-    .top-bar-left { display: flex; align-items: center; gap: 8px; }
-    .top-bar-right { display: flex; gap: 18px; color: var(--deep-black); }
-
-    /* Category Chips - STRICTLY 3 Equal Widths */
-    .category-chips-wrapper { 
-        width: 100%; padding: 12px 16px; background: var(--deep-white); 
-        border-bottom: 1px solid var(--border-color); flex: 0 0 auto; 
-    }
-    .category-chips { display: flex; width: 100%; gap: 12px; }
-    .chip { 
-        flex: 1; text-align: center; padding: 10px 0; border-radius: 100px; 
-        font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; 
-    }
-    .chip.active { background: var(--deep-black); color: var(--deep-white); }
-    .chip.inactive { background: #F0F0F0; color: var(--deep-black); }
-
-    /* Feed Container - Fixed Bottom Space for Nav Bar */
-    .home-feed-scroll { 
-        flex: 1 1 auto; 
-        overflow-y: auto; 
-        overflow-x: hidden; 
-        background: var(--deep-gray-bg); 
-        padding-bottom: 90px; /* Space for Bottom Nav */
-    }
-
-    /* =========================================
-       2. SPLASH & AUTH SCREENS (Fixed Missing Logic)
-       ========================================= */
+    /* Splash Screen */
     #splash-screen {
-        position: absolute; inset: 0; background: var(--deep-white); z-index: 10000;
+        position: absolute; inset: 0; background: #ffffff; z-index: 9999;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         transition: opacity 0.5s ease;
     }
+    .flaynity-logo-text { font-size: 32px; font-weight: 900; color: #ff2a5f; letter-spacing: -1px; }
+    
+    /* Auth Screen */
     #auth-screen {
-        position: absolute; inset: 0; background: var(--deep-white); z-index: 9998; display: none;
+        position: absolute; inset: 0; background: #ffffff; z-index: 9998; display: none;
         flex-direction: column; padding: 24px; justify-content: center;
     }
-    .auth-input { width: 100%; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border-color); border-radius: 12px; font-size: 16px; outline: none; }
-    .auth-input:focus { border-color: var(--deep-accent); }
-    .btn-primary { width: 100%; padding: 16px; background: var(--deep-accent); color: var(--deep-white); border: none; border-radius: 100px; font-size: 16px; font-weight: 700; cursor: pointer; }
+    .auth-title { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+    .auth-input { width: 100%; padding: 16px; margin-bottom: 16px; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; outline: none; }
+    .auth-input:focus { border-color: #ff2a5f; }
+    .btn-primary { width: 100%; padding: 16px; background: #ff2a5f; color: white; border: none; border-radius: 100px; font-size: 16px; font-weight: 600; cursor: pointer; }
+    
+    /* Top Bar */
+    .top-bar {
+        display: flex; justify-content: space-between; align-items: center; padding: 12px 16px;
+        background: #ffffff; border-bottom: 1px solid #f0f0f0; flex-shrink: 0;
+    }
+    .top-bar-left { display: flex; align-items: center; gap: 8px; }
+    .top-bar-right { display: flex; gap: 16px; color: #0f0f0f; }
+    
+    /* Category Chips (Strict No Horizontal Scroll, Equal Divide) */
+    .category-chips {
+        display: flex; width: 100%; background: #ffffff; padding: 8px; gap: 8px; flex-shrink: 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .chip {
+        flex: 1; padding: 8px 0; text-align: center; border-radius: 8px; font-size: 14px; font-weight: 500;
+        background: #f2f2f2; color: #0f0f0f; transition: all 0.2s; cursor: pointer;
+    }
+    .chip.active { background: #0f0f0f; color: #ffffff; }
 
-    /* =========================================
-       3. SHORTS GRID
-       ========================================= */
-    .shorts-grid-container { 
-        display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; 
-        padding: 12px; background: var(--deep-white); margin-bottom: 8px; 
+    /* Feed Area */
+    .feed-container {
+        flex: 1; overflow-y: auto; overflow-x: hidden; background: #f8f8f8; padding-bottom: 80px; /* Space for Bottom Nav */
     }
-    .short-card { 
-        width: 100%; aspect-ratio: 2/3; border-radius: 12px; overflow: hidden; 
-        position: relative; background: var(--deep-black); cursor: pointer; 
-    }
-    .short-card img { width: 100%; height: 100%; object-fit: cover; }
-    .short-overlay { 
-        position: absolute; bottom: 0; left: 0; right: 0; padding: 24px 12px 12px 12px; 
-        background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%); color: var(--deep-white); 
-    }
-    .short-title { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
-    .short-views { font-size: 12px; font-weight: 500; }
 
-    /* =========================================
-       4. LONG VIDEO FEED
-       ========================================= */
-    .video-card { width: 100%; background: var(--deep-white); margin-bottom: 8px; cursor: pointer; }
-    .video-thumbnail { width: 100%; aspect-ratio: 16/9; background: var(--deep-black); position: relative; }
-    .video-thumbnail img { width: 100%; height: 100%; object-fit: cover; }
-    .video-duration { 
-        position: absolute; bottom: 8px; right: 8px; background: var(--deep-black); 
-        color: var(--deep-white); padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 700; 
+    /* Video Player Overlay (Initially Hidden) */
+    #video-player-view {
+        position: absolute; inset: 0; background: #ffffff; z-index: 1000; display: none; flex-direction: column; overflow-y: auto;
     }
-    .video-details { display: flex; gap: 12px; padding: 12px 16px; }
-    .video-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--border-color); flex-shrink: 0; }
-    .video-meta-text { flex: 1; min-width: 0; /* FIXES DESIGN BREAK */ }
-    .video-title { font-size: 16px; font-weight: 700; color: var(--deep-black); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
-    .video-subtitle { font-size: 13px; font-weight: 500; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    /* =========================================
-       5. FACEBOOK STYLE POSTS
-       ========================================= */
-    .post-card { width: 100%; background: var(--deep-white); margin-bottom: 8px; padding-top: 14px; }
-    .post-header { display: flex; justify-content: space-between; align-items: center; padding: 0 16px 14px 16px; }
-    .post-user-info { display: flex; gap: 12px; align-items: center; min-width: 0; flex: 1; }
-    .post-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--border-color); flex-shrink: 0; }
-    .post-name-area { flex: 1; min-width: 0; }
-    .post-name { font-size: 15px; font-weight: 700; color: var(--deep-black); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-    .post-time { font-size: 12px; font-weight: 500; color: #555; }
-    .post-subscribe-btn { background: var(--deep-black); color: var(--deep-white); border: none; padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0; margin-left: 8px; }
-    
-    .post-title { padding: 0 16px 14px 16px; font-size: 15px; font-weight: 500; color: var(--deep-black); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    
-    .post-image { width: 100%; aspect-ratio: 3/4; background: var(--deep-black); object-fit: cover; }
-    
-    .post-stats { display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border-color); font-size: 13px; font-weight: 500; color: #555; }
-    .post-actions { display: flex; padding: 6px 16px; position: relative; }
-    .post-action-btn { flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 10px 0; color: var(--deep-black); font-weight: 700; font-size: 14px; user-select: none; -webkit-user-select: none; cursor: pointer;}
-    .post-action-btn .material-symbols-rounded { font-size: 22px; }
-
-    /* =========================================
-       6. REACTION PICKER
-       ========================================= */
-    .reaction-picker { 
-        position: absolute; bottom: 55px; left: 16px; background: var(--deep-white); 
-        border-radius: 100px; padding: 8px 12px; display: flex; gap: 12px; 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.25); transform: scale(0); opacity: 0; 
-        transform-origin: bottom left; transition: all 0.3s; z-index: 100; border: 1px solid var(--border-color); 
-    }
-    .reaction-picker.show { transform: scale(1); opacity: 1; }
-    .reaction-emoji { font-size: 28px; cursor: pointer; }
-    @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-60px) scale(1.5); opacity: 0; } }
-    .emoji-floating { animation: floatUp 0.8s forwards; position: absolute; pointer-events: none; z-index: 9999; }
-
-    /* =========================================
-       7. VIDEO PLAYER PAGE (Overlay fixed sizing)
-       ========================================= */
-    #video-player-page { 
-        position: fixed; inset: 0; background: var(--deep-gray-bg); z-index: 9999; 
-        display: none; flex-direction: column; overflow-y: auto; overflow-x: hidden; 
-    }
-    .player-wrapper { width: 100%; aspect-ratio: 16/9; background: var(--deep-black); position: sticky; top: 0; z-index: 10; }
-    
-    .video-info-card { background: var(--deep-white); padding: 16px; border-bottom: 1px solid var(--border-color); margin-bottom: 8px; }
-    .vp-title { font-size: 18px; font-weight: 900; color: var(--deep-black); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px; }
-    .vp-metadata { font-size: 13px; color: #555; font-weight: 600; display: flex; flex-wrap: wrap; gap: 8px; }
-    .vp-action-row { display: flex; gap: 12px; margin-top: 16px; overflow-x: auto; padding-bottom: 8px; }
-    .vp-action-row::-webkit-scrollbar { display: none; }
-    
-    .vp-btn { background: #F0F0F0; padding: 8px 16px; border-radius: 100px; font-size: 14px; font-weight: 700; color: var(--deep-black); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-    .vp-subscribe-btn { background: var(--deep-black); color: var(--deep-white); border: none; padding: 8px 16px; border-radius: 100px; font-weight: 700; }
-    
-    .vp-comment-card { background: var(--deep-white); border-radius: 12px; padding: 14px; margin: 0 16px 16px 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); cursor: pointer; }
+    .video-wrapper { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; }
 </style>
 
 <div class="home-container">
-    
-    <!-- FIX: Restored Splash & Auth Screens for firebase-config.js Logic -->
+    <!-- Splash Screen -->
     <div id="splash-screen">
-        <div style="font-size: 32px; font-weight: 900; color: var(--deep-accent); letter-spacing: -1px;">Flaynity</div>
-        <div style="margin-top: 16px; font-size: 14px; color: var(--deep-black); font-weight: 700;">Loading...</div>
+        <div class="flaynity-logo-text">Flaynity</div>
+        <div style="margin-top: 16px; font-size: 14px; color: #666;" id="splash-status">Loading...</div>
     </div>
 
+    <!-- Auth / Login Screen -->
     <div id="auth-screen">
-        <div style="font-size: 32px; font-weight: 900; color: var(--deep-accent); margin-bottom: 32px; text-align: center;">Flaynity</div>
-        <h2 style="font-size: 24px; font-weight: 900; color: var(--deep-black); margin-bottom: 8px;">Welcome back</h2>
-        <p style="color: #555; font-weight: 500; margin-bottom: 24px;">Sign in to continue</p>
+        <div class="flaynity-logo-text" style="margin-bottom: 32px;">Flaynity</div>
+        <div class="auth-title">Welcome back</div>
+        <p style="color: #666; margin-bottom: 24px;">Sign in to continue</p>
         <input type="email" id="auth-email" class="auth-input" placeholder="Email address">
         <input type="password" id="auth-pass" class="auth-input" placeholder="Password">
-        <button class="btn-primary" id="auth-btn">Sign In / Register</button>
+        <button class="btn-primary" id="auth-btn">Sign In</button>
+        <p style="text-align: center; margin-top: 16px; color: #666; font-size: 14px;">
+            Don't have an account? <span style="color: #ff2a5f; font-weight: 600;" id="toggle-auth">Register</span>
+        </p>
     </div>
 
-    <!-- Main UI -->
+    <!-- Main Home UI -->
     <div class="top-bar">
         <div class="top-bar-left">
-            <span class="material-symbols-rounded" style="color: var(--deep-accent); font-size: 30px;">play_circle</span>
-            <span style="font-size: 22px; font-weight: 900; color: var(--deep-black); letter-spacing: -1px;">Flaynity</span>
+            <span class="material-symbols-rounded" style="color: #ff2a5f; font-size: 28px;">play_circle</span>
+            <span class="flaynity-logo-text" style="font-size: 20px;">Flaynity</span>
         </div>
         <div class="top-bar-right">
-            <span class="material-symbols-rounded" style="font-size: 26px;">search</span>
-            <span class="material-symbols-rounded" style="font-size: 26px;">settings</span>
+            <span class="material-symbols-rounded">search</span>
+            <span class="material-symbols-rounded">settings</span>
         </div>
     </div>
 
-    <div class="category-chips-wrapper">
-        <div class="category-chips" id="home-category-chips">
-            <div class="chip active" data-cat="all">All</div>
-            <div class="chip inactive" data-cat="posts">Posts</div>
-            <div class="chip inactive" data-cat="shorts">Shorts</div>
-        </div>
+    <div class="category-chips">
+        <div class="chip active" data-category="all">All</div>
+        <div class="chip" data-category="posts">Posts</div>
+        <div class="chip" data-category="shorts">Shorts</div>
     </div>
 
-    <!-- Feed Container -->
-    <div class="home-feed-scroll" id="dynamic-home-feed">
-        <!-- JS Injects Feed Here -->
-    </div>
-</div>
-
-<!-- Video Player Full View -->
-<div id="video-player-page">
-    <div class="player-wrapper">
-        <video id="main-video" width="100%" height="100%" controls style="background:var(--deep-black);"></video>
-    </div>
-    
-    <div class="video-info-card">
-        <div class="vp-title">Exploring the Beautiful Mountains of Switzerland in 4K HDR</div>
-        <div class="vp-metadata">
-            <span style="color:var(--deep-black);">@NatureLover</span> • <span>137K Likes</span> • <span>2.9M Views</span> • <span>2 days ago</span> • <span style="color:var(--deep-black); font-weight:900;" onclick="alert('Description Bottom Sheet Open')">...more</span>
-        </div>
-        
-        <div class="vp-action-row">
-            <div class="vp-btn" style="padding:4px 12px 4px 6px;">
-                <img src="https://ui-avatars.com/api/?name=N&background=000&color=fff" style="width:32px;height:32px;border-radius:50%;">
-                <button class="vp-subscribe-btn">Subscribe</button>
-            </div>
-            <div class="vp-btn"><span class="material-symbols-rounded">thumb_up</span> 137K</div>
-            <div class="vp-btn"><span class="material-symbols-rounded">thumb_down</span></div>
-            <div class="vp-btn"><span class="material-symbols-rounded">download</span> Download</div>
-        </div>
+    <!-- Scrollable Feed -->
+    <div class="feed-container" id="home-feed">
+        <!-- Skeleton Loaders will be injected here via JS -->
+        <div id="feed-content"></div>
     </div>
 
-    <div class="vp-comment-card">
-        <div style="font-size: 14px; font-weight: 900; margin-bottom: 8px; color: var(--deep-black);">Comments 14K</div>
-        <div style="display: flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 500;">
-            <img src="https://ui-avatars.com/api/?name=U" style="width:24px;height:24px;border-radius:50%;">
-            <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1;">This video is absolutely breathtaking! The views are...</div>
+    <!-- Video Player View (Full Screen Overlay) -->
+    <div id="video-player-view">
+        <div class="video-wrapper">
+            <video id="main-video-player" width="100%" height="100%" controls controlsList="nodownload"></video>
+        </div>
+        <div id="video-info-card" style="padding: 16px;">
+            <!-- Video Meta Injected by JS -->
         </div>
     </div>
 </div>
-
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        setupCategoryChips();
-        renderAllCategory(); 
-    });
-
-    function setupCategoryChips() {
-        const chips = document.querySelectorAll('#home-category-chips .chip');
-        chips.forEach(chip => {
-            chip.addEventListener('click', (e) => {
-                chips.forEach(c => { c.classList.remove('active'); c.classList.add('inactive'); });
-                e.target.classList.remove('inactive');
-                e.target.classList.add('active');
-                
-                const cat = e.target.getAttribute('data-cat');
-                if (cat === 'all') renderAllCategory();
-                else if (cat === 'posts') renderPostsCategory();
-                else if (cat === 'shorts') renderShortsCategory();
-            });
-        });
-    }
-
-    const feedContainer = document.getElementById('dynamic-home-feed');
-
-    function renderAllCategory() {
-        feedContainer.innerHTML = '';
-        
-        const shortsGrid = document.createElement('div');
-        shortsGrid.className = 'shorts-grid-container';
-        for(let i=1; i<=6; i++) {
-            shortsGrid.innerHTML += `
-                <div class="short-card" onclick="openVideoPlayer()">
-                    <img src="https://source.unsplash.com/random/400x600?portrait=${i}" loading="lazy">
-                    <div class="short-overlay">
-                        <div class="short-title">Amazing Short ${i}</div>
-                        <div class="short-views">${Math.floor(Math.random() * 900) + 10}K views</div>
-                    </div>
-                </div>`;
-        }
-        feedContainer.appendChild(shortsGrid);
-
-        for(let i=1; i<=5; i++) {
-            feedContainer.appendChild(createLongVideoCard(i));
-        }
-
-        feedContainer.appendChild(createPostCard(1));
-    }
-
-    function renderPostsCategory() {
-        feedContainer.innerHTML = '';
-        for(let i=1; i<=5; i++) { feedContainer.appendChild(createPostCard(i)); }
-    }
-
-    function renderShortsCategory() {
-        feedContainer.innerHTML = '';
-        const grid = document.createElement('div');
-        grid.className = 'shorts-grid-container';
-        for(let i=1; i<=8; i++) {
-            grid.innerHTML += `
-                <div class="short-card" onclick="openVideoPlayer()">
-                    <img src="https://source.unsplash.com/random/400x600?nature=${i}" loading="lazy">
-                    <div class="short-overlay">
-                        <div class="short-title">Exclusive Short ${i}</div>
-                        <div class="short-views">1.2M views</div>
-                    </div>
-                </div>`;
-        }
-        feedContainer.appendChild(grid);
-    }
-
-    function createLongVideoCard(index) {
-        const div = document.createElement('div');
-        div.className = 'video-card';
-        div.innerHTML = `
-            <div class="video-thumbnail" onclick="openVideoPlayer()">
-                <img src="https://source.unsplash.com/random/800x450?landscape=${index}" loading="lazy">
-                <div class="video-duration">10:45</div>
-            </div>
-            <div class="video-details">
-                <img src="https://ui-avatars.com/api/?name=C${index}&background=000&color=fff" class="video-avatar">
-                <div class="video-meta-text">
-                    <div class="video-title">Epic Long Video Format Demo ${index}</div>
-                    <div class="video-subtitle">Channel Name ${index} • 1M views • 2 days ago</div>
-                </div>
-            </div>
-        `;
-        return div;
-    }
-
-    function createPostCard(index) {
-        const div = document.createElement('div');
-        div.className = 'post-card';
-        div.innerHTML = `
-            <div class="post-header">
-                <div class="post-user-info">
-                    <img src="https://ui-avatars.com/api/?name=U${index}&background=000&color=fff" class="post-avatar">
-                    <div class="post-name-area">
-                        <span class="post-name">User Name Profile ${index}</span>
-                        <span class="post-time">5 hrs ago</span>
-                    </div>
-                </div>
-                <button class="post-subscribe-btn">Subscribe</button>
-            </div>
-            <div class="post-title">This is a beautiful post. Enjoy the view!</div>
-            <img src="https://source.unsplash.com/random/600x800?city=${index}" class="post-image" loading="lazy">
-            
-            <div class="post-stats">
-                <div style="color:var(--deep-black); font-weight:700;">❤️ 👍 🥰 100 Reactions</div>
-                <div>100 Comments</div>
-            </div>
-            
-            <div class="post-actions">
-                <div class="post-action-btn love-btn"><span class="material-symbols-rounded">favorite</span> Love</div>
-                <div class="post-action-btn"><span class="material-symbols-rounded">chat_bubble</span> Comment</div>
-                
-                <div class="reaction-picker">
-                    <span class="reaction-emoji" onclick="selectReaction(this, '❤️')">❤️</span>
-                    <span class="reaction-emoji" onclick="selectReaction(this, '👍')">👍</span>
-                    <span class="reaction-emoji" onclick="selectReaction(this, '🥰')">🥰</span>
-                    <span class="reaction-emoji" onclick="selectReaction(this, '😆')">😆</span>
-                </div>
-            </div>
-        `;
-
-        const loveBtn = div.querySelector('.love-btn');
-        const picker = div.querySelector('.reaction-picker');
-        let pressTimer;
-
-        loveBtn.addEventListener('touchstart', () => { pressTimer = setTimeout(() => { picker.classList.add('show'); }, 500); }, {passive: true});
-        loveBtn.addEventListener('touchend', () => { clearTimeout(pressTimer); });
-        
-        document.addEventListener('click', (e) => {
-            if(!loveBtn.contains(e.target) && !picker.contains(e.target)) picker.classList.remove('show');
-        });
-
-        return div;
-    }
-
-    window.selectReaction = function(element, emoji) {
-        const flying = document.createElement('div');
-        flying.innerText = emoji;
-        flying.className = 'emoji-floating';
-        flying.style.fontSize = '45px';
-        flying.style.left = element.getBoundingClientRect().left + 'px';
-        flying.style.top = element.getBoundingClientRect().top + 'px';
-        document.body.appendChild(flying);
-        element.parentElement.classList.remove('show');
-        setTimeout(() => { flying.remove(); }, 800);
-    }
-
-    window.openVideoPlayer = function() { document.getElementById('video-player-page').style.display = 'flex'; }
-</script>

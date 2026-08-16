@@ -1,378 +1,1043 @@
-<div class="ptr-container" id="ptr-indicator">
-<div class="ptr-spinner" id="ptr-spinner"></div>
+<div class="fl-home-root">
+  <!-- 1. STARTUP / SPLASH SCREEN OVERLAY -->
+  <div id="fl-splash-screen" class="fl-splash-screen">
+    <div class="fl-splash-content">
+      <div class="fl-splash-logo-wrap">
+        <svg class="fl-splash-logo" viewBox="0 0 100 100" fill="none">
+          <circle cx="50" cy="50" r="48" fill="#FF0033" />
+          <path d="M38 30L72 50L38 70V30Z" fill="white" />
+        </svg>
+      </div>
+      <h1 class="fl-splash-title">FLAYNITY</h1>
+      <p class="fl-splash-subtitle">Next-Gen Video & Community</p>
+      <div class="fl-splash-spinner"></div>
+    </div>
+  </div>
+
+  <!-- 2. OFFLINE TOAST / BANNER -->
+  <div id="fl-offline-banner" class="fl-offline-banner hidden">
+    <span class="material-symbols-outlined">cloud_off</span>
+    <span>You're offline. Viewing cached content.</span>
+    <button id="fl-offline-retry-btn" class="fl-retry-btn">Retry</button>
+  </div>
+
+  <!-- 3. AUTHENTICATION MODAL (Triggered when user is unauthenticated) -->
+  <div id="fl-auth-modal" class="fl-modal-overlay hidden">
+    <div class="fl-auth-sheet">
+      <div class="fl-auth-header">
+        <h2 id="fl-auth-title">Sign in to Flaynity</h2>
+        <button id="fl-auth-close-btn" class="fl-icon-btn"><span class="material-symbols-outlined">close</span></button>
+      </div>
+      <div class="fl-auth-tabs">
+        <button id="fl-tab-signin" class="fl-auth-tab active">Sign In</button>
+        <button id="fl-tab-register" class="fl-auth-tab">Register</button>
+      </div>
+      <form id="fl-auth-form" class="fl-auth-form">
+        <div id="fl-username-field-group" class="fl-input-group hidden">
+          <label>Full Name</label>
+          <input type="text" id="fl-auth-name" placeholder="Channel / User Name" />
+        </div>
+        <div class="fl-input-group">
+          <label>Email Address</label>
+          <input type="email" id="fl-auth-email" placeholder="name@example.com" required />
+        </div>
+        <div class="fl-input-group">
+          <label>Password</label>
+          <input type="password" id="fl-auth-password" placeholder="••••••••" required />
+        </div>
+        <div id="fl-auth-error" class="fl-auth-error hidden"></div>
+        <button type="submit" id="fl-auth-submit-btn" class="fl-btn fl-btn-primary">
+          <span id="fl-auth-btn-text">Continue</span>
+          <div id="fl-auth-spinner" class="fl-spinner-small hidden"></div>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. TOP APP BAR -->
+  <header class="fl-header">
+    <div class="fl-header-left">
+      <div class="fl-logo-icon">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="#FF0033">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+        </svg>
+      </div>
+      <span class="fl-logo-text">Flaynity</span>
+    </div>
+    <div class="fl-header-right">
+      <button class="fl-icon-btn" onclick="FlaynityNav.navigateTo('discover')">
+        <span class="material-symbols-outlined">search</span>
+      </button>
+      <button class="fl-icon-btn" onclick="FlaynityNav.navigateTo('you')">
+        <span class="material-symbols-outlined">settings</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 5. CATEGORY CHIPS (Divided Exactly 1/3 Width Each - No Scroll) -->
+  <div class="fl-category-bar">
+    <button class="fl-category-chip active" data-category="all">All</button>
+    <button class="fl-category-chip" data-category="posts">Posts</button>
+    <button class="fl-category-chip" data-category="shorts">Shorts</button>
+  </div>
+
+  <!-- 6. MAIN FEED CONTAINER -->
+  <main id="fl-main-feed" class="fl-feed-container">
+    <!-- Skeleton Loaders -->
+    <div id="fl-feed-skeleton" class="fl-skeleton-wrap">
+      <!-- Shorts Skeleton Grid -->
+      <div class="fl-sk-shorts-grid">
+        <div class="fl-sk-short-card"></div>
+        <div class="fl-sk-short-card"></div>
+      </div>
+      <!-- Video Skeleton Card -->
+      <div class="fl-sk-video-card">
+        <div class="fl-sk-thumb"></div>
+        <div class="fl-sk-details">
+          <div class="fl-sk-avatar"></div>
+          <div class="fl-sk-lines">
+            <div class="fl-sk-line fl-sk-title"></div>
+            <div class="fl-sk-line fl-sk-meta"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Content Feed (Injected dynamically) -->
+    <div id="fl-feed-content" class="fl-feed-content"></div>
+    
+    <!-- Infinite Loading Sentinel -->
+    <div id="fl-feed-sentinel" class="fl-sentinel">
+      <div class="fl-spinner-small"></div>
+    </div>
+  </main>
+
+  <!-- 7. FULLSCREEN / IN-APP LONG VIDEO PLAYER VIEW OVERLAY -->
+  <div id="fl-video-player-view" class="fl-player-view hidden">
+    <!-- Video Player Container (16:9 Aspect Ratio) -->
+    <div class="fl-player-wrapper">
+      <video id="fl-active-video-element" class="fl-video-el" playsinline controls></video>
+      <button id="fl-player-close-btn" class="fl-player-floating-close">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Video Metadata & Interaction Area -->
+    <div class="fl-player-meta-container">
+      <!-- 1st Line: Title -->
+      <div class="fl-player-title-row">
+        <h2 id="fl-player-video-title" class="fl-player-title">Loading title...</h2>
+      </div>
+      <!-- 2nd Line: Compact Metadata + '...more' -->
+      <div class="fl-player-sub-meta">
+        <span id="fl-player-channel-handle">@channel</span>
+        <span class="fl-dot">•</span>
+        <span id="fl-player-like-count">0 Likes</span>
+        <span class="fl-dot">•</span>
+        <span id="fl-player-views-count">0 Views</span>
+        <span class="fl-dot">•</span>
+        <span id="fl-player-time">Just now</span>
+        <button id="fl-btn-more-meta" class="fl-btn-more">...more</button>
+      </div>
+
+      <!-- Channel Action Row -->
+      <div class="fl-channel-actions-row">
+        <div class="fl-channel-author-left">
+          <img id="fl-player-author-img" class="fl-avatar" src="https://via.placeholder.com/40" alt="Avatar" />
+          <div class="fl-channel-name-sub">
+            <span id="fl-player-author-name" class="fl-channel-name">Channel Name</span>
+            <span id="fl-player-author-subcount" class="fl-sub-count">0 subscribers</span>
+          </div>
+        </div>
+        <button id="fl-player-btn-subscribe" class="fl-btn-subscribe">Subscribe</button>
+      </div>
+
+      <!-- Action Buttons Row: Like, Dislike, Download -->
+      <div class="fl-actions-btn-group">
+        <button id="fl-player-btn-like" class="fl-pill-action">
+          <span class="material-symbols-outlined" id="fl-player-like-icon">thumb_up</span>
+          <span id="fl-player-like-text">Like</span>
+        </button>
+        <button id="fl-player-btn-dislike" class="fl-pill-action">
+          <span class="material-symbols-outlined" id="fl-player-dislike-icon">thumb_down</span>
+        </button>
+        <button id="fl-player-btn-download" class="fl-pill-action">
+          <span class="material-symbols-outlined">download</span>
+          <span>Download</span>
+        </button>
+      </div>
+
+      <!-- Comment Preview Card -->
+      <div id="fl-comment-preview-card" class="fl-comment-preview-card">
+        <div class="fl-comment-preview-header">
+          <span class="fl-comment-preview-title">Comments</span>
+          <span id="fl-comment-preview-total" class="fl-comment-preview-count">0</span>
+        </div>
+        <div class="fl-comment-preview-body">
+          <img id="fl-comment-preview-avatar" class="fl-avatar-small" src="https://via.placeholder.com/28" alt="" />
+          <p id="fl-comment-preview-text" class="fl-comment-text-truncated">Add a comment...</p>
+        </div>
+      </div>
+
+      <!-- Recommended Feed Inside Player -->
+      <div class="fl-player-recommended-section">
+        <h3 class="fl-section-heading">Recommended</h3>
+        <div id="fl-player-recommended-list" class="fl-recommended-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. VIDEO "...MORE" BOTTOM SHEET -->
+  <div id="fl-sheet-more-desc" class="fl-bottom-sheet-backdrop hidden">
+    <div class="fl-bottom-sheet">
+      <div class="fl-sheet-handle"></div>
+      <div class="fl-sheet-header">
+        <h3>Description</h3>
+        <button class="fl-icon-btn" onclick="FlaynityHome.closeSheet('fl-sheet-more-desc')">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="fl-sheet-content">
+        <h4 id="fl-sheet-full-title" class="fl-sheet-title">Video Title</h4>
+        <div class="fl-sheet-stats-bar">
+          <div><strong id="fl-sheet-likes">0</strong><span>Likes</span></div>
+          <div><strong id="fl-sheet-views">0</strong><span>Views</span></div>
+          <div><strong id="fl-sheet-date">Date</strong><span>Uploaded</span></div>
+        </div>
+        <p id="fl-sheet-desc-text" class="fl-sheet-desc">No description available.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. COMMENTS FULL BOTTOM SHEET -->
+  <div id="fl-sheet-comments" class="fl-bottom-sheet-backdrop hidden">
+    <div class="fl-bottom-sheet fl-sheet-tall">
+      <div class="fl-sheet-handle"></div>
+      <div class="fl-sheet-header">
+        <h3>Comments <span id="fl-comments-modal-count">0</span></h3>
+        <button class="fl-icon-btn" onclick="FlaynityHome.closeSheet('fl-sheet-comments')">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div id="fl-comments-list" class="fl-comments-scroll-area"></div>
+      <div class="fl-comment-input-bar">
+        <input type="text" id="fl-comment-input-field" placeholder="Add a public comment..." />
+        <button id="fl-btn-send-comment" class="fl-icon-btn"><span class="material-symbols-outlined">send</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. POST FULL-SCREEN IMAGE PREVIEW -->
+  <div id="fl-image-lightbox" class="fl-lightbox-backdrop hidden">
+    <button id="fl-lightbox-close" class="fl-lightbox-close-btn">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <img id="fl-lightbox-img" class="fl-lightbox-image" src="" alt="Post Full Preview" />
+  </div>
+
+  <!-- 11. ALL PEOPLE REACTED MODAL -->
+  <div id="fl-reacted-users-modal" class="fl-bottom-sheet-backdrop hidden">
+    <div class="fl-bottom-sheet fl-sheet-tall">
+      <div class="fl-sheet-handle"></div>
+      <div class="fl-sheet-header">
+        <button class="fl-icon-btn" onclick="FlaynityHome.closeSheet('fl-reacted-users-modal')">
+          <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+        <h3>All People Reacted</h3>
+        <div style="width: 40px;"></div>
+      </div>
+      <!-- Exception: Horizontal Scrolling Reaction Filter Chips -->
+      <div id="fl-reaction-chips-row" class="fl-reaction-chips-scroll">
+        <button class="fl-rxn-chip active" data-rxn="all">All (0)</button>
+        <button class="fl-rxn-chip" data-rxn="love">❤️ Love (0)</button>
+        <button class="fl-rxn-chip" data-rxn="like">👍 Like (0)</button>
+        <button class="fl-rxn-chip" data-rxn="care">🥰 Care (0)</button>
+        <button class="fl-rxn-chip" data-rxn="haha">😆 Haha (0)</button>
+        <button class="fl-rxn-chip" data-rxn="wow">😮 Wow (0)</button>
+        <button class="fl-rxn-chip" data-rxn="sad">😭 Sad (0)</button>
+        <button class="fl-rxn-chip" data-rxn="angry">😡 Angry (0)</button>
+      </div>
+      <div id="fl-reacted-users-list" class="fl-reacted-users-list"></div>
+    </div>
+  </div>
+
+  <!-- 12. BOTTOM NAVIGATION BAR -->
+  <nav class="fl-bottom-nav">
+    <button class="fl-nav-item active" onclick="FlaynityNav.navigateTo('home')">
+      <span class="material-symbols-outlined filled">home</span>
+      <span>Home</span>
+    </button>
+    <button class="fl-nav-item" onclick="FlaynityNav.navigateTo('shorts')">
+      <span class="material-symbols-outlined">play_circle</span>
+      <span>Shorts</span>
+    </button>
+    <button class="fl-nav-item fl-nav-create-btn" onclick="FlaynityNav.navigateTo('upload')">
+      <div class="fl-plus-icon-circle">
+        <span class="material-symbols-outlined">add</span>
+      </div>
+    </button>
+    <button class="fl-nav-item" onclick="FlaynityNav.navigateTo('discover')">
+      <span class="material-symbols-outlined">explore</span>
+      <span>Discover</span>
+    </button>
+    <button class="fl-nav-item" onclick="FlaynityNav.navigateTo('you')">
+      <span class="material-symbols-outlined">person</span>
+      <span>You</span>
+    </button>
+  </nav>
 </div>
 
-<audio id="startupSound" preload="auto">
-<source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg"/>
-</audio>
+<style>
+  /* ==========================================================================
+     HOME PAGE ENCAPSULATED STYLES
+     ========================================================================== */
+  .fl-home-root {
+    width: 100%;
+    min-height: 100vh;
+    padding-bottom: var(--fl-bottom-nav-height);
+    background-color: var(--fl-bg);
+    position: relative;
+    overflow-x: hidden;
+  }
 
-<div id="splash-screen">
-<div class="ambient-light"></div>
-<div class="loading-container">
-<h1 class="logo-splash">Flay<span>nity</span></h1>
-<div class="progress-container">
-<div class="progress-bar"></div>
-</div>
-<p class="loading-text">Loading Cinematic Experience...</p>
-</div>
-</div>
+  /* Splash Screen */
+  .fl-splash-screen {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #FFFFFF;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+  }
+  .fl-splash-content {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .fl-splash-logo-wrap { width: 80px; height: 80px; margin-bottom: 16px; }
+  .fl-splash-logo { width: 100%; height: 100%; }
+  .fl-splash-title { font-size: 24px; font-weight: 800; letter-spacing: 1px; color: #111; margin-bottom: 4px; }
+  .fl-splash-subtitle { font-size: 13px; color: #666; margin-bottom: 24px; }
+  .fl-splash-spinner {
+    width: 28px; height: 28px;
+    border: 3px solid rgba(255,0,51,0.2);
+    border-top-color: var(--fl-primary);
+    border-radius: 50%;
+    animation: fl-spin 0.8s linear infinite;
+  }
 
-<div class="toast-container" id="toast-container"></div>
+  /* Header */
+  .fl-header {
+    position: sticky;
+    top: 0;
+    height: var(--fl-header-height);
+    background: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    z-index: 100;
+    border-bottom: 1px solid #F0F0F0;
+  }
+  .fl-header-left { display: flex; align-items: center; gap: 8px; }
+  .fl-logo-text { font-size: 19px; font-weight: 800; letter-spacing: -0.5px; }
+  .fl-header-right { display: flex; align-items: center; gap: 4px; }
+  .fl-icon-btn {
+    background: none; border: none; outline: none;
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #111; cursor: pointer;
+  }
+  .fl-icon-btn:active { background-color: var(--fl-ripple); }
 
-<div id="network-spinner-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:9999999; justify-content:center; align-items:center; flex-direction:column; color:white;">
-<div style="width:48px; height:48px; border:4px solid rgba(255,255,255,0.2); border-top-color:var(--primary); border-radius:50%; animation:spin 1s linear infinite; margin-bottom:16px;"></div>
-<p style="font-weight:700;">Reconnecting to Server...</p>
-</div>
+  /* Strict Category Chips (Divided 1/3 Width Each - No Scroll) */
+  .fl-category-bar {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    padding: 8px 12px;
+    gap: 8px;
+    background: #FFFFFF;
+    position: sticky;
+    top: var(--fl-header-height);
+    z-index: 99;
+    border-bottom: 1px solid #F0F0F0;
+  }
+  .fl-category-chip {
+    padding: 8px 0;
+    border: none;
+    outline: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #F2F2F2;
+    color: #0F0F0F;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .fl-category-chip.active {
+    background: #0F0F0F;
+    color: #FFFFFF;
+  }
 
-<div id="auth-screen">
-<div class="auth-box" id="login-box" style="text-align: center;">
-<h1>Flay<span>nity</span></h1>
-<h2 style="margin-bottom: 30px;">Cinematic Experience Awaits</h2>
-<button class="btn-google" onclick="signInWithGoogle()" style="padding: 18px; font-size: 1.15rem; width: 100%; border-radius: 24px; box-shadow: 0 10px 25px rgba(255, 46, 85, 0.25); display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer;">
-<img alt="Google" src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg"/>
-                Sign in with Google
-            </button>
-<p style="text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-top: 25px; line-height: 1.4;">
-                By continuing, you agree to Flaynity's Terms of Service and Privacy Policy.
-            </p>
-</div>
-</div>
+  /* Feed Container */
+  .fl-feed-container { width: 100%; overflow-x: hidden; }
 
-<div id="app-screen">
+  /* Skeletons */
+  .fl-sk-shorts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 12px;
+  }
+  .fl-sk-short-card {
+    aspect-ratio: 2/3;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #ececec 25%, #f5f5f5 50%, #ececec 75%);
+    background-size: 200% 100%;
+    animation: fl-shimmer 1.5s infinite;
+  }
+  .fl-sk-video-card { width: 100%; margin-bottom: 20px; }
+  .fl-sk-thumb {
+    width: 100%; aspect-ratio: 16/9;
+    background: #ececec;
+    animation: fl-shimmer 1.5s infinite;
+  }
+  .fl-sk-details { display: flex; padding: 12px; gap: 12px; }
+  .fl-sk-avatar { width: 38px; height: 38px; border-radius: 50%; background: #ececec; }
+  .fl-sk-lines { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .fl-sk-line { height: 12px; background: #ececec; border-radius: 4px; }
+  .fl-sk-title { width: 85%; }
+  .fl-sk-meta { width: 50%; }
 
-<header>
-<div class="brand" id="brand-appbar">
-<svg fill="none" height="28" viewbox="0 0 24 24" width="28" xmlns="http://www.w3.org/2000/svg">
-<rect fill="#FF2E55" height="24" rx="6" width="24"></rect>
-<path d="M10 8.5L15 12L10 15.5V8.5Z" fill="white"></path>
-</svg>
-<span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 900; font-size: 1.35rem; color: var(--text-main); letter-spacing: -0.5px;">Flaynity</span>
-</div>
-<div class="header-actions" id="appbar-actions-wrap" style="display: flex; align-items: center; gap: 14px;">
-<button onclick="switchTab('search')" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
-<i class="fas fa-search"></i>
-</button>
-<button class="appbar-theme-btn" id="theme-toggle-btn" onclick="openThemePopupMenu()" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;" title="Switch Theme">
-<i class="fas fa-circle-half-stroke"></i>
-</button>
-</div>
-</header>
+  /* Shorts Grid (Inside All & Shorts categories) */
+  .fl-shorts-section-heading {
+    display: flex; align-items: center; gap: 6px;
+    padding: 14px 12px 6px; font-size: 16px; font-weight: 700;
+  }
+  .fl-shorts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 8px 12px 16px;
+  }
+  .fl-short-card {
+    position: relative;
+    aspect-ratio: 2/3;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+    cursor: pointer;
+  }
+  .fl-short-thumb { width: 100%; height: 100%; object-fit: cover; }
+  .fl-short-overlay {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 12px 8px 8px;
+    background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, transparent 100%);
+    color: #FFF;
+  }
+  .fl-short-title {
+    font-size: 12px; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+  .fl-short-views { font-size: 11px; opacity: 0.85; }
 
-<div class="category-chips-container" id="global-category-chips">
-<div class="chip-item active" onclick="selectCategoryChip('All', this)">All</div>
-<div class="chip-item" onclick="selectCategoryChip('Posts', this)">Posts</div>
-<div class="chip-item" onclick="selectCategoryChip('Shorts', this)">Shorts</div>
-</div>
+  /* Long Video Card */
+  .fl-video-card { width: 100%; margin-bottom: 16px; cursor: pointer; }
+  .fl-video-thumb-wrap { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; }
+  .fl-video-thumb { width: 100%; height: 100%; object-fit: cover; }
+  .fl-video-duration {
+    position: absolute; bottom: 8px; right: 8px;
+    background: rgba(0,0,0,0.8); color: #FFF;
+    font-size: 11px; font-weight: 600; padding: 2px 5px; border-radius: 4px;
+  }
+  .fl-video-info-row { display: flex; padding: 12px; gap: 12px; }
+  .fl-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: #EEE; }
+  .fl-avatar-small { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+  .fl-video-text-meta { flex: 1; min-width: 0; }
+  .fl-video-card-title {
+    font-size: 14px; font-weight: 600; color: #0F0F0F;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+  .fl-video-sub-line { font-size: 12px; color: var(--fl-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-<div class="tab-content active" id="home-tab" style="padding-top: 0px;">
-<div id="home-feed-container" style="margin-top: 12px;"></div>
-</div>
+  /* Facebook Style Community Post */
+  .fl-post-card {
+    border-top: 6px solid #F2F2F2;
+    padding: 12px 14px;
+    background: #FFF;
+  }
+  .fl-post-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .fl-post-author-wrap { display: flex; align-items: center; gap: 10px; }
+  .fl-post-author-name { font-size: 14px; font-weight: 700; color: #111; }
+  .fl-post-time { font-size: 11px; color: var(--fl-text-secondary); }
+  .fl-post-title-box { font-size: 13px; line-height: 1.4; color: #111; margin-bottom: 10px; }
+  .fl-post-title-collapsed {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .fl-btn-expand-post { background: none; border: none; color: #606060; font-weight: 600; cursor: pointer; padding: 0 4px; }
+  
+  /* Post Images (3:4 ratio single or up to 5-image grid) */
+  .fl-post-media-grid {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .fl-post-media-grid.single { aspect-ratio: 3/4; }
+  .fl-post-img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
 
-<div class="bottom-nav">
-<div class="nav-item active" id="nav-home" onclick="switchTab('home')">
-<div class="nav-icon-container">
-<svg class="nav-icon-svg icon-unselected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M12 5.69l5 4.5v7.81h-2v-6H9v6H7v-7.81l5-4.5M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z" fill="currentColor"></path>
-</svg>
-<svg class="nav-icon-svg icon-selected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="currentColor"></path>
-</svg>
-</div>
-<span class="nav-label">Home</span>
-</div>
-<div class="nav-item" id="nav-shorts" onclick="switchTab('shorts')">
-<div class="nav-icon-container">
-<svg class="nav-icon-svg icon-unselected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M17.77 10.32c-.77-.32-1.2-.5-1.2-.5L18 8.64a2.53 2.53 0 0 0-1.12-3.37 2.45 2.45 0 0 0-3.3.12L7 10.14a2.53 2.53 0 0 0-.27 3.54s1.2.5 1.2.5l-1.43 1.18a2.53 2.53 0 0 0 1.12 3.37 2.45 2.45 0 0 0 3.3-.12l6.57-4.75a2.53 2.53 0 0 0 .28-3.54z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2.2"></path>
-</svg>
-<svg class="nav-icon-svg icon-selected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M17.77 10.32c-.77-.32-1.2-.5-1.2-.5L18 8.64a2.53 2.53 0 0 0-1.12-3.37 2.45 2.45 0 0 0-3.3.12L7 10.14a2.53 2.53 0 0 0-.27 3.54s1.2.5 1.2.5l-1.43 1.18a2.53 2.53 0 0 0 1.12 3.37 2.45 2.45 0 0 0 3.3-.12l6.57-4.75a2.53 2.53 0 0 0 .28-3.54z" fill="currentColor"></path>
-</svg>
-</div>
-<span class="nav-label">Shorts</span>
-</div>
-<div class="nav-item" id="nav-create" onclick="openCreateBottomSheet(); playUI('click')" style="height: 100%; display: flex; align-items: center; justify-content: center;">
-<div class="nav-create-circle">
-<svg fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"></path>
-</svg>
-</div>
-</div>
-<div class="nav-item" id="nav-search" onclick="switchTab('search')">
-<div class="nav-icon-container">
-<svg class="nav-icon-svg icon-unselected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.5l-4 1.5 1.5-4 4-1.5-1.5 4zm-1-3.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="currentColor"></path>
-</svg>
-<svg class="nav-icon-svg icon-selected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.5l-4 1.5 1.5-4 4-1.5-1.5 4zm-1-3.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="currentColor"></path>
-</svg>
-</div>
-<span class="nav-label">Discover</span>
-</div>
-<div class="nav-item" id="nav-you" onclick="switchTab('you')">
-<div class="nav-icon-container">
-<div class="nav-avatar-circle" id="nav-avatar-img">
-<svg class="nav-icon-svg icon-unselected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="currentColor"></path>
-</svg>
-</div>
-</div>
-<span class="nav-label">You</span>
-</div>
-</div>
+  /* Post Reaction Section & Counters */
+  .fl-post-rxn-summary {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 0; border-bottom: 1px solid #F0F0F0;
+    font-size: 12px; color: var(--fl-text-secondary);
+  }
+  .fl-rxn-icons-cluster { display: flex; align-items: center; gap: 2px; cursor: pointer; }
+  .fl-post-actions-row { display: flex; align-items: center; padding-top: 6px; }
+  .fl-post-action-btn {
+    flex: 1; height: 38px; display: flex; align-items: center; justify-content: center;
+    gap: 6px; background: none; border: none; font-size: 13px; font-weight: 600;
+    color: #444; border-radius: 6px; cursor: pointer; position: relative;
+  }
+  .fl-post-action-btn:active { background: #F5F5F5; }
 
-</div>
+  /* Post Reaction Picker (Long Press) */
+  .fl-reaction-picker {
+    position: absolute;
+    bottom: 42px; left: 10px;
+    background: #FFF;
+    border-radius: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px;
+    z-index: 50;
+    animation: fl-pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .fl-rxn-emoji-btn {
+    font-size: 22px; cursor: pointer; transition: transform 0.15s ease;
+  }
+  .fl-rxn-emoji-btn:hover, .fl-rxn-emoji-btn:active {
+    transform: scale(1.35) translateY(-4px);
+  }
 
-<div id="full-movie-page">
-<button class="back-btn" onclick="executeBackAction(); playUI('click')">
-<i class="fas fa-arrow-left"></i>
-</button>
-<div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000000;">
-<div id="video-player-skeleton" style="position: absolute; top:0; left:0; width:100%; height:100%; background:#000000; display:flex; align-items:center; justify-content:center; z-index:11;">
-<div style="width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
-</div>
-<img class="full-page-banner" id="movie-detail-banner" onerror="this.src=''" src="" style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; border-radius:0;"/>
-<div class="video-container" id="video-player-container" style="width:100%; height:100%; display:none; position:absolute; top:0; left:0; z-index:10; border-radius:0;"></div>
-</div>
-<div class="full-page-content" style="padding: 16px;">
-<div class="premium-white-card-watch">
-<h1 id="movie-detail-title" style="font-size: 1.15rem; font-weight: 800; margin: 0 0 6px 0; line-height: 1.35; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Plus Jakarta Sans', sans-serif;">Title</h1>
-<div class="movie-metadata-row">
-<span id="movie-detail-channel-handle" style="color: var(--text-main); font-weight: 800;">@channel</span>
-<span>•</span>
-<span id="movie-detail-likes">0 Likes</span>
-<span>•</span>
-<span id="movie-detail-views">0 Views</span>
-<span>•</span>
-<span id="movie-detail-upload-time">Just Now</span>
-<button class="btn-more-meta" onclick="openMoreDescriptionSheet()">...more</button>
-</div>
-</div>
-<div class="channel-action-row-watch">
-<div class="action-row-left">
-<img id="movie-channel-avatar" src="" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--border-color); background: #E2E8F0;"/>
-<button class="btn-watch-subscribe" id="movie-subscribe-btn" onclick="toggleMovieChannelSubscribe()">Subscribe</button>
-</div>
-<div class="action-row-right">
-<div class="pill-likes-dislikes">
-<button class="btn-watch-like ripple" id="movie-like-btn" onclick="toggleMovieLike()">
-<i class="far fa-thumbs-up" id="movie-like-icon"></i>
-<span id="movie-like-count">0</span>
-</button>
-<div style="width: 1px; height: 16px; background: rgba(0,0,0,0.12); align-self: center;"></div>
-<button class="btn-watch-dislike ripple" id="movie-dislike-btn" onclick="toggleMovieDislike()">
-<i class="far fa-thumbs-down" id="movie-dislike-icon"></i>
-</button>
-</div>
-<button class="btn-watch-download ripple" onclick="requestDownloadWithAd()" style="width: 34px; height: 34px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;" title="Download">
-<i class="fas fa-download"></i>
-</button>
-</div>
-</div>
-<div class="comment-preview-card" id="comment-preview-trigger" onclick="openCommentModal()">
-<div class="comment-preview-header">
-<span class="comment-preview-title">Comments <span class="comment-preview-count" id="comment-preview-count">0</span></span>
-<i class="fas fa-chevron-down" style="font-size: 0.75rem; color: var(--text-muted);"></i>
-</div>
-<div class="comment-preview-content">
-<div class="comment-preview-avatar" id="comment-preview-avatar">
-<i class="far fa-comment" style="color: var(--text-muted);"></i>
-</div>
-<span class="comment-preview-text" id="comment-preview-text">No comments yet. Tap to start the conversation!</span>
-</div>
-</div>
-<div class="recommended-feed-title">
-<i class="fas fa-play-circle" style="color:var(--primary);"></i> Recommended Feed
+  /* In-App Long Video Player View */
+  .fl-player-view {
+    position: fixed; top: 0; left: 0; right: 0; bottom: var(--fl-bottom-nav-height);
+    background: #FFF; z-index: 500; overflow-y: auto;
+  }
+  .fl-player-wrapper {
+    position: sticky; top: 0; width: 100%; aspect-ratio: 16/9;
+    background: #000; z-index: 510;
+  }
+  .fl-video-el { width: 100%; height: 100%; object-fit: contain; }
+  .fl-player-floating-close {
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(0,0,0,0.6); color: #FFF; border: none;
+    border-radius: 50%; width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fl-player-meta-container { padding: 12px; }
+  .fl-player-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .fl-player-sub-meta {
+    font-size: 12px; color: var(--fl-text-secondary);
+    display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .fl-btn-more { background: none; border: none; font-weight: 600; color: #111; cursor: pointer; }
+  .fl-channel-actions-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 0; border-top: 1px solid #F0F0F0; border-bottom: 1px solid #F0F0F0;
+  }
+  .fl-channel-author-left { display: flex; align-items: center; gap: 10px; }
+  .fl-channel-name-sub { display: flex; flex-direction: column; }
+  .fl-channel-name { font-size: 13px; font-weight: 700; }
+  .fl-sub-count { font-size: 11px; color: var(--fl-text-secondary); }
+  .fl-btn-subscribe {
+    background: #0F0F0F; color: #FFF; border: none;
+    padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .fl-btn-subscribe.subscribed { background: #E5E5E5; color: #0F0F0F; }
+
+  /* Pill Buttons Group */
+  .fl-actions-btn-group {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 0; overflow-x: auto;
+  }
+  .fl-pill-action {
+    display: flex; align-items: center; gap: 6px;
+    background: #F2F2F2; border: none; border-radius: 18px;
+    padding: 7px 14px; font-size: 12px; font-weight: 600; color: #0F0F0F;
+    cursor: pointer; white-space: nowrap;
+  }
+
+  /* Comment Preview Card */
+  .fl-comment-preview-card {
+    background: #F8F9FA; border-radius: 10px;
+    padding: 10px 12px; margin: 10px 0; cursor: pointer;
+  }
+  .fl-comment-preview-header { display: flex; gap: 8px; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .fl-comment-preview-body { display: flex; align-items: center; gap: 8px; }
+  .fl-comment-text-truncated {
+    font-size: 12px; color: #333;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* Bottom Sheets & Lightbox */
+  .fl-bottom-sheet-backdrop, .fl-modal-overlay, .fl-lightbox-backdrop {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5); z-index: 1000;
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .fl-bottom-sheet {
+    background: #FFF; border-radius: 16px 16px 0 0;
+    padding: 12px 16px 24px; max-height: 75vh; display: flex; flex-direction: column;
+    animation: fl-slide-up 0.25s ease-out;
+  }
+  .fl-sheet-tall { height: 75vh; }
+  .fl-sheet-handle {
+    width: 36px; height: 4px; background: #CCC; border-radius: 2px;
+    align-self: center; margin-bottom: 8px;
+  }
+  .fl-sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .fl-sheet-content { overflow-y: auto; }
+  .fl-sheet-stats-bar {
+    display: flex; justify-content: space-around; background: #F8F9FA;
+    padding: 10px; border-radius: 8px; margin: 12px 0; text-align: center;
+  }
+  .fl-sheet-stats-bar div { display: flex; flex-direction: column; font-size: 11px; color: #666; }
+  .fl-sheet-stats-bar strong { font-size: 14px; color: #111; margin-bottom: 2px; }
+
+  /* Reaction Chips (Horizontal Scroll allowed ONLY here) */
+  .fl-reaction-chips-scroll {
+    display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 10px;
+    border-bottom: 1px solid #F0F0F0;
+  }
+  .fl-rxn-chip {
+    padding: 6px 12px; border-radius: 16px; border: none;
+    background: #F0F0F0; color: #111; font-size: 12px; font-weight: 600;
+    white-space: nowrap; cursor: pointer;
+  }
+  .fl-rxn-chip.active { background: #000; color: #FFF; }
+  .fl-reacted-users-list { overflow-y: auto; padding: 8px 0; }
+  .fl-reacted-user-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 0; border-bottom: 1px solid #F9F9F9;
+  }
+
+  /* Comments Scroll Area */
+  .fl-comments-scroll-area { flex: 1; overflow-y: auto; padding: 6px 0; }
+  .fl-comment-item { display: flex; gap: 10px; margin-bottom: 12px; }
+  .fl-comment-meta { font-size: 11px; color: #777; margin-bottom: 2px; }
+  .fl-comment-input-bar {
+    display: flex; align-items: center; gap: 8px; border-top: 1px solid #F0F0F0; padding-top: 8px;
+  }
+  .fl-comment-input-bar input {
+    flex: 1; height: 38px; border: 1px solid #E0E0E0; border-radius: 20px;
+    padding: 0 14px; outline: none; font-size: 13px;
+  }
+
+  /* Lightbox */
+  .fl-lightbox-backdrop { justify-content: center; align-items: center; background: rgba(0,0,0,0.95); }
+  .fl-lightbox-close-btn { position: absolute; top: 16px; left: 16px; background: none; border: none; color: #FFF; cursor: pointer; }
+  .fl-lightbox-image { max-width: 100%; max-height: 85vh; object-fit: contain; }
+
+  /* Bottom Navigation */
+  .fl-bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: var(--fl-bottom-nav-height);
+    background: #FFFFFF;
+    border-top: 1px solid #E5E5E5;
+    display: flex; align-items: center; justify-content: space-around;
+    z-index: 800;
+  }
+  .fl-nav-item {
+    background: none; border: none; outline: none;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; color: #606060; font-size: 10px; font-weight: 500; cursor: pointer; flex: 1;
+  }
+  .fl-nav-item.active { color: #0F0F0F; font-weight: 700; }
+  .fl-plus-icon-circle {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--fl-primary); color: #FFF;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(255,0,51,0.3);
+  }
+
+  /* Offline banner */
+  .fl-offline-banner {
+    position: fixed; top: 0; left: 0; right: 0;
+    background: #323232; color: #FFF;
+    padding: 8px 12px; font-size: 12px; display: flex;
+    align-items: center; justify-content: space-between; z-index: 10000;
+  }
+  .fl-retry-btn { background: #FF0033; border: none; color: #FFF; padding: 4px 8px; border-radius: 4px; font-weight: 600; }
+
+  /* Keyframe Animations */
+  @keyframes fl-spin { to { transform: rotate(360deg); } }
+  @keyframes fl-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  @keyframes fl-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes fl-pop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .hidden { display: none !important; }
+</style>
+
+<script>
+  /**
+   * FLAYNITY HOME CONTROLLER
+   * Startup ownership, Firebase Realtime Feed, Video Player, Posts & Reactions.
+   */
+  window.FlaynityHome = (function() {
+    let currentCategory = 'all';
+    let currentVideoId = null;
+    let activeReactionPostId = null;
+    let longPressTimer = null;
+
+    function init() {
+      setupNetworkDetector();
+      setupEventListeners();
+      loadFeed();
+      // Hide Splash screen smoothly after initial hydration
+      setTimeout(() => {
+        const splash = document.getElementById('fl-splash-screen');
+        if (splash) {
+          splash.style.opacity = '0';
+          setTimeout(() => splash.classList.add('hidden'), 350);
+        }
+      }, 900);
+    }
+
+    function setupNetworkDetector() {
+      const banner = document.getElementById('fl-offline-banner');
+      window.addEventListener('online', () => banner.classList.add('hidden'));
+      window.addEventListener('offline', () => banner.classList.remove('hidden'));
+      document.getElementById('fl-offline-retry-btn').addEventListener('click', () => {
+        if (navigator.onLine) {
+          banner.classList.add('hidden');
+          loadFeed();
+        }
+      });
+    }
+
+    function setupEventListeners() {
+      // Equal 1/3 width Category tabs switcher
+      document.querySelectorAll('.fl-category-chip').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.querySelectorAll('.fl-category-chip').forEach(c => c.classList.remove('active'));
+          e.target.classList.add('active');
+          currentCategory = e.target.dataset.category;
+          filterFeedCategory();
+        });
+      });
+
+      // Close In-App Video Player
+      document.getElementById('fl-player-close-btn').addEventListener('click', () => {
+        const player = document.getElementById('fl-active-video-element');
+        player.pause();
+        player.src = '';
+        document.getElementById('fl-video-player-view').classList.add('hidden');
+      });
+
+      // Video "...more" bottom sheet
+      document.getElementById('fl-btn-more-meta').addEventListener('click', () => {
+        document.getElementById('fl-sheet-more-desc').classList.remove('hidden');
+      });
+
+      // Comment preview click -> Open Full comments sheet
+      document.getElementById('fl-comment-preview-card').addEventListener('click', () => {
+        document.getElementById('fl-sheet-comments').classList.remove('hidden');
+        loadCommentsForActiveVideo();
+      });
+
+      // Lightbox close
+      document.getElementById('fl-lightbox-close').addEventListener('click', () => {
+        document.getElementById('fl-image-lightbox').classList.add('hidden');
+      });
+    }
+
+    function loadFeed() {
+      const feedContent = document.getElementById('fl-feed-content');
+      const skel = document.getElementById('fl-feed-skeleton');
+      skel.classList.remove('hidden');
+
+      if (!window.FlaynityDB) {
+        setTimeout(loadFeed, 300);
+        return;
+      }
+
+      // Fetch Realtime Database Nodes for Videos, Shorts, and Community Posts
+      Promise.all([
+        window.FlaynityDB.ref('shorts').limitToLast(6).once('value'),
+        window.FlaynityDB.ref('videos').limitToLast(10).once('value'),
+        window.FlaynityDB.ref('posts').limitToLast(10).once('value')
+      ]).then(([shortsSnap, videosSnap, postsSnap]) => {
+        skel.classList.add('hidden');
+        feedContent.innerHTML = '';
+
+        const shorts = [];
+        shortsSnap.forEach(s => { shorts.unshift({ id: s.key, ...s.val() }); });
+        
+        const videos = [];
+        videosSnap.forEach(v => { videos.unshift({ id: v.key, ...v.val() }); });
+
+        const posts = [];
+        postsSnap.forEach(p => { posts.unshift({ id: p.key, ...p.val() }); });
+
+        renderCompositeFeed(shorts, videos, posts);
+      }).catch(err => {
+        skel.classList.add('hidden');
+        console.warn("Offline or Firebase Error:", err);
+      });
+    }
+
+    function renderCompositeFeed(shorts, videos, posts) {
+      const container = document.getElementById('fl-feed-content');
+
+      // 1. Shorts Grid (Initial 6 shorts)
+      if (shorts.length > 0 && (currentCategory === 'all' || currentCategory === 'shorts')) {
+        const heading = document.createElement('div');
+        heading.className = 'fl-shorts-section-heading';
+        heading.innerHTML = `<span class="material-symbols-outlined" style="color:#FF0033">play_circle</span> Shorts`;
+        container.appendChild(heading);
+
+        const shortsGrid = document.createElement('div');
+        shortsGrid.className = 'fl-shorts-grid';
+        shorts.slice(0, 6).forEach(short => {
+          const card = document.createElement('div');
+          card.className = 'fl-short-card';
+          card.innerHTML = `
+            <img class="fl-short-thumb" src="${short.thumbnailUrl || 'https://via.placeholder.com/300x450'}" alt="" />
+            <div class="fl-short-overlay">
+              <div class="fl-short-title">${escapeHtml(short.title || '')}</div>
+              <div class="fl-short-views">${formatViews(short.views || 0)} views</div>
             </div>
-<div id="yt-related-list" style="display:flex; flex-direction:column; gap:12px; padding-bottom: 60px;"></div>
-</div>
-</div>
+          `;
+          card.onclick = () => FlaynityNav.navigateTo('shorts');
+          shortsGrid.appendChild(card);
+        });
+        container.appendChild(shortsGrid);
+      }
 
-<div class="premium-download-modal" id="premium-download-modal">
-<div class="premium-download-content">
-<div class="drag-handle-line"></div>
-<div class="download-modal-header">
-<h3>Download video as</h3>
-<button class="close-download-modal" onclick="closeDownloadModal()"><i class="fas fa-times"></i></button>
-</div>
-<div class="download-modal-scrollable">
-<div class="format-section-title">Music</div>
-<label class="format-option-row">
-<input checked="" name="download-format" onchange="playUI('click')" type="radio" value="audio-fast"/>
-<div class="format-left">
-<div class="format-icon"><i class="fas fa-music"></i></div>
-<span class="format-name">Fast</span>
-</div>
-<span class="format-size" id="size-audio-fast">1.4 MB</span>
-<div class="custom-radio-check"></div>
-</label>
-<label class="format-option-row">
-<input name="download-format" onchange="playUI('click')" type="radio" value="audio-classic"/>
-<div class="format-left">
-<div class="format-icon"><i class="fas fa-music"></i></div>
-<span class="format-name">Classic MP3 (320K)</span>
-</div>
-<span class="format-size" id="size-audio-classic">3.5 MB</span>
-<div class="custom-radio-check"></div>
-</label>
-<div class="format-section-title" style="margin-top: 20px;">Video</div>
-<label class="format-option-row">
-<input name="download-format" onchange="playUI('click')" type="radio" value="video-144"/>
-<div class="format-left">
-<div class="format-icon"><i class="fas fa-play"></i></div>
-<span class="format-name">Low (144p)</span>
-</div>
-<span class="format-size" id="size-video-144">12.5 MB</span>
-<div class="custom-radio-check"></div>
-</label>
-<label class="format-option-row">
-<input name="download-format" onchange="playUI('click')" type="radio" value="video-360"/>
-<div class="format-left">
-<div class="format-icon"><i class="fas fa-play"></i></div>
-<span class="format-name">Fast (360p)</span>
-</div>
-<span class="format-size" id="size-video-360">25.1 MB</span>
-<div class="custom-radio-check"></div>
-</label>
-<label class="format-option-row">
-<input name="download-format" onchange="playUI('click')" type="radio" value="video-720"/>
-<div class="format-left">
-<div class="format-icon"><i class="fas fa-play"></i></div>
-<span class="format-name">High quality (720p)</span>
-</div>
-<span class="format-size" id="size-video-720">65.5 MB</span>
-<div class="custom-radio-check"></div>
-</label>
-</div>
-<button class="watch-ad-download-btn" onclick="startDownloadAdRequest()">
-<span>Confirm Download</span>
-</button>
-</div>
-</div>
+      // 2. Pattern: 5 Long Videos -> 1 Post -> 6 Posts
+      let videoIdx = 0;
+      let postIdx = 0;
 
-<div class="premium-download-modal" id="comment-modal">
-<div class="premium-download-content">
-<div class="drag-handle-line"></div>
-<div class="download-modal-header">
-<h3>Comments (<span id="modal-comment-count">0</span>)</h3>
-<button class="close-download-modal" onclick="closeCommentModal()"><i class="fas fa-times"></i></button>
-</div>
-<div style="display: flex; gap: 10px; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--glass-border); padding-bottom: 16px;">
-<div class="header-avatar" id="comment-user-avatar" style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%;"></div>
-<input id="comment-input" onkeydown="if(event.key === 'Enter') submitComment()" placeholder="Add a public comment..." style="flex: 1; border: 1.5px solid var(--glass-border); padding: 12px 16px; border-radius: 16px; outline: none; background: var(--bg-color); color: var(--text-main); font-size: 0.95rem; font-weight: 500;" type="text"/>
-<button class="play-btn" onclick="submitComment()" style="flex: 0 0 auto; width: 44px; height: 44px; padding: 0; border-radius: 14px;"><i class="fas fa-paper-plane"></i></button>
-</div>
-<div class="download-modal-scrollable" id="comment-list-container" style="flex-grow: 1; min-height: 220px;"></div>
-</div>
-</div>
+      while (videoIdx < videos.length || postIdx < posts.length) {
+        // Render up to 5 Long Videos
+        for (let i = 0; i < 5 && videoIdx < videos.length; i++, videoIdx++) {
+          if (currentCategory === 'all') {
+            container.appendChild(createVideoCard(videos[videoIdx]));
+          }
+        }
+        // Render 1 Post
+        if (postIdx < posts.length && (currentCategory === 'all' || currentCategory === 'posts')) {
+          container.appendChild(createPostCard(posts[postIdx]));
+          postIdx++;
+        }
+        // Render up to 6 Posts
+        for (let j = 0; j < 6 && postIdx < posts.length; j++, postIdx++) {
+          if (currentCategory === 'all' || currentCategory === 'posts') {
+            container.appendChild(createPostCard(posts[postIdx]));
+          }
+        }
+      }
+    }
 
-<div class="upcoming-modal" id="upcoming-modal">
-<div class="upcoming-content">
-<div class="upcoming-icon">
-<i class="fas fa-rocket"></i>
-</div>
-<h2>Upcoming Feature</h2>
-<p>Our development team is actively building this experience. Stay tuned for future updates!</p>
-<button class="upcoming-close-btn" onclick="hideUpcomingModal()">Close</button>
-</div>
-</div>
+    function createVideoCard(video) {
+      const card = document.createElement('div');
+      card.className = 'fl-video-card';
+      card.innerHTML = `
+        <div class="fl-video-thumb-wrap">
+          <img class="fl-video-thumb" src="${video.thumbnailUrl || 'https://via.placeholder.com/640x360'}" loading="lazy" />
+          <span class="fl-video-duration">${video.duration || '0:00'}</span>
+        </div>
+        <div class="fl-video-info-row">
+          <img class="fl-avatar" src="${video.channelAvatar || 'https://via.placeholder.com/40'}" />
+          <div class="fl-video-text-meta">
+            <h3 class="fl-video-card-title">${escapeHtml(video.title || 'Untitled')}</h3>
+            <div class="fl-video-sub-line">${escapeHtml(video.channelName || 'Flaynity Creator')} • ${formatViews(video.views || 0)} views • ${timeAgo(video.createdAt)}</div>
+          </div>
+        </div>
+      `;
+      card.onclick = () => openVideoPlayer(video);
+      return card;
+    }
 
-<div class="premium-download-modal" id="desc-bottom-sheet" style="z-index: 1800;">
-<div class="premium-download-content" style="max-height: 60vh;">
-<div class="drag-handle-line"></div>
-<div class="download-modal-header">
-<h3>About</h3>
-<button class="close-download-modal" onclick="closeDescBottomSheet()"><i class="fas fa-times"></i></button>
-</div>
-<div class="download-modal-scrollable" style="padding-bottom: 24px;">
-<p id="full-desc-text" style="line-height: 1.6; font-size: 0.95rem; color: var(--text-main); white-space: pre-wrap; word-break: break-word;"></p>
-<div style="border-top: 1px solid var(--glass-border); padding-top: 16px; margin-top: 16px;">
-<div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.85rem; color: var(--text-muted);">
-<span>Channel Category</span>
-<span id="desc-meta-category" style="font-weight: 700; color: var(--text-main);">Gaming</span>
-</div>
-<div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.85rem; color: var(--text-muted);">
-<span>Joined</span>
-<span id="desc-meta-joined" style="font-weight: 700; color: var(--text-main);">Joined Date</span>
-</div>
-</div>
-</div>
-</div>
-</div>
+    function createPostCard(post) {
+      const card = document.createElement('div');
+      card.className = 'fl-post-card';
+      card.id = `post-${post.id}`;
+      card.innerHTML = `
+        <div class="fl-post-header">
+          <div class="fl-post-author-wrap">
+            <img class="fl-avatar" src="${post.userAvatar || 'https://via.placeholder.com/40'}" />
+            <div>
+              <div class="fl-post-author-name">${escapeHtml(post.userName || 'Community User')}</div>
+              <div class="fl-post-time">${timeAgo(post.createdAt)}</div>
+            </div>
+          </div>
+          <button class="fl-btn-subscribe" onclick="FlaynityHome.handleSubscribe('${post.userId}')">Subscribe</button>
+        </div>
+        <div class="fl-post-title-box fl-post-title-collapsed" id="post-title-${post.id}">
+          ${escapeHtml(post.text || '')}
+        </div>
+        ${post.text && post.text.length > 90 ? `<button class="fl-btn-expand-post" onclick="FlaynityHome.togglePostTitle('${post.id}')">...more</button>` : ''}
+        ${post.imageUrl ? `
+          <div class="fl-post-media-grid single">
+            <img class="fl-post-img" src="${post.imageUrl}" onclick="FlaynityHome.openLightbox('${post.imageUrl}')" loading="lazy" />
+          </div>
+        ` : ''}
+        <div class="fl-post-rxn-summary">
+          <div class="fl-rxn-icons-cluster" onclick="FlaynityHome.openReactionModal('${post.id}')">
+            <span>❤️ 👍 🥰</span>
+            <span id="rxn-count-${post.id}">${post.reactionCount || 0} Reactions</span>
+          </div>
+          <span>${post.commentCount || 0} Comments</span>
+        </div>
+        <div class="fl-post-actions-row">
+          <button class="fl-post-action-btn" id="btn-rxn-${post.id}" 
+            onmousedown="FlaynityHome.startRxnTimer('${post.id}')" 
+            onmouseup="FlaynityHome.endRxnTimer('${post.id}')"
+            ontouchstart="FlaynityHome.startRxnTimer('${post.id}')"
+            ontouchend="FlaynityHome.endRxnTimer('${post.id}')">
+            <span class="material-symbols-outlined">favorite</span>
+            <span id="btn-rxn-label-${post.id}">Love</span>
+            <div id="rxn-picker-${post.id}" class="fl-reaction-picker hidden">
+              <span class="fl-rxn-emoji-btn" onclick="FlaynityHome.submitReaction('${post.id}', 'love')">❤️</span>
+              <span class="fl-rxn-emoji-btn" onclick="FlaynityHome.submitReaction('${post.id}', 'like')">👍</span>
+              <span class="fl-rxn-emoji-btn" onclick="FlaynityHome.submitReaction('${post.id}', 'care')">🥰</span>
+              <span class="fl-rxn-emoji-btn" onclick="FlaynityHome.submitReaction('${post.id}', 'haha')">😆</span>
+              <span class="fl-rxn-emoji-btn" onclick="FlaynityHome.submitReaction('${post.id}', 'wow')">😮</span>
+              <span class="fl-rxn-emoji-btn" onclick="FlaynityHome.submitReaction('${post.id}', 'sad')">😭</span>
+              <span class="fl-rxn-emoji-btn" onclick="FlaynityHome.submitReaction('${post.id}', 'angry')">😡</span>
+            </div>
+          </button>
+          <button class="fl-post-action-btn" onclick="FlaynityHome.openCommentsForPost('${post.id}')">
+            <span class="material-symbols-outlined">mode_comment</span>
+            <span>Comment</span>
+          </button>
+        </div>
+      `;
+      return card;
+    }
 
-<div class="premium-download-modal" id="more-desc-sheet" style="z-index: 2500;">
-<div class="premium-download-content" style="max-height: 75vh;">
-<div class="drag-handle-line" id="more-desc-drag-handle"></div>
-<div class="download-modal-header">
-<h3>Description</h3>
-<button class="close-download-modal" onclick="closeMoreDescriptionSheet()"><i class="fas fa-times"></i></button>
-</div>
-<div class="download-modal-scrollable" style="padding-bottom: 30px;">
-<h2 id="more-sheet-video-title" style="font-size: 1.1rem; font-weight: 800; margin: 0 0 12px 0; color: var(--text-main); line-height: 1.4;">Video Title</h2>
-<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: var(--border-color); padding: 12px; border-radius: 14px; margin-bottom: 16px;">
-<div style="text-align: center;">
-<span style="font-size: 0.72rem; color: var(--text-muted); display: block; font-weight: 700;">Likes</span>
-<span id="more-sheet-likes-val" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">0</span>
-</div>
-<div style="text-align: center; border-left: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border);">
-<span style="font-size: 0.72rem; color: var(--text-muted); display: block; font-weight: 700;">Views</span>
-<span id="more-sheet-views-val" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">0</span>
-</div>
-<div style="text-align: center;">
-<span style="font-size: 0.72rem; color: var(--text-muted); display: block; font-weight: 700;">Published</span>
-<span id="more-sheet-time-val" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">Just Now</span>
-</div>
-</div>
-<p id="more-sheet-desc-text" style="font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); white-space: pre-wrap; margin: 0; word-break: break-word;"></p>
-</div>
-</div>
-</div>
+    function openVideoPlayer(video) {
+      currentVideoId = video.id;
+      const playerView = document.getElementById('fl-video-player-view');
+      const videoEl = document.getElementById('fl-active-video-element');
+      
+      document.getElementById('fl-player-video-title').textContent = video.title || 'Untitled';
+      document.getElementById('fl-player-channel-handle').textContent = video.channelHandle || '@creator';
+      document.getElementById('fl-player-like-count').textContent = formatViews(video.likes || 0) + ' Likes';
+      document.getElementById('fl-player-views-count').textContent = formatViews(video.views || 0) + ' Views';
+      document.getElementById('fl-player-time').textContent = timeAgo(video.createdAt);
+      document.getElementById('fl-player-author-img').src = video.channelAvatar || 'https://via.placeholder.com/40';
+      document.getElementById('fl-player-author-name').textContent = video.channelName || 'Flaynity Creator';
+      
+      // Full description sheet bindings
+      document.getElementById('fl-sheet-full-title').textContent = video.title || '';
+      document.getElementById('fl-sheet-likes').textContent = formatViews(video.likes || 0);
+      document.getElementById('fl-sheet-views').textContent = formatViews(video.views || 0);
+      document.getElementById('fl-sheet-date').textContent = new Date(video.createdAt || Date.now()).toLocaleDateString();
+      document.getElementById('fl-sheet-desc-text').textContent = video.description || 'No description provided.';
 
-<div class="premium-download-modal" id="account-switcher-modal">
-<div class="premium-download-content" style="padding-bottom: 30px;">
-<div class="drag-handle-line"></div>
-<div class="download-modal-header">
-<h3>Switch account</h3>
-<button class="close-download-modal" onclick="closeAccountSwitcher()"><i class="fas fa-times"></i></button>
-</div>
-<div class="account-switcher-list" id="account-switcher-list-container" style="display: flex; flex-direction: column; gap: 12px; max-height: 50vh; overflow-y: auto;"></div>
-</div>
-</div>
+      videoEl.src = video.videoUrl;
+      playerView.classList.remove('hidden');
+      videoEl.play().catch(() => {});
 
-<div id="full-image-preview-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.95); z-index: 9999999; display: none; align-items: center; justify-content: center;">
-<button onclick="closeFullScreenImagePreview()" style="position: absolute; top: 24px; left: 24px; background: rgba(255,255,255,0.2); border: none; color: white; width: 44px; height: 44px; border-radius: 50%; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10000000; backdrop-filter: blur(5px);">
-<i class="fas fa-times"></i>
-</button>
-<img id="full-image-preview-el" src="" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);"/>
-</div>
+      // Unique view registration
+      if (window.FlaynityDB) {
+        window.FlaynityDB.ref(`videos/${video.id}/views`).transaction(v => (v || 0) + 1);
+      }
+    }
 
-<div id="fb-reaction-picker" style="position: fixed; display: none; gap: 8px; background: var(--surface); border: 1px solid var(--glass-border); padding: 6px 12px; border-radius: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 9999999; backdrop-filter: blur(20px); align-items: center; transition: opacity 0.2s ease;">
-<div class="animated-emoji-item" onclick="selectPostReaction('love')">❤️</div>
-<div class="animated-emoji-item" onclick="selectPostReaction('like')">👍</div>
-<div class="animated-emoji-item" onclick="selectPostReaction('care')">🥰</div>
-<div class="animated-emoji-item" onclick="selectPostReaction('haha')">😆</div>
-<div class="animated-emoji-item" onclick="selectPostReaction('wow')">😮</div>
-<div class="animated-emoji-item" onclick="selectPostReaction('sad')">😭</div>
-<div class="animated-emoji-item" onclick="selectPostReaction('angry')">😡</div>
-</div>
+    function filterFeedCategory() {
+      loadFeed();
+    }
 
-<div class="theme-popup-menu" id="theme-popup-menu">
-<div class="theme-menu-item" data-theme-val="light" onclick="selectThemeVal('light')">
-<div class="theme-menu-item-left">
-<i class="fas fa-sun" style="color: #FFB300; width: 20px; text-align: center;"></i>
-<span>Light Theme</span>
-</div>
-<div class="theme-radio-circle">
-<div class="theme-radio-inner"></div>
-</div>
-</div>
-<div class="theme-menu-item" data-theme-val="dark" onclick="selectThemeVal('dark')">
-<div class="theme-menu-item-left">
-<i class="fas fa-moon" style="color: #FF2E55; width: 20px; text-align: center;"></i>
-<span>Dark Theme</span>
-</div>
-<div class="theme-radio-circle">
-<div class="theme-radio-inner"></div>
-</div>
-</div>
-</div>
+    function closeSheet(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    }
+
+    function openLightbox(url) {
+      const box = document.getElementById('fl-image-lightbox');
+      document.getElementById('fl-lightbox-img').src = url;
+      box.classList.remove('hidden');
+    }
+
+    function togglePostTitle(id) {
+      const titleBox = document.getElementById(`post-title-${id}`);
+      if (titleBox) titleBox.classList.toggle('fl-post-title-collapsed');
+    }
+
+    function startRxnTimer(postId) {
+      longPressTimer = setTimeout(() => {
+        const picker = document.getElementById(`rxn-picker-${postId}`);
+        if (picker) picker.classList.remove('hidden');
+      }, 450);
+    }
+
+    function endRxnTimer(postId) {
+      clearTimeout(longPressTimer);
+    }
+
+    function submitReaction(postId, rxnType) {
+      const picker = document.getElementById(`rxn-picker-${postId}`);
+      if (picker) picker.classList.add('hidden');
+      if (!window.FlaynityAuth?.currentUser) {
+        document.getElementById('fl-auth-modal').classList.remove('hidden');
+        return;
+      }
+      const uid = window.FlaynityAuth.currentUser.uid;
+      window.FlaynityDB.ref(`posts/${postId}/reactions/${uid}`).set({
+        type: rxnType,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+
+    function formatViews(n) {
+      if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+      return n.toString();
+    }
+
+    function timeAgo(timestamp) {
+      if (!timestamp) return 'Just now';
+      const sec = Math.floor((Date.now() - timestamp) / 1000);
+      if (sec < 60) return 'Just now';
+      if (sec < 3600) return `${Math.floor(sec/60)}m ago`;
+      if (sec < 86400) return `${Math.floor(sec/3600)}h ago`;
+      return `${Math.floor(sec/86400)}d ago`;
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[m]);
+    }
+
+    return {
+      init,
+      closeSheet,
+      openLightbox,
+      togglePostTitle,
+      startRxnTimer,
+      endRxnTimer,
+      submitReaction,
+      openReactionModal: (id) => document.getElementById('fl-reacted-users-modal').classList.remove('hidden'),
+      openCommentsForPost: (id) => document.getElementById('fl-sheet-comments').classList.remove('hidden'),
+      handleSubscribe: (uid) => console.log('Subscribed:', uid)
+    };
+  })();
+
+  // Initialize Home
+  FlaynityHome.init();
+</script>

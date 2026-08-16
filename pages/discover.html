@@ -1,18 +1,312 @@
-<div class="tab-content" id="search-tab">
-<div class="section-title" style="margin-top:20px;">Discover</div>
-<div class="search-container">
-<input class="search-bar" id="search-input" placeholder="Search movies, TV shows..." type="text"/>
-<button class="mic-btn" onclick="startVoiceSearch(); playUI('click')"><i class="fas fa-microphone"></i></button>
+<div class="fl-discover-root">
+  <!-- Top App Bar -->
+  <header class="fl-header">
+    <div class="fl-header-left">
+      <div class="fl-logo-icon">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="#FF0033">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+        </svg>
+      </div>
+      <span class="fl-logo-text">Flaynity</span>
+    </div>
+    <div class="fl-header-right">
+      <button class="fl-icon-btn" onclick="document.getElementById('fl-discover-search-input').focus()">
+        <span class="material-symbols-outlined">search</span>
+      </button>
+      <button class="fl-icon-btn" onclick="FlaynityNav.navigateTo('you')">
+        <span class="material-symbols-outlined">settings</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="fl-discover-main">
+    <h1 class="fl-discover-title">Discover</h1>
+
+    <!-- Search Box with Voice Mic Button -->
+    <div class="fl-search-box-container">
+      <span class="material-symbols-outlined fl-search-icon">search</span>
+      <input type="text" id="fl-discover-search-input" placeholder="Search movies, TV shows, videos..." oninput="FlaynityDiscover.handleSearch(this.value)" />
+      <button id="fl-mic-btn" class="fl-mic-btn" onclick="FlaynityDiscover.startVoiceRecognition()">
+        <span class="material-symbols-outlined" id="fl-mic-icon">mic</span>
+      </button>
+    </div>
+
+    <!-- Category Chips (Horizontal Scrolling Enabled for Exploration) -->
+    <div class="fl-discover-chips-row">
+      <button class="fl-disc-chip active" data-cat="all" onclick="FlaynityDiscover.filterCategory('all', this)">All</button>
+      <button class="fl-disc-chip" data-cat="Action" onclick="FlaynityDiscover.filterCategory('Action', this)">Action</button>
+      <button class="fl-disc-chip" data-cat="Sci-Fi" onclick="FlaynityDiscover.filterCategory('Sci-Fi', this)">Sci-Fi</button>
+      <button class="fl-disc-chip" data-cat="Horror" onclick="FlaynityDiscover.filterCategory('Horror', this)">Horror</button>
+      <button class="fl-disc-chip" data-cat="Comedy" onclick="FlaynityDiscover.filterCategory('Comedy', this)">Comedy</button>
+      <button class="fl-disc-chip" data-cat="Drama" onclick="FlaynityDiscover.filterCategory('Drama', this)">Drama</button>
+      <button class="fl-disc-chip" data-cat="Animation" onclick="FlaynityDiscover.filterCategory('Animation', this)">Animation</button>
+      <button class="fl-disc-chip" data-cat="Gaming" onclick="FlaynityDiscover.filterCategory('Gaming', this)">Gaming</button>
+      <button class="fl-disc-chip" data-cat="Music" onclick="FlaynityDiscover.filterCategory('Music', this)">Music</button>
+    </div>
+
+    <!-- Results / Empty State Container -->
+    <div id="fl-discover-results" class="fl-discover-results-area">
+      <!-- Default Empty State -->
+      <div id="fl-discover-empty" class="fl-empty-state">
+        <div class="fl-empty-icon-circle">
+          <span class="material-symbols-outlined" style="font-size: 48px; color: #9E9E9E;">movie_filter</span>
+        </div>
+        <h3>Explore Flaynity</h3>
+        <p>Search or use the mic to find movies, videos, and trending creators.</p>
+      </div>
+
+      <!-- Live Search Grid -->
+      <div id="fl-discover-grid" class="fl-results-grid hidden"></div>
+    </div>
+  </main>
+
+  <!-- Bottom Navigation Bar -->
+  <nav class="fl-bottom-nav">
+    <button class="fl-nav-item" onclick="FlaynityNav.navigateTo('home')">
+      <span class="material-symbols-outlined">home</span>
+      <span>Home</span>
+    </button>
+    <button class="fl-nav-item" onclick="FlaynityNav.navigateTo('shorts')">
+      <span class="material-symbols-outlined">play_circle</span>
+      <span>Shorts</span>
+    </button>
+    <button class="fl-nav-item fl-nav-create-btn" onclick="FlaynityNav.navigateTo('upload')">
+      <div class="fl-plus-icon-circle">
+        <span class="material-symbols-outlined">add</span>
+      </div>
+    </button>
+    <button class="fl-nav-item active" onclick="FlaynityNav.navigateTo('discover')">
+      <span class="material-symbols-outlined filled">explore</span>
+      <span>Discover</span>
+    </button>
+    <button class="fl-nav-item" onclick="FlaynityNav.navigateTo('you')">
+      <span class="material-symbols-outlined">person</span>
+      <span>You</span>
+    </button>
+  </nav>
 </div>
-<div class="filters">
-<div class="filter-chip" onclick="applyFilter(28, this); playUI('click')">Action</div>
-<div class="filter-chip" onclick="applyFilter(878, this); playUI('click')">Sci-Fi</div>
-<div class="filter-chip" onclick="applyFilter(27, this); playUI('click')">Horror</div>
-<div class="filter-chip" onclick="applyFilter(35, this); playUI('click')">Comedy</div>
-<div class="filter-chip" onclick="applyFilter(10749, this); playUI('click')">Romance</div>
-<div class="filter-chip" onclick="applyFilter(16, this); playUI('click')">Animation</div>
-</div>
-<div class="movie-grid" id="search-results">
-<p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding: 60px 0; font-weight: 500;">Search or use the mic to find movies.</p>
-</div>
-</div>
+
+<style>
+  /* ==========================================================================
+     DISCOVER PAGE STYLES
+     ========================================================================== */
+  .fl-discover-root {
+    width: 100%;
+    min-height: 100vh;
+    padding-bottom: calc(var(--fl-bottom-nav-height) + 16px);
+    background: #FFFFFF;
+    overflow-x: hidden;
+  }
+
+  .fl-discover-main { padding: 12px 16px; }
+  .fl-discover-title { font-size: 26px; font-weight: 800; margin-bottom: 14px; letter-spacing: -0.5px; }
+
+  /* Large Search Bar */
+  .fl-search-box-container {
+    display: flex;
+    align-items: center;
+    background: #F1F3F4;
+    border-radius: 28px;
+    padding: 0 14px;
+    height: 48px;
+    margin-bottom: 16px;
+    transition: background 0.2s ease;
+  }
+  .fl-search-box-container:focus-within {
+    background: #E8EAED;
+    box-shadow: 0 0 0 1px #0F0F0F;
+  }
+  .fl-search-icon { color: #5F6368; margin-right: 8px; }
+  .fl-search-box-container input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    color: #111;
+  }
+  .fl-mic-btn {
+    background: none; border: none; outline: none;
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #5F6368; cursor: pointer;
+  }
+  .fl-mic-btn.listening { color: var(--fl-primary); animation: fl-pulse 1s infinite; }
+
+  /* Horizontal Category Chips */
+  .fl-discover-chips-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .fl-discover-chips-row::-webkit-scrollbar { display: none; }
+  
+  .fl-disc-chip {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: none;
+    background: #F2F2F2;
+    color: #0F0F0F;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .fl-disc-chip.active { background: #0F0F0F; color: #FFFFFF; }
+
+  /* Empty State */
+  .fl-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 20px;
+  }
+  .fl-empty-icon-circle {
+    width: 88px; height: 88px; border-radius: 50%;
+    background: #F8F9FA; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+  }
+  .fl-empty-state h3 { font-size: 17px; font-weight: 700; color: #111; margin-bottom: 6px; }
+  .fl-empty-state p { font-size: 13px; color: #777; max-width: 260px; line-height: 1.4; }
+
+  /* Results Grid */
+  .fl-results-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  @keyframes fl-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+</style>
+
+<script>
+  /**
+   * FLAYNITY DISCOVER CONTROLLER
+   * Search Query Handling, Voice Search, Realtime Firebase Filtering
+   */
+  window.FlaynityDiscover = (function() {
+    let allVideos = [];
+    let currentCategory = 'all';
+
+    function init() {
+      fetchDiscoverData();
+    }
+
+    function fetchDiscoverData() {
+      if (!window.FlaynityDB) {
+        setTimeout(fetchDiscoverData, 300);
+        return;
+      }
+      window.FlaynityDB.ref('videos').limitToLast(40).once('value', snapshot => {
+        allVideos = [];
+        snapshot.forEach(child => {
+          allVideos.unshift({ id: child.key, ...child.val() });
+        });
+      });
+    }
+
+    function filterCategory(cat, btn) {
+      document.querySelectorAll('.fl-disc-chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      currentCategory = cat;
+      const query = document.getElementById('fl-discover-search-input').value;
+      handleSearch(query);
+    }
+
+    function handleSearch(query) {
+      const q = (query || '').toLowerCase().trim();
+      const emptyState = document.getElementById('fl-discover-empty');
+      const grid = document.getElementById('fl-discover-grid');
+
+      if (!q && currentCategory === 'all') {
+        emptyState.classList.remove('hidden');
+        grid.classList.add('hidden');
+        return;
+      }
+
+      const filtered = allVideos.filter(v => {
+        const matchesQuery = !q || (v.title && v.title.toLowerCase().includes(q)) || (v.channelName && v.channelName.toLowerCase().includes(q));
+        const matchesCat = currentCategory === 'all' || v.category === currentCategory;
+        return matchesQuery && matchesCat;
+      });
+
+      emptyState.classList.add('hidden');
+      grid.classList.remove('hidden');
+      grid.innerHTML = '';
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div style="text-align:center; padding:40px; color:#777;">No results found for "${escapeHtml(query)}"</div>`;
+        return;
+      }
+
+      filtered.forEach(video => {
+        const item = document.createElement('div');
+        item.className = 'fl-video-card';
+        item.innerHTML = `
+          <div class="fl-video-thumb-wrap">
+            <img class="fl-video-thumb" src="${video.thumbnailUrl || 'https://via.placeholder.com/640x360'}" />
+            <span class="fl-video-duration">${video.duration || '0:00'}</span>
+          </div>
+          <div class="fl-video-info-row">
+            <img class="fl-avatar" src="${video.channelAvatar || 'https://via.placeholder.com/40'}" />
+            <div class="fl-video-text-meta">
+              <h3 class="fl-video-card-title">${escapeHtml(video.title || '')}</h3>
+              <div class="fl-video-sub-line">${escapeHtml(video.channelName || '')} • ${video.views || 0} views</div>
+            </div>
+          </div>
+        `;
+        item.onclick = () => {
+          FlaynityNav.navigateTo('home');
+          setTimeout(() => {
+            if (window.FlaynityHome) window.FlaynityHome.openVideoPlayer(video);
+          }, 300);
+        };
+        grid.appendChild(item);
+      });
+    }
+
+    function startVoiceRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert("Voice recognition is not supported in this WebView browser.");
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      const micBtn = document.getElementById('fl-mic-btn');
+      micBtn.classList.add('listening');
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        const input = document.getElementById('fl-discover-search-input');
+        input.value = transcript;
+        handleSearch(transcript);
+        micBtn.classList.remove('listening');
+      };
+
+      recognition.onerror = () => micBtn.classList.remove('listening');
+      recognition.onend = () => micBtn.classList.remove('listening');
+      recognition.start();
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[m]);
+    }
+
+    return {
+      init,
+      handleSearch,
+      filterCategory,
+      startVoiceRecognition
+    };
+  })();
+
+  FlaynityDiscover.init();
+</script>

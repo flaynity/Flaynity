@@ -1,0 +1,378 @@
+<div class="ptr-container" id="ptr-indicator">
+<div class="ptr-spinner" id="ptr-spinner"></div>
+</div>
+
+<audio id="startupSound" preload="auto">
+<source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg"/>
+</audio>
+
+<div id="splash-screen">
+<div class="ambient-light"></div>
+<div class="loading-container">
+<h1 class="logo-splash">Flay<span>nity</span></h1>
+<div class="progress-container">
+<div class="progress-bar"></div>
+</div>
+<p class="loading-text">Loading Cinematic Experience...</p>
+</div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<div id="network-spinner-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:9999999; justify-content:center; align-items:center; flex-direction:column; color:white;">
+<div style="width:48px; height:48px; border:4px solid rgba(255,255,255,0.2); border-top-color:var(--primary); border-radius:50%; animation:spin 1s linear infinite; margin-bottom:16px;"></div>
+<p style="font-weight:700;">Reconnecting to Server...</p>
+</div>
+
+<div id="auth-screen">
+<div class="auth-box" id="login-box" style="text-align: center;">
+<h1>Flay<span>nity</span></h1>
+<h2 style="margin-bottom: 30px;">Cinematic Experience Awaits</h2>
+<button class="btn-google" onclick="signInWithGoogle()" style="padding: 18px; font-size: 1.15rem; width: 100%; border-radius: 24px; box-shadow: 0 10px 25px rgba(255, 46, 85, 0.25); display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer;">
+<img alt="Google" src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg"/>
+                Sign in with Google
+            </button>
+<p style="text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-top: 25px; line-height: 1.4;">
+                By continuing, you agree to Flaynity's Terms of Service and Privacy Policy.
+            </p>
+</div>
+</div>
+
+<div id="app-screen">
+
+<header>
+<div class="brand" id="brand-appbar">
+<svg fill="none" height="28" viewbox="0 0 24 24" width="28" xmlns="http://www.w3.org/2000/svg">
+<rect fill="#FF2E55" height="24" rx="6" width="24"></rect>
+<path d="M10 8.5L15 12L10 15.5V8.5Z" fill="white"></path>
+</svg>
+<span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 900; font-size: 1.35rem; color: var(--text-main); letter-spacing: -0.5px;">Flaynity</span>
+</div>
+<div class="header-actions" id="appbar-actions-wrap" style="display: flex; align-items: center; gap: 14px;">
+<button onclick="switchTab('search')" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
+<i class="fas fa-search"></i>
+</button>
+<button class="appbar-theme-btn" id="theme-toggle-btn" onclick="openThemePopupMenu()" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;" title="Switch Theme">
+<i class="fas fa-circle-half-stroke"></i>
+</button>
+</div>
+</header>
+
+<div class="category-chips-container" id="global-category-chips">
+<div class="chip-item active" onclick="selectCategoryChip('All', this)">All</div>
+<div class="chip-item" onclick="selectCategoryChip('Posts', this)">Posts</div>
+<div class="chip-item" onclick="selectCategoryChip('Shorts', this)">Shorts</div>
+</div>
+
+<div class="tab-content active" id="home-tab" style="padding-top: 0px;">
+<div id="home-feed-container" style="margin-top: 12px;"></div>
+</div>
+
+<div class="bottom-nav">
+<div class="nav-item active" id="nav-home" onclick="switchTab('home')">
+<div class="nav-icon-container">
+<svg class="nav-icon-svg icon-unselected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 5.69l5 4.5v7.81h-2v-6H9v6H7v-7.81l5-4.5M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z" fill="currentColor"></path>
+</svg>
+<svg class="nav-icon-svg icon-selected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="currentColor"></path>
+</svg>
+</div>
+<span class="nav-label">Home</span>
+</div>
+<div class="nav-item" id="nav-shorts" onclick="switchTab('shorts')">
+<div class="nav-icon-container">
+<svg class="nav-icon-svg icon-unselected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M17.77 10.32c-.77-.32-1.2-.5-1.2-.5L18 8.64a2.53 2.53 0 0 0-1.12-3.37 2.45 2.45 0 0 0-3.3.12L7 10.14a2.53 2.53 0 0 0-.27 3.54s1.2.5 1.2.5l-1.43 1.18a2.53 2.53 0 0 0 1.12 3.37 2.45 2.45 0 0 0 3.3-.12l6.57-4.75a2.53 2.53 0 0 0 .28-3.54z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2.2"></path>
+</svg>
+<svg class="nav-icon-svg icon-selected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M17.77 10.32c-.77-.32-1.2-.5-1.2-.5L18 8.64a2.53 2.53 0 0 0-1.12-3.37 2.45 2.45 0 0 0-3.3.12L7 10.14a2.53 2.53 0 0 0-.27 3.54s1.2.5 1.2.5l-1.43 1.18a2.53 2.53 0 0 0 1.12 3.37 2.45 2.45 0 0 0 3.3-.12l6.57-4.75a2.53 2.53 0 0 0 .28-3.54z" fill="currentColor"></path>
+</svg>
+</div>
+<span class="nav-label">Shorts</span>
+</div>
+<div class="nav-item" id="nav-create" onclick="openCreateBottomSheet(); playUI('click')" style="height: 100%; display: flex; align-items: center; justify-content: center;">
+<div class="nav-create-circle">
+<svg fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"></path>
+</svg>
+</div>
+</div>
+<div class="nav-item" id="nav-search" onclick="switchTab('search')">
+<div class="nav-icon-container">
+<svg class="nav-icon-svg icon-unselected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.5l-4 1.5 1.5-4 4-1.5-1.5 4zm-1-3.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="currentColor"></path>
+</svg>
+<svg class="nav-icon-svg icon-selected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.5l-4 1.5 1.5-4 4-1.5-1.5 4zm-1-3.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="currentColor"></path>
+</svg>
+</div>
+<span class="nav-label">Discover</span>
+</div>
+<div class="nav-item" id="nav-you" onclick="switchTab('you')">
+<div class="nav-icon-container">
+<div class="nav-avatar-circle" id="nav-avatar-img">
+<svg class="nav-icon-svg icon-unselected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="currentColor"></path>
+</svg>
+</div>
+</div>
+<span class="nav-label">You</span>
+</div>
+</div>
+
+</div>
+
+<div id="full-movie-page">
+<button class="back-btn" onclick="executeBackAction(); playUI('click')">
+<i class="fas fa-arrow-left"></i>
+</button>
+<div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000000;">
+<div id="video-player-skeleton" style="position: absolute; top:0; left:0; width:100%; height:100%; background:#000000; display:flex; align-items:center; justify-content:center; z-index:11;">
+<div style="width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+</div>
+<img class="full-page-banner" id="movie-detail-banner" onerror="this.src=''" src="" style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; border-radius:0;"/>
+<div class="video-container" id="video-player-container" style="width:100%; height:100%; display:none; position:absolute; top:0; left:0; z-index:10; border-radius:0;"></div>
+</div>
+<div class="full-page-content" style="padding: 16px;">
+<div class="premium-white-card-watch">
+<h1 id="movie-detail-title" style="font-size: 1.15rem; font-weight: 800; margin: 0 0 6px 0; line-height: 1.35; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Plus Jakarta Sans', sans-serif;">Title</h1>
+<div class="movie-metadata-row">
+<span id="movie-detail-channel-handle" style="color: var(--text-main); font-weight: 800;">@channel</span>
+<span>•</span>
+<span id="movie-detail-likes">0 Likes</span>
+<span>•</span>
+<span id="movie-detail-views">0 Views</span>
+<span>•</span>
+<span id="movie-detail-upload-time">Just Now</span>
+<button class="btn-more-meta" onclick="openMoreDescriptionSheet()">...more</button>
+</div>
+</div>
+<div class="channel-action-row-watch">
+<div class="action-row-left">
+<img id="movie-channel-avatar" src="" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--border-color); background: #E2E8F0;"/>
+<button class="btn-watch-subscribe" id="movie-subscribe-btn" onclick="toggleMovieChannelSubscribe()">Subscribe</button>
+</div>
+<div class="action-row-right">
+<div class="pill-likes-dislikes">
+<button class="btn-watch-like ripple" id="movie-like-btn" onclick="toggleMovieLike()">
+<i class="far fa-thumbs-up" id="movie-like-icon"></i>
+<span id="movie-like-count">0</span>
+</button>
+<div style="width: 1px; height: 16px; background: rgba(0,0,0,0.12); align-self: center;"></div>
+<button class="btn-watch-dislike ripple" id="movie-dislike-btn" onclick="toggleMovieDislike()">
+<i class="far fa-thumbs-down" id="movie-dislike-icon"></i>
+</button>
+</div>
+<button class="btn-watch-download ripple" onclick="requestDownloadWithAd()" style="width: 34px; height: 34px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;" title="Download">
+<i class="fas fa-download"></i>
+</button>
+</div>
+</div>
+<div class="comment-preview-card" id="comment-preview-trigger" onclick="openCommentModal()">
+<div class="comment-preview-header">
+<span class="comment-preview-title">Comments <span class="comment-preview-count" id="comment-preview-count">0</span></span>
+<i class="fas fa-chevron-down" style="font-size: 0.75rem; color: var(--text-muted);"></i>
+</div>
+<div class="comment-preview-content">
+<div class="comment-preview-avatar" id="comment-preview-avatar">
+<i class="far fa-comment" style="color: var(--text-muted);"></i>
+</div>
+<span class="comment-preview-text" id="comment-preview-text">No comments yet. Tap to start the conversation!</span>
+</div>
+</div>
+<div class="recommended-feed-title">
+<i class="fas fa-play-circle" style="color:var(--primary);"></i> Recommended Feed
+            </div>
+<div id="yt-related-list" style="display:flex; flex-direction:column; gap:12px; padding-bottom: 60px;"></div>
+</div>
+</div>
+
+<div class="premium-download-modal" id="premium-download-modal">
+<div class="premium-download-content">
+<div class="drag-handle-line"></div>
+<div class="download-modal-header">
+<h3>Download video as</h3>
+<button class="close-download-modal" onclick="closeDownloadModal()"><i class="fas fa-times"></i></button>
+</div>
+<div class="download-modal-scrollable">
+<div class="format-section-title">Music</div>
+<label class="format-option-row">
+<input checked="" name="download-format" onchange="playUI('click')" type="radio" value="audio-fast"/>
+<div class="format-left">
+<div class="format-icon"><i class="fas fa-music"></i></div>
+<span class="format-name">Fast</span>
+</div>
+<span class="format-size" id="size-audio-fast">1.4 MB</span>
+<div class="custom-radio-check"></div>
+</label>
+<label class="format-option-row">
+<input name="download-format" onchange="playUI('click')" type="radio" value="audio-classic"/>
+<div class="format-left">
+<div class="format-icon"><i class="fas fa-music"></i></div>
+<span class="format-name">Classic MP3 (320K)</span>
+</div>
+<span class="format-size" id="size-audio-classic">3.5 MB</span>
+<div class="custom-radio-check"></div>
+</label>
+<div class="format-section-title" style="margin-top: 20px;">Video</div>
+<label class="format-option-row">
+<input name="download-format" onchange="playUI('click')" type="radio" value="video-144"/>
+<div class="format-left">
+<div class="format-icon"><i class="fas fa-play"></i></div>
+<span class="format-name">Low (144p)</span>
+</div>
+<span class="format-size" id="size-video-144">12.5 MB</span>
+<div class="custom-radio-check"></div>
+</label>
+<label class="format-option-row">
+<input name="download-format" onchange="playUI('click')" type="radio" value="video-360"/>
+<div class="format-left">
+<div class="format-icon"><i class="fas fa-play"></i></div>
+<span class="format-name">Fast (360p)</span>
+</div>
+<span class="format-size" id="size-video-360">25.1 MB</span>
+<div class="custom-radio-check"></div>
+</label>
+<label class="format-option-row">
+<input name="download-format" onchange="playUI('click')" type="radio" value="video-720"/>
+<div class="format-left">
+<div class="format-icon"><i class="fas fa-play"></i></div>
+<span class="format-name">High quality (720p)</span>
+</div>
+<span class="format-size" id="size-video-720">65.5 MB</span>
+<div class="custom-radio-check"></div>
+</label>
+</div>
+<button class="watch-ad-download-btn" onclick="startDownloadAdRequest()">
+<span>Confirm Download</span>
+</button>
+</div>
+</div>
+
+<div class="premium-download-modal" id="comment-modal">
+<div class="premium-download-content">
+<div class="drag-handle-line"></div>
+<div class="download-modal-header">
+<h3>Comments (<span id="modal-comment-count">0</span>)</h3>
+<button class="close-download-modal" onclick="closeCommentModal()"><i class="fas fa-times"></i></button>
+</div>
+<div style="display: flex; gap: 10px; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--glass-border); padding-bottom: 16px;">
+<div class="header-avatar" id="comment-user-avatar" style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%;"></div>
+<input id="comment-input" onkeydown="if(event.key === 'Enter') submitComment()" placeholder="Add a public comment..." style="flex: 1; border: 1.5px solid var(--glass-border); padding: 12px 16px; border-radius: 16px; outline: none; background: var(--bg-color); color: var(--text-main); font-size: 0.95rem; font-weight: 500;" type="text"/>
+<button class="play-btn" onclick="submitComment()" style="flex: 0 0 auto; width: 44px; height: 44px; padding: 0; border-radius: 14px;"><i class="fas fa-paper-plane"></i></button>
+</div>
+<div class="download-modal-scrollable" id="comment-list-container" style="flex-grow: 1; min-height: 220px;"></div>
+</div>
+</div>
+
+<div class="upcoming-modal" id="upcoming-modal">
+<div class="upcoming-content">
+<div class="upcoming-icon">
+<i class="fas fa-rocket"></i>
+</div>
+<h2>Upcoming Feature</h2>
+<p>Our development team is actively building this experience. Stay tuned for future updates!</p>
+<button class="upcoming-close-btn" onclick="hideUpcomingModal()">Close</button>
+</div>
+</div>
+
+<div class="premium-download-modal" id="desc-bottom-sheet" style="z-index: 1800;">
+<div class="premium-download-content" style="max-height: 60vh;">
+<div class="drag-handle-line"></div>
+<div class="download-modal-header">
+<h3>About</h3>
+<button class="close-download-modal" onclick="closeDescBottomSheet()"><i class="fas fa-times"></i></button>
+</div>
+<div class="download-modal-scrollable" style="padding-bottom: 24px;">
+<p id="full-desc-text" style="line-height: 1.6; font-size: 0.95rem; color: var(--text-main); white-space: pre-wrap; word-break: break-word;"></p>
+<div style="border-top: 1px solid var(--glass-border); padding-top: 16px; margin-top: 16px;">
+<div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.85rem; color: var(--text-muted);">
+<span>Channel Category</span>
+<span id="desc-meta-category" style="font-weight: 700; color: var(--text-main);">Gaming</span>
+</div>
+<div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.85rem; color: var(--text-muted);">
+<span>Joined</span>
+<span id="desc-meta-joined" style="font-weight: 700; color: var(--text-main);">Joined Date</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="premium-download-modal" id="more-desc-sheet" style="z-index: 2500;">
+<div class="premium-download-content" style="max-height: 75vh;">
+<div class="drag-handle-line" id="more-desc-drag-handle"></div>
+<div class="download-modal-header">
+<h3>Description</h3>
+<button class="close-download-modal" onclick="closeMoreDescriptionSheet()"><i class="fas fa-times"></i></button>
+</div>
+<div class="download-modal-scrollable" style="padding-bottom: 30px;">
+<h2 id="more-sheet-video-title" style="font-size: 1.1rem; font-weight: 800; margin: 0 0 12px 0; color: var(--text-main); line-height: 1.4;">Video Title</h2>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: var(--border-color); padding: 12px; border-radius: 14px; margin-bottom: 16px;">
+<div style="text-align: center;">
+<span style="font-size: 0.72rem; color: var(--text-muted); display: block; font-weight: 700;">Likes</span>
+<span id="more-sheet-likes-val" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">0</span>
+</div>
+<div style="text-align: center; border-left: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border);">
+<span style="font-size: 0.72rem; color: var(--text-muted); display: block; font-weight: 700;">Views</span>
+<span id="more-sheet-views-val" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">0</span>
+</div>
+<div style="text-align: center;">
+<span style="font-size: 0.72rem; color: var(--text-muted); display: block; font-weight: 700;">Published</span>
+<span id="more-sheet-time-val" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">Just Now</span>
+</div>
+</div>
+<p id="more-sheet-desc-text" style="font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); white-space: pre-wrap; margin: 0; word-break: break-word;"></p>
+</div>
+</div>
+</div>
+
+<div class="premium-download-modal" id="account-switcher-modal">
+<div class="premium-download-content" style="padding-bottom: 30px;">
+<div class="drag-handle-line"></div>
+<div class="download-modal-header">
+<h3>Switch account</h3>
+<button class="close-download-modal" onclick="closeAccountSwitcher()"><i class="fas fa-times"></i></button>
+</div>
+<div class="account-switcher-list" id="account-switcher-list-container" style="display: flex; flex-direction: column; gap: 12px; max-height: 50vh; overflow-y: auto;"></div>
+</div>
+</div>
+
+<div id="full-image-preview-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.95); z-index: 9999999; display: none; align-items: center; justify-content: center;">
+<button onclick="closeFullScreenImagePreview()" style="position: absolute; top: 24px; left: 24px; background: rgba(255,255,255,0.2); border: none; color: white; width: 44px; height: 44px; border-radius: 50%; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10000000; backdrop-filter: blur(5px);">
+<i class="fas fa-times"></i>
+</button>
+<img id="full-image-preview-el" src="" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);"/>
+</div>
+
+<div id="fb-reaction-picker" style="position: fixed; display: none; gap: 8px; background: var(--surface); border: 1px solid var(--glass-border); padding: 6px 12px; border-radius: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 9999999; backdrop-filter: blur(20px); align-items: center; transition: opacity 0.2s ease;">
+<div class="animated-emoji-item" onclick="selectPostReaction('love')">❤️</div>
+<div class="animated-emoji-item" onclick="selectPostReaction('like')">👍</div>
+<div class="animated-emoji-item" onclick="selectPostReaction('care')">🥰</div>
+<div class="animated-emoji-item" onclick="selectPostReaction('haha')">😆</div>
+<div class="animated-emoji-item" onclick="selectPostReaction('wow')">😮</div>
+<div class="animated-emoji-item" onclick="selectPostReaction('sad')">😭</div>
+<div class="animated-emoji-item" onclick="selectPostReaction('angry')">😡</div>
+</div>
+
+<div class="theme-popup-menu" id="theme-popup-menu">
+<div class="theme-menu-item" data-theme-val="light" onclick="selectThemeVal('light')">
+<div class="theme-menu-item-left">
+<i class="fas fa-sun" style="color: #FFB300; width: 20px; text-align: center;"></i>
+<span>Light Theme</span>
+</div>
+<div class="theme-radio-circle">
+<div class="theme-radio-inner"></div>
+</div>
+</div>
+<div class="theme-menu-item" data-theme-val="dark" onclick="selectThemeVal('dark')">
+<div class="theme-menu-item-left">
+<i class="fas fa-moon" style="color: #FF2E55; width: 20px; text-align: center;"></i>
+<span>Dark Theme</span>
+</div>
+<div class="theme-radio-circle">
+<div class="theme-radio-inner"></div>
+</div>
+</div>
+</div>

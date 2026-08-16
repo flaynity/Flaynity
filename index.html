@@ -1,62 +1,487 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <!-- Android WebView Optimization: No auto-zoom, no pinch-zoom -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#ffffff">
-    <title>Flaynity</title>
+<style>
+    /* =========================================
+       1. GLOBAL HOME STYLES & CATEGORY CHIPS
+       ========================================= */
+    .home-container { width: 100%; height: 100%; display: flex; flex-direction: column; background: #ffffff; position: relative; }
+    
+    .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #ffffff; flex-shrink: 0; }
+    .top-bar-left { display: flex; align-items: center; gap: 8px; }
+    .top-bar-right { display: flex; gap: 16px; color: #0f0f0f; }
 
-    <!-- Google Fonts: Roboto & Material Symbols (Premium Icons) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    /* Category Chips - STRICTLY 3 Equal Widths, No Scroll */
+    .category-chips-wrapper { width: 100%; padding: 8px 16px; background: #ffffff; border-bottom: 1px solid #f0f0f0; flex-shrink: 0; }
+    .category-chips { display: flex; width: 100%; gap: 12px; overflow: hidden; }
+    .chip { flex: 1; text-align: center; padding: 10px 0; border-radius: 100px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.3s ease, color 0.3s ease; }
+    .chip.active { background: #0f0f0f; color: #ffffff; }
+    .chip.inactive { background: #f2f2f2; color: #0f0f0f; }
 
-    <style>
-        /* Global Reset & Base Setup */
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #ffffff;
-            color: #0f0f0f;
-            overflow: hidden; /* Handled by individual pages */
-            width: 100vw;
-            height: 100vh;
-            overscroll-behavior: none; /* Prevents pull-to-refresh glow */
+    /* Feed Container */
+    .home-feed-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; background: #f8f8f8; padding-bottom: 80px; scroll-behavior: smooth; }
+
+    /* =========================================
+       2. SHORTS GRID (All Category)
+       ========================================= */
+    .shorts-grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 12px; background: #ffffff; margin-bottom: 8px; }
+    .short-card { width: 100%; aspect-ratio: 2/3; border-radius: 16px; overflow: hidden; position: relative; background: #ddd; cursor: pointer; }
+    .short-card img { width: 100%; height: 100%; object-fit: cover; }
+    .short-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 12px; background: linear-gradient(transparent, rgba(0,0,0,0.8)); color: #fff; }
+    .short-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+    .short-views { font-size: 12px; font-weight: 400; opacity: 0.9; }
+
+    /* =========================================
+       3. LONG VIDEO FEED
+       ========================================= */
+    .video-card { width: 100%; background: #ffffff; margin-bottom: 8px; cursor: pointer; }
+    .video-thumbnail { width: 100%; aspect-ratio: 16/9; background: #ddd; position: relative; }
+    .video-thumbnail img { width: 100%; height: 100%; object-fit: cover; }
+    .video-duration { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.8); color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    .video-details { display: flex; gap: 12px; padding: 12px 16px; }
+    .video-avatar { width: 40px; height: 40px; border-radius: 50%; background: #eee; flex-shrink: 0; }
+    .video-meta-text { flex: 1; overflow: hidden; }
+    .video-title { font-size: 16px; font-weight: 600; color: #0f0f0f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+    .video-subtitle { font-size: 13px; color: #666; }
+
+    /* =========================================
+       4. FACEBOOK STYLE POSTS
+       ========================================= */
+    .post-card { width: 100%; background: #ffffff; margin-bottom: 8px; padding-top: 12px; }
+    .post-header { display: flex; justify-content: space-between; align-items: center; padding: 0 16px 12px 16px; }
+    .post-user-info { display: flex; gap: 12px; align-items: center; }
+    .post-avatar { width: 40px; height: 40px; border-radius: 50%; background: #eee; }
+    .post-name { font-size: 15px; font-weight: 700; color: #0f0f0f; display: block; }
+    .post-time { font-size: 12px; color: #666; }
+    .post-subscribe-btn { background: #0f0f0f; color: #ffffff; border: none; padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    
+    .post-title { padding: 0 16px 12px 16px; font-size: 15px; color: #0f0f0f; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .post-more-btn { color: #666; font-weight: 500; cursor: pointer; }
+    
+    .post-image { width: 100%; aspect-ratio: 3/4; background: #ddd; object-fit: cover; cursor: pointer; }
+    
+    .post-stats { display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #666; }
+    .post-reactions-count { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+    
+    .post-actions { display: flex; padding: 4px 16px; position: relative; }
+    .post-action-btn { flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 10px 0; color: #666; font-weight: 600; cursor: pointer; font-size: 14px; user-select: none; -webkit-user-select: none; }
+
+    /* =========================================
+       5. REACTION PICKER (Animated Emojis)
+       ========================================= */
+    .reaction-picker { position: absolute; bottom: 50px; left: 16px; background: #ffffff; border-radius: 100px; padding: 8px 12px; display: flex; gap: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); transform: scale(0); opacity: 0; transform-origin: bottom left; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 100; }
+    .reaction-picker.show { transform: scale(1); opacity: 1; }
+    .reaction-emoji { font-size: 28px; cursor: pointer; transition: transform 0.2s; position: relative; }
+    .reaction-emoji:hover { transform: scale(1.3) translateY(-10px); }
+    @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) scale(1.5); opacity: 0; } }
+    .emoji-floating { animation: floatUp 0.8s forwards; position: absolute; pointer-events: none; }
+
+    /* =========================================
+       6. VIDEO PLAYER FULL VIEW
+       ========================================= */
+    #video-player-page { position: fixed; inset: 0; background: #f8f8f8; z-index: 9999; display: none; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+    .player-wrapper { width: 100%; aspect-ratio: 16/9; background: #000; position: sticky; top: 0; z-index: 10; }
+    
+    .video-info-card { background: #ffffff; padding: 16px; border-bottom: 1px solid #f0f0f0; }
+    .vp-title { font-size: 18px; font-weight: 700; color: #0f0f0f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px; }
+    .vp-metadata { font-size: 13px; color: #666; font-weight: 500; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .vp-more { color: #0f0f0f; font-weight: 600; cursor: pointer; }
+    
+    .vp-action-row { display: flex; align-items: center; gap: 12px; margin-top: 16px; overflow-x: auto; padding-bottom: 8px; }
+    .vp-action-row::-webkit-scrollbar { display: none; }
+    .vp-channel-btn { display: flex; align-items: center; gap: 8px; background: #f2f2f2; padding: 6px 12px 6px 6px; border-radius: 100px; }
+    .vp-subscribe-btn { background: #0f0f0f; color: #ffffff; padding: 8px 16px; border-radius: 100px; font-size: 14px; font-weight: 600; border: none; }
+    .vp-subscribe-btn.subscribed { background: #f2f2f2; color: #0f0f0f; }
+    .vp-btn { display: flex; align-items: center; gap: 6px; background: #f2f2f2; padding: 8px 16px; border-radius: 100px; font-size: 14px; font-weight: 600; color: #0f0f0f; }
+    
+    .vp-comment-card { background: #f2f2f2; border-radius: 16px; padding: 12px; margin: 16px; cursor: pointer; }
+    .vp-comment-header { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+    .vp-comment-preview { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #0f0f0f; }
+    .vp-comment-preview img { width: 24px; height: 24px; border-radius: 50%; }
+    .vp-comment-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+
+    /* =========================================
+       7. BOTTOM SHEETS & OVERLAYS
+       ========================================= */
+    .bottom-sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: none; align-items: flex-end; }
+    .bottom-sheet-content { width: 100%; background: #ffffff; border-radius: 24px 24px 0 0; padding: 16px; max-height: 80vh; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s ease; }
+    .sheet-drag-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; margin: 0 auto 16px auto; }
+    
+    /* Image Preview */
+    #image-fullscreen-view { position: fixed; inset: 0; background: #000; z-index: 10000; display: none; align-items: center; justify-content: center; }
+    #image-fullscreen-view img { width: 100%; height: auto; max-height: 100vh; object-fit: contain; }
+    .close-fullscreen { position: absolute; top: 16px; left: 16px; color: #fff; font-size: 32px; cursor: pointer; }
+
+    /* Reacted Users Page */
+    #reacted-users-page { position: fixed; inset: 0; background: #ffffff; z-index: 10000; display: none; flex-direction: column; }
+    .react-chips-container { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; border-bottom: 1px solid #f0f0f0; }
+    .react-chips-container::-webkit-scrollbar { display: none; }
+    .r-chip { padding: 6px 16px; border-radius: 100px; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+    .r-chip.active { background: #0f0f0f; color: #ffffff; }
+    .r-chip.inactive { background: #f2f2f2; color: #0f0f0f; }
+    .user-react-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #f9f9f9; }
+</style>
+
+<div class="home-container">
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <span class="material-symbols-rounded" style="color: #ff2a5f; font-size: 28px;">play_circle</span>
+            <span style="font-size: 20px; font-weight: 900; color: #ff2a5f; letter-spacing: -1px;">Flaynity</span>
+        </div>
+        <div class="top-bar-right">
+            <span class="material-symbols-rounded">search</span>
+            <span class="material-symbols-rounded">settings</span>
+        </div>
+    </div>
+
+    <!-- Category Chips -->
+    <div class="category-chips-wrapper">
+        <div class="category-chips" id="home-category-chips">
+            <div class="chip active" data-cat="all">All</div>
+            <div class="chip inactive" data-cat="posts">Posts</div>
+            <div class="chip inactive" data-cat="shorts">Shorts</div>
+        </div>
+    </div>
+
+    <!-- Main Feed -->
+    <div class="home-feed-scroll" id="dynamic-home-feed">
+        <!-- Content will be injected here by JS -->
+    </div>
+</div>
+
+<!-- ==========================================
+     VIDEO PLAYER PAGE (Overlay)
+     ========================================== -->
+<div id="video-player-page">
+    <div class="player-wrapper">
+        <video id="main-video" width="100%" height="100%" controls style="background:#000;"></video>
+    </div>
+    
+    <div class="video-info-card">
+        <div class="vp-title">Exploring the Beautiful Mountains of Switzerland in 4K HDR</div>
+        <div class="vp-metadata">
+            <span style="color:#0f0f0f;">@NatureLover</span> • <span>137K Likes</span> • <span>2.9M Views</span> • <span>2 days ago</span> • <span class="vp-more" onclick="openDescSheet()">...more</span>
+        </div>
+        
+        <div class="vp-action-row">
+            <div class="vp-channel-btn">
+                <img src="https://ui-avatars.com/api/?name=N&background=000&color=fff" style="width:32px;height:32px;border-radius:50%;">
+                <button class="vp-subscribe-btn" onclick="toggleSubscribe(this)">Subscribe</button>
+            </div>
+            <div class="vp-btn"><span class="material-symbols-rounded">thumb_up</span> 137K</div>
+            <div class="vp-btn"><span class="material-symbols-rounded">thumb_down</span></div>
+            <div class="vp-btn"><span class="material-symbols-rounded">download</span> Download</div>
+        </div>
+    </div>
+
+    <div class="vp-comment-card">
+        <div class="vp-comment-header">Comments 14K</div>
+        <div class="vp-comment-preview">
+            <img src="https://ui-avatars.com/api/?name=U">
+            <div class="vp-comment-text">This video is absolutely breathtaking! The views are...</div>
+        </div>
+    </div>
+
+    <div style="padding: 16px; font-weight: 700; font-size: 16px;">Recommended</div>
+    <div id="recommended-feed">
+        <!-- Rendered by JS -->
+    </div>
+</div>
+
+<!-- ==========================================
+     DESCRIPTION BOTTOM SHEET
+     ========================================== -->
+<div class="bottom-sheet-overlay" id="desc-bottom-sheet">
+    <div class="bottom-sheet-content" id="desc-sheet-content">
+        <div class="sheet-drag-handle"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="font-size: 18px;">Description</h3>
+            <span class="material-symbols-rounded" style="cursor:pointer;" onclick="closeDescSheet()">close</span>
+        </div>
+        <h2 style="font-size:16px; margin-bottom:12px;">Exploring the Beautiful Mountains of Switzerland in 4K HDR</h2>
+        <div style="display:flex; gap:16px; margin-bottom:16px; font-weight:600;">
+            <div>137K <span style="font-weight:400; color:#666; font-size:12px; display:block;">Likes</span></div>
+            <div>2.9M <span style="font-weight:400; color:#666; font-size:12px; display:block;">Views</span></div>
+            <div>Oct 24 <span style="font-weight:400; color:#666; font-size:12px; display:block;">2023</span></div>
+        </div>
+        <p style="color:#333; font-size:14px; line-height:1.5;">This is the full description of the video loaded dynamically. It supports scrolling and contains all the details about the upload.</p>
+    </div>
+</div>
+
+<!-- ==========================================
+     IMAGE FULLSCREEN PREVIEW
+     ========================================== -->
+<div id="image-fullscreen-view">
+    <span class="material-symbols-rounded close-fullscreen" onclick="closeImagePreview()">close</span>
+    <img id="fullscreen-img-src" src="">
+</div>
+
+<!-- ==========================================
+     ALL PEOPLE REACTED PAGE
+     ========================================== -->
+<div id="reacted-users-page">
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <span class="material-symbols-rounded" style="cursor:pointer;" onclick="closeReactPage()">arrow_back</span>
+            <span style="font-size: 18px; font-weight: 700;">All People Reacted</span>
+        </div>
+    </div>
+    <div class="react-chips-container">
+        <div class="r-chip active">All (10)</div>
+        <div class="r-chip inactive">❤️ Love (5)</div>
+        <div class="r-chip inactive">👍 Like (3)</div>
+        <div class="r-chip inactive">🥰 Care (2)</div>
+    </div>
+    <div style="flex:1; overflow-y:auto;" id="reacted-users-list">
+        <div class="user-react-row">
+            <div style="display:flex; gap:12px; align-items:center;">
+                <img src="https://ui-avatars.com/api/?name=A" style="width:36px;height:36px;border-radius:50%;">
+                <span style="font-weight:600; font-size:15px;">Arif Hasan</span>
+            </div>
+            <span style="font-size:20px;">❤️</span>
+        </div>
+        <div class="user-react-row">
+            <div style="display:flex; gap:12px; align-items:center;">
+                <img src="https://ui-avatars.com/api/?name=R" style="width:36px;height:36px;border-radius:50%;">
+                <span style="font-weight:600; font-size:15px;">Raju Ahmed</span>
+            </div>
+            <span style="font-size:20px;">👍</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* =========================================
+       HOME PAGE JAVASCRIPT LOGIC
+       ========================================= */
+    document.addEventListener("DOMContentLoaded", () => {
+        setupCategoryChips();
+        renderAllCategory(); // Default load
+    });
+
+    // 1. Category Chips Logic
+    function setupCategoryChips() {
+        const chips = document.querySelectorAll('#home-category-chips .chip');
+        chips.forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                chips.forEach(c => { c.classList.remove('active'); c.classList.add('inactive'); });
+                e.target.classList.remove('inactive');
+                e.target.classList.add('active');
+                
+                const cat = e.target.getAttribute('data-cat');
+                if (cat === 'all') renderAllCategory();
+                else if (cat === 'posts') renderPostsCategory();
+                else if (cat === 'shorts') renderShortsCategory();
+            });
+        });
+    }
+
+    // 2. Render Functions
+    const feedContainer = document.getElementById('dynamic-home-feed');
+
+    function renderAllCategory() {
+        feedContainer.innerHTML = '';
+        
+        // Step 1: Add 6 Shorts Grid
+        const shortsGrid = document.createElement('div');
+        shortsGrid.className = 'shorts-grid-container';
+        for(let i=1; i<=6; i++) {
+            shortsGrid.innerHTML += `
+                <div class="short-card" onclick="openVideoPlayer('Shorts Title ${i}')">
+                    <img src="https://source.unsplash.com/random/400x600?portrait=${i}" loading="lazy">
+                    <div class="short-overlay">
+                        <div class="short-title">Amazing Short ${i}</div>
+                        <div class="short-views">${Math.floor(Math.random() * 900) + 10}K views</div>
+                    </div>
+                </div>`;
         }
-        /* Root container strictly for rendering pages */
-        #flaynity-root {
-            width: 100%;
-            height: 100%;
-            position: relative;
+        feedContainer.appendChild(shortsGrid);
+
+        // Step 2: Add 5 Long Videos
+        for(let i=1; i<=5; i++) {
+            feedContainer.appendChild(createLongVideoCard(i));
         }
-        /* Material Symbols Setup */
-        .material-symbols-rounded {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+
+        // Step 3: Add 1 Facebook Style Post
+        feedContainer.appendChild(createPostCard(1));
+
+        // Note: Infinite scroll will load more patterns automatically.
+    }
+
+    function renderPostsCategory() {
+        feedContainer.innerHTML = '';
+        for(let i=1; i<=10; i++) {
+            feedContainer.appendChild(createPostCard(i));
         }
-        .icon-filled {
-            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+
+    function renderShortsCategory() {
+        feedContainer.innerHTML = '';
+        const grid = document.createElement('div');
+        grid.className = 'shorts-grid-container';
+        for(let i=1; i<=12; i++) {
+            grid.innerHTML += `
+                <div class="short-card" onclick="openVideoPlayer('Shorts Title ${i}')">
+                    <img src="https://source.unsplash.com/random/400x600?nature=${i}" loading="lazy">
+                    <div class="short-overlay">
+                        <div class="short-title">Exclusive Short ${i}</div>
+                        <div class="short-views">1.2M views</div>
+                    </div>
+                </div>`;
         }
-    </style>
-</head>
-<body>
+        feedContainer.appendChild(grid);
+    }
 
-    <!-- STRICT REQUIREMENT: Only the root container -->
-    <div id="flaynity-root"></div>
+    // 3. UI Component Generators
+    function createLongVideoCard(index) {
+        const div = document.createElement('div');
+        div.className = 'video-card';
+        div.innerHTML = `
+            <div class="video-thumbnail" onclick="openVideoPlayer('Long Video ${index}')">
+                <img src="https://source.unsplash.com/random/800x450?landscape=${index}" loading="lazy">
+                <div class="video-duration">10:45</div>
+            </div>
+            <div class="video-details">
+                <img src="https://ui-avatars.com/api/?name=C${index}&background=random" class="video-avatar">
+                <div class="video-meta-text">
+                    <div class="video-title">This is a massive 1-line title example ${index}</div>
+                    <div class="video-subtitle">Channel ${index} • 1M views • 2 days ago</div>
+                </div>
+            </div>
+        `;
+        return div;
+    }
 
-    <!-- Firebase SDKs (Modular) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+    function createPostCard(index) {
+        const div = document.createElement('div');
+        div.className = 'post-card';
+        div.innerHTML = `
+            <div class="post-header">
+                <div class="post-user-info">
+                    <img src="https://ui-avatars.com/api/?name=U${index}&background=random" class="post-avatar">
+                    <div>
+                        <span class="post-name">User Name ${index}</span>
+                        <span class="post-time">5 hrs ago</span>
+                    </div>
+                </div>
+                <button class="post-subscribe-btn">Subscribe</button>
+            </div>
+            <div class="post-title">This is a beautiful post. Enjoy the view! <span class="post-more-btn">...more</span></div>
+            <img src="https://source.unsplash.com/random/600x800?city=${index}" class="post-image" loading="lazy" onclick="openImagePreview(this.src)">
+            
+            <div class="post-stats">
+                <div class="post-reactions-count" onclick="openReactPage()">❤️ 👍 🥰 100 Reactions</div>
+                <div>100 Comments</div>
+            </div>
+            
+            <div class="post-actions">
+                <div class="post-action-btn love-btn">
+                    <span class="material-symbols-rounded">favorite</span> Love
+                </div>
+                <div class="post-action-btn">
+                    <span class="material-symbols-rounded">chat_bubble</span> Comment
+                </div>
+                <!-- Reaction Picker -->
+                <div class="reaction-picker">
+                    <span class="reaction-emoji" onclick="selectReaction(this, '❤️')">❤️</span>
+                    <span class="reaction-emoji" onclick="selectReaction(this, '👍')">👍</span>
+                    <span class="reaction-emoji" onclick="selectReaction(this, '🥰')">🥰</span>
+                    <span class="reaction-emoji" onclick="selectReaction(this, '😆')">😆</span>
+                    <span class="reaction-emoji" onclick="selectReaction(this, '😮')">😮</span>
+                    <span class="reaction-emoji" onclick="selectReaction(this, '😭')">😭</span>
+                    <span class="reaction-emoji" onclick="selectReaction(this, '😡')">😡</span>
+                </div>
+            </div>
+        `;
 
-    <!-- AWS SDK for Cloudflare R2 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.1408.0/aws-sdk.min.js"></script>
+        // Long Press Logic for Love Button
+        const loveBtn = div.querySelector('.love-btn');
+        const picker = div.querySelector('.reaction-picker');
+        let pressTimer;
 
-    <!-- Application Core Scripts -->
-    <script src="js/firebase-config.js"></script>
-    <script src="js/cloudflare-r2.js"></script>
-    <script src="js/navigation.js"></script>
+        loveBtn.addEventListener('touchstart', (e) => {
+            pressTimer = setTimeout(() => { picker.classList.add('show'); }, 500);
+        }, {passive: true});
+        
+        loveBtn.addEventListener('touchend', () => { clearTimeout(pressTimer); });
+        
+        // For Desktop/Mouse testing
+        loveBtn.addEventListener('mousedown', () => {
+            pressTimer = setTimeout(() => { picker.classList.add('show'); }, 500);
+        });
+        loveBtn.addEventListener('mouseup', () => { clearTimeout(pressTimer); });
+        
+        // Hide picker when clicking outside
+        document.addEventListener('click', (e) => {
+            if(!loveBtn.contains(e.target) && !picker.contains(e.target)) {
+                picker.classList.remove('show');
+            }
+        });
 
-</body>
-</html>
+        return div;
+    }
+
+    // 4. Reaction Selection Animation
+    window.selectReaction = function(element, emoji) {
+        // Create flying emoji
+        const flying = document.createElement('div');
+        flying.innerText = emoji;
+        flying.className = 'emoji-floating';
+        flying.style.fontSize = '40px';
+        flying.style.left = element.getBoundingClientRect().left + 'px';
+        flying.style.top = element.getBoundingClientRect().top + 'px';
+        document.body.appendChild(flying);
+        
+        // Close picker
+        element.parentElement.classList.remove('show');
+        
+        setTimeout(() => { flying.remove(); }, 800);
+    }
+
+    // 5. Video Player Overlays
+    window.openVideoPlayer = function(title) {
+        document.getElementById('video-player-page').style.display = 'flex';
+        // Render 2 recommended videos at bottom
+        const recFeed = document.getElementById('recommended-feed');
+        recFeed.innerHTML = '';
+        recFeed.appendChild(createLongVideoCard(99));
+        recFeed.appendChild(createLongVideoCard(100));
+    }
+    
+    // Bottom Sheet Logic
+    const bottomSheet = document.getElementById('desc-bottom-sheet');
+    const sheetContent = document.getElementById('desc-sheet-content');
+    
+    window.openDescSheet = function() {
+        bottomSheet.style.display = 'flex';
+        setTimeout(() => { sheetContent.style.transform = 'translateY(0)'; }, 10);
+    }
+    window.closeDescSheet = function() {
+        sheetContent.style.transform = 'translateY(100%)';
+        setTimeout(() => { bottomSheet.style.display = 'none'; }, 300);
+    }
+
+    // Subscribe Toggle
+    window.toggleSubscribe = function(btn) {
+        if(btn.classList.contains('subscribed')) {
+            btn.classList.remove('subscribed');
+            btn.innerText = 'Subscribe';
+        } else {
+            btn.classList.add('subscribed');
+            btn.innerText = 'Subscribed';
+            // Sync to Firebase here
+        }
+    }
+
+    // Image Fullscreen Logic
+    window.openImagePreview = function(src) {
+        document.getElementById('fullscreen-img-src').src = src;
+        document.getElementById('image-fullscreen-view').style.display = 'flex';
+    }
+    window.closeImagePreview = function() {
+        document.getElementById('image-fullscreen-view').style.display = 'none';
+    }
+
+    // Reacted Users Page Logic
+    window.openReactPage = function() { document.getElementById('reacted-users-page').style.display = 'flex'; }
+    window.closeReactPage = function() { document.getElementById('reacted-users-page').style.display = 'none'; }
+    
+</script>

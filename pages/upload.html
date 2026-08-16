@@ -1,544 +1,120 @@
-<div class="fl-upload-root">
-  <!-- Top App Bar -->
-  <header class="fl-header">
-    <div class="fl-header-left">
-      <button class="fl-icon-btn" onclick="FlaynityNav.navigateTo('home')">
-        <span class="material-symbols-outlined">close</span>
-      </button>
-      <span class="fl-header-title">Create Content</span>
-    </div>
-  </header>
-
-  <!-- 1. CREATE CONTENT SELECTOR BOTTOM SHEET / HUB -->
-  <div id="fl-upload-hub" class="fl-upload-hub-container">
-    <div class="fl-create-options-list">
-      <!-- Option 1: Video Upload -->
-      <div class="fl-create-card" onclick="FlaynityUpload.openWorkflow('video')">
-        <div class="fl-create-icon-wrap" style="background: rgba(255, 0, 51, 0.1); color: var(--fl-primary);">
-          <span class="material-symbols-outlined">video_call</span>
-        </div>
-        <div class="fl-create-card-text">
-          <h3>Video Upload</h3>
-          <p>Upload videos or long movies up to 10GB</p>
-        </div>
-        <span class="material-symbols-outlined fl-chevron">chevron_right</span>
-      </div>
-
-      <!-- Option 2: Short Upload -->
-      <div class="fl-create-card" onclick="FlaynityUpload.openWorkflow('short')">
-        <div class="fl-create-icon-wrap" style="background: rgba(33, 150, 243, 0.1); color: #2196F3;">
-          <span class="material-symbols-outlined">play_circle</span>
-        </div>
-        <div class="fl-create-card-text">
-          <h3>Short Upload</h3>
-          <p>Share quick portrait clips up to 3 mins</p>
-        </div>
-        <span class="material-symbols-outlined fl-chevron">chevron_right</span>
-      </div>
-
-      <!-- Option 3: Create Post -->
-      <div class="fl-create-card" onclick="FlaynityUpload.openWorkflow('post')">
-        <div class="fl-create-icon-wrap" style="background: rgba(76, 175, 80, 0.1); color: #4CAF50;">
-          <span class="material-symbols-outlined">post_add</span>
-        </div>
-        <div class="fl-create-card-text">
-          <h3>Create Post</h3>
-          <p>Share images up to 5 photos as grid</p>
-        </div>
-        <span class="material-symbols-outlined fl-chevron">chevron_right</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- 2. LONG VIDEO UPLOAD WORKFLOW -->
-  <div id="fl-workflow-video" class="fl-workflow-view hidden">
-    <h2 class="fl-workflow-heading">Upload Long Video</h2>
-    <form id="fl-form-video" class="fl-upload-form" onsubmit="FlaynityUpload.submitVideo(event)">
-      <div class="fl-file-dropzone" onclick="document.getElementById('fl-video-file-input').click()">
-        <span class="material-symbols-outlined" style="font-size: 40px; color: var(--fl-primary);">movie</span>
-        <span id="fl-video-file-label">Select Video File (MP4, MKV up to 10GB)</span>
-        <input type="file" id="fl-video-file-input" accept="video/*" class="hidden" required onchange="FlaynityUpload.handleFileSelect(this, 'fl-video-file-label')" />
-      </div>
-
-      <div class="fl-input-group">
-        <label>Video Title *</label>
-        <input type="text" id="fl-video-title" placeholder="Add a title that describes your video" required maxlength="120" />
-      </div>
-
-      <div class="fl-input-group">
-        <label>Description</label>
-        <textarea id="fl-video-desc" rows="3" placeholder="Tell viewers about your video"></textarea>
-      </div>
-
-      <div class="fl-input-group">
-        <label>Thumbnail Image *</label>
-        <input type="file" id="fl-video-thumb-input" accept="image/*" required />
-      </div>
-
-      <div class="fl-input-group">
-        <label>Category</label>
-        <select id="fl-video-category">
-          <option value="Action">Action</option>
-          <option value="Sci-Fi">Sci-Fi</option>
-          <option value="Horror">Horror</option>
-          <option value="Comedy">Comedy</option>
-          <option value="Drama">Drama</option>
-          <option value="Animation">Animation</option>
-          <option value="Entertainment">Entertainment</option>
-        </select>
-      </div>
-
-      <!-- Upload Progress Container -->
-      <div id="fl-video-progress-wrap" class="fl-progress-container hidden">
-        <div class="fl-progress-bar"><div id="fl-video-progress-fill" class="fl-progress-fill"></div></div>
-        <span id="fl-video-progress-text" class="fl-progress-text">Uploading to Cloudflare R2: 0%</span>
-      </div>
-
-      <div class="fl-form-actions">
-        <button type="button" class="fl-btn fl-btn-secondary" onclick="FlaynityUpload.cancelWorkflow()">Cancel</button>
-        <button type="submit" id="fl-video-submit-btn" class="fl-btn fl-btn-primary">Publish Video</button>
-      </div>
-    </form>
-  </div>
-
-  <!-- 3. SHORT UPLOAD WORKFLOW -->
-  <div id="fl-workflow-short" class="fl-workflow-view hidden">
-    <h2 class="fl-workflow-heading">Upload YouTube Short</h2>
-    <form id="fl-form-short" class="fl-upload-form" onsubmit="FlaynityUpload.submitShort(event)">
-      <div class="fl-file-dropzone" onclick="document.getElementById('fl-short-file-input').click()">
-        <span class="material-symbols-outlined" style="font-size: 40px; color: #2196F3;">play_circle</span>
-        <span id="fl-short-file-label">Select Vertical Clip (Up to 3 mins)</span>
-        <input type="file" id="fl-short-file-input" accept="video/*" class="hidden" required onchange="FlaynityUpload.handleFileSelect(this, 'fl-short-file-label')" />
-      </div>
-
-      <div class="fl-input-group">
-        <label>Short Title / Caption *</label>
-        <input type="text" id="fl-short-title" placeholder="Caption your short #shorts" required maxlength="100" />
-      </div>
-
-      <div class="fl-input-group">
-        <label>Audio / Music Name</label>
-        <input type="text" id="fl-short-audio" placeholder="Original Audio - Artist Name" />
-      </div>
-
-      <div class="fl-input-group">
-        <label>Vertical Thumbnail (Optional)</label>
-        <input type="file" id="fl-short-thumb-input" accept="image/*" />
-      </div>
-
-      <div id="fl-short-progress-wrap" class="fl-progress-container hidden">
-        <div class="fl-progress-bar"><div id="fl-short-progress-fill" class="fl-progress-fill"></div></div>
-        <span id="fl-short-progress-text" class="fl-progress-text">Uploading to Cloudflare R2: 0%</span>
-      </div>
-
-      <div class="fl-form-actions">
-        <button type="button" class="fl-btn fl-btn-secondary" onclick="FlaynityUpload.cancelWorkflow()">Cancel</button>
-        <button type="submit" id="fl-short-submit-btn" class="fl-btn fl-btn-primary">Upload Short</button>
-      </div>
-    </form>
-  </div>
-
-  <!-- 4. COMMUNITY POST WORKFLOW -->
-  <div id="fl-workflow-post" class="fl-workflow-view hidden">
-    <h2 class="fl-workflow-heading">Create Community Post</h2>
-    <form id="fl-form-post" class="fl-upload-form" onsubmit="FlaynityUpload.submitPost(event)">
-      <div class="fl-input-group">
-        <textarea id="fl-post-text" rows="4" placeholder="What's on your mind? Share updates with your community..." required></textarea>
-      </div>
-
-      <div class="fl-file-dropzone" onclick="document.getElementById('fl-post-files-input').click()">
-        <span class="material-symbols-outlined" style="font-size: 36px; color: #4CAF50;">add_photo_alternate</span>
-        <span>Select Photos (Up to 5 images for Grid)</span>
-        <input type="file" id="fl-post-files-input" accept="image/*" multiple class="hidden" onchange="FlaynityUpload.handlePostImages(this)" />
-      </div>
-
-      <!-- Selected Images Grid Preview -->
-      <div id="fl-post-img-preview-grid" class="fl-post-preview-grid"></div>
-
-      <div id="fl-post-progress-wrap" class="fl-progress-container hidden">
-        <div class="fl-progress-bar"><div id="fl-post-progress-fill" class="fl-progress-fill"></div></div>
-        <span id="fl-post-progress-text" class="fl-progress-text">Publishing post...</span>
-      </div>
-
-      <div class="fl-form-actions">
-        <button type="button" class="fl-btn fl-btn-secondary" onclick="FlaynityUpload.cancelWorkflow()">Cancel</button>
-        <button type="submit" id="fl-post-submit-btn" class="fl-btn fl-btn-primary">Post Update</button>
-      </div>
-    </form>
-  </div>
-
-  <!-- Bottom Navigation Bar -->
-  <nav class="fl-bottom-nav">
-    <button class="fl-nav-item" onclick="FlaynityNav.navigateTo('home')">
-      <span class="material-symbols-outlined">home</span>
-      <span>Home</span>
-    </button>
-    <button class="fl-nav-item" onclick="FlaynityNav.navigateTo('shorts')">
-      <span class="material-symbols-outlined">play_circle</span>
-      <span>Shorts</span>
-    </button>
-    <button class="fl-nav-item fl-nav-create-btn" onclick="FlaynityNav.navigateTo('upload')">
-      <div class="fl-plus-icon-circle active">
-        <span class="material-symbols-outlined">add</span>
-      </div>
-    </button>
-    <button class="fl-nav-item" onclick="FlaynityNav.navigateTo('discover')">
-      <span class="material-symbols-outlined">explore</span>
-      <span>Discover</span>
-    </button>
-    <button class="fl-nav-item" onclick="FlaynityNav.navigateTo('you')">
-      <span class="material-symbols-outlined">person</span>
-      <span>You</span>
-    </button>
-  </nav>
-</div>
-
 <style>
-  /* ==========================================================================
-     UPLOAD & CONTENT CREATION STYLES
-     ========================================================================== */
-  .fl-upload-root {
-    width: 100%;
-    min-height: 100vh;
-    padding-bottom: calc(var(--fl-bottom-nav-height) + 20px);
-    background: #FFFFFF;
-    position: relative;
-    overflow-x: hidden;
-  }
+    .upload-container {
+        width: 100%; height: 100%; background: #f8f8f8; display: flex; flex-direction: column;
+        position: relative;
+    }
+    
+    /* Top Bar for Form */
+    .upload-header {
+        display: none; justify-content: space-between; align-items: center; padding: 16px;
+        background: #ffffff; border-bottom: 1px solid #f0f0f0;
+    }
+    .upload-header-title { font-size: 18px; font-weight: 600; }
+    
+    /* Bottom Sheet Style Menu */
+    .upload-menu-sheet {
+        position: absolute; bottom: 0; left: 0; right: 0; background: #ffffff;
+        border-radius: 24px 24px 0 0; padding: 24px 16px; box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+        display: flex; flex-direction: column; gap: 16px; z-index: 50; transition: transform 0.3s ease;
+    }
+    .sheet-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; margin: 0 auto 16px auto; }
+    .sheet-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    
+    .upload-option {
+        display: flex; align-items: center; gap: 16px; padding: 16px; background: #f8f8f8;
+        border-radius: 16px; cursor: pointer; transition: background 0.2s;
+    }
+    .upload-option:active { background: #eee; }
+    .option-icon {
+        width: 48px; height: 48px; border-radius: 50%; background: #ffe6eb; color: #ff2a5f;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .option-text h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .option-text p { font-size: 13px; color: #666; }
 
-  .fl-header {
-    height: var(--fl-header-height);
-    background: #FFF;
-    display: flex;
-    align-items: center;
-    padding: 0 12px;
-    border-bottom: 1px solid #F0F0F0;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-
-  .fl-header-left { display: flex; align-items: center; gap: 12px; }
-  .fl-header-title { font-size: 17px; font-weight: 700; }
-
-  /* Hub selection options */
-  .fl-upload-hub-container { padding: 16px; }
-  .fl-create-options-list { display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
-  
-  .fl-create-card {
-    display: flex;
-    align-items: center;
-    padding: 16px;
-    background: #F8F9FA;
-    border: 1px solid #EAEAEA;
-    border-radius: 16px;
-    cursor: pointer;
-    transition: transform 0.15s ease, background-color 0.15s ease;
-  }
-  .fl-create-card:active { transform: scale(0.98); background: #F1F3F4; }
-  
-  .fl-create-icon-wrap {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 14px;
-    flex-shrink: 0;
-  }
-  .fl-create-card-text { flex: 1; min-width: 0; }
-  .fl-create-card-text h3 { font-size: 15px; font-weight: 700; margin-bottom: 2px; color: #111; }
-  .fl-create-card-text p { font-size: 12px; color: #666; }
-  .fl-chevron { color: #BBB; }
-
-  /* Workflow Views & Forms */
-  .fl-workflow-view { padding: 16px; animation: fl-fade-in 0.2s ease; }
-  .fl-workflow-heading { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
-  .fl-upload-form { display: flex; flex-direction: column; gap: 14px; }
-
-  .fl-file-dropzone {
-    border: 2px dashed #D0D0D0;
-    border-radius: 12px;
-    padding: 24px 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    text-align: center;
-    background: #FAFAFA;
-    cursor: pointer;
-    font-size: 13px;
-    color: #555;
-    font-weight: 500;
-  }
-  .fl-file-dropzone:active { background: #F0F0F0; }
-
-  .fl-input-group { display: flex; flex-direction: column; gap: 6px; }
-  .fl-input-group label { font-size: 12px; font-weight: 600; color: #444; }
-  .fl-input-group input, .fl-input-group textarea, .fl-input-group select {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1px solid #DCDCDC;
-    border-radius: 10px;
-    font-size: 14px;
-    font-family: inherit;
-    outline: none;
-    background: #FFF;
-  }
-  .fl-input-group input:focus, .fl-input-group textarea:focus, .fl-input-group select:focus {
-    border-color: #0F0F0F;
-  }
-
-  /* Progress Bar */
-  .fl-progress-container {
-    background: #F8F9FA;
-    padding: 12px;
-    border-radius: 10px;
-    border: 1px solid #EEE;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .fl-progress-bar { width: 100%; height: 8px; background: #E0E0E0; border-radius: 4px; overflow: hidden; }
-  .fl-progress-fill { width: 0%; height: 100%; background: var(--fl-primary); transition: width 0.2s ease; }
-  .fl-progress-text { font-size: 11px; font-weight: 600; color: #333; text-align: center; }
-
-  /* Post Preview Grid */
-  .fl-post-preview-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-  }
-  .fl-post-preview-thumb {
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: 8px;
-    object-fit: cover;
-  }
-
-  .fl-form-actions { display: flex; gap: 10px; margin-top: 10px; }
-  .fl-btn {
-    flex: 1; height: 44px; border: none; border-radius: 22px;
-    font-size: 14px; font-weight: 600; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .fl-btn-primary { background: #0F0F0F; color: #FFF; }
-  .fl-btn-secondary { background: #F0F0F0; color: #0F0F0F; }
-
-  @keyframes fl-fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* Upload Forms (Initially Hidden) */
+    .upload-form-area {
+        display: none; flex: 1; padding: 16px; overflow-y: auto; background: #ffffff;
+    }
+    .input-group { margin-bottom: 20px; }
+    .input-label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: #333; }
+    .custom-input { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 12px; font-size: 15px; outline: none; }
+    .custom-input:focus { border-color: #ff2a5f; }
+    textarea.custom-input { resize: none; height: 100px; }
+    
+    .file-drop-area {
+        border: 2px dashed #ddd; border-radius: 16px; padding: 32px 16px; text-align: center;
+        background: #fafafa; cursor: pointer; margin-bottom: 20px;
+    }
+    .file-drop-area .material-symbols-rounded { font-size: 40px; color: #aaa; margin-bottom: 8px; }
+    
+    .btn-submit {
+        width: 100%; padding: 16px; background: #ff2a5f; color: white; border: none;
+        border-radius: 100px; font-size: 16px; font-weight: 600; cursor: pointer;
+    }
 </style>
 
-<script>
-  /**
-   * FLAYNITY UPLOAD CONTROLLER
-   * Handles Form Switching, File Validation, Cloudflare R2 Uploads & Database Insertion
-   */
-  window.FlaynityUpload = (function() {
-    let postImagesFiles = [];
+<div class="upload-container">
+    
+    <!-- Step 1: Upload Options Bottom Sheet -->
+    <div class="upload-menu-sheet" id="upload-selection-sheet">
+        <div class="sheet-handle"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div class="sheet-title">Create content</div>
+            <span class="material-symbols-rounded" style="cursor: pointer;" id="close-upload">close</span>
+        </div>
 
-    function openWorkflow(type) {
-      if (!window.FlaynityAuth?.currentUser) {
-        alert("Please sign in first to upload content.");
-        FlaynityNav.navigateTo('home');
-        return;
-      }
-      document.getElementById('fl-upload-hub').classList.add('hidden');
-      document.querySelectorAll('.fl-workflow-view').forEach(v => v.classList.add('hidden'));
-      document.getElementById(`fl-workflow-${type}`).classList.remove('hidden');
-    }
+        <div class="upload-option" data-type="video">
+            <div class="option-icon"><span class="material-symbols-rounded">upload</span></div>
+            <div class="option-text">
+                <h3>Video Upload</h3>
+                <p>Upload videos or long movies up to 10GB</p>
+            </div>
+        </div>
 
-    function cancelWorkflow() {
-      document.querySelectorAll('.fl-workflow-view').forEach(v => v.classList.add('hidden'));
-      document.getElementById('fl-upload-hub').classList.remove('hidden');
-    }
+        <div class="upload-option" data-type="short">
+            <div class="option-icon"><span class="material-symbols-rounded">app_shortcut</span></div>
+            <div class="option-text">
+                <h3>Short Upload</h3>
+                <p>Share quick portrait clips up to 3 mins</p>
+            </div>
+        </div>
 
-    function handleFileSelect(input, labelId) {
-      if (input.files && input.files[0]) {
-        document.getElementById(labelId).textContent = input.files[0].name;
-      }
-    }
+        <div class="upload-option" data-type="post">
+            <div class="option-icon"><span class="material-symbols-rounded">post_add</span></div>
+            <div class="option-text">
+                <h3>Create Post</h3>
+                <p>Share images up to 5 photos as grid</p>
+            </div>
+        </div>
+    </div>
 
-    function handlePostImages(input) {
-      const grid = document.getElementById('fl-post-img-preview-grid');
-      grid.innerHTML = '';
-      postImagesFiles = Array.from(input.files).slice(0, 5);
+    <!-- Step 2: Form Header -->
+    <div class="upload-header" id="upload-form-header">
+        <span class="material-symbols-rounded" style="cursor: pointer;" id="back-to-upload-menu">arrow_back</span>
+        <div class="upload-header-title" id="upload-form-title">Upload</div>
+        <span style="width: 24px;"></span> <!-- Spacer for center alignment -->
+    </div>
 
-      postImagesFiles.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = document.createElement('img');
-          img.className = 'fl-post-preview-thumb';
-          img.src = e.target.result;
-          grid.appendChild(img);
-        };
-        reader.readAsDataURL(file);
-      });
-    }
+    <!-- Step 3: Generic Form Area (Handled Dynamically by JS) -->
+    <div class="upload-form-area" id="upload-form-area">
+        <div class="file-drop-area" id="file-selector-btn">
+            <span class="material-symbols-rounded">cloud_upload</span>
+            <p style="font-weight: 500; font-size: 15px;">Tap to select file</p>
+            <p style="font-size: 12px; color: #888; margin-top: 4px;" id="file-limits-text">MP4, MOV</p>
+            <input type="file" id="media-file-input" style="display: none;">
+        </div>
 
-    async function submitVideo(e) {
-      e.preventDefault();
-      const user = window.FlaynityAuth.currentUser;
-      const videoFile = document.getElementById('fl-video-file-input').files[0];
-      const thumbFile = document.getElementById('fl-video-thumb-input').files[0];
-      const title = document.getElementById('fl-video-title').value.trim();
-      const desc = document.getElementById('fl-video-desc').value.trim();
-      const category = document.getElementById('fl-video-category').value;
+        <div class="input-group">
+            <label class="input-label">Title</label>
+            <input type="text" id="upload-title" class="custom-input" placeholder="Give your content a catchy title">
+        </div>
 
-      if (!videoFile || !thumbFile || !title) return;
+        <div class="input-group" id="desc-group">
+            <label class="input-label">Description</label>
+            <textarea id="upload-desc" class="custom-input" placeholder="Tell viewers about your content..."></textarea>
+        </div>
 
-      const progressWrap = document.getElementById('fl-video-progress-wrap');
-      const progressFill = document.getElementById('fl-video-progress-fill');
-      const progressText = document.getElementById('fl-video-progress-text');
-      const submitBtn = document.getElementById('fl-video-submit-btn');
-
-      progressWrap.classList.remove('hidden');
-      submitBtn.disabled = true;
-
-      try {
-        // 1. Upload Video & Thumbnail to Cloudflare R2
-        progressText.textContent = "Uploading video to Cloudflare R2...";
-        const videoUrl = await FlaynityR2.uploadFile(videoFile, 'videos', (pct) => {
-          progressFill.style.width = `${pct * 0.7}%`;
-          progressText.textContent = `Uploading Video: ${Math.round(pct * 0.7)}%`;
-        });
-
-        progressText.textContent = "Uploading thumbnail...";
-        const thumbUrl = await FlaynityR2.uploadFile(thumbFile, 'thumbnails', (pct) => {
-          progressFill.style.width = `${70 + (pct * 0.3)}%`;
-        });
-
-        // 2. Save metadata to Firebase Realtime Database
-        const videoRef = window.FlaynityDB.ref('videos').push();
-        await videoRef.set({
-          userId: user.uid,
-          channelName: user.displayName || 'Flaynity Creator',
-          channelHandle: `@${(user.displayName || 'creator').toLowerCase().replace(/\s+/g, '')}`,
-          channelAvatar: user.photoURL || 'https://via.placeholder.com/40',
-          title: title,
-          description: desc,
-          category: category,
-          videoUrl: videoUrl,
-          thumbnailUrl: thumbUrl,
-          views: 0,
-          likes: 0,
-          duration: "10:00",
-          createdAt: firebase.database.ServerValue.TIMESTAMP
-        });
-
-        alert("Video uploaded successfully!");
-        FlaynityNav.navigateTo('home');
-      } catch (err) {
-        alert("Upload error: " + err.message);
-      } finally {
-        progressWrap.classList.add('hidden');
-        submitBtn.disabled = false;
-      }
-    }
-
-    async function submitShort(e) {
-      e.preventDefault();
-      const user = window.FlaynityAuth.currentUser;
-      const shortFile = document.getElementById('fl-short-file-input').files[0];
-      const thumbFile = document.getElementById('fl-short-thumb-input').files[0];
-      const title = document.getElementById('fl-short-title').value.trim();
-      const audio = document.getElementById('fl-short-audio').value.trim();
-
-      if (!shortFile || !title) return;
-
-      const progressWrap = document.getElementById('fl-short-progress-wrap');
-      const progressFill = document.getElementById('fl-short-progress-fill');
-      const submitBtn = document.getElementById('fl-short-submit-btn');
-
-      progressWrap.classList.remove('hidden');
-      submitBtn.disabled = true;
-
-      try {
-        const videoUrl = await FlaynityR2.uploadFile(shortFile, 'shorts', (pct) => {
-          progressFill.style.width = `${pct}%`;
-        });
-
-        let thumbUrl = '';
-        if (thumbFile) {
-          thumbUrl = await FlaynityR2.uploadFile(thumbFile, 'shorts_thumbs');
-        }
-
-        const shortRef = window.FlaynityDB.ref('shorts').push();
-        await shortRef.set({
-          userId: user.uid,
-          channelName: user.displayName || 'Creator',
-          channelHandle: `@${(user.displayName || 'creator').toLowerCase().replace(/\s+/g, '')}`,
-          channelAvatar: user.photoURL || 'https://via.placeholder.com/40',
-          title: title,
-          audioTitle: audio || 'Original Audio',
-          videoUrl: videoUrl,
-          thumbnailUrl: thumbUrl || videoUrl,
-          views: 0,
-          likes: 0,
-          comments: 0,
-          createdAt: firebase.database.ServerValue.TIMESTAMP
-        });
-
-        alert("Short published successfully!");
-        FlaynityNav.navigateTo('shorts');
-      } catch (err) {
-        alert("Short upload failed: " + err.message);
-      } finally {
-        progressWrap.classList.add('hidden');
-        submitBtn.disabled = false;
-      }
-    }
-
-    async function submitPost(e) {
-      e.preventDefault();
-      const user = window.FlaynityAuth.currentUser;
-      const text = document.getElementById('fl-post-text').value.trim();
-
-      if (!text && postImagesFiles.length === 0) return;
-
-      const progressWrap = document.getElementById('fl-post-progress-wrap');
-      const submitBtn = document.getElementById('fl-post-submit-btn');
-
-      progressWrap.classList.remove('hidden');
-      submitBtn.disabled = true;
-
-      try {
-        let imageUrl = '';
-        if (postImagesFiles.length > 0) {
-          imageUrl = await FlaynityR2.uploadFile(postImagesFiles[0], 'posts');
-        }
-
-        const postRef = window.FlaynityDB.ref('posts').push();
-        await postRef.set({
-          userId: user.uid,
-          userName: user.displayName || 'Community Member',
-          userAvatar: user.photoURL || 'https://via.placeholder.com/40',
-          text: text,
-          imageUrl: imageUrl,
-          reactionCount: 0,
-          commentCount: 0,
-          createdAt: firebase.database.ServerValue.TIMESTAMP
-        });
-
-        alert("Post shared with community!");
-        FlaynityNav.navigateTo('home');
-      } catch (err) {
-        alert("Failed to share post: " + err.message);
-      } finally {
-        progressWrap.classList.add('hidden');
-        submitBtn.disabled = false;
-      }
-    }
-
-    return {
-      openWorkflow,
-      cancelWorkflow,
-      handleFileSelect,
-      handlePostImages,
-      submitVideo,
-      submitShort,
-      submitPost
-    };
-  })();
-</script>
+        <button class="btn-submit" id="start-upload-btn">Publish to Flaynity</button>
+    </div>
+</div>

@@ -1,24 +1,54 @@
 <style>
+    :root {
+        --bg-primary: #ffffff;
+        --bg-surface: #f8f9fa;
+        --bg-surface-light: #e4e6eb;
+        --text-primary: #0f0f0f;
+        --text-secondary: #606060;
+        --accent-color: #000000;
+        --brand-red: #ff0000;
+        --success-color: #00c853;
+        --danger-color: #d32f2f;
+        --border-color: #e5e5e5;
+        --card-radius: 14px;
+        --avatar-border: #ffffff;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
     .you-page {
         width: 100%;
-        height: calc(100vh - var(--nav-height) - var(--safe-area-bottom));
-        overflow-y: auto;
+        min-height: 100vh;
         background-color: var(--bg-primary);
-        padding-top: var(--safe-area-top);
-        padding-bottom: 24px;
+        color: var(--text-primary);
+        padding-bottom: 80px;
+        position: relative;
+        overflow-x: hidden;
     }
 
-    /* Top Bar */
+    /* Top AppBar */
     .you-header {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background-color: var(--bg-primary);
         display: flex;
+        align-items: center;
         justify-content: flex-end;
-        padding: 16px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-color);
     }
 
-    .switch-account-btn {
+    .switch-account-pill {
         background-color: var(--bg-surface-light);
         color: var(--text-primary);
-        padding: 6px 16px;
+        padding: 6px 14px;
         border-radius: 20px;
         font-size: 13px;
         font-weight: 600;
@@ -26,345 +56,1463 @@
         align-items: center;
         gap: 6px;
         cursor: pointer;
+        border: none;
+        transition: transform 0.15s ease, background-color 0.2s;
     }
 
-    /* Profile Section */
-    .profile-section {
+    .switch-account-pill:active {
+        transform: scale(0.96);
+    }
+
+    /* Profile Main Section */
+    .profile-hero {
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 0 16px 24px;
+        padding: 24px 16px 20px;
         text-align: center;
     }
 
-    .profile-avatar {
-        width: 88px;
-        height: 88px;
+    .avatar-wrapper {
+        position: relative;
+        width: 90px;
+        height: 90px;
+        margin-bottom: 14px;
+    }
+
+    .profile-avatar-img {
+        width: 100%;
+        height: 100%;
         border-radius: 50%;
-        background-color: var(--bg-surface);
-        margin-bottom: 16px;
         object-fit: cover;
-        border: 2px solid var(--bg-surface-light);
+        background-color: var(--bg-surface-light);
+        border: 3px solid var(--avatar-border);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
 
     .profile-name {
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 700;
         color: var(--text-primary);
-        margin-bottom: 4px;
+        margin-bottom: 3px;
     }
 
     .profile-email {
-        font-size: 14px;
+        font-size: 13px;
         color: var(--text-secondary);
         margin-bottom: 16px;
     }
 
-    .channel-action-btn {
-        background-color: var(--text-primary);
-        color: var(--bg-primary);
-        padding: 8px 24px;
+    .channel-cta-btn {
+        background-color: #000000;
+        color: #ffffff;
+        padding: 10px 24px;
         border-radius: 24px;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 700;
         border: none;
         cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: transform 0.15s ease;
     }
 
-    /* Channel Dashboard View */
-    .channel-dashboard {
+    .channel-cta-btn:active {
+        transform: scale(0.97);
+    }
+
+    /* General Navigation Menu */
+    .menu-group {
+        margin-top: 14px;
+        border-top: 1px solid var(--border-color);
+        padding: 8px 0;
+    }
+
+    .menu-item-row {
+        display: flex;
+        align-items: center;
+        padding: 14px 18px;
+        gap: 16px;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+    }
+
+    .menu-item-row:active {
+        background-color: var(--bg-surface-light);
+    }
+
+    .menu-icon {
+        font-size: 22px;
+        width: 28px;
+        text-align: center;
+    }
+
+    .menu-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-primary);
+        flex: 1;
+    }
+
+    .menu-chevron {
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+
+    /* Sub-Pages & Overlays */
+    .subpage-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-color: var(--bg-primary);
+        z-index: 100;
         display: none;
         flex-direction: column;
-        border-top: 1px solid var(--bg-surface-light);
+        overflow-y: auto;
+        animation: subpageSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    .dashboard-tabs {
+    @keyframes subpageSlideIn {
+        0% { transform: translateX(100%); }
+        100% { transform: translateX(0); }
+    }
+
+    .subpage-topbar {
+        position: sticky;
+        top: 0;
+        background-color: var(--bg-primary);
+        z-index: 40;
         display: flex;
-        justify-content: space-around;
-        padding: 16px 0;
-        border-bottom: 1px solid var(--bg-surface-light);
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border-color);
     }
 
-    .dash-tab {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--text-secondary);
-        cursor: pointer;
+    .subpage-topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
     }
-    .dash-tab.active {
+
+    .back-nav-btn {
+        background: transparent;
+        border: none;
+        font-size: 22px;
+        cursor: pointer;
         color: var(--text-primary);
     }
 
-    /* Analytics Cards */
-    .analytics-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        padding: 16px;
+    .subpage-title {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-primary);
     }
 
-    .analytic-card {
+    /* Form Styles (Create & Edit Channel) */
+    .form-container {
+        padding: 20px 16px 40px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .banner-upload-box {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: var(--card-radius);
+        background-color: var(--bg-surface-light);
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .banner-upload-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .banner-upload-badge {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.65);
+        color: #ffffff;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .avatar-upload-center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: -36px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .avatar-edit-circle {
+        position: relative;
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background-color: var(--bg-surface-light);
+        border: 4px solid var(--bg-primary);
+        overflow: hidden;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .avatar-edit-circle img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .avatar-camera-btn {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        font-size: 12px;
+        text-align: center;
+        padding: 4px 0;
+    }
+
+    .input-field-block {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .field-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .custom-input, .custom-textarea, .custom-dropdown {
         background-color: var(--bg-surface);
-        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 12px 14px;
+        color: var(--text-primary);
+        font-size: 14px;
+        outline: none;
+        width: 100%;
+        transition: border-color 0.2s ease;
+    }
+
+    .custom-input:focus, .custom-textarea:focus, .custom-dropdown:focus {
+        border-color: #000000;
+    }
+
+    .custom-textarea {
+        resize: none;
+        height: 100px;
+    }
+
+    .handle-status-msg {
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+
+    .status-available { color: var(--success-color); }
+    .status-taken { color: var(--danger-color); }
+    .status-checking { color: #f57c00; }
+
+    .primary-submit-btn {
+        background-color: #000000;
+        color: #ffffff;
+        border: none;
+        border-radius: 24px;
+        padding: 14px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 10px;
+        transition: transform 0.15s ease;
+    }
+
+    .primary-submit-btn:active {
+        transform: scale(0.98);
+    }
+
+    /* View Channel UI */
+    .channel-view-header {
+        position: relative;
+    }
+
+    .channel-banner-view {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background-color: var(--bg-surface-light);
+        object-fit: cover;
+    }
+
+    .channel-meta-view {
         padding: 16px;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        align-items: center;
+        text-align: center;
+        margin-top: -46px;
+        position: relative;
     }
 
-    .analytic-title {
-        font-size: 13px;
-        color: var(--text-secondary);
-        font-weight: 500;
+    .channel-meta-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 4px solid var(--bg-primary);
+        background-color: var(--bg-surface);
+        object-fit: cover;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        margin-bottom: 8px;
     }
 
-    .analytic-value {
+    .channel-view-name {
         font-size: 20px;
         font-weight: 700;
         color: var(--text-primary);
     }
 
-    /* List Items */
-    .menu-list {
-        display: flex;
-        flex-direction: column;
-        margin-top: 16px;
+    .channel-view-handle {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 2px;
     }
 
-    .menu-item {
-        display: flex;
-        align-items: center;
-        padding: 16px;
-        gap: 16px;
-        background-color: transparent;
-        transition: background-color 0.2s;
-        cursor: pointer;
+    .channel-sub-stats {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 4px;
     }
-    .menu-item:active {
+
+    .channel-desc-preview {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 8px;
+        max-width: 90%;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .channel-actions-row {
+        display: flex;
+        gap: 10px;
+        width: 100%;
+        padding: 14px 16px;
+    }
+
+    .channel-btn-action {
+        flex: 1;
+        padding: 9px 0;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1px solid var(--border-color);
+        background-color: var(--bg-surface);
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+
+    .channel-btn-action:active {
         background-color: var(--bg-surface-light);
     }
 
-    .menu-item .material-symbols-outlined {
-        font-size: 24px;
-        color: var(--text-primary);
+    /* Channel Tabs */
+    .channel-tabs-bar {
+        display: flex;
+        border-bottom: 1px solid var(--border-color);
+        background-color: var(--bg-primary);
+        position: sticky;
+        top: 52px;
+        z-index: 30;
     }
 
-    .menu-text {
-        font-size: 16px;
-        font-weight: 500;
-        color: var(--text-primary);
+    .chan-tab {
         flex: 1;
+        text-align: center;
+        padding: 12px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        position: relative;
+        cursor: pointer;
     }
 
-    /* Login State Container */
-    .login-container {
+    .chan-tab.active {
+        color: #000000;
+        font-weight: 700;
+    }
+
+    .chan-tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 20%; width: 60%;
+        height: 2.5px;
+        background-color: #000000;
+        border-radius: 2px;
+    }
+
+    .channel-content-area {
+        padding: 12px 0;
+    }
+
+    /* Analytics Dashboard */
+    .analytics-body {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .analytics-overview-card {
+        background: linear-gradient(135deg, #000000 0%, #1f1f1f 100%);
+        color: #ffffff;
+        border-radius: var(--card-radius);
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    .analytics-stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .metric-card {
+        background-color: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: var(--card-radius);
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .metric-card-title {
+        font-size: 12px;
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
+
+    .metric-card-value {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+
+    /* Monthly Growth SVG Graph */
+    .chart-box {
+        background-color: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: var(--card-radius);
+        padding: 14px;
+    }
+
+    .chart-title {
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        color: var(--text-primary);
+    }
+
+    /* Account Switcher Bottom Sheet */
+    .sheet-backdrop {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 500;
+        display: none;
+    }
+
+    .accounts-sheet {
+        position: fixed;
+        bottom: 0; left: 0; width: 100%;
+        background-color: #ffffff;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        z-index: 510;
+        display: none;
+        flex-direction: column;
+        padding: 12px 16px 28px;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+        animation: sheetSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes sheetSlideUp {
+        0% { transform: translateY(100%); }
+        100% { transform: translateY(0); }
+    }
+
+    .sheet-handle {
+        width: 36px;
+        height: 4px;
+        background-color: #ccc;
+        border-radius: 4px;
+        margin: 0 auto 12px;
+    }
+
+    .account-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 8px;
+        border-radius: 10px;
+        cursor: pointer;
+    }
+
+    .account-row:active {
+        background-color: var(--bg-surface-light);
+    }
+
+    .account-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    /* Unauth View */
+    .unauth-container {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        height: 100%;
-        padding: 24px;
+        padding: 60px 24px;
         text-align: center;
     }
-    .google-btn {
-        background-color: var(--text-primary);
-        color: var(--bg-primary);
-        border: none;
-        padding: 12px 24px;
+
+    /* Toast Notification */
+    .toast-box {
+        position: fixed;
+        bottom: 90px;
+        left: 50%;
+        transform: translateX(-50%) translateY(30px);
+        background: rgba(15, 15, 15, 0.92);
+        color: #ffffff;
+        padding: 10px 18px;
         border-radius: 24px;
-        font-size: 16px;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-top: 24px;
-        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        z-index: 1000;
+        opacity: 0;
+        pointer-events: none;
+        transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease;
+    }
+
+    .toast-box.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
     }
 </style>
 
-<div class="you-page" id="you-page-container">
-    <!-- State 1: Not Logged In -->
-    <div class="login-container" id="unauth-view">
-        <span class="material-symbols-outlined" style="font-size: 64px; margin-bottom: 16px; color: var(--text-secondary);">account_circle</span>
+<div class="you-page" id="you-main-page">
+    <!-- Unauthenticated View -->
+    <div class="unauth-container" id="unauth-view" style="display:none;">
+        <div style="font-size: 64px; margin-bottom: 16px;">👤</div>
         <h2 style="font-size:20px; font-weight:700;">Sign in to Flaynity</h2>
-        <p style="font-size:14px; color:var(--text-secondary); margin-top:8px;">Upload videos, subscribe to channels, and interact with the community.</p>
-        <button class="google-btn" onclick="signInWithGoogle()">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:20px; height:20px;" alt="">
+        <p style="font-size:14px; color:var(--text-secondary); margin-top:8px; line-height: 1.4;">
+            Sign in to upload videos, create channels, check analytics, and manage content.
+        </p>
+        <button class="primary-submit-btn" style="margin-top:20px; padding: 12px 28px;" onclick="signInWithGoogle()">
             Sign in with Google
         </button>
     </div>
 
-    <!-- State 2: Logged In -->
-    <div id="auth-view" style="display:none; width:100%;">
+    <!-- Authenticated View -->
+    <div id="auth-view" style="display:none;">
+        <!-- Top App Bar -->
         <div class="you-header">
-            <div class="switch-account-btn" onclick="switchAccount()">
-                <span class="material-symbols-outlined" style="font-size:18px;">swap_horiz</span> Switch Account
-            </div>
+            <button class="switch-account-pill" onclick="openAccountSwitcher()">
+                <span>🔄</span> Switch Account
+            </button>
         </div>
 
-        <div class="profile-section">
-            <img src="" id="user-avatar" class="profile-avatar" alt="">
-            <div class="profile-name" id="user-name">User Name</div>
-            <div class="profile-email" id="user-email">user@gmail.com</div>
-            <button class="channel-action-btn" id="channel-btn">Loading...</button>
+        <!-- Profile Section -->
+        <div class="profile-hero">
+            <div class="avatar-wrapper">
+                <img src="" id="user-avatar-img" class="profile-avatar-img" alt="Avatar">
+            </div>
+            <div class="profile-name" id="user-display-name">User Name</div>
+            <div class="profile-email" id="user-email-text">user@gmail.com</div>
+            <button class="channel-cta-btn" id="channel-cta-btn" onclick="handleChannelAction()">
+                Create a Channel
+            </button>
         </div>
 
-        <!-- Channel Dashboard -->
-        <div class="channel-dashboard" id="channel-dashboard">
-            <div class="dashboard-tabs">
-                <div class="dash-tab active">Analytics</div>
-                <div class="dash-tab">Content</div>
+        <!-- Menu List -->
+        <div class="menu-group">
+            <div class="menu-item-row" onclick="openUploadManagerTab()">
+                <div class="menu-icon">📤</div>
+                <div class="menu-title">Upload Manager</div>
+                <div class="menu-chevron">›</div>
             </div>
-            
-            <div class="analytics-grid">
-                <div class="analytic-card">
-                    <span class="analytic-title">Total Views</span>
-                    <span class="analytic-value" id="stat-views">0</span>
-                </div>
-                <div class="analytic-card">
-                    <span class="analytic-title">Subscribers</span>
-                    <span class="analytic-value" id="stat-subs">0</span>
-                </div>
-                <div class="analytic-card">
-                    <span class="analytic-title">Videos</span>
-                    <span class="analytic-value" id="stat-videos">0</span>
-                </div>
-                <div class="analytic-card">
-                    <span class="analytic-title">Likes</span>
-                    <span class="analytic-value" id="stat-likes">0</span>
-                </div>
+            <div class="menu-item-row" onclick="openLikedVideos()">
+                <div class="menu-icon">👍</div>
+                <div class="menu-title">Liked Videos</div>
+                <div class="menu-chevron">›</div>
             </div>
-        </div>
-
-        <!-- General Menu -->
-        <div class="menu-list">
-            <div class="menu-item">
-                <span class="material-symbols-outlined">history</span>
-                <span class="menu-text">History</span>
+            <div class="menu-item-row" onclick="openHistory()">
+                <div class="menu-icon">⏱️</div>
+                <div class="menu-title">History</div>
+                <div class="menu-chevron">›</div>
             </div>
-            <div class="menu-item">
-                <span class="material-symbols-outlined">thumb_up</span>
-                <span class="menu-text">Liked Videos</span>
-            </div>
-            <div class="menu-item">
-                <span class="material-symbols-outlined">cloud_upload</span>
-                <span class="menu-text">Upload Manager</span>
-            </div>
-            <div class="menu-item" onclick="signOut()">
-                <span class="material-symbols-outlined" style="color:var(--accent-color);">logout</span>
-                <span class="menu-text" style="color:var(--accent-color);">Sign out</span>
+            <div class="menu-item-row" onclick="signOut()">
+                <div class="menu-icon" style="color:var(--danger-color);">🚪</div>
+                <div class="menu-title" style="color:var(--danger-color);">Sign Out</div>
+                <div class="menu-chevron">›</div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    (function() {
-        const unauthView = document.getElementById('unauth-view');
-        const authView = document.getElementById('auth-view');
-        const channelDashboard = document.getElementById('channel-dashboard');
-        const channelBtn = document.getElementById('channel-btn');
-        
-        // Listen to Firebase Auth state
-        if(window.firebase) {
-            window.firebase.auth().onAuthStateChanged((user) => {
-                if(user) {
-                    // Show logged in view
-                    unauthView.style.display = 'none';
-                    authView.style.display = 'block';
-                    
-                    document.getElementById('user-name').innerText = user.displayName || 'User';
-                    document.getElementById('user-email').innerText = user.email;
-                    document.getElementById('user-avatar').src = user.photoURL || '';
+<!-- ============================================== -->
+<!-- 1. CREATE CHANNEL PAGE OVERLAY                 -->
+<!-- ============================================== -->
+<div class="subpage-overlay" id="create-channel-overlay">
+    <div class="subpage-topbar">
+        <div class="subpage-topbar-left">
+            <button class="back-nav-btn" onclick="closeCreateChannel()">←</button>
+            <div class="subpage-title">Enter Your Information</div>
+        </div>
+    </div>
 
-                    // Check Realtime DB for Channel
-                    const db = window.firebase.database();
-                    db.ref('channels').orderByChild('userId').equalTo(user.uid).once('value', snapshot => {
-                        if(snapshot.exists()) {
-                            // Has channel
-                            const channelData = Object.values(snapshot.val())[0];
-                            channelBtn.innerText = "View Channel >";
-                            channelBtn.onclick = () => alert("Opening View Channel UI");
-                            
-                            channelDashboard.style.display = 'flex';
-                            document.getElementById('stat-views').innerText = formatCount(channelData.totalViews || 0);
-                            document.getElementById('stat-subs').innerText = formatCount(channelData.subscriberCount || 0);
-                            document.getElementById('stat-videos').innerText = formatCount(channelData.videosCount || 0);
-                            document.getElementById('stat-likes').innerText = formatCount(channelData.totalLikes || 0);
-                            
-                        } else {
-                            // No channel
-                            channelBtn.innerText = "Create a Channel";
-                            channelDashboard.style.display = 'none';
-                            channelBtn.onclick = () => alert("Opening Create Channel Form");
-                        }
-                    });
+    <div class="form-container">
+        <!-- Avatar Upload with Preview -->
+        <div class="input-field-block" style="align-items:center;">
+            <div class="avatar-edit-circle" onclick="triggerAvatarPick('create')">
+                <img id="create-avatar-preview" src="https://via.placeholder.com/150" alt="Avatar">
+                <div class="avatar-camera-btn">📷 Edit</div>
+            </div>
+            <div style="font-size:12px; color:var(--text-secondary); margin-top:6px;">Select Channel Avatar</div>
+        </div>
+
+        <!-- Channel Name -->
+        <div class="input-field-block">
+            <label class="field-label">Channel Name <span id="create-name-count">0/100</span></label>
+            <input type="text" class="custom-input" id="create-channel-name" placeholder="Enter channel name" maxlength="100" oninput="updateCharCount(this, 'create-name-count', 100)">
+        </div>
+
+        <!-- Handle with Realtime Availability Check -->
+        <div class="input-field-block">
+            <label class="field-label">Handle (@)</label>
+            <input type="text" class="custom-input" id="create-channel-handle" placeholder="e.g. yourhandle" oninput="handleAvailabilityCheck(this.value, 'create-handle-status')">
+            <div class="handle-status-msg" id="create-handle-status"></div>
+        </div>
+
+        <!-- Category Dropdown -->
+        <div class="input-field-block">
+            <label class="field-label">Category</label>
+            <select class="custom-dropdown" id="create-channel-category">
+                <option value="Entertainment">Entertainment</option>
+                <option value="Gaming">Gaming</option>
+                <option value="Education">Education</option>
+                <option value="Music">Music</option>
+                <option value="Comedy">Comedy</option>
+                <option value="Sports">Sports</option>
+                <option value="AI">AI</option>
+                <option value="Technology">Technology</option>
+                <option value="Travel">Travel</option>
+                <option value="Lifestyle">Lifestyle</option>
+                <option value="Food">Food</option>
+                <option value="Science">Science</option>
+                <option value="Pets">Pets</option>
+                <option value="Movies">Movies</option>
+                <option value="Animation">Animation</option>
+                <option value="Kids">Kids</option>
+                <option value="Fashion">Fashion</option>
+                <option value="Business">Business</option>
+                <option value="Health">Health</option>
+                <option value="Beauty">Beauty</option>
+                <option value="Vlogs">Vlogs</option>
+                <option value="Others">Others</option>
+            </select>
+        </div>
+
+        <button class="primary-submit-btn" id="create-channel-btn" onclick="submitCreateChannel()">Create Channel</button>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- 2. VIEW CHANNEL PAGE OVERLAY                   -->
+<!-- ============================================== -->
+<div class="subpage-overlay" id="view-channel-overlay">
+    <div class="subpage-topbar">
+        <div class="subpage-topbar-left">
+            <button class="back-nav-btn" onclick="closeViewChannel()">←</button>
+            <div class="subpage-title">Channel</div>
+        </div>
+    </div>
+
+    <div class="channel-view-header">
+        <img id="view-banner-img" class="channel-banner-view" src="https://via.placeholder.com/2048x1152" alt="Banner">
+        <div class="channel-meta-view">
+            <img id="view-avatar-img" class="channel-meta-avatar" src="" alt="Avatar">
+            <div class="channel-view-name" id="view-channel-name">Channel Name</div>
+            <div class="channel-view-handle" id="view-channel-handle">@handle</div>
+            <div class="channel-sub-stats" id="view-channel-stats">0 Subscribers • 0 Videos</div>
+            <div class="channel-desc-preview" id="view-channel-desc" onclick="expandChannelDescription()">No description provided.</div>
+        </div>
+
+        <div class="channel-actions-row">
+            <button class="channel-btn-action" onclick="openAnalyticsPage()">📊 Analytics</button>
+            <button class="channel-btn-action" onclick="openEditChannelPage()">✏️ Edit Channel</button>
+        </div>
+
+        <!-- Content Tabs -->
+        <div class="channel-tabs-bar">
+            <div class="chan-tab active" onclick="switchChannelTab('videos', this)">Videos</div>
+            <div class="chan-tab" onclick="switchChannelTab('shorts', this)">Shorts</div>
+            <div class="chan-tab" onclick="switchChannelTab('posts', this)">Posts</div>
+        </div>
+    </div>
+
+    <!-- Tab Contents Container -->
+    <div class="channel-content-area" id="channel-tab-content">
+        <!-- Injected via JS -->
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- 3. ANALYTICS PAGE OVERLAY                      -->
+<!-- ============================================== -->
+<div class="subpage-overlay" id="analytics-overlay">
+    <div class="subpage-topbar">
+        <div class="subpage-topbar-left">
+            <button class="back-nav-btn" onclick="closeAnalyticsPage()">←</button>
+            <div class="subpage-title">Analytics</div>
+        </div>
+    </div>
+
+    <div class="analytics-body">
+        <!-- Overview Card -->
+        <div class="analytics-overview-card">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <img id="analytics-avatar" class="channel-avatar" style="width:46px; height:46px; border-radius:50%;" src="">
+                <div>
+                    <div style="font-size:16px; font-weight:700;" id="analytics-channel-name">Channel Name</div>
+                    <div style="font-size:12px; opacity:0.8;" id="analytics-subs-count">0 Subscribers</div>
+                </div>
+            </div>
+            <div style="border-top:1px solid rgba(255,255,255,0.15); padding-top:10px; font-size:12px; opacity:0.85;">
+                Last 28 Days Statistics & Growth
+            </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="analytics-stats-grid">
+            <div class="metric-card">
+                <div class="metric-card-title">Views</div>
+                <div class="metric-card-value" id="an-views">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-card-title">Subscribers</div>
+                <div class="metric-card-value" id="an-subs">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-card-title">Likes</div>
+                <div class="metric-card-value" id="an-likes">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-card-title">Comments</div>
+                <div class="metric-card-value" id="an-comments">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-card-title">Watch Time (Hours)</div>
+                <div class="metric-card-value" id="an-watchtime">0.0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-card-title">Estimated Revenue</div>
+                <div class="metric-card-value">$0.00</div>
+            </div>
+        </div>
+
+        <!-- Monthly Growth Graph -->
+        <div class="chart-box">
+            <div class="chart-title">Monthly Growth (Last 28 Days)</div>
+            <svg viewBox="0 0 320 120" style="width:100%; height:120px; overflow:visible;">
+                <defs>
+                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#000000" stop-opacity="0.25"/>
+                        <stop offset="100%" stop-color="#000000" stop-opacity="0.0"/>
+                    </linearGradient>
+                </defs>
+                <path d="M 10 90 Q 60 70, 110 80 T 210 40 T 310 20 L 310 110 L 10 110 Z" fill="url(#chartGrad)"/>
+                <path d="M 10 90 Q 60 70, 110 80 T 210 40 T 310 20" fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="310" cy="20" r="4" fill="#000000"/>
+            </svg>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- 4. EDIT CHANNEL PAGE OVERLAY                   -->
+<!-- ============================================== -->
+<div class="subpage-overlay" id="edit-channel-overlay">
+    <div class="subpage-topbar">
+        <div class="subpage-topbar-left">
+            <button class="back-nav-btn" onclick="closeEditChannel()">←</button>
+            <div class="subpage-title">Edit Channel</div>
+        </div>
+    </div>
+
+    <div class="form-container">
+        <!-- Banner Upload -->
+        <div class="banner-upload-box" onclick="triggerBannerPick()">
+            <img id="edit-banner-preview" src="https://via.placeholder.com/2048x1152" alt="Banner">
+            <div class="banner-upload-badge">📷 Upload Banner (2048 × 1152)</div>
+        </div>
+
+        <!-- Avatar Upload -->
+        <div class="avatar-upload-center">
+            <div class="avatar-edit-circle" onclick="triggerAvatarPick('edit')">
+                <img id="edit-avatar-preview" src="" alt="Avatar">
+                <div class="avatar-camera-btn">📷 Edit</div>
+            </div>
+        </div>
+
+        <!-- Channel Name -->
+        <div class="input-field-block">
+            <label class="field-label">Channel Name</label>
+            <input type="text" class="custom-input" id="edit-channel-name" maxlength="100">
+        </div>
+
+        <!-- Handle -->
+        <div class="input-field-block">
+            <label class="field-label">Handle (@)</label>
+            <input type="text" class="custom-input" id="edit-channel-handle" oninput="handleAvailabilityCheck(this.value, 'edit-handle-status', true)">
+            <div class="handle-status-msg" id="edit-handle-status"></div>
+        </div>
+
+        <!-- Description (Max 250 words) -->
+        <div class="input-field-block">
+            <label class="field-label">Description <span id="edit-desc-word-count">0/250 words</span></label>
+            <textarea class="custom-textarea" id="edit-channel-desc" placeholder="Tell viewers about your channel..." oninput="handleDescriptionWordLimit(this)"></textarea>
+        </div>
+
+        <!-- Category Dropdown -->
+        <div class="input-field-block">
+            <label class="field-label">Category</label>
+            <select class="custom-dropdown" id="edit-channel-category">
+                <option value="Entertainment">Entertainment</option>
+                <option value="Gaming">Gaming</option>
+                <option value="Education">Education</option>
+                <option value="Music">Music</option>
+                <option value="Comedy">Comedy</option>
+                <option value="Sports">Sports</option>
+                <option value="AI">AI</option>
+                <option value="Technology">Technology</option>
+                <option value="Travel">Travel</option>
+                <option value="Lifestyle">Lifestyle</option>
+                <option value="Food">Food</option>
+                <option value="Science">Science</option>
+                <option value="Pets">Pets</option>
+                <option value="Movies">Movies</option>
+                <option value="Animation">Animation</option>
+                <option value="Kids">Kids</option>
+                <option value="Fashion">Fashion</option>
+                <option value="Business">Business</option>
+                <option value="Health">Health</option>
+                <option value="Beauty">Beauty</option>
+                <option value="Vlogs">Vlogs</option>
+                <option value="Others">Others</option>
+            </select>
+        </div>
+
+        <button class="primary-submit-btn" onclick="submitEditChannel()">Save Changes</button>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- 5. ACCOUNT SWITCHER BOTTOM SHEET               -->
+<!-- ============================================== -->
+<div class="sheet-backdrop" id="accounts-backdrop" onclick="closeAccountSwitcher()"></div>
+<div class="accounts-sheet" id="accounts-sheet">
+    <div class="sheet-handle"></div>
+    <div style="font-size:16px; font-weight:700; margin-bottom:12px;">Accounts</div>
+    <div id="accounts-list-container">
+        <!-- Current Account -->
+    </div>
+    <div class="account-row" style="margin-top:8px; border-top:1px solid var(--border-color);" onclick="switchAccount()">
+        <div style="font-size:24px;">➕</div>
+        <div style="font-weight:600; font-size:14px;">Add Account / Switch</div>
+    </div>
+</div>
+
+<!-- Hidden File Inputs -->
+<input type="file" id="hidden-avatar-picker" style="display:none;" accept="image/jpeg,image/png,image/webp">
+<input type="file" id="hidden-banner-picker" style="display:none;" accept="image/jpeg,image/png,image/webp">
+
+<!-- Toast Notification -->
+<div class="toast-box" id="toast-message">Notification</div>
+
+<script>
+(function() {
+    // Cloudflare CDN Base URL
+    const CDN_DOMAIN = 'https://pub-bcff9c709dbe44d7a50c78e9a0f9bd59.r2.dev';
+
+    function getCdnUrl(url) {
+        if (!url) return '';
+        if (url.startsWith('http://') || url.startsWith('https://')) return url;
+        return `${CDN_DOMAIN}/${url.replace(/^\/+/, '')}`;
+    }
+
+    // Number compact formatter
+    function formatCount(num) {
+        if (!num || isNaN(num)) return '0';
+        if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+        return num.toString();
+    }
+
+    // Toast Alert
+    function showToast(msg) {
+        const toast = document.getElementById('toast-message');
+        toast.innerText = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // App State
+    let currentUser = null;
+    let currentChannel = null;
+    let activeAvatarTarget = 'create'; // 'create' | 'edit'
+    let selectedAvatarBlob = null;
+    let selectedBannerBlob = null;
+    let isHandleValid = false;
+    let handleDebounceTimer = null;
+
+    // Elements
+    const unauthView = document.getElementById('unauth-view');
+    const authView = document.getElementById('auth-view');
+    const channelCtaBtn = document.getElementById('channel-cta-btn');
+
+    // 🟢 AUTH STATE LISTENER (Firebase Realtime Database)
+    if (window.firebase) {
+        window.firebase.auth().onAuthStateChanged((user) => {
+            currentUser = user;
+            if (user) {
+                unauthView.style.display = 'none';
+                authView.style.display = 'block';
+
+                document.getElementById('user-display-name').innerText = user.displayName || 'Flaynity User';
+                document.getElementById('user-email-text').innerText = user.email || '';
+                const avatarUrl = user.photoURL || 'https://via.placeholder.com/150';
+                document.getElementById('user-avatar-img').src = avatarUrl;
+
+                // Sync with bottom navigation avatar if available
+                const navAvatar = document.getElementById('nav-avatar-icon');
+                if (navAvatar) navAvatar.src = avatarUrl;
+
+                // Check Realtime DB for Channel
+                loadUserChannel(user.uid);
+            } else {
+                unauthView.style.display = 'flex';
+                authView.style.display = 'none';
+            }
+        });
+    }
+
+    // Load Channel Data from Realtime Database
+    function loadUserChannel(uid) {
+        if (!window.db) return;
+        window.db.ref('channels').orderByChild('userId').equalTo(uid).on('value', snapshot => {
+            if (snapshot.exists()) {
+                const channelsObj = snapshot.val();
+                const channelId = Object.keys(channelsObj)[0];
+                currentChannel = { channelId, ...channelsObj[channelId] };
+
+                channelCtaBtn.innerText = "View Channel >";
+                channelCtaBtn.onclick = openViewChannel;
+                populateChannelView(currentChannel);
+            } else {
+                currentChannel = null;
+                channelCtaBtn.innerText = "Create a Channel";
+                channelCtaBtn.onclick = openCreateChannel;
+            }
+        });
+    }
+
+    window.handleChannelAction = function() {
+        if (currentChannel) {
+            openViewChannel();
+        } else {
+            openCreateChannel();
+        }
+    };
+
+    // -------------------------------------------------------------
+    // 🟢 CREATE CHANNEL WORKFLOW
+    // -------------------------------------------------------------
+    function openCreateChannel() {
+        document.getElementById('create-channel-overlay').style.display = 'flex';
+        if (currentUser) {
+            document.getElementById('create-channel-name').value = currentUser.displayName || '';
+            document.getElementById('create-avatar-preview').src = currentUser.photoURL || 'https://via.placeholder.com/150';
+            const defaultHandle = (currentUser.displayName || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '');
+            document.getElementById('create-channel-handle').value = defaultHandle;
+            handleAvailabilityCheck(defaultHandle, 'create-handle-status');
+        }
+    }
+
+    window.closeCreateChannel = function() {
+        document.getElementById('create-channel-overlay').style.display = 'none';
+    };
+
+    // Live Handle Availability Check
+    window.handleAvailabilityCheck = function(handle, statusElementId, isEdit = false) {
+        clearTimeout(handleDebounceTimer);
+        const statusEl = document.getElementById(statusElementId);
+        const cleanHandle = handle.trim().toLowerCase().replace(/^@/, '');
+
+        // Validation rules: lowercase, numbers, underscore, 3-30 chars, no spaces
+        const handleRegex = /^[a-z0-9_]{3,30}$/;
+
+        if (!handleRegex.test(cleanHandle)) {
+            statusEl.className = 'handle-status-msg status-taken';
+            statusEl.innerText = "❌ Invalid Handle (Use 3-30 lowercase letters, numbers, _ without spaces)";
+            isHandleValid = false;
+            return;
+        }
+
+        if (isEdit && currentChannel && cleanHandle === currentChannel.handle) {
+            statusEl.className = 'handle-status-msg status-available';
+            statusEl.innerText = "✅ Current Handle";
+            isHandleValid = true;
+            return;
+        }
+
+        statusEl.className = 'handle-status-msg status-checking';
+        statusEl.innerText = "Checking availability...";
+
+        handleDebounceTimer = setTimeout(() => {
+            if (!window.db) return;
+            window.db.ref(`handles/${cleanHandle}`).once('value', snap => {
+                if (snap.exists() && (!isEdit || snap.val() !== currentChannel?.channelId)) {
+                    statusEl.className = 'handle-status-msg status-taken';
+                    statusEl.innerText = "❌ Handle Already Taken";
+                    isHandleValid = false;
                 } else {
-                    unauthView.style.display = 'flex';
-                    authView.style.display = 'none';
+                    statusEl.className = 'handle-status-msg status-available';
+                    statusEl.innerText = "✅ Handle Available";
+                    isHandleValid = true;
                 }
             });
+        }, 350);
+    };
+
+    // Submit Create Channel
+    window.submitCreateChannel = async function() {
+        const name = document.getElementById('create-channel-name').value.trim();
+        const handle = document.getElementById('create-channel-handle').value.trim().toLowerCase().replace(/^@/, '');
+        const category = document.getElementById('create-channel-category').value;
+
+        if (!name) return showToast("Please enter a channel name.");
+        if (!isHandleValid) return showToast("Please provide a valid & available handle.");
+
+        const btn = document.getElementById('create-channel-btn');
+        btn.disabled = true;
+        btn.innerText = "Creating Channel...";
+
+        try {
+            let avatarUrl = currentUser.photoURL || '';
+            if (selectedAvatarBlob && window.uploadToR2) {
+                avatarUrl = await window.uploadToR2(selectedAvatarBlob);
+            }
+
+            const newChanRef = window.db.ref('channels').push();
+            const channelId = newChanRef.key;
+
+            const channelData = {
+                channelId: channelId,
+                userId: currentUser.uid,
+                channelName: name,
+                handle: handle,
+                avatarUrl: avatarUrl,
+                bannerUrl: '',
+                description: '',
+                category: category,
+                subscribersCount: 0,
+                videosCount: 0,
+                shortsCount: 0,
+                postsCount: 0,
+                totalViews: 0,
+                totalLikes: 0,
+                totalComments: 0,
+                watchTime: 0,
+                createdAt: window.firebase.database.ServerValue.TIMESTAMP,
+                updatedAt: window.firebase.database.ServerValue.TIMESTAMP
+            };
+
+            await newChanRef.set(channelData);
+            // Reserve handle
+            await window.db.ref(`handles/${handle}`).set(channelId);
+
+            currentChannel = channelData;
+            closeCreateChannel();
+            showToast("🎉 Channel Created Successfully!");
+            openViewChannel();
+        } catch (err) {
+            console.error("Create channel failed:", err);
+            showToast("Failed to create channel: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Create Channel";
         }
+    };
 
-        // 🟢 NATIVE SKETCHWARE GOOGLE LOGIN BRIDGE
-        window.signInWithGoogle = function() {
-            // Check if running inside Sketchware Webview with bridge enabled
-            if(window.AndroidBridge && window.AndroidBridge.triggerGoogleSignIn) {
-                // Call Java method to open native Google Pop-up
-                window.AndroidBridge.triggerGoogleSignIn();
-            } else {
-                // Fallback for normal browsers (if testing outside app)
-                if(!window.firebase) return;
-                const provider = new window.firebase.auth.GoogleAuthProvider();
-                window.firebase.auth().signInWithPopup(provider).catch(error => {
-                    console.error("Google Auth Error", error);
-                });
-            }
-        };
+    // -------------------------------------------------------------
+    // 🟢 VIEW CHANNEL WORKFLOW & REALTIME TABS
+    // -------------------------------------------------------------
+    function openViewChannel() {
+        if (!currentChannel) return;
+        document.getElementById('view-channel-overlay').style.display = 'flex';
+        populateChannelView(currentChannel);
+        switchChannelTab('videos', document.querySelector('.chan-tab'));
+    }
 
-        // 🟢 RECEIVE TOKEN FROM SKETCHWARE AND LOGIN TO FIREBASE
-        window.handleNativeGoogleSignIn = function(idToken) {
-            if(!window.firebase) return;
-            
-            // Create credential from the token received from Android Java
-            const credential = window.firebase.auth.GoogleAuthProvider.credential(idToken);
-            
-            // Sign in to Firebase Auth
-            window.firebase.auth().signInWithCredential(credential)
-                .then((result) => {
-                    console.log("Successfully logged in via Sketchware Native Bridge!");
-                    // Firebase onAuthStateChanged will automatically show the profile UI
-                })
-                .catch((error) => {
-                    console.error("Firebase Native Auth Error", error);
-                    alert("লগিন ব্যর্থ হয়েছে: " + error.message);
-                });
-        };
+    window.closeViewChannel = function() {
+        document.getElementById('view-channel-overlay').style.display = 'none';
+    };
 
-        window.signOut = function() {
-            if(window.firebase) {
-                window.firebase.auth().signOut().then(() => {
-                    unauthView.style.display = 'flex';
-                    authView.style.display = 'none';
-                });
-            }
-        };
+    function populateChannelView(chan) {
+        document.getElementById('view-channel-name').innerText = chan.channelName || 'Channel';
+        document.getElementById('view-channel-handle').innerText = `@${chan.handle || 'user'}`;
+        document.getElementById('view-avatar-img').src = getCdnUrl(chan.avatarUrl || currentUser?.photoURL || 'https://via.placeholder.com/150');
+        document.getElementById('view-banner-img').src = getCdnUrl(chan.bannerUrl || 'https://via.placeholder.com/2048x1152');
+        document.getElementById('view-channel-desc').innerText = chan.description || 'No description provided.';
 
-        window.switchAccount = function() {
-            // Trigger Sign Out first, then trigger Google Login to show account picker again
-            if(window.firebase) {
-                window.firebase.auth().signOut().then(() => {
-                    setTimeout(window.signInWithGoogle, 300);
-                });
-            } else {
-                window.signInWithGoogle();
-            }
-        };
+        const subs = chan.subscribersCount || 0;
+        const vids = (chan.videosCount || 0) + (chan.shortsCount || 0);
+        document.getElementById('view-channel-stats').innerText = `${formatCount(subs)} Subscriber${subs === 1 ? '' : 's'} • ${formatCount(vids)} Video${vids === 1 ? '' : 's'}`;
+    }
 
-        function formatCount(num) {
-            if(num >= 1000000) return (num/1000000).toFixed(1) + 'M';
-            if(num >= 1000) return (num/1000).toFixed(1) + 'K';
-            return num;
+    window.expandChannelDescription = function() {
+        if (currentChannel?.description) {
+            alert(`Channel Description:\n\n${currentChannel.description}`);
         }
-    })();
+    };
+
+    window.switchChannelTab = function(tab, el) {
+        document.querySelectorAll('.chan-tab').forEach(t => t.classList.remove('active'));
+        if (el) el.classList.add('active');
+
+        const container = document.getElementById('channel-tab-content');
+        container.innerHTML = '<div style="text-align:center; padding:30px; color:gray;">Loading content...</div>';
+
+        if (!window.db || !currentChannel) return;
+
+        if (tab === 'videos') {
+            window.db.ref('videos').orderByChild('channelId').equalTo(currentChannel.channelId).on('value', snap => {
+                const val = snap.val();
+                if (!val) {
+                    container.innerHTML = '<div style="text-align:center; padding:40px; color:gray;">No videos uploaded yet.</div>';
+                    return;
+                }
+                const videos = Object.values(val).reverse();
+                container.innerHTML = videos.map(v => `
+                    <div style="display:flex; gap:12px; padding:10px 16px; border-bottom:1px solid var(--border-color); cursor:pointer;" onclick="window.openWatchPage?.('${v.id || v.videoId}')">
+                        <div style="width:120px; aspect-ratio:16/9; background:#000; border-radius:8px; overflow:hidden; position:relative; flex-shrink:0;">
+                            <img src="${getCdnUrl(v.thumbnailUrl)}" style="width:100%; height:100%; object-fit:cover;">
+                            <div style="position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.8); color:#fff; font-size:10px; padding:1px 4px; border-radius:3px;">${v.duration || '0:00'}</div>
+                        </div>
+                        <div style="flex:1; overflow:hidden;">
+                            <div style="font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(v.title)}</div>
+                            <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">${formatCount(v.views || 0)} views • ${new Date(v.createdAt).toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                `).join('');
+            });
+        } else if (tab === 'shorts') {
+            window.db.ref('shorts').orderByChild('channelId').equalTo(currentChannel.channelId).on('value', snap => {
+                const val = snap.val();
+                if (!val) {
+                    container.innerHTML = '<div style="text-align:center; padding:40px; color:gray;">No shorts uploaded yet.</div>';
+                    return;
+                }
+                const shorts = Object.values(val).reverse();
+                container.innerHTML = `
+                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; padding:12px;">
+                        ${shorts.map(s => `
+                            <div style="aspect-ratio:9/16; background:#000; border-radius:8px; overflow:hidden; position:relative;" onclick="window.location.hash='#shorts?id=${s.id || s.shortId}'">
+                                <img src="${getCdnUrl(s.thumbnailUrl)}" style="width:100%; height:100%; object-fit:cover;">
+                                <div style="position:absolute; bottom:6px; left:6px; color:#fff; font-size:11px; font-weight:600; text-shadow:0 1px 3px rgba(0,0,0,0.8);">
+                                    ${formatCount(s.views || 0)} views
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            });
+        } else if (tab === 'posts') {
+            window.db.ref('posts').orderByChild('ownerId').equalTo(currentUser.uid).on('value', snap => {
+                const val = snap.val();
+                if (!val) {
+                    container.innerHTML = '<div style="text-align:center; padding:40px; color:gray;">No posts created yet.</div>';
+                    return;
+                }
+                const posts = Object.values(val).reverse();
+                container.innerHTML = posts.map(p => `
+                    <div style="padding:14px 16px; border-bottom:4px solid var(--bg-surface-light);">
+                        <div style="font-size:14px; line-height:1.4; margin-bottom:8px;">${escapeHtml(p.caption || '')}</div>
+                        ${p.mediaUrl ? `<img src="${getCdnUrl(p.mediaUrl)}" style="width:100%; max-height:280px; object-fit:cover; border-radius:10px; margin-bottom:8px;">` : ''}
+                        <div style="font-size:12px; color:var(--text-secondary); display:flex; justify-content:space-between;">
+                            <span>❤️ 👍 ${Object.keys(p.reactions || {}).length} Reactions</span>
+                            <span>${p.commentsCount || 0} Comments</span>
+                        </div>
+                    </div>
+                `).join('');
+            });
+        }
+    };
+
+    // -------------------------------------------------------------
+    // 🟢 ANALYTICS PAGE WORKFLOW
+    // -------------------------------------------------------------
+    window.openAnalyticsPage = function() {
+        if (!currentChannel) return;
+        document.getElementById('analytics-overlay').style.display = 'flex';
+
+        document.getElementById('analytics-channel-name').innerText = currentChannel.channelName;
+        document.getElementById('analytics-subs-count').innerText = `${formatCount(currentChannel.subscribersCount || 0)} Subscribers`;
+        document.getElementById('analytics-avatar').src = getCdnUrl(currentChannel.avatarUrl || currentUser?.photoURL);
+
+        // Populate metrics
+        document.getElementById('an-views').innerText = formatCount(currentChannel.totalViews || 0);
+        document.getElementById('an-subs').innerText = formatCount(currentChannel.subscribersCount || 0);
+        document.getElementById('an-likes').innerText = formatCount(currentChannel.totalLikes || 0);
+        document.getElementById('an-comments').innerText = formatCount(currentChannel.totalComments || 0);
+        document.getElementById('an-watchtime').innerText = (currentChannel.watchTime || 0).toFixed(1);
+    };
+
+    window.closeAnalyticsPage = function() {
+        document.getElementById('analytics-overlay').style.display = 'none';
+    };
+
+    // -------------------------------------------------------------
+    // 🟢 EDIT CHANNEL WORKFLOW
+    // -------------------------------------------------------------
+    window.openEditChannelPage = function() {
+        if (!currentChannel) return;
+        document.getElementById('edit-channel-overlay').style.display = 'flex';
+
+        document.getElementById('edit-channel-name').value = currentChannel.channelName || '';
+        document.getElementById('edit-channel-handle').value = currentChannel.handle || '';
+        document.getElementById('edit-channel-desc').value = currentChannel.description || '';
+        document.getElementById('edit-channel-category').value = currentChannel.category || 'Entertainment';
+        document.getElementById('edit-avatar-preview').src = getCdnUrl(currentChannel.avatarUrl || currentUser?.photoURL);
+        document.getElementById('edit-banner-preview').src = getCdnUrl(currentChannel.bannerUrl || 'https://via.placeholder.com/2048x1152');
+
+        handleDescriptionWordLimit(document.getElementById('edit-channel-desc'));
+        handleAvailabilityCheck(currentChannel.handle, 'edit-handle-status', true);
+    };
+
+    window.closeEditChannel = function() {
+        document.getElementById('edit-channel-overlay').style.display = 'none';
+        selectedAvatarBlob = null;
+        selectedBannerBlob = null;
+    };
+
+    // Word counter (max 250 words)
+    window.handleDescriptionWordLimit = function(textarea) {
+        const text = textarea.value.trim();
+        const words = text ? text.split(/\s+/).filter(Boolean) : [];
+        if (words.length > 250) {
+            textarea.value = words.slice(0, 250).join(' ');
+        }
+        document.getElementById('edit-desc-word-count').innerText = `${Math.min(words.length, 250)}/250 words`;
+    };
+
+    window.updateCharCount = function(input, labelId, max) {
+        document.getElementById(labelId).innerText = `${input.value.length}/${max}`;
+    };
+
+    // Image Picker Triggers
+    window.triggerAvatarPick = function(target) {
+        activeAvatarTarget = target;
+        document.getElementById('hidden-avatar-picker').click();
+    };
+
+    window.triggerBannerPick = function() {
+        document.getElementById('hidden-banner-picker').click();
+    };
+
+    document.getElementById('hidden-avatar-picker').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            selectedAvatarBlob = file;
+            const previewUrl = URL.createObjectURL(file);
+            if (activeAvatarTarget === 'create') {
+                document.getElementById('create-avatar-preview').src = previewUrl;
+            } else {
+                document.getElementById('edit-avatar-preview').src = previewUrl;
+            }
+        }
+        e.target.value = '';
+    });
+
+    document.getElementById('hidden-banner-picker').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            selectedBannerBlob = file;
+            document.getElementById('edit-banner-preview').src = URL.createObjectURL(file);
+        }
+        e.target.value = '';
+    });
+
+    // Save Channel Updates
+    window.submitEditChannel = async function() {
+        const name = document.getElementById('edit-channel-name').value.trim();
+        const handle = document.getElementById('edit-channel-handle').value.trim().toLowerCase().replace(/^@/, '');
+        const desc = document.getElementById('edit-channel-desc').value.trim();
+        const category = document.getElementById('edit-channel-category').value;
+
+        if (!name) return showToast("Channel Name cannot be empty.");
+        if (!isHandleValid) return showToast("Please enter an available handle.");
+
+        showToast("Saving changes...");
+
+        try {
+            let avatarUrl = currentChannel.avatarUrl || '';
+            let bannerUrl = currentChannel.bannerUrl || '';
+
+            if (selectedAvatarBlob && window.uploadToR2) {
+                avatarUrl = await window.uploadToR2(selectedAvatarBlob);
+            }
+
+            if (selectedBannerBlob && window.uploadToR2) {
+                bannerUrl = await window.uploadToR2(selectedBannerBlob);
+            }
+
+            // If handle changed, release old handle and claim new
+            if (handle !== currentChannel.handle) {
+                await window.db.ref(`handles/${currentChannel.handle}`).remove();
+                await window.db.ref(`handles/${handle}`).set(currentChannel.channelId);
+            }
+
+            const updates = {
+                channelName: name,
+                handle: handle,
+                description: desc,
+                category: category,
+                avatarUrl: avatarUrl,
+                bannerUrl: bannerUrl,
+                updatedAt: window.firebase.database.ServerValue.TIMESTAMP
+            };
+
+            await window.db.ref(`channels/${currentChannel.channelId}`).update(updates);
+
+            currentChannel = { ...currentChannel, ...updates };
+            closeEditChannel();
+            populateChannelView(currentChannel);
+            showToast("✅ Successfully Updated Channel!");
+        } catch (err) {
+            console.error("Update channel error:", err);
+            showToast("Failed to update channel: " + err.message);
+        }
+    };
+
+    // -------------------------------------------------------------
+    // 🟢 ACCOUNT SWITCHER & AUTH ACTIONS
+    // -------------------------------------------------------------
+    window.openAccountSwitcher = function() {
+        document.getElementById('accounts-backdrop').style.display = 'block';
+        document.getElementById('accounts-sheet').style.display = 'flex';
+
+        const container = document.getElementById('accounts-list-container');
+        if (currentUser) {
+            container.innerHTML = `
+                <div class="account-row" style="background:var(--bg-surface-light);">
+                    <img src="${currentUser.photoURL || 'https://via.placeholder.com/80'}" class="account-avatar">
+                    <div style="flex:1;">
+                        <div style="font-weight:700; font-size:14px;">${currentUser.displayName || 'User'}</div>
+                        <div style="font-size:12px; color:var(--text-secondary);">${currentUser.email}</div>
+                    </div>
+                    <div style="font-size:16px;">✓</div>
+                </div>
+            `;
+        }
+    };
+
+    window.closeAccountSwitcher = function() {
+        document.getElementById('accounts-backdrop').style.display = 'none';
+        document.getElementById('accounts-sheet').style.display = 'none';
+    };
+
+    // 🟢 SKETCHWARE NATIVE GOOGLE LOGIN BRIDGE
+    window.signInWithGoogle = function() {
+        if (window.AndroidBridge && window.AndroidBridge.triggerGoogleSignIn) {
+            window.AndroidBridge.triggerGoogleSignIn();
+        } else if (window.firebase) {
+            const provider = new window.firebase.auth.GoogleAuthProvider();
+            window.firebase.auth().signInWithPopup(provider).catch(err => {
+                console.error("Google Auth error:", err);
+            });
+        }
+    };
+
+    window.handleNativeGoogleSignIn = function(idToken) {
+        if (!window.firebase) return;
+        const credential = window.firebase.auth.GoogleAuthProvider.credential(idToken);
+        window.firebase.auth().signInWithCredential(credential)
+            .then(() => showToast("Signed in successfully!"))
+            .catch(err => showToast("Login failed: " + err.message));
+    };
+
+    window.signOut = function() {
+        if (window.firebase) {
+            window.firebase.auth().signOut().then(() => {
+                showToast("Signed out.");
+            });
+        }
+    };
+
+    window.switchAccount = function() {
+        closeAccountSwitcher();
+        if (window.firebase) {
+            window.firebase.auth().signOut().then(() => {
+                setTimeout(window.signInWithGoogle, 300);
+            });
+        }
+    };
+
+    window.openUploadManagerTab = function() {
+        window.location.hash = '#upload';
+    };
+
+    window.openLikedVideos = function() {
+        showToast("Opening Liked Videos...");
+    };
+
+    window.openHistory = function() {
+        showToast("Opening Watch History...");
+    };
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+        });
+    }
+})();
 </script>

@@ -10,8 +10,8 @@
 (function() {
     // Initialize AWS SDK configured for Cloudflare R2
     AWS.config.update({
-        accessKeyId: '76b902c42a3697ad5011ef1c72438306',
-        secretAccessKey: '33902a8ed31914daf36aa6d6f7a715d93ab1cad856cb7eb286edb05e0fe87763',
+        accessKeyId: 'd2a85101c7abf7c81c2497b790d47d4c',
+        secretAccessKey: '8f05ee42698a0349b1c3be34adef6f0f116878c7ec7b6805d5c6f102d4b94e2d',
         region: 'auto',
         signatureVersion: 'v4'
     });

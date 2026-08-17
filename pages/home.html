@@ -1,1358 +1,862 @@
 <style>
-    :root {
-        --bg-primary: #ffffff;
-        --bg-surface: #f8f9fa;
-        --bg-surface-light: #e4e6eb;
-        --text-primary: #0f0f0f;
-        --text-secondary: #606060;
-        --accent-color: #ff0000;
-        --like-color: #0695FF;
-        --love-color: #E41E3F;
-        --border-color: #e5e5e5;
+    /* Google Material Symbols Font */
+    @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+
+    /* Material Symbols Configuration */
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .material-symbols-outlined.filled {
+        font-variation-settings: 'FILL' 1;
     }
 
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-        -webkit-tap-highlight-color: transparent;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    /* Core Variables & Reset */
+    :root {
+        --md-sys-color-primary: #000000;
+        --md-sys-color-on-primary: #FFFFFF;
+        --md-sys-color-surface: #FFFFFF;
+        --md-sys-color-surface-variant: #F2F2F2;
+        --md-sys-color-on-surface: #1F1F1F;
+        --md-sys-color-on-surface-variant: #444746;
+        --md-sys-color-outline: #747775;
+        --border-radius-m: 12px;
+        --border-radius-l: 16px;
+        --nav-height: 56px;
     }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    body { font-family: 'Roboto', system-ui, sans-serif; background-color: var(--md-sys-color-surface-variant); }
 
     .home-page {
         width: 100%;
-        min-height: 100vh;
-        background-color: var(--bg-primary);
-        color: var(--text-primary);
+        height: 100vh;
+        overflow-y: auto;
         overflow-x: hidden;
-        padding-bottom: 80px;
+        background-color: var(--md-sys-color-surface-variant);
+        padding-bottom: calc(var(--nav-height) + 20px);
     }
 
-    /* Fixed Category Bar */
-    .category-chips-bar {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        width: 100%;
-        padding: 10px 12px;
-        gap: 8px;
-        background-color: var(--bg-primary);
+    /* Top Header */
+    .home-header {
         position: sticky;
         top: 0;
-        z-index: 45;
-        overflow: hidden;
-    }
-
-    .chip-btn {
-        width: 100%;
-        text-align: center;
-        padding: 9px 0;
-        border-radius: 24px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        background-color: var(--bg-surface-light);
-        color: #050505;
-        border: none;
-        outline: none;
-        transition: background-color 0.25s ease, color 0.25s ease, transform 0.1s ease;
-        user-select: none;
-    }
-
-    .chip-btn:active {
-        transform: scale(0.97);
-    }
-
-    .chip-btn.active {
-        background-color: #000000;
-        color: #ffffff;
-    }
-
-    /* Feed Container */
-    .feed-container {
-        width: 100%;
+        z-index: 50;
+        background-color: var(--md-sys-color-surface);
         display: flex;
-        flex-direction: column;
-    }
-
-    /* Skeleton Loading */
-    .skeleton {
-        background: linear-gradient(90deg, #ececec 25%, #f7f7f7 50%, #ececec 75%);
-        background-size: 200% 100%;
-        animation: skeleton-loading 1.4s infinite ease-in-out;
-    }
-
-    @keyframes skeleton-loading {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
-    }
-
-    /* Shorts 2-Column Grid */
-    .shorts-shelf {
-        padding: 16px 0 20px;
-        background: var(--bg-primary);
-        border-bottom: 1px solid var(--border-color);
-        margin-bottom: 16px;
-    }
-
-    .shorts-shelf-header {
-        display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 8px;
-        padding: 0 16px 12px;
-        font-size: 17px;
-        font-weight: 700;
+        padding: 12px 16px;
     }
 
+    .brand-logo { font-size: 24px; font-weight: 800; color: var(--md-sys-color-primary); }
+    .header-actions { display: flex; gap: 16px; }
+
+    /* Category Chips (Requirement: No horizontal scroll, Equal Width, Specific Colors) */
+    .category-chips-container {
+        position: sticky;
+        top: 54px;
+        z-index: 49;
+        background-color: var(--md-sys-color-surface);
+        padding: 8px 16px 12px;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .category-chips {
+        display: flex;
+        width: 100%;
+        gap: 8px;
+        overflow: hidden; /* Disabled horizontal scroll */
+    }
+
+    .chip {
+        flex: 1; /* Equal width */
+        text-align: center;
+        padding: 10px 0;
+        border-radius: 24px;
+        font-weight: 600;
+        font-size: 14px;
+        background-color: var(--md-sys-color-surface-variant);
+        color: var(--md-sys-color-primary);
+        transition: background-color 0.3s, color 0.3s;
+        cursor: pointer;
+    }
+
+    .chip.active {
+        background-color: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
+    }
+
+    /* Common Skeleton Loading */
+    .skeleton {
+        background: linear-gradient(90deg, #e0e0e0 25%, #f5f5f5 50%, #e0e0e0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+    }
+    @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* Shorts Grid Container (Requirement: 2 Columns, 2:3 ratio, Equal padding) */
+    .shorts-section { padding: 16px; background-color: var(--md-sys-color-surface); margin-bottom: 8px; }
     .shorts-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr 1fr;
         gap: 12px;
-        padding: 0 12px;
     }
-
     .short-card {
-        position: relative;
         aspect-ratio: 2 / 3;
-        border-radius: 12px;
-        overflow: hidden;
-        background-color: #000;
-        cursor: pointer;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-    }
-
-    .short-card img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .short-card-overlay {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        padding: 24px 8px 8px;
-        background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, transparent 100%);
-    }
-
-    .short-card-title {
-        color: #ffffff;
-        font-size: 13px;
-        font-weight: 600;
-        line-height: 1.3;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    /* YouTube-style Long Video Card */
-    .video-card {
-        width: 100%;
-        margin-bottom: 24px;
-        cursor: pointer;
-    }
-
-    .video-thumbnail-wrap {
+        border-radius: var(--border-radius-m);
         position: relative;
+        overflow: hidden;
+        background-color: var(--md-sys-color-surface-variant);
+    }
+    .short-card img { width: 100%; height: 100%; object-fit: cover; }
+    .short-title {
+        position: absolute; bottom: 8px; left: 8px; right: 8px;
+        font-size: 13px; font-weight: 600; color: #FFF;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .short-views {
+        position: absolute; bottom: 28px; left: 8px; right: 8px;
+        font-size: 11px; font-weight: 500; color: #EEE;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+
+    /* Long Video Card (YouTube Style) */
+    .video-card { width: 100%; background-color: var(--md-sys-color-surface); margin-bottom: 8px; }
+    .video-thumbnail {
         width: 100%;
         aspect-ratio: 16 / 9;
         background-color: #000;
+        position: relative;
     }
-
-    .video-thumbnail-wrap img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
+    .video-thumbnail img { width: 100%; height: 100%; object-fit: cover; }
     .video-duration {
-        position: absolute;
-        bottom: 8px;
-        right: 8px;
-        background-color: rgba(0, 0, 0, 0.8);
-        color: #ffffff;
-        font-size: 11px;
-        font-weight: 600;
-        padding: 2px 6px;
-        border-radius: 4px;
+        position: absolute; bottom: 8px; right: 8px;
+        background-color: rgba(0,0,0,0.8); color: white;
+        padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 600;
     }
-
-    .video-info-box {
-        display: flex;
-        padding: 12px 14px 0;
-        gap: 12px;
+    .video-info { display: flex; padding: 12px 16px; gap: 12px; }
+    .channel-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #e0e0e0; flex-shrink: 0; }
+    .video-text { flex: 1; overflow: hidden; }
+    .video-title {
+        font-size: 16px; font-weight: 600; color: var(--md-sys-color-on-surface);
+        display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 4px;
     }
+    .video-meta { font-size: 13px; color: var(--md-sys-color-on-surface-variant); }
 
-    .channel-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        object-fit: cover;
-        background-color: var(--bg-surface-light);
-        flex-shrink: 0;
-    }
-
-    .video-text-box {
-        flex: 1;
-        overflow: hidden;
-    }
-
-    .video-title-row {
-        font-size: 15px;
-        font-weight: 600;
-        line-height: 1.35;
-        color: var(--text-primary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin-bottom: 4px;
-    }
-
-    .video-meta-row {
-        font-size: 12px;
-        color: var(--text-secondary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    /* Facebook-Style Post Card */
-    .post-card {
-        width: 100%;
-        background-color: var(--bg-primary);
-        border-top: 6px solid var(--bg-surface-light);
-        border-bottom: 6px solid var(--bg-surface-light);
-        padding: 14px 0 8px;
-        margin-bottom: 16px;
-        position: relative;
-    }
-
-    .post-header {
-        display: flex;
-        align-items: center;
-        padding: 0 14px 10px;
-        gap: 10px;
-    }
-
-    .post-user-info {
-        flex: 1;
-    }
-
-    .post-user-name {
-        font-size: 15px;
-        font-weight: 700;
-        color: var(--text-primary);
-    }
-
-    .post-time {
-        font-size: 12px;
-        color: var(--text-secondary);
-        margin-top: 2px;
-    }
-
-    .post-sub-btn {
-        background: transparent;
-        border: none;
-        color: #000;
-        font-weight: 700;
-        font-size: 14px;
-        cursor: pointer;
-        padding: 4px 8px;
-    }
-
+    /* Post Card (Facebook Style) */
+    .post-card { background-color: var(--md-sys-color-surface); margin-bottom: 8px; padding: 12px 0 0; }
+    .post-header { display: flex; align-items: center; padding: 0 16px 12px; gap: 12px; }
+    .post-author-info { flex: 1; }
+    .post-author-name { font-weight: 600; font-size: 15px; }
+    .post-time { font-size: 12px; color: var(--md-sys-color-on-surface-variant); }
+    .post-subscribe-btn { color: #1a73e8; font-weight: 600; font-size: 14px; padding: 6px 12px; }
     .post-caption {
-        padding: 0 14px 10px;
-        font-size: 14px;
-        line-height: 1.45;
-        color: var(--text-primary);
+        padding: 0 16px 8px; font-size: 15px; line-height: 1.4; color: var(--md-sys-color-on-surface);
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
-
-    .post-caption.clamped {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .post-more-btn {
-        color: var(--text-secondary);
-        font-weight: 600;
-        cursor: pointer;
-        margin-left: 4px;
-    }
-
-    .post-image-container {
-        width: 100%;
-        aspect-ratio: 3 / 4;
-        background-color: #000;
-        cursor: pointer;
-        overflow: hidden;
-    }
-
-    .post-image-container img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.2s ease;
-    }
-
-    .post-stats-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 14px;
-        font-size: 13px;
-        color: var(--text-secondary);
-        border-bottom: 1px solid var(--border-color);
+    .post-caption.expanded { -webkit-line-clamp: unset; }
+    .read-more-btn { color: var(--md-sys-color-outline); font-weight: 600; padding: 0 16px 12px; font-size: 14px; display: inline-block;}
+    .post-image {
+        width: 100%; aspect-ratio: 3 / 4; background-color: var(--md-sys-color-surface-variant);
         cursor: pointer;
     }
-
-    .post-reaction-icons {
-        display: flex;
-        align-items: center;
-        gap: 6px;
+    .post-image img { width: 100%; height: 100%; object-fit: cover; }
+    
+    .post-stats { display: flex; justify-content: space-between; padding: 12px 16px; font-size: 13px; color: var(--md-sys-color-on-surface-variant); border-bottom: 1px solid var(--md-sys-color-surface-variant); }
+    .post-top-emojis { display: flex; gap: 4px; align-items: center;}
+    
+    .post-actions { display: flex; padding: 4px 16px; }
+    .post-action-btn {
+        flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;
+        padding: 8px 0; color: var(--md-sys-color-on-surface-variant); font-weight: 600; font-size: 14px;
+        position: relative; border-radius: 8px; transition: background 0.2s;
     }
+    .post-action-btn:active { background: var(--md-sys-color-surface-variant); }
 
-    .emoji-stack {
-        display: flex;
-        align-items: center;
+    /* Reaction Picker (Long Press) */
+    .reaction-picker-container {
+        position: absolute; bottom: 100%; left: 0; background: white; padding: 8px 12px;
+        border-radius: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; gap: 12px;
+        transform: translateY(10px) scale(0.9); opacity: 0; pointer-events: none; transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        z-index: 100;
     }
+    .reaction-picker-container.active { transform: translateY(-8px) scale(1); opacity: 1; pointer-events: auto; }
+    .reaction-emoji { font-size: 28px; cursor: pointer; transition: transform 0.2s; animation: floatEmoji 2s infinite ease-in-out; }
+    .reaction-emoji:hover { transform: scale(1.3) translateY(-5px); }
+    @keyframes floatEmoji { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 
-    .emoji-stack span {
-        margin-right: -4px;
-        font-size: 15px;
+    /* Full Screen Image Preview */
+    .image-preview-overlay {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: black;
+        z-index: 2000; display: none; flex-direction: column; opacity: 0; transition: opacity 0.3s;
     }
+    .image-preview-overlay.active { display: flex; opacity: 1; }
+    .preview-close { position: absolute; top: 20px; left: 20px; color: white; font-size: 30px; z-index: 10; cursor: pointer; background: rgba(0,0,0,0.5); border-radius: 50%; padding: 4px; }
+    .image-preview-overlay img { width: 100%; height: 100%; object-fit: contain; }
 
-    .post-actions-bar {
-        display: flex;
-        padding: 4px 10px;
-        position: relative;
+    /* Watch Video Page Overlay */
+    .watch-page-overlay {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background-color: var(--md-sys-color-surface-variant); z-index: 1000;
+        display: none; flex-direction: column; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
+    .watch-page-overlay.active { display: flex; transform: translateY(0); }
+    
+    /* Video Player (No rounded corners, 16:9, Buffer Animation) */
+    .player-wrapper { width: 100%; aspect-ratio: 16 / 9; background: #000; position: relative; }
+    .player-wrapper video { width: 100%; height: 100%; object-fit: contain; outline: none; }
+    .buffer-spinner {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: #fff;
+        border-radius: 50%; animation: spin 1s linear infinite; display: none; pointer-events: none;
+    }
+    @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
 
-    .post-act-btn {
+    /* Watch Page Premium White Card Info */
+    .watch-info-card {
+        background: var(--md-sys-color-surface);
+        padding: 16px;
         flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        padding: 8px 0;
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--text-secondary);
-        background: transparent;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background 0.15s ease;
-        user-select: none;
-        position: relative;
-    }
-
-    .post-act-btn:active {
-        background-color: var(--bg-surface-light);
-    }
-
-    /* Floating Reaction Picker */
-    .reaction-picker {
-        position: absolute;
-        bottom: 44px;
-        left: 10px;
-        background: #ffffff;
-        border-radius: 30px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.18);
-        display: none;
-        align-items: center;
-        padding: 6px 10px;
-        gap: 10px;
-        z-index: 60;
-        animation: pickerPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    }
-
-    @keyframes pickerPop {
-        0% { transform: scale(0.6) translateY(20px); opacity: 0; }
-        100% { transform: scale(1) translateY(0); opacity: 1; }
-    }
-
-    .reaction-emoji {
-        font-size: 26px;
-        cursor: pointer;
-        display: inline-block;
-        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        animation: emojiWobble 2s infinite ease-in-out;
-    }
-
-    .reaction-emoji:hover, .reaction-emoji:active {
-        transform: scale(1.45) translateY(-8px);
-    }
-
-    @keyframes emojiWobble {
-        0%, 100% { transform: rotate(0deg); }
-        25% { transform: rotate(-5deg) scale(1.05); }
-        75% { transform: rotate(5deg) scale(1.05); }
-    }
-
-    /* Full Screen Image Preview Modal */
-    .fullscreen-image-modal {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background-color: #000000;
-        z-index: 1000;
-        display: none;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .modal-close-btn {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        background: rgba(255, 255, 255, 0.2);
-        border: none;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #ffffff;
-        font-size: 22px;
-        cursor: pointer;
-        z-index: 1010;
-        backdrop-filter: blur(8px);
-    }
-
-    .fullscreen-image-modal img {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-    }
-
-    /* Watch Page Overlay */
-    .watch-overlay {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background-color: var(--bg-primary);
-        z-index: 200;
-        display: none;
-        flex-direction: column;
         overflow-y: auto;
     }
-
-    .watch-player-wrapper {
-        position: sticky;
-        top: 0;
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        background-color: #000000;
-        z-index: 50;
-    }
-
-    .watch-player-wrapper video {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-    }
-
-    .watch-back-btn {
-        position: absolute;
-        top: 12px;
-        left: 12px;
-        background: rgba(0, 0, 0, 0.5);
-        color: #fff;
-        border: none;
-        border-radius: 50%;
-        width: 36px;
-        height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 60;
-    }
-
-    .video-details-card {
-        padding: 14px 16px;
-        background-color: #ffffff;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .details-title {
-        font-size: 16px;
-        font-weight: 700;
-        color: var(--text-primary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin-bottom: 6px;
-    }
-
-    .details-metadata-row {
-        font-size: 13px;
-        color: var(--text-secondary);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-wrap: wrap;
-    }
-
-    .meta-more-btn {
-        font-weight: 700;
-        color: var(--text-primary);
-        cursor: pointer;
-    }
-
-    .channel-action-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 16px;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .channel-action-row .channel-avatar {
-        width: 38px;
-        height: 38px;
-    }
-
-    .pill-sub-btn {
-        background-color: #000000;
-        color: #ffffff;
-        border: none;
-        border-radius: 20px;
-        padding: 8px 16px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: transform 0.15s ease, background-color 0.2s ease;
-    }
-
-    .pill-sub-btn.subscribed {
-        background-color: var(--bg-surface-light);
-        color: #000000;
-    }
-
-    .actions-scroll-group {
-        display: flex;
-        gap: 8px;
-        margin-left: auto;
-    }
-
-    .action-pill {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        background-color: var(--bg-surface-light);
-        padding: 7px 14px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        border: none;
-        transition: transform 0.1s ease;
-    }
-
-    .action-pill:active {
-        transform: scale(0.96);
-    }
-
-    .action-pill.active-like {
-        color: var(--like-color);
-    }
-
+    .watch-title-row { font-size: 18px; font-weight: 700; color: var(--md-sys-color-on-surface); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 8px; }
+    .watch-meta-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--md-sys-color-on-surface-variant); font-weight: 500; flex-wrap: wrap;}
+    .more-btn { font-weight: 700; color: var(--md-sys-color-on-surface); padding: 2px 6px; background: var(--md-sys-color-surface-variant); border-radius: 12px; margin-left: 8px; cursor: pointer; }
+    
+    /* Action Row */
+    .action-row { display: flex; align-items: center; gap: 16px; margin-top: 20px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
+    .action-row::-webkit-scrollbar { display: none; }
+    
+    .channel-watch-info { display: flex; align-items: center; gap: 12px; margin-right: auto; }
+    
+    /* Subscribe Button */
+    .btn-subscribe { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; transition: background 0.2s; white-space: nowrap; border: none; outline: none; }
+    .btn-subscribe.subscribed { background: var(--md-sys-color-surface-variant); color: var(--md-sys-color-on-surface); }
+    
+    /* Like/Dislike/Download Buttons */
+    .action-pill { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--md-sys-color-surface-variant); border-radius: 20px; font-weight: 600; font-size: 14px; white-space: nowrap; color: var(--md-sys-color-on-surface); transition: background 0.2s;}
+    .action-pill:active { background: #e0e0e0; }
+    
     /* Comment Preview Card */
-    .comment-preview-box {
-        margin: 12px 16px;
-        padding: 12px;
-        background-color: var(--bg-surface);
-        border-radius: 12px;
-        cursor: pointer;
-    }
+    .comment-preview-card { background: var(--md-sys-color-surface-variant); border-radius: 12px; padding: 12px 16px; margin-top: 16px; margin-bottom: 16px;}
+    .comment-preview-header { display: flex; gap: 8px; font-weight: 700; font-size: 14px; margin-bottom: 8px; align-items: center; }
+    .comment-preview-body { display: flex; align-items: center; gap: 12px; }
+    .comment-preview-body img { width: 24px; height: 24px; border-radius: 50%; }
+    .comment-preview-text { font-size: 13px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; color: var(--md-sys-color-on-surface); }
 
-    .comment-preview-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 14px;
-        font-weight: 700;
-        margin-bottom: 6px;
-    }
+    /* Description Bottom Sheet */
+    .desc-bottom-sheet { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 3000; display: none; }
+    .desc-bottom-sheet.active { display: block; }
+    .desc-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); opacity: 0; transition: 0.3s; }
+    .desc-bottom-sheet.active .desc-overlay { opacity: 1; }
+    .desc-content { position: absolute; bottom: 0; left: 0; width: 100%; height: 70vh; background: var(--md-sys-color-surface); border-radius: 20px 20px 0 0; padding: 16px; transform: translateY(100%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; }
+    .desc-bottom-sheet.active .desc-content { transform: translateY(0); }
+    .drag-handle { width: 40px; height: 4px; background: var(--md-sys-color-outline); border-radius: 2px; margin: 0 auto 16px; }
+    .desc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; font-weight: 700; font-size: 18px; }
+    .desc-stats { display: flex; gap: 16px; margin-bottom: 16px; font-weight: 600; font-size: 16px; }
+    .desc-stats span { display: flex; flex-direction: column; font-size: 12px; color: var(--md-sys-color-on-surface-variant); font-weight: 400; }
+    .desc-stats span strong { font-size: 16px; color: var(--md-sys-color-on-surface); }
+    .desc-body { flex: 1; overflow-y: auto; font-size: 14px; line-height: 1.5; color: var(--md-sys-color-on-surface); }
 
-    .comment-preview-content {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+    /* All People Reacted Page */
+    .reaction-list-page {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--md-sys-color-surface);
+        z-index: 3000; display: none; flex-direction: column; transform: translateX(100%); transition: 0.3s;
     }
+    .reaction-list-page.active { display: flex; transform: translateX(0); }
+    .reaction-list-header { display: flex; align-items: center; padding: 16px; border-bottom: 1px solid var(--md-sys-color-surface-variant); font-size: 18px; font-weight: 600; gap: 16px; }
+    .reaction-chips { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; border-bottom: 1px solid var(--md-sys-color-surface-variant); scrollbar-width: none; }
+    .reaction-chips::-webkit-scrollbar { display: none; }
+    .r-chip { padding: 6px 16px; border-radius: 20px; background: var(--md-sys-color-surface-variant); font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+    .r-chip.active { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+    .reacted-users-list { flex: 1; overflow-y: auto; padding: 0 16px; }
+    .user-row { display: flex; align-items: center; padding: 12px 0; gap: 12px; border-bottom: 1px solid var(--md-sys-color-surface-variant); }
+    .user-row img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+    .user-name { flex: 1; font-weight: 600; font-size: 15px; }
+    .user-emoji { font-size: 20px; }
 
-    .comment-preview-content img {
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-    }
-
-    .comment-preview-text {
-        font-size: 13px;
-        color: var(--text-secondary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        flex: 1;
-    }
-
-    /* Bottom Sheets */
-    .bottom-sheet-backdrop {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background-color: rgba(0,0,0,0.5);
-        z-index: 500;
-        display: none;
-    }
-
-    .bottom-sheet {
-        position: fixed;
-        bottom: 0; left: 0; width: 100%;
-        max-height: 75vh;
-        background-color: #ffffff;
-        border-top-left-radius: 18px;
-        border-top-right-radius: 18px;
-        z-index: 510;
-        display: none;
-        flex-direction: column;
-        padding: 14px 16px 24px;
-        box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
-        animation: slideUp 0.25s ease-out forwards;
-    }
-
-    @keyframes slideUp {
-        0% { transform: translateY(100%); }
-        100% { transform: translateY(0); }
-    }
-
-    .sheet-drag-handle {
-        width: 40px;
-        height: 4px;
-        background: #ccc;
-        border-radius: 4px;
-        margin: 0 auto 12px;
-    }
-
-    .sheet-header-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-bottom: 12px;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .sheet-body {
-        overflow-y: auto;
-        padding: 12px 0;
-        font-size: 14px;
-        line-height: 1.5;
-        color: var(--text-primary);
-    }
-
-    /* All People Reacted Page / Modal */
-    .reacted-users-modal {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background-color: var(--bg-primary);
-        z-index: 600;
-        display: none;
-        flex-direction: column;
-    }
-
-    .reacted-topbar {
-        display: flex;
-        align-items: center;
-        padding: 14px 16px;
-        border-bottom: 1px solid var(--border-color);
-        gap: 16px;
-    }
-
-    .reacted-filter-chips {
-        display: flex;
-        gap: 8px;
-        overflow-x: auto;
-        padding: 10px 14px;
-        border-bottom: 1px solid var(--border-color);
-        scrollbar-width: none;
-    }
-
-    .reacted-filter-chips::-webkit-scrollbar {
-        display: none;
-    }
-
-    .reacted-filter-chip {
-        padding: 6px 14px;
-        border-radius: 18px;
-        font-size: 13px;
-        font-weight: 600;
-        background-color: var(--bg-surface-light);
-        color: #000;
-        white-space: nowrap;
-        cursor: pointer;
-        border: none;
-    }
-
-    .reacted-filter-chip.active {
-        background-color: #000000;
-        color: #ffffff;
-    }
-
-    .reacted-users-list {
-        flex: 1;
-        overflow-y: auto;
-        padding: 10px 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .reacted-user-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .reacted-user-emoji {
-        margin-left: auto;
-        font-size: 20px;
-    }
 </style>
 
 <div class="home-page" id="home-page">
-    <!-- Category Chips -->
-    <div class="category-chips-bar">
-        <button class="chip-btn active" id="tab-all" onclick="switchCategory('all')">All</button>
-        <button class="chip-btn" id="tab-posts" onclick="switchCategory('posts')">Posts</button>
-        <button class="chip-btn" id="tab-shorts" onclick="switchCategory('shorts')">Shorts</button>
+    <div class="home-header">
+        <div class="brand-logo">FLAYNITY <span style="color:#1a73e8">.</span></div>
+        <div class="header-actions">
+            <span class="material-symbols-outlined">search</span>
+            <span class="material-symbols-outlined">settings</span>
+        </div>
     </div>
 
-    <!-- Feed View Container -->
-    <div class="feed-container" id="feed-container">
-        <!-- Skeleton place while Firebase loads -->
-        <div class="shorts-shelf">
-            <div class="shorts-shelf-header">
-                <span style="color:var(--accent-color);">⚡</span> Shorts
-            </div>
-            <div class="shorts-grid">
-                <div class="short-card skeleton"></div>
-                <div class="short-card skeleton"></div>
-            </div>
+    <div class="category-chips-container">
+        <div class="category-chips">
+            <div class="chip active" data-tab="all">All</div>
+            <div class="chip" data-tab="posts">Posts</div>
+            <div class="chip" data-tab="shorts">Shorts</div>
         </div>
-        <div class="video-card">
-            <div class="video-thumbnail-wrap skeleton"></div>
-            <div class="video-info-box">
-                <div class="channel-avatar skeleton"></div>
-                <div class="video-text-box">
-                    <div class="video-title-row skeleton" style="height: 18px; width: 80%;"></div>
-                    <div class="video-meta-row skeleton" style="height: 14px; width: 40%; margin-top: 6px;"></div>
-                </div>
-            </div>
-        </div>
+    </div>
+
+    <div id="main-feed-container">
+        <!-- Feed Injected Here by Realtime Listeners -->
     </div>
 </div>
 
-<!-- Full Screen Image Modal -->
-<div class="fullscreen-image-modal" id="image-modal">
-    <button class="modal-close-btn" onclick="closeImagePreview()">✕</button>
-    <img id="image-modal-src" src="" alt="Full preview">
-</div>
-
-<!-- All People Reacted Modal Page -->
-<div class="reacted-users-modal" id="reacted-modal">
-    <div class="reacted-topbar">
-        <button style="background:none; border:none; font-size:22px; cursor:pointer;" onclick="closeReactedModal()">←</button>
-        <div style="font-size:17px; font-weight:700;">All People Reacted</div>
-    </div>
-    <div class="reacted-filter-chips" id="reaction-chips-row">
-        <!-- Dynamic chips generated via JS -->
-    </div>
-    <div class="reacted-users-list" id="reacted-users-list">
-        <!-- Reacted users injected here -->
-    </div>
-</div>
-
-<!-- Watch Page Overlay (YouTube Style) -->
-<div class="watch-overlay" id="watch-overlay">
-    <div class="watch-player-wrapper">
-        <button class="watch-back-btn" onclick="closeWatchPage()">✕</button>
-        <video id="watch-video-element" controls playsinline></video>
-    </div>
-
-    <div class="video-details-card">
-        <div class="details-title" id="watch-title">Loading Video...</div>
-        <div class="details-metadata-row">
-            <span id="watch-handle" style="font-weight: 600;">@channel</span>
-            <span>•</span>
-            <span id="watch-likes-count">0 Likes</span>
-            <span>•</span>
-            <span id="watch-views-count">0 Views</span>
-            <span>•</span>
-            <span id="watch-time">Just now</span>
-            <span class="meta-more-btn" onclick="openDescriptionSheet()">...more</span>
-        </div>
-    </div>
-
-    <!-- Channel Action Row -->
-    <div class="channel-action-row">
-        <img src="" id="watch-channel-avatar" class="channel-avatar">
-        <button class="pill-sub-btn" id="watch-sub-btn" onclick="toggleSubscribeCurrent()">Subscribe</button>
-        <div class="actions-scroll-group">
-            <button class="action-pill" id="watch-like-btn" onclick="toggleWatchLike()">
-                <span id="watch-like-icon">👍</span>
-                <span id="watch-like-btn-text">Like</span>
-            </button>
-            <button class="action-pill" onclick="triggerDownload()">
-                <span>⬇</span> Download
-            </button>
-        </div>
-    </div>
-
-    <!-- Comment Preview Card -->
-    <div class="comment-preview-box" onclick="openCommentsSheet()">
-        <div class="comment-preview-header">
-            <span>Comments</span>
-            <span style="color:var(--text-secondary); font-size:12px;" id="watch-comment-count">0</span>
-        </div>
-        <div class="comment-preview-content">
-            <img src="" id="watch-last-comment-avatar" class="channel-avatar" style="display:none;">
-            <div class="comment-preview-text" id="watch-last-comment-text">Be the first to comment...</div>
-        </div>
-    </div>
-
-    <!-- Recommended Video Feed -->
-    <div style="padding: 12px 0 0;" id="watch-recommended-feed">
-        <!-- Injected via JS -->
-    </div>
+<!-- Image Full Screen Preview -->
+<div class="image-preview-overlay" id="image-preview-overlay">
+    <span class="material-symbols-outlined preview-close" onclick="closeImagePreview()">close</span>
+    <img id="preview-image" src="" alt="Full Screen Preview">
 </div>
 
 <!-- Description Bottom Sheet -->
-<div class="bottom-sheet-backdrop" id="desc-backdrop" onclick="closeDescriptionSheet()"></div>
-<div class="bottom-sheet" id="desc-sheet">
-    <div class="sheet-drag-handle"></div>
-    <div class="sheet-header-row">
-        <strong style="font-size:16px;">Description</strong>
-        <button style="background:none; border:none; font-size:18px;" onclick="closeDescriptionSheet()">✕</button>
+<div class="desc-bottom-sheet" id="desc-bottom-sheet">
+    <div class="desc-overlay" onclick="closeDescSheet()"></div>
+    <div class="desc-content">
+        <div class="drag-handle"></div>
+        <div class="desc-header">
+            Description
+            <span class="material-symbols-outlined" onclick="closeDescSheet()">close</span>
+        </div>
+        <div class="desc-stats">
+            <span><strong id="bs-likes">0</strong> Likes</span>
+            <span><strong id="bs-views">0</strong> Views</span>
+            <span><strong id="bs-date">Date</strong> Upload Time</span>
+        </div>
+        <div class="watch-title-row" id="bs-title" style="-webkit-line-clamp: unset; margin-bottom: 16px;">Full Title Here</div>
+        <div class="desc-body" id="bs-desc">Full description goes here...</div>
     </div>
-    <div class="sheet-body" id="desc-full-text">
-        <!-- Full description -->
+</div>
+
+<!-- Watch Page UI -->
+<div class="watch-page-overlay" id="watch-page">
+    <div class="player-wrapper">
+        <video id="main-video-player" playsinline preload="metadata" onwaiting="showBuffer()" onplaying="hideBuffer()"></video>
+        <div class="buffer-spinner" id="video-buffer"></div>
+        <div style="position: absolute; top: 16px; left: 16px; z-index: 10;" onclick="closeWatchPage()">
+            <span class="material-symbols-outlined" style="color:white; font-size:28px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">expand_more</span>
+        </div>
+    </div>
+    
+    <div class="watch-info-card">
+        <!-- Premium White Card Content -->
+        <div class="watch-title-row" id="watch-title">Loading...</div>
+        <div class="watch-meta-row">
+            <span id="watch-handle">@channel</span> • 
+            <span id="watch-likes">0 Likes</span> • 
+            <span id="watch-views">0 Views</span> • 
+            <span id="watch-time">0 days ago</span>
+            <span class="more-btn" onclick="openDescSheet()">...more</span>
+        </div>
+        
+        <div class="action-row">
+            <div class="channel-watch-info">
+                <img id="watch-avatar" class="channel-avatar" src="" alt="">
+                <button id="watch-subscribe-btn" class="btn-subscribe" onclick="toggleSubscribe()">Subscribe</button>
+            </div>
+            
+            <div class="action-pill" onclick="toggleLikeVideo()" id="watch-like-btn">
+                <span class="material-symbols-outlined" id="watch-like-icon">thumb_up</span>
+                <span id="watch-like-count">Like</span>
+            </div>
+            <div class="action-pill">
+                <span class="material-symbols-outlined">thumb_down</span>
+            </div>
+            <div class="action-pill">
+                <span class="material-symbols-outlined">download</span>
+                Download
+            </div>
+        </div>
+
+        <div class="comment-preview-card" onclick="openCommentsPage()">
+            <div class="comment-preview-header">
+                Comments <span style="color: var(--md-sys-color-on-surface-variant); font-weight: 500;" id="watch-comment-count">0</span>
+            </div>
+            <div class="comment-preview-body" id="watch-comment-preview">
+                <div class="skeleton" style="width:24px; height:24px; border-radius:50%;"></div>
+                <div class="skeleton" style="height:14px; flex:1; border-radius:4px;"></div>
+            </div>
+        </div>
+
+        <div style="font-weight: 700; font-size: 16px; margin: 24px 0 12px;">Recommended</div>
+        <div id="recommended-feed">
+            <!-- Populated by Firebase -->
+        </div>
+    </div>
+</div>
+
+<!-- All People Reacted Page -->
+<div class="reaction-list-page" id="reaction-list-page">
+    <div class="reaction-list-header">
+        <span class="material-symbols-outlined" onclick="closeReactionPage()">arrow_back</span>
+        All People Reacted
+    </div>
+    <div class="reaction-chips" id="reaction-chips-container">
+        <div class="r-chip active" onclick="filterReactions('All')">All (<span id="rt-all">0</span>)</div>
+        <div class="r-chip" onclick="filterReactions('❤️')">❤️ (<span id="rt-love">0</span>)</div>
+        <div class="r-chip" onclick="filterReactions('👍')">👍 (<span id="rt-like">0</span>)</div>
+        <div class="r-chip" onclick="filterReactions('🥰')">🥰 (<span id="rt-care">0</span>)</div>
+    </div>
+    <div class="reacted-users-list" id="reacted-users-list">
+        <!-- Rendered Realtime List -->
     </div>
 </div>
 
 <script>
-(function() {
-    // Cloudflare CDN Domain configured
-    const CDN_DOMAIN = 'https://pub-bcff9c709dbe44d7a50c78e9a0f9bd59.r2.dev';
+    (function() {
+        const feedContainer = document.getElementById('main-feed-container');
+        const chips = document.querySelectorAll('.chip');
+        let currentTab = 'all';
+        
+        // Ensure Firebase database is accessible
+        const db = window.db || (window.firebase ? window.firebase.database() : null);
 
-    // Helper: Turn Cloudflare R2 key or path into fast CDN link
-    function getCdnUrl(url) {
-        if (!url) return '';
-        if (url.startsWith('http://') || url.startsWith('https://')) {
-            // Replace raw bucket endpoints with high performance CDN if applicable
-            return url.replace('https://b3741135bd1f3e96b6744f11e6a06600.r2.cloudflarestorage.com/flaynity-storage', CDN_DOMAIN);
-        }
-        return `${CDN_DOMAIN}/${url.replace(/^\/+/, '')}`;
-    }
+        // State Trackers for Feed Pattern (6 Shorts, 10 Videos, 1 Post)
+        let lastShortsKey = null, lastVideosKey = null, lastPostsKey = null;
 
-    // Number compact formatter (1.2K, 3.4M)
-    function formatCount(num) {
-        if (!num || isNaN(num)) return '0';
-        if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-        if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
-        return num.toString();
-    }
+        // Initialize
+        initTabNavigation();
+        loadFeed();
 
-    // Relative Time Formatter
-    function timeAgo(dateParam) {
-        if (!dateParam) return 'Just now';
-        const date = typeof dateParam === 'object' ? dateParam : new Date(dateParam);
-        const today = new Date();
-        const seconds = Math.round((today - date) / 1000);
-        const minutes = Math.round(seconds / 60);
-        const hours = Math.round(minutes / 60);
-        const days = Math.round(hours / 24);
-
-        if (seconds < 60) return 'Just now';
-        if (minutes < 60) return `${minutes}m ago`;
-        if (hours < 24) return `${hours}h ago`;
-        if (days < 30) return `${days}d ago`;
-        return date.toLocaleDateString();
-    }
-
-    // Current State
-    let activeTab = 'all';
-    let currentVideoData = null;
-    let allVideos = [];
-    let allShorts = [];
-    let allPosts = [];
-    let activePostReactions = {};
-
-    const feedContainer = document.getElementById('feed-container');
-
-    // Tab Switching
-    window.switchCategory = function(tabName) {
-        activeTab = tabName;
-        document.querySelectorAll('.chip-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`tab-${tabName}`).classList.add('active');
-        renderCurrentFeed();
-    };
-
-    // Firebase Listeners (Realtime synchronization)
-    function initRealtimeData() {
-        if (!window.db) {
-            console.warn('[Flaynity] Firebase Realtime Database not ready.');
-            return;
-        }
-
-        // Realtime listener for Videos
-        window.db.ref('videos').limitToLast(50).on('value', snapshot => {
-            const val = snapshot.val();
-            allVideos = val ? Object.keys(val).map(key => ({ id: key, ...val[key] })).reverse() : [];
-            renderCurrentFeed();
-        });
-
-        // Realtime listener for Shorts
-        window.db.ref('shorts').limitToLast(50).on('value', snapshot => {
-            const val = snapshot.val();
-            allShorts = val ? Object.keys(val).map(key => ({ id: key, ...val[key] })).reverse() : [];
-            renderCurrentFeed();
-        });
-
-        // Realtime listener for Posts
-        window.db.ref('posts').limitToLast(50).on('value', snapshot => {
-            const val = snapshot.val();
-            allPosts = val ? Object.keys(val).map(key => ({ id: key, ...val[key] })).reverse() : [];
-            renderCurrentFeed();
-        });
-    }
-
-    // Render Master Method
-    function renderCurrentFeed() {
-        feedContainer.innerHTML = '';
-
-        if (activeTab === 'all') {
-            renderAllTabFeed();
-        } else if (activeTab === 'posts') {
-            renderPostsOnly();
-        } else if (activeTab === 'shorts') {
-            renderShortsOnly();
-        }
-    }
-
-    // Pattern in "All": 6 Shorts -> 10 Videos -> 1 Post -> Repeat
-    function renderAllTabFeed() {
-        let shortIndex = 0;
-        let videoIndex = 0;
-        let postIndex = 0;
-
-        const maxLoops = Math.max(
-            Math.ceil(allShorts.length / 6),
-            Math.ceil(allVideos.length / 10),
-            allPosts.length
-        ) || 1;
-
-        for (let i = 0; i < maxLoops; i++) {
-            // 1. Take up to 6 shorts
-            const currentShorts = allShorts.slice(shortIndex, shortIndex + 6);
-            if (currentShorts.length > 0) {
-                feedContainer.insertAdjacentHTML('beforeend', createShortsShelfHtml(currentShorts));
-                shortIndex += 6;
-            }
-
-            // 2. Take up to 10 Videos
-            const currentVideos = allVideos.slice(videoIndex, videoIndex + 10);
-            currentVideos.forEach(video => {
-                feedContainer.insertAdjacentHTML('beforeend', createVideoCardHtml(video));
+        function initTabNavigation() {
+            chips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    chips.forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    currentTab = chip.getAttribute('data-tab');
+                    feedContainer.innerHTML = ''; // Clear feed
+                    
+                    // Reset pagination
+                    lastShortsKey = null; lastVideosKey = null; lastPostsKey = null;
+                    loadFeed();
+                });
             });
-            videoIndex += 10;
+        }
 
-            // 3. Take 1 Post
-            if (postIndex < allPosts.length) {
-                feedContainer.insertAdjacentHTML('beforeend', createPostCardHtml(allPosts[postIndex]));
-                postIndex += 1;
+        function loadFeed() {
+            if(!db) {
+                renderSkeletons();
+                return;
+            }
+
+            if (currentTab === 'all') {
+                renderAllFeedBlock();
+            } else if (currentTab === 'posts') {
+                renderPostsFeed();
+            } else if (currentTab === 'shorts') {
+                renderShortsFeed();
             }
         }
-    }
 
-    function renderPostsOnly() {
-        if (allPosts.length === 0) {
-            feedContainer.innerHTML = '<div style="text-align:center; padding:40px; color:gray;">No posts found</div>';
-            return;
+        function renderSkeletons() {
+            feedContainer.innerHTML = `
+                <div class="video-card">
+                    <div class="video-thumbnail skeleton"></div>
+                    <div class="video-info"><div class="channel-avatar skeleton"></div><div class="video-text"><div class="skeleton" style="height:20px; width:80%; margin-bottom:8px;"></div><div class="skeleton" style="height:14px; width:50%;"></div></div></div>
+                </div>
+            `;
         }
-        allPosts.forEach(post => {
-            feedContainer.insertAdjacentHTML('beforeend', createPostCardHtml(post));
-        });
-    }
 
-    function renderShortsOnly() {
-        if (allShorts.length === 0) {
-            feedContainer.innerHTML = '<div style="text-align:center; padding:40px; color:gray;">No shorts found</div>';
-            return;
+        // ====== ALL TAB PATTERN BUILDER (6 Shorts -> 10 Videos -> 1 Post) ======
+        async function renderAllFeedBlock() {
+            try {
+                // Step 1: Render 6 Shorts
+                const shorts = await fetchBlockData('shorts', 6, lastShortsKey);
+                if(shorts.data.length > 0) {
+                    lastShortsKey = shorts.lastKey;
+                    let html = `<div class="shorts-section"><div class="shorts-grid">`;
+                    shorts.data.forEach(s => html += buildShortCard(s));
+                    html += `</div></div>`;
+                    feedContainer.insertAdjacentHTML('beforeend', html);
+                }
+
+                // Step 2: Render 10 Long Videos
+                const videos = await fetchBlockData('videos', 10, lastVideosKey);
+                if(videos.data.length > 0) {
+                    lastVideosKey = videos.lastKey;
+                    videos.data.forEach(v => {
+                        feedContainer.insertAdjacentHTML('beforeend', buildVideoCard(v));
+                    });
+                }
+
+                // Step 3: Render 1 Post
+                const posts = await fetchBlockData('posts', 1, lastPostsKey);
+                if(posts.data.length > 0) {
+                    lastPostsKey = posts.lastKey;
+                    posts.data.forEach(p => {
+                        feedContainer.insertAdjacentHTML('beforeend', buildPostCard(p));
+                    });
+                }
+            } catch (error) {
+                console.error("Error loading feed block:", error);
+            }
         }
-        const shelf = document.createElement('div');
-        shelf.className = 'shorts-shelf';
-        shelf.style.borderBottom = 'none';
-        shelf.innerHTML = `<div class="shorts-grid" style="padding-top:10px;">
-            ${allShorts.map(short => createShortCardInnerHtml(short)).join('')}
-        </div>`;
-        feedContainer.appendChild(shelf);
-    }
 
-    // HTML Generator Functions
-    function createShortsShelfHtml(shortsArray) {
-        return `
-            <div class="shorts-shelf">
-                <div class="shorts-shelf-header">
-                    <span style="color:var(--accent-color);">⚡</span> Shorts
-                </div>
-                <div class="shorts-grid">
-                    ${shortsArray.map(short => createShortCardInnerHtml(short)).join('')}
-                </div>
-            </div>
-        `;
-    }
+        // Helper to fetch data sequentially using cursors
+        function fetchBlockData(path, limit, lastKey) {
+            return new Promise((resolve) => {
+                let query = db.ref(path).orderByKey();
+                if(lastKey) { query = query.startAfter(lastKey); }
+                
+                query.limitToFirst(limit).once('value', snap => {
+                    let data = [];
+                    let last = null;
+                    snap.forEach(child => {
+                        let item = child.val();
+                        item.id = child.key;
+                        data.push(item);
+                        last = child.key;
+                    });
+                    resolve({ data, lastKey: last });
+                });
+            });
+        }
 
-    function createShortCardInnerHtml(short) {
-        const thumb = getCdnUrl(short.thumbnailUrl || short.coverUrl);
-        return `
-            <div class="short-card" onclick="openShortViewer('${short.id}')">
-                <img src="${thumb}" loading="lazy" alt="">
-                <div class="short-card-overlay">
-                    <div class="short-card-title">${escapeHtml(short.title || 'Untitled')}</div>
-                </div>
-            </div>
-        `;
-    }
+        // ====== SPECIFIC TABS FEED ======
+        function renderPostsFeed() {
+            db.ref('posts').limitToLast(20).on('child_added', (snap) => {
+                if(currentTab !== 'posts') return;
+                const post = snap.val();
+                post.id = snap.key;
+                feedContainer.insertAdjacentHTML('afterbegin', buildPostCard(post)); // Prepend for timeline feel
+            });
+        }
 
-    function createVideoCardHtml(video) {
-        const thumb = getCdnUrl(video.thumbnailUrl || video.coverUrl);
-        const avatar = getCdnUrl(video.channelAvatar || video.authorAvatar || 'https://via.placeholder.com/80');
-        const duration = video.duration || '0:00';
-        return `
-            <div class="video-card" onclick="openWatchPage('${video.id}')">
-                <div class="video-thumbnail-wrap">
-                    <img src="${thumb}" loading="lazy" alt="">
-                    <div class="video-duration">${duration}</div>
+        function renderShortsFeed() {
+            feedContainer.innerHTML = '<div class="shorts-section"><div class="shorts-grid" id="pure-shorts-grid"></div></div>';
+            const grid = document.getElementById('pure-shorts-grid');
+            db.ref('shorts').limitToLast(20).on('child_added', (snap) => {
+                if(currentTab !== 'shorts') return;
+                const short = snap.val();
+                short.id = snap.key;
+                grid.insertAdjacentHTML('afterbegin', buildShortCard(short));
+            });
+        }
+
+        // ====== COMPONENT BUILDERS ======
+        function buildShortCard(data) {
+            return `
+                <div class="short-card" onclick="openShortsPlayer('${data.id}')">
+                    <img loading="lazy" src="${data.thumbnailUrl || ''}">
+                    <div class="short-views">${formatNumber(data.views || 0)} views</div>
+                    <div class="short-title">${data.title || 'Short'}</div>
                 </div>
-                <div class="video-info-box">
-                    <img src="${avatar}" class="channel-avatar" loading="lazy">
-                    <div class="video-text-box">
-                        <div class="video-title-row">${escapeHtml(video.title || 'Untitled')}</div>
-                        <div class="video-meta-row">
-                            ${escapeHtml(video.channelName || video.authorName || 'Creator')} • ${formatCount(video.views || 0)} views • ${timeAgo(video.createdAt)}
+            `;
+        }
+
+        function buildVideoCard(data) {
+            return `
+                <div class="video-card" onclick="openWatchPage('${data.id}')">
+                    <div class="video-thumbnail">
+                        <img loading="lazy" src="${data.thumbnailUrl || ''}">
+                        <div class="video-duration">${data.duration || '0:00'}</div>
+                    </div>
+                    <div class="video-info">
+                        <img class="channel-avatar" src="${data.channelAvatar || ''}">
+                        <div class="video-text">
+                            <div class="video-title">${data.title || 'Video Title'}</div>
+                            <div class="video-meta">${data.channelName || 'User'} • ${formatNumber(data.views || 0)} views • ${timeAgo(data.uploadTime || Date.now())}</div>
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
-    }
-
-    function createPostCardHtml(post) {
-        const avatar = getCdnUrl(post.authorAvatar || post.channelAvatar || 'https://via.placeholder.com/80');
-        const mediaUrl = getCdnUrl(post.mediaUrl || post.imageUrl);
-        const reactions = post.reactions || {};
-        const reactionCount = Object.keys(reactions).length;
-        const commentsCount = post.commentsCount || 0;
-
-        return `
-            <div class="post-card" id="post-${post.id}">
-                <div class="post-header">
-                    <img src="${avatar}" class="channel-avatar" loading="lazy">
-                    <div class="post-user-info">
-                        <div class="post-user-name">${escapeHtml(post.authorName || 'User')}</div>
-                        <div class="post-time">${timeAgo(post.createdAt)}</div>
-                    </div>
-                    <button class="post-sub-btn" onclick="toggleSubscribeChannel('${post.channelId || post.userId}')">Subscribe</button>
-                </div>
-                <div class="post-caption clamped" id="post-caption-${post.id}">
-                    ${escapeHtml(post.caption || '')}
-                </div>
-                ${(post.caption && post.caption.length > 90) ? `
-                    <span class="post-more-btn" onclick="expandPostCaption('${post.id}')">...more</span>
-                ` : ''}
-                ${mediaUrl ? `
-                    <div class="post-image-container" onclick="openImagePreview('${mediaUrl}')">
-                        <img src="${mediaUrl}" loading="lazy" alt="">
-                    </div>
-                ` : ''}
-                <div class="post-stats-bar" onclick="openReactedModal('${post.id}')">
-                    <div class="post-reaction-icons">
-                        <div class="emoji-stack">
-                            <span>❤️</span><span>👍</span><span>🥰</span>
-                        </div>
-                        <span>${reactionCount} Reactions</span>
-                    </div>
-                    <div>${commentsCount} Comments</div>
-                </div>
-                <div class="post-actions-bar">
-                    <!-- Long press trigger for reaction picker -->
-                    <button class="post-act-btn" 
-                        onmousedown="startReactionHold('${post.id}')" 
-                        onmouseup="endReactionHold()" 
-                        ontouchstart="startReactionHold('${post.id}')" 
-                        ontouchend="endReactionHold()"
-                        onclick="toggleDefaultLove('${post.id}')">
-                        <span id="post-love-icon-${post.id}">❤️</span> Love
-                    </button>
-                    <button class="post-act-btn" onclick="openPostComments('${post.id}')">
-                        <span>💬</span> Comment
-                    </button>
-
-                    <!-- Floating Reaction Bar -->
-                    <div class="reaction-picker" id="picker-${post.id}">
-                        <span class="reaction-emoji" onclick="selectReaction('${post.id}', '❤️')">❤️</span>
-                        <span class="reaction-emoji" onclick="selectReaction('${post.id}', '👍')">👍</span>
-                        <span class="reaction-emoji" onclick="selectReaction('${post.id}', '🥰')">🥰</span>
-                        <span class="reaction-emoji" onclick="selectReaction('${post.id}', '😆')">😆</span>
-                        <span class="reaction-emoji" onclick="selectReaction('${post.id}', '😮')">😮</span>
-                        <span class="reaction-emoji" onclick="selectReaction('${post.id}', '😭')">😭</span>
-                        <span class="reaction-emoji" onclick="selectReaction('${post.id}', '😡')">😡</span>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // Expand Caption
-    window.expandPostCaption = function(postId) {
-        const el = document.getElementById(`post-caption-${postId}`);
-        if (el) el.classList.remove('clamped');
-    };
-
-    // Reaction Hold Logic
-    let reactionTimer = null;
-    window.startReactionHold = function(postId) {
-        reactionTimer = setTimeout(() => {
-            document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
-            const picker = document.getElementById(`picker-${postId}`);
-            if (picker) picker.style.display = 'flex';
-        }, 400);
-    };
-
-    window.endReactionHold = function() {
-        if (reactionTimer) clearTimeout(reactionTimer);
-    };
-
-    // Select Reaction & Save to Firebase RTDB
-    window.selectReaction = function(postId, emoji) {
-        const picker = document.getElementById(`picker-${postId}`);
-        if (picker) picker.style.display = 'none';
-
-        const userId = window.auth?.currentUser?.uid || 'guest_user';
-        if (window.db) {
-            window.db.ref(`posts/${postId}/reactions/${userId}`).set({
-                emoji: emoji,
-                userName: window.auth?.currentUser?.displayName || 'Flaynity User',
-                userAvatar: window.auth?.currentUser?.photoURL || 'https://via.placeholder.com/80',
-                timestamp: Date.now()
-            });
-        }
-    };
-
-    window.toggleDefaultLove = function(postId) {
-        window.selectReaction(postId, '❤️');
-    };
-
-    // All People Reacted Modal & Filter
-    let currentReactedPostId = null;
-    window.openReactedModal = function(postId) {
-        currentReactedPostId = postId;
-        const modal = document.getElementById('reacted-modal');
-        modal.style.display = 'flex';
-
-        if (window.db) {
-            window.db.ref(`posts/${postId}/reactions`).on('value', snapshot => {
-                const reactions = snapshot.val() || {};
-                renderReactedUsers(reactions, 'All');
-            });
-        }
-    };
-
-    window.closeReactedModal = function() {
-        document.getElementById('reacted-modal').style.display = 'none';
-        if (window.db && currentReactedPostId) {
-            window.db.ref(`posts/${currentReactedPostId}/reactions`).off();
-        }
-    };
-
-    function renderReactedUsers(reactionsObj, selectedFilter) {
-        const users = Object.keys(reactionsObj).map(uid => ({ uid, ...reactionsObj[uid] }));
-        const chipsContainer = document.getElementById('reaction-chips-row');
-        const listContainer = document.getElementById('reacted-users-list');
-
-        // Counts per reaction
-        const counts = { All: users.length };
-        users.forEach(u => {
-            counts[u.emoji] = (counts[u.emoji] || 0) + 1;
-        });
-
-        // Render filter chips
-        chipsContainer.innerHTML = `
-            <button class="reacted-filter-chip ${selectedFilter === 'All' ? 'active' : ''}" onclick="filterReacted('All')">All (${counts.All || 0})</button>
-            ${['❤️', '👍', '🥰', '😆', '😮', '😭', '😡'].map(emoji => `
-                <button class="reacted-filter-chip ${selectedFilter === emoji ? 'active' : ''}" onclick="filterReacted('${emoji}')">${emoji} (${counts[emoji] || 0})</button>
-            `).join('')}
-        `;
-
-        // Filter list
-        const filteredUsers = selectedFilter === 'All' ? users : users.filter(u => u.emoji === selectedFilter);
-
-        listContainer.innerHTML = filteredUsers.map(u => `
-            <div class="reacted-user-row">
-                <img src="${getCdnUrl(u.userAvatar)}" class="channel-avatar" style="width:36px; height:36px;">
-                <div style="font-weight:600; font-size:14px;">${escapeHtml(u.userName || 'User')}</div>
-                <div class="reacted-user-emoji">${u.emoji}</div>
-            </div>
-        `).join('');
-    }
-
-    window.filterReacted = function(emojiFilter) {
-        if (!window.db || !currentReactedPostId) return;
-        window.db.ref(`posts/${currentReactedPostId}/reactions`).once('value', snap => {
-            renderReactedUsers(snap.val() || {}, emojiFilter);
-        });
-    };
-
-    // Full Screen Image Preview
-    window.openImagePreview = function(url) {
-        document.getElementById('image-modal-src').src = url;
-        document.getElementById('image-modal').style.display = 'flex';
-    };
-
-    window.closeImagePreview = function() {
-        document.getElementById('image-modal').style.display = 'none';
-    };
-
-    // Watch Page (YouTube Style Long Video Player)
-    window.openWatchPage = function(videoId) {
-        const video = allVideos.find(v => v.id === videoId);
-        if (!video) return;
-        currentVideoData = video;
-
-        const overlay = document.getElementById('watch-overlay');
-        overlay.style.display = 'flex';
-
-        // Set CDN video stream
-        const videoPlayer = document.getElementById('watch-video-element');
-        videoPlayer.src = getCdnUrl(video.cdnUrl || video.videoUrl);
-        videoPlayer.play();
-
-        // Increment Views in Firebase
-        if (window.db) {
-            window.db.ref(`videos/${videoId}/views`).transaction(current => (current || 0) + 1);
+            `;
         }
 
-        // Fill Details
-        document.getElementById('watch-title').innerText = video.title || 'Untitled';
-        document.getElementById('watch-handle').innerText = `@${video.channelHandle || video.channelName || 'creator'}`;
-        document.getElementById('watch-likes-count').innerText = `${formatCount(video.likes || 0)} Likes`;
-        document.getElementById('watch-views-count').innerText = `${formatCount((video.views || 0) + 1)} Views`;
-        document.getElementById('watch-time').innerText = timeAgo(video.createdAt);
-        document.getElementById('watch-channel-avatar').src = getCdnUrl(video.channelAvatar || 'https://via.placeholder.com/80');
-        document.getElementById('desc-full-text').innerText = video.description || 'No description available.';
-
-        // Render Recommended List
-        const recContainer = document.getElementById('watch-recommended-feed');
-        recContainer.innerHTML = allVideos
-            .filter(v => v.id !== videoId)
-            .map(v => createVideoCardHtml(v))
-            .join('');
-
-        // Video Ended -> Auto-play / Show Next
-        videoPlayer.onended = function() {
-            const nextVideo = allVideos.find(v => v.id !== videoId);
-            if (nextVideo) openWatchPage(nextVideo.id);
+        window.toggleReadMore = function(btn) {
+            const caption = btn.previousElementSibling;
+            caption.classList.add('expanded');
+            btn.style.display = 'none';
         };
-    };
 
-    window.closeWatchPage = function() {
-        const videoPlayer = document.getElementById('watch-video-element');
-        videoPlayer.pause();
-        videoPlayer.src = '';
-        document.getElementById('watch-overlay').style.display = 'none';
-    };
+        function buildPostCard(data) {
+            const titleLength = (data.title || '').length;
+            const needsMore = titleLength > 80;
+            const topEmojis = "❤️ 👍 🥰"; // Demo visualization for design
+            
+            return `
+                <div class="post-card" id="post-${data.id}">
+                    <div class="post-header">
+                        <img class="channel-avatar" src="${data.channelAvatar || ''}">
+                        <div class="post-author-info">
+                            <div class="post-author-name">${data.channelName || 'User'}</div>
+                            <div class="post-time">${timeAgo(data.uploadTime || Date.now())}</div>
+                        </div>
+                        <div class="post-subscribe-btn">Subscribe</div>
+                    </div>
+                    
+                    <div class="post-caption" id="caption-${data.id}">${data.title || ''}</div>
+                    ${needsMore ? `<div class="read-more-btn" onclick="toggleReadMore(this)">...more</div>` : ''}
+                    
+                    ${data.imageUrl ? `
+                    <div class="post-image" onclick="openImagePreview('${data.imageUrl}')">
+                        <img loading="lazy" src="${data.imageUrl}">
+                    </div>` : ''}
+                    
+                    <div class="post-stats">
+                        <div class="post-top-emojis" onclick="openReactionPage('${data.id}')">${topEmojis} <span style="margin-left:4px;" id="rxn-cnt-${data.id}">${data.reactionsCount || 0}</span></div>
+                        <div>${data.commentsCount || 0} Comments</div>
+                    </div>
+                    <div class="post-actions">
+                        <div class="post-action-btn" 
+                             onmousedown="startReactionHold('${data.id}', this)" onmouseup="clearReactionHold()" onmouseleave="clearReactionHold()"
+                             ontouchstart="startReactionHold('${data.id}', this)" ontouchend="clearReactionHold()">
+                             
+                            <div class="reaction-picker-container" id="picker-${data.id}">
+                                <span class="reaction-emoji" onclick="submitReaction('${data.id}', '❤️', event)">❤️</span>
+                                <span class="reaction-emoji" style="animation-delay: 0.1s" onclick="submitReaction('${data.id}', '👍', event)">👍</span>
+                                <span class="reaction-emoji" style="animation-delay: 0.2s" onclick="submitReaction('${data.id}', '🥰', event)">🥰</span>
+                                <span class="reaction-emoji" style="animation-delay: 0.3s" onclick="submitReaction('${data.id}', '😆', event)">😆</span>
+                                <span class="reaction-emoji" style="animation-delay: 0.4s" onclick="submitReaction('${data.id}', '😮', event)">😮</span>
+                                <span class="reaction-emoji" style="animation-delay: 0.5s" onclick="submitReaction('${data.id}', '😭', event)">😭</span>
+                                <span class="reaction-emoji" style="animation-delay: 0.6s" onclick="submitReaction('${data.id}', '😡', event)">😡</span>
+                            </div>
+                            
+                            <span class="material-symbols-outlined">favorite</span> Love
+                        </div>
+                        <div class="post-action-btn"><span class="material-symbols-outlined">chat_bubble</span> Comment</div>
+                    </div>
+                </div>
+            `;
+        }
 
-    // Subscribe live toggle
-    window.toggleSubscribeCurrent = function() {
-        if (!currentVideoData) return;
-        toggleSubscribeChannel(currentVideoData.channelId || currentVideoData.userId);
-    };
+        // ====== POST REACTION LOGIC ======
+        let reactionTimer = null;
+        window.startReactionHold = function(postId, btnEl) {
+            reactionTimer = setTimeout(() => {
+                const picker = document.getElementById(`picker-${postId}`);
+                if(picker) picker.classList.add('active');
+            }, 400); // 400ms long press
+        };
 
-    window.toggleSubscribeChannel = function(channelId) {
-        const userId = window.auth?.currentUser?.uid || 'guest_user';
-        if (!window.db || !channelId) return;
+        window.clearReactionHold = function() {
+            if(reactionTimer) clearTimeout(reactionTimer);
+        };
 
-        const subRef = window.db.ref(`subscriptions/${userId}/${channelId}`);
-        subRef.once('value', snap => {
-            const isSubbed = snap.val();
-            subRef.set(!isSubbed);
-            window.db.ref(`channels/${channelId}/subscribersCount`).transaction(count => {
-                return isSubbed ? Math.max(0, (count || 1) - 1) : (count || 0) + 1;
+        window.submitReaction = function(postId, emoji, event) {
+            event.stopPropagation(); // Prevent trigger click
+            const picker = document.getElementById(`picker-${postId}`);
+            if(picker) picker.classList.remove('active');
+
+            if(db) {
+                // Update Firebase
+                const ref = db.ref(`posts/${postId}/reactions`);
+                const userId = window.auth?.currentUser?.uid || 'anonymous';
+                
+                ref.child(userId).set({
+                    emoji: emoji,
+                    timestamp: Date.now(),
+                    name: 'User', // Would pull from Auth Profile
+                    avatar: '' 
+                });
+                
+                // Increment counter via transaction
+                db.ref(`posts/${postId}/reactionsCount`).transaction(count => (count || 0) + 1);
+            }
+        };
+
+        // Listen for realtime reaction updates for visual count change
+        db?.ref('posts').on('child_changed', (snap) => {
+            const data = snap.val();
+            const counter = document.getElementById(`rxn-cnt-${snap.key}`);
+            if(counter) counter.innerText = data.reactionsCount || 0;
+        });
+
+        // ====== IMAGE PREVIEW LOGIC ======
+        window.openImagePreview = function(url) {
+            const overlay = document.getElementById('image-preview-overlay');
+            const img = document.getElementById('preview-image');
+            img.src = url;
+            overlay.style.display = 'flex';
+            setTimeout(() => overlay.classList.add('active'), 10);
+        };
+        window.closeImagePreview = function() {
+            const overlay = document.getElementById('image-preview-overlay');
+            overlay.classList.remove('active');
+            setTimeout(() => { overlay.style.display = 'none'; document.getElementById('preview-image').src = ''; }, 300);
+        };
+
+        // ====== WATCH VIDEO PAGE LOGIC ======
+        let currentWatchVideoId = null;
+        window.showBuffer = () => { document.getElementById('video-buffer').style.display = 'block'; };
+        window.hideBuffer = () => { document.getElementById('video-buffer').style.display = 'none'; };
+
+        window.openWatchPage = function(videoId) {
+            currentWatchVideoId = videoId;
+            const overlay = document.getElementById('watch-page');
+            overlay.style.display = 'flex';
+            setTimeout(() => overlay.classList.add('active'), 10);
+            
+            // Clear prior
+            document.getElementById('watch-title').innerText = 'Loading...';
+            document.getElementById('main-video-player').src = '';
+            
+            if(db) {
+                db.ref('videos/' + videoId).once('value', snap => {
+                    const data = snap.val();
+                    if(data) {
+                        document.getElementById('watch-title').innerText = data.title;
+                        document.getElementById('watch-handle').innerText = data.channelHandle || '@channel';
+                        document.getElementById('watch-likes').innerText = formatNumber(data.likes || 0) + ' Likes';
+                        document.getElementById('watch-views').innerText = formatNumber(data.views || 0) + ' Views';
+                        document.getElementById('watch-time').innerText = timeAgo(data.uploadTime || Date.now());
+                        document.getElementById('watch-avatar').src = data.channelAvatar || '';
+                        
+                        // Populate Bottom Sheet Data
+                        document.getElementById('bs-title').innerText = data.title;
+                        document.getElementById('bs-desc').innerText = data.description || 'No description provided.';
+                        document.getElementById('bs-likes').innerText = formatNumber(data.likes || 0);
+                        document.getElementById('bs-views').innerText = formatNumber(data.views || 0);
+                        document.getElementById('bs-date').innerText = new Date(data.uploadTime).toLocaleDateString();
+
+                        const player = document.getElementById('main-video-player');
+                        // Expecting Cloudflare CDN url directly from Database node `cdnUrl`
+                        if(data.cdnUrl) {
+                            player.src = data.cdnUrl;
+                            player.play().catch(e=>console.log("Autoplay blocked"));
+                        }
+                        
+                        // Load recommended
+                        loadRecommendedVideos();
+                    }
+                });
+            }
+        };
+
+        window.closeWatchPage = function() {
+            const overlay = document.getElementById('watch-page');
+            overlay.classList.remove('active');
+            document.getElementById('main-video-player').pause();
+            setTimeout(() => overlay.style.display = 'none', 300);
+        };
+
+        function loadRecommendedVideos() {
+            const rec = document.getElementById('recommended-feed');
+            rec.innerHTML = '';
+            db?.ref('videos').limitToLast(5).once('value', snap => {
+                snap.forEach(child => {
+                    if(child.key !== currentWatchVideoId) {
+                        let v = child.val();
+                        v.id = child.key;
+                        rec.insertAdjacentHTML('beforeend', buildVideoCard(v));
+                    }
+                });
             });
-            const subBtn = document.getElementById('watch-sub-btn');
-            if (subBtn) {
-                subBtn.innerText = !isSubbed ? 'Subscribed' : 'Subscribe';
-                subBtn.classList.toggle('subscribed', !isSubbed);
+        }
+
+        // Sub & Like Logic
+        window.toggleSubscribe = function() {
+            const btn = document.getElementById('watch-subscribe-btn');
+            const isSubbed = btn.classList.contains('subscribed');
+            if(isSubbed) {
+                btn.classList.remove('subscribed');
+                btn.innerText = 'Subscribe';
+            } else {
+                btn.classList.add('subscribed');
+                btn.innerText = 'Subscribed';
+                // Update realtime database 
+                // db.ref(`channels/${channelId}/subscribers`).transaction(count => (count||0)+1);
+            }
+        };
+
+        window.toggleLikeVideo = function() {
+            const icon = document.getElementById('watch-like-icon');
+            const isLiked = icon.classList.contains('filled');
+            if(isLiked) {
+                icon.classList.remove('filled');
+                db?.ref(`videos/${currentWatchVideoId}/likes`).transaction(count => (count||0)-1);
+            } else {
+                icon.classList.add('filled');
+                db?.ref(`videos/${currentWatchVideoId}/likes`).transaction(count => (count||0)+1);
+            }
+        };
+
+        // Listen for live like count updates
+        db?.ref('videos').on('child_changed', snap => {
+            if(snap.key === currentWatchVideoId) {
+                document.getElementById('watch-likes').innerText = formatNumber(snap.val().likes || 0) + ' Likes';
+                document.getElementById('watch-like-count').innerText = formatNumber(snap.val().likes || 0);
             }
         });
-    };
 
-    // Watch Like Live Toggle
-    window.toggleWatchLike = function() {
-        if (!currentVideoData || !window.db) return;
-        const videoId = currentVideoData.id;
-        const userId = window.auth?.currentUser?.uid || 'guest_user';
-        const likeRef = window.db.ref(`videos/${videoId}/userLikes/${userId}`);
+        // ====== BOTTOM SHEET LOGIC ======
+        window.openDescSheet = function() {
+            document.getElementById('desc-bottom-sheet').classList.add('active');
+        };
+        window.closeDescSheet = function() {
+            document.getElementById('desc-bottom-sheet').classList.remove('active');
+        };
 
-        likeRef.once('value', snap => {
-            const isLiked = snap.val();
-            likeRef.set(!isLiked);
-            window.db.ref(`videos/${videoId}/likes`).transaction(current => {
-                return isLiked ? Math.max(0, (current || 1) - 1) : (current || 0) + 1;
-            });
-            document.getElementById('watch-like-btn').classList.toggle('active-like', !isLiked);
+        // ====== ALL PEOPLE REACTED PAGE LOGIC ======
+        let currentReactionPostId = null;
+        window.openReactionPage = function(postId) {
+            currentReactionPostId = postId;
+            document.getElementById('reaction-list-page').classList.add('active');
+            filterReactions('All'); // Load Default
+        };
+        window.closeReactionPage = function() {
+            document.getElementById('reaction-list-page').classList.remove('active');
+        };
+
+        window.filterReactions = function(emojiType) {
+            // Update Chip UI
+            document.querySelectorAll('.r-chip').forEach(c => c.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            const listContainer = document.getElementById('reacted-users-list');
+            listContainer.innerHTML = '';
+
+            // Fetch Realtime
+            if(db && currentReactionPostId) {
+                db.ref(`posts/${currentReactionPostId}/reactions`).once('value', snap => {
+                    snap.forEach(child => {
+                        const r = child.val();
+                        if(emojiType === 'All' || r.emoji === emojiType) {
+                            listContainer.insertAdjacentHTML('beforeend', `
+                                <div class="user-row">
+                                    <img src="${r.avatar || 'https://via.placeholder.com/40'}">
+                                    <div class="user-name">${r.name || 'User'}</div>
+                                    <div class="user-emoji">${r.emoji}</div>
+                                </div>
+                            `);
+                        }
+                    });
+                });
+            }
+        };
+
+        // ====== INFINITE SCROLL ======
+        const feedScrollEl = document.querySelector('.home-page');
+        feedScrollEl.addEventListener('scroll', () => {
+            if (feedScrollEl.scrollTop + feedScrollEl.clientHeight >= feedScrollEl.scrollHeight - 200) {
+                // Throttle fetch
+                if(!feedScrollEl.dataset.fetching) {
+                    feedScrollEl.dataset.fetching = "true";
+                    // Only infinite load block sequence for 'all' tab
+                    if(currentTab === 'all') {
+                        renderAllFeedBlock().then(() => feedScrollEl.dataset.fetching = "");
+                    }
+                }
+            }
         });
-    };
 
-    // Bottom Sheet Handlers
-    window.openDescriptionSheet = function() {
-        document.getElementById('desc-backdrop').style.display = 'block';
-        document.getElementById('desc-sheet').style.display = 'flex';
-    };
-
-    window.closeDescriptionSheet = function() {
-        document.getElementById('desc-backdrop').style.display = 'none';
-        document.getElementById('desc-sheet').style.display = 'none';
-    };
-
-    // Navigation trigger for Shorts
-    window.openShortViewer = function(shortId) {
-        window.location.hash = `#shorts?id=${shortId}`;
-    };
-
-    // Download Handler
-    window.triggerDownload = function() {
-        if (currentVideoData) {
-            const url = getCdnUrl(currentVideoData.cdnUrl || currentVideoData.videoUrl);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${currentVideoData.title || 'video'}.mp4`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+        // Utilities
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
         }
-    };
 
-    // Escape helper
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/[&<>"']/g, function(m) {
-            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
-        });
-    }
+        function timeAgo(dateParam) {
+            if (!dateParam) return '';
+            const date = typeof dateParam === 'object' ? dateParam : new Date(dateParam);
+            const today = new Date();
+            const seconds = Math.round((today - date) / 1000);
+            const minutes = Math.round(seconds / 60);
+            const isToday = today.toDateString() === date.toDateString();
 
-    // Start App & Listeners
-    initRealtimeData();
-})();
+            if (seconds < 60) return 'Just now';
+            else if (minutes < 60) return `${minutes} min ago`;
+            else if (isToday) return `${Math.floor(minutes / 60)} hours ago`;
+            else return `${Math.floor(minutes / 1440)} days ago`;
+        }
+
+    })();
 </script>

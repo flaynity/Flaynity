@@ -1,251 +1,1358 @@
 <style>
-/* FLAYNITY HOME — Prompt-faithful production UI */
-.home-page{width:100%;height:calc(100vh - var(--nav-height,0px) - var(--safe-area-bottom,0px));overflow-y:auto;overflow-x:hidden;background:#f5f5f5;color:#111;padding-bottom:28px;overscroll-behavior-x:none;-webkit-overflow-scrolling:touch}
-.home-page *{box-sizing:border-box;max-width:100%}
-button{font:inherit}
-.home-header{position:sticky;top:0;z-index:80;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#000;color:#fff}
-.brand-logo{font-size:23px;font-weight:900;letter-spacing:-.7px}.brand-logo span{color:#fff}
-.header-actions{display:flex;gap:14px}.icon-btn{width:40px;height:40px;border:0;background:transparent;color:inherit;display:grid;place-items:center;border-radius:50%;cursor:pointer}
-.icon-btn:active{background:rgba(255,255,255,.16);transform:scale(.94)}
-.category-chips{position:sticky;top:56px;z-index:70;width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:8px 10px;background:#f5f5f5;overflow:hidden}
-.chip{min-width:0;width:100%;border:0;border-radius:12px;padding:10px 4px;background:#e9e9e9;color:#111;font-size:14px;font-weight:700;text-align:center;cursor:pointer;transition:transform .2s,background .25s,color .25s,box-shadow .25s}
-.chip.active{background:#000;color:#fff;box-shadow:0 3px 10px rgba(0,0,0,.16)}
-.chip:active{transform:scale(.97)}
-.feed-container{width:100%;overflow:hidden}
-.section-title{display:flex;align-items:center;gap:8px;padding:14px 16px 10px;font-size:18px;font-weight:800}
-.section-title .material-symbols-outlined{font-size:22px}
-.shorts-section{padding:4px 0 16px}
-.shorts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:0 12px}
-.short-card{position:relative;aspect-ratio:2/3;min-width:0;overflow:hidden;border-radius:14px;background:#ddd;box-shadow:0 2px 10px rgba(0,0,0,.10);cursor:pointer;isolation:isolate}
-.short-card img,.short-card video{width:100%;height:100%;object-fit:cover;display:block}
-.short-card:after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 48%,rgba(0,0,0,.7));z-index:1}
-.short-card .short-title{position:absolute;z-index:2;left:10px;right:10px;bottom:10px;color:#fff;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px #000}
-.short-play{position:absolute;z-index:3;top:10px;right:10px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.55);color:#fff}
-.short-card.skeleton,.skeleton{background:linear-gradient(90deg,#e2e2e2 25%,#f4f4f4 50%,#e2e2e2 75%);background-size:200% 100%;animation:skeleton 1.25s infinite}
-@keyframes skeleton{to{background-position:-200% 0}}
-.video-feed{display:flex;flex-direction:column;gap:0}
-.video-card{width:100%;margin:0 0 18px;background:#fff;cursor:pointer}
-.video-thumb{width:100%;aspect-ratio:16/9;background:#111;position:relative;overflow:hidden}
-.video-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.duration{position:absolute;right:8px;bottom:8px;padding:3px 6px;background:rgba(0,0,0,.82);color:#fff;border-radius:4px;font-size:12px;font-weight:700}
-.video-info{display:flex;gap:11px;padding:11px 14px 0}
-.avatar{width:40px;height:40px;flex:0 0 40px;border-radius:50%;object-fit:cover;background:#ddd}
-.video-copy{min-width:0;flex:1}
-.video-title{font-size:15px;font-weight:750;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.video-meta{margin-top:5px;color:#6d6d6d;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.more-dot{width:32px;height:32px;border:0;background:transparent;flex:0 0 32px}
-.pattern-divider{height:8px;background:#f0f0f0;margin:4px 0 12px}
-.post-card{background:#fff;margin:0 0 18px;padding-top:14px}
-.post-header{display:flex;align-items:center;gap:10px;padding:0 14px}
-.post-user{min-width:0;flex:1}.post-user-name{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.post-time{font-size:12px;color:#777;margin-top:2px}
-.subscribe-mini{border:0;background:#000;color:#fff;border-radius:999px;padding:8px 13px;font-size:12px;font-weight:750;transition:.2s}
-.subscribe-mini:active{transform:scale(.94)}
-.post-title{padding:10px 14px 12px;font-size:15px;line-height:1.4}
-.post-title.collapsed{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.post-more{border:0;background:transparent;font-weight:750;padding:0 3px}
-.post-media{width:100%;aspect-ratio:3/4;background:#ddd;overflow:hidden;cursor:pointer;border-radius:10px}
-.post-media img{width:100%;height:100%;object-fit:cover;display:block}
-.post-reactions{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #eee;color:#555;font-size:13px}
-.reaction-summary{cursor:pointer;display:flex;gap:5px;align-items:center}
-.reaction-summary .emoji-stack{letter-spacing:-5px;margin-right:5px}
-.post-actions{display:grid;grid-template-columns:1fr 1fr;padding:5px 10px}
-.post-action{position:relative;border:0;background:transparent;padding:10px;display:flex;justify-content:center;gap:7px;align-items:center;color:#555;font-weight:700;border-radius:9px;overflow:hidden}
-.post-action:active{background:#eee;transform:scale(.98)}
-.ripple{position:absolute;border-radius:50%;transform:scale(0);animation:ripple .55s linear;background:rgba(0,0,0,.14);pointer-events:none}
-@keyframes ripple{to{transform:scale(4);opacity:0}}
-/* Watch */
-.watch-page{position:fixed;inset:0;z-index:200;background:#f3f3f3;overflow-y:auto;overflow-x:hidden;transform:translateY(100%);visibility:hidden;transition:transform .32s cubic-bezier(.2,.8,.2,1),visibility .32s}
-.watch-page.open{transform:translateY(0);visibility:visible}
-.watch-player-wrap{position:relative;width:100%;aspect-ratio:16/9;background:#000;overflow:hidden}
-.watch-player-wrap video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
-.watch-close{position:absolute;top:10px;left:10px;z-index:5;width:40px;height:40px;border:0;border-radius:50%;background:rgba(0,0,0,.55);color:#fff}
-.buffer{position:absolute;inset:0;display:none;place-items:center;pointer-events:none}.buffer.show{display:grid}.spinner{width:38px;height:38px;border:4px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
-.premium-info{margin:0;background:#fff;padding:14px 16px 16px;box-shadow:0 1px 5px rgba(0,0,0,.08)}
-.watch-title{font-size:18px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.watch-meta{display:flex;gap:9px;flex-wrap:wrap;color:#666;font-size:12.5px;margin-top:8px}
-.watch-more{border:0;background:transparent;padding:0;font-weight:800;color:#111;margin-top:7px}
-.channel-actions{display:flex;align-items:center;gap:8px;margin-top:14px;overflow:hidden}
-.channel-actions .avatar{width:38px;height:38px;flex-basis:38px}
-.subscribe-btn{border:0;border-radius:999px;background:#000;color:#fff;padding:9px 15px;font-weight:800;white-space:nowrap;transition:.2s}
-.subscribe-btn.subscribed{background:#e7e7e7;color:#111}
-.action-pill{height:38px;border:1px solid #ddd;background:#fff;border-radius:10px;padding:0 11px;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:750;white-space:nowrap}
-.action-pill:active{transform:scale(.95)}
-.comment-card{margin:10px 0 0;background:#fff;border:1px solid #eee;border-radius:12px;padding:12px;cursor:pointer}
-.comment-head{display:flex;justify-content:space-between;font-weight:800;font-size:14px}
-.comment-preview{display:flex;gap:9px;align-items:center;margin-top:10px}.comment-preview .avatar{width:32px;height:32px;flex-basis:32px}.comment-text{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.recommended{padding:8px 0 30px}.recommended .video-card{margin-bottom:14px}
-.short-recommend-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 12px}
-/* Sheets */
-.sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:310;opacity:0;visibility:hidden;transition:.25s}
-.sheet-backdrop.open{opacity:1;visibility:visible}
-.bottom-sheet{position:fixed;left:0;right:0;bottom:0;z-index:320;max-height:84vh;background:#fff;border-radius:22px 22px 0 0;transform:translateY(110%);transition:transform .3s cubic-bezier(.2,.8,.2,1);padding:9px 16px 20px}
-.bottom-sheet.open{transform:translateY(0)}.drag{width:42px;height:5px;background:#ccc;border-radius:10px;margin:2px auto 12px}
-.sheet-close{position:absolute;right:12px;top:11px;width:34px;height:34px;border:0;border-radius:50%;background:#eee}.sheet-body{max-height:68vh;overflow-y:auto;padding-right:3px}.sheet-body h3{margin:4px 0 12px;font-size:18px}.sheet-row{padding:7px 0;font-size:13px}.sheet-desc{line-height:1.6;color:#555;white-space:pre-wrap}
-/* Image preview */
-.image-preview{position:fixed;inset:0;z-index:350;background:#000;display:none;align-items:center;justify-content:center}.image-preview.open{display:flex}.image-preview img{max-width:100%;max-height:100%;object-fit:contain}.image-close{position:absolute;top:14px;left:14px;width:42px;height:42px;border:0;border-radius:50%;background:rgba(255,255,255,.16);color:#fff}
-/* Reactions */
-.reaction-picker{position:fixed;z-index:500;display:flex;gap:5px;padding:8px 10px;background:#fff;border-radius:999px;box-shadow:0 8px 30px rgba(0,0,0,.22);transform:scale(.85);opacity:0;visibility:hidden;transition:.18s}.reaction-picker.open{transform:scale(1);opacity:1;visibility:visible}.reaction-option{border:0;background:transparent;font-size:27px;padding:1px 4px;cursor:pointer}.reaction-option:hover{animation:bounce .42s ease}.reaction-option:active{transform:scale(1.25)}@keyframes bounce{50%{transform:translateY(-7px) scale(1.1)}}
-.float-reaction{position:fixed;z-index:501;font-size:26px;pointer-events:none;animation:floatReaction .8s ease-out forwards}@keyframes floatReaction{to{transform:translateY(-65px) scale(1.4);opacity:0}}
-.reacted-page{position:fixed;inset:0;z-index:380;background:#f5f5f5;transform:translateX(100%);visibility:hidden;transition:.3s}.reacted-page.open{transform:translateX(0);visibility:visible}
-.reacted-top{height:56px;background:#fff;display:flex;align-items:center;padding:0 10px;border-bottom:1px solid #eee;position:sticky;top:0;z-index:2}.reacted-top h2{font-size:17px;flex:1;text-align:center;margin-right:40px}
-.reaction-chips{display:flex;gap:8px;overflow-x:auto;padding:10px 12px;background:#f5f5f5;scrollbar-width:none}.reaction-chips::-webkit-scrollbar{display:none}.reaction-chip{flex:0 0 auto;border:0;border-radius:999px;padding:8px 12px;background:#e5e5e5;color:#111;font-size:12px;font-weight:750}.reaction-chip.active{background:#000;color:#fff}
-.reacted-list{padding:4px 12px}.reacted-row{display:flex;align-items:center;gap:11px;padding:12px 4px;background:#fff;border-bottom:1px solid #eee}.reacted-row img{width:42px;height:42px;border-radius:50%;object-fit:cover}.reacted-name{flex:1;font-weight:700;font-size:14px}.reacted-emoji{font-size:22px}
-.comments-page{position:fixed;inset:0;z-index:390;background:#f5f5f5;transform:translateX(100%);visibility:hidden;transition:.3s}.comments-page.open{transform:translateX(0);visibility:visible}.comments-list{padding:12px}.comment-row{display:flex;gap:10px;margin-bottom:16px}.comment-row .avatar{width:36px;height:36px;flex-basis:36px}.comment-bubble{background:#fff;border-radius:13px;padding:9px 12px;flex:1}.comment-name{font-weight:800;font-size:13px}.comment-body{font-size:13px;margin-top:3px;color:#444}
-/* Mobile-safe: no horizontal page scroll */
-@media(min-width:700px){.feed-container,.premium-info,.recommended{max-width:760px;margin-left:auto;margin-right:auto}.category-chips{max-width:760px;margin:auto}.home-header{padding-left:max(16px,calc((100vw - 760px)/2));padding-right:max(16px,calc((100vw - 760px)/2))}}
+    :root {
+        --bg-primary: #ffffff;
+        --bg-surface: #f8f9fa;
+        --bg-surface-light: #e4e6eb;
+        --text-primary: #0f0f0f;
+        --text-secondary: #606060;
+        --accent-color: #ff0000;
+        --like-color: #0695FF;
+        --love-color: #E41E3F;
+        --border-color: #e5e5e5;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .home-page {
+        width: 100%;
+        min-height: 100vh;
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        overflow-x: hidden;
+        padding-bottom: 80px;
+    }
+
+    /* Fixed Category Bar */
+    .category-chips-bar {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        width: 100%;
+        padding: 10px 12px;
+        gap: 8px;
+        background-color: var(--bg-primary);
+        position: sticky;
+        top: 0;
+        z-index: 45;
+        overflow: hidden;
+    }
+
+    .chip-btn {
+        width: 100%;
+        text-align: center;
+        padding: 9px 0;
+        border-radius: 24px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        background-color: var(--bg-surface-light);
+        color: #050505;
+        border: none;
+        outline: none;
+        transition: background-color 0.25s ease, color 0.25s ease, transform 0.1s ease;
+        user-select: none;
+    }
+
+    .chip-btn:active {
+        transform: scale(0.97);
+    }
+
+    .chip-btn.active {
+        background-color: #000000;
+        color: #ffffff;
+    }
+
+    /* Feed Container */
+    .feed-container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Skeleton Loading */
+    .skeleton {
+        background: linear-gradient(90deg, #ececec 25%, #f7f7f7 50%, #ececec 75%);
+        background-size: 200% 100%;
+        animation: skeleton-loading 1.4s infinite ease-in-out;
+    }
+
+    @keyframes skeleton-loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    /* Shorts 2-Column Grid */
+    .shorts-shelf {
+        padding: 16px 0 20px;
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 16px;
+    }
+
+    .shorts-shelf-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 16px 12px;
+        font-size: 17px;
+        font-weight: 700;
+    }
+
+    .shorts-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        padding: 0 12px;
+    }
+
+    .short-card {
+        position: relative;
+        aspect-ratio: 2 / 3;
+        border-radius: 12px;
+        overflow: hidden;
+        background-color: #000;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    .short-card img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .short-card-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 24px 8px 8px;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, transparent 100%);
+    }
+
+    .short-card-title {
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* YouTube-style Long Video Card */
+    .video-card {
+        width: 100%;
+        margin-bottom: 24px;
+        cursor: pointer;
+    }
+
+    .video-thumbnail-wrap {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background-color: #000;
+    }
+
+    .video-thumbnail-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .video-duration {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+
+    .video-info-box {
+        display: flex;
+        padding: 12px 14px 0;
+        gap: 12px;
+    }
+
+    .channel-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        background-color: var(--bg-surface-light);
+        flex-shrink: 0;
+    }
+
+    .video-text-box {
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .video-title-row {
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.35;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 4px;
+    }
+
+    .video-meta-row {
+        font-size: 12px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Facebook-Style Post Card */
+    .post-card {
+        width: 100%;
+        background-color: var(--bg-primary);
+        border-top: 6px solid var(--bg-surface-light);
+        border-bottom: 6px solid var(--bg-surface-light);
+        padding: 14px 0 8px;
+        margin-bottom: 16px;
+        position: relative;
+    }
+
+    .post-header {
+        display: flex;
+        align-items: center;
+        padding: 0 14px 10px;
+        gap: 10px;
+    }
+
+    .post-user-info {
+        flex: 1;
+    }
+
+    .post-user-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .post-time {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 2px;
+    }
+
+    .post-sub-btn {
+        background: transparent;
+        border: none;
+        color: #000;
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+        padding: 4px 8px;
+    }
+
+    .post-caption {
+        padding: 0 14px 10px;
+        font-size: 14px;
+        line-height: 1.45;
+        color: var(--text-primary);
+    }
+
+    .post-caption.clamped {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .post-more-btn {
+        color: var(--text-secondary);
+        font-weight: 600;
+        cursor: pointer;
+        margin-left: 4px;
+    }
+
+    .post-image-container {
+        width: 100%;
+        aspect-ratio: 3 / 4;
+        background-color: #000;
+        cursor: pointer;
+        overflow: hidden;
+    }
+
+    .post-image-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.2s ease;
+    }
+
+    .post-stats-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--border-color);
+        cursor: pointer;
+    }
+
+    .post-reaction-icons {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .emoji-stack {
+        display: flex;
+        align-items: center;
+    }
+
+    .emoji-stack span {
+        margin-right: -4px;
+        font-size: 15px;
+    }
+
+    .post-actions-bar {
+        display: flex;
+        padding: 4px 10px;
+        position: relative;
+    }
+
+    .post-act-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        background: transparent;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+        user-select: none;
+        position: relative;
+    }
+
+    .post-act-btn:active {
+        background-color: var(--bg-surface-light);
+    }
+
+    /* Floating Reaction Picker */
+    .reaction-picker {
+        position: absolute;
+        bottom: 44px;
+        left: 10px;
+        background: #ffffff;
+        border-radius: 30px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+        display: none;
+        align-items: center;
+        padding: 6px 10px;
+        gap: 10px;
+        z-index: 60;
+        animation: pickerPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes pickerPop {
+        0% { transform: scale(0.6) translateY(20px); opacity: 0; }
+        100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    .reaction-emoji {
+        font-size: 26px;
+        cursor: pointer;
+        display: inline-block;
+        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        animation: emojiWobble 2s infinite ease-in-out;
+    }
+
+    .reaction-emoji:hover, .reaction-emoji:active {
+        transform: scale(1.45) translateY(-8px);
+    }
+
+    @keyframes emojiWobble {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-5deg) scale(1.05); }
+        75% { transform: rotate(5deg) scale(1.05); }
+    }
+
+    /* Full Screen Image Preview Modal */
+    .fullscreen-image-modal {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-color: #000000;
+        z-index: 1000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-close-btn {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-size: 22px;
+        cursor: pointer;
+        z-index: 1010;
+        backdrop-filter: blur(8px);
+    }
+
+    .fullscreen-image-modal img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+
+    /* Watch Page Overlay */
+    .watch-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-color: var(--bg-primary);
+        z-index: 200;
+        display: none;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .watch-player-wrapper {
+        position: sticky;
+        top: 0;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background-color: #000000;
+        z-index: 50;
+    }
+
+    .watch-player-wrapper video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .watch-back-btn {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        background: rgba(0, 0, 0, 0.5);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 60;
+    }
+
+    .video-details-card {
+        padding: 14px 16px;
+        background-color: #ffffff;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .details-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 6px;
+    }
+
+    .details-metadata-row {
+        font-size: 13px;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .meta-more-btn {
+        font-weight: 700;
+        color: var(--text-primary);
+        cursor: pointer;
+    }
+
+    .channel-action-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .channel-action-row .channel-avatar {
+        width: 38px;
+        height: 38px;
+    }
+
+    .pill-sub-btn {
+        background-color: #000000;
+        color: #ffffff;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.15s ease, background-color 0.2s ease;
+    }
+
+    .pill-sub-btn.subscribed {
+        background-color: var(--bg-surface-light);
+        color: #000000;
+    }
+
+    .actions-scroll-group {
+        display: flex;
+        gap: 8px;
+        margin-left: auto;
+    }
+
+    .action-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background-color: var(--bg-surface-light);
+        padding: 7px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: transform 0.1s ease;
+    }
+
+    .action-pill:active {
+        transform: scale(0.96);
+    }
+
+    .action-pill.active-like {
+        color: var(--like-color);
+    }
+
+    /* Comment Preview Card */
+    .comment-preview-box {
+        margin: 12px 16px;
+        padding: 12px;
+        background-color: var(--bg-surface);
+        border-radius: 12px;
+        cursor: pointer;
+    }
+
+    .comment-preview-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .comment-preview-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .comment-preview-content img {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+    }
+
+    .comment-preview-text {
+        font-size: 13px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+    }
+
+    /* Bottom Sheets */
+    .bottom-sheet-backdrop {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 500;
+        display: none;
+    }
+
+    .bottom-sheet {
+        position: fixed;
+        bottom: 0; left: 0; width: 100%;
+        max-height: 75vh;
+        background-color: #ffffff;
+        border-top-left-radius: 18px;
+        border-top-right-radius: 18px;
+        z-index: 510;
+        display: none;
+        flex-direction: column;
+        padding: 14px 16px 24px;
+        box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
+        animation: slideUp 0.25s ease-out forwards;
+    }
+
+    @keyframes slideUp {
+        0% { transform: translateY(100%); }
+        100% { transform: translateY(0); }
+    }
+
+    .sheet-drag-handle {
+        width: 40px;
+        height: 4px;
+        background: #ccc;
+        border-radius: 4px;
+        margin: 0 auto 12px;
+    }
+
+    .sheet-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .sheet-body {
+        overflow-y: auto;
+        padding: 12px 0;
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--text-primary);
+    }
+
+    /* All People Reacted Page / Modal */
+    .reacted-users-modal {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-color: var(--bg-primary);
+        z-index: 600;
+        display: none;
+        flex-direction: column;
+    }
+
+    .reacted-topbar {
+        display: flex;
+        align-items: center;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border-color);
+        gap: 16px;
+    }
+
+    .reacted-filter-chips {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border-color);
+        scrollbar-width: none;
+    }
+
+    .reacted-filter-chips::-webkit-scrollbar {
+        display: none;
+    }
+
+    .reacted-filter-chip {
+        padding: 6px 14px;
+        border-radius: 18px;
+        font-size: 13px;
+        font-weight: 600;
+        background-color: var(--bg-surface-light);
+        color: #000;
+        white-space: nowrap;
+        cursor: pointer;
+        border: none;
+    }
+
+    .reacted-filter-chip.active {
+        background-color: #000000;
+        color: #ffffff;
+    }
+
+    .reacted-users-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .reacted-user-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .reacted-user-emoji {
+        margin-left: auto;
+        font-size: 20px;
+    }
 </style>
 
 <div class="home-page" id="home-page">
-  <header class="home-header">
-    <div class="brand-logo">FLAYNITY<span>.</span></div>
-    <div class="header-actions">
-      <button class="icon-btn" aria-label="Search"><span class="material-symbols-outlined">search</span></button>
-      <button class="icon-btn" aria-label="Settings"><span class="material-symbols-outlined">settings</span></button>
+    <!-- Category Chips -->
+    <div class="category-chips-bar">
+        <button class="chip-btn active" id="tab-all" onclick="switchCategory('all')">All</button>
+        <button class="chip-btn" id="tab-posts" onclick="switchCategory('posts')">Posts</button>
+        <button class="chip-btn" id="tab-shorts" onclick="switchCategory('shorts')">Shorts</button>
     </div>
-  </header>
-  <nav class="category-chips" aria-label="Feed categories">
-    <button class="chip active" data-tab="all">All</button>
-    <button class="chip" data-tab="posts">Posts</button>
-    <button class="chip" data-tab="shorts">Shorts</button>
-  </nav>
-  <main class="feed-container" id="feed-container"></main>
+
+    <!-- Feed View Container -->
+    <div class="feed-container" id="feed-container">
+        <!-- Skeleton place while Firebase loads -->
+        <div class="shorts-shelf">
+            <div class="shorts-shelf-header">
+                <span style="color:var(--accent-color);">⚡</span> Shorts
+            </div>
+            <div class="shorts-grid">
+                <div class="short-card skeleton"></div>
+                <div class="short-card skeleton"></div>
+            </div>
+        </div>
+        <div class="video-card">
+            <div class="video-thumbnail-wrap skeleton"></div>
+            <div class="video-info-box">
+                <div class="channel-avatar skeleton"></div>
+                <div class="video-text-box">
+                    <div class="video-title-row skeleton" style="height: 18px; width: 80%;"></div>
+                    <div class="video-meta-row skeleton" style="height: 14px; width: 40%; margin-top: 6px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Watch page -->
-<section class="watch-page" id="watch-page">
-  <div class="watch-player-wrap">
-    <button class="watch-close" onclick="closeWatchPage()"><span class="material-symbols-outlined">arrow_back</span></button>
-    <video id="main-video-player" controls playsinline preload="metadata"></video>
-    <div class="buffer" id="video-buffer"><div class="spinner"></div></div>
-  </div>
-  <div class="premium-info">
-    <div class="watch-title" id="watch-title">Loading...</div>
-    <div class="watch-meta">
-      <span id="watch-handle">@ChannelName</span><span id="watch-likes">0 Likes</span><span id="watch-views">0 Views</span><span id="watch-time">Just now</span>
-    </div>
-    <button class="watch-more" onclick="openMoreSheet()">...more</button>
-    <div class="channel-actions">
-      <img id="watch-avatar" class="avatar" src="" alt="">
-      <button class="subscribe-btn" id="watch-subscribe" onclick="toggleSubscribe()">Subscribe</button>
-      <button class="action-pill" onclick="toggleVideoLike()"><span id="watch-like-icon" class="material-symbols-outlined">thumb_up</span><span id="watch-like-count">0</span></button>
-      <button class="action-pill" onclick="toggleVideoDislike()"><span class="material-symbols-outlined">thumb_down</span></button>
-      <button class="action-pill" onclick="downloadCurrentVideo()"><span class="material-symbols-outlined">download</span>Download</button>
-    </div>
-    <div class="comment-card" onclick="openCommentsPage()">
-      <div class="comment-head"><span>Comments</span><span id="watch-comments-count">0</span></div>
-      <div class="comment-preview"><img id="last-comment-avatar" class="avatar" src="" alt=""><div class="comment-text" id="last-comment-text">Be the first to comment</div></div>
-    </div>
-  </div>
-  <div class="recommended">
-    <div class="section-title">Recommended</div>
-    <div id="recommended-videos"></div>
-    <div class="section-title">Shorts</div>
-    <div class="short-recommend-grid" id="recommended-shorts"></div>
-  </div>
-</section>
-
-<!-- More bottom sheet -->
-<div class="sheet-backdrop" id="sheet-backdrop" onclick="closeMoreSheet()"></div>
-<section class="bottom-sheet" id="more-sheet">
-  <div class="drag"></div><button class="sheet-close" onclick="closeMoreSheet()">×</button>
-  <div class="sheet-body">
-    <h3 id="sheet-title">Full Title</h3>
-    <div class="sheet-row"><b id="sheet-likes">0</b> Likes · <b id="sheet-views">0</b> Views · <span id="sheet-time">Just now</span></div>
-    <div class="sheet-desc" id="sheet-description">No description.</div>
-  </div>
-</section>
-
-<!-- Full image preview -->
-<div class="image-preview" id="image-preview" onclick="closeImagePreview()"><button class="image-close" onclick="event.stopPropagation();closeImagePreview()">×</button><img id="preview-image" src="" alt=""></div>
-
-<!-- Reaction picker -->
-<div class="reaction-picker" id="reaction-picker">
-  <button class="reaction-option" data-reaction="love">❤️</button><button class="reaction-option" data-reaction="like">👍</button><button class="reaction-option" data-reaction="care">🥰</button><button class="reaction-option" data-reaction="haha">😆</button><button class="reaction-option" data-reaction="wow">😮</button><button class="reaction-option" data-reaction="sad">😭</button><button class="reaction-option" data-reaction="angry">😡</button>
+<!-- Full Screen Image Modal -->
+<div class="fullscreen-image-modal" id="image-modal">
+    <button class="modal-close-btn" onclick="closeImagePreview()">✕</button>
+    <img id="image-modal-src" src="" alt="Full preview">
 </div>
 
-<!-- All People Reacted -->
-<section class="reacted-page" id="reacted-page">
-  <div class="reacted-top"><button class="icon-btn" onclick="closeReactedPage()"><span class="material-symbols-outlined">arrow_back</span></button><h2>All People Reacted</h2></div>
-  <div class="reaction-chips" id="reaction-chips"></div><div class="reacted-list" id="reacted-list"></div>
-</section>
+<!-- All People Reacted Modal Page -->
+<div class="reacted-users-modal" id="reacted-modal">
+    <div class="reacted-topbar">
+        <button style="background:none; border:none; font-size:22px; cursor:pointer;" onclick="closeReactedModal()">←</button>
+        <div style="font-size:17px; font-weight:700;">All People Reacted</div>
+    </div>
+    <div class="reacted-filter-chips" id="reaction-chips-row">
+        <!-- Dynamic chips generated via JS -->
+    </div>
+    <div class="reacted-users-list" id="reacted-users-list">
+        <!-- Reacted users injected here -->
+    </div>
+</div>
 
-<!-- Comments -->
-<section class="comments-page" id="comments-page">
-  <div class="reacted-top"><button class="icon-btn" onclick="closeCommentsPage()"><span class="material-symbols-outlined">arrow_back</span></button><h2>Comments</h2></div>
-  <div class="comments-list" id="comments-list"></div>
-</section>
+<!-- Watch Page Overlay (YouTube Style) -->
+<div class="watch-overlay" id="watch-overlay">
+    <div class="watch-player-wrapper">
+        <button class="watch-back-btn" onclick="closeWatchPage()">✕</button>
+        <video id="watch-video-element" controls playsinline></video>
+    </div>
+
+    <div class="video-details-card">
+        <div class="details-title" id="watch-title">Loading Video...</div>
+        <div class="details-metadata-row">
+            <span id="watch-handle" style="font-weight: 600;">@channel</span>
+            <span>•</span>
+            <span id="watch-likes-count">0 Likes</span>
+            <span>•</span>
+            <span id="watch-views-count">0 Views</span>
+            <span>•</span>
+            <span id="watch-time">Just now</span>
+            <span class="meta-more-btn" onclick="openDescriptionSheet()">...more</span>
+        </div>
+    </div>
+
+    <!-- Channel Action Row -->
+    <div class="channel-action-row">
+        <img src="" id="watch-channel-avatar" class="channel-avatar">
+        <button class="pill-sub-btn" id="watch-sub-btn" onclick="toggleSubscribeCurrent()">Subscribe</button>
+        <div class="actions-scroll-group">
+            <button class="action-pill" id="watch-like-btn" onclick="toggleWatchLike()">
+                <span id="watch-like-icon">👍</span>
+                <span id="watch-like-btn-text">Like</span>
+            </button>
+            <button class="action-pill" onclick="triggerDownload()">
+                <span>⬇</span> Download
+            </button>
+        </div>
+    </div>
+
+    <!-- Comment Preview Card -->
+    <div class="comment-preview-box" onclick="openCommentsSheet()">
+        <div class="comment-preview-header">
+            <span>Comments</span>
+            <span style="color:var(--text-secondary); font-size:12px;" id="watch-comment-count">0</span>
+        </div>
+        <div class="comment-preview-content">
+            <img src="" id="watch-last-comment-avatar" class="channel-avatar" style="display:none;">
+            <div class="comment-preview-text" id="watch-last-comment-text">Be the first to comment...</div>
+        </div>
+    </div>
+
+    <!-- Recommended Video Feed -->
+    <div style="padding: 12px 0 0;" id="watch-recommended-feed">
+        <!-- Injected via JS -->
+    </div>
+</div>
+
+<!-- Description Bottom Sheet -->
+<div class="bottom-sheet-backdrop" id="desc-backdrop" onclick="closeDescriptionSheet()"></div>
+<div class="bottom-sheet" id="desc-sheet">
+    <div class="sheet-drag-handle"></div>
+    <div class="sheet-header-row">
+        <strong style="font-size:16px;">Description</strong>
+        <button style="background:none; border:none; font-size:18px;" onclick="closeDescriptionSheet()">✕</button>
+    </div>
+    <div class="sheet-body" id="desc-full-text">
+        <!-- Full description -->
+    </div>
+</div>
 
 <script>
-(function(){
-'use strict';
-const $=id=>document.getElementById(id);
-const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const db=window.firebase?.database?.()||null;
-const imgFallback='https://i.pravatar.cc/100?img=12';
-let currentTab='all', currentVideo=null, currentPost=null, postLimit=20, videoLimit=30, shortLimit=30;
-let data={videos:[],shorts:[],posts:[]}, listeners=[];
+(function() {
+    // Cloudflare CDN Domain configured
+    const CDN_DOMAIN = 'https://pub-bcff9c709dbe44d7a50c78e9a0f9bd59.r2.dev';
 
-const reactions={love:'❤️',like:'👍',care:'🥰',haha:'😆',wow:'😮',sad:'😭',angry:'😡'};
-function val(o,...keys){for(const k of keys){if(o&&o[k]!==undefined&&o[k]!==null&&o[k]!=='')return o[k]}return ''}
-function count(o,...keys){const v=val(o,...keys);return Number(v)||0}
-function timeAgo(ts){if(!ts)return 'Just now';let d=Date.now()-Number(ts);if(d<60000)return 'just now';if(d<3600000)return Math.floor(d/60000)+' min ago';if(d<86400000)return Math.floor(d/3600000)+' hours ago';if(d<604800000)return Math.floor(d/86400000)+' days ago';return new Date(Number(ts)).toLocaleDateString()}
-function normalizeSnap(snap,type){const out=[];snap?.forEach?.(x=>{const v=x.val()||{};out.push({...v,id:x.key,type})});return out.reverse()}
-function addRipple(e){const b=e.currentTarget,r=document.createElement('span');r.className='ripple';const rect=b.getBoundingClientRect(),size=Math.max(rect.width,rect.height);r.style.width=r.style.height=size+'px';r.style.left=e.clientX-rect.left-size/2+'px';r.style.top=e.clientY-rect.top-size/2+'px';b.appendChild(r);setTimeout(()=>r.remove(),600)}
+    // Helper: Turn Cloudflare R2 key or path into fast CDN link
+    function getCdnUrl(url) {
+        if (!url) return '';
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+            // Replace raw bucket endpoints with high performance CDN if applicable
+            return url.replace('https://b3741135bd1f3e96b6744f11e6a06600.r2.cloudflarestorage.com/flaynity-storage', CDN_DOMAIN);
+        }
+        return `${CDN_DOMAIN}/${url.replace(/^\/+/, '')}`;
+    }
 
-function videoCard(v){const title=val(v,'title','name')||'Untitled video', thumb=val(v,'thumbnailUrl','thumbnail','thumbUrl'), avatar=val(v,'avatarUrl','channelAvatar','channelImage')||imgFallback, channel=val(v,'channelName','channelId','username')||'Channel', views=count(v,'views','viewCount'), duration=val(v,'duration','durationText')||'0:00';return `<article class="video-card" onclick="openWatchPage('${esc(v.id)}')"><div class="video-thumb"><img loading="lazy" src="${esc(thumb)}" onerror="this.style.display='none'"><span class="duration">${esc(duration)}</span></div><div class="video-info"><img class="avatar" loading="lazy" src="${esc(avatar)}" onerror="this.src='${imgFallback}'"><div class="video-copy"><div class="video-title">${esc(title)}</div><div class="video-meta">${esc(channel)} · ${views.toLocaleString()} views · ${timeAgo(val(v,'createdAt','timestamp'))}</div></div><button class="more-dot" onclick="event.stopPropagation()"><span class="material-symbols-outlined">more_vert</span></button></div></article>`}
-function shortCard(s){return `<article class="short-card" onclick="openShortPlayer('${esc(s.id)}')"><img loading="lazy" src="${esc(val(s,'thumbnailUrl','thumbnail','thumbUrl'))}" onerror="this.style.display='none'"><span class="short-play material-symbols-outlined">play_arrow</span><div class="short-title">${esc(val(s,'title','name')||'Short')}</div></article>`}
-function shortsSection(items,title='Shorts'){if(!items.length)return '';return `<section class="shorts-section"><div class="section-title"><span class="material-symbols-outlined">play_circle</span>${esc(title)}</div><div class="shorts-grid">${items.slice(0,6).map(shortCard).join('')}</div></section>`}
-function postCard(p){const title=val(p,'title','caption','text')||'',avatar=val(p,'avatarUrl','userAvatar','channelAvatar')||imgFallback,user=val(p,'userName','channelName','username')||'User',image=val(p,'imageUrl','image','images') instanceof Array?val(p,'images')[0]:val(p,'imageUrl','image','mediaUrl'),rid=p.id||'';const reactionsCount=count(p,'reactionsCount','reactionCount','likesCount'),comments=count(p,'commentsCount','commentCount');return `<article class="post-card" data-post-id="${esc(rid)}"><div class="post-header"><img class="avatar" src="${esc(avatar)}" onerror="this.src='${imgFallback}'"><div class="post-user"><div class="post-user-name">${esc(user)}</div><div class="post-time">${timeAgo(val(p,'createdAt','timestamp'))}</div></div><button class="subscribe-mini" onclick="event.stopPropagation();togglePostSubscribe('${esc(val(p,'channelId','userId','uid')||rid)}',this)">Subscribe</button></div><div class="post-title collapsed" id="post-title-${esc(rid)}">${esc(title)}${title.length>100?` <button class="post-more" onclick="event.stopPropagation();togglePostTitle('${esc(rid)}')">...more</button>`:''}</div>${image?`<div class="post-media" onclick="openImagePreview('${esc(image)}')"><img loading="lazy" src="${esc(image)}" alt="Post image"></div>`:''}<div class="post-reactions"><div class="reaction-summary" onclick="openReactedPage('${esc(rid)}')"><span class="emoji-stack">❤️ 👍 🥰</span><span>${reactionsCount}</span></div><span>${comments} Comments</span></div><div class="post-actions"><button class="post-action" onpointerdown="startReactionPress(event,'${esc(rid)}')" onpointerup="endReactionPress()" onclick="quickLove(event,'${esc(rid)}')"><span class="material-symbols-outlined">favorite_border</span>Love</button><button class="post-action" onclick="openCommentsForPost('${esc(rid)}')"><span class="material-symbols-outlined">chat_bubble_outline</span>Comment</button></div></article>`}
+    // Number compact formatter (1.2K, 3.4M)
+    function formatCount(num) {
+        if (!num || isNaN(num)) return '0';
+        if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+        return num.toString();
+    }
 
-function renderAll(){let html='';const S=data.shorts,V=data.videos,P=data.posts;let si=0,vi=0,pi=0;while(si<S.length||vi<V.length||pi<P.length){const shorts=S.slice(si,si+6);si+=6;if(shorts.length)html+=shortsSection(shorts,'Shorts');const vids=V.slice(vi,vi+10);vi+=10;if(vids.length)html+=`<section class="video-feed">${vids.map(videoCard).join('')}</section>`;const post=P[pi++];if(post)html+=postCard(post);if(si<S.length||vi<V.length||pi<P.length)html+='<div class="pattern-divider"></div>';if(si>=S.length&&vi>=V.length&&pi>=P.length)break} $('feed-container').innerHTML=html||emptyState('No content yet');wireRipples()}
-function renderShorts(){ $('feed-container').innerHTML=shortsSection(data.shorts,'All Shorts')||emptyState('No Shorts uploaded yet');wireRipples() }
-function renderPosts(){ $('feed-container').innerHTML=data.posts.length?data.posts.map(postCard).join(''):emptyState('No community posts yet');wireRipples() }
-function emptyState(t){return `<div style="padding:60px 20px;text-align:center;color:#777">${esc(t)}</div>`}
-function wireRipples(){document.querySelectorAll('.post-action,.action-pill,.subscribe-btn,.subscribe-mini').forEach(b=>b.addEventListener('click',addRipple,{once:false}))}
+    // Relative Time Formatter
+    function timeAgo(dateParam) {
+        if (!dateParam) return 'Just now';
+        const date = typeof dateParam === 'object' ? dateParam : new Date(dateParam);
+        const today = new Date();
+        const seconds = Math.round((today - date) / 1000);
+        const minutes = Math.round(seconds / 60);
+        const hours = Math.round(minutes / 60);
+        const days = Math.round(hours / 24);
 
-function listenData(){
- if(!db){data.videos=demoVideos();data.shorts=demoShorts();data.posts=demoPosts();render();return}
- listeners.forEach(x=>x.off?.());listeners=[];
- const listen=(path,type,target)=>{const ref=db.ref(path).orderByChild('createdAt').limitToLast(target);const cb=s=>{data[type]=normalizeSnap(s,type);render()};ref.on('value',cb);listeners.push(ref)}
- listen('videos','videos',videoLimit);listen('shorts','shorts',shortLimit);listen('posts','posts',postLimit);
-}
-function render(){if(currentTab==='all')renderAll();else if(currentTab==='shorts')renderShorts();else renderPosts()}
-document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');currentTab=c.dataset.tab;render()});
+        if (seconds < 60) return 'Just now';
+        if (minutes < 60) return `${minutes}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        if (days < 30) return `${days}d ago`;
+        return date.toLocaleDateString();
+    }
 
-window.openWatchPage=function(id){const v=data.videos.find(x=>x.id===id);if(!v)return;currentVideo=v;const w=$('watch-page');w.classList.add('open');document.querySelector('.home-page').scrollTop=0;const player=$('main-video-player');player.src=val(v,'cdnUrl','videoUrl','mediaUrl','url')||'';$('watch-title').textContent=val(v,'title','name')||'Untitled video';$('watch-handle').textContent='@'+(val(v,'channelHandle','channelName','channelId')||'Channel').replace(/^@/,'');$('watch-likes').textContent=count(v,'likes','likeCount')+' Likes';$('watch-views').textContent=count(v,'views','viewCount')+' Views';$('watch-time').textContent=timeAgo(val(v,'createdAt','timestamp'));$('watch-avatar').src=val(v,'avatarUrl','channelAvatar','channelImage')||imgFallback;$('sheet-description').textContent=val(v,'description','caption')||'No description.';$('sheet-title').textContent=val(v,'title','name')||'Untitled video';$('sheet-likes').textContent=count(v,'likes','likeCount');$('sheet-views').textContent=count(v,'views','viewCount');$('sheet-time').textContent=timeAgo(val(v,'createdAt','timestamp'));loadRecommended();if(player.src)player.play().catch(()=>{});}
-window.closeWatchPage=function(){$('main-video-player').pause();$('watch-page').classList.remove('open')}
-const player=$('main-video-player');player.addEventListener('waiting',()=>$('video-buffer').classList.add('show'));player.addEventListener('playing',()=>$('video-buffer').classList.remove('show'));player.addEventListener('canplay',()=>$('video-buffer').classList.remove('show'));player.addEventListener('ended',()=>{const first=data.videos.find(v=>v.id!==currentVideo?.id);if(first){setTimeout(()=>openWatchPage(first.id),300)}})
-function loadRecommended(){const rv=data.videos.filter(v=>v.id!==currentVideo?.id).slice(0,10);$('recommended-videos').innerHTML=rv.map(videoCard).join('');$('recommended-shorts').innerHTML=data.shorts.slice(0,6).map(shortCard).join('')}
-window.openShortPlayer=function(id){const s=data.shorts.find(x=>x.id===id);if(!s)return;const url=val(s,'cdnUrl','videoUrl','mediaUrl','url');currentVideo=s;const w=$('watch-page');w.classList.add('open');$('watch-title').textContent=val(s,'title','name')||'Short';$('watch-handle').textContent='@'+(val(s,'channelName','channelId')||'Channel');$('watch-likes').textContent=count(s,'likes','likeCount')+' Likes';$('watch-views').textContent=count(s,'views','viewCount')+' Views';$('watch-time').textContent=timeAgo(val(s,'createdAt','timestamp'));$('main-video-player').src=url||'';$('main-video-player').play().catch(()=>{});loadRecommended()}
-window.openMoreSheet=function(){$('sheet-backdrop').classList.add('open');$('more-sheet').classList.add('open')};window.closeMoreSheet=function(){$('sheet-backdrop').classList.remove('open');$('more-sheet').classList.remove('open')}
-window.toggleSubscribe=function(){const b=$('watch-subscribe'),on=b.classList.toggle('subscribed');b.textContent=on?'Subscribed':'Subscribe';if(db&&currentVideo){const uid=window.currentUser?.uid||'guest';db.ref(`channels/${val(currentVideo,'channelId','uid')}/subscribers/${uid}`).set(on)}}
-window.togglePostSubscribe=function(channelId,b){b.classList.toggle('subscribed');b.textContent=b.classList.contains('subscribed')?'Subscribed':'Subscribe';if(db){const uid=window.currentUser?.uid||'guest';db.ref(`channels/${channelId}/subscribers/${uid}`).set(b.classList.contains('subscribed'))}}
-window.toggleVideoLike=function(){if(!currentVideo)return;const i=$('watch-like-icon');const on=i.textContent==='thumb_up';i.textContent=on?'thumb_up':'thumb_up';i.style.fontVariationSettings=on?"'FILL' 1":'';const c=Math.max(0,count(currentVideo,'likes','likeCount')+(on?1:-1));$('watch-like-count').textContent=c}
-window.toggleVideoDislike=function(){document.querySelector('#watch-page .action-pill:nth-of-type(3)')?.animate([{transform:'scale(1)'},{transform:'scale(.9)'},{transform:'scale(1)'}],{duration:220})}
-window.downloadCurrentVideo=function(){if(currentVideo){const u=val(currentVideo,'cdnUrl','videoUrl','mediaUrl','url');if(u)window.open(u,'_blank')}}
-window.openImagePreview=function(src){$('preview-image').src=src;$('image-preview').classList.add('open')};window.closeImagePreview=function(){$('image-preview').classList.remove('open')}
-window.togglePostTitle=function(id){const e=$('post-title-'+id);e.classList.toggle('collapsed');const b=e.querySelector('.post-more');if(b)b.textContent=e.classList.contains('collapsed')?'...more':'...less'}
-let pressTimer=null,pressPost=null;
-window.startReactionPress=function(e,id){pressPost=id;pressTimer=setTimeout(()=>showReactionPicker(e.clientX,e.clientY,id),500)}
-window.endReactionPress=function(){clearTimeout(pressTimer)}
-window.quickLove=function(e,id){if(Date.now()-(window.__reactionOpenedAt||0)<700)return;saveReaction(id,'love',e.clientX,e.clientY)}
-function showReactionPicker(x,y,id){window.__reactionOpenedAt=Date.now();const p=$('reaction-picker');p.style.left=Math.max(5,Math.min(innerWidth-300,x-140))+'px';p.style.top=Math.max(8,y-70)+'px';p.dataset.postId=id;p.classList.add('open')}
-$('reaction-picker').querySelectorAll('.reaction-option').forEach(b=>b.onclick=()=>{const p=$('reaction-picker');saveReaction(p.dataset.postId,b.dataset.reaction,innerWidth/2,innerHeight/2);p.classList.remove('open')});
-function saveReaction(id,type,x,y){if(db){const uid=window.currentUser?.uid||'guest';db.ref(`posts/${id}/reactions/${uid}`).set(type)}const f=document.createElement('span');f.className='float-reaction';f.textContent=reactions[type];f.style.left=(x||innerWidth/2)+'px';f.style.top=(y||innerHeight/2)+'px';document.body.appendChild(f);setTimeout(()=>f.remove(),850)}
-document.addEventListener('click',e=>{if(!$('reaction-picker').contains(e.target))$('reaction-picker').classList.remove('open')});
-const reactionDefs=[['all','All'],['love','❤️ Love'],['like','👍 Like'],['care','🥰 Care'],['haha','😆 Haha'],['wow','😮 Wow'],['sad','😭 Sad'],['angry','😡 Angry']];
-window.openReactedPage=function(id){currentPost=id;$('reacted-page').classList.add('open');selectReaction('all')}
-window.closeReactedPage=function(){$('reacted-page').classList.remove('open')}
-window.selectReaction=function(type){$('reaction-chips').innerHTML=reactionDefs.map(([k,l])=>`<button class="reaction-chip ${k===type?'active':''}" onclick="selectReaction('${k}')">${l} (${reactionCount(type)})</button>`).join('');loadReacted(type)}
-function reactionCount(type){if(!db)return type==='all'?10:5;return '…'}
-function loadReacted(type){const list=$('reacted-list');if(!db){list.innerHTML=Array.from({length:type==='all'?10:5},(_,i)=>`<div class="reacted-row"><img src="https://i.pravatar.cc/100?img=${i+10}"><div class="reacted-name">User ${i+1}</div><div class="reacted-emoji">${reactions[type==='all'?'love':type]||'❤️'}</div></div>`).join('');return}db.ref(`posts/${currentPost}/reactions`).once('value').then(s=>{let h='';s.forEach((x,i)=>{const r=x.val();if(type==='all'||r===type)h+=`<div class="reacted-row"><img src="${imgFallback}"><div class="reacted-name">${esc(x.key)}</div><div class="reacted-emoji">${reactions[r]||'❤️'}</div></div>`});list.innerHTML=h||emptyState('No reactions yet')})}
-window.openCommentsPage=function(){loadComments(currentVideo?.id);$('comments-page').classList.add('open')};window.openCommentsForPost=function(id){currentPost=id;loadComments(id);$('comments-page').classList.add('open')};window.closeCommentsPage=function(){$('comments-page').classList.remove('open')}
-function loadComments(id){const list=$('comments-list');if(!db){list.innerHTML=emptyState('No comments yet');return}db.ref(`comments/${id}`).limitToLast(50).once('value').then(s=>{let h='';s.forEach(x=>{const c=x.val()||{};h+=`<div class="comment-row"><img class="avatar" src="${esc(val(c,'avatarUrl','avatar')||imgFallback)}"><div class="comment-bubble"><div class="comment-name">${esc(val(c,'userName','username','uid')||'User')}</div><div class="comment-body">${esc(val(c,'text','comment')||'')}</div></div></div>`});list.innerHTML=h||emptyState('No comments yet')})}
-function demoVideos(){return Array.from({length:30},(_,i)=>({id:'demo-v'+i,title:'FLAYNITY Long Video '+(i+1),thumbnailUrl:'https://picsum.photos/seed/flaynityv'+i+'/1280/720',avatarUrl:'https://i.pravatar.cc/100?img='+(i%60+1),channelName:'Flaynity Creator',views:(i+1)*137000,createdAt:Date.now()-i*3600000,duration:'12:34',description:'This is demo content. Connect Firebase to load real user uploads.',cdnUrl:''}))}
-function demoShorts(){return Array.from({length:18},(_,i)=>({id:'demo-s'+i,title:'Amazing Short '+(i+1),thumbnailUrl:'https://picsum.photos/seed/flaynitys'+i+'/600/900',channelName:'Creator '+(i+1),views:(i+1)*12000,createdAt:Date.now()-i*7200000}))}
-function demoPosts(){return Array.from({length:6},(_,i)=>({id:'demo-p'+i,title:'Welcome to FLAYNITY community — this is a professional Facebook-style community post with a longer title to demonstrate the two-line limit and more expansion.',imageUrl:'https://picsum.photos/seed/flaynityp'+i+'/900/1200',userName:'FLAYNITY User '+(i+1),avatarUrl:'https://i.pravatar.cc/100?img='+(i+20),createdAt:Date.now()-i*900000,reactionsCount:100+i,commentsCount:14+i}))}
-window.addEventListener('scroll',()=>{if(currentTab==='posts'&&innerHeight+scrollY>=document.documentElement.scrollHeight-500&&db){postLimit+=10;listenData()}});
-listenData();
+    // Current State
+    let activeTab = 'all';
+    let currentVideoData = null;
+    let allVideos = [];
+    let allShorts = [];
+    let allPosts = [];
+    let activePostReactions = {};
+
+    const feedContainer = document.getElementById('feed-container');
+
+    // Tab Switching
+    window.switchCategory = function(tabName) {
+        activeTab = tabName;
+        document.querySelectorAll('.chip-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+        renderCurrentFeed();
+    };
+
+    // Firebase Listeners (Realtime synchronization)
+    function initRealtimeData() {
+        if (!window.db) {
+            console.warn('[Flaynity] Firebase Realtime Database not ready.');
+            return;
+        }
+
+        // Realtime listener for Videos
+        window.db.ref('videos').limitToLast(50).on('value', snapshot => {
+            const val = snapshot.val();
+            allVideos = val ? Object.keys(val).map(key => ({ id: key, ...val[key] })).reverse() : [];
+            renderCurrentFeed();
+        });
+
+        // Realtime listener for Shorts
+        window.db.ref('shorts').limitToLast(50).on('value', snapshot => {
+            const val = snapshot.val();
+            allShorts = val ? Object.keys(val).map(key => ({ id: key, ...val[key] })).reverse() : [];
+            renderCurrentFeed();
+        });
+
+        // Realtime listener for Posts
+        window.db.ref('posts').limitToLast(50).on('value', snapshot => {
+            const val = snapshot.val();
+            allPosts = val ? Object.keys(val).map(key => ({ id: key, ...val[key] })).reverse() : [];
+            renderCurrentFeed();
+        });
+    }
+
+    // Render Master Method
+    function renderCurrentFeed() {
+        feedContainer.innerHTML = '';
+
+        if (activeTab === 'all') {
+            renderAllTabFeed();
+        } else if (activeTab === 'posts') {
+            renderPostsOnly();
+        } else if (activeTab === 'shorts') {
+            renderShortsOnly();
+        }
+    }
+
+    // Pattern in "All": 6 Shorts -> 10 Videos -> 1 Post -> Repeat
+    function renderAllTabFeed() {
+        let shortIndex = 0;
+        let videoIndex = 0;
+        let postIndex = 0;
+
+        const maxLoops = Math.max(
+            Math.ceil(allShorts.length / 6),
+            Math.ceil(allVideos.length / 10),
+            allPosts.length
+        ) || 1;
+
+        for (let i = 0; i < maxLoops; i++) {
+            // 1. Take up to 6 shorts
+            const currentShorts = allShorts.slice(shortIndex, shortIndex + 6);
+            if (currentShorts.length > 0) {
+                feedContainer.insertAdjacentHTML('beforeend', createShortsShelfHtml(currentShorts));
+                shortIndex += 6;
+            }
+
+            // 2. Take up to 10 Videos
+            const currentVideos = allVideos.slice(videoIndex, videoIndex + 10);
+            currentVideos.forEach(video => {
+                feedContainer.insertAdjacentHTML('beforeend', createVideoCardHtml(video));
+            });
+            videoIndex += 10;
+
+            // 3. Take 1 Post
+            if (postIndex < allPosts.length) {
+                feedContainer.insertAdjacentHTML('beforeend', createPostCardHtml(allPosts[postIndex]));
+                postIndex += 1;
+            }
+        }
+    }
+
+    function renderPostsOnly() {
+        if (allPosts.length === 0) {
+            feedContainer.innerHTML = '<div style="text-align:center; padding:40px; color:gray;">No posts found</div>';
+            return;
+        }
+        allPosts.forEach(post => {
+            feedContainer.insertAdjacentHTML('beforeend', createPostCardHtml(post));
+        });
+    }
+
+    function renderShortsOnly() {
+        if (allShorts.length === 0) {
+            feedContainer.innerHTML = '<div style="text-align:center; padding:40px; color:gray;">No shorts found</div>';
+            return;
+        }
+        const shelf = document.createElement('div');
+        shelf.className = 'shorts-shelf';
+        shelf.style.borderBottom = 'none';
+        shelf.innerHTML = `<div class="shorts-grid" style="padding-top:10px;">
+            ${allShorts.map(short => createShortCardInnerHtml(short)).join('')}
+        </div>`;
+        feedContainer.appendChild(shelf);
+    }
+
+    // HTML Generator Functions
+    function createShortsShelfHtml(shortsArray) {
+        return `
+            <div class="shorts-shelf">
+                <div class="shorts-shelf-header">
+                    <span style="color:var(--accent-color);">⚡</span> Shorts
+                </div>
+                <div class="shorts-grid">
+                    ${shortsArray.map(short => createShortCardInnerHtml(short)).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    function createShortCardInnerHtml(short) {
+        const thumb = getCdnUrl(short.thumbnailUrl || short.coverUrl);
+        return `
+            <div class="short-card" onclick="openShortViewer('${short.id}')">
+                <img src="${thumb}" loading="lazy" alt="">
+                <div class="short-card-overlay">
+                    <div class="short-card-title">${escapeHtml(short.title || 'Untitled')}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    function createVideoCardHtml(video) {
+        const thumb = getCdnUrl(video.thumbnailUrl || video.coverUrl);
+        const avatar = getCdnUrl(video.channelAvatar || video.authorAvatar || 'https://via.placeholder.com/80');
+        const duration = video.duration || '0:00';
+        return `
+            <div class="video-card" onclick="openWatchPage('${video.id}')">
+                <div class="video-thumbnail-wrap">
+                    <img src="${thumb}" loading="lazy" alt="">
+                    <div class="video-duration">${duration}</div>
+                </div>
+                <div class="video-info-box">
+                    <img src="${avatar}" class="channel-avatar" loading="lazy">
+                    <div class="video-text-box">
+                        <div class="video-title-row">${escapeHtml(video.title || 'Untitled')}</div>
+                        <div class="video-meta-row">
+                            ${escapeHtml(video.channelName || video.authorName || 'Creator')} • ${formatCount(video.views || 0)} views • ${timeAgo(video.createdAt)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function createPostCardHtml(post) {
+        const avatar = getCdnUrl(post.authorAvatar || post.channelAvatar || 'https://via.placeholder.com/80');
+        const mediaUrl = getCdnUrl(post.mediaUrl || post.imageUrl);
+        const reactions = post.reactions || {};
+        const reactionCount = Object.keys(reactions).length;
+        const commentsCount = post.commentsCount || 0;
+
+        return `
+            <div class="post-card" id="post-${post.id}">
+                <div class="post-header">
+                    <img src="${avatar}" class="channel-avatar" loading="lazy">
+                    <div class="post-user-info">
+                        <div class="post-user-name">${escapeHtml(post.authorName || 'User')}</div>
+                        <div class="post-time">${timeAgo(post.createdAt)}</div>
+                    </div>
+                    <button class="post-sub-btn" onclick="toggleSubscribeChannel('${post.channelId || post.userId}')">Subscribe</button>
+                </div>
+                <div class="post-caption clamped" id="post-caption-${post.id}">
+                    ${escapeHtml(post.caption || '')}
+                </div>
+                ${(post.caption && post.caption.length > 90) ? `
+                    <span class="post-more-btn" onclick="expandPostCaption('${post.id}')">...more</span>
+                ` : ''}
+                ${mediaUrl ? `
+                    <div class="post-image-container" onclick="openImagePreview('${mediaUrl}')">
+                        <img src="${mediaUrl}" loading="lazy" alt="">
+                    </div>
+                ` : ''}
+                <div class="post-stats-bar" onclick="openReactedModal('${post.id}')">
+                    <div class="post-reaction-icons">
+                        <div class="emoji-stack">
+                            <span>❤️</span><span>👍</span><span>🥰</span>
+                        </div>
+                        <span>${reactionCount} Reactions</span>
+                    </div>
+                    <div>${commentsCount} Comments</div>
+                </div>
+                <div class="post-actions-bar">
+                    <!-- Long press trigger for reaction picker -->
+                    <button class="post-act-btn" 
+                        onmousedown="startReactionHold('${post.id}')" 
+                        onmouseup="endReactionHold()" 
+                        ontouchstart="startReactionHold('${post.id}')" 
+                        ontouchend="endReactionHold()"
+                        onclick="toggleDefaultLove('${post.id}')">
+                        <span id="post-love-icon-${post.id}">❤️</span> Love
+                    </button>
+                    <button class="post-act-btn" onclick="openPostComments('${post.id}')">
+                        <span>💬</span> Comment
+                    </button>
+
+                    <!-- Floating Reaction Bar -->
+                    <div class="reaction-picker" id="picker-${post.id}">
+                        <span class="reaction-emoji" onclick="selectReaction('${post.id}', '❤️')">❤️</span>
+                        <span class="reaction-emoji" onclick="selectReaction('${post.id}', '👍')">👍</span>
+                        <span class="reaction-emoji" onclick="selectReaction('${post.id}', '🥰')">🥰</span>
+                        <span class="reaction-emoji" onclick="selectReaction('${post.id}', '😆')">😆</span>
+                        <span class="reaction-emoji" onclick="selectReaction('${post.id}', '😮')">😮</span>
+                        <span class="reaction-emoji" onclick="selectReaction('${post.id}', '😭')">😭</span>
+                        <span class="reaction-emoji" onclick="selectReaction('${post.id}', '😡')">😡</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Expand Caption
+    window.expandPostCaption = function(postId) {
+        const el = document.getElementById(`post-caption-${postId}`);
+        if (el) el.classList.remove('clamped');
+    };
+
+    // Reaction Hold Logic
+    let reactionTimer = null;
+    window.startReactionHold = function(postId) {
+        reactionTimer = setTimeout(() => {
+            document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
+            const picker = document.getElementById(`picker-${postId}`);
+            if (picker) picker.style.display = 'flex';
+        }, 400);
+    };
+
+    window.endReactionHold = function() {
+        if (reactionTimer) clearTimeout(reactionTimer);
+    };
+
+    // Select Reaction & Save to Firebase RTDB
+    window.selectReaction = function(postId, emoji) {
+        const picker = document.getElementById(`picker-${postId}`);
+        if (picker) picker.style.display = 'none';
+
+        const userId = window.auth?.currentUser?.uid || 'guest_user';
+        if (window.db) {
+            window.db.ref(`posts/${postId}/reactions/${userId}`).set({
+                emoji: emoji,
+                userName: window.auth?.currentUser?.displayName || 'Flaynity User',
+                userAvatar: window.auth?.currentUser?.photoURL || 'https://via.placeholder.com/80',
+                timestamp: Date.now()
+            });
+        }
+    };
+
+    window.toggleDefaultLove = function(postId) {
+        window.selectReaction(postId, '❤️');
+    };
+
+    // All People Reacted Modal & Filter
+    let currentReactedPostId = null;
+    window.openReactedModal = function(postId) {
+        currentReactedPostId = postId;
+        const modal = document.getElementById('reacted-modal');
+        modal.style.display = 'flex';
+
+        if (window.db) {
+            window.db.ref(`posts/${postId}/reactions`).on('value', snapshot => {
+                const reactions = snapshot.val() || {};
+                renderReactedUsers(reactions, 'All');
+            });
+        }
+    };
+
+    window.closeReactedModal = function() {
+        document.getElementById('reacted-modal').style.display = 'none';
+        if (window.db && currentReactedPostId) {
+            window.db.ref(`posts/${currentReactedPostId}/reactions`).off();
+        }
+    };
+
+    function renderReactedUsers(reactionsObj, selectedFilter) {
+        const users = Object.keys(reactionsObj).map(uid => ({ uid, ...reactionsObj[uid] }));
+        const chipsContainer = document.getElementById('reaction-chips-row');
+        const listContainer = document.getElementById('reacted-users-list');
+
+        // Counts per reaction
+        const counts = { All: users.length };
+        users.forEach(u => {
+            counts[u.emoji] = (counts[u.emoji] || 0) + 1;
+        });
+
+        // Render filter chips
+        chipsContainer.innerHTML = `
+            <button class="reacted-filter-chip ${selectedFilter === 'All' ? 'active' : ''}" onclick="filterReacted('All')">All (${counts.All || 0})</button>
+            ${['❤️', '👍', '🥰', '😆', '😮', '😭', '😡'].map(emoji => `
+                <button class="reacted-filter-chip ${selectedFilter === emoji ? 'active' : ''}" onclick="filterReacted('${emoji}')">${emoji} (${counts[emoji] || 0})</button>
+            `).join('')}
+        `;
+
+        // Filter list
+        const filteredUsers = selectedFilter === 'All' ? users : users.filter(u => u.emoji === selectedFilter);
+
+        listContainer.innerHTML = filteredUsers.map(u => `
+            <div class="reacted-user-row">
+                <img src="${getCdnUrl(u.userAvatar)}" class="channel-avatar" style="width:36px; height:36px;">
+                <div style="font-weight:600; font-size:14px;">${escapeHtml(u.userName || 'User')}</div>
+                <div class="reacted-user-emoji">${u.emoji}</div>
+            </div>
+        `).join('');
+    }
+
+    window.filterReacted = function(emojiFilter) {
+        if (!window.db || !currentReactedPostId) return;
+        window.db.ref(`posts/${currentReactedPostId}/reactions`).once('value', snap => {
+            renderReactedUsers(snap.val() || {}, emojiFilter);
+        });
+    };
+
+    // Full Screen Image Preview
+    window.openImagePreview = function(url) {
+        document.getElementById('image-modal-src').src = url;
+        document.getElementById('image-modal').style.display = 'flex';
+    };
+
+    window.closeImagePreview = function() {
+        document.getElementById('image-modal').style.display = 'none';
+    };
+
+    // Watch Page (YouTube Style Long Video Player)
+    window.openWatchPage = function(videoId) {
+        const video = allVideos.find(v => v.id === videoId);
+        if (!video) return;
+        currentVideoData = video;
+
+        const overlay = document.getElementById('watch-overlay');
+        overlay.style.display = 'flex';
+
+        // Set CDN video stream
+        const videoPlayer = document.getElementById('watch-video-element');
+        videoPlayer.src = getCdnUrl(video.cdnUrl || video.videoUrl);
+        videoPlayer.play();
+
+        // Increment Views in Firebase
+        if (window.db) {
+            window.db.ref(`videos/${videoId}/views`).transaction(current => (current || 0) + 1);
+        }
+
+        // Fill Details
+        document.getElementById('watch-title').innerText = video.title || 'Untitled';
+        document.getElementById('watch-handle').innerText = `@${video.channelHandle || video.channelName || 'creator'}`;
+        document.getElementById('watch-likes-count').innerText = `${formatCount(video.likes || 0)} Likes`;
+        document.getElementById('watch-views-count').innerText = `${formatCount((video.views || 0) + 1)} Views`;
+        document.getElementById('watch-time').innerText = timeAgo(video.createdAt);
+        document.getElementById('watch-channel-avatar').src = getCdnUrl(video.channelAvatar || 'https://via.placeholder.com/80');
+        document.getElementById('desc-full-text').innerText = video.description || 'No description available.';
+
+        // Render Recommended List
+        const recContainer = document.getElementById('watch-recommended-feed');
+        recContainer.innerHTML = allVideos
+            .filter(v => v.id !== videoId)
+            .map(v => createVideoCardHtml(v))
+            .join('');
+
+        // Video Ended -> Auto-play / Show Next
+        videoPlayer.onended = function() {
+            const nextVideo = allVideos.find(v => v.id !== videoId);
+            if (nextVideo) openWatchPage(nextVideo.id);
+        };
+    };
+
+    window.closeWatchPage = function() {
+        const videoPlayer = document.getElementById('watch-video-element');
+        videoPlayer.pause();
+        videoPlayer.src = '';
+        document.getElementById('watch-overlay').style.display = 'none';
+    };
+
+    // Subscribe live toggle
+    window.toggleSubscribeCurrent = function() {
+        if (!currentVideoData) return;
+        toggleSubscribeChannel(currentVideoData.channelId || currentVideoData.userId);
+    };
+
+    window.toggleSubscribeChannel = function(channelId) {
+        const userId = window.auth?.currentUser?.uid || 'guest_user';
+        if (!window.db || !channelId) return;
+
+        const subRef = window.db.ref(`subscriptions/${userId}/${channelId}`);
+        subRef.once('value', snap => {
+            const isSubbed = snap.val();
+            subRef.set(!isSubbed);
+            window.db.ref(`channels/${channelId}/subscribersCount`).transaction(count => {
+                return isSubbed ? Math.max(0, (count || 1) - 1) : (count || 0) + 1;
+            });
+            const subBtn = document.getElementById('watch-sub-btn');
+            if (subBtn) {
+                subBtn.innerText = !isSubbed ? 'Subscribed' : 'Subscribe';
+                subBtn.classList.toggle('subscribed', !isSubbed);
+            }
+        });
+    };
+
+    // Watch Like Live Toggle
+    window.toggleWatchLike = function() {
+        if (!currentVideoData || !window.db) return;
+        const videoId = currentVideoData.id;
+        const userId = window.auth?.currentUser?.uid || 'guest_user';
+        const likeRef = window.db.ref(`videos/${videoId}/userLikes/${userId}`);
+
+        likeRef.once('value', snap => {
+            const isLiked = snap.val();
+            likeRef.set(!isLiked);
+            window.db.ref(`videos/${videoId}/likes`).transaction(current => {
+                return isLiked ? Math.max(0, (current || 1) - 1) : (current || 0) + 1;
+            });
+            document.getElementById('watch-like-btn').classList.toggle('active-like', !isLiked);
+        });
+    };
+
+    // Bottom Sheet Handlers
+    window.openDescriptionSheet = function() {
+        document.getElementById('desc-backdrop').style.display = 'block';
+        document.getElementById('desc-sheet').style.display = 'flex';
+    };
+
+    window.closeDescriptionSheet = function() {
+        document.getElementById('desc-backdrop').style.display = 'none';
+        document.getElementById('desc-sheet').style.display = 'none';
+    };
+
+    // Navigation trigger for Shorts
+    window.openShortViewer = function(shortId) {
+        window.location.hash = `#shorts?id=${shortId}`;
+    };
+
+    // Download Handler
+    window.triggerDownload = function() {
+        if (currentVideoData) {
+            const url = getCdnUrl(currentVideoData.cdnUrl || currentVideoData.videoUrl);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentVideoData.title || 'video'}.mp4`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    };
+
+    // Escape helper
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+        });
+    }
+
+    // Start App & Listeners
+    initRealtimeData();
 })();
 </script>

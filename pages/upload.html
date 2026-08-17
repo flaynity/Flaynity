@@ -8,7 +8,6 @@
         position: relative;
     }
 
-    /* Top Header */
     .upload-header {
         position: sticky;
         top: 0;
@@ -27,7 +26,6 @@
         flex: 1;
     }
 
-    /* Upload Manager Tabs */
     .manager-tabs {
         display: flex;
         padding: 0 16px;
@@ -46,9 +44,7 @@
         transition: color 0.2s;
     }
 
-    .manager-tab.active {
-        color: var(--text-primary);
-    }
+    .manager-tab.active { color: var(--text-primary); }
 
     .manager-tab.active::after {
         content: '';
@@ -61,12 +57,23 @@
         border-radius: 3px 3px 0 0;
     }
 
-    /* Upload Queue List */
     .upload-queue {
         padding: 16px;
         display: flex;
         flex-direction: column;
         gap: 16px;
+    }
+
+    .queue-empty {
+        text-align: center;
+        padding: 40px 16px;
+        color: var(--text-secondary);
+    }
+
+    .queue-empty .material-symbols-outlined {
+        font-size: 48px;
+        margin-bottom: 16px;
+        display: block;
     }
 
     .queue-item {
@@ -84,29 +91,30 @@
         border-radius: 8px;
         background-color: var(--bg-surface-light);
         object-fit: cover;
+        flex-shrink: 0;
     }
 
-    .queue-info {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
+    .queue-info { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 
     .queue-title {
         font-size: 14px;
         font-weight: 600;
         color: var(--text-primary);
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
+        white-space: nowrap;
         overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .queue-status {
         font-size: 12px;
         color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
+
+    .queue-status.error { color: #ff5c5c; }
+    .queue-status.success { color: #3ddc84; }
 
     .queue-progress-bar {
         width: 100%;
@@ -121,15 +129,33 @@
         height: 100%;
         background-color: var(--accent-color);
         width: 0%;
-        transition: width 0.3s;
+        transition: width 0.25s ease;
     }
 
-    .queue-actions .material-symbols-outlined {
-        color: var(--text-secondary);
-        font-size: 24px;
+    .queue-progress-fill.error { background-color: #ff5c5c; }
+
+    .queue-actions {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
     }
 
-    /* Upload Forms Container (Hidden by default, overlays screen when active) */
+    .queue-action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: background-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .queue-action-btn:active { transform: scale(0.9); background-color: var(--bg-surface-light); }
+
+    .queue-action-btn .material-symbols-outlined { color: var(--text-secondary); font-size: 22px; }
+
+    /* Upload Form Overlay */
     .upload-form-overlay {
         position: absolute;
         top: 0;
@@ -142,9 +168,7 @@
         flex-direction: column;
     }
 
-    .upload-form-overlay.active {
-        display: flex;
-    }
+    .upload-form-overlay.active { display: flex; }
 
     .form-header {
         display: flex;
@@ -157,10 +181,7 @@
         border-bottom: 1px solid var(--bg-surface-light);
     }
 
-    .form-header .material-symbols-outlined {
-        font-size: 28px;
-        margin-right: 16px;
-    }
+    .form-header .material-symbols-outlined { font-size: 28px; margin-right: 16px; cursor: pointer; }
 
     .form-publish-btn {
         background-color: var(--text-primary);
@@ -171,14 +192,14 @@
         font-size: 14px;
         border: none;
         margin-left: auto;
+        cursor: pointer;
+        transition: opacity 0.2s ease, transform 0.15s ease;
     }
 
-    .form-content {
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-    }
+    .form-publish-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .form-publish-btn:active:not(:disabled) { transform: scale(0.96); }
+
+    .form-content { padding: 16px; display: flex; flex-direction: column; gap: 20px; }
 
     .form-media-preview {
         width: 100%;
@@ -191,19 +212,19 @@
         color: var(--text-secondary);
         position: relative;
         overflow: hidden;
+        cursor: pointer;
     }
 
-    .form-input-group {
+    .form-input-group { display: flex; flex-direction: column; gap: 8px; }
+
+    .form-label-row {
         display: flex;
-        flex-direction: column;
-        gap: 8px;
+        justify-content: space-between;
+        align-items: center;
     }
 
-    .form-label {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text-secondary);
-    }
+    .form-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+    .form-char-counter { font-size: 12px; color: var(--text-secondary); }
 
     .form-input, .form-textarea {
         background-color: var(--bg-surface);
@@ -215,17 +236,103 @@
         font-family: var(--font-family);
         width: 100%;
         outline: none;
-    }
-    
-    .form-input:focus, .form-textarea:focus {
-        border-color: var(--text-secondary);
+        transition: border-color 0.2s ease;
     }
 
-    .form-textarea {
-        resize: none;
-        height: 100px;
+    .form-input:focus, .form-textarea:focus { border-color: var(--text-secondary); }
+    .form-input.invalid, .form-textarea.invalid { border-color: #ff5c5c; }
+
+    .form-textarea { resize: none; height: 100px; }
+
+    .form-toggle-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 0;
     }
 
+    .form-toggle {
+        width: 44px;
+        height: 26px;
+        border-radius: 14px;
+        background-color: var(--bg-surface-light);
+        position: relative;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        flex-shrink: 0;
+    }
+
+    .form-toggle.on { background-color: var(--text-primary); }
+
+    .form-toggle::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: var(--bg-primary);
+        transition: transform 0.2s ease;
+    }
+
+    .form-toggle.on::after { transform: translateX(18px); }
+
+    .form-footer-actions {
+        display: flex;
+        gap: 12px;
+        padding: 4px 16px 24px;
+    }
+
+    .form-secondary-btn {
+        flex: 1;
+        padding: 12px 0;
+        border-radius: 24px;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 700;
+        background-color: var(--bg-surface);
+        color: var(--text-primary);
+        cursor: pointer;
+    }
+
+    .form-secondary-btn.discard { color: #ff5c5c; }
+
+    /* Custom toast (no browser alert) */
+    .upload-toast-stack {
+        position: fixed;
+        left: 16px;
+        right: 16px;
+        bottom: calc(var(--nav-height) + 16px);
+        z-index: 200;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        pointer-events: none;
+    }
+
+    .upload-toast {
+        background-color: #1c1c1c;
+        color: #fff;
+        border-radius: 10px;
+        padding: 12px 14px;
+        font-size: 13px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+        transform: translateY(12px);
+        opacity: 0;
+        animation: toast-in 0.25s ease forwards;
+    }
+
+    .upload-toast.error { border-left: 3px solid #ff5c5c; }
+    .upload-toast.success { border-left: 3px solid #3ddc84; }
+
+    @keyframes toast-in {
+        to { transform: translateY(0); opacity: 1; }
+    }
 </style>
 
 <div class="upload-page">
@@ -233,59 +340,56 @@
         <div class="upload-header-title">Upload Manager</div>
     </div>
 
-    <div class="manager-tabs">
-        <div class="manager-tab active">Uploading</div>
-        <div class="manager-tab">Completed</div>
-        <div class="manager-tab">Drafts</div>
+    <div class="manager-tabs" id="manager-tabs">
+        <div class="manager-tab active" data-filter="active">Uploading</div>
+        <div class="manager-tab" data-filter="completed">Completed</div>
+        <div class="manager-tab" data-filter="draft">Drafts</div>
     </div>
 
     <div class="upload-queue" id="upload-queue-container">
-        <!-- Empty State Default -->
-        <div style="text-align:center; padding: 40px 16px; color:var(--text-secondary);">
-            <span class="material-symbols-outlined" style="font-size:48px; margin-bottom:16px;">cloud_upload</span>
+        <div class="queue-empty" id="queue-empty-state">
+            <span class="material-symbols-outlined">cloud_upload</span>
             <div style="font-size:16px; font-weight:600; color:var(--text-primary);">No active uploads</div>
             <div style="font-size:14px; margin-top:8px;">Your video uploads and processing jobs will appear here.</div>
         </div>
-        <!-- Example Queue Item (Dynamically injected in JS) -->
-        <!-- <div class="queue-item">
-            <div class="queue-thumbnail"></div>
-            <div class="queue-info">
-                <div class="queue-title">My Epic Vlog 2026</div>
-                <div class="queue-status">Uploading... 45% (2.1 MB/s)</div>
-                <div class="queue-progress-bar">
-                    <div class="queue-progress-fill" style="width: 45%;"></div>
-                </div>
-            </div>
-            <div class="queue-actions">
-                <span class="material-symbols-outlined">pause_circle</span>
-            </div>
-        </div> -->
     </div>
 
-    <!-- Hidden Video Upload Form (Triggered from Navigation Bottom Sheet) -->
+    <!-- Video / Short Upload Form -->
     <div class="upload-form-overlay" id="video-upload-form">
         <div class="form-header">
             <span class="material-symbols-outlined" onclick="closeUploadForm()">close</span>
-            <div style="font-size: 18px; font-weight:700;">Details</div>
-            <button class="form-publish-btn" onclick="startUploadProcess()">Publish</button>
+            <div style="font-size: 18px; font-weight:700;" id="form-title-label">Details</div>
+            <button class="form-publish-btn" id="publish-btn" onclick="startUploadProcess()" disabled>Publish</button>
         </div>
         <div class="form-content">
             <div class="form-media-preview" id="media-preview-container" onclick="triggerNativePicker()">
-                <div style="display:flex; flex-direction:column; align-items:center;">
+                <div id="media-preview-placeholder" style="display:flex; flex-direction:column; align-items:center;">
                     <span class="material-symbols-outlined" style="font-size:40px;">video_library</span>
                     <span style="font-size:14px; margin-top:8px; font-weight:500;">Select Video</span>
                 </div>
-                <!-- Native video preview gets injected here -->
             </div>
 
             <div class="form-input-group">
-                <label class="form-label">Title</label>
+                <div class="form-label-row">
+                    <label class="form-label">Title</label>
+                    <span class="form-char-counter" id="title-counter">0/100</span>
+                </div>
                 <input type="text" class="form-input" id="upload-title" placeholder="Create a title" maxlength="100">
             </div>
 
             <div class="form-input-group">
                 <label class="form-label">Description</label>
                 <textarea class="form-textarea" id="upload-desc" placeholder="Add a description..."></textarea>
+            </div>
+
+            <div class="form-input-group" id="hashtags-group" style="display:none;">
+                <label class="form-label">Hashtags</label>
+                <input type="text" class="form-input" id="upload-hashtags" placeholder="#travel #vlog #music">
+            </div>
+
+            <div class="form-input-group">
+                <label class="form-label">Location</label>
+                <input type="text" class="form-input" id="upload-location" placeholder="Add location (optional)">
             </div>
 
             <div class="form-input-group">
@@ -295,124 +399,501 @@
                     <option value="private">Private</option>
                 </select>
             </div>
+
+            <div class="form-toggle-row">
+                <span class="form-label" style="color:var(--text-primary); font-size:15px;">Allow comments</span>
+                <div class="form-toggle on" id="toggle-comments" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="form-toggle-row">
+                <span class="form-label" style="color:var(--text-primary); font-size:15px;">Allow likes</span>
+                <div class="form-toggle on" id="toggle-likes" onclick="this.classList.toggle('on')"></div>
+            </div>
+        </div>
+
+        <div class="form-footer-actions">
+            <div class="form-secondary-btn discard" onclick="discardUploadForm()">Discard</div>
+            <div class="form-secondary-btn" onclick="saveDraft(true)">Save Draft</div>
         </div>
     </div>
 </div>
 
+<div class="upload-toast-stack" id="upload-toast-stack"></div>
+
 <script>
-    (function() {
-        const queueContainer = document.getElementById('upload-queue-container');
-        const db = window.firebase ? window.firebase.database() : null;
+(function() {
+    const queueContainer = document.getElementById('upload-queue-container');
+    const emptyState = document.getElementById('queue-empty-state');
+    const tabs = document.querySelectorAll('.manager-tab');
+    const db = window.firebase ? window.firebase.database() : null;
 
-        // Exposed globally so navigation.js Bottom Sheet can call it
-        window.openVideoUploadForm = function(type) {
-            const form = document.getElementById('video-upload-form');
-            form.classList.add('active');
-            
-            // Adjust ratio based on Short vs Video
-            const preview = document.getElementById('media-preview-container');
-            if(type === 'short') {
-                preview.style.aspectRatio = '9 / 16';
-                preview.style.width = '60%';
-                preview.style.margin = '0 auto';
-            } else {
-                preview.style.aspectRatio = '16 / 9';
-                preview.style.width = '100%';
+    let jobs = {};          // jobId -> job state
+    let activeUploadType = 'video'; // 'video' | 'short'
+    let activeFilter = 'active';
+    let autosaveTimer = null;
+    const DRAFT_STORAGE_KEY = 'flaynity_upload_draft';
+
+    /* ---------------- Tabs ---------------- */
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            activeFilter = tab.dataset.filter;
+            renderQueue();
+        });
+    });
+
+    /* ---------------- Toasts (no browser alert) ---------------- */
+    function showToast(message, type) {
+        const stack = document.getElementById('upload-toast-stack');
+        const toast = document.createElement('div');
+        toast.className = `upload-toast ${type || ''}`;
+        const icon = type === 'error' ? 'error' : (type === 'success' ? 'check_circle' : 'info');
+        toast.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">${icon}</span><span>${message}</span>`;
+        stack.appendChild(toast);
+        setTimeout(() => {
+            toast.style.transition = 'opacity 0.25s ease';
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 250);
+        }, 3200);
+    }
+
+    /* ---------------- Bottom-sheet entry points ---------------- */
+    window.openVideoUploadForm = function(type) {
+        activeUploadType = type === 'short' ? 'short' : 'video';
+        resetForm();
+
+        const form = document.getElementById('video-upload-form');
+        form.classList.add('active');
+        document.getElementById('form-title-label').innerText = activeUploadType === 'short' ? 'Short Details' : 'Video Details';
+        document.getElementById('hashtags-group').style.display = activeUploadType === 'short' ? 'flex' : 'none';
+
+        const preview = document.getElementById('media-preview-container');
+        if (activeUploadType === 'short') {
+            preview.style.aspectRatio = '9 / 16';
+            preview.style.width = '55%';
+            preview.style.margin = '0 auto';
+        } else {
+            preview.style.aspectRatio = '16 / 9';
+            preview.style.width = '100%';
+            preview.style.margin = '0';
+        }
+
+        restoreDraftIfPresent();
+    };
+
+    window.closeUploadForm = function() {
+        document.getElementById('video-upload-form').classList.remove('active');
+        clearInterval(autosaveTimer);
+    };
+
+    window.discardUploadForm = function() {
+        clearDraft();
+        resetForm();
+        closeUploadForm();
+    };
+
+    function resetForm() {
+        window.currentUploadFile = null;
+        document.getElementById('upload-title').value = '';
+        document.getElementById('upload-desc').value = '';
+        document.getElementById('upload-hashtags').value = '';
+        document.getElementById('upload-location').value = '';
+        document.getElementById('upload-visibility').value = 'public';
+        document.getElementById('toggle-comments').classList.add('on');
+        document.getElementById('toggle-likes').classList.add('on');
+        document.getElementById('title-counter').innerText = '0/100';
+        document.getElementById('publish-btn').disabled = true;
+        const preview = document.getElementById('media-preview-container');
+        preview.innerHTML = `
+            <div id="media-preview-placeholder" style="display:flex; flex-direction:column; align-items:center;">
+                <span class="material-symbols-outlined" style="font-size:40px;">video_library</span>
+                <span style="font-size:14px; margin-top:8px; font-weight:500;">Select ${activeUploadType === 'short' ? 'Short' : 'Video'}</span>
+            </div>
+        `;
+    }
+
+    document.getElementById('upload-title').addEventListener('input', (e) => {
+        document.getElementById('title-counter').innerText = `${e.target.value.length}/100`;
+        validatePublishReady();
+        scheduleAutosave();
+    });
+    document.getElementById('upload-desc').addEventListener('input', scheduleAutosave);
+    document.getElementById('upload-hashtags').addEventListener('input', scheduleAutosave);
+    document.getElementById('upload-location').addEventListener('input', scheduleAutosave);
+
+    function validatePublishReady() {
+        const title = document.getElementById('upload-title').value.trim();
+        document.getElementById('publish-btn').disabled = !(title && window.currentUploadFile);
+    }
+
+    /* ---------------- Media picking + validation ---------------- */
+    window.triggerNativePicker = function() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'video/mp4,video/quicktime,video/x-matroska,video/webm';
+        input.onchange = e => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const kind = activeUploadType === 'short' ? 'short' : 'video';
+            const validation = window.validateMediaFile ? window.validateMediaFile(file, kind) : { valid: true };
+            if (!validation.valid) {
+                showToast(validation.message, 'error');
+                return;
             }
-        };
 
-        window.closeUploadForm = function() {
-            document.getElementById('video-upload-form').classList.remove('active');
-        };
-
-        window.triggerNativePicker = function() {
-            // In a pure WebView, use input type=file. In Sketchware, bridge to native picker.
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'video/mp4,video/x-m4v,video/*';
-            input.onchange = e => {
-                const file = e.target.files[0];
-                if(file) {
-                    // Show preview (Object URL)
-                    const preview = document.getElementById('media-preview-container');
-                    const videoNode = document.createElement('video');
-                    videoNode.src = URL.createObjectURL(file);
-                    videoNode.style.width = '100%';
-                    videoNode.style.height = '100%';
-                    videoNode.style.objectFit = 'cover';
-                    videoNode.style.borderRadius = '12px';
-                    preview.innerHTML = '';
-                    preview.appendChild(videoNode);
-                    
-                    // Attach file to form for R2 upload process
-                    window.currentUploadFile = file;
-                }
+            const proceedWithFile = () => {
+                window.currentUploadFile = file;
+                renderMediaPreview(file);
+                validatePublishReady();
+                scheduleAutosave();
             };
-            input.click();
-        };
 
-        window.startUploadProcess = function() {
-            if(!window.currentUploadFile) return alert("Please select a video");
-            const title = document.getElementById('upload-title').value;
-            if(!title) return alert("Please enter a title");
-
-            // Close form & add to queue UI
-            closeUploadForm();
-            renderQueueItem(title, "Starting upload...");
-
-            // Logic flows to cloudflare-r2.js (window.uploadToR2)
-            if(window.uploadToR2) {
-                window.uploadToR2(window.currentUploadFile, (progress) => {
-                    updateQueueProgress(title, progress);
-                }).then(cdnUrl => {
-                    saveToFirebase(title, cdnUrl);
-                }).catch(err => {
-                    console.error("Upload failed", err);
-                });
+            if (activeUploadType === 'short' && window.getVideoDuration) {
+                window.getVideoDuration(file).then(duration => {
+                    if (duration > 180) {
+                        showToast('This video exceeds the Shorts limit (3 minutes).', 'error');
+                        return;
+                    }
+                    proceedWithFile();
+                }).catch(() => proceedWithFile());
+            } else {
+                proceedWithFile();
             }
         };
+        input.click();
+    };
 
-        function renderQueueItem(title, status) {
-            queueContainer.innerHTML = `
-                <div class="queue-item" id="queue-${title.replace(/\s+/g, '')}">
-                    <div class="queue-thumbnail" style="background:#222;"></div>
-                    <div class="queue-info">
-                        <div class="queue-title">${title}</div>
-                        <div class="queue-status">${status}</div>
-                        <div class="queue-progress-bar">
-                            <div class="queue-progress-fill" style="width: 0%;"></div>
-                        </div>
-                    </div>
-                    <div class="queue-actions">
-                        <span class="material-symbols-outlined">pause_circle</span>
+    function renderMediaPreview(file) {
+        const preview = document.getElementById('media-preview-container');
+        const videoNode = document.createElement('video');
+        videoNode.src = URL.createObjectURL(file);
+        videoNode.style.width = '100%';
+        videoNode.style.height = '100%';
+        videoNode.style.objectFit = 'cover';
+        videoNode.style.borderRadius = '12px';
+        videoNode.muted = true;
+        videoNode.playsInline = true;
+        preview.innerHTML = '';
+        preview.appendChild(videoNode);
+    }
+
+    /* ---------------- Draft autosave ---------------- */
+    function scheduleAutosave() {
+        clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(() => saveDraft(false), 2500);
+    }
+
+    function saveDraft(showConfirmation) {
+        const draft = {
+            type: activeUploadType,
+            title: document.getElementById('upload-title').value,
+            description: document.getElementById('upload-desc').value,
+            hashtags: document.getElementById('upload-hashtags').value,
+            location: document.getElementById('upload-location').value,
+            visibility: document.getElementById('upload-visibility').value,
+            allowComments: document.getElementById('toggle-comments').classList.contains('on'),
+            allowLikes: document.getElementById('toggle-likes').classList.contains('on'),
+            savedAt: Date.now()
+        };
+        try {
+            localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+            if (showConfirmation) {
+                showToast('Draft saved', 'success');
+                closeUploadForm();
+            }
+        } catch (e) {
+            if (showConfirmation) showToast('Could not save draft on this device', 'error');
+        }
+    }
+
+    function restoreDraftIfPresent() {
+        try {
+            const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+            if (!raw) return;
+            const draft = JSON.parse(raw);
+            if (draft.type !== activeUploadType) return;
+            document.getElementById('upload-title').value = draft.title || '';
+            document.getElementById('upload-desc').value = draft.description || '';
+            document.getElementById('upload-hashtags').value = draft.hashtags || '';
+            document.getElementById('upload-location').value = draft.location || '';
+            document.getElementById('upload-visibility').value = draft.visibility || 'public';
+            document.getElementById('toggle-comments').classList.toggle('on', draft.allowComments !== false);
+            document.getElementById('toggle-likes').classList.toggle('on', draft.allowLikes !== false);
+            document.getElementById('title-counter').innerText = `${(draft.title || '').length}/100`;
+        } catch (e) { /* ignore malformed draft */ }
+    }
+
+    function clearDraft() {
+        try { localStorage.removeItem(DRAFT_STORAGE_KEY); } catch (e) {}
+    }
+
+    /* ---------------- Publish flow ---------------- */
+    window.startUploadProcess = function() {
+        if (!window.currentUploadFile) return showToast('Please select a video', 'error');
+        const title = document.getElementById('upload-title').value.trim();
+        if (!title) return showToast('Please enter a title', 'error');
+
+        if (!navigator.onLine) {
+            return showToast('No internet connection. Try again when you\u2019re back online.', 'error');
+        }
+
+        const meta = {
+            title,
+            description: document.getElementById('upload-desc').value.trim(),
+            hashtags: document.getElementById('upload-hashtags').value.trim(),
+            location: document.getElementById('upload-location').value.trim(),
+            visibility: document.getElementById('upload-visibility').value,
+            allowComments: document.getElementById('toggle-comments').classList.contains('on'),
+            allowLikes: document.getElementById('toggle-likes').classList.contains('on'),
+            type: activeUploadType
+        };
+        const file = window.currentUploadFile;
+
+        clearDraft();
+        closeUploadForm();
+        resetForm();
+
+        const jobId = `job_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        startJob(jobId, file, meta);
+    };
+
+    function startJob(jobId, file, meta) {
+        const job = {
+            id: jobId,
+            file,
+            meta,
+            status: 'uploading', // uploading | paused | processing | completed | failed
+            progress: 0,
+            controller: null,
+            cdnUrl: null
+        };
+        jobs[jobId] = job;
+        renderQueue();
+
+        if (!window.uploadToR2) {
+            job.status = 'failed';
+            job.error = 'Upload service unavailable';
+            renderQueue();
+            return;
+        }
+
+        const { promise, pause, resume, cancel } = window.uploadToR2(file, (pct) => {
+            job.progress = pct;
+            updateJobRow(jobId);
+        });
+        job.controller = { pause, resume, cancel };
+
+        promise.then(cdnUrl => {
+            job.cdnUrl = cdnUrl;
+            job.status = 'processing';
+            renderQueue();
+            saveMetadataToFirebase(job);
+        }).catch(err => {
+            if (err && err.cancelled) {
+                delete jobs[jobId];
+                renderQueue();
+                return;
+            }
+            job.status = 'failed';
+            job.error = err && err.message ? err.message : 'Upload failed';
+            renderQueue();
+        });
+    }
+
+    function retryJob(jobId) {
+        const job = jobs[jobId];
+        if (!job) return;
+        startJob(jobId, job.file, job.meta);
+    }
+
+    function pauseJob(jobId) {
+        const job = jobs[jobId];
+        if (!job || !job.controller) return;
+        job.controller.pause();
+        job.status = 'paused';
+        renderQueue();
+    }
+
+    function resumeJob(jobId) {
+        const job = jobs[jobId];
+        if (!job || !job.controller) return;
+        job.controller.resume();
+        job.status = 'uploading';
+        renderQueue();
+    }
+
+    function cancelJob(jobId) {
+        const job = jobs[jobId];
+        if (!job) return;
+        if (job.controller) job.controller.cancel();
+        delete jobs[jobId];
+        renderQueue();
+    }
+
+    function deleteJob(jobId) {
+        delete jobs[jobId];
+        renderQueue();
+    }
+
+    /* ---------------- Firebase metadata (never fake success) ---------------- */
+    function saveMetadataToFirebase(job) {
+        if (!db) {
+            job.status = 'failed';
+            job.error = 'Not connected to database';
+            renderQueue();
+            return;
+        }
+        const user = window.firebase.auth().currentUser;
+        const refPath = job.meta.type === 'short' ? 'shorts' : 'videos';
+        const newRef = db.ref(refPath).push();
+        const idempotencyKey = newRef.key;
+
+        const payload = {
+            ownerId: user ? user.uid : 'anonymous',
+            channelId: user && user.channelId ? user.channelId : null,
+            title: job.meta.title,
+            description: job.meta.description,
+            hashtags: job.meta.hashtags,
+            location: job.meta.location,
+            cdnUrl: job.cdnUrl,
+            visibility: job.meta.visibility,
+            allowComments: job.meta.allowComments,
+            allowLikes: job.meta.allowLikes,
+            views: 0,
+            likes: 0,
+            commentsCount: 0,
+            createdAt: window.firebase.database.ServerValue.TIMESTAMP,
+            updatedAt: window.firebase.database.ServerValue.TIMESTAMP
+        };
+        if (job.meta.type !== 'short') payload.dislikes = 0;
+
+        newRef.set(payload).then(() => {
+            job.status = 'completed';
+            renderQueue();
+        }).catch(err => {
+            // Media is already on R2 - do not lose the reference, allow retrying
+            // just the metadata registration instead of re-uploading the file.
+            job.status = 'failed';
+            job.error = 'Upload finished, but publishing failed. Tap Retry.';
+            job.retryMetadataOnly = true;
+            job.idempotencyKey = idempotencyKey;
+            renderQueue();
+        });
+    }
+
+    /* ---------------- Rendering ---------------- */
+    function renderQueue() {
+        const list = Object.values(jobs).filter(j => {
+            if (activeFilter === 'active') return j.status === 'uploading' || j.status === 'paused' || j.status === 'processing' || j.status === 'failed';
+            if (activeFilter === 'completed') return j.status === 'completed';
+            if (activeFilter === 'draft') return false; // drafts live in the form, not the queue
+            return true;
+        });
+
+        queueContainer.querySelectorAll('.queue-item').forEach(el => el.remove());
+        emptyState.style.display = list.length === 0 ? 'block' : 'none';
+
+        list.forEach(job => queueContainer.insertAdjacentHTML('beforeend', jobRowHTML(job)));
+        list.forEach(job => wireJobRow(job.id));
+    }
+
+    function updateJobRow(jobId) {
+        const job = jobs[jobId];
+        if (!job) return;
+        const row = document.getElementById(`queue-${jobId}`);
+        if (!row) return;
+        row.querySelector('.queue-progress-fill').style.width = job.progress + '%';
+        row.querySelector('.queue-status').innerHTML = statusLabel(job);
+    }
+
+    function statusLabel(job) {
+        if (job.status === 'uploading') return `Uploading... ${job.progress}%`;
+        if (job.status === 'paused') return `Paused at ${job.progress}%`;
+        if (job.status === 'processing') return `Processing\u2026`;
+        if (job.status === 'completed') return `Published`;
+        if (job.status === 'failed') return `${job.error || 'Failed'}`;
+        return '';
+    }
+
+    function jobRowHTML(job) {
+        const statusClass = job.status === 'failed' ? 'error' : (job.status === 'completed' ? 'success' : '');
+        const fillClass = job.status === 'failed' ? 'error' : '';
+
+        let actionsHTML = '';
+        if (job.status === 'uploading') {
+            actionsHTML = `<div class="queue-action-btn" data-action="pause"><span class="material-symbols-outlined">pause_circle</span></div>
+                           <div class="queue-action-btn" data-action="cancel"><span class="material-symbols-outlined">close</span></div>`;
+        } else if (job.status === 'paused') {
+            actionsHTML = `<div class="queue-action-btn" data-action="resume"><span class="material-symbols-outlined">play_circle</span></div>
+                           <div class="queue-action-btn" data-action="cancel"><span class="material-symbols-outlined">close</span></div>`;
+        } else if (job.status === 'failed') {
+            actionsHTML = `<div class="queue-action-btn" data-action="retry"><span class="material-symbols-outlined">refresh</span></div>
+                           <div class="queue-action-btn" data-action="delete"><span class="material-symbols-outlined">delete</span></div>`;
+        } else if (job.status === 'processing') {
+            actionsHTML = `<div class="queue-action-btn"><span class="material-symbols-outlined">hourglass_top</span></div>`;
+        } else if (job.status === 'completed') {
+            actionsHTML = `<div class="queue-action-btn" data-action="delete"><span class="material-symbols-outlined">check_circle</span></div>`;
+        }
+
+        return `
+            <div class="queue-item" id="queue-${job.id}">
+                <div class="queue-thumbnail" style="background:#222;"></div>
+                <div class="queue-info">
+                    <div class="queue-title">${escapeHTML(job.meta.title)}</div>
+                    <div class="queue-status ${statusClass}">${statusLabel(job)}</div>
+                    <div class="queue-progress-bar">
+                        <div class="queue-progress-fill ${fillClass}" style="width:${job.status === 'completed' ? 100 : job.progress}%;"></div>
                     </div>
                 </div>
-            `;
-        }
+                <div class="queue-actions">${actionsHTML}</div>
+            </div>
+        `;
+    }
 
-        function updateQueueProgress(title, percent) {
-            const item = document.getElementById(`queue-${title.replace(/\s+/g, '')}`);
-            if(item) {
-                item.querySelector('.queue-progress-fill').style.width = percent + '%';
-                item.querySelector('.queue-status').innerText = `Uploading... ${Math.round(percent)}%`;
-            }
-        }
+    function wireJobRow(jobId) {
+        const row = document.getElementById(`queue-${jobId}`);
+        if (!row) return;
+        row.querySelectorAll('[data-action]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const action = btn.dataset.action;
+                if (action === 'pause') pauseJob(jobId);
+                if (action === 'resume') resumeJob(jobId);
+                if (action === 'cancel') cancelJob(jobId);
+                if (action === 'retry') retryJob(jobId);
+                if (action === 'delete') deleteJob(jobId);
+            });
+        });
+    }
 
-        function saveToFirebase(title, cdnUrl) {
-            if(db) {
-                const user = window.firebase.auth().currentUser;
-                const newRef = db.ref('videos').push();
-                newRef.set({
-                    videoId: newRef.key,
-                    title: title,
-                    cdnUrl: cdnUrl,
-                    ownerId: user ? user.uid : 'anonymous',
-                    createdAt: window.firebase.database.ServerValue.TIMESTAMP,
-                    views: 0
-                }).then(() => {
-                    document.getElementById(`queue-${title.replace(/\s+/g, '')}`).querySelector('.queue-status').innerText = "Completed & Published";
-                });
+    function escapeHTML(str) {
+        const div = document.createElement('div');
+        div.innerText = str == null ? '' : str;
+        return div.innerHTML;
+    }
+
+    /* ---------------- Connectivity ---------------- */
+    window.addEventListener('offline', () => {
+        Object.values(jobs).forEach(job => {
+            if (job.status === 'uploading' && job.controller) {
+                job.controller.pause();
+                job.status = 'paused';
             }
-        }
-    })();
+        });
+        renderQueue();
+        showToast('You\u2019re offline. Uploads paused.', 'error');
+    });
+
+    window.addEventListener('online', () => {
+        Object.values(jobs).forEach(job => {
+            if (job.status === 'paused' && job.controller) {
+                job.controller.resume();
+                job.status = 'uploading';
+            }
+        });
+        renderQueue();
+    });
+
+    renderQueue();
+})();
 </script>

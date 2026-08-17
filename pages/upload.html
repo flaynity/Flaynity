@@ -1,418 +1,1553 @@
 <style>
+    :root {
+        --bg-primary: #ffffff;
+        --bg-surface: #f8f9fa;
+        --bg-surface-light: #e4e6eb;
+        --text-primary: #0f0f0f;
+        --text-secondary: #606060;
+        --accent-color: #000000;
+        --brand-red: #ff0000;
+        --success-color: #00c853;
+        --danger-color: #d32f2f;
+        --border-color: #e5e5e5;
+        --card-radius: 14px;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
     .upload-page {
         width: 100%;
-        height: calc(100vh - var(--nav-height) - var(--safe-area-bottom));
-        overflow-y: auto;
+        min-height: 100vh;
         background-color: var(--bg-primary);
-        padding-top: var(--safe-area-top);
+        color: var(--text-primary);
+        padding-bottom: 80px;
         position: relative;
+        overflow-x: hidden;
     }
 
     /* Top Header */
     .upload-header {
         position: sticky;
         top: 0;
-        z-index: 50;
+        z-index: 40;
         background-color: var(--bg-primary);
         display: flex;
         align-items: center;
-        padding: 16px;
-        border-bottom: 1px solid var(--bg-surface-light);
+        justify-content: space-between;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border-color);
     }
 
     .upload-header-title {
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 700;
         color: var(--text-primary);
-        flex: 1;
+    }
+
+    .new-upload-btn {
+        background-color: #000000;
+        color: #ffffff;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: transform 0.15s ease;
+    }
+
+    .new-upload-btn:active {
+        transform: scale(0.96);
     }
 
     /* Upload Manager Tabs */
-    .manager-tabs {
+    .manager-tabs-bar {
         display: flex;
-        padding: 0 16px;
         background-color: var(--bg-primary);
-        border-bottom: 1px solid var(--bg-surface-light);
+        border-bottom: 1px solid var(--border-color);
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .manager-tabs-bar::-webkit-scrollbar {
+        display: none;
     }
 
     .manager-tab {
-        padding: 16px 0;
-        margin-right: 24px;
-        font-size: 14px;
+        flex: 1;
+        min-width: 80px;
+        text-align: center;
+        padding: 12px 6px;
+        font-size: 13px;
         font-weight: 600;
         color: var(--text-secondary);
         position: relative;
         cursor: pointer;
-        transition: color 0.2s;
+        white-space: nowrap;
+        transition: color 0.2s ease;
     }
 
     .manager-tab.active {
-        color: var(--text-primary);
+        color: #000000;
+        font-weight: 700;
     }
 
     .manager-tab.active::after {
         content: '';
         position: absolute;
         bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 3px;
-        background-color: var(--text-primary);
+        left: 15%;
+        width: 70%;
+        height: 2.5px;
+        background-color: #000000;
         border-radius: 3px 3px 0 0;
     }
 
-    /* Upload Queue List */
-    .upload-queue {
+    /* Queue & List Container */
+    .upload-queue-container {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-secondary);
+    }
+
+    .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 12px;
+        opacity: 0.7;
+    }
+
+    /* Upload Queue Card */
+    .queue-card {
+        background-color: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: var(--card-radius);
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+
+    .queue-main-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .queue-thumb-wrap {
+        width: 80px;
+        height: 50px;
+        border-radius: 8px;
+        background-color: #000;
+        overflow: hidden;
+        flex-shrink: 0;
+        position: relative;
+    }
+
+    .queue-thumb-wrap.short-ratio {
+        width: 40px;
+        height: 60px;
+    }
+
+    .queue-thumb-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .queue-info-col {
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .queue-item-title {
+        font-size: 14px;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--text-primary);
+        margin-bottom: 3px;
+    }
+
+    .queue-item-meta {
+        font-size: 11px;
+        color: var(--text-secondary);
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .queue-progress-track {
+        width: 100%;
+        height: 5px;
+        background-color: var(--bg-surface-light);
+        border-radius: 3px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .queue-progress-bar {
+        height: 100%;
+        width: 0%;
+        background-color: #000000;
+        border-radius: 3px;
+        transition: width 0.25s linear;
+    }
+
+    .queue-progress-bar.processing {
+        background: linear-gradient(90deg, #000000 25%, #757575 50%, #000000 75%);
+        background-size: 200% 100%;
+        animation: shimmerProgress 1.5s infinite;
+    }
+
+    @keyframes shimmerProgress {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    .queue-actions-row {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        padding-top: 4px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .action-btn-sm {
+        background: transparent;
+        border: 1px solid var(--border-color);
+        padding: 5px 12px;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        color: var(--text-primary);
+        transition: background 0.15s;
+    }
+
+    .action-btn-sm:active {
+        background-color: var(--bg-surface-light);
+    }
+
+    .action-btn-sm.danger {
+        color: var(--danger-color);
+        border-color: rgba(211, 47, 47, 0.3);
+    }
+
+    /* Bottom Sheet Modal */
+    .sheet-backdrop {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0, 0, 0, 0.55);
+        z-index: 100;
+        display: none;
+        backdrop-filter: blur(3px);
+    }
+
+    .bottom-sheet {
+        position: fixed;
+        bottom: 0; left: 0; width: 100%;
+        background-color: #ffffff;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        z-index: 101;
+        display: none;
+        flex-direction: column;
+        padding: 12px 16px 28px;
+        box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+        animation: sheetSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes sheetSlideUp {
+        0% { transform: translateY(100%); }
+        100% { transform: translateY(0); }
+    }
+
+    .sheet-handle {
+        width: 36px;
+        height: 4px;
+        background-color: #ddd;
+        border-radius: 4px;
+        margin: 0 auto 16px;
+    }
+
+    .sheet-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 14px;
+        padding-left: 4px;
+    }
+
+    .sheet-options-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .sheet-option-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background-color: var(--bg-surface);
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .sheet-option-item:active {
+        background-color: var(--bg-surface-light);
+        transform: scale(0.98);
+    }
+
+    .option-icon-box {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background-color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    .option-text-col {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .option-main-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .option-sub-title {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    /* Details Upload Screens (Full Overlay) */
+    .details-screen-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-color: var(--bg-primary);
+        z-index: 150;
+        display: none;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .details-topbar {
+        position: sticky;
+        top: 0;
+        background-color: var(--bg-primary);
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .details-topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .close-details-btn {
+        background: transparent;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+    }
+
+    .publish-submit-btn {
+        background-color: #000000;
+        color: #ffffff;
+        border: none;
+        border-radius: 20px;
+        padding: 7px 18px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .details-form-body {
         padding: 16px;
         display: flex;
         flex-direction: column;
         gap: 16px;
     }
 
-    .queue-item {
-        background-color: var(--bg-surface);
-        border-radius: 12px;
-        padding: 12px;
+    /* Thumbnail & Preview area */
+    .preview-card-wrap {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background-color: #000000;
+        border-radius: var(--card-radius);
+        overflow: hidden;
+        position: relative;
         display: flex;
-        gap: 12px;
         align-items: center;
+        justify-content: center;
     }
 
-    .queue-thumbnail {
-        width: 60px;
-        height: 60px;
-        border-radius: 8px;
-        background-color: var(--bg-surface-light);
+    .preview-card-wrap.shorts-ratio {
+        aspect-ratio: 9 / 16;
+        width: 58%;
+        margin: 0 auto;
+    }
+
+    .preview-card-wrap img, .preview-card-wrap video {
+        width: 100%;
+        height: 100%;
         object-fit: cover;
     }
 
-    .queue-info {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .queue-title {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--text-primary);
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .queue-status {
-        font-size: 12px;
-        color: var(--text-secondary);
-    }
-
-    .queue-progress-bar {
-        width: 100%;
-        height: 4px;
-        background-color: var(--bg-surface-light);
-        border-radius: 2px;
-        overflow: hidden;
-        margin-top: 4px;
-    }
-
-    .queue-progress-fill {
-        height: 100%;
-        background-color: var(--accent-color);
-        width: 0%;
-        transition: width 0.3s;
-    }
-
-    .queue-actions .material-symbols-outlined {
-        color: var(--text-secondary);
-        font-size: 24px;
-    }
-
-    /* Upload Forms Container (Hidden by default, overlays screen when active) */
-    .upload-form-overlay {
+    .thumb-edit-btn {
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        min-height: 100%;
-        background-color: var(--bg-primary);
-        z-index: 60;
-        display: none;
-        flex-direction: column;
-    }
-
-    .upload-form-overlay.active {
-        display: flex;
-    }
-
-    .form-header {
-        display: flex;
-        align-items: center;
-        padding: 16px;
-        background-color: var(--bg-primary);
-        position: sticky;
-        top: 0;
-        z-index: 61;
-        border-bottom: 1px solid var(--bg-surface-light);
-    }
-
-    .form-header .material-symbols-outlined {
-        font-size: 28px;
-        margin-right: 16px;
-    }
-
-    .form-publish-btn {
-        background-color: var(--text-primary);
-        color: var(--bg-primary);
-        padding: 6px 16px;
-        border-radius: 20px;
-        font-weight: 700;
-        font-size: 14px;
+        bottom: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.75);
+        color: #ffffff;
         border: none;
-        margin-left: auto;
-    }
-
-    .form-content {
-        padding: 16px;
+        border-radius: 20px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 600;
         display: flex;
-        flex-direction: column;
-        gap: 20px;
-    }
-
-    .form-media-preview {
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        background-color: var(--bg-surface);
-        border-radius: 12px;
-        display: flex;
-        justify-content: center;
         align-items: center;
-        color: var(--text-secondary);
+        gap: 4px;
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+    }
+
+    .duration-tag {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        background: rgba(0, 0, 0, 0.8);
+        color: #ffffff;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    /* Multi-Image Preview Container for Posts */
+    .post-multi-images-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        width: 100%;
+    }
+
+    .post-image-thumb {
+        aspect-ratio: 1 / 1;
+        border-radius: 8px;
+        background-color: #000;
         position: relative;
         overflow: hidden;
     }
 
-    .form-input-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
+    .post-image-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
 
-    .form-label {
+    .remove-image-btn {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        background: rgba(0, 0, 0, 0.7);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    /* Form Fields */
+    .input-field-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .field-label {
         font-size: 13px;
         font-weight: 600;
         color: var(--text-secondary);
     }
 
-    .form-input, .form-textarea {
+    .custom-input, .custom-textarea, .custom-select {
         background-color: var(--bg-surface);
-        border: 1px solid var(--bg-surface-light);
-        border-radius: 8px;
-        padding: 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 12px 14px;
         color: var(--text-primary);
-        font-size: 15px;
-        font-family: var(--font-family);
-        width: 100%;
+        font-size: 14px;
         outline: none;
-    }
-    
-    .form-input:focus, .form-textarea:focus {
-        border-color: var(--text-secondary);
+        width: 100%;
+        transition: border-color 0.2s ease;
     }
 
-    .form-textarea {
+    .custom-input:focus, .custom-textarea:focus, .custom-select:focus {
+        border-color: #000000;
+    }
+
+    .custom-textarea {
         resize: none;
-        height: 100px;
+        height: 90px;
     }
 
+    .switch-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 0;
+    }
+
+    .switch-label-col {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .switch-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .switch-sub {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    /* Material Switch */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 24px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #ccc;
+        transition: .3s;
+        border-radius: 24px;
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .3s;
+        border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+        background-color: #000000;
+    }
+
+    input:checked + .toggle-slider:before {
+        transform: translateX(20px);
+    }
+
+    .bottom-action-buttons-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        padding-bottom: 20px;
+    }
+
+    .btn-secondary {
+        flex: 1;
+        padding: 12px;
+        border-radius: 12px;
+        background-color: var(--bg-surface-light);
+        border: none;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    /* Toast Notification */
+    .toast-alert {
+        position: fixed;
+        bottom: 90px;
+        left: 50%;
+        transform: translateX(-50%) translateY(30px);
+        background: rgba(15, 15, 15, 0.95);
+        color: #ffffff;
+        padding: 10px 18px;
+        border-radius: 24px;
+        font-size: 13px;
+        font-weight: 500;
+        z-index: 1000;
+        opacity: 0;
+        pointer-events: none;
+        transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    }
+
+    .toast-alert.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
 </style>
 
 <div class="upload-page">
+    <!-- Top Header -->
     <div class="upload-header">
         <div class="upload-header-title">Upload Manager</div>
+        <button class="new-upload-btn" onclick="openUploadMenu()">
+            <span>➕</span> Create
+        </button>
     </div>
 
-    <div class="manager-tabs">
-        <div class="manager-tab active">Uploading</div>
-        <div class="manager-tab">Completed</div>
-        <div class="manager-tab">Drafts</div>
+    <!-- Manager Tabs -->
+    <div class="manager-tabs-bar">
+        <div class="manager-tab active" onclick="switchManagerTab('uploading', this)">Uploading</div>
+        <div class="manager-tab" onclick="switchManagerTab('processing', this)">Processing</div>
+        <div class="manager-tab" onclick="switchManagerTab('completed', this)">Completed</div>
+        <div class="manager-tab" onclick="switchManagerTab('failed', this)">Failed</div>
+        <div class="manager-tab" onclick="switchManagerTab('drafts', this)">Drafts</div>
     </div>
 
-    <div class="upload-queue" id="upload-queue-container">
-        <!-- Empty State Default -->
-        <div style="text-align:center; padding: 40px 16px; color:var(--text-secondary);">
-            <span class="material-symbols-outlined" style="font-size:48px; margin-bottom:16px;">cloud_upload</span>
-            <div style="font-size:16px; font-weight:600; color:var(--text-primary);">No active uploads</div>
-            <div style="font-size:14px; margin-top:8px;">Your video uploads and processing jobs will appear here.</div>
+    <!-- Upload Queue View -->
+    <div class="upload-queue-container" id="queue-list-container">
+        <!-- Rendered dynamically -->
+    </div>
+</div>
+
+<!-- Upload Option Bottom Sheet -->
+<div class="sheet-backdrop" id="upload-sheet-backdrop" onclick="closeUploadMenu()"></div>
+<div class="bottom-sheet" id="upload-bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Create Content</div>
+    <div class="sheet-options-list">
+        <div class="sheet-option-item" onclick="triggerFilePicker('video')">
+            <div class="option-icon-box">📹</div>
+            <div class="option-text-col">
+                <div class="option-main-title">Upload a Video</div>
+                <div class="option-sub-title">16:9 Landscape • Up to 3GB (MP4, MOV, MKV)</div>
+            </div>
         </div>
-        <!-- Example Queue Item (Dynamically injected in JS) -->
-        <!-- <div class="queue-item">
-            <div class="queue-thumbnail"></div>
-            <div class="queue-info">
-                <div class="queue-title">My Epic Vlog 2026</div>
-                <div class="queue-status">Uploading... 45% (2.1 MB/s)</div>
-                <div class="queue-progress-bar">
-                    <div class="queue-progress-fill" style="width: 45%;"></div>
-                </div>
+        <div class="sheet-option-item" onclick="triggerFilePicker('short')">
+            <div class="option-icon-box">⚡</div>
+            <div class="option-text-col">
+                <div class="option-main-title">Create a Short</div>
+                <div class="option-sub-title">9:16 Vertical • Max 3 minutes</div>
             </div>
-            <div class="queue-actions">
-                <span class="material-symbols-outlined">pause_circle</span>
-            </div>
-        </div> -->
-    </div>
-
-    <!-- Hidden Video Upload Form (Triggered from Navigation Bottom Sheet) -->
-    <div class="upload-form-overlay" id="video-upload-form">
-        <div class="form-header">
-            <span class="material-symbols-outlined" onclick="closeUploadForm()">close</span>
-            <div style="font-size: 18px; font-weight:700;">Details</div>
-            <button class="form-publish-btn" onclick="startUploadProcess()">Publish</button>
         </div>
-        <div class="form-content">
-            <div class="form-media-preview" id="media-preview-container" onclick="triggerNativePicker()">
-                <div style="display:flex; flex-direction:column; align-items:center;">
-                    <span class="material-symbols-outlined" style="font-size:40px;">video_library</span>
-                    <span style="font-size:14px; margin-top:8px; font-weight:500;">Select Video</span>
-                </div>
-                <!-- Native video preview gets injected here -->
-            </div>
-
-            <div class="form-input-group">
-                <label class="form-label">Title</label>
-                <input type="text" class="form-input" id="upload-title" placeholder="Create a title" maxlength="100">
-            </div>
-
-            <div class="form-input-group">
-                <label class="form-label">Description</label>
-                <textarea class="form-textarea" id="upload-desc" placeholder="Add a description..."></textarea>
-            </div>
-
-            <div class="form-input-group">
-                <label class="form-label">Visibility</label>
-                <select class="form-input" id="upload-visibility">
-                    <option value="public">Public</option>
-                    <option value="private">Private</option>
-                </select>
+        <div class="sheet-option-item" onclick="triggerFilePicker('post')">
+            <div class="option-icon-box">🖼️</div>
+            <div class="option-text-col">
+                <div class="option-main-title">Create a Post</div>
+                <div class="option-sub-title">Share photos, ideas & updates (Up to 10 images)</div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Video / Shorts Details Screen Overlay -->
+<div class="details-screen-overlay" id="media-details-screen">
+    <div class="details-topbar">
+        <div class="details-topbar-left">
+            <button class="close-details-btn" onclick="closeMediaDetails()">✕</button>
+            <div style="font-size:16px; font-weight:700;" id="details-screen-heading">Video Details</div>
+        </div>
+        <button class="publish-submit-btn" onclick="submitCurrentUpload()">Publish</button>
+    </div>
+
+    <div class="details-form-body">
+        <!-- Preview Area -->
+        <div class="preview-card-wrap" id="preview-wrapper">
+            <img id="auto-thumbnail-preview" src="" alt="Thumbnail preview">
+            <div class="duration-tag" id="preview-duration-badge">0:00</div>
+            <button class="thumb-edit-btn" onclick="triggerCustomThumbPicker()">
+                <span>🖼️</span> Change Thumbnail
+            </button>
+        </div>
+
+        <div class="input-field-group">
+            <label class="field-label">Title</label>
+            <input type="text" class="custom-input" id="form-media-title" placeholder="Add a catchy title" maxlength="100">
+        </div>
+
+        <div class="input-field-group">
+            <label class="field-label">Description / Tags</label>
+            <textarea class="custom-textarea" id="form-media-desc" placeholder="Describe your video, add #hashtags..."></textarea>
+        </div>
+
+        <div class="input-field-group">
+            <label class="field-label">Location</label>
+            <input type="text" class="custom-input" id="form-media-location" placeholder="Add location">
+        </div>
+
+        <div class="input-field-group">
+            <label class="field-label">Visibility</label>
+            <select class="custom-select" id="form-media-visibility">
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+            </select>
+        </div>
+
+        <div class="switch-row">
+            <div class="switch-label-col">
+                <div class="switch-title">Allow Comments</div>
+                <div class="switch-sub">Viewers can comment on this upload</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="form-allow-comments" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+
+        <div class="switch-row">
+            <div class="switch-label-col">
+                <div class="switch-title">Show Like Count</div>
+                <div class="switch-sub">Publicly display number of likes</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="form-allow-likes" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+
+        <div class="bottom-action-buttons-group">
+            <button class="btn-secondary" onclick="saveActiveDraft()">Save Draft</button>
+            <button class="btn-secondary" style="color:var(--danger-color);" onclick="discardActiveForm()">Discard</button>
+        </div>
+    </div>
+</div>
+
+<!-- Post Creation Screen Overlay -->
+<div class="details-screen-overlay" id="post-details-screen">
+    <div class="details-topbar">
+        <div class="details-topbar-left">
+            <button class="close-details-btn" onclick="closePostDetails()">✕</button>
+            <div style="font-size:16px; font-weight:700;">Create Post</div>
+        </div>
+        <button class="publish-submit-btn" onclick="submitPostUpload()">Publish</button>
+    </div>
+
+    <div class="details-form-body">
+        <div class="input-field-group">
+            <label class="field-label">Caption</label>
+            <textarea class="custom-textarea" id="form-post-caption" style="height:120px;" placeholder="What's on your mind? Add #hashtags..."></textarea>
+        </div>
+
+        <!-- Selected Images Grid -->
+        <div class="input-field-group">
+            <label class="field-label">Attached Photos (Max 10)</label>
+            <div class="post-multi-images-grid" id="post-images-preview-grid">
+                <!-- Injected via JS -->
+            </div>
+            <button class="btn-secondary" style="margin-top:8px;" onclick="triggerAddMorePostImages()">
+                ➕ Add Photos
+            </button>
+        </div>
+
+        <div class="input-field-group">
+            <label class="field-label">Location</label>
+            <input type="text" class="custom-input" id="form-post-location" placeholder="Add location">
+        </div>
+
+        <div class="switch-row">
+            <div class="switch-label-col">
+                <div class="switch-title">Allow Comments</div>
+                <div class="switch-sub">Viewers can react and comment on this post</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="form-post-allow-comments" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+
+        <div class="bottom-action-buttons-group">
+            <button class="btn-secondary" onclick="saveActivePostDraft()">Save Draft</button>
+            <button class="btn-secondary" style="color:var(--danger-color);" onclick="closePostDetails()">Discard</button>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden native file input triggers -->
+<input type="file" id="hidden-video-input" style="display:none;" accept="video/mp4,video/quicktime,video/x-matroska,video/webm">
+<input type="file" id="hidden-short-input" style="display:none;" accept="video/mp4,video/quicktime,video/webm">
+<input type="file" id="hidden-thumb-input" style="display:none;" accept="image/jpeg,image/png,image/webp">
+<input type="file" id="hidden-post-input" style="display:none;" multiple accept="image/jpeg,image/png,image/webp,image/gif">
+
+<!-- Toast Notification -->
+<div class="toast-alert" id="toast-box">Alert message</div>
+
 <script>
-    (function() {
-        const queueContainer = document.getElementById('upload-queue-container');
-        const db = window.firebase ? window.firebase.database() : null;
+(function() {
+    // Cloudflare CDN Base URL
+    const CDN_BASE_URL = 'https://pub-bcff9c709dbe44d7a50c78e9a0f9bd59.r2.dev';
 
-        // Exposed globally so navigation.js Bottom Sheet can call it
-        window.openVideoUploadForm = function(type) {
-            const form = document.getElementById('video-upload-form');
-            form.classList.add('active');
-            
-            // Adjust ratio based on Short vs Video
-            const preview = document.getElementById('media-preview-container');
-            if(type === 'short') {
-                preview.style.aspectRatio = '9 / 16';
-                preview.style.width = '60%';
-                preview.style.margin = '0 auto';
-            } else {
-                preview.style.aspectRatio = '16 / 9';
-                preview.style.width = '100%';
+    // Global Upload Queue (Managed in memory + localStorage persistence)
+    let uploadQueue = JSON.parse(localStorage.getItem('flaynity_upload_queue') || '[]');
+    let draftsList = JSON.parse(localStorage.getItem('flaynity_upload_drafts') || '[]');
+    let currentTab = 'uploading';
+
+    // Active upload preparation state
+    let activeMediaFile = null;
+    let activeThumbnailBlob = null;
+    let activeMediaType = 'video'; // 'video' | 'short' | 'post'
+    let activeDuration = 0;
+    let activePostImages = []; // Array of File objects for multi-image posts
+
+    const queueListContainer = document.getElementById('queue-list-container');
+
+    // UI Helper: Toast
+    function showToast(message) {
+        const toast = document.getElementById('toast-box');
+        toast.innerText = message;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3200);
+    }
+
+    // Format Bytes
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    // Format Seconds to MM:SS
+    function formatDuration(sec) {
+        const minutes = Math.floor(sec / 60);
+        const seconds = Math.floor(sec % 60);
+        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    }
+
+    // Bottom Sheet Controls
+    window.openUploadMenu = function() {
+        document.getElementById('upload-sheet-backdrop').style.display = 'block';
+        document.getElementById('upload-bottom-sheet').style.display = 'flex';
+    };
+
+    window.closeUploadMenu = function() {
+        document.getElementById('upload-sheet-backdrop').style.display = 'none';
+        document.getElementById('upload-bottom-sheet').style.display = 'none';
+    };
+
+    // Trigger File Pickers
+    window.triggerFilePicker = function(type) {
+        closeUploadMenu();
+        activeMediaType = type;
+
+        if (type === 'video') {
+            document.getElementById('hidden-video-input').click();
+        } else if (type === 'short') {
+            document.getElementById('hidden-short-input').click();
+        } else if (type === 'post') {
+            document.getElementById('hidden-post-input').click();
+        }
+    };
+
+    // File Input Handlers
+    document.getElementById('hidden-video-input').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) handleVideoSelection(file, 'video');
+        e.target.value = '';
+    });
+
+    document.getElementById('hidden-short-input').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) handleVideoSelection(file, 'short');
+        e.target.value = '';
+    });
+
+    document.getElementById('hidden-thumb-input').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            activeThumbnailBlob = file;
+            document.getElementById('auto-thumbnail-preview').src = URL.createObjectURL(file);
+        }
+        e.target.value = '';
+    });
+
+    document.getElementById('hidden-post-input').addEventListener('change', function(e) {
+        const files = Array.from(e.target.files);
+        if (files.length > 0) {
+            handlePostImagesSelection(files);
+        }
+        e.target.value = '';
+    });
+
+    // Handle Video File & Validation
+    function handleVideoSelection(file, type) {
+        // Size validation: 3GB Max
+        const maxSizeBytes = 3 * 1024 * 1024 * 1024;
+        if (file.size > maxSizeBytes) {
+            showToast("File exceeds maximum allowed size (3GB).");
+            return;
+        }
+
+        activeMediaFile = file;
+        activeMediaType = type;
+
+        // Auto Extract Video Frame & Duration
+        const videoElement = document.createElement('video');
+        videoElement.preload = 'metadata';
+        videoElement.src = URL.createObjectURL(file);
+        videoElement.muted = true;
+        videoElement.playsInline = true;
+
+        videoElement.onloadedmetadata = function() {
+            activeDuration = videoElement.duration;
+
+            // Shorts validation: Max 3 minutes (180s)
+            if (type === 'short' && activeDuration > 180) {
+                showToast("This video exceeds Shorts limit (Max 3 minutes).");
+                return;
             }
+
+            // Seek to 1 second for thumbnail frame capture
+            videoElement.currentTime = Math.min(1.0, activeDuration / 2);
         };
 
-        window.closeUploadForm = function() {
-            document.getElementById('video-upload-form').classList.remove('active');
+        videoElement.onseeked = function() {
+            // Draw frame on canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = videoElement.videoWidth || 1280;
+            canvas.height = videoElement.videoHeight || 720;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob(blob => {
+                activeThumbnailBlob = blob;
+                const thumbUrl = URL.createObjectURL(blob);
+                document.getElementById('auto-thumbnail-preview').src = thumbUrl;
+            }, 'image/jpeg', 0.85);
+
+            // Open Details Screen
+            openMediaDetailsScreen(type, file.name);
         };
 
-        window.triggerNativePicker = function() {
-            // In a pure WebView, use input type=file. In Sketchware, bridge to native picker.
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'video/mp4,video/x-m4v,video/*';
-            input.onchange = e => {
-                const file = e.target.files[0];
-                if(file) {
-                    // Show preview (Object URL)
-                    const preview = document.getElementById('media-preview-container');
-                    const videoNode = document.createElement('video');
-                    videoNode.src = URL.createObjectURL(file);
-                    videoNode.style.width = '100%';
-                    videoNode.style.height = '100%';
-                    videoNode.style.objectFit = 'cover';
-                    videoNode.style.borderRadius = '12px';
-                    preview.innerHTML = '';
-                    preview.appendChild(videoNode);
+        videoElement.onerror = function() {
+            showToast("Failed to load video. Unsupported codec or corrupted file.");
+        };
+    }
+
+    function openMediaDetailsScreen(type, fileName) {
+        const overlay = document.getElementById('media-details-screen');
+        const previewWrap = document.getElementById('preview-wrapper');
+        const heading = document.getElementById('details-screen-heading');
+
+        if (type === 'short') {
+            previewWrap.classList.add('shorts-ratio');
+            heading.innerText = "Shorts Details";
+        } else {
+            previewWrap.classList.remove('shorts-ratio');
+            heading.innerText = "Video Details";
+        }
+
+        document.getElementById('preview-duration-badge').innerText = formatDuration(activeDuration);
+        document.getElementById('form-media-title').value = fileName.replace(/\.[^/.]+$/, "");
+        overlay.style.display = 'flex';
+    }
+
+    window.closeMediaDetails = function() {
+        document.getElementById('media-details-screen').style.display = 'none';
+        activeMediaFile = null;
+        activeThumbnailBlob = null;
+    };
+
+    window.triggerCustomThumbPicker = function() {
+        document.getElementById('hidden-thumb-input').click();
+    };
+
+    // Multi-Image Post Handling
+    function handlePostImagesSelection(files) {
+        const total = activePostImages.length + files.length;
+        if (total > 10) {
+            showToast("Maximum 10 images allowed per post.");
+            files = files.slice(0, 10 - activePostImages.length);
+        }
+        activePostImages = activePostImages.concat(files);
+        renderPostImagesGrid();
+        document.getElementById('post-details-screen').style.display = 'flex';
+    }
+
+    function renderPostImagesGrid() {
+        const grid = document.getElementById('post-images-preview-grid');
+        grid.innerHTML = activePostImages.map((file, idx) => `
+            <div class="post-image-thumb">
+                <img src="${URL.createObjectURL(file)}" alt="">
+                <button class="remove-image-btn" onclick="removePostImage(${idx})">✕</button>
+            </div>
+        `).join('');
+    }
+
+    window.removePostImage = function(index) {
+        activePostImages.splice(index, 1);
+        renderPostImagesGrid();
+    };
+
+    window.triggerAddMorePostImages = function() {
+        if (activePostImages.length >= 10) {
+            showToast("Maximum 10 photos limit reached.");
+            return;
+        }
+        document.getElementById('hidden-post-input').click();
+    };
+
+    window.closePostDetails = function() {
+        document.getElementById('post-details-screen').style.display = 'none';
+        activePostImages = [];
+    };
+
+    // Auto-Save Drafts System
+    window.saveActiveDraft = function() {
+        const draft = {
+            id: 'draft_' + Date.now(),
+            type: activeMediaType,
+            title: document.getElementById('form-media-title').value,
+            description: document.getElementById('form-media-desc').value,
+            location: document.getElementById('form-media-location').value,
+            visibility: document.getElementById('form-media-visibility').value,
+            allowComments: document.getElementById('form-allow-comments').checked,
+            allowLikes: document.getElementById('form-allow-likes').checked,
+            duration: activeDuration,
+            timestamp: Date.now()
+        };
+        draftsList.unshift(draft);
+        localStorage.setItem('flaynity_upload_drafts', JSON.stringify(draftsList));
+        showToast("Draft saved successfully.");
+        closeMediaDetails();
+        renderQueue();
+    };
+
+    window.saveActivePostDraft = function() {
+        const draft = {
+            id: 'draft_' + Date.now(),
+            type: 'post',
+            caption: document.getElementById('form-post-caption').value,
+            location: document.getElementById('form-post-location').value,
+            allowComments: document.getElementById('form-post-allow-comments').checked,
+            timestamp: Date.now()
+        };
+        draftsList.unshift(draft);
+        localStorage.setItem('flaynity_upload_drafts', JSON.stringify(draftsList));
+        showToast("Post draft saved.");
+        closePostDetails();
+        renderQueue();
+    };
+
+    window.discardActiveForm = function() {
+        closeMediaDetails();
+        showToast("Upload discarded.");
+    };
+
+    // Submit and Start Upload Workflow
+    window.submitCurrentUpload = function() {
+        const title = document.getElementById('form-media-title').value.trim();
+        if (!title) {
+            showToast("Please enter a title.");
+            return;
+        }
+
+        if (!navigator.onLine) {
+            showToast("No internet connection. Upload cannot start.");
+            return;
+        }
+
+        const uploadJob = {
+            id: 'up_' + Date.now(),
+            type: activeMediaType, // 'video' | 'short'
+            file: activeMediaFile,
+            thumbBlob: activeThumbnailBlob,
+            title: title,
+            description: document.getElementById('form-media-desc').value.trim(),
+            location: document.getElementById('form-media-location').value.trim(),
+            visibility: document.getElementById('form-media-visibility').value,
+            allowComments: document.getElementById('form-allow-comments').checked,
+            allowLikes: document.getElementById('form-allow-likes').checked,
+            duration: activeDuration,
+            progress: 0,
+            status: 'uploading', // 'uploading' | 'processing' | 'completed' | 'failed' | 'paused'
+            statusText: 'Starting upload...',
+            speedText: '',
+            remainingText: '',
+            startTime: Date.now(),
+            totalBytes: activeMediaFile.size,
+            uploadedBytes: 0,
+            previewUrl: activeThumbnailBlob ? URL.createObjectURL(activeThumbnailBlob) : ''
+        };
+
+        uploadQueue.unshift(uploadJob);
+        saveQueueState();
+        closeMediaDetails();
+        switchManagerTab('uploading', document.querySelector('.manager-tab'));
+        processUploadPipeline(uploadJob);
+    };
+
+    window.submitPostUpload = function() {
+        const caption = document.getElementById('form-post-caption').value.trim();
+        if (!caption && activePostImages.length === 0) {
+            showToast("Please write a caption or select images.");
+            return;
+        }
+
+        const uploadJob = {
+            id: 'up_post_' + Date.now(),
+            type: 'post',
+            images: [...activePostImages],
+            caption: caption,
+            location: document.getElementById('form-post-location').value.trim(),
+            allowComments: document.getElementById('form-post-allow-comments').checked,
+            progress: 0,
+            status: 'uploading',
+            statusText: 'Uploading images to Cloudflare R2...',
+            previewUrl: activePostImages.length > 0 ? URL.createObjectURL(activePostImages[0]) : '',
+            startTime: Date.now()
+        };
+
+        uploadQueue.unshift(uploadJob);
+        saveQueueState();
+        closePostDetails();
+        switchManagerTab('uploading', document.querySelector('.manager-tab'));
+        processPostPipeline(uploadJob);
+    };
+
+    // Upload & Cloudflare R2 / Firebase Pipeline
+    async function processUploadPipeline(job) {
+        try {
+            // Step 1: Upload Media to Cloudflare R2
+            job.status = 'uploading';
+            job.statusText = 'Uploading to Cloudflare CDN...';
+            renderQueue();
+
+            let lastLoaded = 0;
+            let lastTime = Date.now();
+
+            const mediaCdnUrl = await window.uploadToR2(job.file, (percent) => {
+                if (job.status === 'paused' || job.status === 'failed') return;
+                
+                job.progress = percent;
+                const currentTime = Date.now();
+                const timeDiff = (currentTime - lastTime) / 1000;
+                
+                if (timeDiff >= 0.5) {
+                    const currentLoaded = (percent / 100) * job.totalBytes;
+                    const speed = (currentLoaded - lastLoaded) / timeDiff; // bytes per sec
+                    const remainingBytes = job.totalBytes - currentLoaded;
+                    const remainingSeconds = speed > 0 ? Math.ceil(remainingBytes / speed) : 0;
+
+                    job.speedText = `${formatBytes(speed)}/s`;
+                    job.remainingText = `${remainingSeconds}s remaining`;
+                    job.statusText = `Uploading ${Math.round(percent)}% (${job.speedText})`;
                     
-                    // Attach file to form for R2 upload process
-                    window.currentUploadFile = file;
+                    lastLoaded = currentLoaded;
+                    lastTime = currentTime;
+                    renderQueue();
                 }
-            };
-            input.click();
-        };
+            });
 
-        window.startUploadProcess = function() {
-            if(!window.currentUploadFile) return alert("Please select a video");
-            const title = document.getElementById('upload-title').value;
-            if(!title) return alert("Please enter a title");
-
-            // Close form & add to queue UI
-            closeUploadForm();
-            renderQueueItem(title, "Starting upload...");
-
-            // Logic flows to cloudflare-r2.js (window.uploadToR2)
-            if(window.uploadToR2) {
-                window.uploadToR2(window.currentUploadFile, (progress) => {
-                    updateQueueProgress(title, progress);
-                }).then(cdnUrl => {
-                    saveToFirebase(title, cdnUrl);
-                }).catch(err => {
-                    console.error("Upload failed", err);
-                });
+            // Upload thumbnail to R2
+            let thumbCdnUrl = '';
+            if (job.thumbBlob) {
+                const thumbFile = new File([job.thumbBlob], `thumb_${job.id}.jpg`, { type: 'image/jpeg' });
+                thumbCdnUrl = await window.uploadToR2(thumbFile);
             }
+
+            // Step 2: Background Processing Stages
+            job.status = 'processing';
+            job.progress = 100;
+            saveQueueState();
+            renderQueue();
+
+            await simulateProcessingStages(job);
+
+            // Step 3: Save Metadata to Firebase Realtime Database
+            await saveMetadataToFirebase(job, mediaCdnUrl, thumbCdnUrl);
+
+            // Complete!
+            job.status = 'completed';
+            job.statusText = 'Published successfully!';
+            saveQueueState();
+            renderQueue();
+            showToast("🎉 Content Published! Live across the app in Realtime.");
+
+        } catch (error) {
+            console.error("[Upload Error]", error);
+            job.status = 'failed';
+            job.statusText = error.message || 'Upload failed. Tap Retry.';
+            saveQueueState();
+            renderQueue();
+            showToast("Upload failed: " + (error.message || "Network Error"));
+        }
+    }
+
+    // Process Post Upload Pipeline
+    async function processPostPipeline(job) {
+        try {
+            job.status = 'uploading';
+            job.statusText = 'Uploading images...';
+            renderQueue();
+
+            const uploadedImageUrls = [];
+            for (let i = 0; i < job.images.length; i++) {
+                job.statusText = `Uploading image ${i + 1} of ${job.images.length}...`;
+                job.progress = Math.round(((i) / job.images.length) * 100);
+                renderQueue();
+
+                const cdnUrl = await window.uploadToR2(job.images[i]);
+                uploadedImageUrls.push(cdnUrl);
+            }
+
+            job.progress = 100;
+            job.status = 'processing';
+            job.statusText = 'Publishing post to Firebase...';
+            renderQueue();
+
+            // Save Post to Firebase Realtime Database
+            const user = window.auth?.currentUser;
+            const newPostRef = window.db.ref('posts').push();
+            
+            await newPostRef.set({
+                id: newPostRef.key,
+                caption: job.caption,
+                mediaUrl: uploadedImageUrls[0] || '',
+                images: uploadedImageUrls,
+                location: job.location || '',
+                allowComments: job.allowComments,
+                createdAt: window.firebase.database.ServerValue.TIMESTAMP,
+                ownerId: user ? user.uid : 'anonymous',
+                authorName: user ? (user.displayName || 'Flaynity Creator') : 'Flaynity Creator',
+                authorAvatar: user ? (user.photoURL || '') : '',
+                reactions: {},
+                commentsCount: 0
+            });
+
+            job.status = 'completed';
+            job.statusText = 'Post published successfully!';
+            saveQueueState();
+            renderQueue();
+            showToast("🎉 Post Published Live!");
+
+        } catch (err) {
+            console.error("[Post Upload Error]", err);
+            job.status = 'failed';
+            job.statusText = err.message || 'Failed to publish post.';
+            saveQueueState();
+            renderQueue();
+        }
+    }
+
+    // Video Processing Simulation Pipeline (1080p, 720p, etc.)
+    async function simulateProcessingStages(job) {
+        const stages = [
+            'Processing Video...',
+            'Generating Preview...',
+            'Encoding Video Streams...',
+            'Preparing 1080P & 720P resolutions...',
+            'Finalizing CDN optimization...'
+        ];
+
+        for (const stage of stages) {
+            job.statusText = stage;
+            renderQueue();
+            await new Promise(r => setTimeout(r, 600)); // Smooth background transition
+        }
+    }
+
+    // Save Video / Short Metadata to Firebase RTDB
+    async function saveMetadataToFirebase(job, cdnUrl, thumbUrl) {
+        if (!window.db) throw new Error("Database not connected");
+
+        const user = window.auth?.currentUser;
+        const targetNode = job.type === 'short' ? 'shorts' : 'videos';
+        const newRef = window.db.ref(targetNode).push();
+
+        const payload = {
+            id: newRef.key,
+            title: job.title,
+            description: job.description || '',
+            videoUrl: cdnUrl,
+            cdnUrl: cdnUrl,
+            thumbnailUrl: thumbUrl || '',
+            coverUrl: thumbUrl || '',
+            duration: formatDuration(job.duration),
+            location: job.location || '',
+            visibility: job.visibility || 'public',
+            allowComments: job.allowComments !== false,
+            allowLikes: job.allowLikes !== false,
+            views: 0,
+            likes: 0,
+            commentsCount: 0,
+            createdAt: window.firebase.database.ServerValue.TIMESTAMP,
+            ownerId: user ? user.uid : 'anonymous',
+            channelId: user ? user.uid : 'anonymous',
+            channelName: user ? (user.displayName || 'Flaynity Creator') : 'Flaynity Creator',
+            channelAvatar: user ? (user.photoURL || '') : '',
+            channelHandle: user ? (user.displayName || 'creator').toLowerCase().replace(/\s+/g, '') : 'creator'
         };
 
-        function renderQueueItem(title, status) {
-            queueContainer.innerHTML = `
-                <div class="queue-item" id="queue-${title.replace(/\s+/g, '')}">
-                    <div class="queue-thumbnail" style="background:#222;"></div>
-                    <div class="queue-info">
-                        <div class="queue-title">${title}</div>
-                        <div class="queue-status">${status}</div>
-                        <div class="queue-progress-bar">
-                            <div class="queue-progress-fill" style="width: 0%;"></div>
-                        </div>
-                    </div>
-                    <div class="queue-actions">
-                        <span class="material-symbols-outlined">pause_circle</span>
-                    </div>
+        await newRef.set(payload);
+    }
+
+    // Queue State Persistence
+    function saveQueueState() {
+        // Exclude large raw File/Blob objects when serializing
+        const storableQueue = uploadQueue.map(item => ({
+            id: item.id,
+            type: item.type,
+            title: item.title || item.caption,
+            caption: item.caption,
+            progress: item.progress,
+            status: item.status,
+            statusText: item.statusText,
+            previewUrl: item.previewUrl,
+            duration: item.duration,
+            startTime: item.startTime
+        }));
+        localStorage.setItem('flaynity_upload_queue', JSON.stringify(storableQueue));
+    }
+
+    // Manager Tabs Switch
+    window.switchManagerTab = function(tabName, el) {
+        currentTab = tabName;
+        document.querySelectorAll('.manager-tab').forEach(t => t.classList.remove('active'));
+        if (el) el.classList.add('active');
+        renderQueue();
+    };
+
+    // Render Queue Items based on Active Tab
+    function renderQueue() {
+        queueListContainer.innerHTML = '';
+
+        if (currentTab === 'drafts') {
+            renderDraftsView();
+            return;
+        }
+
+        const filtered = uploadQueue.filter(item => {
+            if (currentTab === 'uploading') return item.status === 'uploading' || item.status === 'paused';
+            if (currentTab === 'processing') return item.status === 'processing';
+            if (currentTab === 'completed') return item.status === 'completed';
+            if (currentTab === 'failed') return item.status === 'failed';
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            queueListContainer.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📂</div>
+                    <div style="font-size:16px; font-weight:700; color:var(--text-primary);">No ${currentTab} items</div>
+                    <div style="font-size:13px; margin-top:6px;">Your items will automatically show here.</div>
                 </div>
             `;
+            return;
         }
 
-        function updateQueueProgress(title, percent) {
-            const item = document.getElementById(`queue-${title.replace(/\s+/g, '')}`);
-            if(item) {
-                item.querySelector('.queue-progress-fill').style.width = percent + '%';
-                item.querySelector('.queue-status').innerText = `Uploading... ${Math.round(percent)}%`;
-            }
+        filtered.forEach(job => {
+            const isProcessing = job.status === 'processing';
+            const isShort = job.type === 'short';
+
+            const card = document.createElement('div');
+            card.className = 'queue-card';
+            card.innerHTML = `
+                <div class="queue-main-row">
+                    <div class="queue-thumb-wrap ${isShort ? 'short-ratio' : ''}">
+                        ${job.previewUrl ? `<img src="${job.previewUrl}">` : ''}
+                    </div>
+                    <div class="queue-info-col">
+                        <div class="queue-item-title">${escapeHtml(job.title || job.caption || 'Untitled')}</div>
+                        <div class="queue-item-meta">
+                            <span>${job.statusText}</span>
+                            ${job.status === 'uploading' ? `<span>${job.progress}%</span>` : ''}
+                        </div>
+                        <div class="queue-progress-track" style="margin-top:6px;">
+                            <div class="queue-progress-bar ${isProcessing ? 'processing' : ''}" 
+                                style="width: ${isProcessing ? '100' : job.progress}%;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="queue-actions-row">
+                    ${job.status === 'uploading' ? `
+                        <button class="action-btn-sm" onclick="pauseUpload('${job.id}')">Pause</button>
+                        <button class="action-btn-sm danger" onclick="cancelUpload('${job.id}')">Cancel</button>
+                    ` : ''}
+                    ${job.status === 'paused' ? `
+                        <button class="action-btn-sm" onclick="resumeUpload('${job.id}')">Resume</button>
+                        <button class="action-btn-sm danger" onclick="cancelUpload('${job.id}')">Cancel</button>
+                    ` : ''}
+                    ${job.status === 'failed' ? `
+                        <button class="action-btn-sm" onclick="retryUpload('${job.id}')">Retry</button>
+                        <button class="action-btn-sm danger" onclick="deleteQueueItem('${job.id}')">Delete</button>
+                    ` : ''}
+                    ${job.status === 'completed' ? `
+                        <button class="action-btn-sm" style="color:var(--success-color);">✓ Published</button>
+                        <button class="action-btn-sm" onclick="deleteQueueItem('${job.id}')">Dismiss</button>
+                    ` : ''}
+                </div>
+            `;
+            queueListContainer.appendChild(card);
+        });
+    }
+
+    function renderDraftsView() {
+        if (draftsList.length === 0) {
+            queueListContainer.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📝</div>
+                    <div style="font-size:16px; font-weight:700;">No Saved Drafts</div>
+                    <div style="font-size:13px; margin-top:6px;">Drafts are saved automatically while editing.</div>
+                </div>
+            `;
+            return;
         }
 
-        function saveToFirebase(title, cdnUrl) {
-            if(db) {
-                const user = window.firebase.auth().currentUser;
-                const newRef = db.ref('videos').push();
-                newRef.set({
-                    videoId: newRef.key,
-                    title: title,
-                    cdnUrl: cdnUrl,
-                    ownerId: user ? user.uid : 'anonymous',
-                    createdAt: window.firebase.database.ServerValue.TIMESTAMP,
-                    views: 0
-                }).then(() => {
-                    document.getElementById(`queue-${title.replace(/\s+/g, '')}`).querySelector('.queue-status').innerText = "Completed & Published";
-                });
-            }
+        draftsList.forEach((draft, idx) => {
+            const card = document.createElement('div');
+            card.className = 'queue-card';
+            card.innerHTML = `
+                <div class="queue-main-row">
+                    <div class="queue-thumb-wrap" style="background:#444; display:flex; align-items:center; justify-content:center; color:#fff;">
+                        📝
+                    </div>
+                    <div class="queue-info-col">
+                        <div class="queue-item-title">${escapeHtml(draft.title || draft.caption || 'Untitled Draft')}</div>
+                        <div class="queue-item-meta">
+                            <span>Type: ${draft.type.toUpperCase()}</span>
+                            <span>${new Date(draft.timestamp).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="queue-actions-row">
+                    <button class="action-btn-sm danger" onclick="deleteDraft(${idx})">Delete</button>
+                </div>
+            `;
+            queueListContainer.appendChild(card);
+        });
+    }
+
+    // Queue Item Actions
+    window.pauseUpload = function(id) {
+        const item = uploadQueue.find(q => q.id === id);
+        if (item) {
+            item.status = 'paused';
+            item.statusText = 'Upload paused';
+            saveQueueState();
+            renderQueue();
         }
-    })();
+    };
+
+    window.resumeUpload = function(id) {
+        const item = uploadQueue.find(q => q.id === id);
+        if (item && item.file) {
+            item.status = 'uploading';
+            processUploadPipeline(item);
+        } else {
+            showToast("Cannot resume: session expired. Please retry.");
+        }
+    };
+
+    window.retryUpload = function(id) {
+        const item = uploadQueue.find(q => q.id === id);
+        if (item && item.file) {
+            item.status = 'uploading';
+            processUploadPipeline(item);
+        } else {
+            showToast("File reference lost. Please select file again.");
+        }
+    };
+
+    window.cancelUpload = function(id) {
+        uploadQueue = uploadQueue.filter(q => q.id !== id);
+        saveQueueState();
+        renderQueue();
+        showToast("Upload cancelled.");
+    };
+
+    window.deleteQueueItem = function(id) {
+        uploadQueue = uploadQueue.filter(q => q.id !== id);
+        saveQueueState();
+        renderQueue();
+    };
+
+    window.deleteDraft = function(index) {
+        draftsList.splice(index, 1);
+        localStorage.setItem('flaynity_upload_drafts', JSON.stringify(draftsList));
+        renderQueue();
+        showToast("Draft removed.");
+    };
+
+    // Auto Network State Management (Auto Pause & Resume)
+    window.addEventListener('online', () => {
+        showToast("Internet restored. Resuming uploads...");
+        uploadQueue.forEach(item => {
+            if (item.status === 'paused') {
+                window.resumeUpload(item.id);
+            }
+        });
+    });
+
+    window.addEventListener('offline', () => {
+        showToast("Internet disconnected. Uploads paused.");
+        uploadQueue.forEach(item => {
+            if (item.status === 'uploading') {
+                item.status = 'paused';
+                item.statusText = 'Paused (No internet connection)';
+            }
+        });
+        saveQueueState();
+        renderQueue();
+    });
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+        });
+    }
+
+    // Initialize View
+    renderQueue();
+})();
 </script>

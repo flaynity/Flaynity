@@ -1,150 +1,231 @@
-// ==========================================
-// SPA NAVIGATION & APP INITIALIZATION ENGINE
-// ==========================================
+/**
+ * Flaynity - Centralized Navigation & SPA Router
+ * Manages Bottom Navigation, Page Routing, Back History, and the Upload Bottom Sheet.
+ */
 
-const pagesToLoad = ['home', 'shorts', 'upload', 'discover', 'you'];
-const rootContainer = document.getElementById('flaynity-root');
+(function() {
+    // 1. Build the App Shell Layout inside #root
+    const root = document.getElementById('root');
+    root.innerHTML = `
+        <div id="page-container" style="width: 100%; height: 100%; position: relative;"></div>
+        
+        <!-- Upload Bottom Sheet (Hidden by default) -->
+        <div id="upload-bottom-sheet" class="bottom-sheet">
+            <div class="sheet-overlay" onclick="closeUploadSheet()"></div>
+            <div class="sheet-content">
+                <div class="sheet-drag-handle"></div>
+                <h3 class="sheet-title">Create</h3>
+                <div class="sheet-options">
+                    <div class="sheet-option" onclick="triggerUpload('video')">
+                        <div class="option-icon-bg"><span class="material-symbols-outlined">upload</span></div>
+                        <span class="option-text">Upload a Video</span>
+                    </div>
+                    <div class="sheet-option" onclick="triggerUpload('short')">
+                        <div class="option-icon-bg"><span class="material-symbols-outlined">bolt</span></div>
+                        <span class="option-text">Create a Short</span>
+                    </div>
+                    <div class="sheet-option" onclick="triggerUpload('post')">
+                        <div class="option-icon-bg"><span class="material-symbols-outlined">edit_square</span></div>
+                        <span class="option-text">Create a Post</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-// Bottom Navigation HTML Template
-const bottomNavHTML = `
-<style>
-    #bottom-navigation {
-        position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: #ffffff;
-        display: flex; justify-content: space-around; align-items: center;
-        border-top: 1px solid #f0f0f0; z-index: 9000; padding-bottom: env(safe-area-inset-bottom);
-    }
-    .nav-item {
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        gap: 4px; color: #0f0f0f; cursor: pointer; width: 20%; height: 100%; transition: transform 0.2s;
-    }
-    .nav-item:active { transform: scale(0.9); background: rgba(0,0,0,0.05); border-radius: 12px; }
-    .nav-item .material-symbols-rounded { font-size: 24px; font-variation-settings: 'FILL' 0; }
-    .nav-item.active .material-symbols-rounded { font-variation-settings: 'FILL' 1; }
-    .nav-item .nav-label { font-size: 10px; font-weight: 500; }
-    
-    .nav-upload {
-        width: 44px; height: 44px; border-radius: 50%; border: 1px solid #0f0f0f;
-        display: flex; align-items: center; justify-content: center; background: transparent;
-    }
-    .nav-upload .material-symbols-rounded { font-size: 28px; font-weight: 300; }
-</style>
-<div id="bottom-navigation">
-    <div class="nav-item active" data-target="home">
-        <span class="material-symbols-rounded">home</span><span class="nav-label">Home</span>
-    </div>
-    <div class="nav-item" data-target="shorts">
-        <span class="material-symbols-rounded">app_shortcut</span><span class="nav-label">Shorts</span>
-    </div>
-    <div class="nav-item" data-target="upload">
-        <div class="nav-upload"><span class="material-symbols-rounded">add</span></div>
-    </div>
-    <div class="nav-item" data-target="discover">
-        <span class="material-symbols-rounded">search</span><span class="nav-label">Discover</span>
-    </div>
-    <div class="nav-item" data-target="you">
-        <span class="material-symbols-rounded">person</span><span class="nav-label">You</span>
-    </div>
-</div>
-`;
+        <!-- Centralized Bottom Navigation -->
+        <nav class="bottom-nav">
+            <div class="nav-item active" data-page="home">
+                <span class="material-symbols-outlined nav-icon">home</span>
+                <span class="nav-label">Home</span>
+            </div>
+            <div class="nav-item" data-page="shorts">
+                <span class="material-symbols-outlined nav-icon">app_shortcut</span>
+                <span class="nav-label">Shorts</span>
+            </div>
+            <div class="nav-item add-btn" onclick="openUploadSheet()">
+                <span class="material-symbols-outlined">add_circle</span>
+            </div>
+            <div class="nav-item" data-page="discover">
+                <span class="material-symbols-outlined nav-icon">explore</span>
+                <span class="nav-label">Discover</span>
+            </div>
+            <div class="nav-item" data-page="you">
+                <span class="material-symbols-outlined nav-icon" id="nav-you-icon">account_circle</span>
+                <span class="nav-label">You</span>
+            </div>
+        </nav>
+    `;
 
-// Initialize Application
-async function buildAppStructure() {
-    // 1. Fetch and inject all HTML pages
-    for (let page of pagesToLoad) {
+    // 2. Inject Shared Navigation & Sheet CSS dynamically
+    const navStyle = document.createElement('style');
+    navStyle.innerHTML = `
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            height: calc(var(--nav-height) + var(--safe-area-bottom));
+            background-color: var(--bg-primary);
+            border-top: 1px solid var(--bg-surface-light);
+            display: flex; justify-content: space-around; align-items: center;
+            padding-bottom: var(--safe-area-bottom);
+            z-index: 1000;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            flex: 1; color: var(--text-secondary); cursor: pointer; transition: color 0.2s;
+        }
+        .nav-item.active { color: var(--text-primary); }
+        .nav-icon { font-size: 26px; font-variation-settings: 'FILL' 0; transition: 0.2s; }
+        .nav-item.active .nav-icon { font-variation-settings: 'FILL' 1; }
+        .nav-label { font-size: 10px; font-weight: 500; margin-top: 4px; }
+        
+        .add-btn .material-symbols-outlined { font-size: 42px; font-variation-settings: 'wght' 200; color: var(--text-primary); }
+        
+        /* Bottom Sheet Styling */
+        .bottom-sheet { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2000; display: none; }
+        .bottom-sheet.active { display: block; }
+        .sheet-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); opacity: 0; transition: opacity 0.3s; }
+        .bottom-sheet.active .sheet-overlay { opacity: 1; }
+        .sheet-content {
+            position: absolute; bottom: 0; left: 0; width: 100%; background-color: var(--bg-surface);
+            border-radius: 16px 16px 0 0; padding: 12px 16px 32px;
+            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .bottom-sheet.active .sheet-content { transform: translateY(0); }
+        .sheet-drag-handle { width: 40px; height: 4px; background-color: var(--bg-surface-light); border-radius: 2px; margin: 0 auto 16px; }
+        .sheet-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+        .sheet-option { display: flex; align-items: center; padding: 12px 0; gap: 16px; }
+        .option-icon-bg { width: 40px; height: 40px; border-radius: 50%; background-color: var(--bg-surface-light); display: flex; align-items: center; justify-content: center; }
+        .option-text { font-size: 16px; font-weight: 500; }
+    `;
+    document.head.appendChild(navStyle);
+
+    // 3. SPA Routing Logic
+    const pageContainer = document.getElementById('page-container');
+    const navItems = document.querySelectorAll('.nav-item[data-page]');
+    const pageCache = {}; // Cache fetched HTML to prevent redundant network calls
+
+    async function loadPage(pageName, addToHistory = true) {
+        // Highlight active nav item
+        navItems.forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('data-page') === pageName) item.classList.add('active');
+        });
+
+        // Handle Back History
+        if (addToHistory) {
+            history.pushState({ page: pageName }, '', `#${pageName}`);
+        }
+
         try {
-            const response = await fetch(`pages/${page}.html`);
-            const htmlContent = await response.text();
-            
-            const pageDiv = document.createElement('div');
-            pageDiv.id = `flaynity-page-${page}`;
-            pageDiv.style.width = '100%';
-            pageDiv.style.height = '100%';
-            pageDiv.style.display = (page === 'home') ? 'block' : 'none'; // Only show home initially
-            pageDiv.innerHTML = htmlContent;
-            
-            rootContainer.appendChild(pageDiv);
+            // Fetch HTML file from pages/
+            let html = pageCache[pageName];
+            if (!html) {
+                const response = await fetch(`pages/${pageName}.html`);
+                if (!response.ok) throw new Error("Page not found");
+                html = await response.text();
+                pageCache[pageName] = html; // Cache it
+            }
+
+            // Inject HTML
+            pageContainer.innerHTML = html;
+
+            // Execute scripts inside the fetched HTML safely
+            const scripts = pageContainer.querySelectorAll('script');
+            scripts.forEach(oldScript => {
+                const newScript = document.createElement('script');
+                if (oldScript.src) {
+                    newScript.src = oldScript.src;
+                } else {
+                    newScript.textContent = oldScript.textContent;
+                }
+                document.body.appendChild(newScript).parentNode.removeChild(newScript);
+            });
+
+            // Scroll to top safely
+            window.scrollTo(0, 0);
+
         } catch (error) {
-            console.error(`Failed to load page: ${page}`, error);
+            console.error(`[Flaynity] Failed to load ${pageName}:`, error);
+            pageContainer.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--text-secondary);">Error loading page. Please check connection.</div>`;
         }
     }
 
-    // 2. Inject Bottom Navigation
-    document.body.insertAdjacentHTML('beforeend', bottomNavHTML);
-
-    // 3. Setup Listeners
-    setupNavListeners();
-    if(window.initAuthUI) window.initAuthUI();
-    
-    // Hardware Back Button Integration (Android WebView)
-    window.addEventListener('popstate', (e) => {
-        if(e.state && e.state.page) {
-            switchPage(e.state.page, false);
-        }
-    });
-    history.replaceState({ page: 'home' }, "Home", "?page=home");
-}
-
-function setupNavListeners() {
-    const navItems = document.querySelectorAll('.nav-item');
-    
+    // 4. Attach Event Listeners to Nav
     navItems.forEach(item => {
         item.addEventListener('click', () => {
-            const targetPage = item.getAttribute('data-target');
-            
-            if (targetPage === 'upload') {
-                // Upload is a Bottom Sheet overlay over the 'upload' page view
-                switchPage('upload');
-                const uploadSheet = document.getElementById('upload-selection-sheet');
-                if(uploadSheet) uploadSheet.style.transform = 'translateY(0)';
-                return;
+            const page = item.getAttribute('data-page');
+            if(history.state?.page !== page) {
+                loadPage(page);
             }
-            
-            // Update Active State
-            navItems.forEach(n => n.classList.remove('active'));
-            item.classList.add('active');
-            
-            switchPage(targetPage);
-        }, { passive: true }); // WebView touch optimization
+        });
     });
 
-    // Upload Form Listeners Setup
-    setTimeout(() => {
-        const closeUpload = document.getElementById('close-upload');
-        if(closeUpload) closeUpload.addEventListener('click', () => switchPage('home')); // Back to home
-        
-        // Setup Logout
-        const logoutBtn = document.getElementById('menu-logout');
-        if(logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                firebase.auth().signOut().then(() => switchPage('home'));
-            });
-        }
-    }, 1000);
-}
+    // 5. Upload Bottom Sheet Logic
+    const bottomSheet = document.getElementById('upload-bottom-sheet');
+    window.openUploadSheet = function() {
+        bottomSheet.classList.add('active');
+        history.pushState({ bottomSheet: true }, '', '#create');
+    };
+    
+    window.closeUploadSheet = function() {
+        bottomSheet.classList.remove('active');
+        if(history.state?.bottomSheet) history.back();
+    };
 
-function switchPage(pageId, pushState = true) {
-    // Hide all pages, show target
-    pagesToLoad.forEach(p => {
-        const pageEl = document.getElementById(`flaynity-page-${p}`);
-        if(pageEl) {
-            pageEl.style.display = (p === pageId) ? 'block' : 'none';
+    window.triggerUpload = function(type) {
+        closeUploadSheet();
+        // Route to Upload page and trigger specific UI
+        loadPage('upload').then(() => {
+            // Short delay to allow scripts to execute and DOM to mount
+            setTimeout(() => {
+                if(window.openVideoUploadForm) window.openVideoUploadForm(type);
+            }, 100);
+        });
+    };
+
+    // 6. Handle Android Back Button / Browser Back Navigation intelligently
+    window.addEventListener('popstate', (e) => {
+        if (bottomSheet.classList.contains('active')) {
+            bottomSheet.classList.remove('active');
+            return;
         }
+
+        // Handle specific component closes (Watch Page overlay, Upload Form overlay)
+        const watchPage = document.getElementById('watch-page');
+        if (watchPage && watchPage.classList.contains('active')) {
+            window.closeWatchPage();
+            return;
+        }
+
+        const uploadForm = document.getElementById('video-upload-form');
+        if (uploadForm && uploadForm.classList.contains('active')) {
+            window.closeUploadForm();
+            return;
+        }
+
+        // Standard page navigation fallback
+        const targetPage = e.state?.page || 'home';
+        loadPage(targetPage, false);
     });
 
-    if(pushState) {
-        history.pushState({ page: pageId }, pageId, `?page=${pageId}`);
-    }
-
-    // Update bottom nav visual if navigated via back button
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(n => {
-        if(n.getAttribute('data-target') === pageId) {
-            n.classList.add('active');
-        } else {
-            n.classList.remove('active');
-        }
+    // 7. Update User Icon visually if Auth State Changes
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            if(window.auth) {
+                window.auth.onAuthStateChanged(user => {
+                    const icon = document.getElementById('nav-you-icon');
+                    if (user && user.photoURL) {
+                        icon.outerHTML = `<img src="${user.photoURL}" class="nav-icon" id="nav-you-icon" style="width:26px; height:26px; border-radius:50%; object-fit:cover; border:1px solid var(--text-primary);">`;
+                    } else {
+                        icon.outerHTML = `<span class="material-symbols-outlined nav-icon" id="nav-you-icon">account_circle</span>`;
+                    }
+                });
+            }
+        }, 1000);
     });
-}
 
-// Start App Architecture Generation on Load
-document.addEventListener('DOMContentLoaded', buildAppStructure);
+    // 8. Application Startup Sequence
+    // Initial Route parsing
+    const initialHash = window.location.hash.replace('#', '') || 'home';
+    loadPage(initialHash.split('?')[0]);
+
+})();

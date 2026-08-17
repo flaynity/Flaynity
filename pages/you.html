@@ -1,4 +1,5 @@
 <style>
+    /* Premium Minimal UI Variables */
     :root {
         --you-bg: #fafafa;
         --you-card-bg: #ffffff;
@@ -8,220 +9,129 @@
         --you-accent-red: #ff0b37;
         --you-accent-light-red: #ffeaef;
         --you-yellow: #fdbb00;
+        --border-radius-m: 16px;
+        --border-radius-l: 24px;
     }
 
     .you-page-wrapper {
-        width: 100%;
-        height: calc(100vh - var(--nav-height) - var(--safe-area-bottom));
-        overflow-y: auto;
-        background-color: var(--you-bg);
-        position: relative;
-        padding-bottom: 24px;
-        font-family: 'Roboto', sans-serif;
+        width: 100%; height: calc(100vh - var(--nav-height) - var(--safe-area-bottom));
+        overflow-y: auto; background-color: var(--you-bg); position: relative;
+        padding-bottom: 24px; font-family: 'Roboto', sans-serif;
     }
 
-    /* Top Bar */
-    .you-top-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px 24px;
+    /* Common App Bar */
+    .app-bar {
+        display: flex; align-items: center; padding: 16px; background: var(--you-card-bg);
+        position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--you-border);
     }
+    .icon-btn { background: none; border: none; font-size: 24px; color: var(--you-text-main); cursor: pointer; transition: 0.2s; padding: 4px; border-radius: 50%; }
+    .icon-btn:active { background: var(--you-border); }
+    .app-bar-title { flex: 1; margin-left: 16px; font-size: 18px; font-weight: 700; color: var(--you-text-main); }
+
+    /* You Page Top Bar */
+    .you-top-bar { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; }
+    .settings-icon { color: var(--you-yellow); font-size: 26px; cursor: pointer; }
     
-    .settings-icon {
-        color: var(--you-yellow);
-        font-size: 26px;
-        cursor: pointer;
-    }
-
     .switch-account-btn {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--you-card-bg);
-        border: 1px solid var(--you-border);
-        padding: 8px 16px;
-        border-radius: 24px;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--you-text-main);
-        cursor: pointer;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-    }
-    .switch-account-btn .material-symbols-outlined {
-        font-size: 18px;
+        display: flex; align-items: center; gap: 8px; background: var(--you-card-bg);
+        border: 1px solid var(--you-border); padding: 8px 16px; border-radius: 24px;
+        font-size: 13px; font-weight: 600; color: var(--you-text-main); cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
 
     /* Profile Card */
-    .you-card {
-        background: var(--you-card-bg);
-        border: 1px solid var(--you-border);
-        border-radius: 24px;
-        margin: 0 24px 20px;
-        padding: 20px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.03);
-    }
-
-    .profile-info-row {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 20px;
-    }
-
-    .profile-avatar-container {
-        position: relative;
-    }
+    .you-card { background: var(--you-card-bg); border: 1px solid var(--you-border); border-radius: var(--border-radius-l); margin: 0 24px 20px; padding: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.03); }
+    .profile-info-row { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+    .profile-avatar-container { position: relative; }
+    .profile-avatar-img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; box-shadow: 0 12px 24px rgba(255, 11, 55, 0.25); border: 2px solid transparent; }
+    .profile-text-info { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+    .profile-name { font-size: 20px; font-weight: 700; color: var(--you-text-main); margin: 0 0 4px 0; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;}
+    .profile-handle { font-size: 14px; font-weight: 600; color: var(--you-accent-red); margin: 0; }
     
-    .profile-avatar-img {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        object-fit: cover;
-        box-shadow: 0 12px 24px rgba(255, 11, 55, 0.25); /* Glowing shadow */
-        border: 2px solid transparent; /* Allows space for shadow naturally */
-    }
-
-    .profile-text-info {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .profile-name {
-        font-size: 22px;
-        font-weight: 700;
-        color: var(--you-text-main);
-        margin: 0 0 4px 0;
-    }
-
-    .profile-handle {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--you-accent-red);
-        margin: 0;
-    }
-
-    .card-divider {
-        width: 100%;
-        height: 1px;
-        background-color: var(--you-border);
-        margin-bottom: 20px;
-    }
-
+    .card-divider { width: 100%; height: 1px; background-color: var(--you-border); margin-bottom: 20px; }
+    
     .view-channel-btn {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: var(--you-card-bg);
-        border: 1px solid var(--you-border);
-        padding: 12px 20px;
-        border-radius: 24px;
-        cursor: pointer;
-        transition: 0.2s;
+        width: 100%; display: flex; align-items: center; justify-content: space-between; background: var(--you-card-bg);
+        border: 1px solid var(--you-border); padding: 12px 20px; border-radius: var(--border-radius-l); cursor: pointer; transition: 0.2s;
     }
-    
-    .view-channel-btn:active {
-        background: #f9f9f9;
-    }
+    .view-channel-btn:active { background: #f9f9f9; }
+    .v-channel-left { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 700; color: var(--you-text-main); }
+    .v-channel-left .material-symbols-outlined { font-size: 22px; }
+    .view-channel-btn .chevron { color: var(--you-text-main); font-size: 24px; }
 
-    .v-channel-left {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-size: 16px;
-        font-weight: 700;
-        color: var(--you-text-main);
-    }
-
-    .v-channel-left .material-symbols-outlined {
-        font-size: 22px;
-    }
-
-    .view-channel-btn .chevron {
-        color: var(--you-text-main);
-        font-size: 24px;
-    }
-
-    /* Menu Card */
-    .menu-item {
-        display: flex;
-        align-items: center;
-        padding: 16px 0;
-        border-bottom: 1px solid var(--you-border);
-        cursor: pointer;
-        transition: 0.2s;
-    }
-    
-    .menu-item:last-child {
-        border-bottom: none;
-        padding-bottom: 0;
-    }
-    .menu-item:first-child {
-        padding-top: 0;
-    }
-    
-    .menu-item:active {
-        opacity: 0.7;
-    }
-
-    .menu-icon {
-        color: var(--you-accent-red);
-        font-size: 24px;
-        margin-right: 16px;
-    }
-
-    .menu-text {
-        font-size: 16px;
-        font-weight: 700;
-        color: var(--you-text-main);
-        flex: 1;
-    }
-
-    .menu-chevron {
-        color: #ff99a8; /* Light pink chevron */
-        font-size: 24px;
-    }
+    /* Menu List */
+    .menu-item { display: flex; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--you-border); cursor: pointer; transition: 0.2s; }
+    .menu-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .menu-item:first-child { padding-top: 0; }
+    .menu-item:active { opacity: 0.7; }
+    .menu-icon { color: var(--you-accent-red); font-size: 24px; margin-right: 16px; }
+    .menu-text { font-size: 16px; font-weight: 700; color: var(--you-text-main); flex: 1; }
+    .menu-chevron { color: #ff99a8; font-size: 24px; }
 
     /* Login State Container */
-    .login-container {
-        display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;
-    }
-    .google-btn {
-        background: #ffffff; color: #000; border: 1px solid #ddd; padding: 12px 24px; border-radius: 24px; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 12px; margin-top: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); cursor: pointer;
-    }
+    .login-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 24px; }
+    .google-btn { background: #ffffff; color: #000; border: 1px solid #ddd; padding: 12px 24px; border-radius: 24px; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 12px; margin-top: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); cursor: pointer; }
 
-    /* Fullscreen Overlays for Channels (retained from previous but styled to match) */
-    .fullscreen-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--you-bg); z-index: 2000; display: none; flex-direction: column; transform: translateX(100%); transition: transform 0.3s; overflow-y: auto; }
+    /* Fullscreen Overlays */
+    .fullscreen-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--you-bg); z-index: 2000; display: none; flex-direction: column; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); overflow-y: auto; }
     .fullscreen-overlay.active { display: flex; transform: translateX(0); }
     
-    .app-bar { display: flex; align-items: center; padding: 16px; background: var(--you-card-bg); position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--you-border); }
-    .icon-btn { background: none; border: none; font-size: 24px; color: var(--you-text-main); cursor: pointer; }
-    .app-bar-title { flex: 1; margin-left: 16px; font-size: 18px; font-weight: 700; color: var(--you-text-main); }
+    /* Forms */
+    .form-container { padding: 24px; display: flex; flex-direction: column; gap: 20px; background: var(--you-card-bg); min-height: 100%; }
     
-    .form-container { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+    .banner-picker-wrap { width: 100%; aspect-ratio: 16 / 9; background: #e0e0e0; position: relative; border-radius: var(--border-radius-m); overflow: hidden; }
+    .banner-picker-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .banner-picker-wrap .camera-badge { bottom: 16px; right: 16px; width: 40px; height: 40px; font-size: 20px; background: rgba(0,0,0,0.7); color: white; border: none;}
+
+    .image-picker-wrap { position: relative; width: 100px; height: 100px; margin: 0 auto; border-radius: 50%; background: #e0e0e0; display: flex; align-items: center; justify-content: center; }
+    .image-picker-wrap img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+    .camera-badge { position: absolute; bottom: 0; right: 0; background: var(--you-text-main); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 2px solid var(--you-card-bg); cursor: pointer; }
     
-    /* Inputs */
     .floating-input { position: relative; }
-    .floating-input input, .floating-input textarea, .floating-input select { width: 100%; background: var(--you-card-bg); border: 1px solid var(--you-border); border-radius: 16px; padding: 16px 16px 12px; font-size: 16px; color: var(--you-text-main); outline: none; font-family: inherit; appearance: none; }
+    .floating-input input, .floating-input textarea, .floating-input select { width: 100%; background: var(--you-bg); border: 1px solid var(--you-border); border-radius: 16px; padding: 16px 16px 12px; font-size: 16px; color: var(--you-text-main); outline: none; font-family: inherit; appearance: none; transition: 0.2s;}
     .floating-input textarea { height: 120px; resize: none; }
     .floating-input label { position: absolute; top: 16px; left: 16px; font-size: 16px; color: var(--you-text-sub); transition: 0.2s; pointer-events: none; }
     .floating-input input:focus, .floating-input textarea:focus, .floating-input select:focus { border-color: var(--you-accent-red); border-width: 2px; }
     .floating-input input:focus + label, .floating-input input:not(:placeholder-shown) + label,
     .floating-input textarea:focus + label, .floating-input textarea:not(:placeholder-shown) + label,
-    .floating-input select:focus + label, .floating-input select:valid + label { top: -8px; left: 12px; font-size: 12px; background: var(--you-card-bg); padding: 0 4px; color: var(--you-accent-red); font-weight: 600; }
-    
-    .image-picker-wrap { position: relative; width: 100px; height: 100px; margin: 0 auto; border-radius: 50%; background: #e0e0e0; display: flex; align-items: center; justify-content: center; }
-    .image-picker-wrap img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-    .camera-badge { position: absolute; bottom: 0; right: 0; background: var(--you-text-main); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 2px solid var(--you-bg); cursor: pointer; }
-    
+    .floating-input select:focus + label, .floating-input select:valid + label { top: -8px; left: 12px; font-size: 12px; background: var(--you-bg); padding: 0 4px; color: var(--you-accent-red); font-weight: 600; border-radius:4px;}
+    select:invalid { color: var(--you-text-sub); }
+
     .validation-msg { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; margin-top: 6px; margin-left: 4px; }
     .msg-success { color: #146c2e; }
     .msg-error { color: var(--you-accent-red); }
     .msg-neutral { color: var(--you-text-sub); }
 
-    /* Required fix for select placeholder color */
-    select:invalid { color: var(--you-text-sub); }
+    /* View Channel Specifics */
+    .channel-banner { width: 100%; aspect-ratio: 16 / 9; background: #e0e0e0; }
+    .channel-banner img { width: 100%; height: 100%; object-fit: cover; }
+    .channel-info-section { padding: 0 16px 16px; background: var(--you-card-bg); text-align: center; margin-top: -45px; border-bottom: 1px solid var(--you-border); }
+    .channel-info-avatar { width: 90px; height: 90px; border-radius: 50%; border: 4px solid var(--you-card-bg); object-fit: cover; background: #e0e0e0; margin: 0 auto 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .c-name { font-size: 24px; font-weight: 700; color: var(--you-text-main); margin-bottom: 4px; }
+    .c-meta { font-size: 14px; color: var(--you-text-sub); margin-bottom: 12px; font-weight: 500; }
+    .c-desc { font-size: 14px; color: var(--you-text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-align: center; padding: 0 24px; }
+    .c-desc.expanded { -webkit-line-clamp: unset; }
+    .c-desc-more { font-size: 13px; font-weight: 600; color: var(--you-accent-red); cursor: pointer; margin-top: 4px; }
+    
+    .c-actions { display: flex; justify-content: center; gap: 12px; margin-top: 16px; }
+    .btn-tonal { background: var(--you-bg); color: var(--you-text-main); padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: 1px solid var(--you-border); display: inline-flex; align-items: center; gap: 8px; cursor: pointer;}
+    .btn-tonal:active { background: #e0e0e0; }
+
+    /* Tabs */
+    .tabs-wrapper { display: flex; background: var(--you-card-bg); border-bottom: 1px solid var(--you-border); padding: 0 16px; }
+    .tab { padding: 14px 16px; font-size: 15px; font-weight: 600; color: var(--you-text-sub); cursor: pointer; position: relative; transition: color 0.3s; flex: 1; text-align: center; }
+    .tab.active { color: var(--you-text-main); }
+    .tab.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background-color: var(--you-accent-red); border-radius: 3px 3px 0 0; }
+    
+    .feed-area { padding: 16px; background: var(--you-bg); min-height: 50vh; }
+
+    /* Analytics UI */
+    .analytics-overview { background: var(--you-card-bg); padding: 24px 16px; text-align: center; margin-bottom: 8px; }
+    .graph-mockup { width: 100%; height: 150px; background: linear-gradient(to top, rgba(255,11,55,0.1), transparent); border-bottom: 2px solid var(--you-accent-red); margin-top: 24px; border-radius: 8px 8px 0 0; position: relative; }
+    
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; background: var(--you-bg); }
+    .stat-card { background: var(--you-card-bg); border-radius: var(--border-radius-m); padding: 16px; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--you-border); }
+    .stat-label { font-size: 13px; color: var(--you-text-sub); font-weight: 600; display: flex; align-items: center; gap: 6px;}
+    .stat-value { font-size: 24px; font-weight: 700; color: var(--you-text-main); }
 </style>
 
 <div class="you-page-wrapper">
@@ -229,9 +139,9 @@
     <!-- State 1: Unauthenticated -->
     <div class="login-container" id="you-unauth-view">
         <span class="material-symbols-outlined" style="font-size: 64px; margin-bottom: 16px; color: #ccc;">account_circle</span>
-        <h2 style="font-size:22px; font-weight:700; color: #000;">Sign in to Flaynity</h2>
-        <p style="font-size:15px; color:#777; margin-top:8px;">Manage your channel, upload videos, and track your analytics.</p>
-        <button class="google-btn" onclick="triggerGoogleLogin()">
+        <h2 style="font-size:22px; font-weight:700; color: var(--you-text-main);">Sign in to Flaynity</h2>
+        <p style="font-size:15px; color:var(--you-text-sub); margin-top:8px;">Manage your channel, upload videos, and track your analytics.</p>
+        <button class="google-btn" onclick="signInWithGoogle()">
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:20px; height:20px;" alt="">
             Sign in with Google
         </button>
@@ -261,9 +171,9 @@
             
             <div class="card-divider"></div>
             
-            <button class="view-channel-btn" id="main-channel-btn" onclick="handleChannelAction()">
+            <button class="view-channel-btn" onclick="handleChannelAction()">
                 <div class="v-channel-left">
-                    <span class="material-symbols-outlined">desktop_windows</span>
+                    <span class="material-symbols-outlined" id="channel-btn-icon">desktop_windows</span>
                     <span id="channel-btn-text">View Channel</span>
                 </div>
                 <span class="material-symbols-outlined chevron">chevron_right</span>
@@ -299,15 +209,22 @@
 
 <!-- ================= OVERLAYS ================= -->
 
-<!-- Create Channel / Edit Channel Overlay -->
-<div class="fullscreen-overlay" id="editor-channel-overlay">
+<!-- 1. Create / Edit Channel Overlay -->
+<div class="fullscreen-overlay" id="editor-channel-overlay" style="background:var(--you-card-bg);">
     <div class="app-bar">
         <button class="icon-btn" onclick="closeEditorOverlay()"><span class="material-symbols-outlined">arrow_back</span></button>
         <div class="app-bar-title" id="editor-title">Enter Your Information</div>
-        <button class="icon-btn" style="color:var(--you-accent-red); font-weight:700; font-size:16px;" onclick="saveChannelInfo()">Save</button>
+        <button class="icon-btn" style="color:var(--you-accent-red); font-weight:700; font-size:16px; width:auto; padding:0 16px; border-radius:8px;" onclick="saveChannelInfo()">Save</button>
     </div>
 
     <div class="form-container">
+        
+        <!-- Banner Picker (Hidden in Create Mode) -->
+        <div class="banner-picker-wrap" id="banner-picker-section" style="display:none;" onclick="document.getElementById('banner-input').click()">
+            <img id="banner-preview" src="https://via.placeholder.com/2048x1152?text=Upload+Banner" alt="Banner">
+            <div class="camera-badge"><span class="material-symbols-outlined">photo_camera</span></div>
+        </div>
+
         <!-- Avatar Picker -->
         <div class="image-picker-wrap" onclick="document.getElementById('avatar-input').click()">
             <img id="avatar-preview" src="https://via.placeholder.com/150" alt="Avatar">
@@ -330,6 +247,15 @@
             </div>
         </div>
 
+        <!-- Description (Hidden in Create Mode) -->
+        <div id="desc-section" style="display:none;">
+            <div class="floating-input">
+                <textarea id="input-c-desc" placeholder=" " oninput="checkWordCount(this)"></textarea>
+                <label>Description</label>
+            </div>
+            <div style="text-align:right; font-size:12px; color:var(--you-text-sub); margin-top:4px;" id="word-count">0 / 250 words</div>
+        </div>
+
         <div class="floating-input">
             <select id="input-c-category" required>
                 <option value="" disabled selected></option>
@@ -347,6 +273,90 @@
         </div>
 
         <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewImage(event, 'avatar-preview')">
+        <input type="file" id="banner-input" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewImage(event, 'banner-preview')">
+    </div>
+</div>
+
+<!-- 2. View Channel Overlay -->
+<div class="fullscreen-overlay" id="view-channel-overlay" style="background:var(--you-card-bg);">
+    <div class="app-bar" style="background:transparent; position:absolute; width:100%; box-shadow:none; border:none;">
+        <button class="icon-btn" style="color:white; background:rgba(0,0,0,0.5);" onclick="closeViewChannel()"><span class="material-symbols-outlined">arrow_back</span></button>
+    </div>
+
+    <div class="channel-banner">
+        <img id="vc-banner" src="" alt="Banner">
+    </div>
+
+    <div class="channel-info-section">
+        <img id="vc-avatar" class="channel-info-avatar" src="">
+        <div class="c-name" id="vc-name">Channel Name</div>
+        <div class="c-meta"><span id="vc-handle">@handle</span> • <span id="vc-subs">0 Subscribers</span> • <span id="vc-videos">0 Videos</span></div>
+        <div class="c-desc" id="vc-desc">No description.</div>
+        <div class="c-desc-more" id="vc-more-btn" onclick="toggleDesc()">More</div>
+        
+        <div class="c-actions">
+            <button class="btn-tonal" onclick="openAnalytics()"><span class="material-symbols-outlined" style="font-size:18px;">bar_chart</span> Analytics</button>
+            <button class="btn-tonal" onclick="openEditor('edit')"><span class="material-symbols-outlined" style="font-size:18px;">edit</span> Edit Channel</button>
+        </div>
+    </div>
+
+    <div class="tabs-wrapper">
+        <div class="tab active" data-vctab="videos" onclick="switchVcTab('videos')">Videos</div>
+        <div class="tab" data-vctab="shorts" onclick="switchVcTab('shorts')">Shorts</div>
+        <div class="tab" data-vctab="posts" onclick="switchVcTab('posts')">Posts</div>
+    </div>
+
+    <div class="feed-area" id="vc-feed-container">
+        <!-- Content injected dynamically based on tab -->
+    </div>
+</div>
+
+<!-- 3. Analytics Overlay -->
+<div class="fullscreen-overlay" id="analytics-overlay" style="background:var(--you-bg);">
+    <div class="app-bar">
+        <button class="icon-btn" onclick="closeAnalytics()"><span class="material-symbols-outlined">arrow_back</span></button>
+        <div class="app-bar-title">Analytics</div>
+    </div>
+    
+    <div class="analytics-overview">
+        <img id="an-avatar" src="" style="width:64px; height:64px; border-radius:50%; margin-bottom:12px; border:1px solid var(--you-border);">
+        <div style="font-size:14px; color:var(--you-text-sub); font-weight:600;">Last 28 Days Growth</div>
+        <div class="graph-mockup"></div>
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-label"><span class="material-symbols-outlined">visibility</span> Views</div>
+            <div class="stat-value" id="an-views">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label"><span class="material-symbols-outlined">group</span> Subscribers</div>
+            <div class="stat-value" id="an-subs">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label"><span class="material-symbols-outlined">video_library</span> Videos</div>
+            <div class="stat-value" id="an-videos">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label"><span class="material-symbols-outlined">bolt</span> Shorts</div>
+            <div class="stat-value" id="an-shorts">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label"><span class="material-symbols-outlined">dynamic_feed</span> Posts</div>
+            <div class="stat-value" id="an-posts">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label"><span class="material-symbols-outlined">thumb_up</span> Likes</div>
+            <div class="stat-value" id="an-likes">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label"><span class="material-symbols-outlined">chat</span> Comments</div>
+            <div class="stat-value" id="an-comments">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label"><span class="material-symbols-outlined">schedule</span> Watch Time (Hrs)</div>
+            <div class="stat-value" id="an-watch">0</div>
+        </div>
     </div>
 </div>
 
@@ -360,8 +370,10 @@
         let currentChannelId = null;
 
         let avatarFile = null;
+        let bannerFile = null;
         let isHandleValid = false;
         let handleCheckTimeout = null;
+        let isEditMode = false;
 
         // ====== AUTH STATE LISTENER ======
         if(auth) {
@@ -372,7 +384,7 @@
                     document.getElementById('you-auth-view').style.display = 'block';
                     
                     document.getElementById('user-main-name').innerText = user.displayName || 'User Name';
-                    document.getElementById('user-main-handle').innerText = user.email; // Default till channel loads
+                    document.getElementById('user-main-handle').innerText = user.email; // Default fallback
                     document.getElementById('user-main-avatar').src = user.photoURL || 'https://via.placeholder.com/150';
 
                     checkChannelStatus();
@@ -389,6 +401,7 @@
             if(!db || !currentUser) return;
             db.ref('channels').orderByChild('userId').equalTo(currentUser.uid).on('value', snap => {
                 const btnText = document.getElementById('channel-btn-text');
+                const btnIcon = document.getElementById('channel-btn-icon');
                 const handleTxt = document.getElementById('user-main-handle');
                 
                 if(snap.exists()) {
@@ -396,33 +409,44 @@
                     currentChannelId = Object.keys(data)[0];
                     currentChannelData = data[currentChannelId];
                     btnText.innerText = "View Channel";
+                    btnIcon.innerText = "desktop_windows";
                     handleTxt.innerText = '@' + currentChannelData.handle;
                     document.getElementById('user-main-avatar').src = currentChannelData.avatarUrl || currentUser.photoURL;
                 } else {
                     currentChannelData = null;
                     currentChannelId = null;
                     btnText.innerText = "Create Channel";
-                    handleTxt.innerText = currentUser.email; // fallback
+                    btnIcon.innerText = "add_circle";
+                    handleTxt.innerText = currentUser.email;
                 }
             });
         }
 
         window.handleChannelAction = function() {
             if(currentChannelData) {
-                // Future Implementation: Open Full View Channel Page
-                alert("View Channel Logic Here");
+                openViewChannel();
             } else {
                 openEditor('create');
             }
         };
 
-        window.triggerGoogleLogin = function() {
+        // 🟢 NATIVE SKETCHWARE GOOGLE LOGIN FIX
+        window.signInWithGoogle = function() {
             if(window.AndroidBridge && window.AndroidBridge.triggerGoogleSignIn) {
                 window.AndroidBridge.triggerGoogleSignIn();
             } else if (auth) {
                 const provider = new window.firebase.auth.GoogleAuthProvider();
                 auth.signInWithPopup(provider).catch(console.error);
             }
+        };
+
+        // 🟢 RECEIVE TOKEN FROM SKETCHWARE
+        window.handleNativeGoogleSignIn = function(idToken) {
+            if(!auth) return;
+            const credential = window.firebase.auth.GoogleAuthProvider.credential(idToken);
+            auth.signInWithCredential(credential).catch((error) => {
+                alert("Login Error: " + error.message);
+            });
         };
 
         window.triggerSignOut = function() {
@@ -434,30 +458,46 @@
                 window.AndroidBridge.triggerGoogleSignIn();
             } else {
                 triggerSignOut();
-                setTimeout(triggerGoogleLogin, 500);
+                setTimeout(signInWithGoogle, 500);
             }
         };
 
-        // ====== CREATE CHANNEL EDITOR ======
-        window.openEditor = function() {
-            document.getElementById('input-c-name').value = currentUser.displayName || '';
-            let baseHandle = (currentUser.displayName || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '') + Math.floor(Math.random()*100);
-            document.getElementById('input-c-handle').value = baseHandle;
-            document.getElementById('input-c-category').value = '';
-            document.getElementById('avatar-preview').src = currentUser.photoURL || 'https://via.placeholder.com/150';
-            debouncedHandleCheck();
+        // ====== 1. CREATE/EDIT CHANNEL EDITOR ======
+        window.openEditor = function(mode) {
+            isEditMode = (mode === 'edit');
+            document.getElementById('editor-title').innerText = isEditMode ? 'Edit Channel' : 'Enter Your Information';
+            document.getElementById('banner-picker-section').style.display = isEditMode ? 'block' : 'none';
+            document.getElementById('desc-section').style.display = isEditMode ? 'block' : 'none';
             
+            if(isEditMode && currentChannelData) {
+                document.getElementById('input-c-name').value = currentChannelData.channelName || '';
+                document.getElementById('input-c-handle').value = currentChannelData.handle || '';
+                document.getElementById('input-c-desc').value = currentChannelData.description || '';
+                document.getElementById('input-c-category').value = currentChannelData.category || '';
+                document.getElementById('avatar-preview').src = currentChannelData.avatarUrl || currentUser.photoURL;
+                document.getElementById('banner-preview').src = currentChannelData.bannerUrl || 'https://via.placeholder.com/2048x1152?text=Upload+Banner';
+                isHandleValid = true;
+                updateHandleMsg('neutral', 'check_circle', 'Keep typing to change handle');
+            } else {
+                document.getElementById('input-c-name').value = currentUser.displayName || '';
+                let baseHandle = (currentUser.displayName || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '') + Math.floor(Math.random()*100);
+                document.getElementById('input-c-handle').value = baseHandle;
+                document.getElementById('input-c-category').value = '';
+                document.getElementById('avatar-preview').src = currentUser.photoURL || 'https://via.placeholder.com/150';
+                debouncedHandleCheck();
+            }
+            
+            avatarFile = null; bannerFile = null;
             document.getElementById('editor-channel-overlay').classList.add('active');
         };
 
-        window.closeEditorOverlay = function() {
-            document.getElementById('editor-channel-overlay').classList.remove('active');
-        };
+        window.closeEditorOverlay = function() { document.getElementById('editor-channel-overlay').classList.remove('active'); };
 
         window.previewImage = function(event, targetId) {
             const file = event.target.files[0];
             if(file) {
-                avatarFile = file;
+                if(targetId === 'avatar-preview') avatarFile = file;
+                if(targetId === 'banner-preview') bannerFile = file;
                 document.getElementById(targetId).src = URL.createObjectURL(file);
             }
         };
@@ -471,6 +511,12 @@
             if(val.length < 3) {
                 updateHandleMsg('error', 'error', 'Handle too short');
                 isHandleValid = false;
+                return;
+            }
+
+            if(isEditMode && currentChannelData && val === currentChannelData.handle) {
+                updateHandleMsg('success', 'check_circle', 'Current Handle');
+                isHandleValid = true;
                 return;
             }
 
@@ -495,42 +541,186 @@
             msgEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px;">${icon}</span> ${text}`;
         }
 
+        window.checkWordCount = function(el) {
+            const words = el.value.trim().split(/\s+/).filter(w => w.length > 0);
+            const count = words.length;
+            const display = document.getElementById('word-count');
+            display.innerText = `${count} / 250 words`;
+            if(count > 250) {
+                display.style.color = 'var(--you-accent-red)';
+                el.value = words.slice(0, 250).join(" ");
+            } else {
+                display.style.color = 'var(--you-text-sub)';
+            }
+        };
+
         window.saveChannelInfo = async function() {
             if(!isHandleValid) return alert("Please fix handle errors");
             const name = document.getElementById('input-c-name').value.trim();
             const handle = document.getElementById('input-c-handle').value.trim();
             const category = document.getElementById('input-c-category').value;
+            const desc = isEditMode ? document.getElementById('input-c-desc').value.trim() : '';
 
             if(!name || !category) return alert("Name and Category required.");
-
-            document.getElementById('editor-title').innerText = "Creating...";
+            document.getElementById('editor-title').innerText = "Saving...";
 
             try {
-                let finalAvatarUrl = currentUser.photoURL;
-                if(avatarFile && window.uploadToR2) finalAvatarUrl = await window.uploadToR2(avatarFile);
+                let finalAvatarUrl = isEditMode ? currentChannelData.avatarUrl : currentUser.photoURL;
+                let finalBannerUrl = isEditMode ? currentChannelData.bannerUrl : 'https://via.placeholder.com/2048x1152/222222/FFFFFF?text=Flaynity+Channel';
 
-                const newRef = db.ref('channels').push();
-                currentChannelId = newRef.key;
-                
-                await newRef.set({
+                if(avatarFile && window.uploadToR2) finalAvatarUrl = await window.uploadToR2(avatarFile);
+                if(bannerFile && window.uploadToR2) finalBannerUrl = await window.uploadToR2(bannerFile);
+
+                const channelDataObj = {
                     userId: currentUser.uid,
                     channelName: name,
                     handle: handle,
                     avatarUrl: finalAvatarUrl,
+                    bannerUrl: finalBannerUrl,
+                    description: desc,
                     category: category,
-                    subscribersCount: 0,
-                    createdAt: window.firebase.database.ServerValue.TIMESTAMP
-                });
-                
-                await db.ref(`handles/${handle}`).set(currentChannelId);
-                closeEditorOverlay();
-                
+                    updatedAt: window.firebase.database.ServerValue.TIMESTAMP
+                };
+
+                if(!isEditMode) {
+                    const newRef = db.ref('channels').push();
+                    currentChannelId = newRef.key;
+                    channelDataObj.subscribersCount = 0;
+                    channelDataObj.videosCount = 0;
+                    channelDataObj.shortsCount = 0;
+                    channelDataObj.postsCount = 0;
+                    channelDataObj.totalViews = 0;
+                    channelDataObj.totalLikes = 0;
+                    channelDataObj.createdAt = window.firebase.database.ServerValue.TIMESTAMP;
+                    
+                    await newRef.set(channelDataObj);
+                    await db.ref(`handles/${handle}`).set(currentChannelId);
+                    closeEditorOverlay();
+                    setTimeout(openViewChannel, 500);
+                } else {
+                    if(handle !== currentChannelData.handle) {
+                        await db.ref(`handles/${currentChannelData.handle}`).remove();
+                        await db.ref(`handles/${handle}`).set(currentChannelId);
+                    }
+                    await db.ref(`channels/${currentChannelId}`).update(channelDataObj);
+                    closeEditorOverlay();
+                }
             } catch (err) {
                 console.error(err);
-                alert("Error creating channel.");
-                document.getElementById('editor-title').innerText = 'Enter Your Information';
+                alert("Error saving channel.");
+                document.getElementById('editor-title').innerText = isEditMode ? 'Edit Channel' : 'Enter Your Information';
             }
         };
 
+        // ====== 2. VIEW CHANNEL ======
+        window.openViewChannel = function() {
+            if(!currentChannelData) return;
+            document.getElementById('vc-banner').src = currentChannelData.bannerUrl || '';
+            document.getElementById('vc-avatar').src = currentChannelData.avatarUrl || '';
+            document.getElementById('vc-name').innerText = currentChannelData.channelName;
+            document.getElementById('vc-handle').innerText = '@' + currentChannelData.handle;
+            document.getElementById('vc-subs').innerText = formatCount(currentChannelData.subscribersCount || 0) + ' Subscribers';
+            document.getElementById('vc-videos').innerText = formatCount(currentChannelData.videosCount || 0) + ' Videos';
+            
+            const descEl = document.getElementById('vc-desc');
+            const moreBtn = document.getElementById('vc-more-btn');
+            descEl.innerText = currentChannelData.description || 'No description provided.';
+            descEl.classList.remove('expanded');
+            moreBtn.innerText = 'More';
+
+            document.getElementById('view-channel-overlay').classList.add('active');
+            switchVcTab('videos');
+        };
+
+        window.closeViewChannel = function() { document.getElementById('view-channel-overlay').classList.remove('active'); };
+
+        window.toggleDesc = function() {
+            const descEl = document.getElementById('vc-desc');
+            const btn = document.getElementById('vc-more-btn');
+            if(descEl.classList.contains('expanded')) {
+                descEl.classList.remove('expanded'); btn.innerText = 'More';
+            } else {
+                descEl.classList.add('expanded'); btn.innerText = 'Less';
+            }
+        };
+
+        window.switchVcTab = function(tabName) {
+            document.querySelectorAll('#view-channel-overlay .tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`#view-channel-overlay .tab[data-vctab="${tabName}"]`).classList.add('active');
+            
+            const feed = document.getElementById('vc-feed-container');
+            feed.innerHTML = '<div style="text-align:center; padding: 40px;"><span class="material-symbols-outlined skeleton" style="font-size:40px; border-radius:50%; width:40px; height:40px;"></span></div>';
+            
+            if(db) {
+                db.ref(tabName).orderByChild('ownerId').equalTo(currentUser.uid).once('value', snap => {
+                    feed.innerHTML = '';
+                    if(!snap.exists()) {
+                        feed.innerHTML = `<div style="text-align:center; padding:40px; color:var(--you-text-sub);">No ${tabName} yet.</div>`;
+                        return;
+                    }
+                    if(tabName === 'shorts') feed.innerHTML = '<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;" id="vc-shorts-grid"></div>';
+                    
+                    snap.forEach(child => {
+                        const data = child.val();
+                        if(tabName === 'videos') {
+                            feed.insertAdjacentHTML('afterbegin', `
+                                <div style="display:flex; gap:12px; margin-bottom:16px; background:var(--you-card-bg); border-radius:12px; overflow:hidden;">
+                                    <div style="width:140px; aspect-ratio:16/9; background:#000; position:relative;">
+                                        <img src="${data.thumbnailUrl}" style="width:100%; height:100%; object-fit:cover;">
+                                        <span style="position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.8); color:#fff; font-size:10px; padding:2px 4px; border-radius:4px;">${data.duration || '0:00'}</span>
+                                    </div>
+                                    <div style="padding:8px 8px 8px 0; flex:1;">
+                                        <div style="font-size:14px; font-weight:600; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; color:var(--you-text-main);">${data.title}</div>
+                                        <div style="font-size:12px; color:var(--you-text-sub); margin-top:4px;">${formatCount(data.views || 0)} views • ${new Date(data.createdAt).toLocaleDateString()}</div>
+                                    </div>
+                                </div>
+                            `);
+                        } else if (tabName === 'shorts') {
+                            document.getElementById('vc-shorts-grid').insertAdjacentHTML('afterbegin', `
+                                <div style="aspect-ratio:9/16; background:#000; border-radius:12px; position:relative; overflow:hidden;">
+                                    <img src="${data.thumbnailUrl}" style="width:100%; height:100%; object-fit:cover;">
+                                    <div style="position:absolute; bottom:8px; left:8px; color:white; font-size:12px; font-weight:600; text-shadow:0 1px 2px #000;">${formatCount(data.views || 0)} views</div>
+                                </div>
+                            `);
+                        } else if (tabName === 'posts') {
+                            feed.insertAdjacentHTML('afterbegin', `
+                                <div style="background:var(--you-card-bg); padding:16px; border-radius:12px; margin-bottom:16px;">
+                                    <div style="font-size:14px; margin-bottom:12px; color:var(--you-text-main);">${data.title}</div>
+                                    ${data.imageUrl ? `<img src="${data.imageUrl}" style="width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:8px;">` : ''}
+                                    <div style="display:flex; justify-content:space-between; margin-top:12px; font-size:13px; color:var(--you-text-sub);">
+                                        <span><span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle; color:var(--you-accent-red);">favorite</span> ${data.reactionsCount || 0}</span>
+                                        <span>${data.commentsCount || 0} Comments</span>
+                                    </div>
+                                </div>
+                            `);
+                        }
+                    });
+                });
+            }
+        };
+
+        // ====== 3. ANALYTICS ======
+        window.openAnalytics = function() {
+            if(!currentChannelData) return;
+            document.getElementById('an-avatar').src = currentChannelData.avatarUrl;
+            document.getElementById('an-views').innerText = formatCount(currentChannelData.totalViews || 0);
+            document.getElementById('an-subs').innerText = formatCount(currentChannelData.subscribersCount || 0);
+            document.getElementById('an-videos').innerText = formatCount(currentChannelData.videosCount || 0);
+            document.getElementById('an-shorts').innerText = formatCount(currentChannelData.shortsCount || 0);
+            document.getElementById('an-posts').innerText = formatCount(currentChannelData.postsCount || 0);
+            document.getElementById('an-likes').innerText = formatCount(currentChannelData.totalLikes || 0);
+            document.getElementById('an-comments').innerText = formatCount(currentChannelData.totalComments || 0);
+            document.getElementById('an-watch').innerText = (currentChannelData.watchTime || 0).toFixed(1);
+
+            document.getElementById('analytics-overlay').classList.add('active');
+        };
+
+        window.closeAnalytics = function() { document.getElementById('analytics-overlay').classList.remove('active'); };
+
+        function formatCount(num) {
+            if(num >= 1000000) return (num/1000000).toFixed(1) + 'M';
+            if(num >= 1000) return (num/1000).toFixed(1) + 'K';
+            return num;
+        }
     })();
 </script>

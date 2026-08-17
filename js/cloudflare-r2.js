@@ -10,8 +10,8 @@
 (function() {
     // Initialize AWS SDK configured for Cloudflare R2
     AWS.config.update({
-        accessKeyId: 'd2a85101c7abf7c81c2497b790d47d4c',
-        secretAccessKey: '8f05ee42698a0349b1c3be34adef6f0f116878c7ec7b6805d5c6f102d4b94e2d',
+        accessKeyId: 'c4d26ef58f7d0818695c8710af083fb6',
+        secretAccessKey: '97bc62a7b0c961001611489e28f9dbd41d2b30cda3e8348bb32d12a7c1d319a8',
         region: 'auto',
         signatureVersion: 'v4'
     });
@@ -22,7 +22,7 @@
     });
 
     const BUCKET_NAME = 'flaynity-storage';
-    const CDN_DOMAIN = 'https://pub-bcff9c709dbe44d7a50c78e9a0f9bd59.r2.dev';
+    const CDN_DOMAIN = 'https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev';
 
     /**
      * Uploads a file to Cloudflare R2 and returns the CDN delivery URL.

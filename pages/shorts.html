@@ -1,80 +1,297 @@
 <style>
-    .shorts-container {
-        width: 100%; height: 100%; background: #000000; color: #ffffff;
-        position: relative; overflow: hidden;
+    .shorts-page-container {
+        width: 100vw;
+        height: calc(100vh - var(--nav-height));
+        background-color: var(--bg-primary);
+        overflow-y: scroll;
+        scroll-snap-type: y mandatory;
+        scroll-behavior: smooth;
     }
     
-    /* Scroll Snapping for Vertical Swipe */
-    .shorts-feed {
-        width: 100%; height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory;
-        scroll-behavior: smooth; padding-bottom: 60px; /* Bottom Nav Space */
+    /* Hide scrollbar for seamless vertical swiping */
+    .shorts-page-container::-webkit-scrollbar {
+        display: none;
     }
-    .shorts-feed::-webkit-scrollbar { display: none; }
-    
-    /* Individual Short Container */
-    .short-item {
-        width: 100%; height: 100%; scroll-snap-align: start; position: relative;
+    .shorts-page-container {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
     }
-    
+
+    .short-container {
+        width: 100vw;
+        height: calc(100vh - var(--nav-height));
+        scroll-snap-align: start;
+        position: relative;
+        background-color: var(--bg-primary);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
     .short-video {
-        width: 100%; height: 100%; object-fit: cover;
+        width: 100%;
+        height: 100%;
+        /* Intelligent fitting preserving aspect ratio */
+        object-fit: contain; 
     }
 
-    /* Overlays */
-    .short-overlay-bottom {
-        position: absolute; bottom: 80px; left: 16px; right: 70px; z-index: 10;
+    /* Right Action Bar */
+    .short-actions {
+        position: absolute;
+        right: 16px;
+        bottom: 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        z-index: 10;
     }
-    .short-title { font-size: 15px; font-weight: 400; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .short-channel { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-    .channel-avatar { width: 32px; height: 32px; border-radius: 50%; background: #333; }
-    .channel-name { font-weight: 600; font-size: 14px; }
-    .btn-subscribe-short { background: #ffffff; color: #000; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 600; border: none; }
 
-    /* Right Action Sidebar */
-    .short-sidebar {
-        position: absolute; bottom: 80px; right: 12px; z-index: 10;
-        display: flex; flex-direction: column; gap: 20px; align-items: center;
+    .action-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        color: var(--text-primary);
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
     }
-    .action-btn {
-        display: flex; flex-direction: column; align-items: center; gap: 4px; color: white;
+
+    .action-item .material-symbols-outlined {
+        font-size: 32px;
+        transition: transform 0.2s;
     }
-    .action-btn .material-symbols-rounded { font-size: 28px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
-    .action-text { font-size: 12px; font-weight: 500; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
-    
-    /* Top Bar Over Shorts */
-    .shorts-header {
-        position: absolute; top: 16px; left: 16px; right: 16px; z-index: 10;
-        display: flex; justify-content: space-between;
+
+    .action-item:active .material-symbols-outlined {
+        transform: scale(0.9);
+    }
+
+    .action-text {
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    /* Music Disc */
+    .music-disc {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background-color: #222;
+        border: 2px solid #555;
+        animation: spin 4s linear infinite;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 10px;
+    }
+    .music-disc img {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .music-disc.paused {
+        animation-play-state: paused;
+    }
+
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    /* Bottom Info */
+    .short-info {
+        position: absolute;
+        bottom: 24px;
+        left: 16px;
+        right: 80px; /* leave room for actions */
+        z-index: 10;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+    }
+
+    .short-channel-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    .short-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .short-channel-name {
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    .short-subscribe {
+        background-color: var(--text-primary);
+        color: var(--bg-primary);
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .short-title-text {
+        font-size: 14px;
+        font-weight: 400;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Play/Pause Overlay Icon */
+    .center-overlay-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 64px;
+        color: rgba(255,255,255,0.8);
+        background: rgba(0,0,0,0.4);
+        border-radius: 50%;
+        padding: 16px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+        z-index: 10;
     }
 </style>
 
-<div class="shorts-container">
-    <div class="shorts-header">
-        <span class="material-symbols-rounded" style="font-size: 28px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">search</span>
-        <span class="material-symbols-rounded" style="font-size: 28px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">camera_alt</span>
-    </div>
-
-    <!-- Infinite Scroll Feed Container -->
-    <div class="shorts-feed" id="shorts-feed-container">
-        <!-- Structure of a single short (Will be cloned & injected by JS) -->
-        <!-- 
-        <div class="short-item">
-            <video class="short-video" loop playsinline src="..."></video>
-            <div class="short-sidebar">
-                <div class="action-btn"><span class="material-symbols-rounded">thumb_up</span><span class="action-text">1.2M</span></div>
-                <div class="action-btn"><span class="material-symbols-rounded">thumb_down</span><span class="action-text">Dislike</span></div>
-                <div class="action-btn"><span class="material-symbols-rounded">comment</span><span class="action-text">45K</span></div>
-                <div class="action-btn"><span class="material-symbols-rounded">share</span><span class="action-text">Share</span></div>
-            </div>
-            <div class="short-overlay-bottom">
-                <div class="short-channel">
-                    <img src="avatar.jpg" class="channel-avatar">
-                    <span class="channel-name">@ChannelHandle</span>
-                    <button class="btn-subscribe-short">Subscribe</button>
-                </div>
-                <div class="short-title">Amazing landscape view #nature #shorts</div>
-            </div>
-        </div> 
-        -->
-    </div>
+<div class="shorts-page-container" id="shorts-scroll-container">
+    <!-- Shorts are injected here -->
 </div>
+
+<script>
+    (function() {
+        const container = document.getElementById('shorts-scroll-container');
+        const db = window.firebase ? window.firebase.database() : null;
+
+        // Intersection Observer for Auto-Play/Pause
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const video = entry.target.querySelector('video');
+                const disc = entry.target.querySelector('.music-disc');
+                if (entry.isIntersecting) {
+                    video.play().catch(e => console.log("Autoplay prevented"));
+                    if(disc) disc.classList.remove('paused');
+                } else {
+                    video.pause();
+                    video.currentTime = 0; // Reset when out of view
+                    if(disc) disc.classList.add('paused');
+                }
+            });
+        }, { threshold: 0.7 }); // Triggers when 70% of video is visible
+
+        function fetchShorts() {
+            if (!db) return;
+            // Fetch optimized payload from Firebase
+            db.ref('shorts').limitToLast(10).once('value', (snapshot) => {
+                snapshot.forEach((child) => {
+                    const short = child.val();
+                    renderShort(short, child.key);
+                });
+            });
+        }
+
+        function renderShort(data, id) {
+            const shortElement = document.createElement('div');
+            shortElement.className = 'short-container';
+            shortElement.innerHTML = `
+                <video class="short-video" src="${data.cdnUrl}" loop playsinline preload="metadata"></video>
+                <span class="material-symbols-outlined center-overlay-icon">play_arrow</span>
+                
+                <div class="short-actions">
+                    <div class="action-item" onclick="toggleLike(this, '${id}')">
+                        <span class="material-symbols-outlined">favorite</span>
+                        <span class="action-text">${formatCount(data.likes || 0)}</span>
+                    </div>
+                    <div class="action-item">
+                        <span class="material-symbols-outlined">chat_bubble</span>
+                        <span class="action-text">${formatCount(data.commentsCount || 0)}</span>
+                    </div>
+                    <div class="action-item">
+                        <span class="material-symbols-outlined">download</span>
+                        <span class="action-text">Save</span>
+                    </div>
+                    <div class="music-disc paused">
+                        <img src="${data.thumbnailUrl || ''}" alt="">
+                    </div>
+                </div>
+
+                <div class="short-info">
+                    <div class="short-channel-row">
+                        <img src="" class="short-avatar" alt="">
+                        <span class="short-channel-name">@${data.channelId}</span>
+                        <span class="short-subscribe">Subscribe</span>
+                    </div>
+                    <div class="short-title-text">${data.title}</div>
+                </div>
+            `;
+            
+            // Play/Pause mechanics
+            let lastTap = 0;
+            const video = shortElement.querySelector('video');
+            const overlay = shortElement.querySelector('.center-overlay-icon');
+            const disc = shortElement.querySelector('.music-disc');
+
+            video.addEventListener('click', (e) => {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                
+                if (tapLength < 300 && tapLength > 0) {
+                    // Double Tap logic
+                    e.preventDefault();
+                    triggerDoubleTapLike(shortElement, id);
+                } else {
+                    // Single Tap Play/Pause
+                    if (video.paused) {
+                        video.play();
+                        overlay.innerText = 'play_arrow';
+                        disc.classList.remove('paused');
+                    } else {
+                        video.pause();
+                        overlay.innerText = 'pause';
+                        disc.classList.add('paused');
+                    }
+                    overlay.style.opacity = '1';
+                    setTimeout(() => overlay.style.opacity = '0', 800);
+                }
+                lastTap = currentTime;
+            });
+
+            container.appendChild(shortElement);
+            observer.observe(shortElement);
+        }
+
+        window.toggleLike = function(element, shortId) {
+            const icon = element.querySelector('.material-symbols-outlined');
+            if(icon.style.fontVariationSettings.includes('"FILL" 1')) {
+                icon.style.fontVariationSettings = '"FILL" 0';
+                icon.style.color = "var(--text-primary)";
+                // Firebase logic to decrement
+            } else {
+                icon.style.fontVariationSettings = '"FILL" 1';
+                icon.style.color = "var(--accent-color)";
+                // Firebase logic to increment
+            }
+        };
+
+        function triggerDoubleTapLike(element, shortId) {
+            const actionItem = element.querySelector('.action-item');
+            window.toggleLike(actionItem, shortId);
+            // Can add heart animation over video here
+        }
+
+        function formatCount(num) {
+            if(num >= 1000000) return (num/1000000).toFixed(1) + 'M';
+            if(num >= 1000) return (num/1000).toFixed(1) + 'K';
+            return num;
+        }
+
+        // Init
+        fetchShorts();
+    })();
+</script>

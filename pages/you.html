@@ -1,97 +1,341 @@
 <style>
-    .you-container {
-        width: 100%; height: 100%; display: flex; flex-direction: column;
-        background: #f8f8f8; overflow-y: auto; padding-bottom: 80px;
+    .you-page {
+        width: 100%;
+        height: calc(100vh - var(--nav-height) - var(--safe-area-bottom));
+        overflow-y: auto;
+        background-color: var(--bg-primary);
+        padding-top: var(--safe-area-top);
+        padding-bottom: 24px;
     }
-    
+
     /* Top Bar */
-    .you-top-bar {
-        display: flex; justify-content: flex-end; align-items: center; padding: 16px;
-        background: #f8f8f8; gap: 16px;
-    }
-    .btn-switch-account {
-        font-size: 14px; font-weight: 600; color: #ff2a5f; background: transparent;
-        border: none; cursor: pointer;
+    .you-header {
+        display: flex;
+        justify-content: flex-end;
+        padding: 16px;
     }
 
-    /* Profile Card */
-    .profile-card {
-        display: flex; align-items: center; padding: 0 16px 24px 16px; gap: 16px;
-    }
-    .you-avatar {
-        width: 80px; height: 80px; border-radius: 50%; background: #ddd; object-fit: cover;
-    }
-    .you-info { flex: 1; }
-    .you-name { font-size: 22px; font-weight: 700; margin-bottom: 4px; color: #0f0f0f; }
-    .you-handle { font-size: 14px; color: #666; margin-bottom: 8px; }
-    
-    .btn-view-channel {
-        display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px;
-        background: #ffffff; border: 1px solid #ddd; border-radius: 100px;
-        font-size: 13px; font-weight: 600; color: #0f0f0f; cursor: pointer;
+    .switch-account-btn {
+        background-color: var(--bg-surface-light);
+        color: var(--text-primary);
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
 
-    /* Menu List */
-    .menu-group {
-        background: #ffffff; border-radius: 16px; margin: 0 16px 24px 16px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;
+    /* Profile Section */
+    .profile-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0 16px 24px;
+        text-align: center;
     }
+
+    .profile-avatar {
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        background-color: var(--bg-surface);
+        margin-bottom: 16px;
+        object-fit: cover;
+        border: 2px solid var(--bg-surface-light);
+    }
+
+    .profile-name {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .profile-email {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+    }
+
+    .channel-action-btn {
+        background-color: var(--text-primary);
+        color: var(--bg-primary);
+        padding: 8px 24px;
+        border-radius: 24px;
+        font-size: 15px;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+    }
+
+    /* Channel Dashboard View (Visible when channel exists) */
+    .channel-dashboard {
+        display: none; /* Toggled via JS */
+        flex-direction: column;
+        border-top: 1px solid var(--bg-surface-light);
+    }
+
+    .dashboard-tabs {
+        display: flex;
+        justify-content: space-around;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--bg-surface-light);
+    }
+
+    .dash-tab {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        cursor: pointer;
+    }
+    .dash-tab.active {
+        color: var(--text-primary);
+    }
+
+    /* Analytics Cards */
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .analytic-card {
+        background-color: var(--bg-surface);
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .analytic-title {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .analytic-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    /* List Items (History, Liked, Logout) */
+    .menu-list {
+        display: flex;
+        flex-direction: column;
+        margin-top: 16px;
+    }
+
     .menu-item {
-        display: flex; align-items: center; gap: 16px; padding: 16px;
-        border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        padding: 16px;
+        gap: 16px;
+        background-color: transparent;
+        transition: background-color 0.2s;
     }
-    .menu-item:last-child { border-bottom: none; }
-    .menu-item:active { background: #f9f9f9; }
-    
-    .menu-icon { font-size: 24px; color: #0f0f0f; }
-    .menu-text { flex: 1; font-size: 16px; font-weight: 500; color: #0f0f0f; }
-    .menu-arrow { font-size: 20px; color: #aaa; }
-    
-    .logout-text { color: #ff2a5f; }
+    .menu-item:active {
+        background-color: var(--bg-surface-light);
+    }
+
+    .menu-item .material-symbols-outlined {
+        font-size: 24px;
+        color: var(--text-primary);
+    }
+
+    .menu-text {
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--text-primary);
+        flex: 1;
+    }
+
+    /* Login State Container */
+    .login-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding: 24px;
+        text-align: center;
+    }
+    .google-btn {
+        background-color: var(--text-primary);
+        color: var(--bg-primary);
+        border: none;
+        padding: 12px 24px;
+        border-radius: 24px;
+        font-size: 16px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
 </style>
 
-<div class="you-container">
-    <div class="you-top-bar">
-        <button class="btn-switch-account">Switch Account</button>
-        <span class="material-symbols-rounded" style="color: #0f0f0f;">settings</span>
+<div class="you-page" id="you-page-container">
+    <!-- State 1: Not Logged In -->
+    <div class="login-container" id="unauth-view">
+        <span class="material-symbols-outlined" style="font-size: 64px; margin-bottom: 16px; color: var(--text-secondary);">account_circle</span>
+        <h2 style="font-size:20px; font-weight:700;">Sign in to Flaynity</h2>
+        <p style="font-size:14px; color:var(--text-secondary); margin-top:8px;">Upload videos, subscribe to channels, and interact with the community.</p>
+        <button class="google-btn" onclick="signInWithGoogle()">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:20px; height:20px;" alt="">
+            Sign in with Google
+        </button>
     </div>
 
-    <!-- Profile Section -->
-    <div class="profile-card">
-        <img src="https://ui-avatars.com/api/?name=User&background=ff2a5f&color=fff" class="you-avatar" id="you-profile-avatar" alt="Profile">
-        <div class="you-info">
-            <div class="you-name" id="you-profile-name">Loading...</div>
-            <div class="you-handle" id="you-profile-handle">@loading</div>
-            <button class="btn-view-channel">
-                View Channel <span class="material-symbols-rounded" style="font-size: 16px;">chevron_right</span>
-            </button>
+    <!-- State 2: Logged In -->
+    <div id="auth-view" style="display:none; width:100%;">
+        <div class="you-header">
+            <div class="switch-account-btn" onclick="switchAccount()">
+                <span class="material-symbols-outlined" style="font-size:18px;">swap_horiz</span> Switch Account
+            </div>
         </div>
-    </div>
 
-    <!-- Primary Actions Menu -->
-    <div class="menu-group">
-        <div class="menu-item" id="menu-upload-manager">
-            <span class="material-symbols-rounded menu-icon">video_library</span>
-            <div class="menu-text">Upload Manager</div>
-            <span class="material-symbols-rounded menu-arrow">chevron_right</span>
+        <div class="profile-section">
+            <img src="" id="user-avatar" class="profile-avatar" alt="">
+            <div class="profile-name" id="user-name">User Name</div>
+            <div class="profile-email" id="user-email">user@gmail.com</div>
+            <button class="channel-action-btn" id="channel-btn">Loading...</button>
         </div>
-        <div class="menu-item" id="menu-history">
-            <span class="material-symbols-rounded menu-icon">history</span>
-            <div class="menu-text">History</div>
-            <span class="material-symbols-rounded menu-arrow">chevron_right</span>
-        </div>
-        <div class="menu-item" id="menu-liked">
-            <span class="material-symbols-rounded menu-icon">thumb_up</span>
-            <div class="menu-text">Liked Videos</div>
-            <span class="material-symbols-rounded menu-arrow">chevron_right</span>
-        </div>
-    </div>
 
-    <!-- Settings & Auth Menu -->
-    <div class="menu-group">
-        <div class="menu-item" id="menu-logout">
-            <span class="material-symbols-rounded menu-icon logout-text">logout</span>
-            <div class="menu-text logout-text">Log Out</div>
+        <!-- Channel Dashboard -->
+        <div class="channel-dashboard" id="channel-dashboard">
+            <div class="dashboard-tabs">
+                <div class="dash-tab active">Analytics</div>
+                <div class="dash-tab">Content</div>
+            </div>
+            
+            <div class="analytics-grid">
+                <div class="analytic-card">
+                    <span class="analytic-title">Total Views</span>
+                    <span class="analytic-value" id="stat-views">0</span>
+                </div>
+                <div class="analytic-card">
+                    <span class="analytic-title">Subscribers</span>
+                    <span class="analytic-value" id="stat-subs">0</span>
+                </div>
+                <div class="analytic-card">
+                    <span class="analytic-title">Videos</span>
+                    <span class="analytic-value" id="stat-videos">0</span>
+                </div>
+                <div class="analytic-card">
+                    <span class="analytic-title">Likes</span>
+                    <span class="analytic-value" id="stat-likes">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- General Menu -->
+        <div class="menu-list">
+            <div class="menu-item">
+                <span class="material-symbols-outlined">history</span>
+                <span class="menu-text">History</span>
+            </div>
+            <div class="menu-item">
+                <span class="material-symbols-outlined">thumb_up</span>
+                <span class="menu-text">Liked Videos</span>
+            </div>
+            <div class="menu-item">
+                <span class="material-symbols-outlined">cloud_upload</span>
+                <span class="menu-text">Upload Manager</span>
+            </div>
+            <div class="menu-item" onclick="signOut()">
+                <span class="material-symbols-outlined" style="color:var(--accent-color);">logout</span>
+                <span class="menu-text" style="color:var(--accent-color);">Sign out</span>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    (function() {
+        const unauthView = document.getElementById('unauth-view');
+        const authView = document.getElementById('auth-view');
+        const channelDashboard = document.getElementById('channel-dashboard');
+        const channelBtn = document.getElementById('channel-btn');
+        
+        // Listen to Firebase Auth state (Global integration handled via firebase-config.js usually, local check here)
+        if(window.firebase) {
+            window.firebase.auth().onAuthStateChanged((user) => {
+                if(user) {
+                    // Show logged in view
+                    unauthView.style.display = 'none';
+                    authView.style.display = 'block';
+                    
+                    document.getElementById('user-name').innerText = user.displayName || 'User';
+                    document.getElementById('user-email').innerText = user.email;
+                    document.getElementById('user-avatar').src = user.photoURL || '';
+
+                    // Check Realtime DB for Channel Exists
+                    const db = window.firebase.database();
+                    db.ref('channels').orderByChild('userId').equalTo(user.uid).once('value', snapshot => {
+                        if(snapshot.exists()) {
+                            // Has channel
+                            const channelData = Object.values(snapshot.val())[0];
+                            channelBtn.innerText = "View Channel >";
+                            channelBtn.onclick = () => alert("Opening View Channel UI"); // Route to channel view logic
+                            
+                            // Show Dashboard Analytics
+                            channelDashboard.style.display = 'flex';
+                            document.getElementById('stat-views').innerText = formatCount(channelData.totalViews || 0);
+                            document.getElementById('stat-subs').innerText = formatCount(channelData.subscriberCount || 0);
+                            document.getElementById('stat-videos').innerText = formatCount(channelData.videosCount || 0);
+                            document.getElementById('stat-likes').innerText = formatCount(channelData.totalLikes || 0);
+                            
+                        } else {
+                            // No channel
+                            channelBtn.innerText = "Create a Channel";
+                            channelDashboard.style.display = 'none';
+                            channelBtn.onclick = () => alert("Opening Create Channel Form"); // Route to create channel
+                        }
+                    });
+
+                } else {
+                    unauthView.style.display = 'flex';
+                    authView.style.display = 'none';
+                }
+            });
+        } else {
+            // Skeleton / Dev Mock if Firebase not loaded
+            unauthView.style.display = 'flex';
+        }
+
+        window.signInWithGoogle = function() {
+            if(!window.firebase) return;
+            const provider = new window.firebase.auth.GoogleAuthProvider();
+            window.firebase.auth().signInWithPopup(provider).catch(error => {
+                console.error("Google Auth Error", error);
+            });
+        };
+
+        window.signOut = function() {
+            if(window.firebase) {
+                window.firebase.auth().signOut().then(() => {
+                    unauthView.style.display = 'flex';
+                    authView.style.display = 'none';
+                });
+            }
+        };
+
+        window.switchAccount = function() {
+            // In Android WebView, this triggers the native account picker or clears current auth
+            window.signOut();
+            setTimeout(window.signInWithGoogle, 500);
+        };
+
+        function formatCount(num) {
+            if(num >= 1000000) return (num/1000000).toFixed(1) + 'M';
+            if(num >= 1000) return (num/1000).toFixed(1) + 'K';
+            return num;
+        }
+    })();
+</script>

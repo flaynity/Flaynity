@@ -25,6 +25,7 @@
         display: flex;
         align-items: center;
         gap: 6px;
+        cursor: pointer;
     }
 
     /* Profile Section */
@@ -70,9 +71,9 @@
         cursor: pointer;
     }
 
-    /* Channel Dashboard View (Visible when channel exists) */
+    /* Channel Dashboard View */
     .channel-dashboard {
-        display: none; /* Toggled via JS */
+        display: none;
         flex-direction: column;
         border-top: 1px solid var(--bg-surface-light);
     }
@@ -123,7 +124,7 @@
         color: var(--text-primary);
     }
 
-    /* List Items (History, Liked, Logout) */
+    /* List Items */
     .menu-list {
         display: flex;
         flex-direction: column;
@@ -137,6 +138,7 @@
         gap: 16px;
         background-color: transparent;
         transition: background-color 0.2s;
+        cursor: pointer;
     }
     .menu-item:active {
         background-color: var(--bg-surface-light);
@@ -176,8 +178,8 @@
         align-items: center;
         gap: 12px;
         margin-top: 24px;
+        cursor: pointer;
     }
-
 </style>
 
 <div class="you-page" id="you-page-container">
@@ -263,7 +265,7 @@
         const channelDashboard = document.getElementById('channel-dashboard');
         const channelBtn = document.getElementById('channel-btn');
         
-        // Listen to Firebase Auth state (Global integration handled via firebase-config.js usually, local check here)
+        // Listen to Firebase Auth state
         if(window.firebase) {
             window.firebase.auth().onAuthStateChanged((user) => {
                 if(user) {
@@ -275,16 +277,15 @@
                     document.getElementById('user-email').innerText = user.email;
                     document.getElementById('user-avatar').src = user.photoURL || '';
 
-                    // Check Realtime DB for Channel Exists
+                    // Check Realtime DB for Channel
                     const db = window.firebase.database();
                     db.ref('channels').orderByChild('userId').equalTo(user.uid).once('value', snapshot => {
                         if(snapshot.exists()) {
                             // Has channel
                             const channelData = Object.values(snapshot.val())[0];
                             channelBtn.innerText = "View Channel >";
-                            channelBtn.onclick = () => alert("Opening View Channel UI"); // Route to channel view logic
+                            channelBtn.onclick = () => alert("Opening View Channel UI");
                             
-                            // Show Dashboard Analytics
                             channelDashboard.style.display = 'flex';
                             document.getElementById('stat-views').innerText = formatCount(channelData.totalViews || 0);
                             document.getElementById('stat-subs').innerText = formatCount(channelData.subscriberCount || 0);
@@ -295,26 +296,49 @@
                             // No channel
                             channelBtn.innerText = "Create a Channel";
                             channelDashboard.style.display = 'none';
-                            channelBtn.onclick = () => alert("Opening Create Channel Form"); // Route to create channel
+                            channelBtn.onclick = () => alert("Opening Create Channel Form");
                         }
                     });
-
                 } else {
                     unauthView.style.display = 'flex';
                     authView.style.display = 'none';
                 }
             });
-        } else {
-            // Skeleton / Dev Mock if Firebase not loaded
-            unauthView.style.display = 'flex';
         }
 
+        // 🟢 NATIVE SKETCHWARE GOOGLE LOGIN BRIDGE
         window.signInWithGoogle = function() {
+            // Check if running inside Sketchware Webview with bridge enabled
+            if(window.AndroidBridge && window.AndroidBridge.triggerGoogleSignIn) {
+                // Call Java method to open native Google Pop-up
+                window.AndroidBridge.triggerGoogleSignIn();
+            } else {
+                // Fallback for normal browsers (if testing outside app)
+                if(!window.firebase) return;
+                const provider = new window.firebase.auth.GoogleAuthProvider();
+                window.firebase.auth().signInWithPopup(provider).catch(error => {
+                    console.error("Google Auth Error", error);
+                });
+            }
+        };
+
+        // 🟢 RECEIVE TOKEN FROM SKETCHWARE AND LOGIN TO FIREBASE
+        window.handleNativeGoogleSignIn = function(idToken) {
             if(!window.firebase) return;
-            const provider = new window.firebase.auth.GoogleAuthProvider();
-            window.firebase.auth().signInWithPopup(provider).catch(error => {
-                console.error("Google Auth Error", error);
-            });
+            
+            // Create credential from the token received from Android Java
+            const credential = window.firebase.auth.GoogleAuthProvider.credential(idToken);
+            
+            // Sign in to Firebase Auth
+            window.firebase.auth().signInWithCredential(credential)
+                .then((result) => {
+                    console.log("Successfully logged in via Sketchware Native Bridge!");
+                    // Firebase onAuthStateChanged will automatically show the profile UI
+                })
+                .catch((error) => {
+                    console.error("Firebase Native Auth Error", error);
+                    alert("লগিন ব্যর্থ হয়েছে: " + error.message);
+                });
         };
 
         window.signOut = function() {
@@ -327,9 +351,14 @@
         };
 
         window.switchAccount = function() {
-            // In Android WebView, this triggers the native account picker or clears current auth
-            window.signOut();
-            setTimeout(window.signInWithGoogle, 500);
+            // Trigger Sign Out first, then trigger Google Login to show account picker again
+            if(window.firebase) {
+                window.firebase.auth().signOut().then(() => {
+                    setTimeout(window.signInWithGoogle, 300);
+                });
+            } else {
+                window.signInWithGoogle();
+            }
         };
 
         function formatCount(num) {

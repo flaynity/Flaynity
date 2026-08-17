@@ -1,71 +1,77 @@
-// ==========================================
-// CLOUDFLARE R2 (AWS SDK S3 COMPATIBLE) SETUP
-// ==========================================
+/**
+ * Flaynity - Cloudflare R2 Media Storage Architecture
+ * Handles secure direct-to-R2 uploads and CDN URL generation.
+ * 
+ * NOTE: For full production security (Rule 111), these AWS keys should ideally be kept 
+ * on a server generating presigned URLs. As per exact prompt requirements, they are 
+ * implemented here to ensure functional app testing and immediate uploads.
+ */
 
-/* 
-  Security Note:
-  For a Sketchware WebView app without a backend server, we initialize the SDK directly here.
-  In a strictly secure production environment, presigned URLs from a backend should be used.
-*/
+(function() {
+    // Initialize AWS SDK configured for Cloudflare R2
+    AWS.config.update({
+        accessKeyId: '76b902c42a3697ad5011ef1c72438306',
+        secretAccessKey: '33902a8ed31914daf36aa6d6f7a715d93ab1cad856cb7eb286edb05e0fe87763',
+        region: 'auto',
+        signatureVersion: 'v4'
+    });
 
-AWS.config.update({
-    accessKeyId: "76b902c42a3697ad5011ef1c72438306",
-    secretAccessKey: "33902a8ed31914daf36aa6d6f7a715d93ab1cad856cb7eb286edb05e0fe87763",
-    region: "auto",
-    signatureVersion: "v4"
-});
+    const s3 = new AWS.S3({
+        endpoint: 'https://b3741135bd1f3e96b6744f11e6a06600.r2.cloudflarestorage.com',
+        s3ForcePathStyle: true // Needed for R2 compatibility
+    });
 
-const s3 = new AWS.S3({
-    endpoint: "https://b3741135bd1f3e96b6744f11e6a06600.r2.cloudflarestorage.com",
-    s3ForcePathStyle: true,
-    signatureVersion: 'v4'
-});
+    const BUCKET_NAME = 'flaynity-storage';
+    const CDN_DOMAIN = 'https://pub-bcff9c709dbe44d7a50c78e9a0f9bd59.r2.dev';
 
-const R2_BUCKET = "flaynity-storage";
-const R2_PUBLIC_DOMAIN = "https://pub-bcff9c709dbe44d7a50c78e9a0f9bd59.r2.dev";
-
-// Global Upload Manager
-window.FlaynityUploadManager = {
-    
     /**
-     * Uploads a file to Cloudflare R2
-     * @param {File} file - The file to upload
-     * @param {String} folder - E.g., 'videos', 'shorts', 'posts'
-     * @param {Function} onProgress - Progress callback (0-100)
-     * @returns {Promise<String>} - Public URL of the uploaded file
+     * Uploads a file to Cloudflare R2 and returns the CDN delivery URL.
+     * @param {File} file - The media file (Video, Image)
+     * @param {Function} onProgress - Callback for upload percentage (0-100)
+     * @returns {Promise<string>} - Resolves with the public CDN URL
      */
-    uploadFile: function(file, folder, onProgress) {
+    window.uploadToR2 = function(file, onProgress) {
         return new Promise((resolve, reject) => {
-            // Clean filename and generate unique key
-            const cleanName = file.name.replace(/[^a-zA-Z0-9.\-]/g, '_');
-            const fileKey = `${folder}/${Date.now()}_${cleanName}`;
+            if (!file) return reject("No file provided");
+
+            // Generate unique, collision-resistant upload ID
+            const extension = file.name.split('.').pop();
+            const uniqueFilename = `media_${Date.now()}_${Math.random().toString(36).substring(2)}.${extension}`;
+            
+            // Organize path by media type
+            let folder = 'others';
+            if (file.type.startsWith('video/')) folder = 'videos';
+            if (file.type.startsWith('image/')) folder = 'images';
+            const objectKey = `${folder}/${uniqueFilename}`;
 
             const params = {
-                Bucket: R2_BUCKET,
-                Key: fileKey,
+                Bucket: BUCKET_NAME,
+                Key: objectKey,
                 Body: file,
                 ContentType: file.type
             };
 
-            const uploadRequest = s3.upload(params);
+            console.log(`[Flaynity] Starting R2 upload: ${objectKey}`);
 
-            // Progress tracking
-            uploadRequest.on('httpUploadProgress', (progressEvent) => {
-                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                if (onProgress) onProgress(percentCompleted);
+            // S3 Managed Upload with tracking
+            const request = s3.putObject(params);
+
+            request.on('httpUploadProgress', (progress) => {
+                const percentage = Math.round((progress.loaded / progress.total) * 100);
+                if (onProgress) onProgress(percentage);
             });
 
-            // Execute upload
-            uploadRequest.send((err, data) => {
+            request.send((err, data) => {
                 if (err) {
-                    console.error("R2 Upload Error:", err);
+                    console.error("[Flaynity] R2 Upload Failed:", err);
                     reject(err);
                 } else {
-                    const publicUrl = `${R2_PUBLIC_DOMAIN}/${fileKey}`;
-                    console.log("Upload Success! URL:", publicUrl);
-                    resolve(publicUrl);
+                    // Success! Generate CDN URL
+                    const cdnUrl = `${CDN_DOMAIN}/${objectKey}`;
+                    console.log("[Flaynity] Upload Complete. CDN URL:", cdnUrl);
+                    resolve(cdnUrl);
                 }
             });
         });
-    }
-};
+    };
+})();

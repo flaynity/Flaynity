@@ -2,318 +2,144 @@
     .shorts-page-container {
         width: 100vw;
         height: calc(100vh - var(--nav-height));
-        background-color: #000;
+        background-color: var(--bg-primary);
         overflow-y: scroll;
         scroll-snap-type: y mandatory;
         scroll-behavior: smooth;
-        position: relative;
     }
-
-    .shorts-page-container::-webkit-scrollbar { display: none; }
-    .shorts-page-container { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Hide scrollbar for seamless vertical swiping */
+    .shorts-page-container::-webkit-scrollbar {
+        display: none;
+    }
+    .shorts-page-container {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
 
     .short-container {
         width: 100vw;
         height: calc(100vh - var(--nav-height));
         scroll-snap-align: start;
-        scroll-snap-stop: always;
         position: relative;
-        background-color: #000;
+        background-color: var(--bg-primary);
         display: flex;
         justify-content: center;
         align-items: center;
-        overflow: hidden;
-    }
-
-    /* Poster shown before real video is mounted (windowed loading) */
-    .short-poster {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        filter: blur(18px) brightness(0.55);
-        transform: scale(1.15);
     }
 
     .short-video {
-        position: relative;
         width: 100%;
         height: 100%;
-        object-fit: contain;
-        z-index: 1;
-        background-color: transparent;
+        /* Intelligent fitting preserving aspect ratio */
+        object-fit: contain; 
     }
 
-    /* Buffering Spinner */
-    .short-buffer-spinner {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 44px;
-        height: 44px;
-        border: 3px solid rgba(255,255,255,0.25);
-        border-top-color: #fff;
-        border-radius: 50%;
-        animation: short-spin 0.8s linear infinite;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.2s ease;
-        z-index: 5;
-    }
-
-    .short-buffer-spinner.visible { opacity: 1; }
-
-    @keyframes short-spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
-
-    /* Error fallback */
-    .short-error-state {
-        position: absolute;
-        inset: 0;
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        color: rgba(255,255,255,0.75);
-        z-index: 4;
-        background-color: #000;
-    }
-
-    .short-error-state.visible { display: flex; }
-
-    .short-error-state .material-symbols-outlined {
-        font-size: 36px;
-        opacity: 0.7;
-    }
-
-    .short-error-text {
-        font-size: 13px;
-        font-weight: 500;
-    }
-
-    /* Right Action Bar - icon only, no text */
+    /* Right Action Bar */
     .short-actions {
         position: absolute;
-        right: 12px;
-        bottom: 110px;
+        right: 16px;
+        bottom: 120px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 26px;
+        gap: 24px;
         z-index: 10;
     }
 
     .action-item {
         display: flex;
-        justify-content: center;
+        flex-direction: column;
         align-items: center;
-        width: 46px;
-        height: 46px;
-        border-radius: 50%;
-        color: #fff;
-        filter: drop-shadow(0 2px 5px rgba(0,0,0,0.55));
-        transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1);
+        gap: 4px;
+        color: var(--text-primary);
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
     }
 
     .action-item .material-symbols-outlined {
-        font-size: 30px;
+        font-size: 32px;
+        transition: transform 0.2s;
     }
 
-    .action-item:active {
-        transform: scale(0.85);
+    .action-item:active .material-symbols-outlined {
+        transform: scale(0.9);
     }
 
-    .action-item.liked {
-        color: var(--accent-color, #ff3b5c);
-    }
-
-    .action-item.liked .material-symbols-outlined {
-        font-variation-settings: 'FILL' 1;
-        animation: short-like-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    @keyframes short-like-pop {
-        0% { transform: scale(1); }
-        40% { transform: scale(1.35); }
-        100% { transform: scale(1); }
+    .action-text {
+        font-size: 13px;
+        font-weight: 600;
     }
 
     /* Music Disc */
     .music-disc {
-        width: 42px;
-        height: 42px;
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
-        background-color: #1c1c1c;
-        border: 2px solid rgba(255,255,255,0.35);
-        animation: spin 4.5s linear infinite;
+        background-color: #222;
+        border: 2px solid #555;
+        animation: spin 4s linear infinite;
         display: flex;
         justify-content: center;
         align-items: center;
-        margin-top: 4px;
-        filter: drop-shadow(0 2px 5px rgba(0,0,0,0.55));
+        margin-top: 10px;
     }
     .music-disc img {
-        width: 22px;
-        height: 22px;
+        width: 24px;
+        height: 24px;
         border-radius: 50%;
         object-fit: cover;
     }
-    .music-disc.paused { animation-play-state: paused; }
+    .music-disc.paused {
+        animation-play-state: paused;
+    }
 
     @keyframes spin { 100% { transform: rotate(360deg); } }
-
-    /* Double-tap heart burst */
-    .short-heart-burst {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        font-size: 90px;
-        color: var(--accent-color, #ff3b5c);
-        transform: translate(-50%, -50%) scale(0);
-        opacity: 0;
-        pointer-events: none;
-        z-index: 8;
-        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
-        font-variation-settings: 'FILL' 1;
-    }
-
-    .short-heart-burst.animate {
-        animation: short-heart-pop 0.75s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
-    }
-
-    @keyframes short-heart-pop {
-        0%   { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-        25%  { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
-        40%  { transform: translate(-50%, -50%) scale(0.95); opacity: 1; }
-        75%  { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-        100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-    }
 
     /* Bottom Info */
     .short-info {
         position: absolute;
-        bottom: 20px;
-        left: 14px;
-        right: 76px;
+        bottom: 24px;
+        left: 16px;
+        right: 80px; /* leave room for actions */
         z-index: 10;
-        filter: drop-shadow(0 2px 5px rgba(0,0,0,0.8));
-        color: #fff;
-        transition: bottom 0.25s cubic-bezier(0.2, 0, 0, 1);
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
     }
 
     .short-channel-row {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
         margin-bottom: 8px;
     }
 
     .short-avatar {
-        width: 34px;
-        height: 34px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
-        object-fit: cover;
-        background-color: #333;
-        border: 1px solid rgba(255,255,255,0.25);
-        flex-shrink: 0;
+        border: 1px solid rgba(255,255,255,0.2);
     }
 
     .short-channel-name {
-        font-size: 14px;
-        font-weight: 700;
+        font-size: 15px;
+        font-weight: 600;
     }
 
     .short-subscribe {
-        background-color: #fff;
-        color: #000;
-        padding: 5px 14px;
+        background-color: var(--text-primary);
+        color: var(--bg-primary);
+        padding: 4px 12px;
         border-radius: 16px;
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 700;
-        margin-left: 4px;
-        transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
     }
 
-    .short-subscribe.subscribed {
-        background-color: rgba(255,255,255,0.18);
-        color: #fff;
-    }
-
-    .short-subscribe:active { transform: scale(0.92); }
-
-    /* Collapsed one-line title */
     .short-title-text {
         font-size: 14px;
         font-weight: 400;
-        line-height: 1.4;
-        white-space: nowrap;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
         overflow: hidden;
-        text-overflow: ellipsis;
-        cursor: pointer;
-    }
-
-    /* Expanded panel */
-    .short-title-text.expanded {
-        white-space: normal;
-        overflow: visible;
-    }
-
-    .short-expand-panel {
-        display: none;
-        margin-top: 8px;
-        font-size: 13px;
-        line-height: 1.5;
-        max-height: 34vh;
-        overflow-y: auto;
-        padding-right: 4px;
-    }
-
-    .short-expand-panel.visible { display: block; }
-
-    .short-hashtags {
-        color: #8ecbff;
-        font-weight: 600;
-        margin-bottom: 6px;
-        word-break: break-word;
-    }
-
-    .short-expand-meta {
-        display: flex;
-        gap: 14px;
-        color: rgba(255,255,255,0.85);
-        font-size: 12.5px;
-        margin-bottom: 6px;
-        flex-wrap: wrap;
-    }
-
-    .short-expand-desc {
-        color: rgba(255,255,255,0.92);
-        white-space: pre-line;
-    }
-
-    /* Swipe direction hint (first-time only, fades out) */
-    .short-swipe-hint {
-        position: absolute;
-        left: 50%;
-        bottom: 18px;
-        transform: translateX(-50%);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        color: rgba(255,255,255,0.85);
-        z-index: 9;
-        opacity: 0;
-        animation: short-hint-fade 2.4s ease forwards;
-        pointer-events: none;
-    }
-
-    @keyframes short-hint-fade {
-        0% { opacity: 0; transform: translate(-50%, 6px); }
-        15% { opacity: 1; transform: translate(-50%, 0); }
-        75% { opacity: 1; }
-        100% { opacity: 0; }
     }
 
     /* Play/Pause Overlay Icon */
@@ -322,324 +148,150 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        font-size: 60px;
-        color: rgba(255,255,255,0.85);
-        background: rgba(0,0,0,0.35);
+        font-size: 64px;
+        color: rgba(255,255,255,0.8);
+        background: rgba(0,0,0,0.4);
         border-radius: 50%;
         padding: 16px;
         opacity: 0;
         pointer-events: none;
-        transition: opacity 0.25s ease;
-        z-index: 6;
+        transition: opacity 0.3s;
+        z-index: 10;
     }
 </style>
 
-<div class="shorts-page-container" id="shorts-scroll-container"></div>
+<div class="shorts-page-container" id="shorts-scroll-container">
+    <!-- Shorts are injected here -->
+</div>
 
 <script>
-(function() {
-    const container = document.getElementById('shorts-scroll-container');
-    const db = window.firebase ? window.firebase.database() : null;
+    (function() {
+        const container = document.getElementById('shorts-scroll-container');
+        const db = window.firebase ? window.firebase.database() : null;
 
-    const PRELOAD_WINDOW = 1; // how many neighbors on each side keep a mounted <video>
-    let items = [];
-    let currentIndex = 0;
-    let hintShown = false;
-
-    /* ---------------- Fetch & initial render ---------------- */
-    function fetchShorts() {
-        if (!db) return;
-        db.ref('shorts').orderByChild('createdAt').limitToLast(10).once('value', (snapshot) => {
-            const list = [];
-            snapshot.forEach(child => list.push({ id: child.key, ...child.val() }));
-            list.reverse();
-            items = list;
-            items.forEach((data, i) => renderShort(data, i));
-        });
-    }
-
-    function renderShort(data, index) {
-        const el = document.createElement('div');
-        el.className = 'short-container';
-        el.dataset.index = index;
-        el.dataset.id = data.id;
-
-        el.innerHTML = `
-            <img class="short-poster" src="${data.thumbnailUrl || ''}" alt="">
-            <div class="short-buffer-spinner"></div>
-            <div class="short-error-state">
-                <span class="material-symbols-outlined">error_outline</span>
-                <span class="short-error-text">Video unavailable</span>
-            </div>
-            <span class="material-symbols-outlined center-overlay-icon">play_arrow</span>
-            <div class="short-heart-burst material-symbols-outlined">favorite</div>
-
-            <div class="short-actions">
-                <div class="action-item like-btn" data-liked="false">
-                    <span class="material-symbols-outlined">favorite</span>
-                </div>
-                <div class="action-item comment-btn">
-                    <span class="material-symbols-outlined">chat_bubble</span>
-                </div>
-                <div class="action-item download-btn">
-                    <span class="material-symbols-outlined">download</span>
-                </div>
-                <div class="music-disc paused">
-                    <img src="${data.thumbnailUrl || ''}" alt="">
-                </div>
-            </div>
-
-            <div class="short-info">
-                <div class="short-channel-row">
-                    <img src="${data.channelAvatarUrl || ''}" class="short-avatar" alt="">
-                    <span class="short-channel-name">@${escapeHTML(data.channelId || '')}</span>
-                    <span class="short-subscribe">Subscribe</span>
-                </div>
-                <div class="short-title-text">${escapeHTML(data.title || '')}</div>
-                <div class="short-expand-panel">
-                    ${data.hashtags ? `<div class="short-hashtags">${formatHashtags(data.hashtags)}</div>` : ''}
-                    <div class="short-expand-meta">
-                        <span>${formatCount(data.likes || 0)} likes</span>
-                        <span>${formatCount(data.views || 0)} views</span>
-                        <span>${timeAgo(data.createdAt)}</span>
-                    </div>
-                    <div class="short-expand-desc">${escapeHTML(data.description || '')}</div>
-                </div>
-            </div>
-        `;
-
-        wireInteractions(el, data);
-        container.appendChild(el);
-        observer.observe(el);
-
-        if (index <= PRELOAD_WINDOW) mountVideo(el, data);
-    }
-
-    /* ---------------- Video mount / unmount (memory management) ---------------- */
-    function mountVideo(el, data) {
-        if (el.querySelector('video')) return;
-        const poster = el.querySelector('.short-poster');
-        const video = document.createElement('video');
-        video.className = 'short-video';
-        video.src = data.cdnUrl;
-        video.loop = true;
-        video.playsInline = true;
-        video.preload = 'metadata';
-        video.style.opacity = '0';
-        video.style.transition = 'opacity 0.2s ease';
-
-        const spinner = el.querySelector('.short-buffer-spinner');
-        const errorState = el.querySelector('.short-error-state');
-
-        video.addEventListener('waiting', () => spinner.classList.add('visible'));
-        video.addEventListener('playing', () => {
-            spinner.classList.remove('visible');
-            video.style.opacity = '1';
-        });
-        video.addEventListener('canplay', () => {
-            spinner.classList.remove('visible');
-            video.style.opacity = '1';
-        });
-        video.addEventListener('error', () => {
-            spinner.classList.remove('visible');
-            errorState.classList.add('visible');
-        });
-
-        el.insertBefore(video, poster.nextSibling);
-    }
-
-    function unmountVideo(el) {
-        const video = el.querySelector('video');
-        if (!video) return;
-        video.pause();
-        video.removeAttribute('src');
-        video.load();
-        video.remove();
-    }
-
-    function updatePreloadWindow(centerIndex) {
-        items.forEach((data, i) => {
-            const el = container.querySelector(`.short-container[data-index="${i}"]`);
-            if (!el) return;
-            const withinWindow = Math.abs(i - centerIndex) <= PRELOAD_WINDOW;
-            if (withinWindow) {
-                mountVideo(el, data);
-            } else {
-                unmountVideo(el);
-            }
-        });
-    }
-
-    /* ---------------- Autoplay / pause on visibility ---------------- */
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            const el = entry.target;
-            const index = parseInt(el.dataset.index, 10);
-            let video = el.querySelector('video');
-
-            if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
-                currentIndex = index;
-                updatePreloadWindow(index);
-                video = el.querySelector('video'); // may have just been mounted
-                const disc = el.querySelector('.music-disc');
-                if (video) {
-                    video.play().catch(() => {});
-                    if (disc) disc.classList.remove('paused');
-                }
-                if (!hintShown && items.length > 1) {
-                    hintShown = true;
-                    showSwipeHint(el);
-                }
-            } else {
-                if (video) {
+        // Intersection Observer for Auto-Play/Pause
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const video = entry.target.querySelector('video');
+                const disc = entry.target.querySelector('.music-disc');
+                if (entry.isIntersecting) {
+                    video.play().catch(e => console.log("Autoplay prevented"));
+                    if(disc) disc.classList.remove('paused');
+                } else {
                     video.pause();
-                    video.currentTime = 0;
+                    video.currentTime = 0; // Reset when out of view
+                    if(disc) disc.classList.add('paused');
                 }
-                const disc = el.querySelector('.music-disc');
-                if (disc) disc.classList.add('paused');
-            }
-        });
-    }, { threshold: [0, 0.7] });
+            });
+        }, { threshold: 0.7 }); // Triggers when 70% of video is visible
 
-    function showSwipeHint(el) {
-        const hint = document.createElement('div');
-        hint.className = 'short-swipe-hint';
-        hint.innerHTML = `<span class="material-symbols-outlined">keyboard_double_arrow_up</span>`;
-        el.appendChild(hint);
-        setTimeout(() => hint.remove(), 2500);
-    }
+        function fetchShorts() {
+            if (!db) return;
+            // Fetch optimized payload from Firebase
+            db.ref('shorts').limitToLast(10).once('value', (snapshot) => {
+                snapshot.forEach((child) => {
+                    const short = child.val();
+                    renderShort(short, child.key);
+                });
+            });
+        }
 
-    /* ---------------- Interactions: tap, double-tap, expand, actions ---------------- */
-    function wireInteractions(el, data) {
-        let lastTap = 0;
-        const overlay = el.querySelector('.center-overlay-icon');
-        const heart = el.querySelector('.short-heart-burst');
-        const titleEl = el.querySelector('.short-title-text');
-        const panel = el.querySelector('.short-expand-panel');
-        const likeBtn = el.querySelector('.like-btn');
+        function renderShort(data, id) {
+            const shortElement = document.createElement('div');
+            shortElement.className = 'short-container';
+            shortElement.innerHTML = `
+                <video class="short-video" src="${data.cdnUrl}" loop playsinline preload="metadata"></video>
+                <span class="material-symbols-outlined center-overlay-icon">play_arrow</span>
+                
+                <div class="short-actions">
+                    <div class="action-item" onclick="toggleLike(this, '${id}')">
+                        <span class="material-symbols-outlined">favorite</span>
+                        <span class="action-text">${formatCount(data.likes || 0)}</span>
+                    </div>
+                    <div class="action-item">
+                        <span class="material-symbols-outlined">chat_bubble</span>
+                        <span class="action-text">${formatCount(data.commentsCount || 0)}</span>
+                    </div>
+                    <div class="action-item">
+                        <span class="material-symbols-outlined">download</span>
+                        <span class="action-text">Save</span>
+                    </div>
+                    <div class="music-disc paused">
+                        <img src="${data.thumbnailUrl || ''}" alt="">
+                    </div>
+                </div>
 
-        el.addEventListener('click', (e) => {
-            if (e.target.closest('.short-actions') || e.target.closest('.short-info')) return;
-            const now = Date.now();
-            const tapLength = now - lastTap;
+                <div class="short-info">
+                    <div class="short-channel-row">
+                        <img src="" class="short-avatar" alt="">
+                        <span class="short-channel-name">@${data.channelId}</span>
+                        <span class="short-subscribe">Subscribe</span>
+                    </div>
+                    <div class="short-title-text">${data.title}</div>
+                </div>
+            `;
+            
+            // Play/Pause mechanics
+            let lastTap = 0;
+            const video = shortElement.querySelector('video');
+            const overlay = shortElement.querySelector('.center-overlay-icon');
+            const disc = shortElement.querySelector('.music-disc');
 
-            if (tapLength < 300 && tapLength > 0) {
-                triggerDoubleTapLike(el, data, likeBtn, heart, e);
+            video.addEventListener('click', (e) => {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                
+                if (tapLength < 300 && tapLength > 0) {
+                    // Double Tap logic
+                    e.preventDefault();
+                    triggerDoubleTapLike(shortElement, id);
+                } else {
+                    // Single Tap Play/Pause
+                    if (video.paused) {
+                        video.play();
+                        overlay.innerText = 'play_arrow';
+                        disc.classList.remove('paused');
+                    } else {
+                        video.pause();
+                        overlay.innerText = 'pause';
+                        disc.classList.add('paused');
+                    }
+                    overlay.style.opacity = '1';
+                    setTimeout(() => overlay.style.opacity = '0', 800);
+                }
+                lastTap = currentTime;
+            });
+
+            container.appendChild(shortElement);
+            observer.observe(shortElement);
+        }
+
+        window.toggleLike = function(element, shortId) {
+            const icon = element.querySelector('.material-symbols-outlined');
+            if(icon.style.fontVariationSettings.includes('"FILL" 1')) {
+                icon.style.fontVariationSettings = '"FILL" 0';
+                icon.style.color = "var(--text-primary)";
+                // Firebase logic to decrement
             } else {
-                togglePlayPause(el, overlay);
+                icon.style.fontVariationSettings = '"FILL" 1';
+                icon.style.color = "var(--accent-color)";
+                // Firebase logic to increment
             }
-            lastTap = now;
-        });
+        };
 
-        titleEl.addEventListener('click', () => toggleExpand(titleEl, panel));
-
-        likeBtn.addEventListener('click', () => toggleLike(likeBtn, data));
-
-        el.querySelector('.comment-btn').addEventListener('click', () => {
-            if (window.openShortComments) window.openShortComments(data.id);
-        });
-
-        el.querySelector('.download-btn').addEventListener('click', () => {
-            if (window.downloadShort) window.downloadShort(data.id, data.cdnUrl);
-        });
-
-        el.querySelector('.short-subscribe').addEventListener('click', function () {
-            if (window.toggleSubscribe) window.toggleSubscribe(this, data.channelId);
-            else this.classList.toggle('subscribed');
-        });
-    }
-
-    function togglePlayPause(el, overlay) {
-        const video = el.querySelector('video');
-        if (!video) return;
-        const disc = el.querySelector('.music-disc');
-        if (video.paused) {
-            video.play();
-            overlay.innerText = 'play_arrow';
-            if (disc) disc.classList.remove('paused');
-        } else {
-            video.pause();
-            overlay.innerText = 'pause';
-            if (disc) disc.classList.add('paused');
-        }
-        overlay.style.opacity = '1';
-        setTimeout(() => overlay.style.opacity = '0', 700);
-    }
-
-    function toggleExpand(titleEl, panel) {
-        const expanding = !panel.classList.contains('visible');
-        panel.classList.toggle('visible', expanding);
-        titleEl.classList.toggle('expanded', expanding);
-    }
-
-    function toggleLike(likeBtn, data) {
-        const liked = likeBtn.dataset.liked === 'true';
-        likeBtn.dataset.liked = (!liked).toString();
-        likeBtn.classList.toggle('liked', !liked);
-        // Firebase: user-specific like record + transactional count update
-        if (window.setShortLike) window.setShortLike(data.id, !liked);
-    }
-
-    function triggerDoubleTapLike(el, data, likeBtn, heart, e) {
-        // Only add a like if not already liked - never unlike via double tap
-        if (likeBtn.dataset.liked !== 'true') {
-            likeBtn.dataset.liked = 'true';
-            likeBtn.classList.add('liked');
-            if (window.setShortLike) window.setShortLike(data.id, true);
+        function triggerDoubleTapLike(element, shortId) {
+            const actionItem = element.querySelector('.action-item');
+            window.toggleLike(actionItem, shortId);
+            // Can add heart animation over video here
         }
 
-        // Position burst near tap location, fallback to center
-        const rect = el.getBoundingClientRect();
-        if (e && e.clientX) {
-            heart.style.left = (e.clientX - rect.left) + 'px';
-            heart.style.top = (e.clientY - rect.top) + 'px';
-        } else {
-            heart.style.left = '50%';
-            heart.style.top = '50%';
+        function formatCount(num) {
+            if(num >= 1000000) return (num/1000000).toFixed(1) + 'M';
+            if(num >= 1000) return (num/1000).toFixed(1) + 'K';
+            return num;
         }
-        heart.classList.remove('animate');
-        void heart.offsetWidth; // restart animation
-        heart.classList.add('animate');
 
-        if (window.navigator && window.navigator.vibrate) {
-            window.navigator.vibrate(45);
-        }
-    }
-
-    /* ---------------- Helpers ---------------- */
-    function formatCount(num) {
-        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-        return num;
-    }
-
-    function timeAgo(timestamp) {
-        if (!timestamp) return '';
-        const diff = Date.now() - timestamp;
-        const sec = Math.floor(diff / 1000);
-        if (sec < 60) return 'just now';
-        const min = Math.floor(sec / 60);
-        if (min < 60) return `${min}m ago`;
-        const hr = Math.floor(min / 60);
-        if (hr < 24) return `${hr}h ago`;
-        const day = Math.floor(hr / 24);
-        if (day < 30) return `${day}d ago`;
-        const month = Math.floor(day / 30);
-        if (month < 12) return `${month}mo ago`;
-        return `${Math.floor(month / 12)}y ago`;
-    }
-
-    function formatHashtags(tags) {
-        const arr = Array.isArray(tags) ? tags : String(tags).split(/[,\s]+/).filter(Boolean);
-        return arr.map(t => `#${escapeHTML(t.replace(/^#/, ''))}`).join(' ');
-    }
-
-    function escapeHTML(str) {
-        const div = document.createElement('div');
-        div.innerText = str == null ? '' : str;
-        return div.innerHTML;
-    }
-
-    fetchShorts();
-})();
+        // Init
+        fetchShorts();
+    })();
 </script>

@@ -1,21 +1,21 @@
 /*
  * ==============================================================================
- * FLAYNITY - MASTER APPLICATION LOGIC (Upload Engine & Navigation Fixed)
+ * FLAYNITY - MASTER APPLICATION LOGIC (Production Realtime & R2 Storage Engine)
  * ==============================================================================
  * 1. Global Configurations & State Management
- * 2. High-Precision Utility Engine (Formatting, DOM, Haptics, Security)
+ * 2. High-Precision Utility & Auto-Thumbnail Generator
  * 3. Offline/Online Synchronizer & Android Native Bridge
- * 4. AWS S3 / Cloudflare R2 Media Upload Engine
- * 5. Firebase Realtime Database & Reactive Listener Hub
+ * 4. Cloudflare R2 Upload Engine (Native S3 API without ACL conflicts)
+ * 5. Firebase Realtime Database Reactive Sync Hub (< 2s instant refresh)
  * 6. Google Authentication System (Native Android + Web Fallback)
  * 7. Home Feed Interleaved Generator (6 Shorts -> 10 Videos -> 1 Post)
- * 8. Cinema Video Watch Player & Comments System
+ * 8. Cinema Video Watch Player with Cloudflare CDN Streaming
  * 9. Vertical Shorts Player (IntersectionObserver, Snapping & Double Tap)
- * 10. Community Post & 7-Reaction Engine
- * 11. Upload Studio Pipeline (Video, Short, Post -> R2 Storage -> Database)
+ * 10. Community Post & 7-Reaction Engine (Love, Like, Care, Haha, Wow, Sad, Angry)
+ * 11. Content Publish Pipeline (Video, Short, Post -> R2 CDN -> Database)
  * 12. Discover & Search Filter Engine
- * 13. Channel Management, Handle Validation & Realtime Analytics
- * 14. Global Persistent Bottom Navigation & Router Engine
+ * 13. Channel Studio, Handle Validation & Realtime Analytics
+ * 14. Persistent Bottom Navigation & Back Navigation Sync
  * 15. Application Lifecycle Bootstrap & Fail-Safe Splash Engine
  * ==============================================================================
  */
@@ -63,7 +63,7 @@ const State = {
 };
 
 // ==========================================
-// 2. HIGH-PRECISION UTILITIES
+// 2. HIGH-PRECISION UTILITIES & THUMBNAIL ENGINE
 // ==========================================
 const Utils = {
     el: (id) => document.getElementById(id),
@@ -108,6 +108,13 @@ const Utils = {
         return num.toLocaleString();
     },
 
+    formatDuration: (seconds) => {
+        if (!seconds || isNaN(seconds)) return '0:00';
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    },
+
     vibrate: (ms = 40) => {
         try {
             if (navigator.vibrate) navigator.vibrate(ms);
@@ -121,6 +128,40 @@ const Utils = {
         const temp = document.createElement('div');
         temp.textContent = str;
         return temp.innerHTML;
+    },
+
+    // Client-side instant video frame extractor for R2 thumbnail upload
+    generateVideoThumbnail: (file) => {
+        return new Promise((resolve) => {
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.src = URL.createObjectURL(file);
+            video.muted = true;
+            video.playsInline = true;
+
+            video.onloadeddata = () => {
+                video.currentTime = Math.min(1, (video.duration / 2) || 0);
+            };
+
+            video.onseeked = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 360;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                canvas.toBlob((blob) => {
+                    const duration = video.duration || 0;
+                    URL.revokeObjectURL(video.src);
+                    resolve({ blob, duration });
+                }, 'image/jpeg', 0.85);
+            };
+
+            video.onerror = () => {
+                URL.revokeObjectURL(video.src);
+                resolve({ blob: null, duration: 0 });
+            };
+        });
     }
 };
 
@@ -164,7 +205,9 @@ const UI = {
         }, duration);
     },
 
-    showUploadProgress: () => {
+    showUploadProgress: (titleText = "Uploading to Cloudflare R2...") => {
+        const title = document.querySelector('#upload-progress-engine .progress-text');
+        if (title) title.innerText = titleText;
         Utils.show('upload-progress-engine');
     },
 
@@ -189,7 +232,7 @@ const onClick = (id, callback) => {
 };
 
 // ==========================================
-// 3. CORE SERVICES & NATIVE BRIDGE
+// 3. CLOUDFLARE R2 OBJECT STORAGE ENGINE
 // ==========================================
 let auth, db, s3Client;
 
@@ -204,45 +247,62 @@ const Services = {
         auth = firebase.auth();
         db = firebase.database();
 
+        // Configure AWS S3 SDK for Cloudflare R2
         if (typeof AWS !== 'undefined') {
-            AWS.config.update({
+            s3Client = new AWS.S3({
                 accessKeyId: CONFIG.r2.accessKey,
                 secretAccessKey: CONFIG.r2.secretKey,
-                region: 'auto',
-                endpoint: CONFIG.r2.endpoint,
+                endpoint: new AWS.Endpoint(CONFIG.r2.endpoint),
                 s3ForcePathStyle: true,
-                signatureVersion: 'v4'
+                signatureVersion: 'v4',
+                region: 'auto'
             });
-            s3Client = new AWS.S3();
         }
     },
 
-    uploadFile: (file, folderPath) => {
+    // Upload to Cloudflare R2 and return Fast CDN URL
+    uploadFile: (fileOrBlob, folderPath, customExt = null) => {
         return new Promise((resolve, reject) => {
             if (!s3Client) {
                 return reject(new Error("Cloudflare R2 Client is uninitialized."));
             }
-            const extension = file.name.split('.').pop();
-            const uniqueKey = `flaynity/${folderPath}/${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`;
 
-            const uploadRequest = s3Client.upload({
+            let extension = customExt;
+            if (!extension) {
+                if (fileOrBlob.name) {
+                    extension = fileOrBlob.name.split('.').pop();
+                } else if (fileOrBlob.type) {
+                    extension = fileOrBlob.type.split('/')[1] || 'bin';
+                } else {
+                    extension = 'bin';
+                }
+            }
+
+            const uniqueKey = `${folderPath}/${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`;
+
+            // Note: Cloudflare R2 does NOT support 'ACL: public-read'. Omit ACL to prevent 400 Bad Request.
+            const uploadParams = {
                 Bucket: CONFIG.r2.bucket,
                 Key: uniqueKey,
-                Body: file,
-                ContentType: file.type,
-                ACL: 'public-read'
-            });
+                Body: fileOrBlob,
+                ContentType: fileOrBlob.type || 'application/octet-stream'
+            };
+
+            const uploadRequest = s3Client.upload(uploadParams);
 
             uploadRequest.on('httpUploadProgress', (event) => {
-                const percentage = (event.loaded / event.total) * 100;
-                UI.updateUploadProgress(percentage);
+                if (event.total) {
+                    const percentage = (event.loaded / event.total) * 100;
+                    UI.updateUploadProgress(percentage);
+                }
             });
 
             uploadRequest.send((err, data) => {
                 if (err) {
-                    console.error("R2 Upload Error:", err);
+                    console.error("Cloudflare R2 Upload Error:", err);
                     reject(err);
                 } else {
+                    // Direct Cloudflare CDN delivery URL
                     const finalCdnUrl = `${CONFIG.r2.publicUrl}/${uniqueKey}`;
                     resolve(finalCdnUrl);
                 }
@@ -357,7 +417,7 @@ window.handleNativeGoogleSignIn = (idToken) => {
 };
 
 // ==========================================
-// 5. HOME FEED ENGINE
+// 5. HOME FEED ENGINE (6 Shorts -> 10 Videos -> 1 Post)
 // ==========================================
 const HomeFeed = {
     init: () => {
@@ -415,6 +475,7 @@ const HomeFeed = {
         while (active) {
             let chunkAdded = false;
 
+            // Pattern Step 1: 6 Shorts Grid
             if (shortsIdx < shorts.length) {
                 const batch = shorts.slice(shortsIdx, shortsIdx + 6);
                 shortsIdx += 6;
@@ -422,6 +483,7 @@ const HomeFeed = {
                 chunkAdded = true;
             }
 
+            // Pattern Step 2: 10 Long Videos
             if (videoIdx < videos.length) {
                 const batch = videos.slice(videoIdx, videoIdx + 10);
                 videoIdx += 10;
@@ -431,6 +493,7 @@ const HomeFeed = {
                 chunkAdded = true;
             }
 
+            // Pattern Step 3: 1 Community Post
             if (postIdx < posts.length) {
                 container.appendChild(HomeFeed.buildPostCard(posts[postIdx]));
                 postIdx++;
@@ -560,13 +623,11 @@ const PostReactions = {
             await postRef.transaction((current) => (current || 0) + 1);
             State.cache.userReactions[postId] = 'like';
         }
-
-        HomeFeed.render();
     }
 };
 
 // ==========================================
-// 7. CINEMA VIDEO PLAYER ENGINE
+// 7. CINEMA VIDEO PLAYER (CLOUDFLARE CDN)
 // ==========================================
 const Player = {
     currentVideoData: null,
@@ -590,8 +651,9 @@ const Player = {
         Utils.el('wp-channel-avatar').src = videoData.channelAvatar || 'https://via.placeholder.com/36';
         Utils.show('wp-channel-avatar');
 
+        // Play directly via Cloudflare CDN URL
         videoEl.src = videoData.cdnVideoUrl;
-        videoEl.play().catch(() => console.warn("Video auto-play prevented by browser policy"));
+        videoEl.play().catch(() => console.warn("Autoplay blocked by WebView"));
 
         layer.classList.add('active');
         State.currentPlayingVideo = videoEl;
@@ -658,7 +720,7 @@ const Player = {
 };
 
 // ==========================================
-// 8. SHORTS VERTICAL STREAM ENGINE
+// 8. SHORTS VERTICAL STREAM (CLOUDFLARE CDN)
 // ==========================================
 const ShortsPlayer = {
     observer: null,
@@ -789,7 +851,7 @@ const ShortsPlayer = {
 };
 
 // ==========================================
-// 9. UPLOAD STUDIO & R2 ENGINE (FIXED)
+// 9. CONTENT PUBLISH PIPELINE (R2 + REALTIME DB)
 // ==========================================
 const UploadPage = {
     activeFile: null,
@@ -869,7 +931,6 @@ const UploadPage = {
     },
 
     openSheet: () => {
-        // Activate wrapper container
         const uploadContainer = Utils.el('page-container-upload');
         if (uploadContainer) {
             uploadContainer.style.display = 'block';
@@ -944,6 +1005,7 @@ const UploadPage = {
         }, 300);
     },
 
+    // 🚀 STEP 1 -> STEP 2 -> STEP 3 PUBLISH ENGINE
     publish: async (type) => {
         if (!State.channel) {
             UI.toast("Please create a channel first under 'You' tab.");
@@ -952,53 +1014,99 @@ const UploadPage = {
             return;
         }
 
-        let metadata = {
-            uid: State.user.uid,
-            channelId: State.channel.id,
-            channelName: State.channel.channelName,
-            channelAvatar: State.channel.avatarUrl || '',
-            createdAt: firebase.database.ServerValue.TIMESTAMP,
-            views: 0,
-            likes: 0,
-            comments: 0
-        };
+        let titleVal = '';
+        let descVal = '';
+        let catVal = 'Entertainment';
+        let visVal = 'public';
+        let textVal = '';
 
         if (type === 'video') {
-            metadata.title = Utils.el('input-video-title').value.trim();
-            if (!metadata.title || !UploadPage.activeFile) return UI.toast("Title and Video file are required.");
-            metadata.description = Utils.el('input-video-desc').value;
-            metadata.visibility = Utils.el('input-video-visibility').value;
-            metadata.category = Utils.el('input-video-category').value;
+            titleVal = Utils.el('input-video-title').value.trim();
+            if (!titleVal || !UploadPage.activeFile) return UI.toast("Video title and file are required.");
+            descVal = Utils.el('input-video-desc').value.trim();
+            visVal = Utils.el('input-video-visibility').value;
+            catVal = Utils.el('input-video-category').value;
         } else if (type === 'short') {
-            metadata.title = Utils.el('input-short-title').value.trim();
-            if (!metadata.title || !UploadPage.activeFile) return UI.toast("Caption and Video file are required.");
-            metadata.visibility = Utils.el('input-short-visibility').value;
+            titleVal = Utils.el('input-short-title').value.trim();
+            if (!titleVal || !UploadPage.activeFile) return UI.toast("Short caption and video are required.");
+            visVal = Utils.el('input-short-visibility').value;
         } else if (type === 'post') {
-            metadata.text = Utils.el('input-post-text').value.trim();
-            if (!metadata.text && !UploadPage.activeFile) return UI.toast("Text content or Image required.");
+            textVal = Utils.el('input-post-text').value.trim();
+            if (!textVal && !UploadPage.activeFile) return UI.toast("Post content or Image required.");
         }
 
         try {
-            UI.showUploadProgress();
+            UI.showUploadProgress("Uploading media to Cloudflare R2...");
 
-            if (UploadPage.activeFile) {
-                const cdnUrl = await Services.uploadFile(UploadPage.activeFile, `${type}s/${State.user.uid}`);
-                if (type === 'post') {
-                    metadata.imageUrl = cdnUrl;
-                } else {
-                    metadata.cdnVideoUrl = cdnUrl;
+            let cdnVideoUrl = '';
+            let thumbnailUrl = '';
+            let imageUrl = '';
+            let durationFormatted = '0:00';
+
+            // STEP 1: Upload Media File to Cloudflare R2
+            if (type === 'video' || type === 'short') {
+                // Upload main video
+                cdnVideoUrl = await Services.uploadFile(UploadPage.activeFile, `${type}s/${State.user.uid}`);
+
+                // Generate & Upload Thumbnail to Cloudflare R2
+                try {
+                    UI.showUploadProgress("Generating video thumbnail...");
+                    const thumbResult = await Utils.generateVideoThumbnail(UploadPage.activeFile);
+                    if (thumbResult && thumbResult.blob) {
+                        durationFormatted = Utils.formatDuration(thumbResult.duration);
+                        thumbnailUrl = await Services.uploadFile(thumbResult.blob, `thumbnails/${State.user.uid}`, 'jpg');
+                    }
+                } catch (thumbErr) {
+                    console.warn("Thumbnail upload warning:", thumbErr);
+                }
+            } else if (type === 'post') {
+                if (UploadPage.activeFile) {
+                    imageUrl = await Services.uploadFile(UploadPage.activeFile, `posts/${State.user.uid}`);
                 }
             }
 
-            await db.ref(`${type}s`).push().set(metadata);
+            // STEP 2: Save Metadata in Firebase Realtime Database
+            UI.showUploadProgress("Saving metadata to Realtime Database...");
+            const metadata = {
+                uid: State.user.uid,
+                channelId: State.channel.id,
+                channelName: State.channel.channelName,
+                channelAvatar: State.channel.avatarUrl || '',
+                cdnVideoUrl: cdnVideoUrl,
+                thumbnailUrl: thumbnailUrl || cdnVideoUrl,
+                imageUrl: imageUrl,
+                title: titleVal,
+                description: descVal,
+                category: catVal,
+                visibility: visVal,
+                text: textVal,
+                duration: durationFormatted,
+                views: 0,
+                likes: 0,
+                comments: 0,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            };
 
+            const targetRef = db.ref(`${type}s`).push();
+            await targetRef.set(metadata);
+
+            // STEP 3: Close modal & instant redirect (<2s refresh via listeners)
+            UI.updateUploadProgress(100);
             UI.hideUploadProgress();
-            UI.toast("Published successfully!");
+            UI.toast("Published successfully! 🚀");
             UploadPage.closeAll();
-            Router.switchTab('home');
+            
+            // Clean inputs
+            if (Utils.el('input-video-title')) Utils.el('input-video-title').value = '';
+            if (Utils.el('input-video-desc')) Utils.el('input-video-desc').value = '';
+            if (Utils.el('input-short-title')) Utils.el('input-short-title').value = '';
+            if (Utils.el('input-post-text')) Utils.el('input-post-text').value = '';
+
+            Router.switchTab(type === 'short' ? 'shorts' : 'home');
         } catch (error) {
+            console.error("Publish Failed:", error);
             UI.hideUploadProgress();
-            UI.toast("Upload failed: " + error.message);
+            UI.toast("Upload failed: " + (error.message || "Network Error"));
         }
     }
 };
@@ -1086,7 +1194,7 @@ const YouPage = {
             if (!name || !handle) return UI.toast("Name and handle are required.");
 
             try {
-                UI.showUploadProgress();
+                UI.showUploadProgress("Uploading Channel Avatar to R2...");
                 let avatarUrl = State.user.photoURL || '';
 
                 if (avatarFile) {
@@ -1227,7 +1335,7 @@ const Router = {
             appRoot.appendChild(container);
         }
 
-        // Move bottom navigation out of home directly into #app root
+        // Global Bottom Navigation mount
         const bottomNav = Utils.el('flaynity-bottom-nav');
         if (bottomNav) {
             appRoot.appendChild(bottomNav);
@@ -1285,6 +1393,8 @@ const Router = {
 
         if (tabName === 'shorts') {
             ShortsPlayer.render();
+        } else if (tabName === 'home') {
+            HomeFeed.render();
         }
     },
 
@@ -1336,7 +1446,7 @@ window.app = {
 };
 
 // ==========================================
-// 13. LIFECYCLE BOOTSTRAP ENGINE
+// 13. LIFECYCLE BOOTSTRAP & REALTIME SYNC HUB
 // ==========================================
 const App = {
     bootstrap: async () => {
@@ -1357,10 +1467,10 @@ const App = {
                 throw new Error("Firebase SDK is not available. Please verify network connectivity.");
             }
 
-            // 1. Fetch Page Templates & Mount Global Navigation
+            // 1. Fetch Page Templates & Mount Navigation
             await Router.fetchPages();
 
-            // 2. Initialize Backend Services
+            // 2. Initialize R2 & Database Services
             Services.init();
 
             // 3. Initialize Controller Hubs
@@ -1372,7 +1482,7 @@ const App = {
             YouPage.init();
             Router.bindGlobalNavigation();
 
-            // 4. Network Status Listeners
+            // 4. Network Listeners
             window.addEventListener('offline', () => {
                 State.online = false;
                 Utils.show('flaynity-offline');
@@ -1414,24 +1524,44 @@ const App = {
         }
     },
 
+    // ⚡ INSTANT REALTIME LISTENER PIPELINE (<2s auto refresh)
     startRealtimeListeners: () => {
+        // Realtime Long Videos Listener
         Services.addListener('videos', 'videos', (snap) => {
             const data = snap.val() || {};
             State.cache.videos = Object.keys(data).map((k) => ({ id: k, ...data[k] })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-            if (State.currentTab === 'home') HomeFeed.render();
+            
+            // Automatic instant update across screens
+            HomeFeed.render();
+            if (State.currentTab === 'you' && State.channel) {
+                YouPage.renderChannelContent('videos');
+            }
+            if (Player.currentVideoData) {
+                Player.loadRecommended(Player.currentVideoData.id);
+            }
         });
 
+        // Realtime Shorts Listener
         Services.addListener('shorts', 'shorts', (snap) => {
             const data = snap.val() || {};
             State.cache.shorts = Object.keys(data).map((k) => ({ id: k, ...data[k] })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-            if (State.currentTab === 'home') HomeFeed.render();
-            if (State.currentTab === 'shorts') ShortsPlayer.render();
+            
+            HomeFeed.render();
+            ShortsPlayer.render();
+            if (State.currentTab === 'you' && State.channel) {
+                YouPage.renderChannelContent('shorts');
+            }
         });
 
+        // Realtime Community Posts Listener
         Services.addListener('posts', 'posts', (snap) => {
             const data = snap.val() || {};
             State.cache.posts = Object.keys(data).map((k) => ({ id: k, ...data[k] })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-            if (State.currentTab === 'home') HomeFeed.render();
+            
+            HomeFeed.render();
+            if (State.currentTab === 'you' && State.channel) {
+                YouPage.renderChannelContent('posts');
+            }
         });
     }
 };

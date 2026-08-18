@@ -1,6 +1,6 @@
 /*
  * ==============================================================================
- * FLAYNITY - MASTER APPLICATION LOGIC (Persistent Global Navigation Core)
+ * FLAYNITY - MASTER APPLICATION LOGIC (Upload Engine & Navigation Fixed)
  * ==============================================================================
  * 1. Global Configurations & State Management
  * 2. High-Precision Utility Engine (Formatting, DOM, Haptics, Security)
@@ -314,7 +314,6 @@ const AuthSystem = {
             lastLogin: firebase.database.ServerValue.TIMESTAMP
         });
 
-        // Set You tab navigation avatar to user's Google photo
         const youNavTab = document.querySelector('.nav-item[data-tab="you"]');
         if (youNavTab && State.user.photoURL) {
             youNavTab.innerHTML = `
@@ -790,7 +789,7 @@ const ShortsPlayer = {
 };
 
 // ==========================================
-// 9. UPLOAD STUDIO & R2 ENGINE
+// 9. UPLOAD STUDIO & R2 ENGINE (FIXED)
 // ==========================================
 const UploadPage = {
     activeFile: null,
@@ -810,6 +809,7 @@ const UploadPage = {
         onClick('btn-close-post-flow', UploadPage.closeAll);
         onClick('btn-back-short-details', () => Utils.hide('short-details-ui'));
 
+        // File Selectors
         onClick('video-file-picker-trigger', () => {
             const input = Utils.el('input-video-file');
             if (input) input.click();
@@ -869,11 +869,13 @@ const UploadPage = {
     },
 
     openSheet: () => {
-        if (!State.channel) {
-            UI.toast("Please create a channel first.");
-            Router.switchTab('you');
-            return;
+        // Activate wrapper container
+        const uploadContainer = Utils.el('page-container-upload');
+        if (uploadContainer) {
+            uploadContainer.style.display = 'block';
+            uploadContainer.style.pointerEvents = 'auto';
         }
+
         const backdrop = Utils.el('upload-backdrop');
         const sheet = Utils.el('upload-sheet');
         if (backdrop && sheet) {
@@ -891,11 +893,26 @@ const UploadPage = {
         if (backdrop && sheet) {
             backdrop.classList.remove('active');
             sheet.classList.remove('active');
-            setTimeout(() => backdrop.style.display = 'none', 300);
+            setTimeout(() => {
+                backdrop.style.display = 'none';
+                const anyFlowActive = document.querySelector('.upload-flow-layer.active');
+                if (!anyFlowActive) {
+                    const uploadContainer = Utils.el('page-container-upload');
+                    if (uploadContainer) {
+                        uploadContainer.style.display = 'none';
+                    }
+                }
+            }, 300);
         }
     },
 
     openFlow: (flowId) => {
+        const uploadContainer = Utils.el('page-container-upload');
+        if (uploadContainer) {
+            uploadContainer.style.display = 'block';
+            uploadContainer.style.pointerEvents = 'auto';
+        }
+
         UploadPage.closeSheet();
         UploadPage.activeFile = null;
         Utils.hide('video-preview-element');
@@ -918,10 +935,22 @@ const UploadPage = {
             }
         });
         UploadPage.activeFile = null;
+
+        setTimeout(() => {
+            const uploadContainer = Utils.el('page-container-upload');
+            if (uploadContainer) {
+                uploadContainer.style.display = 'none';
+            }
+        }, 300);
     },
 
     publish: async (type) => {
-        if (!State.channel) return UI.toast("Active channel required.");
+        if (!State.channel) {
+            UI.toast("Please create a channel first under 'You' tab.");
+            UploadPage.closeAll();
+            Router.switchTab('you');
+            return;
+        }
 
         let metadata = {
             uid: State.user.uid,
@@ -1172,7 +1201,7 @@ const YouPage = {
 };
 
 // ==========================================
-// 14. ROUTER & GLOBAL PERSISTENT NAVIGATION
+// 12. ROUTER & GLOBAL PERSISTENT NAVIGATION
 // ==========================================
 const Router = {
     pages: ['home', 'shorts', 'upload', 'discover', 'you'],
@@ -1198,8 +1227,7 @@ const Router = {
             appRoot.appendChild(container);
         }
 
-        // --- 🔴 CRITICAL FIX: Make Bottom Navigation Permanently Global ---
-        // Move bottom navigation out of page-container-home directly into #app root
+        // Move bottom navigation out of home directly into #app root
         const bottomNav = Utils.el('flaynity-bottom-nav');
         if (bottomNav) {
             appRoot.appendChild(bottomNav);
@@ -1210,8 +1238,9 @@ const Router = {
 
     bindGlobalNavigation: () => {
         document.querySelectorAll('.nav-item').forEach((el) => {
-            el.addEventListener('click', () => {
-                const tab = el.dataset.tab;
+            el.addEventListener('click', (e) => {
+                const targetNav = e.currentTarget;
+                const tab = targetNav.dataset.tab;
                 if (tab === 'upload') {
                     UploadPage.openSheet();
                 } else {
@@ -1228,7 +1257,6 @@ const Router = {
             State.currentPlayingVideo.pause();
         }
 
-        // Hide all page containers EXCEPT the bottom navigation
         Router.pages.forEach((p) => {
             if (p !== 'upload') {
                 const el = document.getElementById(`page-container-${p}`);
@@ -1236,15 +1264,12 @@ const Router = {
             }
         });
 
-        // Show selected tab page
         const target = document.getElementById(`page-container-${tabName}`);
         if (target) target.style.display = 'block';
 
-        // Keep Bottom Navigation permanently visible
         const bottomNav = Utils.el('flaynity-bottom-nav');
         if (bottomNav) bottomNav.style.display = 'flex';
 
-        // Update active tab button style
         document.querySelectorAll('.nav-item').forEach((el) => {
             if (el.dataset.tab !== 'upload') {
                 el.classList.toggle('active', el.dataset.tab === tabName);
@@ -1311,7 +1336,7 @@ window.app = {
 };
 
 // ==========================================
-// 15. LIFECYCLE BOOTSTRAP ENGINE
+// 13. LIFECYCLE BOOTSTRAP ENGINE
 // ==========================================
 const App = {
     bootstrap: async () => {
@@ -1412,7 +1437,7 @@ const App = {
 };
 
 // ==========================================
-// 16. MULTI-PLATFORM DOM BOOTSTRAP TRIGGER
+// 14. MULTI-PLATFORM DOM BOOTSTRAP TRIGGER
 // ==========================================
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => App.bootstrap());

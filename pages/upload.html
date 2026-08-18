@@ -1,713 +1,160 @@
-<style>
-    /* Material Symbols */
-    @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+<div class="upload-tabs">
+    <div class="upload-tab active">Uploading</div>
+    <div class="upload-tab">Completed</div>
+    <div class="upload-tab">Drafts</div>
+</div>
 
-    :root {
-        --md-sys-color-primary: #000000;
-        --md-sys-color-on-primary: #FFFFFF;
-        --md-sys-color-surface: #FFFFFF;
-        --md-sys-color-surface-variant: #F2F2F2;
-        --md-sys-color-on-surface: #1F1F1F;
-        --md-sys-color-on-surface-variant: #444746;
-        --md-sys-color-outline: #747775;
-        --md-sys-color-error: #B3261E;
-        --border-radius-m: 12px;
-        --border-radius-l: 16px;
-    }
+<div class="queue-list" id="upload-queue">
+    <!-- Empty state injected by JS if empty -->
+</div>
 
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-    body { margin: 0; font-family: 'Roboto', system-ui, sans-serif; background-color: var(--md-sys-color-surface-variant); }
+<div class="fab-container">
+    <button class="fab-btn" onclick="UI.openBottomSheet()">
+        <span class="material-symbols-outlined">add</span>
+    </button>
+</div>
 
-    /* Main Page: Upload Manager */
-    .upload-page {
-        width: 100%; height: calc(100vh - var(--nav-height) - var(--safe-area-bottom));
-        overflow-y: auto; background-color: var(--md-sys-color-surface-variant); padding-bottom: 20px;
-    }
-
-    .upload-header {
-        position: sticky; top: 0; z-index: 50; background-color: var(--md-sys-color-surface);
-        display: flex; align-items: center; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-    .upload-header-title { font-size: 20px; font-weight: 700; color: var(--md-sys-color-on-surface); flex: 1; }
-
-    /* Tabs */
-    .manager-tabs-container { background: var(--md-sys-color-surface); overflow-x: auto; scrollbar-width: none; }
-    .manager-tabs-container::-webkit-scrollbar { display: none; }
-    .manager-tabs { display: flex; border-bottom: 1px solid var(--md-sys-color-surface-variant); width: max-content; padding: 0 16px; }
-    .manager-tab { padding: 14px 16px; font-size: 14px; font-weight: 600; color: var(--md-sys-color-on-surface-variant); cursor: pointer; position: relative; transition: color 0.3s; }
-    .manager-tab.active { color: var(--md-sys-color-primary); }
-    .manager-tab.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background-color: var(--md-sys-color-primary); border-radius: 3px 3px 0 0; }
-
-    /* Queue List */
-    .upload-queue { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-    .empty-state { text-align: center; padding: 60px 20px; color: var(--md-sys-color-on-surface-variant); }
-    
-    .queue-item { background: var(--md-sys-color-surface); border-radius: var(--border-radius-m); padding: 12px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .queue-header { display: flex; gap: 12px; align-items: center; }
-    .queue-thumbnail { width: 80px; height: 50px; border-radius: 6px; background-color: #000; object-fit: cover; }
-    .queue-info { flex: 1; overflow: hidden; }
-    .queue-title { font-size: 14px; font-weight: 600; color: var(--md-sys-color-on-surface); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 4px; }
-    .queue-status-text { font-size: 12px; font-weight: 500; color: var(--md-sys-color-primary); }
-    
-    .queue-progress-row { display: flex; flex-direction: column; gap: 6px; }
-    .queue-progress-bar { width: 100%; height: 6px; background: var(--md-sys-color-surface-variant); border-radius: 3px; overflow: hidden; }
-    .queue-progress-fill { height: 100%; background: #1a73e8; width: 0%; transition: width 0.3s linear; }
-    .queue-stats { display: flex; justify-content: space-between; font-size: 11px; color: var(--md-sys-color-on-surface-variant); }
-    
-    .queue-actions { display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--md-sys-color-surface-variant); padding-top: 8px; }
-    .queue-action-btn { background: none; border: none; font-size: 13px; font-weight: 600; color: var(--md-sys-color-on-surface-variant); padding: 6px 12px; border-radius: 16px; cursor: pointer; }
-    .queue-action-btn.primary { color: #1a73e8; background: rgba(26, 115, 232, 0.1); }
-
-    /* Fullscreen Forms Overlays */
-    .form-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--md-sys-color-surface-variant); z-index: 2000; display: none; flex-direction: column; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); overflow-y: auto; }
-    .form-overlay.active { display: flex; transform: translateY(0); }
-
-    .form-appbar { display: flex; align-items: center; padding: 12px 16px; background: var(--md-sys-color-surface); position: sticky; top: 0; z-index: 2010; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .form-appbar-title { flex: 1; font-size: 18px; font-weight: 700; margin-left: 16px; }
-    .btn-publish { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); padding: 8px 20px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; }
-
-    .form-content { display: flex; flex-direction: column; padding-bottom: 80px; }
-
-    /* Thumbnail Area */
-    .media-preview-box { width: 100%; position: relative; background: #000; }
-    .media-preview-box img { width: 100%; height: 100%; object-fit: cover; }
-    .media-preview-box.ratio-16-9 { aspect-ratio: 16 / 9; }
-    .media-preview-box.ratio-9-16 { aspect-ratio: 9 / 16; width: 60%; margin: 16px auto; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-    
-    .thumbnail-change-btn { position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
-
-    /* Inputs */
-    .input-section { padding: 16px; background: var(--md-sys-color-surface); margin-bottom: 8px; }
-    .input-group { margin-bottom: 16px; }
-    .input-group:last-child { margin-bottom: 0; }
-    
-    .floating-label-input { position: relative; }
-    .floating-label-input input, .floating-label-input textarea { width: 100%; background: var(--md-sys-color-surface); border: 1px solid var(--md-sys-color-outline); border-radius: 8px; padding: 16px 16px 12px; font-size: 16px; color: var(--md-sys-color-on-surface); outline: none; transition: 0.2s; font-family: inherit; }
-    .floating-label-input textarea { height: 100px; resize: none; }
-    .floating-label-input label { position: absolute; top: 16px; left: 16px; font-size: 16px; color: var(--md-sys-color-on-surface-variant); transition: 0.2s; pointer-events: none; }
-    .floating-label-input input:focus, .floating-label-input textarea:focus { border-color: #1a73e8; border-width: 2px; }
-    .floating-label-input input:focus + label, .floating-label-input input:not(:placeholder-shown) + label,
-    .floating-label-input textarea:focus + label, .floating-label-input textarea:not(:placeholder-shown) + label { top: -8px; left: 12px; font-size: 12px; background: var(--md-sys-color-surface); padding: 0 4px; color: #1a73e8; font-weight: 600; }
-
-    /* Settings rows */
-    .setting-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--md-sys-color-surface-variant); }
-    .setting-row:last-child { border-bottom: none; }
-    .setting-info { display: flex; flex-direction: column; }
-    .setting-title { font-size: 16px; font-weight: 500; color: var(--md-sys-color-on-surface); }
-    .setting-desc { font-size: 12px; color: var(--md-sys-color-on-surface-variant); margin-top: 2px; }
-    
-    /* Toggle Switch */
-    .switch { position: relative; display: inline-block; width: 48px; height: 24px; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
-    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-    input:checked + .slider { background-color: #1a73e8; }
-    input:checked + .slider:before { transform: translateX(24px); }
-
-    select.premium-select { width: 100%; padding: 12px 16px; border: 1px solid var(--md-sys-color-outline); border-radius: 8px; font-size: 16px; background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface); appearance: none; }
-
-    /* Bottom Action Bar */
-    .bottom-action-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--md-sys-color-surface); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -1px 3px rgba(0,0,0,0.05); z-index: 2010; }
-    .btn-text { color: var(--md-sys-color-on-surface-variant); font-weight: 600; border: none; background: none; font-size: 14px; padding: 8px; cursor: pointer; }
-
-    /* Toasts/Snackbars */
-    .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 12px 24px; border-radius: 24px; font-size: 14px; z-index: 5000; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
-    .toast.show { opacity: 1; }
-
-</style>
-
-<div class="upload-page">
-    <div class="upload-header">
-        <div class="upload-header-title">Upload Manager</div>
-        <span class="material-symbols-outlined" style="cursor: pointer;">search</span>
+    <div class="creation-carousel" id="creation-carousel">
+        <div class="creation-item" data-type="video">Video</div>
+        <div class="creation-item active" data-type="short">Short</div>
+        <div class="creation-item" data-type="post">Post</div>
     </div>
 
-    <div class="manager-tabs-container">
-        <div class="manager-tabs">
-            <div class="manager-tab active" data-tab="uploading" onclick="switchManagerTab('uploading')">Uploading</div>
-            <div class="manager-tab" data-tab="processing" onclick="switchManagerTab('processing')">Processing</div>
-            <div class="manager-tab" data-tab="completed" onclick="switchManagerTab('completed')">Completed</div>
-            <div class="manager-tab" data-tab="failed" onclick="switchManagerTab('failed')">Failed</div>
-            <div class="manager-tab" data-tab="drafts" onclick="switchManagerTab('drafts')">Drafts</div>
-        </div>
-    </div>
+    <button class="sheet-action-btn" onclick="UI.handleCreationSelection()">Continue</button>
+</div>
 
-    <div class="upload-queue" id="upload-queue-container">
-        <!-- Queue items injected here -->
+<div class="cam-top-controls">
+    <button class="icon-btn" onclick="UI.backToMain()"><span class="material-symbols-outlined">close</span></button>
+    <div class="cam-sound-btn">
+        <span class="material-symbols-outlined" style="font-size: 18px;">music_note</span> Add Sound
+    </div>
+    <div style="width:40px"></div>
+</div>
+
+<div style="position:absolute; right:16px; top:100px;" class="cam-tools-right">
+    <div class="cam-tool" onclick="CameraManager.switchCamera()">
+        <span class="material-symbols-outlined">cameraswitch</span> Flip
+    </div>
+    <div class="cam-tool" onclick="CameraManager.toggleDuration()">
+        <span class="material-symbols-outlined">timer</span> <span id="cam-dur-label">15s</span>
+    </div>
+    <div class="cam-tool">
+        <span class="material-symbols-outlined">speed</span> Speed
+    </div>
+    <div class="cam-tool">
+        <span class="material-symbols-outlined">face_retouching_natural</span> Beauty
     </div>
 </div>
 
-<!-- Video/Short Form Overlay -->
-<div class="form-overlay" id="media-form-overlay">
-    <div class="form-appbar">
-        <span class="material-symbols-outlined" style="cursor: pointer;" onclick="closeUploadForm()">arrow_back</span>
-        <div class="form-appbar-title" id="form-header-title">Upload Video</div>
-        <button class="btn-publish" onclick="initiateUpload()">Publish</button>
+<div class="cam-bottom-controls">
+    <div class="cam-tool" onclick="UI.showScreen('screen-gallery')">
+        <div style="width:40px;height:40px;border-radius:8px;background:var(--bg-surface);border:2px solid white;margin-bottom:4px;"></div>
+        Gallery
+    </div>
+    
+    <div class="record-btn-wrapper">
+        <div class="record-ring"></div>
+        <div class="record-progress" id="record-progress"></div>
+        <button class="record-btn" id="record-btn"
+            ontouchstart="CameraManager.startRecord()" ontouchend="CameraManager.stopRecord()"
+            onmousedown="CameraManager.startRecord()" onmouseup="CameraManager.stopRecord()"></button>
     </div>
 
-    <div class="form-content">
-        <!-- Thumbnail Section -->
-        <div class="media-preview-box ratio-16-9" id="form-preview-box">
-            <img id="form-preview-img" src="" alt="Thumbnail">
-            <button class="thumbnail-change-btn" onclick="document.getElementById('custom-thumb-picker').click()">
-                <span class="material-symbols-outlined" style="font-size: 16px;">image</span> Edit
-            </button>
-        </div>
-
-        <!-- Details Section -->
-        <div class="input-section">
-            <div class="input-group floating-label-input">
-                <input type="text" id="form-title" placeholder=" " maxlength="100">
-                <label>Create a title</label>
-            </div>
-            <div class="input-group floating-label-input">
-                <textarea id="form-desc" placeholder=" "></textarea>
-                <label>Add description</label>
-            </div>
-        </div>
-
-        <!-- Settings Section -->
-        <div class="input-section">
-            <div class="input-group">
-                <div class="setting-title" style="margin-bottom: 8px;">Visibility</div>
-                <select class="premium-select" id="form-visibility">
-                    <option value="public">Public</option>
-                    <option value="private">Private</option>
-                </select>
-            </div>
-            <div class="input-group floating-label-input">
-                <input type="text" id="form-location" placeholder=" ">
-                <label>Location (Optional)</label>
-            </div>
-        </div>
-
-        <div class="input-section">
-            <div class="setting-row">
-                <div class="setting-info">
-                    <div class="setting-title">Allow Comments</div>
-                    <div class="setting-desc">Viewers can leave comments</div>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="form-comments" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="setting-row">
-                <div class="setting-info">
-                    <div class="setting-title">Allow Likes</div>
-                    <div class="setting-desc">Show how many viewers like this</div>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="form-likes" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
-        </div>
-    </div>
-
-    <div class="bottom-action-bar">
-        <button class="btn-text" onclick="saveDraft()">Save Draft</button>
-        <button class="btn-publish" style="background: var(--md-sys-color-surface-variant); color: var(--md-sys-color-on-surface);" onclick="closeUploadForm()">Discard</button>
-    </div>
+    <button class="icon-btn" id="cam-done-btn" style="visibility:hidden; background:white; color:black; padding:12px;" onclick="EditorManager.loadFromCamera()">
+        <span class="material-symbols-outlined">check</span>
+    </button>
 </div>
 
-<!-- Post Form Overlay -->
-<div class="form-overlay" id="post-form-overlay">
-    <div class="form-appbar">
-        <span class="material-symbols-outlined" style="cursor: pointer;" onclick="closeUploadForm()">close</span>
-        <div class="form-appbar-title">Create Post</div>
-        <button class="btn-publish" onclick="initiatePostUpload()">Publish</button>
+<div class="editor-workspace" id="editor-workspace">
+    <video id="hidden-video" class="hidden" crossOrigin="anonymous"></video>
+    <canvas id="edit-canvas"></canvas>
+</div>
+
+<div class="editor-toolbar">
+    <div class="timeline" id="timeline-container">
+        <div class="timeline-frames" id="timeline-frames"></div>
+        <div class="trim-box" id="trim-box" style="left:0%; right:0%;">
+            <div class="trim-handle left" id="trim-left"></div>
+            <div class="trim-handle right" id="trim-right"></div>
+        </div>
     </div>
-    <div class="form-content">
-        <div class="input-section" id="post-images-grid" style="display: flex; gap:8px; overflow-x: auto; padding-bottom: 8px;">
-            <!-- Images Preview -->
+
+    <div class="tools-scroller">
+        <div class="cam-tool" onclick="EditorManager.applyFilter('brightness(1.2) contrast(1.1)')">
+            <span class="material-symbols-outlined">auto_awesome</span> Filter
         </div>
-        <div class="input-section">
-            <div class="floating-label-input">
-                <textarea id="post-caption" placeholder=" " style="height: 150px; border:none; padding:0; font-size:18px;"></textarea>
-                <label style="left:0; top:0;">What's on your mind?</label>
-            </div>
+        <div class="cam-tool" onclick="EditorManager.rotate()">
+            <span class="material-symbols-outlined">rotate_right</span> Rotate
         </div>
-        <div class="input-section">
-            <div class="setting-row">
-                <div class="setting-title">Allow Comments</div>
-                <label class="switch">
-                    <input type="checkbox" id="post-comments" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
+        <div class="cam-tool">
+            <span class="material-symbols-outlined">text_fields</span> Text
+        </div>
+        <div class="cam-tool">
+            <span class="material-symbols-outlined">graphic_eq</span> Noise Red.
+        </div>
+        <div class="cam-tool">
+            <span class="material-symbols-outlined">closed_caption</span> Caption
         </div>
     </div>
 </div>
 
-<!-- Hidden Pickers -->
-<input type="file" id="video-picker" accept="video/mp4,video/quicktime,video/x-matroska,video/webm" style="display:none;">
-<input type="file" id="image-picker" accept="image/jpeg,image/png,image/webp,image/gif" multiple style="display:none;">
-<input type="file" id="custom-thumb-picker" accept="image/jpeg,image/png" style="display:none;">
+<div class="form-container">
+    <div class="thumbnail-picker" id="thumbnail-picker">
+        <div class="thumb-card custom-add" onclick="document.getElementById('native-thumb-picker').click()">
+            <span class="material-symbols-outlined">add_photo_alternate</span>
+            <span style="font-size:12px; margin-top:8px;">Custom</span>
+        </div>
+        <!-- Auto generated thumbs here -->
+    </div>
+    <input type="file" id="native-thumb-picker" accept="image/*" class="hidden" onchange="DetailsManager.handleCustomThumb(event)">
 
-<!-- Toast Notification -->
-<div id="app-toast" class="toast">Message</div>
+    <div class="input-group">
+        <label>Title</label>
+        <input type="text" id="meta-title" class="input-field" placeholder="Caption your video..." maxlength="100" oninput="DetailsManager.updateCharCount('title-count', this, 100)">
+        <span class="char-count" id="title-count">0/100</span>
+    </div>
 
-<script>
-    (function() {
-        const db = window.db || (window.firebase ? window.firebase.database() : null);
-        
-        // State
-        let currentUploadType = null; // 'video', 'short', 'post'
-        let selectedFile = null;
-        let selectedThumbnailBlob = null;
-        let selectedPostImages = [];
-        let videoDurationStr = "0:00";
-        
-        // Upload Queue Storage (In-memory for active session)
-        let uploadQueue = []; // { id, type, file, title, status, progress, speed, remaining, thumbUrl }
-        let activeTab = 'uploading';
+    <div class="input-group">
+        <label>Description</label>
+        <textarea id="meta-desc" class="input-field" placeholder="Add details..." maxlength="5000" oninput="DetailsManager.updateCharCount('desc-count', this, 5000)"></textarea>
+        <span class="char-count" id="desc-count">0/5000</span>
+    </div>
 
-        // Listen for online/offline state
-        window.addEventListener('online', resumeAllUploads);
-        window.addEventListener('offline', pauseAllUploads);
+    <div class="input-group">
+        <label>Visibility</label>
+        <select id="meta-vis" class="input-field">
+            <option value="public">Public</option>
+            <option value="unlisted">Unlisted</option>
+            <option value="private">Private</option>
+        </select>
+    </div>
+    
+    <div class="input-group">
+        <label>Tags</label>
+        <input type="text" id="meta-tags" class="input-field" placeholder="e.g. gaming, vlog (comma separated)">
+    </div>
 
-        // Auto Save Draft logic
-        setInterval(() => {
-            if(document.getElementById('media-form-overlay').classList.contains('active')) {
-                localStorage.setItem('flaynity_draft_title', document.getElementById('form-title').value);
-                localStorage.setItem('flaynity_draft_desc', document.getElementById('form-desc').value);
-            }
-        }, 5000);
+    <div class="setting-row">
+        <div class="setting-info">
+            <div class="setting-title">Allow Comments</div>
+            <div class="setting-desc">Viewers can comment</div>
+        </div>
+        <input type="checkbox" id="meta-comments" checked style="width:24px;height:24px;accent-color:var(--text-primary)">
+    </div>
 
-        // 1. Triggered globally by navigation.js Bottom Sheet
-        window.openVideoUploadForm = function(type) {
-            currentUploadType = type;
-            if(type === 'video' || type === 'short') {
-                document.getElementById('video-picker').click();
-            } else if (type === 'post') {
-                document.getElementById('image-picker').click();
-            }
-        };
-
-        window.closeUploadForm = function() {
-            document.getElementById('media-form-overlay').classList.remove('active');
-            document.getElementById('post-form-overlay').classList.remove('active');
-            selectedFile = null;
-            selectedThumbnailBlob = null;
-            selectedPostImages = [];
-        };
-
-        function showToast(msg) {
-            const toast = document.getElementById('app-toast');
-            toast.innerText = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
-
-        // 2. Handle File Selection
-        document.getElementById('video-picker').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if(!file) return;
-
-            // Validation: Max 3GB
-            if(file.size > 3 * 1024 * 1024 * 1024) {
-                return showToast("File size exceeds 3GB limit.");
-            }
-
-            selectedFile = file;
-            showToast("Processing video...");
-
-            // Extract Metadata & Generate Thumbnail natively via Canvas
-            try {
-                const meta = await extractVideoMetadata(file);
-                
-                // Shorts Validation
-                if(currentUploadType === 'short') {
-                    if(meta.duration > 180) { // 3 Mins
-                        showToast("This video exceeds Shorts limit (Max 3m).");
-                        return; 
-                    }
-                    document.getElementById('form-preview-box').classList.remove('ratio-16-9');
-                    document.getElementById('form-preview-box').classList.add('ratio-9-16');
-                    document.getElementById('form-header-title').innerText = "Upload Short";
-                } else {
-                    document.getElementById('form-preview-box').classList.add('ratio-16-9');
-                    document.getElementById('form-preview-box').classList.remove('ratio-9-16');
-                    document.getElementById('form-header-title').innerText = "Upload Video";
-                }
-
-                selectedThumbnailBlob = meta.thumbBlob;
-                document.getElementById('form-preview-img').src = meta.thumbDataUrl;
-                videoDurationStr = formatDuration(meta.duration);
-
-                // Restore Drafts if any
-                document.getElementById('form-title').value = localStorage.getItem('flaynity_draft_title') || '';
-                document.getElementById('form-desc').value = localStorage.getItem('flaynity_draft_desc') || '';
-
-                // Open UI
-                document.getElementById('media-form-overlay').classList.add('active');
-
-            } catch (error) {
-                console.error(error);
-                showToast("Error processing video file.");
-            }
-            e.target.value = ''; // Reset
-        });
-
-        document.getElementById('custom-thumb-picker').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if(file) {
-                selectedThumbnailBlob = file;
-                document.getElementById('form-preview-img').src = URL.createObjectURL(file);
-            }
-        });
-
-        // Generate Thumbnail logic using Canvas
-        function extractVideoMetadata(file) {
-            return new Promise((resolve, reject) => {
-                const video = document.createElement('video');
-                video.preload = 'metadata';
-                video.src = URL.createObjectURL(file);
-                
-                video.onloadedmetadata = () => {
-                    video.currentTime = Math.min(2, video.duration / 3); // Seek to a safe frame
-                };
-
-                video.onseeked = () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth || 1280;
-                    canvas.height = video.videoHeight || 720;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                    canvas.toBlob((blob) => {
-                        resolve({ thumbBlob: blob, thumbDataUrl: dataUrl, duration: video.duration });
-                    }, 'image/jpeg', 0.8);
-                };
-                video.onerror = () => reject("Video loading error");
-            });
-        }
-
-        function formatDuration(seconds) {
-            const m = Math.floor(seconds / 60);
-            const s = Math.floor(seconds % 60);
-            return `${m}:${s < 10 ? '0' : ''}${s}`;
-        }
-
-        // 3. Initiate Upload Process
-        window.initiateUpload = function() {
-            const title = document.getElementById('form-title').value.trim();
-            if(!title) return showToast("Title is required");
-
-            const jobId = 'job_' + Date.now();
-            const job = {
-                id: jobId,
-                type: currentUploadType,
-                file: selectedFile,
-                thumbBlob: selectedThumbnailBlob,
-                title: title,
-                desc: document.getElementById('form-desc').value,
-                visibility: document.getElementById('form-visibility').value,
-                comments: document.getElementById('form-comments').checked,
-                likes: document.getElementById('form-likes').checked,
-                location: document.getElementById('form-location').value,
-                duration: videoDurationStr,
-                status: 'uploading',
-                progress: 0,
-                speed: '0 KB/s',
-                remaining: 'Calculating...',
-                isPaused: false
-            };
-
-            uploadQueue.push(job);
-            
-            // Clean UI & clear drafts
-            localStorage.removeItem('flaynity_draft_title');
-            localStorage.removeItem('flaynity_draft_desc');
-            closeUploadForm();
-            showToast("Upload started in background");
-            
-            // Force view to Upload Manager
-            switchManagerTab('uploading');
-
-            // Begin architecture pipeline
-            executeUploadPipeline(job);
-        };
-
-        // 4. Background Upload Pipeline Engine
-        async function executeUploadPipeline(job) {
-            try {
-                // Step 1: Upload Video File to Cloudflare R2
-                let uploadStartTime = Date.now();
-                let lastLoaded = 0;
-                let lastTime = uploadStartTime;
-
-                // Simulate/Wrap the actual R2 function to inject precise tracking
-                const videoUrl = await emulateOrExecuteR2Upload(job.file, (percent, loadedBytes, totalBytes) => {
-                    if(job.isPaused) return false; // Break hook
-                    
-                    let now = Date.now();
-                    let timeDiff = (now - lastTime) / 1000; // seconds
-                    if(timeDiff > 0.5) {
-                        let bytesDiff = loadedBytes - lastLoaded;
-                        let speedBps = bytesDiff / timeDiff;
-                        
-                        // Format speed
-                        if(speedBps > 1024*1024) job.speed = (speedBps / (1024*1024)).toFixed(1) + ' MB/s';
-                        else job.speed = (speedBps / 1024).toFixed(1) + ' KB/s';
-
-                        // Format remaining time
-                        let remainingBytes = totalBytes - loadedBytes;
-                        let secLeft = remainingBytes / (speedBps || 1);
-                        job.remaining = secLeft > 60 ? Math.floor(secLeft/60) + 'm left' : Math.floor(secLeft) + 's left';
-
-                        lastLoaded = loadedBytes;
-                        lastTime = now;
-                    }
-
-                    job.progress = percent;
-                    renderManagerUI();
-                });
-
-                if(job.status === 'failed' || job.isPaused) return;
-
-                // Step 2: Upload Thumbnail
-                job.status = 'processing';
-                job.progress = 100;
-                job.remaining = 'Generating Thumbnail...';
-                renderManagerUI();
-                
-                const thumbUrl = await emulateOrExecuteR2Upload(job.thumbBlob, () => {});
-
-                // Step 3: Background Processing Simulation
-                const stages = ['Encoding Video...', 'Preparing 1080P...', 'Preparing 720P...'];
-                for(let stage of stages) {
-                    job.remaining = stage;
-                    renderManagerUI();
-                    await new Promise(r => setTimeout(r, 1500)); // Artificial wait
-                }
-
-                // Step 4: Write Metadata to Firebase Realtime Database
-                job.remaining = 'Finalizing metadata...';
-                renderManagerUI();
-
-                if(db) {
-                    const node = job.type === 'short' ? 'shorts' : 'videos';
-                    const user = window.firebase.auth().currentUser;
-                    const metaData = {
-                        title: job.title,
-                        description: job.desc,
-                        cdnUrl: videoUrl,
-                        thumbnailUrl: thumbUrl,
-                        duration: job.duration,
-                        visibility: job.visibility,
-                        location: job.location,
-                        allowComments: job.comments,
-                        allowLikes: job.likes,
-                        ownerId: user ? user.uid : 'anonymous',
-                        channelName: user ? user.displayName : 'My Channel',
-                        channelAvatar: user ? user.photoURL : 'https://via.placeholder.com/150',
-                        createdAt: window.firebase.database.ServerValue.TIMESTAMP,
-                        views: 0,
-                        likes: 0,
-                        commentsCount: 0
-                    };
-                    await db.ref(node).push(metaData);
-                }
-
-                // Step 5: Complete
-                job.status = 'completed';
-                job.speed = '';
-                job.remaining = 'Published successfully';
-                renderManagerUI();
-                
-                // Automatic trigger to App - listeners in home.html pick this up instantly.
-
-            } catch(e) {
-                console.error("Pipeline Error", e);
-                job.status = 'failed';
-                job.remaining = 'Upload interrupted';
-                renderManagerUI();
-            }
-        }
-
-        // Bridge to previously provided cloudflare-r2.js logic
-        function emulateOrExecuteR2Upload(file, onProgress) {
-            return new Promise((resolve, reject) => {
-                if(window.uploadToR2) {
-                    // Assuming uploadToR2 is patched to provide loaded/total bytes
-                    window.uploadToR2(file, onProgress).then(resolve).catch(reject);
-                } else {
-                    // Emulation if script missing
-                    let loaded = 0;
-                    let total = file.size;
-                    let intv = setInterval(() => {
-                        loaded += total * 0.1;
-                        if(loaded >= total) loaded = total;
-                        onProgress( (loaded/total)*100, loaded, total );
-                        if(loaded === total) {
-                            clearInterval(intv);
-                            resolve('https://cdn.r2.flaynity.app/mock_' + Date.now());
-                        }
-                    }, 500);
-                }
-            });
-        }
-
-        // 5. Upload Manager UI
-        window.switchManagerTab = function(tabName) {
-            activeTab = tabName;
-            document.querySelectorAll('.manager-tab').forEach(t => t.classList.remove('active'));
-            document.querySelector(`.manager-tab[data-tab="${tabName}"]`).classList.add('active');
-            renderManagerUI();
-        };
-
-        function renderManagerUI() {
-            const container = document.getElementById('upload-queue-container');
-            container.innerHTML = '';
-            
-            const filteredJobs = uploadQueue.filter(j => j.status === activeTab || (activeTab === 'processing' && j.status === 'processing'));
-
-            if(filteredJobs.length === 0) {
-                container.innerHTML = `<div class="empty-state"><span class="material-symbols-outlined" style="font-size:48px; opacity:0.5; margin-bottom:12px;">cloud_done</span><br>No ${activeTab} items</div>`;
-                return;
-            }
-
-            filteredJobs.forEach(job => {
-                // Build dynamic action buttons based on state
-                let actionsHTML = '';
-                if(job.status === 'uploading') {
-                    actionsHTML = `
-                        <button class="queue-action-btn" onclick="pauseJob('${job.id}')">${job.isPaused ? 'Resume' : 'Pause'}</button>
-                        <button class="queue-action-btn" onclick="cancelJob('${job.id}')">Cancel</button>
-                    `;
-                } else if (job.status === 'failed') {
-                    actionsHTML = `
-                        <button class="queue-action-btn primary" onclick="retryJob('${job.id}')">Retry</button>
-                        <button class="queue-action-btn" onclick="deleteJob('${job.id}')">Delete</button>
-                    `;
-                } else if (job.status === 'completed') {
-                    actionsHTML = `<button class="queue-action-btn" onclick="deleteJob('${job.id}')">Remove from list</button>`;
-                }
-
-                // Render Item
-                const thumbSrc = job.thumbBlob ? URL.createObjectURL(job.thumbBlob) : '';
-                
-                container.insertAdjacentHTML('beforeend', `
-                    <div class="queue-item">
-                        <div class="queue-header">
-                            <img src="${thumbSrc}" class="queue-thumbnail">
-                            <div class="queue-info">
-                                <div class="queue-title">${job.title}</div>
-                                <div class="queue-status-text">${job.status === 'uploading' && job.isPaused ? 'Paused' : job.status === 'uploading' ? 'Uploading... ' + Math.round(job.progress) + '%' : job.remaining}</div>
-                            </div>
-                        </div>
-                        
-                        ${job.status === 'uploading' ? `
-                        <div class="queue-progress-row">
-                            <div class="queue-progress-bar"><div class="queue-progress-fill" style="width: ${job.progress}%"></div></div>
-                            <div class="queue-stats"><span>${job.speed}</span><span>${job.remaining}</span></div>
-                        </div>` : ''}
-                        
-                        ${actionsHTML ? `<div class="queue-actions">${actionsHTML}</div>` : ''}
-                    </div>
-                `);
-            });
-        }
-
-        // Job Controls
-        window.pauseJob = function(id) {
-            let job = uploadQueue.find(j => j.id === id);
-            if(job) {
-                job.isPaused = !job.isPaused;
-                if(!job.isPaused) executeUploadPipeline(job); // Resume
-                renderManagerUI();
-            }
-        };
-
-        window.cancelJob = function(id) {
-            uploadQueue = uploadQueue.filter(j => j.id !== id);
-            renderManagerUI();
-        };
-
-        window.deleteJob = function(id) {
-            uploadQueue = uploadQueue.filter(j => j.id !== id);
-            renderManagerUI();
-        };
-
-        window.retryJob = function(id) {
-            let job = uploadQueue.find(j => j.id === id);
-            if(job) {
-                job.status = 'uploading';
-                job.isPaused = false;
-                executeUploadPipeline(job);
-            }
-        };
-
-        // Auto Network Handlers
-        function pauseAllUploads() {
-            uploadQueue.forEach(j => { if(j.status === 'uploading') j.isPaused = true; });
-            showToast("Offline. Uploads paused.");
-            renderManagerUI();
-        }
-        function resumeAllUploads() {
-            uploadQueue.forEach(j => { 
-                if(j.status === 'uploading' && j.isPaused) {
-                    j.isPaused = false;
-                    executeUploadPipeline(j);
-                }
-            });
-            showToast("Online. Resuming uploads.");
-            renderManagerUI();
-        }
-
-        // 6. Posts Handling (Simplified for requirement fulfillment)
-        document.getElementById('image-picker').addEventListener('change', (e) => {
-            const files = Array.from(e.target.files);
-            if(files.length > 10) return showToast("Maximum 10 images allowed.");
-            
-            selectedPostImages = files;
-            const grid = document.getElementById('post-images-grid');
-            grid.innerHTML = '';
-            
-            files.forEach(f => {
-                grid.insertAdjacentHTML('beforeend', `<img src="${URL.createObjectURL(f)}" style="height:100px; width:80px; object-fit:cover; border-radius:8px;">`);
-            });
-
-            document.getElementById('post-form-overlay').classList.add('active');
-        });
-
-        window.initiatePostUpload = async function() {
-            const caption = document.getElementById('post-caption').value;
-            if(!caption && selectedPostImages.length === 0) return showToast("Post cannot be empty");
-
-            closeUploadForm();
-            showToast("Publishing Post...");
-
-            // Logic flows immediately to background.
-            // Parallel R2 image upload
-            let imgUrls = [];
-            for(let f of selectedPostImages) {
-                imgUrls.push(await emulateOrExecuteR2Upload(f, ()=>{}));
-            }
-
-            if(db) {
-                const user = window.firebase.auth().currentUser;
-                await db.ref('posts').push({
-                    title: caption, // Storing as title/caption
-                    images: imgUrls,
-                    imageUrl: imgUrls[0] || null, // Primary legacy support
-                    allowComments: document.getElementById('post-comments').checked,
-                    ownerId: user ? user.uid : 'anonymous',
-                    channelName: user ? user.displayName : 'My Channel',
-                    channelAvatar: user ? user.photoURL : 'https://via.placeholder.com/150',
-                    createdAt: window.firebase.database.ServerValue.TIMESTAMP,
-                    reactionsCount: 0,
-                    commentsCount: 0
-                });
-            }
-            showToast("Post Published!");
-            // Automatically listener in home feed picks up the new post
-        };
-
-        // Initialize empty state
-        renderManagerUI();
-    })();
-</script>
+    <div class="setting-row">
+        <div class="setting-info">
+            <div class="setting-title">Premium Content</div>
+            <div class="setting-desc">Subscribers only</div>
+        </div>
+        <input type="checkbox" id="meta-premium" style="width:24px;height:24px;accent-color:var(--text-primary)">
+    </div>
+    
+    <div class="setting-row">
+        <div class="setting-info">
+            <div class="setting-title">Schedule</div>
+            <div class="setting-desc">Publish at a later time</div>
+        </div>
+        <input type="datetime-local" id="meta-schedule" class="input-field" style="width: auto; padding: 8px;">
+    </div>
+</div>

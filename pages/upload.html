@@ -1,1086 +1,354 @@
+<!-- pages/upload.html -->
 <style>
-/* Flaynity Premium Upload Studio */
-/* Deep Light & Deep Dark Theme Variables */
-:root {
---upload-bg-light: #FFFFFF;
---upload-bg-dark: #000000;
---upload-surface-light: #F2F2F2;
---upload-surface-dark: #121212;
---upload-text-light: #000000;
---upload-text-dark: #FFFFFF;
---upload-text-sec-light: #606060;
---upload-text-sec-dark: #AAAAAA;
---upload-accent: #FF0000; /* YouTube-like accent */
---upload-accent-hover: #CC0000;
---upload-border-light: #E5E5E5;
---upload-border-dark: #2A2A2A;
+/* UPLOAD COMPONENT STYLES */
+.page-upload-root {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    z-index: 3000;
 }
 
-[data-theme="dark"] .upload-page,
-.dark-theme .upload-page,
-body.dark .upload-page {
---bg-primary: var(--upload-bg-dark);
---bg-surface: var(--upload-surface-dark);
---text-primary: var(--upload-text-dark);
---text-secondary: var(--upload-text-sec-dark);
---border-color: var(--upload-border-dark);
+/* Backdrop for bottom sheet */
+.upload-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+.upload-backdrop.active { opacity: 1; }
+
+/* Bottom Sheet */
+.upload-bottom-sheet {
+    background: var(--flaynity-surface);
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 24px 16px max(24px, var(--safe-area-bottom));
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+}
+.upload-bottom-sheet.active { transform: translateY(0); }
+
+.upload-sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+.upload-sheet-title { font-size: 20px; font-weight: 700; color: var(--flaynity-text); }
+.upload-sheet-close {
+    background: var(--flaynity-skeleton);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--flaynity-text);
 }
 
-[data-theme="light"] .upload-page,
-.light-theme .upload-page,
-body:not(.dark) .upload-page {
---bg-primary: var(--upload-bg-light);
---bg-surface: var(--upload-surface-light);
---text-primary: var(--upload-text-light);
---text-secondary: var(--upload-text-sec-light);
---border-color: var(--upload-border-light);
+.upload-options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
 }
+.upload-option-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 8px;
+    background: var(--flaynity-bg);
+    border: 1px solid var(--flaynity-divider);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.upload-option-card:active { background: var(--flaynity-skeleton); }
+.upload-option-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--flaynity-skeleton);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--flaynity-text);
+}
+.upload-option-icon .material-symbols-outlined { font-size: 28px; font-variation-settings: 'FILL' 1; }
+.upload-option-label { font-size: 14px; font-weight: 600; color: var(--flaynity-text); }
 
-.upload-page {
-width: 100%;
-height: 100vh;
-height: calc(100vh - var(--nav-height, 0px));
-overflow-y: auto;
-background-color: var(--bg-primary, #FFFFFF);
-color: var(--text-primary, #000000);
-padding-top: var(--safe-area-top, 0px);
-padding-bottom: var(--safe-area-bottom, 0px);
-position: relative;
-font-family: 'Roboto', 'Segoe UI', sans-serif;
+/* Full Screen Flow Layers (Video, Short, Post) */
+.upload-flow-layer {
+    position: absolute;
+    inset: 0;
+    background: var(--flaynity-bg);
+    z-index: 3100;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+.upload-flow-layer.active { transform: translateY(0); }
 
-/* Queue Manager */
-.upload-header {
-position: sticky;
-top: 0;
-z-index: 10;
-background-color: var(--bg-primary);
-display: flex;
-align-items: center;
-padding: 16px 20px;
-border-bottom: 1px solid var(--border-color);
+/* Common Flow Top Bar */
+.flow-top-bar {
+    height: var(--top-bar-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    padding-top: var(--safe-area-top);
+    border-bottom: 1px solid var(--flaynity-divider);
+    background: var(--flaynity-surface);
 }
+.flow-top-bar .title { font-size: 18px; font-weight: 700; color: var(--flaynity-text); }
+.flow-btn-primary {
+    background: var(--flaynity-text);
+    color: var(--flaynity-bg);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+}
+.flow-btn-primary:disabled { opacity: 0.5; }
 
-.upload-header-title {
-font-size: 22px;
-font-weight: 700;
-flex: 1;
-letter-spacing: -0.5px;
+/* Upload Forms & Editors */
+.upload-form-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    padding-bottom: calc(16px + var(--safe-area-bottom));
 }
+.form-group { margin-bottom: 24px; }
+.form-label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--flaynity-text); }
+.form-input, .form-textarea, .form-select {
+    width: 100%;
+    background: var(--flaynity-skeleton);
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 15px;
+    color: var(--flaynity-text);
+    font-family: inherit;
+    transition: border 0.2s;
+}
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+    border-color: var(--flaynity-text);
+    outline: none;
+}
+.form-textarea { resize: none; min-height: 120px; }
 
-.upload-queue {
-padding: 16px;
-display: flex;
-flex-direction: column;
-gap: 16px;
+/* Video Preview Box */
+.video-preview-box {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+.video-preview-box video { width: 100%; height: 100%; object-fit: contain; }
 
-.queue-item {
-background-color: var(--bg-surface);
-border-radius: 16px;
-padding: 14px;
-display: flex;
-gap: 14px;
-align-items: center;
-box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-transition: transform 0.2s;
+/* Short Camera UI Simulator */
+.short-camera-view {
+    flex: 1;
+    background: #000;
+    position: relative;
+    display: flex;
+    flex-direction: column;
 }
-.queue-item:active { transform: scale(0.98); }
+.camera-preview { width: 100%; height: 100%; object-fit: cover; }
+.camera-controls-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px 16px max(32px, var(--safe-area-bottom));
+}
+.camera-top-actions { display: flex; justify-content: space-between; align-items: flex-start; pointer-events: auto; }
+.camera-side-tools { display: flex; flex-direction: column; gap: 16px; }
+.cam-tool { background: rgba(0,0,0,0.5); color: #fff; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.camera-bottom-actions { display: flex; justify-content: center; align-items: center; gap: 32px; pointer-events: auto; }
+.cam-record-btn { width: 72px; height: 72px; border-radius: 50%; border: 4px solid #fff; background: var(--flaynity-accent); transition: transform 0.2s; }
+.cam-record-btn:active { transform: scale(0.9); }
 
-.queue-thumbnail {
-width: 64px;
-height: 64px;
-border-radius: 12px;
-background-color: var(--border-color);
-object-fit: cover;
+/* Post Image Grid Maker */
+.post-image-picker-box {
+    width: 100%; aspect-ratio: 3/4; background: var(--flaynity-skeleton); border-radius: 12px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--flaynity-text-secondary);
+    border: 2px dashed var(--flaynity-divider); cursor: pointer; margin-bottom: 16px; overflow: hidden; position: relative;
 }
+.post-image-picker-box img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1; }
 
-.queue-info {
-flex: 1;
-display: flex;
-flex-direction: column;
-gap: 6px;
+/* Upload Progress Engine Overlay */
+.upload-progress-overlay {
+    position: absolute; inset: 0; background: var(--flaynity-surface); z-index: 4000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 32px;
 }
-
-.queue-title {
-font-size: 15px;
-font-weight: 600;
-display: -webkit-box;
--webkit-line-clamp: 1;
--webkit-box-orient: vertical;
-overflow: hidden;
-}
-
-.queue-status {
-font-size: 13px;
-color: var(--text-secondary);
-font-weight: 500;
-}
-
-.queue-progress-bar {
-width: 100%;
-height: 6px;
-background-color: var(--border-color);
-border-radius: 4px;
-overflow: hidden;
-}
-
-.queue-progress-fill {
-height: 100%;
-background-color: var(--upload-accent);
-width: 0%;
-transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Bottom Sheet (Create Options) */
-.create-sheet-backdrop {
-position: fixed;
-top: 0; left: 0; right: 0; bottom: 0;
-background: rgba(0,0,0,0.6);
-backdrop-filter: blur(4px);
-z-index: 999;
-opacity: 0;
-pointer-events: none;
-transition: opacity 0.3s ease;
-}
-.create-sheet-backdrop.active {
-opacity: 1;
-pointer-events: auto;
-}
-
-.create-sheet {
-position: absolute;
-bottom: 0; left: 0; right: 0;
-background-color: var(--bg-primary);
-border-radius: 28px 28px 0 0;
-padding: 24px 16px var(--safe-area-bottom, 24px);
-transform: translateY(100%);
-transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-will-change: transform;
-}
-.create-sheet-backdrop.active .create-sheet {
-transform: translateY(0);
-}
-
-.sheet-drag-handle {
-width: 40px;
-height: 4px;
-background: var(--text-secondary);
-border-radius: 4px;
-margin: -8px auto 20px;
-opacity: 0.5;
-}
-
-.create-options-scroll {
-display: flex;
-overflow-x: auto;
-scroll-snap-type: x mandatory;
-gap: 16px;
-padding-bottom: 16px;
-scrollbar-width: none;
-}
-.create-options-scroll::-webkit-scrollbar { display: none; }
-
-.create-option {
-min-width: 120px;
-flex-shrink: 0;
-scroll-snap-align: center;
-display: flex;
-flex-direction: column;
-align-items: center;
-gap: 12px;
-padding: 20px;
-border-radius: 24px;
-background: var(--bg-surface);
-transition: all 0.2s;
-}
-.create-option:active { transform: scale(0.95); }
-.create-option .material-symbols-outlined {
-font-size: 36px;
-color: var(--text-primary);
-}
-.create-option span {
-font-size: 14px;
-font-weight: 600;
-color: var(--text-primary);
-}
-
-/* Premium Studio Overlay (Video/Shorts Details & Edit) */
-.studio-overlay {
-position: fixed;
-top: 0; left: 0; right: 0; bottom: 0;
-background-color: var(--bg-primary);
-z-index: 1000;
-display: flex;
-flex-direction: column;
-transform: translateY(100%);
-transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-will-change: transform;
-}
-.studio-overlay.active {
-transform: translateY(0);
-}
-
-.studio-header {
-display: flex;
-align-items: center;
-padding: 16px;
-padding-top: calc(16px + var(--safe-area-top, 0px));
-background-color: var(--bg-primary);
-border-bottom: 1px solid var(--border-color);
-}
-.studio-header .material-symbols-outlined {
-font-size: 28px;
-margin-right: 16px;
-cursor: pointer;
-}
-.studio-header-title {
-font-size: 18px;
-font-weight: 700;
-flex: 1;
-}
-.btn-publish {
-background-color: var(--upload-accent);
-color: #FFFFFF;
-padding: 8px 20px;
-border-radius: 20px;
-font-weight: 700;
-font-size: 14px;
-border: none;
-cursor: pointer;
-transition: background 0.2s;
-}
-.btn-publish:active { background-color: var(--upload-accent-hover); }
-
-.studio-content {
-flex: 1;
-overflow-y: auto;
-padding: 16px;
-display: flex;
-flex-direction: column;
-gap: 24px;
-}
-
-/* Video Preview Area */
-.preview-container {
-width: 100%;
-background-color: #000;
-border-radius: 16px;
-overflow: hidden;
-position: relative;
-aspect-ratio: 16/9;
-display: flex;
-align-items: center;
-justify-content: center;
-}
-.preview-container.shorts-mode {
-aspect-ratio: 9/16;
-max-width: 320px;
-margin: 0 auto;
-}
-.preview-video {
-width: 100%;
-height: 100%;
-object-fit: cover;
-}
-.play-overlay {
-position: absolute;
-width: 50px;
-height: 50px;
-background: rgba(0,0,0,0.5);
-border-radius: 50%;
-display: flex;
-align-items: center;
-justify-content: center;
-color: #FFF;
-pointer-events: none;
-transition: opacity 0.2s;
-}
-.play-overlay .material-symbols-outlined { font-size: 32px; }
-
-/* Editor Toolbar */
-.editor-toolbar {
-display: flex;
-gap: 16px;
-overflow-x: auto;
-padding: 8px 0;
-scrollbar-width: none;
-}
-.editor-toolbar::-webkit-scrollbar { display: none; }
-.editor-tool {
-display: flex;
-flex-direction: column;
-align-items: center;
-gap: 8px;
-color: var(--text-primary);
-font-size: 12px;
-font-weight: 600;
-min-width: 60px;
-}
-.editor-tool .icon-circle {
-width: 44px;
-height: 44px;
-border-radius: 22px;
-background-color: var(--bg-surface);
-display: flex;
-align-items: center;
-justify-content: center;
-}
-
-/* Form Inputs */
-.input-group {
-display: flex;
-flex-direction: column;
-gap: 10px;
-}
-.input-label {
-font-size: 14px;
-font-weight: 600;
-color: var(--text-primary);
-}
-.input-field {
-background-color: var(--bg-surface);
-border: 1px solid var(--border-color);
-border-radius: 12px;
-padding: 16px;
-color: var(--text-primary);
-font-size: 15px;
-font-family: inherit;
-width: 100%;
-outline: none;
-transition: border-color 0.2s;
-}
-.input-field:focus {
-border-color: var(--upload-accent);
-}
-textarea.input-field {
-resize: none;
-height: 120px;
-}
-
-.thumbnail-picker {
-display: flex;
-gap: 12px;
-overflow-x: auto;
-padding-bottom: 8px;
-}
-.thumb-option {
-width: 100px;
-height: 60px;
-border-radius: 8px;
-background-color: var(--bg-surface);
-flex-shrink: 0;
-border: 2px solid transparent;
-overflow: hidden;
-position: relative;
-}
-.thumb-option.active { border-color: var(--upload-accent); }
-.thumb-option img { width: 100%; height: 100%; object-fit: cover; }
-.thumb-option.custom {
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-color: var(--text-secondary);
-border: 2px dashed var(--border-color);
-background: transparent;
-}
-
-/* Camera Interface for Shorts */
-.camera-ui {
-position: fixed;
-top: 0; left: 0; right: 0; bottom: 0;
-background: #000;
-z-index: 1001;
-display: none;
-flex-direction: column;
-}
-.camera-ui.active { display: flex; }
-.camera-view {
-flex: 1;
-position: relative;
-width: 100%;
-overflow: hidden;
-}
-.camera-video {
-width: 100%;
-height: 100%;
-object-fit: cover;
-}
-.camera-top-bar {
-position: absolute;
-top: var(--safe-area-top, 20px);
-left: 0; right: 0;
-padding: 16px;
-display: flex;
-justify-content: space-between;
-align-items: center;
-color: #FFF;
-z-index: 2;
-}
-.camera-top-bar .icon {
-width: 40px; height: 40px;
-background: rgba(0,0,0,0.4);
-border-radius: 50%;
-display: flex; align-items: center; justify-content: center;
-}
-.camera-right-panel {
-position: absolute;
-right: 16px; top: 80px;
-display: flex; flex-direction: column; gap: 20px;
-color: #FFF; z-index: 2;
-}
-.camera-right-panel .tool {
-display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px;
-}
-.camera-bottom-bar {
-position: absolute;
-bottom: var(--safe-area-bottom, 40px);
-left: 0; right: 0;
-display: flex;
-justify-content: center;
-align-items: center;
-gap: 40px;
-z-index: 2;
-}
-.record-btn-outer {
-width: 72px; height: 72px;
-border-radius: 50%;
-border: 4px solid #FFF;
-display: flex; align-items: center; justify-content: center;
-transition: all 0.2s;
-}
-.record-btn-inner {
-width: 56px; height: 56px;
-border-radius: 50%;
-background: var(--upload-accent);
-transition: all 0.2s;
-}
-.recording .record-btn-inner {
-border-radius: 8px;
-transform: scale(0.6);
-}
-
-/* Empty State */
-.empty-state {
-text-align: center;
-padding: 60px 20px;
-color: var(--text-secondary);
-display: flex;
-flex-direction: column;
-align-items: center;
-}
-.empty-state .material-symbols-outlined {
-font-size: 64px;
-margin-bottom: 16px;
-opacity: 0.8;
-}
-.empty-state-title { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
-.empty-state-desc { font-size: 14px; line-height: 1.5; }
+.progress-ring { width: 80px; height: 80px; border-radius: 50%; border: 4px solid var(--flaynity-skeleton); border-top-color: var(--flaynity-accent); animation: spin 1s linear infinite; margin-bottom: 24px; }
+.progress-text { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.progress-subtext { font-size: 14px; color: var(--flaynity-text-secondary); }
 </style>
-<div class="upload-page" id="upload-page">
-<div class="upload-header">
-<div class="upload-header-title">Upload Studio</div>
-</div>
-code
-Code
-<!-- Active Uploads Queue -->
-<div class="upload-queue" id="upload-queue-container">
-    <div class="empty-state" id="queue-empty-state">
-        <span class="material-symbols-outlined">cloud_upload</span>
-        <div class="empty-state-title">No Active Uploads</div>
-        <div class="empty-state-desc">Your processing videos and shorts will appear here in real-time.</div>
-    </div>
-    <!-- Dynamic Queue Items injected here -->
-</div>
 
-<!-- Create Bottom Sheet -->
-<div class="create-sheet-backdrop" id="create-sheet-backdrop" onclick="closeCreateSheet(event)">
-    <div class="create-sheet" onclick="event.stopPropagation()">
-        <div class="sheet-drag-handle"></div>
-        <div style="font-size: 20px; font-weight: 700; margin-bottom: 24px; padding: 0 16px;">Create</div>
-        
-        <div class="create-options-scroll">
-            <div class="create-option" onclick="startFlow('video')">
-                <span class="material-symbols-outlined">video_library</span>
-                <span>Upload Video</span>
-            </div>
-            <div class="create-option" onclick="startFlow('short')">
-                <span class="material-symbols-outlined">play_circle</span>
-                <span>Create Short</span>
-            </div>
-            <div class="create-option" onclick="startFlow('post')">
-                <span class="material-symbols-outlined">edit_document</span>
-                <span>Create Post</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Video/Short Studio Editor & Details Overlay -->
-<div class="studio-overlay" id="studio-overlay">
-    <div class="studio-header">
-        <span class="material-symbols-outlined" onclick="closeStudio()">arrow_back</span>
-        <div class="studio-header-title" id="studio-title">Details</div>
-        <button class="btn-publish" onclick="publishMedia()">Publish</button>
-    </div>
+<div class="page-upload-root" id="upload-root">
     
-    <div class="studio-content">
-        <!-- Media Preview -->
-        <div class="preview-container" id="media-preview-container" onclick="togglePlay()">
-            <video class="preview-video" id="preview-video" loop playsinline></video>
-            <div class="play-overlay" id="play-overlay">
-                <span class="material-symbols-outlined">play_arrow</span>
-            </div>
-        </div>
-
-        <!-- Premium Editor Tools UI (Visual representation for WebView) -->
-        <div class="editor-toolbar">
-            <div class="editor-tool">
-                <div class="icon-circle"><span class="material-symbols-outlined">content_cut</span></div>
-                <span>Trim</span>
-            </div>
-            <div class="editor-tool">
-                <div class="icon-circle"><span class="material-symbols-outlined">tune</span></div>
-                <span>Filter</span>
-            </div>
-            <div class="editor-tool">
-                <div class="icon-circle"><span class="material-symbols-outlined">text_fields</span></div>
-                <span>Text</span>
-            </div>
-            <div class="editor-tool">
-                <div class="icon-circle"><span class="material-symbols-outlined">music_note</span></div>
-                <span>Sound</span>
-            </div>
-            <div class="editor-tool">
-                <div class="icon-circle"><span class="material-symbols-outlined">speed</span></div>
-                <span>Speed</span>
-            </div>
-        </div>
-
-        <!-- Details Form -->
-        <div class="input-group">
-            <label class="input-label">Thumbnail</label>
-            <div class="thumbnail-picker" id="thumbnail-picker">
-                <div class="thumb-option custom" onclick="uploadCustomThumb()">
-                    <span class="material-symbols-outlined">add_photo_alternate</span>
-                    <span style="font-size:11px; margin-top:4px;">Custom</span>
+    <!-- Backdrop & Bottom Sheet Selection -->
+    <div class="upload-backdrop" id="upload-backdrop">
+        <div class="upload-bottom-sheet" id="upload-sheet">
+            <div class="upload-sheet-header">
+                <div class="upload-sheet-title">Create</div>
+                <div class="upload-sheet-close" id="btn-close-upload-sheet">
+                    <span class="material-symbols-outlined">close</span>
                 </div>
-                <!-- Auto generated thumbs injected here -->
+            </div>
+            
+            <div class="upload-options-grid">
+                <div class="upload-option-card" id="btn-create-video">
+                    <div class="upload-option-icon"><span class="material-symbols-outlined">upload_file</span></div>
+                    <div class="upload-option-label">Video</div>
+                </div>
+                <div class="upload-option-card" id="btn-create-short">
+                    <div class="upload-option-icon"><span class="material-symbols-outlined">app_shortcut</span></div>
+                    <div class="upload-option-label">Short</div>
+                </div>
+                <div class="upload-option-card" id="btn-create-post">
+                    <div class="upload-option-icon"><span class="material-symbols-outlined">edit_square</span></div>
+                    <div class="upload-option-label">Post</div>
+                </div>
             </div>
         </div>
+    </div>
 
-        <div class="input-group">
-            <label class="input-label">Title</label>
-            <input type="text" class="input-field" id="upload-title" placeholder="Create a catchy title (required)" maxlength="100">
-            <div style="text-align: right; font-size: 12px; color: var(--text-secondary);" id="title-counter">0/100</div>
+    <!-- Video Upload Flow -->
+    <div class="upload-flow-layer flaynity-hidden" id="flow-video">
+        <div class="flow-top-bar">
+            <span class="material-symbols-outlined" id="btn-close-video-flow" style="cursor:pointer;">arrow_back</span>
+            <div class="title">Upload Video</div>
+            <button class="flow-btn-primary" id="btn-publish-video">Publish</button>
         </div>
-
-        <div class="input-group">
-            <label class="input-label">Description</label>
-            <textarea class="input-field" id="upload-desc" placeholder="Tell viewers about your video..." maxlength="5000"></textarea>
+        <div class="upload-form-scroll">
+            <div class="video-preview-box" id="video-file-picker-trigger">
+                <span class="material-symbols-outlined" style="font-size: 48px; color: var(--flaynity-text-secondary);">add_photo_alternate</span>
+                <video id="video-preview-element" class="flaynity-hidden" controls></video>
+                <input type="file" id="input-video-file" accept="video/*" class="flaynity-hidden">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Title</label>
+                <input type="text" class="form-input" id="input-video-title" placeholder="Create a title">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" id="input-video-desc" placeholder="Add a description"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Visibility</label>
+                <select class="form-select" id="input-video-visibility">
+                    <option value="public">Public</option>
+                    <option value="private">Private</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="input-video-category">
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Gaming">Gaming</option>
+                    <option value="Education">Education</option>
+                    <option value="Music">Music</option>
+                    <option value="Technology">Technology</option>
+                </select>
+            </div>
         </div>
+    </div>
 
-        <div class="input-group">
-            <label class="input-label">Visibility</label>
-            <select class="input-field" id="upload-visibility">
-                <option value="public">Public - Anyone can search for and view</option>
-                <option value="private">Private - Only you can view</option>
-            </select>
-        </div>
-
-        <div class="input-group">
-            <label class="input-label">Tags (comma separated)</label>
-            <input type="text" class="input-field" id="upload-tags" placeholder="e.g. gaming, vlog, tech">
+    <!-- Short Upload Flow (Camera Simulator & Details) -->
+    <div class="upload-flow-layer flaynity-hidden" id="flow-short">
+        <!-- Camera View -->
+        <div class="short-camera-view" id="short-camera-ui">
+            <video class="camera-preview" id="short-camera-video" autoplay muted playsinline></video>
+            <div class="camera-controls-overlay">
+                <div class="camera-top-actions">
+                    <div class="cam-tool" id="btn-close-short-flow"><span class="material-symbols-outlined">close</span></div>
+                    <div class="camera-side-tools">
+                        <div class="cam-tool"><span class="material-symbols-outlined">flip_camera_ios</span></div>
+                        <div class="cam-tool"><span class="material-symbols-outlined">speed</span></div>
+                        <div class="cam-tool"><span class="material-symbols-outlined">timer</span></div>
+                    </div>
+                </div>
+                <div class="camera-bottom-actions">
+                    <div class="cam-tool" id="btn-short-gallery"><span class="material-symbols-outlined">photo_library</span></div>
+                    <div class="cam-record-btn" id="btn-record-short"></div>
+                    <div class="cam-tool" id="btn-short-next"><span class="material-symbols-outlined">check</span></div>
+                </div>
+            </div>
+            <input type="file" id="input-short-file" accept="video/*" class="flaynity-hidden">
         </div>
         
-        <div class="input-group">
-            <label class="input-label">Category</label>
-            <select class="input-field" id="upload-category">
-                <option value="Entertainment">Entertainment</option>
-                <option value="Education">Education</option>
-                <option value="Gaming">Gaming</option>
-                <option value="Music">Music</option>
-                <option value="Vlogs">Vlogs</option>
-            </select>
-        </div>
-    </div>
-</div>
-
-<!-- Shorts Camera UI Overlay -->
-<div class="camera-ui" id="camera-ui">
-    <div class="camera-top-bar">
-        <div class="icon" onclick="closeCamera()"><span class="material-symbols-outlined">close</span></div>
-        <div style="font-weight:600; font-size:14px; background:rgba(0,0,0,0.5); padding:6px 12px; border-radius:16px;">Add Sound</div>
-        <div class="icon"><span class="material-symbols-outlined">more_horiz</span></div>
-    </div>
-    
-    <div class="camera-right-panel">
-        <div class="tool" onclick="flipCamera()">
-            <span class="material-symbols-outlined" style="font-size:28px;">flip_camera_ios</span>
-            <span>Flip</span>
-        </div>
-        <div class="tool">
-            <span class="material-symbols-outlined" style="font-size:28px;">timer</span>
-            <span>Timer</span>
-        </div>
-        <div class="tool">
-            <span class="material-symbols-outlined" style="font-size:28px;">speed</span>
-            <span>Speed</span>
-        </div>
-        <div class="tool">
-            <span class="material-symbols-outlined" style="font-size:28px;">auto_awesome</span>
-            <span>Effects</span>
+        <!-- Short Details View -->
+        <div class="upload-flow-layer flaynity-hidden" id="short-details-ui" style="z-index: 3101;">
+            <div class="flow-top-bar">
+                <span class="material-symbols-outlined" id="btn-back-short-details" style="cursor:pointer;">arrow_back</span>
+                <div class="title">Details</div>
+                <button class="flow-btn-primary" id="btn-publish-short">Upload Short</button>
+            </div>
+            <div class="upload-form-scroll">
+                <div class="form-group">
+                    <label class="form-label">Caption your Short</label>
+                    <textarea class="form-textarea" id="input-short-title" placeholder="Write a caption..." style="min-height: 80px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Visibility</label>
+                    <select class="form-select" id="input-short-visibility">
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
+                    </select>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="camera-view">
-        <video class="camera-video" id="camera-stream" autoplay muted playsinline></video>
+    <!-- Post Creation Flow -->
+    <div class="upload-flow-layer flaynity-hidden" id="flow-post">
+        <div class="flow-top-bar">
+            <span class="material-symbols-outlined" id="btn-close-post-flow" style="cursor:pointer;">close</span>
+            <div class="title">Create Post</div>
+            <button class="flow-btn-primary" id="btn-publish-post">Post</button>
+        </div>
+        <div class="upload-form-scroll">
+            <div class="post-image-picker-box" id="post-image-picker-trigger">
+                <span class="material-symbols-outlined" style="font-size: 32px; margin-bottom: 8px;">add_photo_alternate</span>
+                <span style="font-size: 13px; font-weight: 500;">Select Image (3:4 ratio)</span>
+                <img id="post-image-preview" src="" class="flaynity-hidden">
+                <input type="file" id="input-post-file" accept="image/*" class="flaynity-hidden">
+            </div>
+            <div class="form-group">
+                <textarea class="form-textarea" id="input-post-text" placeholder="What's on your mind?"></textarea>
+            </div>
+        </div>
     </div>
 
-    <div class="camera-bottom-bar">
-        <div class="icon" style="color:#FFF;" onclick="triggerNativePicker('short')">
-            <span class="material-symbols-outlined" style="font-size:32px;">photo_library</span>
-        </div>
-        <div class="record-btn-outer" id="record-btn" onclick="toggleRecording()">
-            <div class="record-btn-inner"></div>
-        </div>
-        <div class="icon" style="color:#FFF; opacity:0;" id="camera-next-btn" onclick="finishRecording()">
-            <span class="material-symbols-outlined" style="font-size:32px;">check_circle</span>
-        </div>
+    <!-- Global Upload Engine Progress -->
+    <div class="upload-progress-overlay flaynity-hidden" id="upload-progress-engine">
+        <div class="progress-ring"></div>
+        <div class="progress-text">Uploading to Flaynity...</div>
+        <div class="progress-subtext" id="upload-progress-percentage">0%</div>
     </div>
+
 </div>
-</div>
-<script>
-(function() {
-// --- Core Variables ---
-const db = window.firebase ? window.firebase.database() : null;
-const auth = window.firebase ? window.firebase.auth() : null;
-
-let currentUploadType = 'video';
-let currentMediaFile = null;
-let currentThumbData = null; // base64 or blob
-let generatedThumbs = [];
-let videoDuration = 0;
-
-// Camera variables
-let mediaRecorder;
-let recordedChunks = [];
-let stream = null;
-let isRecording = false;
-let facingMode = 'user';
-
-// Listeners for UI
-document.getElementById('upload-title').addEventListener('input', function(e) {
-document.getElementById('title-counter').innerText = `${e.target.value.length}/100`;
-});
-
-// --- Expose Navigation Functions ---
-window.openUploadSheet = function() {
-document.getElementById('create-sheet-backdrop').classList.add('active');
-};
-
-// Fallback backward compatibility for external callers
-window.openVideoUploadForm = window.openUploadSheet;
-
-window.closeCreateSheet = function(e) {
-if(e && e.target !== document.getElementById('create-sheet-backdrop')) return;
-document.getElementById('create-sheet-backdrop').classList.remove('active');
-};
-
-// --- Main Flow Control ---
-window.startFlow = function(type) {
-currentUploadType = type;
-closeCreateSheet();
-
-if (type === 'video') {
-triggerNativePicker('video');
-} else if (type === 'short') {
-openCameraUI();
-} else if (type === 'post') {
-// Bridge to existing post system if any, or show alert
-if(window.openPostUI) window.openPostUI();
-else alert("Post feature coming soon!");
-}
-};
-
-// --- Native Media Picker via input element ---
-window.triggerNativePicker = function(type) {
-const input = document.createElement('input');
-input.type = 'file';
-input.accept = 'video/*';
-input.onchange = e => {
-const file = e.target.files[0];
-if(file) {
-processSelectedVideo(file, type);
-}
-};
-input.click();
-};
-
-function processSelectedVideo(file, type) {
-currentMediaFile = file;
-const url = URL.createObjectURL(file);
-
-const previewVideo = document.getElementById('preview-video');
-previewVideo.src = url;
-
-// Wait for metadata to load to generate thumbnails & get duration
-previewVideo.onloadedmetadata = function() {
-videoDuration = previewVideo.duration;
-generateThumbnails(previewVideo);
-openStudioUI(type);
-if (type === 'short' && stream) {
-closeCamera(); // close camera if picked from gallery
-}
-};
-}
-
-// --- Thumbnail Generation ---
-function generateThumbnails(videoElement) {
-const picker = document.getElementById('thumbnail-picker');
-// Keep only the custom button
-picker.innerHTML = `
-<div class="thumb-option custom" onclick="uploadCustomThumb()">
-<span class="material-symbols-outlined">add_photo_alternate</span>
-<span style="font-size:11px; margin-top:4px;">Custom</span>
-</div>
-`;
-generatedThumbs = [];
-
-const canvas = document.createElement('canvas');
-const context = canvas.getContext('2d');
-
-// Generate 3 thumbnails at 15%, 50%, 85% of duration
-const times = [
-videoDuration * 0.15,
-videoDuration * 0.5,
-videoDuration * 0.85
-];
-
-// Temporary video element to seek without affecting main preview
-const tempVid = document.createElement('video');
-tempVid.src = videoElement.src;
-tempVid.crossOrigin = "anonymous";
-tempVid.muted = true;
-
-let timeIndex = 0;
-
-tempVid.onloadeddata = () => {
-tempVid.currentTime = times[timeIndex];
-};
-
-tempVid.onseeked = () => {
-canvas.width = tempVid.videoWidth;
-canvas.height = tempVid.videoHeight;
-context.drawImage(tempVid, 0, 0, canvas.width, canvas.height);
-
-const thumbData = canvas.toDataURL('image/jpeg', 0.7);
-generatedThumbs.push(thumbData);
-
-const thumbDiv = document.createElement('div');
-thumbDiv.className = `thumb-option ${timeIndex === 0 ? 'active' : ''}`;
-thumbDiv.innerHTML = `<img src="${thumbData}">`;
-thumbDiv.onclick = () => selectThumbnail(thumbDiv, thumbData);
-picker.appendChild(thumbDiv);
-
-if (timeIndex === 0) currentThumbData = thumbData; // Default select first
-
-timeIndex++;
-if (timeIndex < times.length) {
-tempVid.currentTime = times[timeIndex];
-}
-};
-}
-
-window.selectThumbnail = function(element, dataUrl) {
-document.querySelectorAll('.thumb-option').forEach(el => el.classList.remove('active'));
-element.classList.add('active');
-currentThumbData = dataUrl;
-};
-
-window.uploadCustomThumb = function() {
-const input = document.createElement('input');
-input.type = 'file';
-input.accept = 'image/*';
-input.onchange = e => {
-const file = e.target.files[0];
-if(file) {
-const reader = new FileReader();
-reader.onload = event => {
-const dataUrl = event.target.result;
-currentThumbData = dataUrl;
-const picker = document.getElementById('thumbnail-picker');
-const customEl = picker.querySelector('.custom');
-customEl.innerHTML = `<img src="${dataUrl}">`;
-selectThumbnail(customEl, dataUrl);
-};
-reader.readAsDataURL(file);
-}
-};
-input.click();
-};
-
-// --- Studio UI Control ---
-function openStudioUI(type) {
-document.getElementById('studio-title').innerText = type === 'short' ? 'Short Details' : 'Video Details';
-
-const previewContainer = document.getElementById('media-preview-container');
-if(type === 'short') {
-previewContainer.classList.add('shorts-mode');
-} else {
-previewContainer.classList.remove('shorts-mode');
-}
-
-document.getElementById('studio-overlay').classList.add('active');
-}
-
-window.closeStudio = function() {
-document.getElementById('studio-overlay').classList.remove('active');
-const video = document.getElementById('preview-video');
-video.pause();
-currentMediaFile = null;
-};
-
-window.togglePlay = function() {
-const video = document.getElementById('preview-video');
-const overlay = document.getElementById('play-overlay');
-if(video.paused) {
-video.play();
-overlay.style.opacity = '0';
-} else {
-video.pause();
-overlay.style.opacity = '1';
-}
-};
-
-// --- Shorts Camera WebRTC ---
-async function openCameraUI() {
-document.getElementById('camera-ui').classList.add('active');
-recordedChunks = [];
-document.getElementById('camera-next-btn').style.opacity = '0';
-startCameraStream();
-}
-
-async function startCameraStream() {
-if (stream) {
-stream.getTracks().forEach(track => track.stop());
-}
-try {
-stream = await navigator.mediaDevices.getUserMedia({
-video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
-audio: true
-});
-document.getElementById('camera-stream').srcObject = stream;
-} catch (err) {
-console.error("Camera access denied or unavailable", err);
-// Fallback to native input capture if WebRTC fails
-closeCamera();
-triggerNativePicker('short');
-}
-}
-
-window.flipCamera = function() {
-facingMode = facingMode === 'user' ? 'environment' : 'user';
-startCameraStream();
-};
-
-window.closeCamera = function() {
-document.getElementById('camera-ui').classList.remove('active');
-if (stream) {
-stream.getTracks().forEach(track => track.stop());
-stream = null;
-}
-};
-
-window.toggleRecording = function() {
-const btnContainer = document.getElementById('record-btn');
-if (!isRecording) {
-// Start Record
-isRecording = true;
-recordedChunks = [];
-btnContainer.classList.add('recording');
-
-try {
-mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8,opus' });
-} catch (e) {
-mediaRecorder = new MediaRecorder(stream); // fallback
-}
-
-mediaRecorder.ondataavailable = e => {
-if (e.data.size > 0) recordedChunks.push(e.data);
-};
-mediaRecorder.onstop = () => {
-document.getElementById('camera-next-btn').style.opacity = '1';
-};
-mediaRecorder.start();
-} else {
-// Stop Record
-isRecording = false;
-btnContainer.classList.remove('recording');
-if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-mediaRecorder.stop();
-}
-}
-};
-
-window.finishRecording = function() {
-if(recordedChunks.length === 0) return;
-const blob = new Blob(recordedChunks, { type: 'video/webm' });
-const file = new File([blob], `short_${Date.now()}.webm`, { type: 'video/webm' });
-
-closeCamera();
-processSelectedVideo(file, 'short');
-};
-
-// --- Data Conversion Utils ---
-function dataURLtoFile(dataurl, filename) {
-if(!dataurl) return null;
-let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-while(n--){
-u8arr[n] = bstr.charCodeAt(n);
-}
-return new File([u8arr], filename, {type:mime});
-}
-
-// --- Final Publish & Firebase Push ---
-window.publishMedia = async function() {
-const title = document.getElementById('upload-title').value.trim();
-if(!title) return alert("Please enter a title");
-if(!currentMediaFile) return alert("Media file missing");
-
-const desc = document.getElementById('upload-desc').value;
-const visibility = document.getElementById('upload-visibility').value;
-const tagsInput = document.getElementById('upload-tags').value;
-const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t);
-const category = document.getElementById('upload-category').value;
-
-// Prepare unique IDs
-const uqId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-
-closeStudio();
-renderQueueItem(title, uqId);
-
-// Upload Logic
-try {
-let thumbUrl = '';
-// 1. Upload Thumbnail to R2 (if R2 accepts File)
-if(currentThumbData && window.uploadToR2) {
-const thumbFile = dataURLtoFile(currentThumbData, `thumb_${uqId}.jpg`);
-if(thumbFile) {
-updateQueueProgress(uqId, 'Uploading Thumbnail...', 10);
-// Mock R2 upload for thumbnail, assuming uploadToR2 handles generic files
-thumbUrl = await window.uploadToR2(thumbFile, (p) => {});
-}
-}
-
-// 2. Upload Video to R2
-let videoUrl = '';
-if(window.uploadToR2) {
-videoUrl = await window.uploadToR2(currentMediaFile, (progress) => {
-// Map progress 10% to 90%
-const mapped = 10 + (progress * 0.8);
-updateQueueProgress(uqId, `Uploading Video... ${Math.round(progress)}%`, mapped);
-});
-} else {
-throw new Error("Cloudflare R2 module (window.uploadToR2) not found");
-}
-
-// 3. Save to Firebase Realtime Database
-updateQueueProgress(uqId, 'Finalizing Publish...', 95);
-
-if (db && auth) {
-const user = auth.currentUser;
-const dbRef = currentUploadType === 'short' ? db.ref('shorts') : db.ref('videos');
-const newRef = dbRef.push();
-const finalVideoId = newRef.key;
-
-const payload = {
-videoId: finalVideoId,
-uid: user ? user.uid : 'anonymous',
-username: user ? (user.displayName || 'User') : 'Anonymous',
-profilePhoto: user ? (user.photoURL || '') : '',
-title: title,
-description: desc,
-thumbUrl: thumbUrl,
-videoUrl: videoUrl,
-duration: videoDuration,
-views: 0,
-likes: 0,
-comments: 0,
-shares: 0,
-createdAt: window.firebase.database.ServerValue.TIMESTAMP,
-visibility: visibility,
-status: 'published',
-tags: tags,
-category: category,
-type: currentUploadType
-};
-
-await newRef.set(payload);
-updateQueueProgress(uqId, 'Published Successfully!', 100);
-
-setTimeout(() => {
-removeQueueItem(uqId);
-}, 4000);
-
-// Note: Home Feed, Shorts Feed will auto refresh based on their own Firebase listeners attached to 'child_added' / 'value'.
-} else {
-throw new Error("Firebase not initialized");
-}
-} catch (err) {
-console.error("Upload failed", err);
-updateQueueProgress(uqId, 'Upload Failed. Retry?', 0);
-}
-};
-
-// --- Queue UI Updaters ---
-function renderQueueItem(title, id) {
-document.getElementById('queue-empty-state').style.display = 'none';
-const queueContainer = document.getElementById('upload-queue-container');
-
-// Check if queue element exists
-let item = document.getElementById(`queue-${id}`);
-if(!item) {
-item = document.createElement('div');
-item.className = 'queue-item';
-item.id = `queue-${id}`;
-item.innerHTML = `
-<img class="queue-thumbnail" src="${currentThumbData || ''}" alt="thumb">
-<div class="queue-info">
-<div class="queue-title">${title}</div>
-<div class="queue-status" id="q-status-${id}">Starting upload...</div>
-<div class="queue-progress-bar">
-<div class="queue-progress-fill" id="q-fill-${id}" style="width: 0%;"></div>
-</div>
-</div>
-`;
-queueContainer.appendChild(item);
-}
-}
-
-function updateQueueProgress(id, statusText, percent) {
-const statusEl = document.getElementById(`q-status-${id}`);
-const fillEl = document.getElementById(`q-fill-${id}`);
-if(statusEl) statusEl.innerText = statusText;
-if(fillEl) fillEl.style.width = `${percent}%`;
-}
-
-function removeQueueItem(id) {
-const el = document.getElementById(`queue-${id}`);
-if(el) {
-el.style.transform = 'scale(0.9)';
-el.style.opacity = '0';
-setTimeout(() => {
-el.remove();
-const container = document.getElementById('upload-queue-container');
-if(container.querySelectorAll('.queue-item').length === 0) {
-document.getElementById('queue-empty-state').style.display = 'flex';
-}
-}, 300);
-}
-}
-
-})();
-</script>

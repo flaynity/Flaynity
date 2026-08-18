@@ -1,297 +1,206 @@
-<style>
-    .shorts-page-container {
-        width: 100vw;
-        height: calc(100vh - var(--nav-height));
-        background-color: var(--bg-primary);
-        overflow-y: scroll;
-        scroll-snap-type: y mandatory;
-        scroll-behavior: smooth;
-    }
-    
-    /* Hide scrollbar for seamless vertical swiping */
-    .shorts-page-container::-webkit-scrollbar {
-        display: none;
-    }
-    .shorts-page-container {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
-
-    .short-container {
-        width: 100vw;
-        height: calc(100vh - var(--nav-height));
-        scroll-snap-align: start;
-        position: relative;
-        background-color: var(--bg-primary);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .short-video {
-        width: 100%;
-        height: 100%;
-        /* Intelligent fitting preserving aspect ratio */
-        object-fit: contain; 
-    }
-
-    /* Right Action Bar */
-    .short-actions {
-        position: absolute;
-        right: 16px;
-        bottom: 120px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 24px;
-        z-index: 10;
-    }
-
-    .action-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-        color: var(--text-primary);
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
-    }
-
-    .action-item .material-symbols-outlined {
-        font-size: 32px;
-        transition: transform 0.2s;
-    }
-
-    .action-item:active .material-symbols-outlined {
-        transform: scale(0.9);
-    }
-
-    .action-text {
-        font-size: 13px;
-        font-weight: 600;
-    }
-
-    /* Music Disc */
-    .music-disc {
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        background-color: #222;
-        border: 2px solid #555;
-        animation: spin 4s linear infinite;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 10px;
-    }
-    .music-disc img {
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        object-fit: cover;
-    }
-    .music-disc.paused {
-        animation-play-state: paused;
-    }
-
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-
-    /* Bottom Info */
-    .short-info {
-        position: absolute;
-        bottom: 24px;
-        left: 16px;
-        right: 80px; /* leave room for actions */
-        z-index: 10;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
-    }
-
-    .short-channel-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 8px;
-    }
-
-    .short-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        border: 1px solid rgba(255,255,255,0.2);
-    }
-
-    .short-channel-name {
-        font-size: 15px;
-        font-weight: 600;
-    }
-
-    .short-subscribe {
-        background-color: var(--text-primary);
-        color: var(--bg-primary);
-        padding: 4px 12px;
-        border-radius: 16px;
-        font-size: 13px;
-        font-weight: 700;
-    }
-
-    .short-title-text {
-        font-size: 14px;
-        font-weight: 400;
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    /* Play/Pause Overlay Icon */
-    .center-overlay-icon {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 64px;
-        color: rgba(255,255,255,0.8);
-        background: rgba(0,0,0,0.4);
-        border-radius: 50%;
-        padding: 16px;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.3s;
-        z-index: 10;
-    }
-</style>
-
-<div class="shorts-page-container" id="shorts-scroll-container">
-    <!-- Shorts are injected here -->
+<!-- Upload Manager Queue View -->
+<div class="upload-header">
+    <div class="upload-header-title">Studio</div>
+    <div class="header-actions">
+        <span class="material-symbols-outlined">search</span>
+        <span class="material-symbols-outlined">more_vert</span>
+    </div>
 </div>
 
-<script>
-    (function() {
-        const container = document.getElementById('shorts-scroll-container');
-        const db = window.firebase ? window.firebase.database() : null;
+<div class="manager-tabs">
+    <div class="manager-tab active">Uploading</div>
+    <div class="manager-tab">Completed</div>
+    <div class="manager-tab">Drafts</div>
+</div>
 
-        // Intersection Observer for Auto-Play/Pause
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                const video = entry.target.querySelector('video');
-                const disc = entry.target.querySelector('.music-disc');
-                if (entry.isIntersecting) {
-                    video.play().catch(e => console.log("Autoplay prevented"));
-                    if(disc) disc.classList.remove('paused');
-                } else {
-                    video.pause();
-                    video.currentTime = 0; // Reset when out of view
-                    if(disc) disc.classList.add('paused');
-                }
-            });
-        }, { threshold: 0.7 }); // Triggers when 70% of video is visible
+<div class="upload-queue" id="queue-container">
+    <div class="empty-state" id="empty-queue">
+        <span class="material-symbols-outlined">cloud_upload</span>
+        <div style="font-size: 18px; font-weight: 600;">No active uploads</div>
+        <div style="font-size: 14px; margin-top: 8px;">Create a Short or Video to get started</div>
+    </div>
+</div>
 
-        function fetchShorts() {
-            if (!db) return;
-            // Fetch optimized payload from Firebase
-            db.ref('shorts').limitToLast(10).once('value', (snapshot) => {
-                snapshot.forEach((child) => {
-                    const short = child.val();
-                    renderShort(short, child.key);
-                });
-            });
-        }
+<!-- FAB -->
+<div class="fab-create" onclick="UI.showBottomSheet()">
+    <span class="material-symbols-outlined">add</span>
+</div>
 
-        function renderShort(data, id) {
-            const shortElement = document.createElement('div');
-            shortElement.className = 'short-container';
-            shortElement.innerHTML = `
-                <video class="short-video" src="${data.cdnUrl}" loop playsinline preload="metadata"></video>
-                <span class="material-symbols-outlined center-overlay-icon">play_arrow</span>
-                
-                <div class="short-actions">
-                    <div class="action-item" onclick="toggleLike(this, '${id}')">
-                        <span class="material-symbols-outlined">favorite</span>
-                        <span class="action-text">${formatCount(data.likes || 0)}</span>
-                    </div>
-                    <div class="action-item">
-                        <span class="material-symbols-outlined">chat_bubble</span>
-                        <span class="action-text">${formatCount(data.commentsCount || 0)}</span>
-                    </div>
-                    <div class="action-item">
-                        <span class="material-symbols-outlined">download</span>
-                        <span class="action-text">Save</span>
-                    </div>
-                    <div class="music-disc paused">
-                        <img src="${data.thumbnailUrl || ''}" alt="">
-                    </div>
-                </div>
+<!-- Create Bottom Sheet -->
+<div class="sheet-overlay" id="create-sheet">
+    <div class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">
+            Create
+            <span class="material-symbols-outlined" style="cursor:pointer" onclick="UI.hideBottomSheet()">close</span>
+        </div>
+        
+        <div class="type-selector" id="type-selector">
+            <div class="type-item" data-type="video">Video</div>
+            <div class="type-item selected" data-type="short">Short</div>
+            <div class="type-item" data-type="post">Post</div>
+        </div>
 
-                <div class="short-info">
-                    <div class="short-channel-row">
-                        <img src="" class="short-avatar" alt="">
-                        <span class="short-channel-name">@${data.channelId}</span>
-                        <span class="short-subscribe">Subscribe</span>
-                    </div>
-                    <div class="short-title-text">${data.title}</div>
-                </div>
-            `;
-            
-            // Play/Pause mechanics
-            let lastTap = 0;
-            const video = shortElement.querySelector('video');
-            const overlay = shortElement.querySelector('.center-overlay-icon');
-            const disc = shortElement.querySelector('.music-disc');
+        <button class="continue-btn" onclick="UI.handleSelection()">Continue</button>
+    </div>
+</div>
 
-            video.addEventListener('click', (e) => {
-                const currentTime = new Date().getTime();
-                const tapLength = currentTime - lastTap;
-                
-                if (tapLength < 300 && tapLength > 0) {
-                    // Double Tap logic
-                    e.preventDefault();
-                    triggerDoubleTapLike(shortElement, id);
-                } else {
-                    // Single Tap Play/Pause
-                    if (video.paused) {
-                        video.play();
-                        overlay.innerText = 'play_arrow';
-                        disc.classList.remove('paused');
-                    } else {
-                        video.pause();
-                        overlay.innerText = 'pause';
-                        disc.classList.add('paused');
-                    }
-                    overlay.style.opacity = '1';
-                    setTimeout(() => overlay.style.opacity = '0', 800);
-                }
-                lastTap = currentTime;
-            });
+<!-- Shorts Camera View -->
+<div class="fullscreen-view" id="camera-view">
+    <video id="camera-preview" autoplay muted playsinline></video>
+    
+    <div class="camera-ui-top">
+        <span class="material-symbols-outlined" style="font-size: 32px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);" onclick="UI.closeCamera()">close</span>
+        <div style="background: rgba(0,0,0,0.5); padding: 6px 16px; border-radius: 20px; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(4px);">
+            <span class="material-symbols-outlined" style="font-size: 18px;">music_note</span>
+            <span style="font-size: 14px; font-weight: 600;">Add Sound</span>
+        </div>
+        <span style="width: 32px;"></span> <!-- spacer -->
+    </div>
 
-            container.appendChild(shortElement);
-            observer.observe(shortElement);
-        }
+    <div class="camera-tools-right">
+        <button class="tool-btn" onclick="Camera.switchCamera()">
+            <span class="material-symbols-outlined">cameraswitch</span>
+            Switch
+        </button>
+        <button class="tool-btn" onclick="Camera.toggleDuration()">
+            <span class="material-symbols-outlined">timer</span>
+            <span id="cam-duration">15s</span>
+        </button>
+        <button class="tool-btn">
+            <span class="material-symbols-outlined">speed</span>
+            Speed
+        </button>
+        <button class="tool-btn">
+            <span class="material-symbols-outlined">face_retouching_natural</span>
+            Beauty
+        </button>
+    </div>
 
-        window.toggleLike = function(element, shortId) {
-            const icon = element.querySelector('.material-symbols-outlined');
-            if(icon.style.fontVariationSettings.includes('"FILL" 1')) {
-                icon.style.fontVariationSettings = '"FILL" 0';
-                icon.style.color = "var(--text-primary)";
-                // Firebase logic to decrement
-            } else {
-                icon.style.fontVariationSettings = '"FILL" 1';
-                icon.style.color = "var(--accent-color)";
-                // Firebase logic to increment
-            }
-        };
+    <div class="camera-bottom">
+        <button class="tool-btn" onclick="document.getElementById('native-video-picker').click()">
+            <div style="width: 40px; height: 40px; background: var(--bg-surface); border-radius: 8px; border: 2px solid white;"></div>
+            Gallery
+        </button>
 
-        function triggerDoubleTapLike(element, shortId) {
-            const actionItem = element.querySelector('.action-item');
-            window.toggleLike(actionItem, shortId);
-            // Can add heart animation over video here
-        }
+        <div class="record-btn-container">
+            <div class="record-ring"></div>
+            <div class="record-progress" id="record-progress"></div>
+            <button class="record-btn" id="record-btn" 
+                ontouchstart="Camera.startRecording()" 
+                ontouchend="Camera.stopRecording()"
+                onmousedown="Camera.startRecording()" 
+                onmouseup="Camera.stopRecording()"></button>
+        </div>
 
-        function formatCount(num) {
-            if(num >= 1000000) return (num/1000000).toFixed(1) + 'M';
-            if(num >= 1000) return (num/1000).toFixed(1) + 'K';
-            return num;
-        }
+        <button class="tool-btn" onclick="Camera.confirmRecording()" style="visibility: hidden;" id="cam-next-btn">
+            <span class="material-symbols-outlined" style="background: white; color: black; border-radius: 50%; padding: 8px;">check</span>
+        </button>
+    </div>
+</div>
 
-        // Init
-        fetchShorts();
-    })();
-</script>
+<!-- Native File Picker (Acts as standard responsive gallery in WebView) -->
+<input type="file" id="native-video-picker" accept="video/*" class="hidden-input" onchange="Editor.loadFromFile(event)">
+
+<!-- Editor View (For both Short and Video) -->
+<div class="fullscreen-view" id="editor-view">
+    <div class="editor-header">
+        <span class="material-symbols-outlined" onclick="UI.closeEditor()">arrow_back</span>
+        <div style="font-weight: 600; font-size: 18px;" id="editor-title">Edit Video</div>
+        <span class="material-symbols-outlined" onclick="Editor.proceedToDetails()">arrow_forward</span>
+    </div>
+
+    <div class="editor-preview-container">
+        <video id="edit-video-player" loop playsinline></video>
+    </div>
+
+    <div class="editor-controls">
+        <div class="timeline-container">
+            <div class="timeline-frames" id="timeline-frames"></div>
+            <div class="trim-slider" id="trim-slider" style="left: 0%; right: 0%;">
+                <div class="trim-handle left" id="trim-handle-left"></div>
+                <div class="trim-handle right" id="trim-handle-right"></div>
+            </div>
+        </div>
+
+        <div class="editor-tools">
+            <button class="tool-btn">
+                <span class="material-symbols-outlined">content_cut</span>
+                Trim
+            </button>
+            <button class="tool-btn" onclick="Editor.applyFilter('contrast(1.2) saturate(1.2)')">
+                <span class="material-symbols-outlined">auto_awesome</span>
+                Filter
+            </button>
+            <button class="tool-btn">
+                <span class="material-symbols-outlined">text_fields</span>
+                Text
+            </button>
+            <button class="tool-btn">
+                <span class="material-symbols-outlined">volume_up</span>
+                Volume
+            </button>
+            <button class="tool-btn" onclick="Editor.reset()">
+                <span class="material-symbols-outlined">restart_alt</span>
+                Reset
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Details View -->
+<div class="fullscreen-view" id="details-view">
+    <div class="details-header">
+        <span class="material-symbols-outlined" onclick="UI.closeDetails()">arrow_back</span>
+        <div style="font-weight: 700; font-size: 18px; margin-left: 16px;">Details</div>
+        <button class="header-publish-btn" onclick="Uploader.start()">Upload</button>
+    </div>
+
+    <div class="details-form">
+        
+        <div class="thumb-selector" id="thumb-selector">
+            <div class="thumb-item add-custom" onclick="document.getElementById('native-thumb-picker').click()">
+                <span class="material-symbols-outlined">add_photo_alternate</span>
+                <span style="font-size: 12px; margin-top: 8px;">Custom</span>
+            </div>
+            <!-- Auto extracted frames go here -->
+        </div>
+        <input type="file" id="native-thumb-picker" accept="image/*" class="hidden-input">
+
+        <div class="input-group">
+            <label>Title</label>
+            <input type="text" id="meta-title" class="input-field" placeholder="Caption your video..." maxlength="100">
+        </div>
+
+        <div class="input-group">
+            <label>Description</label>
+            <textarea id="meta-desc" class="input-field" placeholder="Add details..."></textarea>
+        </div>
+
+        <div class="input-group">
+            <label>Visibility</label>
+            <select id="meta-visibility" class="input-field">
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+                <option value="unlisted">Unlisted</option>
+            </select>
+        </div>
+
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-title">Allow Comments</div>
+                <div class="setting-desc">Viewers can comment on this video</div>
+            </div>
+            <input type="checkbox" id="meta-comments" checked style="width: 24px; height: 24px; accent-color: var(--text-primary);">
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-title">Premium Content</div>
+                <div class="setting-desc">Restrict access to subscribers</div>
+            </div>
+            <input type="checkbox" id="meta-premium" style="width: 24px; height: 24px; accent-color: var(--text-primary);">
+        </div>
+
+    </div>
+</div>

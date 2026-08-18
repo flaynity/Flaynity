@@ -1,30 +1,16 @@
-// js/app.js
-
 /*
  * ==============================================================================
- * FLAYNITY - MASTER APPLICATION LOGIC
+ * FLAYNITY - MASTER APPLICATION LOGIC (Sketchware WebView Optimized)
  * ==============================================================================
- * Architecture:
- * 1. Imports & Configuration
- * 2. State Management
- * 3. Utility Systems (UI, DOM, Time)
- * 4. Core Services (Auth, DB, Storage)
+ * 1. Configuration & State
+ * 2. Utility Systems
+ * 3. Services (Firebase Compat, S3, Android Bridge)
+ * 4. Auth System (Native Google Sign-In Support)
  * 5. Page Controllers (Home, Watch, Shorts, Upload, Discover, You)
- * 6. Router & Bootstrap
+ * 6. Router & Bootstrap (Back Button Integration)
  * ==============================================================================
  */
 
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth';
-import { getDatabase, ref, onValue, set, push, update, remove, serverTimestamp, get, query, orderByChild, equalTo } from 'firebase/database';
-
-/* 
- * SECURITY CONFLICT NOTICE (Rule 101):
- * Rule 7 requested no secret R2 keys in client code, but the prompt explicitly 
- * provided R2 Access & Secret keys to be implemented for direct upload functionality.
- * To maintain the requested behavior without silently deleting it, the direct AWS SDK 
- * implementation is used. In true production, replace this with a backend presigned URL API.
- */
 const CONFIG = {
     firebase: {
         apiKey: "AIzaSyCiUTQp_QDSbBIOGJXKI7jJmzQHPu8L14I",
@@ -45,7 +31,6 @@ const CONFIG = {
     }
 };
 
-// Global App State
 const State = {
     user: null,
     channel: null,
@@ -93,7 +78,6 @@ const Utils = {
 
 const UI = {
     toast: (msg) => {
-        // Simple functional toast
         const t = document.createElement('div');
         t.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:12px 24px;border-radius:24px;z-index:9999;font-size:14px;font-weight:600;transition:opacity 0.3s;`;
         t.innerText = msg;
@@ -108,18 +92,17 @@ const UI = {
     }
 };
 
-// --- SERVICES ---
-let firebaseApp, auth, db;
-let s3Client;
+// --- SERVICES (Compat SDK) ---
+let auth, db, s3Client;
 
 const Services = {
     init: () => {
-        // Firebase
-        firebaseApp = initializeApp(CONFIG.firebase);
-        auth = getAuth(firebaseApp);
-        db = getDatabase(firebaseApp);
+        if (!firebase.apps.length) {
+            firebase.initializeApp(CONFIG.firebase);
+        }
+        auth = firebase.auth();
+        db = firebase.database();
 
-        // AWS R2
         if (typeof AWS !== 'undefined') {
             AWS.config.update({
                 accessKeyId: CONFIG.r2.accessKey,
@@ -159,13 +142,15 @@ const Services = {
     },
     addListener: (id, path, callback) => {
         if (State.activeListeners[id]) return;
-        const dbRef = ref(db, path);
-        const unsub = onValue(dbRef, callback);
-        State.activeListeners[id] = unsub;
+        const dbRef = db.ref(path);
+        const wrapper = (snapshot) => callback(snapshot);
+        dbRef.on('value', wrapper);
+        State.activeListeners[id] = { ref: dbRef, cb: wrapper };
     },
     removeListener: (id) => {
-        if (State.activeListeners[id]) {
-            State.activeListeners[id](); // call unsubscribe
+        const listener = State.activeListeners[id];
+        if (listener) {
+            listener.ref.off('value', listener.cb);
             delete State.activeListeners[id];
         }
     }
@@ -174,7 +159,7 @@ const Services = {
 // --- AUTHENTICATION ---
 const AuthSystem = {
     init: () => {
-        onAuthStateChanged(auth, async (user) => {
+        auth.onAuthStateChanged(async (user) => {
             Utils.hide('flaynity-splash');
             if (user) {
                 State.user = user;
@@ -190,32 +175,35 @@ const AuthSystem = {
         const btnGoogle = Utils.el('btn-google-signin');
         if (btnGoogle) {
             btnGoogle.onclick = async () => {
-                try {
-                    const provider = new GoogleAuthProvider();
-                    await signInWithPopup(auth, provider);
-                } catch (error) {
-                    UI.toast("Authentication failed.");
-                    console.error("Auth Error", error);
+                // If Sketchware AndroidBridge is present, use Native Google Login
+                if (window.AndroidBridge && typeof AndroidBridge.triggerGoogleSignIn === 'function') {
+                    AndroidBridge.triggerGoogleSignIn();
+                } else {
+                    // Fallback to Web Google Login
+                    try {
+                        const provider = new firebase.auth.GoogleAuthProvider();
+                        await auth.signInWithRedirect(provider);
+                    } catch (error) {
+                        UI.toast("Authentication failed.");
+                    }
                 }
             };
         }
     },
     loadUserProfile: async () => {
-        // Sync minimal user profile
-        const userRef = ref(db, `users/${State.user.uid}`);
-        await update(userRef, {
+        const userRef = db.ref(`users/${State.user.uid}`);
+        await userRef.update({
             displayName: State.user.displayName,
             email: State.user.email,
             photoURL: State.user.photoURL,
-            lastLogin: serverTimestamp()
+            lastLogin: firebase.database.ServerValue.TIMESTAMP
         });
 
-        // Check if user has a channel
-        const chQuery = query(ref(db, 'channels'), orderByChild('uid'), equalTo(State.user.uid));
-        onValue(chQuery, (snap) => {
+        const chQuery = db.ref('channels').orderByChild('uid').equalTo(State.user.uid);
+        chQuery.on('value', (snap) => {
             if (snap.exists()) {
                 const data = snap.val();
-                State.channel = data[Object.keys(data)[0]]; // Cache active channel
+                State.channel = data[Object.keys(data)[0]];
                 State.channel.id = Object.keys(data)[0];
             } else {
                 State.channel = null;
@@ -224,13 +212,20 @@ const AuthSystem = {
         });
     },
     signOut: async () => {
-        await signOut(auth);
+        await auth.signOut();
         window.location.reload();
     }
 };
 
-// --- PAGE CONTROLLERS ---
+// Native App Calls this function when Google Sign-In is successful
+window.handleNativeGoogleSignIn = (idToken) => {
+    const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
+    auth.signInWithCredential(credential).catch(error => {
+        UI.toast("Google Sign-In Error: " + error.message);
+    });
+};
 
+// --- PAGE CONTROLLERS ---
 const HomeFeed = {
     init: () => {
         const searchBtn = Utils.el('btn-home-search');
@@ -239,10 +234,8 @@ const HomeFeed = {
     render: () => {
         const container = Utils.el('home-feed-container');
         if (!container) return;
+        container.innerHTML = ''; 
         
-        container.innerHTML = ''; // Clear skeleton
-        
-        // Merge strategy: 6 shorts, 10 videos, 1 post, repeat
         let vIdx = 0, sIdx = 0, pIdx = 0;
         const v = State.cache.videos;
         const s = State.cache.shorts;
@@ -258,7 +251,6 @@ const HomeFeed = {
         while(isRunning) {
             let addedAny = false;
             
-            // Add Shorts
             if (sIdx < s.length) {
                 const sBlock = s.slice(sIdx, sIdx + 6);
                 sIdx += 6;
@@ -266,7 +258,6 @@ const HomeFeed = {
                 addedAny = true;
             }
 
-            // Add Videos
             if (vIdx < v.length) {
                 const vBlock = v.slice(vIdx, vIdx + 10);
                 vIdx += 10;
@@ -276,7 +267,6 @@ const HomeFeed = {
                 addedAny = true;
             }
 
-            // Add Post
             if (pIdx < p.length) {
                 container.appendChild(HomeFeed.buildPostCard(p[pIdx]));
                 pIdx++;
@@ -321,7 +311,6 @@ const HomeFeed = {
         innerHTML += `</div>`;
         section.innerHTML = innerHTML;
         
-        // Add click listeners to switch to shorts tab and play specific short
         section.querySelectorAll('.s-card').forEach(card => {
             card.onclick = () => {
                 Router.switchTab('shorts');
@@ -359,7 +348,6 @@ const HomeFeed = {
 };
 
 const Player = {
-    activeVideoRef: null,
     init: () => {
         const closeBtn = Utils.el('btn-close-watch');
         if (closeBtn) closeBtn.onclick = Player.close;
@@ -378,18 +366,15 @@ const Player = {
         avatar.style.display = 'block';
 
         videoEl.src = videoData.cdnVideoUrl;
-        videoEl.play().catch(e => console.log("Autoplay prevented", e));
+        videoEl.play().catch(e => console.log("Autoplay prevented"));
         
         layer.classList.add('active');
         State.currentPlayingVideo = videoEl;
+        Router.addBackState('player');
 
-        // View increment (Transaction safely)
+        // Update Views via Compat Firebase
         if (videoData.id) {
-            const vRef = ref(db, `videos/${videoData.id}/views`);
-            // Basic view bump (In production use Cloud Functions)
-            get(vRef).then(s => {
-                set(vRef, (s.val() || 0) + 1);
-            });
+            db.ref(`videos/${videoData.id}/views`).transaction((current) => (current || 0) + 1);
         }
     },
     close: () => {
@@ -408,7 +393,6 @@ const ShortsPlayer = {
         const container = Utils.el('shorts-feed-container');
         if (!container) return;
 
-        // Intersection Observer for Auto-play
         ShortsPlayer.observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 const videoEl = entry.target.querySelector('.short-video-element');
@@ -470,21 +454,17 @@ const ShortsPlayer = {
                 </div>
             `;
             
-            // Double tap logic for likes
             let lastTap = 0;
             div.addEventListener('click', (e) => {
                 const now = new Date().getTime();
                 const timesince = now - lastTap;
                 if ((timesince < 300) && (timesince > 0)) {
-                    // Double tap
                     Utils.vibrate();
                     const icon = div.querySelector('.like-btn .material-symbols-outlined');
                     icon.style.color = 'var(--flaynity-accent)';
                     icon.style.transform = 'scale(1.3)';
                     setTimeout(() => icon.style.transform = 'scale(1)', 200);
-                    // Add like logic via Firebase
                 } else {
-                    // Single tap: play/pause
                     const v = div.querySelector('.short-video-element');
                     const indicator = div.querySelector('.short-center-play-indicator');
                     if(v.paused) {
@@ -513,18 +493,15 @@ const ShortsPlayer = {
 const UploadPage = {
     activeFile: null,
     init: () => {
-        // Bottom Sheet Logic
         Utils.el('btn-close-upload-sheet').onclick = UploadPage.closeSheet;
         Utils.el('upload-backdrop').onclick = (e) => {
             if(e.target.id === 'upload-backdrop') UploadPage.closeSheet();
         };
 
-        // Open Flows
         Utils.el('btn-create-video').onclick = () => UploadPage.openFlow('flow-video');
         Utils.el('btn-create-short').onclick = () => UploadPage.openFlow('flow-short');
         Utils.el('btn-create-post').onclick = () => UploadPage.openFlow('flow-post');
 
-        // Close Flows
         Utils.el('btn-close-video-flow').onclick = UploadPage.closeAll;
         Utils.el('btn-close-short-flow').onclick = UploadPage.closeAll;
         Utils.el('btn-close-post-flow').onclick = UploadPage.closeAll;
@@ -532,7 +509,6 @@ const UploadPage = {
             Utils.hide('short-details-ui');
         };
 
-        // Inputs
         Utils.el('video-file-picker-trigger').onclick = () => Utils.el('input-video-file').click();
         Utils.el('input-video-file').onchange = (e) => {
             const file = e.target.files[0];
@@ -545,7 +521,6 @@ const UploadPage = {
             }
         };
 
-        // Post Image Picker
         Utils.el('post-image-picker-trigger').onclick = () => Utils.el('input-post-file').click();
         Utils.el('input-post-file').onchange = (e) => {
             const file = e.target.files[0];
@@ -558,12 +533,10 @@ const UploadPage = {
             }
         };
 
-        // Publish Actions
         Utils.el('btn-publish-video').onclick = () => UploadPage.publish('video');
         Utils.el('btn-publish-post').onclick = () => UploadPage.publish('post');
         Utils.el('btn-publish-short').onclick = () => UploadPage.publish('short');
 
-        // Short Camera Simulator
         Utils.el('btn-record-short').onmousedown = () => {
             Utils.el('btn-record-short').style.transform = 'scale(0.8)';
             UI.toast("Recording Simulator...");
@@ -572,7 +545,6 @@ const UploadPage = {
             Utils.el('btn-record-short').style.transform = 'scale(1)';
         };
         Utils.el('btn-short-next').onclick = () => {
-            // Fake progression from camera to details
             Utils.show('short-details-ui');
         };
         Utils.el('btn-short-gallery').onclick = () => {
@@ -595,10 +567,10 @@ const UploadPage = {
         const b = Utils.el('upload-backdrop');
         const s = Utils.el('upload-sheet');
         b.style.display = 'flex';
-        // force reflow
         void b.offsetWidth;
         b.classList.add('active');
         s.classList.add('active');
+        Router.addBackState('upload-sheet');
     },
     closeSheet: () => {
         const b = Utils.el('upload-backdrop');
@@ -610,12 +582,12 @@ const UploadPage = {
     openFlow: (id) => {
         UploadPage.closeSheet();
         UploadPage.activeFile = null;
-        // Reset previews
         Utils.hide('video-preview-element');
         Utils.hide('post-image-preview');
         const f = Utils.el(id);
         f.classList.remove('flaynity-hidden');
         setTimeout(() => f.classList.add('active'), 10);
+        Router.addBackState('upload-flow');
     },
     closeAll: () => {
         ['flow-video', 'flow-short', 'flow-post', 'short-details-ui'].forEach(id => {
@@ -635,7 +607,7 @@ const UploadPage = {
             channelId: State.channel.id,
             channelName: State.channel.channelName,
             channelAvatar: State.channel.avatarUrl || '',
-            createdAt: serverTimestamp(),
+            createdAt: firebase.database.ServerValue.TIMESTAMP,
             views: 0, likes: 0, comments: 0
         };
 
@@ -651,7 +623,6 @@ const UploadPage = {
             if (!title) return UI.toast("Caption is required.");
             metadata.title = title;
             metadata.visibility = Utils.el('input-short-visibility').value;
-            // if activeFile missing, mock it for simulator
             if(!UploadPage.activeFile) return UI.toast("Record or pick a short first.");
         } else if (type === 'post') {
             const text = Utils.el('input-post-text').value.trim();
@@ -661,37 +632,28 @@ const UploadPage = {
 
         try {
             UI.showUploadProgress();
-            
-            // 1. Upload media to R2 if exists
             if (UploadPage.activeFile) {
                 const r2Url = await Services.uploadFile(UploadPage.activeFile, `${type}s/${State.user.uid}`);
                 if (type === 'post') metadata.imageUrl = r2Url;
                 else metadata.cdnVideoUrl = r2Url;
             }
 
-            // 2. Save Metadata
-            const dbRef = ref(db, `${type}s`);
-            const newRef = push(dbRef);
-            await set(newRef, metadata);
+            await db.ref(`${type}s`).push().set(metadata);
 
             UI.hideUploadProgress();
             UI.toast("Published successfully!");
             UploadPage.closeAll();
-            
-            // Auto switch tab to see new content
             Router.switchTab('home');
 
         } catch (error) {
             UI.hideUploadProgress();
             UI.toast("Upload failed.");
-            console.error(error);
         }
     }
 };
 
 const DiscoverPage = {
     init: () => {
-        // Setup categories
         const chips = document.querySelectorAll('.discover-categories-scroll .d-chip');
         chips.forEach(c => {
             c.onclick = () => {
@@ -705,19 +667,29 @@ const DiscoverPage = {
 const YouPage = {
     init: () => {
         Utils.el('btn-sign-out').onclick = AuthSystem.signOut;
-        Utils.el('btn-create-channel').onclick = () => Utils.el('layer-create-channel').classList.add('active');
-        Utils.el('btn-view-channel').onclick = YouPage.openViewChannel;
-        Utils.el('btn-open-edit-channel').onclick = YouPage.openEditChannel;
-        Utils.el('btn-open-analytics').onclick = () => Utils.el('layer-analytics').classList.add('active');
+        Utils.el('btn-create-channel').onclick = () => {
+            Utils.el('layer-create-channel').classList.add('active');
+            Router.addBackState('layer');
+        };
+        Utils.el('btn-view-channel').onclick = () => {
+            YouPage.openViewChannel();
+            Router.addBackState('layer');
+        };
+        Utils.el('btn-open-edit-channel').onclick = () => {
+            YouPage.openEditChannel();
+            Router.addBackState('layer');
+        };
+        Utils.el('btn-open-analytics').onclick = () => {
+            Utils.el('layer-analytics').classList.add('active');
+            Router.addBackState('layer');
+        };
         
-        // Back buttons
         document.querySelectorAll('.btn-back-layer').forEach(btn => {
             btn.onclick = (e) => {
                 e.target.closest('.you-sub-layer').classList.remove('active');
             };
         });
 
-        // Tabs
         document.querySelectorAll('.vc-tab').forEach(tab => {
             tab.onclick = (e) => {
                 document.querySelectorAll('.vc-tab').forEach(t => t.classList.remove('active'));
@@ -726,7 +698,6 @@ const YouPage = {
             };
         });
 
-        // Create Channel Form
         Utils.el('picker-create-avatar').onclick = () => Utils.el('input-create-avatar').click();
         let createAvatarFile = null;
         Utils.el('input-create-avatar').onchange = (e) => {
@@ -741,28 +712,26 @@ const YouPage = {
             
             try {
                 UI.showUploadProgress();
-                let avatarUrl = State.user.photoURL; // default to google
+                let avatarUrl = State.user.photoURL; 
                 if(createAvatarFile) {
                     avatarUrl = await Services.uploadFile(createAvatarFile, `avatars/${State.user.uid}`);
                 }
 
-                const chRef = push(ref(db, 'channels'));
+                const chRef = db.ref('channels').push();
                 const newChannel = {
                     uid: State.user.uid,
                     channelName: name,
                     handle: handle,
                     avatarUrl: avatarUrl,
                     category: Utils.el('input-create-category').value,
-                    createdAt: serverTimestamp(),
+                    createdAt: firebase.database.ServerValue.TIMESTAMP,
                     subscribersCount: 0
                 };
-                await set(chRef, newChannel);
+                await chRef.set(newChannel);
                 
                 UI.hideUploadProgress();
                 UI.toast("Channel created!");
                 Utils.el('layer-create-channel').classList.remove('active');
-                
-                // State updates automatically via listener in AuthSystem
             } catch(e) {
                 UI.hideUploadProgress();
                 UI.toast("Error creating channel.");
@@ -802,7 +771,6 @@ const YouPage = {
         const area = Utils.el('vc-content-area');
         area.innerHTML = '';
         
-        // Filter globally cached items by user
         let items = [];
         if (tabName === 'videos') items = State.cache.videos.filter(v => v.uid === State.user.uid);
         else if (tabName === 'shorts') items = State.cache.shorts.filter(s => s.uid === State.user.uid);
@@ -813,7 +781,6 @@ const YouPage = {
             return;
         }
 
-        // Minimal render logic
         items.forEach(item => {
             const div = document.createElement('div');
             div.style.padding = '12px 0';
@@ -829,21 +796,19 @@ const YouPage = {
         Utils.el('input-edit-name').value = ch.channelName || '';
         Utils.el('input-edit-handle').value = ch.handle || '';
         Utils.el('input-edit-desc').value = ch.description || '';
-        
-        // Form bindings for edit would go here (similar to create)
     }
 };
 
-// --- ROUTER & DOM MANAGER ---
+// --- ROUTER & BACK NAVIGATION ---
 const Router = {
     pages: ['home', 'shorts', 'upload', 'discover', 'you'],
     loaded: new Set(),
+    history: ['home'], // Store tab history for back button
     
     fetchPages: async () => {
         const appRoot = document.getElementById('app');
         for (const p of Router.pages) {
             try {
-                // Fetch template generated in previous stages
                 const res = await fetch(`pages/${p}.html`);
                 const html = await res.text();
                 
@@ -879,15 +844,12 @@ const Router = {
     },
 
     switchTab: (tabName) => {
-        // Ignore if upload (it's an overlay)
         if(tabName === 'upload') return;
 
-        // Pause global video if switching away from watch/shorts
         if (State.currentPlayingVideo && tabName !== 'shorts') {
             State.currentPlayingVideo.pause();
         }
 
-        // Hide all pages
         Router.pages.forEach(p => {
             if (p !== 'upload') {
                 const el = document.getElementById(`page-container-${p}`);
@@ -895,11 +857,9 @@ const Router = {
             }
         });
 
-        // Show target page
         const target = document.getElementById(`page-container-${tabName}`);
         if (target) target.style.display = 'block';
 
-        // Update Nav UI
         document.querySelectorAll('.nav-item').forEach(el => {
             if (el.dataset.tab !== 'upload') {
                 el.classList.toggle('active', el.dataset.tab === tabName);
@@ -907,25 +867,87 @@ const Router = {
         });
 
         State.currentTab = tabName;
+        
+        // Android Back Button Logic
+        if (Router.history[Router.history.length - 1] !== tabName) {
+            Router.history.push(tabName);
+            Router.updateAndroidBackStack();
+        }
 
-        // Trigger Lifecycle
-        if (tabName === 'shorts') {
-            // Re-eval shorts intersection
-            ShortsPlayer.render();
+        if (tabName === 'shorts') ShortsPlayer.render();
+    },
+
+    // Notifies Native Java code if there is anything to go back to
+    updateAndroidBackStack: () => {
+        if (window.AndroidBridge && typeof AndroidBridge.setBackStackStatus === 'function') {
+            // True if history length > 1 or any modals/layers are open
+            AndroidBridge.setBackStackStatus(Router.history.length > 1);
+        }
+    },
+    
+    addBackState: (stateType) => {
+        Router.history.push(stateType);
+        Router.updateAndroidBackStack();
+    }
+};
+
+// Exposed to MainActivity.java for Handling Back Press
+window.app = {
+    executeBackAction: () => {
+        // Close overlays first
+        if (Utils.el('flaynity-watch-page').classList.contains('active')) {
+            Player.close();
+            Router.history.pop();
+            Router.updateAndroidBackStack();
+            return;
+        }
+        if (Utils.el('upload-sheet').classList.contains('active')) {
+            UploadPage.closeSheet();
+            Router.history.pop();
+            Router.updateAndroidBackStack();
+            return;
+        }
+        if (Utils.el('flow-video').classList.contains('active') || Utils.el('flow-short').classList.contains('active') || Utils.el('flow-post').classList.contains('active')) {
+            UploadPage.closeAll();
+            Router.history.pop();
+            Router.updateAndroidBackStack();
+            return;
+        }
+        
+        // Close sub-layers (You Page channels, edit, etc)
+        const activeSubLayers = document.querySelectorAll('.you-sub-layer.active');
+        if (activeSubLayers.length > 0) {
+            activeSubLayers.forEach(l => l.classList.remove('active'));
+            Router.history.pop();
+            Router.updateAndroidBackStack();
+            return;
+        }
+
+        // Navigate previous tab
+        if (Router.history.length > 1) {
+            Router.history.pop(); // Remove current
+            const prevTab = Router.history.pop(); // Get previous
+            Router.switchTab(prevTab);
         }
     }
 };
 
-// --- REALTIME ENGINE ---
+// Native Network Listeners from MainActivity.java
+window['Devnix-aiNetworkOnline'] = function() {
+    State.online = true;
+    Utils.hide('flaynity-offline');
+};
+window['Devnix-aiNetworkOffline'] = function() {
+    State.online = false;
+    Utils.show('flaynity-offline');
+};
+
+// --- REALTIME ENGINE & BOOTSTRAP ---
 const App = {
     bootstrap: async () => {
-        // 1. Load HTML templates
         await Router.fetchPages();
 
-        // 2. Init Services
         Services.init();
-
-        // 3. Init Controllers
         HomeFeed.init();
         Player.init();
         ShortsPlayer.init();
@@ -934,23 +956,18 @@ const App = {
         YouPage.init();
         Router.bindGlobalNavigation();
 
-        // 4. Offline Handling
-        window.addEventListener('offline', () => {
-            State.online = false;
-            Utils.show('flaynity-offline');
-        });
-        window.addEventListener('online', () => {
-            State.online = true;
-            Utils.hide('flaynity-offline');
-        });
+        window.addEventListener('offline', () => window['Devnix-aiNetworkOffline']());
+        window.addEventListener('online', () => window['Devnix-aiNetworkOnline']());
         Utils.el('btn-retry-network').onclick = () => {
-            if(navigator.onLine) Utils.hide('flaynity-offline');
+            if (window.AndroidBridge && typeof AndroidBridge.retryConnection === 'function') {
+                AndroidBridge.retryConnection();
+            } else if (navigator.onLine) {
+                window['Devnix-aiNetworkOnline']();
+            }
         };
 
-        // 5. Auth System Start
         AuthSystem.init();
 
-        // Prevent unwanted default behaviors
         document.addEventListener('contextmenu', e => {
             if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
                 e.preventDefault();
@@ -959,14 +976,12 @@ const App = {
     },
 
     startRealtimeListeners: () => {
-        // Listen to Videos
         Services.addListener('videos', 'videos', (snapshot) => {
             const data = snapshot.val() || {};
             State.cache.videos = Object.keys(data).map(k => ({id: k, ...data[k]})).sort((a,b) => b.createdAt - a.createdAt);
             if (State.currentTab === 'home') HomeFeed.render();
         });
 
-        // Listen to Shorts
         Services.addListener('shorts', 'shorts', (snapshot) => {
             const data = snapshot.val() || {};
             State.cache.shorts = Object.keys(data).map(k => ({id: k, ...data[k]})).sort((a,b) => b.createdAt - a.createdAt);
@@ -974,7 +989,6 @@ const App = {
             if (State.currentTab === 'shorts') ShortsPlayer.render();
         });
 
-        // Listen to Posts
         Services.addListener('posts', 'posts', (snapshot) => {
             const data = snapshot.val() || {};
             State.cache.posts = Object.keys(data).map(k => ({id: k, ...data[k]})).sort((a,b) => b.createdAt - a.createdAt);
@@ -983,7 +997,6 @@ const App = {
     }
 };
 
-// Start application
 window.addEventListener('DOMContentLoaded', () => {
     App.bootstrap();
 });

@@ -1,160 +1,297 @@
-<div class="upload-tabs">
-    <div class="upload-tab active">Uploading</div>
-    <div class="upload-tab">Completed</div>
-    <div class="upload-tab">Drafts</div>
-</div>
-
-<div class="queue-list" id="upload-queue">
-    <!-- Empty state injected by JS if empty -->
-</div>
-
-<div class="fab-container">
-    <button class="fab-btn" onclick="UI.openBottomSheet()">
-        <span class="material-symbols-outlined">add</span>
-    </button>
-</div>
-
-    <div class="creation-carousel" id="creation-carousel">
-        <div class="creation-item" data-type="video">Video</div>
-        <div class="creation-item active" data-type="short">Short</div>
-        <div class="creation-item" data-type="post">Post</div>
-    </div>
-
-    <button class="sheet-action-btn" onclick="UI.handleCreationSelection()">Continue</button>
-</div>
-
-<div class="cam-top-controls">
-    <button class="icon-btn" onclick="UI.backToMain()"><span class="material-symbols-outlined">close</span></button>
-    <div class="cam-sound-btn">
-        <span class="material-symbols-outlined" style="font-size: 18px;">music_note</span> Add Sound
-    </div>
-    <div style="width:40px"></div>
-</div>
-
-<div style="position:absolute; right:16px; top:100px;" class="cam-tools-right">
-    <div class="cam-tool" onclick="CameraManager.switchCamera()">
-        <span class="material-symbols-outlined">cameraswitch</span> Flip
-    </div>
-    <div class="cam-tool" onclick="CameraManager.toggleDuration()">
-        <span class="material-symbols-outlined">timer</span> <span id="cam-dur-label">15s</span>
-    </div>
-    <div class="cam-tool">
-        <span class="material-symbols-outlined">speed</span> Speed
-    </div>
-    <div class="cam-tool">
-        <span class="material-symbols-outlined">face_retouching_natural</span> Beauty
-    </div>
-</div>
-
-<div class="cam-bottom-controls">
-    <div class="cam-tool" onclick="UI.showScreen('screen-gallery')">
-        <div style="width:40px;height:40px;border-radius:8px;background:var(--bg-surface);border:2px solid white;margin-bottom:4px;"></div>
-        Gallery
-    </div>
+<style>
+    .shorts-page-container {
+        width: 100vw;
+        height: calc(100vh - var(--nav-height));
+        background-color: var(--bg-primary);
+        overflow-y: scroll;
+        scroll-snap-type: y mandatory;
+        scroll-behavior: smooth;
+    }
     
-    <div class="record-btn-wrapper">
-        <div class="record-ring"></div>
-        <div class="record-progress" id="record-progress"></div>
-        <button class="record-btn" id="record-btn"
-            ontouchstart="CameraManager.startRecord()" ontouchend="CameraManager.stopRecord()"
-            onmousedown="CameraManager.startRecord()" onmouseup="CameraManager.stopRecord()"></button>
-    </div>
+    /* Hide scrollbar for seamless vertical swiping */
+    .shorts-page-container::-webkit-scrollbar {
+        display: none;
+    }
+    .shorts-page-container {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
 
-    <button class="icon-btn" id="cam-done-btn" style="visibility:hidden; background:white; color:black; padding:12px;" onclick="EditorManager.loadFromCamera()">
-        <span class="material-symbols-outlined">check</span>
-    </button>
+    .short-container {
+        width: 100vw;
+        height: calc(100vh - var(--nav-height));
+        scroll-snap-align: start;
+        position: relative;
+        background-color: var(--bg-primary);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .short-video {
+        width: 100%;
+        height: 100%;
+        /* Intelligent fitting preserving aspect ratio */
+        object-fit: contain; 
+    }
+
+    /* Right Action Bar */
+    .short-actions {
+        position: absolute;
+        right: 16px;
+        bottom: 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        z-index: 10;
+    }
+
+    .action-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        color: var(--text-primary);
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+    }
+
+    .action-item .material-symbols-outlined {
+        font-size: 32px;
+        transition: transform 0.2s;
+    }
+
+    .action-item:active .material-symbols-outlined {
+        transform: scale(0.9);
+    }
+
+    .action-text {
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    /* Music Disc */
+    .music-disc {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background-color: #222;
+        border: 2px solid #555;
+        animation: spin 4s linear infinite;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 10px;
+    }
+    .music-disc img {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .music-disc.paused {
+        animation-play-state: paused;
+    }
+
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    /* Bottom Info */
+    .short-info {
+        position: absolute;
+        bottom: 24px;
+        left: 16px;
+        right: 80px; /* leave room for actions */
+        z-index: 10;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+    }
+
+    .short-channel-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    .short-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .short-channel-name {
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    .short-subscribe {
+        background-color: var(--text-primary);
+        color: var(--bg-primary);
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .short-title-text {
+        font-size: 14px;
+        font-weight: 400;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Play/Pause Overlay Icon */
+    .center-overlay-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 64px;
+        color: rgba(255,255,255,0.8);
+        background: rgba(0,0,0,0.4);
+        border-radius: 50%;
+        padding: 16px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+        z-index: 10;
+    }
+</style>
+
+<div class="shorts-page-container" id="shorts-scroll-container">
+    <!-- Shorts are injected here -->
 </div>
 
-<div class="editor-workspace" id="editor-workspace">
-    <video id="hidden-video" class="hidden" crossOrigin="anonymous"></video>
-    <canvas id="edit-canvas"></canvas>
-</div>
+<script>
+    (function() {
+        const container = document.getElementById('shorts-scroll-container');
+        const db = window.firebase ? window.firebase.database() : null;
 
-<div class="editor-toolbar">
-    <div class="timeline" id="timeline-container">
-        <div class="timeline-frames" id="timeline-frames"></div>
-        <div class="trim-box" id="trim-box" style="left:0%; right:0%;">
-            <div class="trim-handle left" id="trim-left"></div>
-            <div class="trim-handle right" id="trim-right"></div>
-        </div>
-    </div>
+        // Intersection Observer for Auto-Play/Pause
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const video = entry.target.querySelector('video');
+                const disc = entry.target.querySelector('.music-disc');
+                if (entry.isIntersecting) {
+                    video.play().catch(e => console.log("Autoplay prevented"));
+                    if(disc) disc.classList.remove('paused');
+                } else {
+                    video.pause();
+                    video.currentTime = 0; // Reset when out of view
+                    if(disc) disc.classList.add('paused');
+                }
+            });
+        }, { threshold: 0.7 }); // Triggers when 70% of video is visible
 
-    <div class="tools-scroller">
-        <div class="cam-tool" onclick="EditorManager.applyFilter('brightness(1.2) contrast(1.1)')">
-            <span class="material-symbols-outlined">auto_awesome</span> Filter
-        </div>
-        <div class="cam-tool" onclick="EditorManager.rotate()">
-            <span class="material-symbols-outlined">rotate_right</span> Rotate
-        </div>
-        <div class="cam-tool">
-            <span class="material-symbols-outlined">text_fields</span> Text
-        </div>
-        <div class="cam-tool">
-            <span class="material-symbols-outlined">graphic_eq</span> Noise Red.
-        </div>
-        <div class="cam-tool">
-            <span class="material-symbols-outlined">closed_caption</span> Caption
-        </div>
-    </div>
-</div>
+        function fetchShorts() {
+            if (!db) return;
+            // Fetch optimized payload from Firebase
+            db.ref('shorts').limitToLast(10).once('value', (snapshot) => {
+                snapshot.forEach((child) => {
+                    const short = child.val();
+                    renderShort(short, child.key);
+                });
+            });
+        }
 
-<div class="form-container">
-    <div class="thumbnail-picker" id="thumbnail-picker">
-        <div class="thumb-card custom-add" onclick="document.getElementById('native-thumb-picker').click()">
-            <span class="material-symbols-outlined">add_photo_alternate</span>
-            <span style="font-size:12px; margin-top:8px;">Custom</span>
-        </div>
-        <!-- Auto generated thumbs here -->
-    </div>
-    <input type="file" id="native-thumb-picker" accept="image/*" class="hidden" onchange="DetailsManager.handleCustomThumb(event)">
+        function renderShort(data, id) {
+            const shortElement = document.createElement('div');
+            shortElement.className = 'short-container';
+            shortElement.innerHTML = `
+                <video class="short-video" src="${data.cdnUrl}" loop playsinline preload="metadata"></video>
+                <span class="material-symbols-outlined center-overlay-icon">play_arrow</span>
+                
+                <div class="short-actions">
+                    <div class="action-item" onclick="toggleLike(this, '${id}')">
+                        <span class="material-symbols-outlined">favorite</span>
+                        <span class="action-text">${formatCount(data.likes || 0)}</span>
+                    </div>
+                    <div class="action-item">
+                        <span class="material-symbols-outlined">chat_bubble</span>
+                        <span class="action-text">${formatCount(data.commentsCount || 0)}</span>
+                    </div>
+                    <div class="action-item">
+                        <span class="material-symbols-outlined">download</span>
+                        <span class="action-text">Save</span>
+                    </div>
+                    <div class="music-disc paused">
+                        <img src="${data.thumbnailUrl || ''}" alt="">
+                    </div>
+                </div>
 
-    <div class="input-group">
-        <label>Title</label>
-        <input type="text" id="meta-title" class="input-field" placeholder="Caption your video..." maxlength="100" oninput="DetailsManager.updateCharCount('title-count', this, 100)">
-        <span class="char-count" id="title-count">0/100</span>
-    </div>
+                <div class="short-info">
+                    <div class="short-channel-row">
+                        <img src="" class="short-avatar" alt="">
+                        <span class="short-channel-name">@${data.channelId}</span>
+                        <span class="short-subscribe">Subscribe</span>
+                    </div>
+                    <div class="short-title-text">${data.title}</div>
+                </div>
+            `;
+            
+            // Play/Pause mechanics
+            let lastTap = 0;
+            const video = shortElement.querySelector('video');
+            const overlay = shortElement.querySelector('.center-overlay-icon');
+            const disc = shortElement.querySelector('.music-disc');
 
-    <div class="input-group">
-        <label>Description</label>
-        <textarea id="meta-desc" class="input-field" placeholder="Add details..." maxlength="5000" oninput="DetailsManager.updateCharCount('desc-count', this, 5000)"></textarea>
-        <span class="char-count" id="desc-count">0/5000</span>
-    </div>
+            video.addEventListener('click', (e) => {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                
+                if (tapLength < 300 && tapLength > 0) {
+                    // Double Tap logic
+                    e.preventDefault();
+                    triggerDoubleTapLike(shortElement, id);
+                } else {
+                    // Single Tap Play/Pause
+                    if (video.paused) {
+                        video.play();
+                        overlay.innerText = 'play_arrow';
+                        disc.classList.remove('paused');
+                    } else {
+                        video.pause();
+                        overlay.innerText = 'pause';
+                        disc.classList.add('paused');
+                    }
+                    overlay.style.opacity = '1';
+                    setTimeout(() => overlay.style.opacity = '0', 800);
+                }
+                lastTap = currentTime;
+            });
 
-    <div class="input-group">
-        <label>Visibility</label>
-        <select id="meta-vis" class="input-field">
-            <option value="public">Public</option>
-            <option value="unlisted">Unlisted</option>
-            <option value="private">Private</option>
-        </select>
-    </div>
-    
-    <div class="input-group">
-        <label>Tags</label>
-        <input type="text" id="meta-tags" class="input-field" placeholder="e.g. gaming, vlog (comma separated)">
-    </div>
+            container.appendChild(shortElement);
+            observer.observe(shortElement);
+        }
 
-    <div class="setting-row">
-        <div class="setting-info">
-            <div class="setting-title">Allow Comments</div>
-            <div class="setting-desc">Viewers can comment</div>
-        </div>
-        <input type="checkbox" id="meta-comments" checked style="width:24px;height:24px;accent-color:var(--text-primary)">
-    </div>
+        window.toggleLike = function(element, shortId) {
+            const icon = element.querySelector('.material-symbols-outlined');
+            if(icon.style.fontVariationSettings.includes('"FILL" 1')) {
+                icon.style.fontVariationSettings = '"FILL" 0';
+                icon.style.color = "var(--text-primary)";
+                // Firebase logic to decrement
+            } else {
+                icon.style.fontVariationSettings = '"FILL" 1';
+                icon.style.color = "var(--accent-color)";
+                // Firebase logic to increment
+            }
+        };
 
-    <div class="setting-row">
-        <div class="setting-info">
-            <div class="setting-title">Premium Content</div>
-            <div class="setting-desc">Subscribers only</div>
-        </div>
-        <input type="checkbox" id="meta-premium" style="width:24px;height:24px;accent-color:var(--text-primary)">
-    </div>
-    
-    <div class="setting-row">
-        <div class="setting-info">
-            <div class="setting-title">Schedule</div>
-            <div class="setting-desc">Publish at a later time</div>
-        </div>
-        <input type="datetime-local" id="meta-schedule" class="input-field" style="width: auto; padding: 8px;">
-    </div>
-</div>
+        function triggerDoubleTapLike(element, shortId) {
+            const actionItem = element.querySelector('.action-item');
+            window.toggleLike(actionItem, shortId);
+            // Can add heart animation over video here
+        }
+
+        function formatCount(num) {
+            if(num >= 1000000) return (num/1000000).toFixed(1) + 'M';
+            if(num >= 1000) return (num/1000).toFixed(1) + 'K';
+            return num;
+        }
+
+        // Init
+        fetchShorts();
+    })();
+</script>

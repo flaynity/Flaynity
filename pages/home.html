@@ -1,862 +1,1302 @@
 <style>
-    /* Google Material Symbols Font */
-    @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+/* Deep Light Theme Variables */
+:root {
+--bg-primary: #FFFFFF; /* Deep Light */
+--text-primary: #000000; /* Deep Dark for text */
+--bg-surface: #F0F0F0; /* Unselected / Light Gray */
+--bg-surface-light: #E0E0E0;
+--text-secondary: #555555;
+--accent-color: #000000;
+--safe-area-top: env(safe-area-inset-top, 24px);
+--safe-area-bottom: env(safe-area-inset-bottom, 0px);
+--nav-height: 56px;
+}
 
-    /* Material Symbols Configuration */
-    .material-symbols-outlined {
-        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    }
-    .material-symbols-outlined.filled {
-        font-variation-settings: 'FILL' 1;
-    }
+* {
+box-sizing: border-box;
+margin: 0;
+padding: 0;
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+-webkit-tap-highlight-color: transparent;
+}
 
-    /* Core Variables & Reset */
-    :root {
-        --md-sys-color-primary: #000000;
-        --md-sys-color-on-primary: #FFFFFF;
-        --md-sys-color-surface: #FFFFFF;
-        --md-sys-color-surface-variant: #F2F2F2;
-        --md-sys-color-on-surface: #1F1F1F;
-        --md-sys-color-on-surface-variant: #444746;
-        --md-sys-color-outline: #747775;
-        --border-radius-m: 12px;
-        --border-radius-l: 16px;
-        --nav-height: 56px;
-    }
+.home-page {
+width: 100%;
+height: calc(100vh - var(--nav-height) - var(--safe-area-bottom));
+overflow-y: auto;
+overflow-x: hidden;
+background-color: var(--bg-primary);
+padding-top: var(--safe-area-top);
+padding-bottom: 20px;
+}
 
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    
-    body { font-family: 'Roboto', system-ui, sans-serif; background-color: var(--md-sys-color-surface-variant); }
+/* Top Header */
+.home-header {
+position: sticky;
+top: 0;
+z-index: 50;
+background-color: var(--bg-primary);
+display: flex;
+justify-content: flex-start;
+align-items: center;
+padding: 12px 16px;
+}
 
-    .home-page {
-        width: 100%;
-        height: 100vh;
-        overflow-y: auto;
-        overflow-x: hidden;
-        background-color: var(--md-sys-color-surface-variant);
-        padding-bottom: calc(var(--nav-height) + 20px);
-    }
+.brand-logo {
+font-size: 24px;
+font-weight: 800;
+letter-spacing: -0.5px;
+color: var(--text-primary);
+}
 
-    /* Top Header */
-    .home-header {
-        position: sticky;
-        top: 0;
-        z-index: 50;
-        background-color: var(--md-sys-color-surface);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px 16px;
-    }
+/* Category Chips */
+.category-chips {
+display: flex;
+width: 100%;
+background-color: var(--bg-primary);
+padding: 10px 16px;
+position: sticky;
+top: 54px; /* Below header */
+z-index: 49;
+overflow: hidden; /* Horizontal Scroll completely disabled */
+gap: 8px;
+}
 
-    .brand-logo { font-size: 24px; font-weight: 800; color: var(--md-sys-color-primary); }
-    .header-actions { display: flex; gap: 16px; }
+.chip {
+flex: 1; /* 3 parts equal width */
+text-align: center;
+padding: 10px 0;
+border-radius: 24px;
+font-weight: 600;
+font-size: 14px;
+color: var(--text-primary);
+background-color: var(--bg-surface); /* Light Gray */
+transition: background-color 0.3s ease, color 0.3s ease;
+cursor: pointer;
+}
 
-    /* Category Chips (Requirement: No horizontal scroll, Equal Width, Specific Colors) */
-    .category-chips-container {
-        position: sticky;
-        top: 54px;
-        z-index: 49;
-        background-color: var(--md-sys-color-surface);
-        padding: 8px 16px 12px;
-        border-bottom: 1px solid rgba(0,0,0,0.05);
-    }
+.chip.active {
+background-color: var(--text-primary); /* Black Background */
+color: var(--bg-primary); /* White Text */
+}
 
-    .category-chips {
-        display: flex;
-        width: 100%;
-        gap: 8px;
-        overflow: hidden; /* Disabled horizontal scroll */
-    }
+/* Feed Containers */
+.feed-container {
+display: flex;
+flex-direction: column;
+width: 100%;
+overflow-x: hidden;
+}
 
-    .chip {
-        flex: 1; /* Equal width */
-        text-align: center;
-        padding: 10px 0;
-        border-radius: 24px;
-        font-weight: 600;
-        font-size: 14px;
-        background-color: var(--md-sys-color-surface-variant);
-        color: var(--md-sys-color-primary);
-        transition: background-color 0.3s, color 0.3s;
-        cursor: pointer;
-    }
+/* Skeleton Loading & Animations */
+.skeleton {
+background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-surface-light) 50%, var(--bg-surface) 75%);
+background-size: 200% 100%;
+animation: loading 1.5s infinite linear;
+}
 
-    .chip.active {
-        background-color: var(--md-sys-color-primary);
-        color: var(--md-sys-color-on-primary);
-    }
+@keyframes loading {
+0% { background-position: 200% 0; }
+100% { background-position: -200% 0; }
+}
 
-    /* Common Skeleton Loading */
-    .skeleton {
-        background: linear-gradient(90deg, #e0e0e0 25%, #f5f5f5 50%, #e0e0e0 75%);
-        background-size: 200% 100%;
-        animation: loading 1.5s infinite;
-    }
-    @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+/* Shorts Grid (Home & Shorts Category) */
+.shorts-section {
+width: 100%;
+padding: 16px;
+background-color: var(--bg-primary);
+}
 
-    /* Shorts Grid Container (Requirement: 2 Columns, 2:3 ratio, Equal padding) */
-    .shorts-section { padding: 16px; background-color: var(--md-sys-color-surface); margin-bottom: 8px; }
-    .shorts-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-    }
-    .short-card {
-        aspect-ratio: 2 / 3;
-        border-radius: var(--border-radius-m);
-        position: relative;
-        overflow: hidden;
-        background-color: var(--md-sys-color-surface-variant);
-    }
-    .short-card img { width: 100%; height: 100%; object-fit: cover; }
-    .short-title {
-        position: absolute; bottom: 8px; left: 8px; right: 8px;
-        font-size: 13px; font-weight: 600; color: #FFF;
-        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-        display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
-    }
-    .short-views {
-        position: absolute; bottom: 28px; left: 8px; right: 8px;
-        font-size: 11px; font-weight: 500; color: #EEE;
-        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-    }
+.shorts-grid {
+display: grid;
+grid-template-columns: repeat(2, 1fr); /* 2 Columns */
+gap: 12px; /* Equal margin/gap */
+}
 
-    /* Long Video Card (YouTube Style) */
-    .video-card { width: 100%; background-color: var(--md-sys-color-surface); margin-bottom: 8px; }
-    .video-thumbnail {
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        background-color: #000;
-        position: relative;
-    }
-    .video-thumbnail img { width: 100%; height: 100%; object-fit: cover; }
-    .video-duration {
-        position: absolute; bottom: 8px; right: 8px;
-        background-color: rgba(0,0,0,0.8); color: white;
-        padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 600;
-    }
-    .video-info { display: flex; padding: 12px 16px; gap: 12px; }
-    .channel-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #e0e0e0; flex-shrink: 0; }
-    .video-text { flex: 1; overflow: hidden; }
-    .video-title {
-        font-size: 16px; font-weight: 600; color: var(--md-sys-color-on-surface);
-        display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 4px;
-    }
-    .video-meta { font-size: 13px; color: var(--md-sys-color-on-surface-variant); }
+.short-card {
+width: 100%;
+aspect-ratio: 2 / 3; /* Card Ratio 2:3 */
+border-radius: 12px; /* Rounded Corner */
+background-color: var(--bg-surface);
+position: relative;
+overflow: hidden;
+cursor: pointer;
+}
 
-    /* Post Card (Facebook Style) */
-    .post-card { background-color: var(--md-sys-color-surface); margin-bottom: 8px; padding: 12px 0 0; }
-    .post-header { display: flex; align-items: center; padding: 0 16px 12px; gap: 12px; }
-    .post-author-info { flex: 1; }
-    .post-author-name { font-weight: 600; font-size: 15px; }
-    .post-time { font-size: 12px; color: var(--md-sys-color-on-surface-variant); }
-    .post-subscribe-btn { color: #1a73e8; font-weight: 600; font-size: 14px; padding: 6px 12px; }
-    .post-caption {
-        padding: 0 16px 8px; font-size: 15px; line-height: 1.4; color: var(--md-sys-color-on-surface);
-        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-    }
-    .post-caption.expanded { -webkit-line-clamp: unset; }
-    .read-more-btn { color: var(--md-sys-color-outline); font-weight: 600; padding: 0 16px 12px; font-size: 14px; display: inline-block;}
-    .post-image {
-        width: 100%; aspect-ratio: 3 / 4; background-color: var(--md-sys-color-surface-variant);
-        cursor: pointer;
-    }
-    .post-image img { width: 100%; height: 100%; object-fit: cover; }
-    
-    .post-stats { display: flex; justify-content: space-between; padding: 12px 16px; font-size: 13px; color: var(--md-sys-color-on-surface-variant); border-bottom: 1px solid var(--md-sys-color-surface-variant); }
-    .post-top-emojis { display: flex; gap: 4px; align-items: center;}
-    
-    .post-actions { display: flex; padding: 4px 16px; }
-    .post-action-btn {
-        flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;
-        padding: 8px 0; color: var(--md-sys-color-on-surface-variant); font-weight: 600; font-size: 14px;
-        position: relative; border-radius: 8px; transition: background 0.2s;
-    }
-    .post-action-btn:active { background: var(--md-sys-color-surface-variant); }
+.short-card img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
 
-    /* Reaction Picker (Long Press) */
-    .reaction-picker-container {
-        position: absolute; bottom: 100%; left: 0; background: white; padding: 8px 12px;
-        border-radius: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; gap: 12px;
-        transform: translateY(10px) scale(0.9); opacity: 0; pointer-events: none; transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        z-index: 100;
-    }
-    .reaction-picker-container.active { transform: translateY(-8px) scale(1); opacity: 1; pointer-events: auto; }
-    .reaction-emoji { font-size: 28px; cursor: pointer; transition: transform 0.2s; animation: floatEmoji 2s infinite ease-in-out; }
-    .reaction-emoji:hover { transform: scale(1.3) translateY(-5px); }
-    @keyframes floatEmoji { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.short-title {
+position: absolute;
+bottom: 8px;
+left: 8px;
+right: 8px;
+font-size: 14px;
+font-weight: 600;
+color: #FFFFFF;
+text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+display: -webkit-box;
+-webkit-line-clamp: 1; /* 1 Line Title */
+-webkit-box-orient: vertical;
+overflow: hidden;
+}
 
-    /* Full Screen Image Preview */
-    .image-preview-overlay {
-        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: black;
-        z-index: 2000; display: none; flex-direction: column; opacity: 0; transition: opacity 0.3s;
-    }
-    .image-preview-overlay.active { display: flex; opacity: 1; }
-    .preview-close { position: absolute; top: 20px; left: 20px; color: white; font-size: 30px; z-index: 10; cursor: pointer; background: rgba(0,0,0,0.5); border-radius: 50%; padding: 4px; }
-    .image-preview-overlay img { width: 100%; height: 100%; object-fit: contain; }
+.short-views {
+position: absolute;
+top: 8px;
+right: 8px;
+font-size: 12px;
+font-weight: 600;
+color: #FFFFFF;
+text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
 
-    /* Watch Video Page Overlay */
-    .watch-page-overlay {
-        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-        background-color: var(--md-sys-color-surface-variant); z-index: 1000;
-        display: none; flex-direction: column; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-    }
-    .watch-page-overlay.active { display: flex; transform: translateY(0); }
-    
-    /* Video Player (No rounded corners, 16:9, Buffer Animation) */
-    .player-wrapper { width: 100%; aspect-ratio: 16 / 9; background: #000; position: relative; }
-    .player-wrapper video { width: 100%; height: 100%; object-fit: contain; outline: none; }
-    .buffer-spinner {
-        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: #fff;
-        border-radius: 50%; animation: spin 1s linear infinite; display: none; pointer-events: none;
-    }
-    @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+/* Long Video Card */
+.video-card {
+width: 100%;
+margin-bottom: 24px;
+background-color: var(--bg-primary);
+}
 
-    /* Watch Page Premium White Card Info */
-    .watch-info-card {
-        background: var(--md-sys-color-surface);
-        padding: 16px;
-        flex: 1;
-        overflow-y: auto;
-    }
-    .watch-title-row { font-size: 18px; font-weight: 700; color: var(--md-sys-color-on-surface); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 8px; }
-    .watch-meta-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--md-sys-color-on-surface-variant); font-weight: 500; flex-wrap: wrap;}
-    .more-btn { font-weight: 700; color: var(--md-sys-color-on-surface); padding: 2px 6px; background: var(--md-sys-color-surface-variant); border-radius: 12px; margin-left: 8px; cursor: pointer; }
-    
-    /* Action Row */
-    .action-row { display: flex; align-items: center; gap: 16px; margin-top: 20px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
-    .action-row::-webkit-scrollbar { display: none; }
-    
-    .channel-watch-info { display: flex; align-items: center; gap: 12px; margin-right: auto; }
-    
-    /* Subscribe Button */
-    .btn-subscribe { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; transition: background 0.2s; white-space: nowrap; border: none; outline: none; }
-    .btn-subscribe.subscribed { background: var(--md-sys-color-surface-variant); color: var(--md-sys-color-on-surface); }
-    
-    /* Like/Dislike/Download Buttons */
-    .action-pill { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--md-sys-color-surface-variant); border-radius: 20px; font-weight: 600; font-size: 14px; white-space: nowrap; color: var(--md-sys-color-on-surface); transition: background 0.2s;}
-    .action-pill:active { background: #e0e0e0; }
-    
-    /* Comment Preview Card */
-    .comment-preview-card { background: var(--md-sys-color-surface-variant); border-radius: 12px; padding: 12px 16px; margin-top: 16px; margin-bottom: 16px;}
-    .comment-preview-header { display: flex; gap: 8px; font-weight: 700; font-size: 14px; margin-bottom: 8px; align-items: center; }
-    .comment-preview-body { display: flex; align-items: center; gap: 12px; }
-    .comment-preview-body img { width: 24px; height: 24px; border-radius: 50%; }
-    .comment-preview-text { font-size: 13px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; color: var(--md-sys-color-on-surface); }
+.video-thumbnail {
+width: 100%;
+aspect-ratio: 16 / 9; /* 16:9 Thumbnail */
+background-color: var(--bg-surface);
+position: relative;
+cursor: pointer;
+}
 
-    /* Description Bottom Sheet */
-    .desc-bottom-sheet { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 3000; display: none; }
-    .desc-bottom-sheet.active { display: block; }
-    .desc-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); opacity: 0; transition: 0.3s; }
-    .desc-bottom-sheet.active .desc-overlay { opacity: 1; }
-    .desc-content { position: absolute; bottom: 0; left: 0; width: 100%; height: 70vh; background: var(--md-sys-color-surface); border-radius: 20px 20px 0 0; padding: 16px; transform: translateY(100%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; }
-    .desc-bottom-sheet.active .desc-content { transform: translateY(0); }
-    .drag-handle { width: 40px; height: 4px; background: var(--md-sys-color-outline); border-radius: 2px; margin: 0 auto 16px; }
-    .desc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; font-weight: 700; font-size: 18px; }
-    .desc-stats { display: flex; gap: 16px; margin-bottom: 16px; font-weight: 600; font-size: 16px; }
-    .desc-stats span { display: flex; flex-direction: column; font-size: 12px; color: var(--md-sys-color-on-surface-variant); font-weight: 400; }
-    .desc-stats span strong { font-size: 16px; color: var(--md-sys-color-on-surface); }
-    .desc-body { flex: 1; overflow-y: auto; font-size: 14px; line-height: 1.5; color: var(--md-sys-color-on-surface); }
+.video-thumbnail img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
 
-    /* All People Reacted Page */
-    .reaction-list-page {
-        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--md-sys-color-surface);
-        z-index: 3000; display: none; flex-direction: column; transform: translateX(100%); transition: 0.3s;
-    }
-    .reaction-list-page.active { display: flex; transform: translateX(0); }
-    .reaction-list-header { display: flex; align-items: center; padding: 16px; border-bottom: 1px solid var(--md-sys-color-surface-variant); font-size: 18px; font-weight: 600; gap: 16px; }
-    .reaction-chips { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; border-bottom: 1px solid var(--md-sys-color-surface-variant); scrollbar-width: none; }
-    .reaction-chips::-webkit-scrollbar { display: none; }
-    .r-chip { padding: 6px 16px; border-radius: 20px; background: var(--md-sys-color-surface-variant); font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; }
-    .r-chip.active { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
-    .reacted-users-list { flex: 1; overflow-y: auto; padding: 0 16px; }
-    .user-row { display: flex; align-items: center; padding: 12px 0; gap: 12px; border-bottom: 1px solid var(--md-sys-color-surface-variant); }
-    .user-row img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-    .user-name { flex: 1; font-weight: 600; font-size: 15px; }
-    .user-emoji { font-size: 20px; }
+.video-duration {
+position: absolute;
+bottom: 8px;
+right: 8px;
+background-color: rgba(0,0,0,0.85);
+color: #FFFFFF;
+padding: 4px 6px;
+border-radius: 4px;
+font-size: 12px;
+font-weight: 600;
+}
+
+.video-info {
+display: flex;
+padding: 12px 16px 0;
+gap: 12px;
+}
+
+.channel-avatar {
+width: 40px;
+height: 40px;
+border-radius: 50%;
+background-color: var(--bg-surface);
+object-fit: cover;
+}
+
+.video-text {
+flex: 1;
+display: flex;
+flex-direction: column;
+}
+
+.video-title {
+font-size: 16px;
+font-weight: 600;
+color: var(--text-primary);
+display: -webkit-box;
+-webkit-line-clamp: 1; /* Maximum 1 Line */
+-webkit-box-orient: vertical;
+overflow: hidden;
+margin-bottom: 4px;
+}
+
+.video-meta {
+font-size: 13px;
+color: var(--text-secondary);
+display: flex;
+flex-wrap: wrap;
+gap: 4px;
+align-items: center;
+}
+
+/* Watch Page Overlay */
+.watch-page-overlay {
+position: fixed;
+top: 0; left: 0; width: 100%; height: 100%;
+background-color: var(--bg-primary);
+z-index: 100;
+display: none;
+flex-direction: column;
+transform: translateY(100%);
+transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+overflow-y: auto;
+overflow-x: hidden;
+}
+
+.watch-page-overlay.active {
+display: flex;
+transform: translateY(0);
+}
+
+/* Video Player Area */
+.player-container {
+width: 100%;
+aspect-ratio: 16/9; /* 16:9 Aspect Ratio */
+background-color: #000000; /* Black Background when load */
+position: sticky;
+top: 0;
+z-index: 101;
+display: flex;
+align-items: center;
+justify-content: center;
+/* Rounded Corner থাকবে না -> No border-radius */
+}
+
+.player-container video {
+width: 100%;
+height: 100%;
+object-fit: contain;
+}
+
+/* Buffer Animation */
+.buffer-spinner {
+position: absolute;
+width: 40px; height: 40px;
+border: 4px solid rgba(255,255,255,0.3);
+border-top-color: #FFFFFF;
+border-radius: 50%;
+animation: spin 1s infinite linear;
+display: none;
+}
+
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* Recommended Auto Show inside player */
+.auto-show-overlay {
+position: absolute;
+top: 0; left: 0; width: 100%; height: 100%;
+background: rgba(0,0,0,0.8);
+display: none;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+color: #FFF;
+}
+
+.auto-show-overlay img {
+width: 50%;
+aspect-ratio: 16/9;
+object-fit: cover;
+border-radius: 8px;
+margin-top: 10px;
+}
+
+/* Premium White Card */
+.premium-info-card {
+background-color: var(--bg-primary); /* Premium White */
+padding: 16px;
+width: 100%;
+}
+
+.watch-title {
+font-size: 18px;
+font-weight: 700; /* Bold Font */
+color: var(--text-primary);
+display: -webkit-box;
+-webkit-line-clamp: 1; /* Maximum 1 line */
+-webkit-box-orient: vertical;
+overflow: hidden;
+margin-bottom: 8px;
+}
+
+.watch-metadata-row {
+display: flex;
+align-items: center;
+flex-wrap: wrap;
+font-size: 13px;
+color: var(--text-secondary);
+gap: 6px;
+margin-bottom: 16px;
+}
+
+.more-btn {
+color: var(--text-primary);
+font-weight: 600;
+cursor: pointer;
+}
+
+/* Channel Action Row */
+.channel-action-row {
+display: flex;
+align-items: center;
+gap: 12px;
+width: 100%;
+overflow-x: auto;
+padding-bottom: 8px;
+}
+
+.channel-action-row::-webkit-scrollbar { display: none; }
+
+.subscribe-btn {
+background-color: var(--text-primary); /* Black Background */
+color: var(--bg-primary); /* White Text */
+border-radius: 24px; /* Pill */
+padding: 8px 16px;
+font-weight: 600;
+font-size: 14px;
+border: none;
+cursor: pointer;
+transition: background-color 0.2s, color 0.2s;
+}
+.subscribe-btn.subscribed {
+background-color: var(--bg-surface-light);
+color: var(--text-primary);
+}
+
+.action-btn {
+display: flex;
+align-items: center;
+gap: 6px;
+background-color: var(--bg-surface);
+padding: 8px 16px;
+border-radius: 24px; /* Rounded Rectangle */
+font-size: 14px;
+font-weight: 500;
+color: var(--text-primary);
+white-space: nowrap;
+cursor: pointer;
+position: relative;
+overflow: hidden;
+}
+
+/* Ripple Material Animation */
+.action-btn::after {
+content: ""; position: absolute; background: rgba(0,0,0,0.1);
+display: block; width: 100%; height: 100%;
+top: 0; left: 0; opacity: 0; transition: all 0.3s;
+}
+.action-btn:active::after { opacity: 1; transition: 0s; }
+
+/* Comment Preview Card */
+.comment-preview-card {
+background-color: var(--bg-surface);
+border-radius: 12px;
+padding: 12px;
+margin: 16px;
+cursor: pointer;
+}
+
+.comment-preview-header {
+display: flex;
+align-items: center;
+gap: 8px;
+font-weight: 600;
+font-size: 14px;
+margin-bottom: 8px;
+color: var(--text-primary);
+}
+
+.comment-preview-body {
+display: flex;
+align-items: center;
+gap: 10px;
+}
+
+.comment-avatar {
+width: 24px; height: 24px; border-radius: 50%;
+background-color: var(--bg-surface-light);
+}
+
+.comment-text {
+font-size: 13px; color: var(--text-primary);
+display: -webkit-box; -webkit-line-clamp: 1; /* Maximum 1 line */
+-webkit-box-orient: vertical; overflow: hidden; flex: 1;
+}
+
+/* Bottom Sheet Description */
+.bottom-sheet-overlay {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background: rgba(0,0,0,0.5); z-index: 200;
+display: none; flex-direction: column; justify-content: flex-end;
+opacity: 0; transition: opacity 0.3s;
+}
+.bottom-sheet-overlay.active { display: flex; opacity: 1; }
+
+.bottom-sheet-content {
+background: var(--bg-primary); width: 100%; height: 70vh;
+border-radius: 24px 24px 0 0; /* Rounded Top Corner */
+display: flex; flex-direction: column;
+transform: translateY(100%); transition: transform 0.3s ease-out;
+}
+.bottom-sheet-overlay.active .bottom-sheet-content { transform: translateY(0); }
+
+.drag-handle {
+width: 40px; height: 4px; border-radius: 2px;
+background: var(--bg-surface-light); margin: 12px auto;
+}
+
+.bottom-sheet-header {
+display: flex; justify-content: space-between; align-items: center;
+padding: 0 16px 12px; border-bottom: 1px solid var(--bg-surface);
+}
+.bottom-sheet-title { font-weight: 700; font-size: 16px; }
+
+.bottom-sheet-scroll {
+flex: 1; overflow-y: auto; padding: 16px; font-size: 14px; color: var(--text-primary);
+}
+
+.stats-row { display: flex; gap: 24px; margin-bottom: 16px; font-weight: 600; font-size: 16px;}
+.stats-col { display: flex; flex-direction: column; align-items: center; }
+.stats-label { font-size: 12px; color: var(--text-secondary); font-weight: 400; margin-top: 4px;}
+
+/* Posts Category - Facebook Style */
+.post-card {
+background-color: var(--bg-primary);
+padding: 16px 0 0 0;
+margin-bottom: 12px;
+border-bottom: 8px solid var(--bg-surface);
+}
+
+.post-header {
+display: flex; align-items: center; padding: 0 16px 12px; gap: 12px;
+}
+
+.post-author-info { flex: 1; display: flex; flex-direction: column; }
+
+.post-author-name { font-weight: 600; font-size: 15px; color: var(--text-primary); }
+.post-time { font-size: 12px; color: var(--text-secondary); }
+
+.post-subscribe-btn {
+color: var(--text-primary); font-weight: 600; font-size: 14px; cursor: pointer;
+}
+
+.post-caption {
+padding: 0 16px 12px; font-size: 15px; line-height: 1.5; color: var(--text-primary);
+}
+.post-caption.collapsed {
+display: -webkit-box; -webkit-line-clamp: 2; /* Maximum 2 Line */
+-webkit-box-orient: vertical; overflow: hidden;
+}
+.post-caption-more { font-weight: 600; color: var(--text-secondary); cursor: pointer; display: none; margin-left: 16px; margin-bottom: 12px;}
+
+.post-media {
+width: 100%; /* Screen 2 site width */
+aspect-ratio: 3 / 4; /* Aspect Ratio 3:4 */
+border-radius: 12px; /* Rounded Corner */
+background-color: var(--bg-surface);
+overflow: hidden;
+cursor: pointer;
+}
+
+.post-media img {
+width: 100%; height: 100%; object-fit: cover;
+}
+
+.post-reactions-summary {
+display: flex; justify-content: space-between; align-items: center;
+padding: 12px 16px; font-size: 13px; color: var(--text-secondary);
+border-bottom: 1px solid var(--bg-surface-light);
+}
+
+.reaction-emojis { display: flex; align-items: center; gap: 4px; font-size: 16px;}
+
+.post-actions {
+display: flex; padding: 4px 8px;
+}
+
+.post-action-btn {
+flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;
+padding: 10px 0; color: var(--text-secondary); font-weight: 600; font-size: 14px;
+border-radius: 8px; cursor: pointer; user-select: none;
+}
+.post-action-btn:active { background: var(--bg-surface-light); }
+
+.post-action-btn .material-symbols-outlined { font-size: 22px; }
+
+/* Post Image Preview Full Screen */
+.image-preview-overlay {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background: #000000; z-index: 300; display: none; align-items: center; justify-content: center;
+}
+.image-preview-overlay.active { display: flex; }
+.image-preview-overlay img { width: 100%; object-fit: contain; max-height: 100%; }
+.preview-close-btn {
+position: absolute; top: var(--safe-area-top); left: 16px;
+color: #FFFFFF; font-size: 32px; cursor: pointer; padding: 8px;
+}
+
+/* Reaction Picker */
+.reaction-picker {
+position: absolute; background: var(--bg-primary); border-radius: 30px;
+padding: 8px 12px; display: flex; gap: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+z-index: 100; transform: scale(0); opacity: 0; transform-origin: bottom left;
+transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.reaction-picker.active { transform: scale(1); opacity: 1; }
+
+.reaction-emoji {
+font-size: 28px; cursor: pointer; transition: transform 0.2s;
+/* Animated Emojis */
+animation: pulse 2s infinite alternate;
+}
+.reaction-emoji:hover { transform: scale(1.3) translateY(-5px); /* Hover bounce */ }
+
+@keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
+
+/* Reacted Users Page */
+.reacted-users-page {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background-color: var(--bg-primary); z-index: 150;
+display: none; flex-direction: column;
+transform: translateX(100%); transition: transform 0.3s ease;
+}
+.reacted-users-page.active { display: flex; transform: translateX(0); }
+
+.reacted-header {
+display: flex; align-items: center; padding: 12px 16px;
+padding-top: var(--safe-area-top); border-bottom: 1px solid var(--bg-surface-light);
+}
+.reacted-title { font-size: 18px; font-weight: 700; flex: 1; text-align: center; margin-right: 24px;}
+
+.reaction-categories {
+display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto;
+border-bottom: 1px solid var(--bg-surface-light);
+}
+.reaction-categories::-webkit-scrollbar { display: none; }
+
+.react-chip {
+padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;
+background: var(--bg-surface); color: var(--text-primary); white-space: nowrap;
+cursor: pointer; transition: 0.3s;
+}
+.react-chip.active { background: var(--text-primary); color: var(--bg-primary); }
+
+.reacted-list { flex: 1; overflow-y: auto; }
+.reacted-user-row {
+display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+}
+.reacted-user-row img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+.reacted-user-name { font-weight: 600; font-size: 15px; flex: 1; }
+.reacted-user-emoji { font-size: 20px; }
+
+/* Floating Animation for Reaction Select */
+.floating-reaction {
+position: fixed; font-size: 40px; pointer-events: none; z-index: 1000;
+animation: floatUp 1s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+}
+@keyframes floatUp {
+0% { transform: scale(0.5) translateY(0); opacity: 1; }
+100% { transform: scale(1.5) translateY(-100px); opacity: 0; }
+}
+
+/* Material Symbols Outlined */
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+.filled-icon { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; color: var(--text-primary); }
 
 </style>
-
 <div class="home-page" id="home-page">
-    <div class="home-header">
-        <div class="brand-logo">FLAYNITY <span style="color:#1a73e8">.</span></div>
-        <div class="header-actions">
-            <span class="material-symbols-outlined">search</span>
-            <span class="material-symbols-outlined">settings</span>
-        </div>
-    </div>
-
-    <div class="category-chips-container">
-        <div class="category-chips">
-            <div class="chip active" data-tab="all">All</div>
-            <div class="chip" data-tab="posts">Posts</div>
-            <div class="chip" data-tab="shorts">Shorts</div>
-        </div>
-    </div>
-
-    <div id="main-feed-container">
-        <!-- Feed Injected Here by Realtime Listeners -->
-    </div>
+<!-- Top Bar -->
+<div class="home-header">
+<div class="brand-logo">Flaynity</div>
+</div>
+code
+Code
+<!-- Category Chips -->
+<div class="category-chips">
+    <div class="chip active" data-tab="all" onclick="switchCategory('all')">All</div>
+    <div class="chip" data-tab="posts" onclick="switchCategory('posts')">Posts</div>
+    <div class="chip" data-tab="shorts" onclick="switchCategory('shorts')">Shorts</div>
 </div>
 
-<!-- Image Full Screen Preview -->
-<div class="image-preview-overlay" id="image-preview-overlay">
-    <span class="material-symbols-outlined preview-close" onclick="closeImagePreview()">close</span>
-    <img id="preview-image" src="" alt="Full Screen Preview">
+<!-- Main Feed Container -->
+<div class="feed-container" id="feed-container">
+    <!-- Data dynamically injected via Realtime Firebase Listeners -->
 </div>
-
-<!-- Description Bottom Sheet -->
-<div class="desc-bottom-sheet" id="desc-bottom-sheet">
-    <div class="desc-overlay" onclick="closeDescSheet()"></div>
-    <div class="desc-content">
-        <div class="drag-handle"></div>
-        <div class="desc-header">
-            Description
-            <span class="material-symbols-outlined" onclick="closeDescSheet()">close</span>
-        </div>
-        <div class="desc-stats">
-            <span><strong id="bs-likes">0</strong> Likes</span>
-            <span><strong id="bs-views">0</strong> Views</span>
-            <span><strong id="bs-date">Date</strong> Upload Time</span>
-        </div>
-        <div class="watch-title-row" id="bs-title" style="-webkit-line-clamp: unset; margin-bottom: 16px;">Full Title Here</div>
-        <div class="desc-body" id="bs-desc">Full description goes here...</div>
-    </div>
 </div>
-
-<!-- Watch Page UI -->
 <div class="watch-page-overlay" id="watch-page">
-    <div class="player-wrapper">
-        <video id="main-video-player" playsinline preload="metadata" onwaiting="showBuffer()" onplaying="hideBuffer()"></video>
-        <div class="buffer-spinner" id="video-buffer"></div>
-        <div style="position: absolute; top: 16px; left: 16px; z-index: 10;" onclick="closeWatchPage()">
-            <span class="material-symbols-outlined" style="color:white; font-size:28px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">expand_more</span>
-        </div>
+<div class="player-container" id="player-container">
+<!-- Top Left Back inside player area -->
+<div style="position: absolute; top: var(--safe-area-top); left: 16px; z-index: 102; cursor: pointer;" onclick="closeWatchPage()">
+<span class="material-symbols-outlined" style="color:#FFF; font-size:28px; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">keyboard_arrow_down</span>
+</div>
+<div class="buffer-spinner" id="video-buffer"></div>
+<video id="main-video-player" controls preload="metadata"></video>
+code
+Code
+<div class="auto-show-overlay" id="video-end-overlay">
+        <h3 style="font-size: 16px; font-weight: 600;">Up Next</h3>
+        <img id="auto-show-thumb" src="">
+        <p id="auto-show-title" style="margin-top:8px; font-size:14px; text-align:center; padding: 0 16px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;"></p>
     </div>
-    
-    <div class="watch-info-card">
-        <!-- Premium White Card Content -->
-        <div class="watch-title-row" id="watch-title">Loading...</div>
-        <div class="watch-meta-row">
-            <span id="watch-handle">@channel</span> • 
-            <span id="watch-likes">0 Likes</span> • 
-            <span id="watch-views">0 Views</span> • 
-            <span id="watch-time">0 days ago</span>
-            <span class="more-btn" onclick="openDescSheet()">...more</span>
-        </div>
-        
-        <div class="action-row">
-            <div class="channel-watch-info">
-                <img id="watch-avatar" class="channel-avatar" src="" alt="">
-                <button id="watch-subscribe-btn" class="btn-subscribe" onclick="toggleSubscribe()">Subscribe</button>
-            </div>
-            
-            <div class="action-pill" onclick="toggleLikeVideo()" id="watch-like-btn">
-                <span class="material-symbols-outlined" id="watch-like-icon">thumb_up</span>
-                <span id="watch-like-count">Like</span>
-            </div>
-            <div class="action-pill">
-                <span class="material-symbols-outlined">thumb_down</span>
-            </div>
-            <div class="action-pill">
-                <span class="material-symbols-outlined">download</span>
-                Download
-            </div>
-        </div>
+</div>
 
-        <div class="comment-preview-card" onclick="openCommentsPage()">
-            <div class="comment-preview-header">
-                Comments <span style="color: var(--md-sys-color-on-surface-variant); font-weight: 500;" id="watch-comment-count">0</span>
-            </div>
-            <div class="comment-preview-body" id="watch-comment-preview">
-                <div class="skeleton" style="width:24px; height:24px; border-radius:50%;"></div>
-                <div class="skeleton" style="height:14px; flex:1; border-radius:4px;"></div>
-            </div>
-        </div>
+<!-- Premium White Card -->
+<div class="premium-info-card">
+    <div class="watch-title" id="watch-title"></div>
+    <div class="watch-metadata-row" id="watch-metadata">
+        <!-- Dynamic Injection -->
+    </div>
 
-        <div style="font-weight: 700; font-size: 16px; margin: 24px 0 12px;">Recommended</div>
-        <div id="recommended-feed">
-            <!-- Populated by Firebase -->
+    <div class="channel-action-row">
+        <img id="watch-avatar" class="channel-avatar" src="" alt="">
+        <button class="subscribe-btn" id="watch-subscribe-btn" onclick="toggleSubscribeWatch()">Subscribe</button>
+        <div class="action-btn" onclick="toggleLikeWatch()" id="watch-like-btn">
+            <span class="material-symbols-outlined" id="watch-like-icon">thumb_up</span>
+            <span id="watch-like-count">Like</span>
+        </div>
+        <div class="action-btn" onclick="toggleDislikeWatch()">
+            <span class="material-symbols-outlined" id="watch-dislike-icon">thumb_down</span>
+        </div>
+        <div class="action-btn" onclick="downloadVideo()">
+            <span class="material-symbols-outlined">download</span>
+            <span>Download</span>
         </div>
     </div>
 </div>
 
-<!-- All People Reacted Page -->
-<div class="reaction-list-page" id="reaction-list-page">
-    <div class="reaction-list-header">
-        <span class="material-symbols-outlined" onclick="closeReactionPage()">arrow_back</span>
-        All People Reacted
+<!-- Comment Preview Card -->
+<div class="comment-preview-card" onclick="openFullComments()">
+    <div class="comment-preview-header">
+        <span>Comments</span>
+        <span id="watch-comment-count">0</span>
     </div>
-    <div class="reaction-chips" id="reaction-chips-container">
-        <div class="r-chip active" onclick="filterReactions('All')">All (<span id="rt-all">0</span>)</div>
-        <div class="r-chip" onclick="filterReactions('❤️')">❤️ (<span id="rt-love">0</span>)</div>
-        <div class="r-chip" onclick="filterReactions('👍')">👍 (<span id="rt-like">0</span>)</div>
-        <div class="r-chip" onclick="filterReactions('🥰')">🥰 (<span id="rt-care">0</span>)</div>
-    </div>
-    <div class="reacted-users-list" id="reacted-users-list">
-        <!-- Rendered Realtime List -->
+    <div class="comment-preview-body">
+        <img id="preview-comment-avatar" class="comment-avatar" src="">
+        <div class="comment-text" id="preview-comment-text">Loading...</div>
     </div>
 </div>
 
+<!-- Recommended Feed -->
+<div id="recommended-feed" class="feed-container">
+    <!-- Auto filled with Long Videos -->
+</div>
+</div>
+<div class="bottom-sheet-overlay" id="description-sheet">
+<div class="bottom-sheet-content">
+<div class="drag-handle" id="desc-drag-handle"></div>
+<div class="bottom-sheet-header">
+<span class="bottom-sheet-title">Description</span>
+<span class="material-symbols-outlined" style="cursor:pointer;" onclick="closeDescription()">close</span>
+</div>
+<div class="bottom-sheet-scroll">
+<div class="watch-title" id="desc-full-title" style="-webkit-line-clamp: unset; margin-bottom: 24px;"></div>
+<div class="stats-row">
+<div class="stats-col"><span id="desc-likes">0</span><span class="stats-label">Likes</span></div>
+<div class="stats-col"><span id="desc-views">0</span><span class="stats-label">Views</span></div>
+<div class="stats-col"><span id="desc-date">Date</span><span class="stats-label">Upload Time</span></div>
+</div>
+<div id="desc-full-text" style="white-space: pre-wrap; line-height: 1.5;"></div>
+</div>
+</div>
+</div>
+<div class="image-preview-overlay" id="image-preview">
+<span class="material-symbols-outlined preview-close-btn" onclick="closeImagePreview()">close</span>
+<img id="preview-full-img" src="">
+</div>
+<div class="reacted-users-page" id="reacted-page">
+<div class="reacted-header">
+<span class="material-symbols-outlined" style="font-size:28px; cursor:pointer;" onclick="closeReactedPage()">arrow_back</span>
+<span class="reacted-title">All People Reacted</span>
+</div>
+<div class="reaction-categories" id="react-categories">
+<!-- Chips Auto Generated -->
+</div>
+<div class="reacted-list" id="reacted-list">
+<!-- Users Auto Generated -->
+</div>
+</div>
 <script>
-    (function() {
-        const feedContainer = document.getElementById('main-feed-container');
-        const chips = document.querySelectorAll('.chip');
-        let currentTab = 'all';
-        
-        // Ensure Firebase database is accessible
-        const db = window.db || (window.firebase ? window.firebase.database() : null);
+// System Core - Firebase Init Check
+const db = window.firebase ? window.firebase.database() : null;
+const auth = window.firebase ? window.firebase.auth() : null;
 
-        // State Trackers for Feed Pattern (6 Shorts, 10 Videos, 1 Post)
-        let lastShortsKey = null, lastVideosKey = null, lastPostsKey = null;
+// Variables for State
+let currentCategory = 'all';
+let currentUser = null; // Should be loaded via Firebase Auth
+let globalReactionTimer;
+let currentPlayingVideoId = null;
 
-        // Initialize
-        initTabNavigation();
-        loadFeed();
+// Pattern Tracking for 'All' Category
+let shortsQueue = [];
+let videosQueue = [];
+let postsQueue = [];
 
-        function initTabNavigation() {
-            chips.forEach(chip => {
-                chip.addEventListener('click', () => {
-                    chips.forEach(c => c.classList.remove('active'));
-                    chip.classList.add('active');
-                    currentTab = chip.getAttribute('data-tab');
-                    feedContainer.innerHTML = ''; // Clear feed
-                    
-                    // Reset pagination
-                    lastShortsKey = null; lastVideosKey = null; lastPostsKey = null;
-                    loadFeed();
-                });
-            });
-        }
+// Limits
+const BATCH_SHORTS = 6;
+const BATCH_VIDEOS = 10;
+const BATCH_POSTS = 1;
 
-        function loadFeed() {
-            if(!db) {
-                renderSkeletons();
-                return;
-            }
+// Ensure Firebase User
+if(auth) {
+auth.onAuthStateChanged(user => { currentUser = user; });
+} else {
+// Fallback dummy user ID for logic testing since no demo data but structure needs UID
+currentUser = { uid: "user_123", displayName: "Me" };
+}
 
-            if (currentTab === 'all') {
-                renderAllFeedBlock();
-            } else if (currentTab === 'posts') {
-                renderPostsFeed();
-            } else if (currentTab === 'shorts') {
-                renderShortsFeed();
-            }
-        }
+// Navigation Logic
+function switchCategory(tab) {
+currentCategory = tab;
+document.querySelectorAll('.chip').forEach(c => {
+if(c.dataset.tab === tab) c.classList.add('active');
+else c.classList.remove('active');
+});
 
-        function renderSkeletons() {
-            feedContainer.innerHTML = `
-                <div class="video-card">
-                    <div class="video-thumbnail skeleton"></div>
-                    <div class="video-info"><div class="channel-avatar skeleton"></div><div class="video-text"><div class="skeleton" style="height:20px; width:80%; margin-bottom:8px;"></div><div class="skeleton" style="height:14px; width:50%;"></div></div></div>
-                </div>
-            `;
-        }
+const container = document.getElementById('feed-container');
+container.innerHTML = '';
 
-        // ====== ALL TAB PATTERN BUILDER (6 Shorts -> 10 Videos -> 1 Post) ======
-        async function renderAllFeedBlock() {
-            try {
-                // Step 1: Render 6 Shorts
-                const shorts = await fetchBlockData('shorts', 6, lastShortsKey);
-                if(shorts.data.length > 0) {
-                    lastShortsKey = shorts.lastKey;
-                    let html = `<div class="shorts-section"><div class="shorts-grid">`;
-                    shorts.data.forEach(s => html += buildShortCard(s));
-                    html += `</div></div>`;
-                    feedContainer.insertAdjacentHTML('beforeend', html);
-                }
+// Reset specific queues
+shortsQueue = []; videosQueue = []; postsQueue = [];
 
-                // Step 2: Render 10 Long Videos
-                const videos = await fetchBlockData('videos', 10, lastVideosKey);
-                if(videos.data.length > 0) {
-                    lastVideosKey = videos.lastKey;
-                    videos.data.forEach(v => {
-                        feedContainer.insertAdjacentHTML('beforeend', buildVideoCard(v));
-                    });
-                }
+if(tab === 'all') initAllFeedListener();
+else if(tab === 'posts') initPostsFeedListener();
+else if(tab === 'shorts') initShortsFeedListener();
+}
 
-                // Step 3: Render 1 Post
-                const posts = await fetchBlockData('posts', 1, lastPostsKey);
-                if(posts.data.length > 0) {
-                    lastPostsKey = posts.lastKey;
-                    posts.data.forEach(p => {
-                        feedContainer.insertAdjacentHTML('beforeend', buildPostCard(p));
-                    });
-                }
-            } catch (error) {
-                console.error("Error loading feed block:", error);
-            }
-        }
+// Feed Initializers based on Realtime Listeners
+function initAllFeedListener() {
+if(!db) return; // Strict requirement: No demo data. If no DB, show nothing.
 
-        // Helper to fetch data sequentially using cursors
-        function fetchBlockData(path, limit, lastKey) {
-            return new Promise((resolve) => {
-                let query = db.ref(path).orderByKey();
-                if(lastKey) { query = query.startAfter(lastKey); }
-                
-                query.limitToFirst(limit).once('value', snap => {
-                    let data = [];
-                    let last = null;
-                    snap.forEach(child => {
-                        let item = child.val();
-                        item.id = child.key;
-                        data.push(item);
-                        last = child.key;
-                    });
-                    resolve({ data, lastKey: last });
-                });
-            });
-        }
+// Setup persistent listeners that push to queues
+db.ref('shorts').orderByChild('timestamp').limitToLast(30).on('child_added', snap => {
+shortsQueue.push({ id: snap.key, ...snap.val() });
+processPatternFeed();
+});
 
-        // ====== SPECIFIC TABS FEED ======
-        function renderPostsFeed() {
-            db.ref('posts').limitToLast(20).on('child_added', (snap) => {
-                if(currentTab !== 'posts') return;
-                const post = snap.val();
-                post.id = snap.key;
-                feedContainer.insertAdjacentHTML('afterbegin', buildPostCard(post)); // Prepend for timeline feel
-            });
-        }
+db.ref('videos').orderByChild('timestamp').limitToLast(30).on('child_added', snap => {
+videosQueue.push({ id: snap.key, ...snap.val() });
+processPatternFeed();
+});
 
-        function renderShortsFeed() {
-            feedContainer.innerHTML = '<div class="shorts-section"><div class="shorts-grid" id="pure-shorts-grid"></div></div>';
-            const grid = document.getElementById('pure-shorts-grid');
-            db.ref('shorts').limitToLast(20).on('child_added', (snap) => {
-                if(currentTab !== 'shorts') return;
-                const short = snap.val();
-                short.id = snap.key;
-                grid.insertAdjacentHTML('afterbegin', buildShortCard(short));
-            });
-        }
+db.ref('posts').orderByChild('timestamp').limitToLast(10).on('child_added', snap => {
+postsQueue.push({ id: snap.key, ...snap.val() });
+processPatternFeed();
+});
+}
 
-        // ====== COMPONENT BUILDERS ======
-        function buildShortCard(data) {
-            return `
-                <div class="short-card" onclick="openShortsPlayer('${data.id}')">
-                    <img loading="lazy" src="${data.thumbnailUrl || ''}">
-                    <div class="short-views">${formatNumber(data.views || 0)} views</div>
-                    <div class="short-title">${data.title || 'Short'}</div>
-                </div>
-            `;
-        }
+// Pattern Processor: 6 Shorts -> 10 Videos -> 1 Post -> Loop
+function processPatternFeed() {
+if(currentCategory !== 'all') return;
+const container = document.getElementById('feed-container');
 
-        function buildVideoCard(data) {
-            return `
-                <div class="video-card" onclick="openWatchPage('${data.id}')">
-                    <div class="video-thumbnail">
-                        <img loading="lazy" src="${data.thumbnailUrl || ''}">
-                        <div class="video-duration">${data.duration || '0:00'}</div>
-                    </div>
-                    <div class="video-info">
-                        <img class="channel-avatar" src="${data.channelAvatar || ''}">
-                        <div class="video-text">
-                            <div class="video-title">${data.title || 'Video Title'}</div>
-                            <div class="video-meta">${data.channelName || 'User'} • ${formatNumber(data.views || 0)} views • ${timeAgo(data.uploadTime || Date.now())}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
+// We need 6 shorts to form a grid
+if(shortsQueue.length >= BATCH_SHORTS) {
+let chunk = shortsQueue.splice(0, BATCH_SHORTS);
+container.appendChild(buildShortsGrid(chunk));
+}
 
-        window.toggleReadMore = function(btn) {
-            const caption = btn.previousElementSibling;
-            caption.classList.add('expanded');
-            btn.style.display = 'none';
-        };
+// We need 10 videos
+if(videosQueue.length >= BATCH_VIDEOS) {
+let chunk = videosQueue.splice(0, BATCH_VIDEOS);
+chunk.forEach(vid => container.appendChild(buildLongVideoCard(vid)));
+}
 
-        function buildPostCard(data) {
-            const titleLength = (data.title || '').length;
-            const needsMore = titleLength > 80;
-            const topEmojis = "❤️ 👍 🥰"; // Demo visualization for design
-            
-            return `
-                <div class="post-card" id="post-${data.id}">
-                    <div class="post-header">
-                        <img class="channel-avatar" src="${data.channelAvatar || ''}">
-                        <div class="post-author-info">
-                            <div class="post-author-name">${data.channelName || 'User'}</div>
-                            <div class="post-time">${timeAgo(data.uploadTime || Date.now())}</div>
-                        </div>
-                        <div class="post-subscribe-btn">Subscribe</div>
-                    </div>
-                    
-                    <div class="post-caption" id="caption-${data.id}">${data.title || ''}</div>
-                    ${needsMore ? `<div class="read-more-btn" onclick="toggleReadMore(this)">...more</div>` : ''}
-                    
-                    ${data.imageUrl ? `
-                    <div class="post-image" onclick="openImagePreview('${data.imageUrl}')">
-                        <img loading="lazy" src="${data.imageUrl}">
-                    </div>` : ''}
-                    
-                    <div class="post-stats">
-                        <div class="post-top-emojis" onclick="openReactionPage('${data.id}')">${topEmojis} <span style="margin-left:4px;" id="rxn-cnt-${data.id}">${data.reactionsCount || 0}</span></div>
-                        <div>${data.commentsCount || 0} Comments</div>
-                    </div>
-                    <div class="post-actions">
-                        <div class="post-action-btn" 
-                             onmousedown="startReactionHold('${data.id}', this)" onmouseup="clearReactionHold()" onmouseleave="clearReactionHold()"
-                             ontouchstart="startReactionHold('${data.id}', this)" ontouchend="clearReactionHold()">
-                             
-                            <div class="reaction-picker-container" id="picker-${data.id}">
-                                <span class="reaction-emoji" onclick="submitReaction('${data.id}', '❤️', event)">❤️</span>
-                                <span class="reaction-emoji" style="animation-delay: 0.1s" onclick="submitReaction('${data.id}', '👍', event)">👍</span>
-                                <span class="reaction-emoji" style="animation-delay: 0.2s" onclick="submitReaction('${data.id}', '🥰', event)">🥰</span>
-                                <span class="reaction-emoji" style="animation-delay: 0.3s" onclick="submitReaction('${data.id}', '😆', event)">😆</span>
-                                <span class="reaction-emoji" style="animation-delay: 0.4s" onclick="submitReaction('${data.id}', '😮', event)">😮</span>
-                                <span class="reaction-emoji" style="animation-delay: 0.5s" onclick="submitReaction('${data.id}', '😭', event)">😭</span>
-                                <span class="reaction-emoji" style="animation-delay: 0.6s" onclick="submitReaction('${data.id}', '😡', event)">😡</span>
-                            </div>
-                            
-                            <span class="material-symbols-outlined">favorite</span> Love
-                        </div>
-                        <div class="post-action-btn"><span class="material-symbols-outlined">chat_bubble</span> Comment</div>
-                    </div>
-                </div>
-            `;
-        }
+// We need 1 post
+if(postsQueue.length >= BATCH_POSTS) {
+let chunk = postsQueue.splice(0, BATCH_POSTS);
+chunk.forEach(post => container.appendChild(buildPostCard(post)));
+}
+}
 
-        // ====== POST REACTION LOGIC ======
-        let reactionTimer = null;
-        window.startReactionHold = function(postId, btnEl) {
-            reactionTimer = setTimeout(() => {
-                const picker = document.getElementById(`picker-${postId}`);
-                if(picker) picker.classList.add('active');
-            }, 400); // 400ms long press
-        };
+// Specific Category Initializers
+function initPostsFeedListener() {
+if(!db) return;
+const container = document.getElementById('feed-container');
+db.ref('posts').orderByChild('timestamp').limitToLast(20).on('child_added', snap => {
+container.insertAdjacentElement('afterbegin', buildPostCard({ id: snap.key, ...snap.val() }));
+});
+}
 
-        window.clearReactionHold = function() {
-            if(reactionTimer) clearTimeout(reactionTimer);
-        };
+function initShortsFeedListener() {
+if(!db) return;
+const container = document.getElementById('feed-container');
+const grid = document.createElement('div');
+grid.className = 'shorts-grid';
+grid.style.padding = '16px';
+container.appendChild(grid);
 
-        window.submitReaction = function(postId, emoji, event) {
-            event.stopPropagation(); // Prevent trigger click
-            const picker = document.getElementById(`picker-${postId}`);
-            if(picker) picker.classList.remove('active');
+db.ref('shorts').orderByChild('timestamp').limitToLast(20).on('child_added', snap => {
+grid.insertAdjacentHTML('afterbegin', generateShortCardHTML({ id: snap.key, ...snap.val() }));
+});
+}
 
-            if(db) {
-                // Update Firebase
-                const ref = db.ref(`posts/${postId}/reactions`);
-                const userId = window.auth?.currentUser?.uid || 'anonymous';
-                
-                ref.child(userId).set({
-                    emoji: emoji,
-                    timestamp: Date.now(),
-                    name: 'User', // Would pull from Auth Profile
-                    avatar: '' 
-                });
-                
-                // Increment counter via transaction
-                db.ref(`posts/${postId}/reactionsCount`).transaction(count => (count || 0) + 1);
-            }
-        };
+// Builders
+function buildShortsGrid(shortsArray) {
+const wrapper = document.createElement('div');
+wrapper.className = 'shorts-section';
+const grid = document.createElement('div');
+grid.className = 'shorts-grid';
 
-        // Listen for realtime reaction updates for visual count change
-        db?.ref('posts').on('child_changed', (snap) => {
-            const data = snap.val();
-            const counter = document.getElementById(`rxn-cnt-${snap.key}`);
-            if(counter) counter.innerText = data.reactionsCount || 0;
-        });
+shortsArray.forEach(short => {
+grid.innerHTML += generateShortCardHTML(short);
+});
+wrapper.appendChild(grid);
+return wrapper;
+}
 
-        // ====== IMAGE PREVIEW LOGIC ======
-        window.openImagePreview = function(url) {
-            const overlay = document.getElementById('image-preview-overlay');
-            const img = document.getElementById('preview-image');
-            img.src = url;
-            overlay.style.display = 'flex';
-            setTimeout(() => overlay.classList.add('active'), 10);
-        };
-        window.closeImagePreview = function() {
-            const overlay = document.getElementById('image-preview-overlay');
-            overlay.classList.remove('active');
-            setTimeout(() => { overlay.style.display = 'none'; document.getElementById('preview-image').src = ''; }, 300);
-        };
+function generateShortCardHTML(short) {
+return `
+<div class="short-card" onclick="window.location.hash='#shorts?id=${short.id}'">
+<img src="${short.thumbnail || ''}" loading="lazy">
+<div class="short-views">${formatNumber(short.views || 0)} Views</div>
+<div class="short-title">${short.title || ''}</div>
+</div>
+`;
+}
 
-        // ====== WATCH VIDEO PAGE LOGIC ======
-        let currentWatchVideoId = null;
-        window.showBuffer = () => { document.getElementById('video-buffer').style.display = 'block'; };
-        window.hideBuffer = () => { document.getElementById('video-buffer').style.display = 'none'; };
+function buildLongVideoCard(video) {
+const div = document.createElement('div');
+div.className = 'video-card';
+div.onclick = () => openWatchPage(video.id);
 
-        window.openWatchPage = function(videoId) {
-            currentWatchVideoId = videoId;
-            const overlay = document.getElementById('watch-page');
-            overlay.style.display = 'flex';
-            setTimeout(() => overlay.classList.add('active'), 10);
-            
-            // Clear prior
-            document.getElementById('watch-title').innerText = 'Loading...';
-            document.getElementById('main-video-player').src = '';
-            
-            if(db) {
-                db.ref('videos/' + videoId).once('value', snap => {
-                    const data = snap.val();
-                    if(data) {
-                        document.getElementById('watch-title').innerText = data.title;
-                        document.getElementById('watch-handle').innerText = data.channelHandle || '@channel';
-                        document.getElementById('watch-likes').innerText = formatNumber(data.likes || 0) + ' Likes';
-                        document.getElementById('watch-views').innerText = formatNumber(data.views || 0) + ' Views';
-                        document.getElementById('watch-time').innerText = timeAgo(data.uploadTime || Date.now());
-                        document.getElementById('watch-avatar').src = data.channelAvatar || '';
-                        
-                        // Populate Bottom Sheet Data
-                        document.getElementById('bs-title').innerText = data.title;
-                        document.getElementById('bs-desc').innerText = data.description || 'No description provided.';
-                        document.getElementById('bs-likes').innerText = formatNumber(data.likes || 0);
-                        document.getElementById('bs-views').innerText = formatNumber(data.views || 0);
-                        document.getElementById('bs-date').innerText = new Date(data.uploadTime).toLocaleDateString();
+const uploadTime = timeAgo(video.timestamp || Date.now());
 
-                        const player = document.getElementById('main-video-player');
-                        // Expecting Cloudflare CDN url directly from Database node `cdnUrl`
-                        if(data.cdnUrl) {
-                            player.src = data.cdnUrl;
-                            player.play().catch(e=>console.log("Autoplay blocked"));
-                        }
-                        
-                        // Load recommended
-                        loadRecommendedVideos();
-                    }
-                });
-            }
-        };
+div.innerHTML = `
+<div class="video-thumbnail">
+<img src="${video.thumbnail || ''}" loading="lazy">
+<div class="video-duration">${video.duration || '0:00'}</div>
+</div>
+<div class="video-info">
+<img src="${video.channelAvatar || ''}" class="channel-avatar">
+<div class="video-text">
+<div class="video-title">${video.title || ''}</div>
+<div class="video-meta">
+<span>${video.channelName || ''}</span> •
+<span>${formatNumber(video.views || 0)} Views</span> •
+<span>${uploadTime}</span>
+</div>
+</div>
+</div>
+`;
+return div;
+}
 
-        window.closeWatchPage = function() {
-            const overlay = document.getElementById('watch-page');
-            overlay.classList.remove('active');
-            document.getElementById('main-video-player').pause();
-            setTimeout(() => overlay.style.display = 'none', 300);
-        };
+function buildPostCard(post) {
+const div = document.createElement('div');
+div.className = 'post-card';
+div.id = `post-${post.id}`;
 
-        function loadRecommendedVideos() {
-            const rec = document.getElementById('recommended-feed');
-            rec.innerHTML = '';
-            db?.ref('videos').limitToLast(5).once('value', snap => {
-                snap.forEach(child => {
-                    if(child.key !== currentWatchVideoId) {
-                        let v = child.val();
-                        v.id = child.key;
-                        rec.insertAdjacentHTML('beforeend', buildVideoCard(v));
-                    }
-                });
-            });
-        }
+const uploadTime = timeAgo(post.timestamp || Date.now());
+let reactionsStr = '';
+if(post.reactions) {
+// Get top 3
+let counts = {};
+Object.values(post.reactions).forEach(r => { counts[r.type] = (counts[r.type] || 0) + 1; });
+let sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]).slice(0,3);
+let map = { love: '❤️', like: '👍', care: '🥰', haha: '😆', wow: '😮', sad: '😭', angry: '😡' };
+reactionsStr = sorted.map(k => map[k]).join('');
+}
+let totalReactions = post.reactions ? Object.keys(post.reactions).length : 0;
+let totalComments = post.comments ? Object.keys(post.comments).length : 0;
 
-        // Sub & Like Logic
-        window.toggleSubscribe = function() {
-            const btn = document.getElementById('watch-subscribe-btn');
-            const isSubbed = btn.classList.contains('subscribed');
-            if(isSubbed) {
-                btn.classList.remove('subscribed');
-                btn.innerText = 'Subscribe';
-            } else {
-                btn.classList.add('subscribed');
-                btn.innerText = 'Subscribed';
-                // Update realtime database 
-                // db.ref(`channels/${channelId}/subscribers`).transaction(count => (count||0)+1);
-            }
-        };
+div.innerHTML = `
+<div class="post-header">
+<img src="${post.userAvatar || ''}" class="channel-avatar">
+<div class="post-author-info">
+<div class="post-author-name">${post.userName || ''}</div>
+<div class="post-time">${uploadTime}</div>
+</div>
+<div class="post-subscribe-btn" onclick="toggleSubscribe('${post.userId}', this)">Subscribe</div>
+</div>
 
-        window.toggleLikeVideo = function() {
-            const icon = document.getElementById('watch-like-icon');
-            const isLiked = icon.classList.contains('filled');
-            if(isLiked) {
-                icon.classList.remove('filled');
-                db?.ref(`videos/${currentWatchVideoId}/likes`).transaction(count => (count||0)-1);
-            } else {
-                icon.classList.add('filled');
-                db?.ref(`videos/${currentWatchVideoId}/likes`).transaction(count => (count||0)+1);
-            }
-        };
+<div class="post-caption collapsed" id="cap-${post.id}">${post.caption || ''}</div>
+${(post.caption && post.caption.length > 80) ? `<div class="post-caption-more" onclick="expandPostCaption('${post.id}', this)">...more</div>` : ''}
 
-        // Listen for live like count updates
-        db?.ref('videos').on('child_changed', snap => {
-            if(snap.key === currentWatchVideoId) {
-                document.getElementById('watch-likes').innerText = formatNumber(snap.val().likes || 0) + ' Likes';
-                document.getElementById('watch-like-count').innerText = formatNumber(snap.val().likes || 0);
-            }
-        });
+${post.image ? `<div class="post-media" onclick="openImagePreview('${post.image}')"><img src="${post.image}" loading="lazy"></div>` : ''}
 
-        // ====== BOTTOM SHEET LOGIC ======
-        window.openDescSheet = function() {
-            document.getElementById('desc-bottom-sheet').classList.add('active');
-        };
-        window.closeDescSheet = function() {
-            document.getElementById('desc-bottom-sheet').classList.remove('active');
-        };
+<div class="post-reactions-summary">
+<div class="reaction-emojis" onclick="openReactedUsersPage('${post.id}')">${reactionsStr} <span style="font-size:13px; margin-left:4px; color:var(--text-secondary);">${totalReactions} Reactions</span></div>
+<div>${totalComments} Comments</div>
+</div>
 
-        // ====== ALL PEOPLE REACTED PAGE LOGIC ======
-        let currentReactionPostId = null;
-        window.openReactionPage = function(postId) {
-            currentReactionPostId = postId;
-            document.getElementById('reaction-list-page').classList.add('active');
-            filterReactions('All'); // Load Default
-        };
-        window.closeReactionPage = function() {
-            document.getElementById('reaction-list-page').classList.remove('active');
-        };
+<div class="post-actions" style="position:relative;">
+<div class="post-action-btn"
+ontouchstart="startReactionTimer('${post.id}', event)"
+ontouchend="clearReactionTimer()"
+onmousedown="startReactionTimer('${post.id}', event)"
+onmouseup="clearReactionTimer()"
+onclick="quickLove('${post.id}')">
+<span class="material-symbols-outlined">favorite</span> Love
+</div>
+<div class="post-action-btn"><span class="material-symbols-outlined">chat_bubble</span> Comment</div>
+</div>
+`;
+return div;
+}
 
-        window.filterReactions = function(emojiType) {
-            // Update Chip UI
-            document.querySelectorAll('.r-chip').forEach(c => c.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+// --- Interaction Functions ---
 
-            const listContainer = document.getElementById('reacted-users-list');
-            listContainer.innerHTML = '';
+function expandPostCaption(id, btn) {
+document.getElementById(`cap-${id}`).classList.remove('collapsed');
+btn.style.display = 'none';
+}
 
-            // Fetch Realtime
-            if(db && currentReactionPostId) {
-                db.ref(`posts/${currentReactionPostId}/reactions`).once('value', snap => {
-                    snap.forEach(child => {
-                        const r = child.val();
-                        if(emojiType === 'All' || r.emoji === emojiType) {
-                            listContainer.insertAdjacentHTML('beforeend', `
-                                <div class="user-row">
-                                    <img src="${r.avatar || 'https://via.placeholder.com/40'}">
-                                    <div class="user-name">${r.name || 'User'}</div>
-                                    <div class="user-emoji">${r.emoji}</div>
-                                </div>
-                            `);
-                        }
-                    });
-                });
-            }
-        };
+function openImagePreview(url) {
+document.getElementById('preview-full-img').src = url;
+document.getElementById('image-preview').classList.add('active');
+}
+function closeImagePreview() {
+document.getElementById('image-preview').classList.remove('active');
+}
 
-        // ====== INFINITE SCROLL ======
-        const feedScrollEl = document.querySelector('.home-page');
-        feedScrollEl.addEventListener('scroll', () => {
-            if (feedScrollEl.scrollTop + feedScrollEl.clientHeight >= feedScrollEl.scrollHeight - 200) {
-                // Throttle fetch
-                if(!feedScrollEl.dataset.fetching) {
-                    feedScrollEl.dataset.fetching = "true";
-                    // Only infinite load block sequence for 'all' tab
-                    if(currentTab === 'all') {
-                        renderAllFeedBlock().then(() => feedScrollEl.dataset.fetching = "");
-                    }
-                }
-            }
-        });
+// Reaction System
+function startReactionTimer(postId, e) {
+e.preventDefault();
+globalReactionTimer = setTimeout(() => {
+showReactionPicker(postId, e.target.closest('.post-action-btn'));
+}, 500);
+}
+function clearReactionTimer() {
+clearTimeout(globalReactionTimer);
+}
+function quickLove(postId) {
+setReaction(postId, 'love');
+}
 
-        // Utilities
-        function formatNumber(num) {
-            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-            return num.toString();
-        }
+function showReactionPicker(postId, btnElem) {
+// Remove existing picker if any
+let existing = document.querySelector('.reaction-picker');
+if(existing) existing.remove();
 
-        function timeAgo(dateParam) {
-            if (!dateParam) return '';
-            const date = typeof dateParam === 'object' ? dateParam : new Date(dateParam);
-            const today = new Date();
-            const seconds = Math.round((today - date) / 1000);
-            const minutes = Math.round(seconds / 60);
-            const isToday = today.toDateString() === date.toDateString();
+const picker = document.createElement('div');
+picker.className = 'reaction-picker';
+const emojis = [
+{ type: 'love', char: '❤️' }, { type: 'like', char: '👍' }, { type: 'care', char: '🥰' },
+{ type: 'haha', char: '😆' }, { type: 'wow', char: '😮' }, { type: 'sad', char: '😭' }, { type: 'angry', char: '😡' }
+];
 
-            if (seconds < 60) return 'Just now';
-            else if (minutes < 60) return `${minutes} min ago`;
-            else if (isToday) return `${Math.floor(minutes / 60)} hours ago`;
-            else return `${Math.floor(minutes / 1440)} days ago`;
-        }
+emojis.forEach(e => {
+const span = document.createElement('span');
+span.className = 'reaction-emoji';
+span.innerText = e.char;
+span.onclick = (event) => {
+event.stopPropagation();
+triggerFloatingReaction(e.char, event.clientX, event.clientY);
+setReaction(postId, e.type);
+picker.classList.remove('active');
+setTimeout(() => picker.remove(), 300);
+};
+picker.appendChild(span);
+});
 
-    })();
+// Position it
+btnElem.appendChild(picker);
+picker.style.bottom = '50px';
+picker.style.left = '10px';
+
+// Animate in
+requestAnimationFrame(() => {
+picker.classList.add('active');
+});
+
+// Auto close when click outside
+document.addEventListener('click', function closePicker(ev) {
+if(!picker.contains(ev.target)) {
+picker.classList.remove('active');
+setTimeout(() => picker.remove(), 300);
+document.removeEventListener('click', closePicker);
+}
+});
+}
+
+function triggerFloatingReaction(char, x, y) {
+const floatElem = document.createElement('div');
+floatElem.className = 'floating-reaction';
+floatElem.innerText = char;
+floatElem.style.left = x + 'px';
+floatElem.style.top = y + 'px';
+document.body.appendChild(floatElem);
+setTimeout(() => floatElem.remove(), 1000);
+}
+
+function setReaction(postId, type) {
+if(!db || !currentUser) return;
+db.ref(`posts/${postId}/reactions/${currentUser.uid}`).set({
+type: type,
+timestamp: Date.now(),
+userAvatar: currentUser.photoURL || '',
+userName: currentUser.displayName || 'User'
+});
+}
+
+function toggleSubscribe(channelId, btn) {
+if(!db || !currentUser) return;
+const ref = db.ref(`channels/${channelId}/subscribers/${currentUser.uid}`);
+ref.once('value', snap => {
+if(snap.exists()) {
+ref.remove();
+btn.innerText = "Subscribe";
+btn.classList.remove('subscribed');
+} else {
+ref.set(true);
+btn.innerText = "Subscribed";
+btn.classList.add('subscribed');
+}
+});
+}
+
+// Reacted Users Page Logic
+function openReactedUsersPage(postId) {
+if(!db) return;
+const page = document.getElementById('reacted-page');
+page.classList.add('active');
+
+const catContainer = document.getElementById('react-categories');
+const listContainer = document.getElementById('reacted-list');
+catContainer.innerHTML = '';
+listContainer.innerHTML = '';
+
+db.ref(`posts/${postId}/reactions`).once('value', snap => {
+let reactions = [];
+snap.forEach(c => { reactions.push(c.val()); });
+
+// Build Chips
+let counts = { all: reactions.length };
+reactions.forEach(r => counts[r.type] = (counts[r.type] || 0) + 1);
+
+const map = { all: 'All', love: '❤️ Love', like: '👍 Like', care: '🥰 Care', haha: '😆 Haha', wow: '😮 Wow', sad: '😭 Sad', angry: '😡 Angry' };
+
+Object.keys(counts).forEach((k, idx) => {
+let chip = document.createElement('div');
+chip.className = `react-chip ${idx === 0 ? 'active' : ''}`;
+chip.innerText = `${map[k]} (${counts[k]})`;
+chip.onclick = () => renderReactedList(reactions, k, catContainer, chip, listContainer);
+catContainer.appendChild(chip);
+});
+
+// Initial Render
+renderReactedList(reactions, 'all', catContainer, catContainer.firstChild, listContainer);
+});
+}
+
+function renderReactedList(reactions, filterType, catContainer, selectedChip, listContainer) {
+Array.from(catContainer.children).forEach(c => c.classList.remove('active'));
+if(selectedChip) selectedChip.classList.add('active');
+
+listContainer.innerHTML = '';
+const map = { love: '❤️', like: '👍', care: '🥰', haha: '😆', wow: '😮', sad: '😭', angry: '😡' };
+
+let filtered = filterType === 'all' ? reactions : reactions.filter(r => r.type === filterType);
+filtered.forEach(r => {
+listContainer.innerHTML += `
+<div class="reacted-user-row">
+<img src="${r.userAvatar || ''}">
+<div class="reacted-user-name">${r.userName || 'User'}</div>
+<div class="reacted-user-emoji">${map[r.type]}</div>
+</div>
+`;
+});
+}
+
+function closeReactedPage() {
+document.getElementById('reacted-page').classList.remove('active');
+}
+
+// --- Watch Page Full Logic ---
+function openWatchPage(videoId) {
+if(!db) return;
+currentPlayingVideoId = videoId;
+const page = document.getElementById('watch-page');
+page.style.display = 'flex';
+// Allow display flex to apply before animating transform
+requestAnimationFrame(() => page.classList.add('active'));
+
+const player = document.getElementById('main-video-player');
+const buffer = document.getElementById('video-buffer');
+buffer.style.display = 'block'; // Show skeleton buffer
+
+// Reset UI
+document.getElementById('watch-title').innerText = '';
+document.getElementById('watch-metadata').innerHTML = '';
+document.getElementById('video-end-overlay').style.display = 'none';
+
+// Fetch Metadata dynamically
+db.ref(`videos/${videoId}`).once('value', snap => {
+if(!snap.exists()) return;
+const data = snap.val();
+
+player.src = data.videoUrl || '';
+player.play().catch(e=>console.log(e));
+
+// Setup Text
+document.getElementById('watch-title').innerText = data.title || '';
+document.getElementById('watch-avatar').src = data.channelAvatar || '';
+
+let handle = data.channelHandle || '@' + (data.channelName || '').replace(/\s+/g,'').toLowerCase();
+let likes = formatNumber(data.likesCount || 0);
+let views = formatNumber(data.views || 0);
+let time = timeAgo(data.timestamp || Date.now());
+
+document.getElementById('watch-metadata').innerHTML = `
+<b>${handle}</b> • ${likes} Likes • ${views} Views • ${time} <span class="more-btn" onclick="openDescription()">...more</span>
+`;
+
+// Prepare Description Sheet Data
+document.getElementById('desc-full-title').innerText = data.title;
+document.getElementById('desc-likes').innerText = likes;
+document.getElementById('desc-views').innerText = views;
+document.getElementById('desc-date').innerText = new Date(data.timestamp).toLocaleDateString();
+document.getElementById('desc-full-text').innerText = data.description || 'No description available.';
+
+// Setup comment preview
+if(data.comments) {
+let keys = Object.keys(data.comments);
+document.getElementById('watch-comment-count').innerText = keys.length;
+let lastKey = keys[keys.length-1];
+let lastComment = data.comments[lastKey];
+document.getElementById('preview-comment-avatar').src = lastComment.userAvatar || '';
+document.getElementById('preview-comment-text').innerText = lastComment.text || '';
+} else {
+document.getElementById('watch-comment-count').innerText = '0';
+document.getElementById('preview-comment-text').innerText = 'Add a comment...';
+}
+
+// Load Recommended
+loadRecommendedVideos();
+});
+
+// Player Events
+player.onwaiting = () => buffer.style.display = 'block';
+player.onplaying = () => buffer.style.display = 'none';
+player.onended = () => showAutoNext();
+}
+
+function closeWatchPage() {
+const page = document.getElementById('watch-page');
+page.classList.remove('active');
+document.getElementById('main-video-player').pause();
+setTimeout(() => page.style.display = 'none', 300);
+currentPlayingVideoId = null;
+}
+
+function toggleLikeWatch() {
+if(!db || !currentUser || !currentPlayingVideoId) return;
+const ref = db.ref(`videos/${currentPlayingVideoId}/likes/${currentUser.uid}`);
+const icon = document.getElementById('watch-like-icon');
+ref.once('value', snap => {
+if(snap.exists()) {
+ref.remove();
+icon.classList.remove('filled-icon');
+} else {
+ref.set(true);
+icon.classList.add('filled-icon');
+// Remove dislike if any
+db.ref(`videos/${currentPlayingVideoId}/dislikes/${currentUser.uid}`).remove();
+document.getElementById('watch-dislike-icon').classList.remove('filled-icon');
+}
+});
+}
+
+function toggleDislikeWatch() {
+if(!db || !currentUser || !currentPlayingVideoId) return;
+const ref = db.ref(`videos/${currentPlayingVideoId}/dislikes/${currentUser.uid}`);
+const icon = document.getElementById('watch-dislike-icon');
+ref.once('value', snap => {
+if(snap.exists()) {
+ref.remove();
+icon.classList.remove('filled-icon');
+} else {
+ref.set(true);
+icon.classList.add('filled-icon');
+db.ref(`videos/${currentPlayingVideoId}/likes/${currentUser.uid}`).remove();
+document.getElementById('watch-like-icon').classList.remove('filled-icon');
+}
+});
+}
+
+function showAutoNext() {
+if(!db) return;
+db.ref('videos').limitToLast(2).once('value', snap => {
+let nextVid = null;
+snap.forEach(c => { if(c.key !== currentPlayingVideoId) nextVid = c.val(); });
+if(nextVid) {
+document.getElementById('auto-show-thumb').src = nextVid.thumbnail;
+document.getElementById('auto-show-title').innerText = nextVid.title;
+document.getElementById('video-end-overlay').style.display = 'flex';
+}
+});
+}
+
+function loadRecommendedVideos() {
+const cont = document.getElementById('recommended-feed');
+cont.innerHTML = '';
+if(!db) return;
+// Infinite scroll for recommended
+db.ref('videos').orderByChild('timestamp').limitToLast(5).on('child_added', snap => {
+if(snap.key !== currentPlayingVideoId) {
+cont.appendChild(buildLongVideoCard({ id: snap.key, ...snap.val() }));
+}
+});
+}
+
+// Bottom Sheet Logic
+function openDescription() {
+document.getElementById('description-sheet').classList.add('active');
+}
+function closeDescription() {
+document.getElementById('description-sheet').classList.remove('active');
+}
+
+// Bottom Sheet Drag to close logic
+let startY;
+const sheetOverlay = document.getElementById('description-sheet');
+const sheetContent = document.querySelector('.bottom-sheet-content');
+
+document.getElementById('desc-drag-handle').addEventListener('touchstart', e => {
+startY = e.touches[0].clientY;
+}, {passive: true});
+
+document.getElementById('desc-drag-handle').addEventListener('touchmove', e => {
+let currentY = e.touches[0].clientY;
+if(currentY > startY) {
+sheetContent.style.transform = `translateY(${currentY - startY}px)`;
+}
+}, {passive: true});
+
+document.getElementById('desc-drag-handle').addEventListener('touchend', e => {
+let endY = e.changedTouches[0].clientY;
+if(endY - startY > 100) {
+closeDescription();
+}
+sheetContent.style.transform = ''; // reset
+});
+
+// Utilities
+function formatNumber(num) {
+if(num >= 1000000) return (num/1000000).toFixed(1) + 'M';
+if(num >= 1000) return (num/1000).toFixed(1) + 'K';
+return num.toString();
+}
+
+function timeAgo(timestamp) {
+const diff = Date.now() - timestamp;
+const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+if(days > 0) return days === 1 ? '1 day ago' : `${days} days ago`;
+const hours = Math.floor(diff / (1000 * 60 * 60));
+if(hours > 0) return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
+const mins = Math.floor(diff / (1000 * 60));
+if(mins > 0) return mins === 1 ? '1 min ago' : `${mins} mins ago`;
+return 'Just now';
+}
+
+// Initialize the View
+window.onload = () => {
+switchCategory('all');
+// Setting up Infinite Scroll Observer on Home feed
+const feedContainerNode = document.getElementById('feed-container');
+feedContainerNode.addEventListener('scroll', () => {
+if (feedContainerNode.scrollTop + feedContainerNode.clientHeight >= feedContainerNode.scrollHeight - 200) {
+// When reaching bottom, trigger fetch next batch if using proper pagination
+// Currently covered by continuous realtime listeners filling the queues and rendering
+}
+});
+};
 </script>

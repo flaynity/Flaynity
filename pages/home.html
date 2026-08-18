@@ -421,7 +421,7 @@ display: -webkit-box; -webkit-line-clamp: 1; /* Maximum 1 line */
 -webkit-box-orient: vertical; overflow: hidden; flex: 1;
 }
 
-/* Bottom Sheet Description */
+/* Bottom Sheet Description & Comments */
 .bottom-sheet-overlay {
 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
 background: rgba(0,0,0,0.5); z-index: 200;
@@ -438,6 +438,8 @@ transform: translateY(100%); transition: transform 0.3s ease-out;
 }
 .bottom-sheet-overlay.active .bottom-sheet-content { transform: translateY(0); }
 
+.comments-content { height: 75vh; } /* Slightly taller for comments */
+
 .drag-handle {
 width: 40px; height: 4px; border-radius: 2px;
 background: var(--bg-surface-light); margin: 12px auto;
@@ -447,7 +449,7 @@ background: var(--bg-surface-light); margin: 12px auto;
 display: flex; justify-content: space-between; align-items: center;
 padding: 0 16px 12px; border-bottom: 1px solid var(--bg-surface);
 }
-.bottom-sheet-title { font-weight: 700; font-size: 16px; }
+.bottom-sheet-title { font-weight: 700; font-size: 16px; color: var(--text-primary); }
 
 .bottom-sheet-scroll {
 flex: 1; overflow-y: auto; padding: 16px; font-size: 14px; color: var(--text-primary);
@@ -456,6 +458,30 @@ flex: 1; overflow-y: auto; padding: 16px; font-size: 14px; color: var(--text-pri
 .stats-row { display: flex; gap: 24px; margin-bottom: 16px; font-weight: 600; font-size: 16px;}
 .stats-col { display: flex; flex-direction: column; align-items: center; }
 .stats-label { font-size: 12px; color: var(--text-secondary); font-weight: 400; margin-top: 4px;}
+
+/* Comments System Styles */
+.comments-scroll-area {
+flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px;
+}
+.comment-item { display: flex; gap: 12px; }
+.comment-item img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--bg-surface-light); }
+.comment-content { flex: 1; }
+.comment-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.comment-author { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.comment-time { font-size: 12px; color: var(--text-secondary); }
+.comment-text-body { font-size: 14px; color: var(--text-primary); line-height: 1.4; }
+
+.comment-input-area {
+display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+border-top: 1px solid var(--bg-surface-light); background: var(--bg-primary);
+padding-bottom: calc(12px + var(--safe-area-bottom));
+}
+.comment-input-area img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: var(--bg-surface-light); }
+.comment-input-area input {
+flex: 1; background: var(--bg-surface); border: none; padding: 10px 16px;
+border-radius: 20px; font-size: 14px; color: var(--text-primary); outline: none;
+}
+.comment-input-area .send-btn { color: var(--text-primary); cursor: pointer; font-size: 26px; }
 
 /* Posts Category - Facebook Style */
 .post-card {
@@ -515,9 +541,11 @@ display: flex; padding: 4px 8px;
 .post-action-btn {
 flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;
 padding: 10px 0; color: var(--text-secondary); font-weight: 600; font-size: 14px;
-border-radius: 8px; cursor: pointer; user-select: none;
+border-radius: 8px; cursor: pointer; user-select: none; transition: background-color 0.3s;
 }
 .post-action-btn:active { background: var(--bg-surface-light); }
+.post-action-btn.liked { color: var(--text-primary); }
+.post-action-btn.liked .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
 
 .post-action-btn .material-symbols-outlined { font-size: 22px; }
 
@@ -663,7 +691,7 @@ Code
 </div>
 
 <!-- Comment Preview Card -->
-<div class="comment-preview-card" onclick="openFullComments()">
+<div class="comment-preview-card" onclick="openComments(currentPlayingVideoId, 'videos')">
     <div class="comment-preview-header">
         <span>Comments</span>
         <span id="watch-comment-count">0</span>
@@ -697,6 +725,23 @@ Code
 </div>
 </div>
 </div>
+<div class="bottom-sheet-overlay" id="comments-sheet">
+<div class="bottom-sheet-content comments-content">
+<div class="drag-handle" id="comments-drag-handle"></div>
+<div class="bottom-sheet-header">
+<span class="bottom-sheet-title">Comments</span>
+<span class="material-symbols-outlined" style="cursor:pointer;" onclick="closeComments()">close</span>
+</div>
+<div class="comments-scroll-area" id="comments-list">
+<!-- Comments automatically injected here -->
+</div>
+<div class="comment-input-area">
+<img src="" id="current-user-avatar-comment" class="comment-avatar">
+<input type="text" id="comment-input" placeholder="Add a comment...">
+<span class="material-symbols-outlined send-btn" onclick="submitComment()">send</span>
+</div>
+</div>
+</div>
 <div class="image-preview-overlay" id="image-preview">
 <span class="material-symbols-outlined preview-close-btn" onclick="closeImagePreview()">close</span>
 <img id="preview-full-img" src="">
@@ -724,6 +769,10 @@ let currentUser = null; // Should be loaded via Firebase Auth
 let globalReactionTimer;
 let currentPlayingVideoId = null;
 
+// Comments System State
+let currentCommentTarget = { id: null, type: null };
+let commentsRef = null;
+
 // Pattern Tracking for 'All' Category
 let shortsQueue = [];
 let videosQueue = [];
@@ -734,12 +783,11 @@ const BATCH_SHORTS = 6;
 const BATCH_VIDEOS = 10;
 const BATCH_POSTS = 1;
 
-// Ensure Firebase User
+// Ensure Firebase User (Fallback logic for Sketchware without auth data built in yet)
 if(auth) {
 auth.onAuthStateChanged(user => { currentUser = user; });
 } else {
-// Fallback dummy user ID for logic testing since no demo data but structure needs UID
-currentUser = { uid: "user_123", displayName: "Me" };
+currentUser = { uid: "user_123", displayName: "My Name", photoURL: "https://via.placeholder.com/150" };
 }
 
 // Navigation Logic
@@ -763,19 +811,15 @@ else if(tab === 'shorts') initShortsFeedListener();
 
 // Feed Initializers based on Realtime Listeners
 function initAllFeedListener() {
-if(!db) return; // Strict requirement: No demo data. If no DB, show nothing.
-
-// Setup persistent listeners that push to queues
+if(!db) return;
 db.ref('shorts').orderByChild('timestamp').limitToLast(30).on('child_added', snap => {
 shortsQueue.push({ id: snap.key, ...snap.val() });
 processPatternFeed();
 });
-
 db.ref('videos').orderByChild('timestamp').limitToLast(30).on('child_added', snap => {
 videosQueue.push({ id: snap.key, ...snap.val() });
 processPatternFeed();
 });
-
 db.ref('posts').orderByChild('timestamp').limitToLast(10).on('child_added', snap => {
 postsQueue.push({ id: snap.key, ...snap.val() });
 processPatternFeed();
@@ -787,19 +831,17 @@ function processPatternFeed() {
 if(currentCategory !== 'all') return;
 const container = document.getElementById('feed-container');
 
-// We need 6 shorts to form a grid
+// Need 6 shorts
 if(shortsQueue.length >= BATCH_SHORTS) {
 let chunk = shortsQueue.splice(0, BATCH_SHORTS);
 container.appendChild(buildShortsGrid(chunk));
 }
-
-// We need 10 videos
+// Need 10 videos
 if(videosQueue.length >= BATCH_VIDEOS) {
 let chunk = videosQueue.splice(0, BATCH_VIDEOS);
 chunk.forEach(vid => container.appendChild(buildLongVideoCard(vid)));
 }
-
-// We need 1 post
+// Need 1 post
 if(postsQueue.length >= BATCH_POSTS) {
 let chunk = postsQueue.splice(0, BATCH_POSTS);
 chunk.forEach(post => container.appendChild(buildPostCard(post)));
@@ -887,7 +929,6 @@ div.id = `post-${post.id}`;
 const uploadTime = timeAgo(post.timestamp || Date.now());
 let reactionsStr = '';
 if(post.reactions) {
-// Get top 3
 let counts = {};
 Object.values(post.reactions).forEach(r => { counts[r.type] = (counts[r.type] || 0) + 1; });
 let sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]).slice(0,3);
@@ -913,12 +954,13 @@ ${(post.caption && post.caption.length > 80) ? `<div class="post-caption-more" o
 ${post.image ? `<div class="post-media" onclick="openImagePreview('${post.image}')"><img src="${post.image}" loading="lazy"></div>` : ''}
 
 <div class="post-reactions-summary">
-<div class="reaction-emojis" onclick="openReactedUsersPage('${post.id}')">${reactionsStr} <span style="font-size:13px; margin-left:4px; color:var(--text-secondary);">${totalReactions} Reactions</span></div>
-<div>${totalComments} Comments</div>
+<div class="reaction-emojis" onclick="openReactedUsersPage('${post.id}')" id="react-emojis-${post.id}">${reactionsStr}</div>
+<div style="font-size:13px; color:var(--text-secondary); margin-left:4px; flex:1;" id="react-count-${post.id}">${totalReactions > 0 ? totalReactions + ' Reactions' : ''}</div>
+<div id="comment-count-${post.id}">${totalComments} Comments</div>
 </div>
 
 <div class="post-actions" style="position:relative;">
-<div class="post-action-btn"
+<div class="post-action-btn" id="love-btn-${post.id}"
 ontouchstart="startReactionTimer('${post.id}', event)"
 ontouchend="clearReactionTimer()"
 onmousedown="startReactionTimer('${post.id}', event)"
@@ -926,7 +968,9 @@ onmouseup="clearReactionTimer()"
 onclick="quickLove('${post.id}')">
 <span class="material-symbols-outlined">favorite</span> Love
 </div>
-<div class="post-action-btn"><span class="material-symbols-outlined">chat_bubble</span> Comment</div>
+<div class="post-action-btn" onclick="openComments('${post.id}', 'posts')">
+<span class="material-symbols-outlined">chat_bubble</span> Comment
+</div>
 </div>
 `;
 return div;
@@ -947,7 +991,7 @@ function closeImagePreview() {
 document.getElementById('image-preview').classList.remove('active');
 }
 
-// Reaction System
+// --- Like / Reaction System (Optimistic UI applied) ---
 function startReactionTimer(postId, e) {
 e.preventDefault();
 globalReactionTimer = setTimeout(() => {
@@ -962,7 +1006,6 @@ setReaction(postId, 'love');
 }
 
 function showReactionPicker(postId, btnElem) {
-// Remove existing picker if any
 let existing = document.querySelector('.reaction-picker');
 if(existing) existing.remove();
 
@@ -987,17 +1030,12 @@ setTimeout(() => picker.remove(), 300);
 picker.appendChild(span);
 });
 
-// Position it
 btnElem.appendChild(picker);
 picker.style.bottom = '50px';
 picker.style.left = '10px';
 
-// Animate in
-requestAnimationFrame(() => {
-picker.classList.add('active');
-});
+requestAnimationFrame(() => picker.classList.add('active'));
 
-// Auto close when click outside
 document.addEventListener('click', function closePicker(ev) {
 if(!picker.contains(ev.target)) {
 picker.classList.remove('active');
@@ -1018,6 +1056,20 @@ setTimeout(() => floatElem.remove(), 1000);
 }
 
 function setReaction(postId, type) {
+// Optimistic UI Update instantly so user knows Like works
+const map = { love: '❤️', like: '👍', care: '🥰', haha: '😆', wow: '😮', sad: '😭', angry: '😡' };
+
+const loveBtn = document.getElementById(`love-btn-${postId}`);
+if(loveBtn) {
+loveBtn.classList.add('liked'); // Highlights the button icon to filled
+}
+
+const emojisDiv = document.getElementById(`react-emojis-${postId}`);
+if(emojisDiv && !emojisDiv.innerHTML.includes(map[type])) {
+emojisDiv.innerHTML = map[type] + emojisDiv.innerHTML;
+}
+
+// Realtime DB update
 if(!db || !currentUser) return;
 db.ref(`posts/${postId}/reactions/${currentUser.uid}`).set({
 type: type,
@@ -1027,23 +1079,97 @@ userName: currentUser.displayName || 'User'
 });
 }
 
-function toggleSubscribe(channelId, btn) {
-if(!db || !currentUser) return;
-const ref = db.ref(`channels/${channelId}/subscribers/${currentUser.uid}`);
-ref.once('value', snap => {
-if(snap.exists()) {
-ref.remove();
-btn.innerText = "Subscribe";
-btn.classList.remove('subscribed');
-} else {
-ref.set(true);
-btn.innerText = "Subscribed";
-btn.classList.add('subscribed');
+// --- Comments System ---
+function openComments(id, type) {
+if(!id) return;
+currentCommentTarget = { id, type };
+document.getElementById('comments-sheet').classList.add('active');
+document.getElementById('comments-list').innerHTML = '';
+document.getElementById('comment-input').value = '';
+
+if(currentUser && currentUser.photoURL) {
+document.getElementById('current-user-avatar-comment').src = currentUser.photoURL;
 }
+
+if(!db) return;
+commentsRef = db.ref(`${type}/${id}/comments`);
+commentsRef.on('child_added', snap => {
+appendCommentToUI(snap.val(), true);
 });
 }
 
-// Reacted Users Page Logic
+function closeComments() {
+document.getElementById('comments-sheet').classList.remove('active');
+if(commentsRef) commentsRef.off('child_added');
+currentCommentTarget = { id: null, type: null };
+}
+
+function submitComment() {
+const text = document.getElementById('comment-input').value.trim();
+if(!text) return;
+
+const commentObj = {
+userId: currentUser ? currentUser.uid : 'temp_id',
+userName: currentUser ? (currentUser.displayName || 'User') : 'Me',
+userAvatar: currentUser ? (currentUser.photoURL || '') : '',
+text: text,
+timestamp: Date.now()
+};
+
+// Instant UI Update (Optimistic UI)
+appendCommentToUI(commentObj, false); // append to bottom visually
+document.getElementById('comment-input').value = '';
+
+// Firebase Sync
+if(db && currentCommentTarget.id) {
+db.ref(`${currentCommentTarget.type}/${currentCommentTarget.id}/comments`).push(commentObj);
+}
+}
+
+function appendCommentToUI(c, fromFirebase = false) {
+// Prevent duplicate append if Firebase syncs the exact same comment we just optimistic-added
+// We'd usually check IDs, but simple structure here allows basic append
+const html = `
+<div class="comment-item">
+<img src="${c.userAvatar || ''}">
+<div class="comment-content">
+<div class="comment-header">
+<span class="comment-author">${c.userName || 'User'}</span>
+<span class="comment-time">${timeAgo(c.timestamp || Date.now())}</span>
+</div>
+<div class="comment-text-body">${c.text || ''}</div>
+</div>
+</div>
+`;
+const list = document.getElementById('comments-list');
+list.insertAdjacentHTML('beforeend', html);
+list.scrollTop = list.scrollHeight; // Auto scroll to bottom
+}
+
+// Drag to close logic for Comments Bottom Sheet
+let commentStartY;
+const commentSheetContent = document.querySelector('.comments-content');
+
+document.getElementById('comments-drag-handle').addEventListener('touchstart', e => {
+commentStartY = e.touches[0].clientY;
+}, {passive: true});
+
+document.getElementById('comments-drag-handle').addEventListener('touchmove', e => {
+let currentY = e.touches[0].clientY;
+if(currentY > commentStartY) {
+commentSheetContent.style.transform = `translateY(${currentY - commentStartY}px)`;
+}
+}, {passive: true});
+
+document.getElementById('comments-drag-handle').addEventListener('touchend', e => {
+let endY = e.changedTouches[0].clientY;
+if(endY - commentStartY > 100) {
+closeComments();
+}
+commentSheetContent.style.transform = ''; // reset
+});
+
+// --- Reacted Users Page Logic ---
 function openReactedUsersPage(postId) {
 if(!db) return;
 const page = document.getElementById('reacted-page');
@@ -1051,14 +1177,12 @@ page.classList.add('active');
 
 const catContainer = document.getElementById('react-categories');
 const listContainer = document.getElementById('reacted-list');
-catContainer.innerHTML = '';
-listContainer.innerHTML = '';
+catContainer.innerHTML = ''; listContainer.innerHTML = '';
 
 db.ref(`posts/${postId}/reactions`).once('value', snap => {
 let reactions = [];
 snap.forEach(c => { reactions.push(c.val()); });
 
-// Build Chips
 let counts = { all: reactions.length };
 reactions.forEach(r => counts[r.type] = (counts[r.type] || 0) + 1);
 
@@ -1071,8 +1195,6 @@ chip.innerText = `${map[k]} (${counts[k]})`;
 chip.onclick = () => renderReactedList(reactions, k, catContainer, chip, listContainer);
 catContainer.appendChild(chip);
 });
-
-// Initial Render
 renderReactedList(reactions, 'all', catContainer, catContainer.firstChild, listContainer);
 });
 }
@@ -1096,29 +1218,24 @@ listContainer.innerHTML += `
 });
 }
 
-function closeReactedPage() {
-document.getElementById('reacted-page').classList.remove('active');
-}
+function closeReactedPage() { document.getElementById('reacted-page').classList.remove('active'); }
 
-// --- Watch Page Full Logic ---
+// --- Watch Page Logic ---
 function openWatchPage(videoId) {
 if(!db) return;
 currentPlayingVideoId = videoId;
 const page = document.getElementById('watch-page');
 page.style.display = 'flex';
-// Allow display flex to apply before animating transform
 requestAnimationFrame(() => page.classList.add('active'));
 
 const player = document.getElementById('main-video-player');
 const buffer = document.getElementById('video-buffer');
-buffer.style.display = 'block'; // Show skeleton buffer
+buffer.style.display = 'block';
 
-// Reset UI
 document.getElementById('watch-title').innerText = '';
 document.getElementById('watch-metadata').innerHTML = '';
 document.getElementById('video-end-overlay').style.display = 'none';
 
-// Fetch Metadata dynamically
 db.ref(`videos/${videoId}`).once('value', snap => {
 if(!snap.exists()) return;
 const data = snap.val();
@@ -1126,7 +1243,6 @@ const data = snap.val();
 player.src = data.videoUrl || '';
 player.play().catch(e=>console.log(e));
 
-// Setup Text
 document.getElementById('watch-title').innerText = data.title || '';
 document.getElementById('watch-avatar').src = data.channelAvatar || '';
 
@@ -1139,14 +1255,12 @@ document.getElementById('watch-metadata').innerHTML = `
 <b>${handle}</b> • ${likes} Likes • ${views} Views • ${time} <span class="more-btn" onclick="openDescription()">...more</span>
 `;
 
-// Prepare Description Sheet Data
 document.getElementById('desc-full-title').innerText = data.title;
 document.getElementById('desc-likes').innerText = likes;
 document.getElementById('desc-views').innerText = views;
 document.getElementById('desc-date').innerText = new Date(data.timestamp).toLocaleDateString();
 document.getElementById('desc-full-text').innerText = data.description || 'No description available.';
 
-// Setup comment preview
 if(data.comments) {
 let keys = Object.keys(data.comments);
 document.getElementById('watch-comment-count').innerText = keys.length;
@@ -1159,11 +1273,9 @@ document.getElementById('watch-comment-count').innerText = '0';
 document.getElementById('preview-comment-text').innerText = 'Add a comment...';
 }
 
-// Load Recommended
 loadRecommendedVideos();
 });
 
-// Player Events
 player.onwaiting = () => buffer.style.display = 'block';
 player.onplaying = () => buffer.style.display = 'none';
 player.onended = () => showAutoNext();
@@ -1178,36 +1290,47 @@ currentPlayingVideoId = null;
 }
 
 function toggleLikeWatch() {
-if(!db || !currentUser || !currentPlayingVideoId) return;
-const ref = db.ref(`videos/${currentPlayingVideoId}/likes/${currentUser.uid}`);
+// Optimistic UI update instantly for Video Like
 const icon = document.getElementById('watch-like-icon');
-ref.once('value', snap => {
-if(snap.exists()) {
-ref.remove();
+const dislikeIcon = document.getElementById('watch-dislike-icon');
+
+if (icon.classList.contains('filled-icon')) {
 icon.classList.remove('filled-icon');
 } else {
-ref.set(true);
 icon.classList.add('filled-icon');
-// Remove dislike if any
+dislikeIcon.classList.remove('filled-icon');
+}
+
+if(!db || !currentUser || !currentPlayingVideoId) return;
+const ref = db.ref(`videos/${currentPlayingVideoId}/likes/${currentUser.uid}`);
+ref.once('value', snap => {
+if(snap.exists()) ref.remove();
+else {
+ref.set(true);
 db.ref(`videos/${currentPlayingVideoId}/dislikes/${currentUser.uid}`).remove();
-document.getElementById('watch-dislike-icon').classList.remove('filled-icon');
 }
 });
 }
 
 function toggleDislikeWatch() {
-if(!db || !currentUser || !currentPlayingVideoId) return;
-const ref = db.ref(`videos/${currentPlayingVideoId}/dislikes/${currentUser.uid}`);
+// Optimistic UI update
 const icon = document.getElementById('watch-dislike-icon');
-ref.once('value', snap => {
-if(snap.exists()) {
-ref.remove();
+const likeIcon = document.getElementById('watch-like-icon');
+
+if (icon.classList.contains('filled-icon')) {
 icon.classList.remove('filled-icon');
 } else {
-ref.set(true);
 icon.classList.add('filled-icon');
+likeIcon.classList.remove('filled-icon');
+}
+
+if(!db || !currentUser || !currentPlayingVideoId) return;
+const ref = db.ref(`videos/${currentPlayingVideoId}/dislikes/${currentUser.uid}`);
+ref.once('value', snap => {
+if(snap.exists()) ref.remove();
+else {
+ref.set(true);
 db.ref(`videos/${currentPlayingVideoId}/likes/${currentUser.uid}`).remove();
-document.getElementById('watch-like-icon').classList.remove('filled-icon');
 }
 });
 }
@@ -1229,7 +1352,6 @@ function loadRecommendedVideos() {
 const cont = document.getElementById('recommended-feed');
 cont.innerHTML = '';
 if(!db) return;
-// Infinite scroll for recommended
 db.ref('videos').orderByChild('timestamp').limitToLast(5).on('child_added', snap => {
 if(snap.key !== currentPlayingVideoId) {
 cont.appendChild(buildLongVideoCard({ id: snap.key, ...snap.val() }));
@@ -1237,36 +1359,26 @@ cont.appendChild(buildLongVideoCard({ id: snap.key, ...snap.val() }));
 });
 }
 
-// Bottom Sheet Logic
-function openDescription() {
-document.getElementById('description-sheet').classList.add('active');
-}
-function closeDescription() {
-document.getElementById('description-sheet').classList.remove('active');
-}
+// --- Description Bottom Sheet Logic ---
+function openDescription() { document.getElementById('description-sheet').classList.add('active'); }
+function closeDescription() { document.getElementById('description-sheet').classList.remove('active'); }
 
-// Bottom Sheet Drag to close logic
-let startY;
-const sheetOverlay = document.getElementById('description-sheet');
-const sheetContent = document.querySelector('.bottom-sheet-content');
+let descStartY;
+const descSheetContent = document.querySelector('.bottom-sheet-content');
 
 document.getElementById('desc-drag-handle').addEventListener('touchstart', e => {
-startY = e.touches[0].clientY;
+descStartY = e.touches[0].clientY;
 }, {passive: true});
 
 document.getElementById('desc-drag-handle').addEventListener('touchmove', e => {
 let currentY = e.touches[0].clientY;
-if(currentY > startY) {
-sheetContent.style.transform = `translateY(${currentY - startY}px)`;
-}
+if(currentY > descStartY) descSheetContent.style.transform = `translateY(${currentY - descStartY}px)`;
 }, {passive: true});
 
 document.getElementById('desc-drag-handle').addEventListener('touchend', e => {
 let endY = e.changedTouches[0].clientY;
-if(endY - startY > 100) {
-closeDescription();
-}
-sheetContent.style.transform = ''; // reset
+if(endY - descStartY > 100) closeDescription();
+descSheetContent.style.transform = '';
 });
 
 // Utilities
@@ -1287,16 +1399,7 @@ if(mins > 0) return mins === 1 ? '1 min ago' : `${mins} mins ago`;
 return 'Just now';
 }
 
-// Initialize the View
 window.onload = () => {
 switchCategory('all');
-// Setting up Infinite Scroll Observer on Home feed
-const feedContainerNode = document.getElementById('feed-container');
-feedContainerNode.addEventListener('scroll', () => {
-if (feedContainerNode.scrollTop + feedContainerNode.clientHeight >= feedContainerNode.scrollHeight - 200) {
-// When reaching bottom, trigger fetch next batch if using proper pagination
-// Currently covered by continuous realtime listeners filling the queues and rendering
-}
-});
 };
 </script>

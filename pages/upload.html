@@ -1,0 +1,418 @@
+<style>
+    .upload-page {
+        width: 100%;
+        height: calc(100vh - var(--nav-height) - var(--safe-area-bottom));
+        overflow-y: auto;
+        background-color: var(--bg-primary);
+        padding-top: var(--safe-area-top);
+        position: relative;
+    }
+
+    /* Top Header */
+    .upload-header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background-color: var(--bg-primary);
+        display: flex;
+        align-items: center;
+        padding: 16px;
+        border-bottom: 1px solid var(--bg-surface-light);
+    }
+
+    .upload-header-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-primary);
+        flex: 1;
+    }
+
+    /* Upload Manager Tabs */
+    .manager-tabs {
+        display: flex;
+        padding: 0 16px;
+        background-color: var(--bg-primary);
+        border-bottom: 1px solid var(--bg-surface-light);
+    }
+
+    .manager-tab {
+        padding: 16px 0;
+        margin-right: 24px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        position: relative;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+    .manager-tab.active {
+        color: var(--text-primary);
+    }
+
+    .manager-tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background-color: var(--text-primary);
+        border-radius: 3px 3px 0 0;
+    }
+
+    /* Upload Queue List */
+    .upload-queue {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .queue-item {
+        background-color: var(--bg-surface);
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .queue-thumbnail {
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        background-color: var(--bg-surface-light);
+        object-fit: cover;
+    }
+
+    .queue-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .queue-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .queue-status {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .queue-progress-bar {
+        width: 100%;
+        height: 4px;
+        background-color: var(--bg-surface-light);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 4px;
+    }
+
+    .queue-progress-fill {
+        height: 100%;
+        background-color: var(--accent-color);
+        width: 0%;
+        transition: width 0.3s;
+    }
+
+    .queue-actions .material-symbols-outlined {
+        color: var(--text-secondary);
+        font-size: 24px;
+    }
+
+    /* Upload Forms Container (Hidden by default, overlays screen when active) */
+    .upload-form-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        min-height: 100%;
+        background-color: var(--bg-primary);
+        z-index: 60;
+        display: none;
+        flex-direction: column;
+    }
+
+    .upload-form-overlay.active {
+        display: flex;
+    }
+
+    .form-header {
+        display: flex;
+        align-items: center;
+        padding: 16px;
+        background-color: var(--bg-primary);
+        position: sticky;
+        top: 0;
+        z-index: 61;
+        border-bottom: 1px solid var(--bg-surface-light);
+    }
+
+    .form-header .material-symbols-outlined {
+        font-size: 28px;
+        margin-right: 16px;
+    }
+
+    .form-publish-btn {
+        background-color: var(--text-primary);
+        color: var(--bg-primary);
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 14px;
+        border: none;
+        margin-left: auto;
+    }
+
+    .form-content {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .form-media-preview {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background-color: var(--bg-surface);
+        border-radius: 12px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: var(--text-secondary);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .form-input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    .form-input, .form-textarea {
+        background-color: var(--bg-surface);
+        border: 1px solid var(--bg-surface-light);
+        border-radius: 8px;
+        padding: 12px;
+        color: var(--text-primary);
+        font-size: 15px;
+        font-family: var(--font-family);
+        width: 100%;
+        outline: none;
+    }
+    
+    .form-input:focus, .form-textarea:focus {
+        border-color: var(--text-secondary);
+    }
+
+    .form-textarea {
+        resize: none;
+        height: 100px;
+    }
+
+</style>
+
+<div class="upload-page">
+    <div class="upload-header">
+        <div class="upload-header-title">Upload Manager</div>
+    </div>
+
+    <div class="manager-tabs">
+        <div class="manager-tab active">Uploading</div>
+        <div class="manager-tab">Completed</div>
+        <div class="manager-tab">Drafts</div>
+    </div>
+
+    <div class="upload-queue" id="upload-queue-container">
+        <!-- Empty State Default -->
+        <div style="text-align:center; padding: 40px 16px; color:var(--text-secondary);">
+            <span class="material-symbols-outlined" style="font-size:48px; margin-bottom:16px;">cloud_upload</span>
+            <div style="font-size:16px; font-weight:600; color:var(--text-primary);">No active uploads</div>
+            <div style="font-size:14px; margin-top:8px;">Your video uploads and processing jobs will appear here.</div>
+        </div>
+        <!-- Example Queue Item (Dynamically injected in JS) -->
+        <!-- <div class="queue-item">
+            <div class="queue-thumbnail"></div>
+            <div class="queue-info">
+                <div class="queue-title">My Epic Vlog 2026</div>
+                <div class="queue-status">Uploading... 45% (2.1 MB/s)</div>
+                <div class="queue-progress-bar">
+                    <div class="queue-progress-fill" style="width: 45%;"></div>
+                </div>
+            </div>
+            <div class="queue-actions">
+                <span class="material-symbols-outlined">pause_circle</span>
+            </div>
+        </div> -->
+    </div>
+
+    <!-- Hidden Video Upload Form (Triggered from Navigation Bottom Sheet) -->
+    <div class="upload-form-overlay" id="video-upload-form">
+        <div class="form-header">
+            <span class="material-symbols-outlined" onclick="closeUploadForm()">close</span>
+            <div style="font-size: 18px; font-weight:700;">Details</div>
+            <button class="form-publish-btn" onclick="startUploadProcess()">Publish</button>
+        </div>
+        <div class="form-content">
+            <div class="form-media-preview" id="media-preview-container" onclick="triggerNativePicker()">
+                <div style="display:flex; flex-direction:column; align-items:center;">
+                    <span class="material-symbols-outlined" style="font-size:40px;">video_library</span>
+                    <span style="font-size:14px; margin-top:8px; font-weight:500;">Select Video</span>
+                </div>
+                <!-- Native video preview gets injected here -->
+            </div>
+
+            <div class="form-input-group">
+                <label class="form-label">Title</label>
+                <input type="text" class="form-input" id="upload-title" placeholder="Create a title" maxlength="100">
+            </div>
+
+            <div class="form-input-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" id="upload-desc" placeholder="Add a description..."></textarea>
+            </div>
+
+            <div class="form-input-group">
+                <label class="form-label">Visibility</label>
+                <select class="form-input" id="upload-visibility">
+                    <option value="public">Public</option>
+                    <option value="private">Private</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const queueContainer = document.getElementById('upload-queue-container');
+        const db = window.firebase ? window.firebase.database() : null;
+
+        // Exposed globally so navigation.js Bottom Sheet can call it
+        window.openVideoUploadForm = function(type) {
+            const form = document.getElementById('video-upload-form');
+            form.classList.add('active');
+            
+            // Adjust ratio based on Short vs Video
+            const preview = document.getElementById('media-preview-container');
+            if(type === 'short') {
+                preview.style.aspectRatio = '9 / 16';
+                preview.style.width = '60%';
+                preview.style.margin = '0 auto';
+            } else {
+                preview.style.aspectRatio = '16 / 9';
+                preview.style.width = '100%';
+            }
+        };
+
+        window.closeUploadForm = function() {
+            document.getElementById('video-upload-form').classList.remove('active');
+        };
+
+        window.triggerNativePicker = function() {
+            // In a pure WebView, use input type=file. In Sketchware, bridge to native picker.
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'video/mp4,video/x-m4v,video/*';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if(file) {
+                    // Show preview (Object URL)
+                    const preview = document.getElementById('media-preview-container');
+                    const videoNode = document.createElement('video');
+                    videoNode.src = URL.createObjectURL(file);
+                    videoNode.style.width = '100%';
+                    videoNode.style.height = '100%';
+                    videoNode.style.objectFit = 'cover';
+                    videoNode.style.borderRadius = '12px';
+                    preview.innerHTML = '';
+                    preview.appendChild(videoNode);
+                    
+                    // Attach file to form for R2 upload process
+                    window.currentUploadFile = file;
+                }
+            };
+            input.click();
+        };
+
+        window.startUploadProcess = function() {
+            if(!window.currentUploadFile) return alert("Please select a video");
+            const title = document.getElementById('upload-title').value;
+            if(!title) return alert("Please enter a title");
+
+            // Close form & add to queue UI
+            closeUploadForm();
+            renderQueueItem(title, "Starting upload...");
+
+            // Logic flows to cloudflare-r2.js (window.uploadToR2)
+            if(window.uploadToR2) {
+                window.uploadToR2(window.currentUploadFile, (progress) => {
+                    updateQueueProgress(title, progress);
+                }).then(cdnUrl => {
+                    saveToFirebase(title, cdnUrl);
+                }).catch(err => {
+                    console.error("Upload failed", err);
+                });
+            }
+        };
+
+        function renderQueueItem(title, status) {
+            queueContainer.innerHTML = `
+                <div class="queue-item" id="queue-${title.replace(/\s+/g, '')}">
+                    <div class="queue-thumbnail" style="background:#222;"></div>
+                    <div class="queue-info">
+                        <div class="queue-title">${title}</div>
+                        <div class="queue-status">${status}</div>
+                        <div class="queue-progress-bar">
+                            <div class="queue-progress-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div class="queue-actions">
+                        <span class="material-symbols-outlined">pause_circle</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateQueueProgress(title, percent) {
+            const item = document.getElementById(`queue-${title.replace(/\s+/g, '')}`);
+            if(item) {
+                item.querySelector('.queue-progress-fill').style.width = percent + '%';
+                item.querySelector('.queue-status').innerText = `Uploading... ${Math.round(percent)}%`;
+            }
+        }
+
+        function saveToFirebase(title, cdnUrl) {
+            if(db) {
+                const user = window.firebase.auth().currentUser;
+                const newRef = db.ref('videos').push();
+                newRef.set({
+                    videoId: newRef.key,
+                    title: title,
+                    cdnUrl: cdnUrl,
+                    ownerId: user ? user.uid : 'anonymous',
+                    createdAt: window.firebase.database.ServerValue.TIMESTAMP,
+                    views: 0
+                }).then(() => {
+                    document.getElementById(`queue-${title.replace(/\s+/g, '')}`).querySelector('.queue-status').innerText = "Completed & Published";
+                });
+            }
+        }
+    })();
+</script>

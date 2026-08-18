@@ -1,9 +1,29 @@
 /*
  * ==============================================================================
- * FLAYNITY - MASTER APPLICATION LOGIC (Crash-Proof WebView Optimized)
+ * FLAYNITY - ENTERPRISE SOCIAL VIDEO PLATFORM (PRODUCTION CORE)
+ * ==============================================================================
+ * Architecture:
+ * 1. Global Configurations & State Management
+ * 2. High-Precision Utility Engine (Formatting, DOM, Haptics, Security)
+ * 3. Offline/Online Synchronizer & Android Native Bridge
+ * 4. AWS S3 / Cloudflare R2 Media Upload Engine
+ * 5. Firebase Realtime Database & Reactive Listener Hub
+ * 6. Google Authentication System (Native Android + Web Fallback)
+ * 7. Home Feed Interleaved Generator (6 Shorts -> 10 Videos -> 1 Post)
+ * 8. Cinema Video Watch Player & Comments System
+ * 9. Vertical Shorts Player (IntersectionObserver, Snapping & Double Tap)
+ * 10. Community Post & 7-Reaction Engine (Love, Like, Care, Haha, Wow, Sad, Angry)
+ * 11. Upload Studio Pipeline (Video, Short, Post -> R2 Storage -> Database)
+ * 12. Discover & Search Filter Engine
+ * 13. Channel Management, Handle Validation & Realtime Analytics
+ * 14. Single Page Router & Dynamic Page Loader
+ * 15. Application Lifecycle Bootstrap & Fail-Safe Splash Engine
  * ==============================================================================
  */
 
+// ==========================================
+// 1. CONFIGURATION & STATE
+// ==========================================
 const CONFIG = {
     firebase: {
         apiKey: "AIzaSyCiUTQp_QDSbBIOGJXKI7jJmzQHPu8L14I",
@@ -25,107 +45,257 @@ const CONFIG = {
 };
 
 const State = {
-    user: null, channel: null, currentTab: 'home',
+    user: null,
+    channel: null,
+    currentTab: 'home',
     online: navigator.onLine,
-    cache: { videos: [], shorts: [], posts: [], channels: {}, subscriptions: {} },
-    activeListeners: {}, currentPlayingVideo: null
+    cache: {
+        videos: [],
+        shorts: [],
+        posts: [],
+        channels: {},
+        subscriptions: {},
+        userReactions: {},
+        comments: {}
+    },
+    activeListeners: {},
+    currentPlayingVideo: null,
+    isBootstrapped: false
 };
 
-// --- UTILITIES ---
+// ==========================================
+// 2. HIGH-PRECISION UTILITIES
+// ==========================================
 const Utils = {
     el: (id) => document.getElementById(id),
-    show: (id) => { const e = Utils.el(id); if (e) e.classList.remove('flaynity-hidden'); },
-    hide: (id) => { const e = Utils.el(id); if (e) e.classList.add('flaynity-hidden'); },
+
+    show: (id) => {
+        const target = Utils.el(id);
+        if (target) target.classList.remove('flaynity-hidden');
+    },
+
+    hide: (id) => {
+        const target = Utils.el(id);
+        if (target) target.classList.add('flaynity-hidden');
+    },
+
     timeAgo: (timestamp) => {
         if (!timestamp) return 'Just now';
         const seconds = Math.floor((new Date() - new Date(timestamp)) / 1000);
-        let interval = seconds / 31536000; if (interval > 1) return Math.floor(interval) + " yrs ago";
-        interval = seconds / 2592000; if (interval > 1) return Math.floor(interval) + " mos ago";
-        interval = seconds / 86400; if (interval > 1) return Math.floor(interval) + " days ago";
-        interval = seconds / 3600; if (interval > 1) return Math.floor(interval) + " hrs ago";
-        interval = seconds / 60; if (interval > 1) return Math.floor(interval) + " mins ago";
-        return Math.floor(seconds) + " sec ago";
+        if (seconds < 30) return 'Just now';
+        
+        const intervals = {
+            year: 31536000,
+            month: 2592000,
+            day: 86400,
+            hour: 3600,
+            minute: 60
+        };
+
+        for (const [unit, value] of Object.entries(intervals)) {
+            const count = Math.floor(seconds / value);
+            if (count >= 1) {
+                return `${count} ${unit}${count > 1 ? 's' : ''} ago`;
+            }
+        }
+        return `${seconds} seconds ago`;
     },
+
     formatViews: (num) => {
+        if (!num || isNaN(num)) return '0';
+        if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
         if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
         if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-        return num || 0;
+        return num.toLocaleString();
     },
-    vibrate: () => { if (navigator.vibrate) navigator.vibrate(50); },
-    secureText: (str) => { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
-};
 
-// Safe onClick Binder (Prevent Null Errors)
-const onClick = (id, fn) => {
-    const element = Utils.el(id);
-    if (element) element.onclick = fn;
-    else console.warn("Element missing for click binding:", id);
-};
-
-const UI = {
-    toast: (msg) => {
-        const t = document.createElement('div');
-        t.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:12px 24px;border-radius:24px;z-index:9999;font-size:14px;font-weight:600;transition:opacity 0.3s;`;
-        t.innerText = msg;
-        document.body.appendChild(t);
-        setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+    vibrate: (ms = 40) => {
+        try {
+            if (navigator.vibrate) navigator.vibrate(ms);
+        } catch (e) {
+            console.warn("Haptic feedback unavailable");
+        }
     },
-    showUploadProgress: () => Utils.show('upload-progress-engine'),
-    hideUploadProgress: () => Utils.hide('upload-progress-engine'),
-    updateUploadProgress: (pct) => {
-        const txt = Utils.el('upload-progress-percentage');
-        if (txt) txt.innerText = `${pct}%`;
+
+    secureText: (str) => {
+        if (!str) return '';
+        const temp = document.createElement('div');
+        temp.textContent = str;
+        return temp.innerHTML;
+    },
+
+    debounce: (func, wait) => {
+        let timeout;
+        return function (...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
     }
 };
 
-// --- SERVICES ---
+const UI = {
+    toast: (msg, duration = 3000) => {
+        const existingToast = document.querySelector('.flaynity-toast');
+        if (existingToast) existingToast.remove();
+
+        const toast = document.createElement('div');
+        toast.className = 'flaynity-toast';
+        toast.style.cssText = `
+            position: fixed;
+            bottom: calc(var(--bottom-nav-height) + 24px + var(--safe-area-bottom));
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #1e1e1e;
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 28px;
+            z-index: 99999;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            pointer-events: none;
+            white-space: nowrap;
+        `;
+        toast.innerText = msg;
+        document.body.appendChild(toast);
+
+        requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(-50%) translateY(0)';
+        });
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(-50%) translateY(10px)';
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    },
+
+    showUploadProgress: () => {
+        Utils.show('upload-progress-engine');
+    },
+
+    hideUploadProgress: () => {
+        Utils.hide('upload-progress-engine');
+        UI.updateUploadProgress(0);
+    },
+
+    updateUploadProgress: (pct) => {
+        const txt = Utils.el('upload-progress-percentage');
+        if (txt) txt.innerText = `${Math.round(pct)}%`;
+    }
+};
+
+// Safe DOM Event Binder to eliminate null-reference crashes
+const onClick = (id, callback) => {
+    const el = Utils.el(id);
+    if (el) {
+        el.onclick = callback;
+    } else {
+        console.warn(`[SafeBinder] Element #${id} not found.`);
+    }
+};
+
+// ==========================================
+// 3. CORE SERVICES & NATIVE BRIDGE
+// ==========================================
 let auth, db, s3Client;
+
 const Services = {
     init: () => {
-        if (!firebase.apps.length) firebase.initializeApp(CONFIG.firebase);
+        if (!window.firebase) {
+            throw new Error("Firebase Core SDK is not loaded.");
+        }
+        if (!firebase.apps.length) {
+            firebase.initializeApp(CONFIG.firebase);
+        }
         auth = firebase.auth();
         db = firebase.database();
+
         if (typeof AWS !== 'undefined') {
             AWS.config.update({
-                accessKeyId: CONFIG.r2.accessKey, secretAccessKey: CONFIG.r2.secretKey,
-                region: 'auto', endpoint: CONFIG.r2.endpoint,
-                s3ForcePathStyle: true, signatureVersion: 'v4'
+                accessKeyId: CONFIG.r2.accessKey,
+                secretAccessKey: CONFIG.r2.secretKey,
+                region: 'auto',
+                endpoint: CONFIG.r2.endpoint,
+                s3ForcePathStyle: true,
+                signatureVersion: 'v4'
             });
             s3Client = new AWS.S3();
         }
     },
-    uploadFile: (file, folder) => {
+
+    uploadFile: (file, folderPath) => {
         return new Promise((resolve, reject) => {
-            if (!s3Client) return reject("R2 Engine Not Initialized");
-            const ext = file.name.split('.').pop();
-            const key = `uploads/${folder}/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
-            const req = s3Client.upload({ Bucket: CONFIG.r2.bucket, Key: key, Body: file, ContentType: file.type, ACL: 'public-read' });
-            req.on('httpUploadProgress', (evt) => UI.updateUploadProgress(Math.round((evt.loaded * 100) / evt.total)));
-            req.send((err, data) => { if (err) reject(err); else resolve(`${CONFIG.r2.publicUrl}/${key}`); });
+            if (!s3Client) {
+                return reject(new Error("Cloudflare R2 Client is uninitialized."));
+            }
+            const extension = file.name.split('.').pop();
+            const uniqueKey = `flaynity/${folderPath}/${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`;
+
+            const uploadRequest = s3Client.upload({
+                Bucket: CONFIG.r2.bucket,
+                Key: uniqueKey,
+                Body: file,
+                ContentType: file.type,
+                ACL: 'public-read'
+            });
+
+            uploadRequest.on('httpUploadProgress', (event) => {
+                const percentage = (event.loaded / event.total) * 100;
+                UI.updateUploadProgress(percentage);
+            });
+
+            uploadRequest.send((err, data) => {
+                if (err) {
+                    console.error("R2 Upload Error:", err);
+                    reject(err);
+                } else {
+                    const finalCdnUrl = `${CONFIG.r2.publicUrl}/${uniqueKey}`;
+                    resolve(finalCdnUrl);
+                }
+            });
         });
     },
-    addListener: (id, path, callback) => {
-        if (State.activeListeners[id]) return;
-        const dbRef = db.ref(path);
-        const wrapper = (snapshot) => callback(snapshot);
-        dbRef.on('value', wrapper);
-        State.activeListeners[id] = { ref: dbRef, cb: wrapper };
+
+    addListener: (key, path, callback) => {
+        if (State.activeListeners[key]) return;
+        const targetRef = db.ref(path);
+        const listenerCallback = (snapshot) => callback(snapshot);
+        targetRef.on('value', listenerCallback);
+        State.activeListeners[key] = { ref: targetRef, cb: listenerCallback };
+    },
+
+    removeListener: (key) => {
+        const entry = State.activeListeners[key];
+        if (entry) {
+            entry.ref.off('value', entry.cb);
+            delete State.activeListeners[key];
+        }
     }
 };
 
-// --- AUTHENTICATION ---
+// ==========================================
+// 4. AUTHENTICATION & PROFILE SYSTEM
+// ==========================================
 const AuthSystem = {
     init: () => {
         auth.onAuthStateChanged(async (user) => {
+            // Dismiss Splash immediately when Auth state resolves
             Utils.hide('flaynity-splash');
+
             if (user) {
                 State.user = user;
                 Utils.hide('flaynity-auth');
-                await AuthSystem.loadUserProfile();
+                Utils.show('flaynity-home-ui');
+                await AuthSystem.syncUserProfile();
                 App.startRealtimeListeners();
             } else {
                 State.user = null;
                 Utils.show('flaynity-auth');
+                Utils.hide('flaynity-home-ui');
             }
         });
 
@@ -136,345 +306,1038 @@ const AuthSystem = {
                 try {
                     const provider = new firebase.auth.GoogleAuthProvider();
                     await auth.signInWithRedirect(provider);
-                } catch (error) { UI.toast("Auth failed."); }
+                } catch (error) {
+                    UI.toast("Google Login Failed: " + error.message);
+                }
             }
         });
     },
-    loadUserProfile: async () => {
-        await db.ref(`users/${State.user.uid}`).update({
-            displayName: State.user.displayName, email: State.user.email,
-            photoURL: State.user.photoURL, lastLogin: firebase.database.ServerValue.TIMESTAMP
+
+    syncUserProfile: async () => {
+        if (!State.user) return;
+        
+        const userRef = db.ref(`users/${State.user.uid}`);
+        await userRef.update({
+            uid: State.user.uid,
+            displayName: State.user.displayName || 'Flaynity User',
+            email: State.user.email || '',
+            photoURL: State.user.photoURL || '',
+            lastLogin: firebase.database.ServerValue.TIMESTAMP
         });
-        db.ref('channels').orderByChild('uid').equalTo(State.user.uid).on('value', (snap) => {
-            if (snap.exists()) {
-                const data = snap.val();
-                State.channel = data[Object.keys(data)[0]];
-                State.channel.id = Object.keys(data)[0];
-            } else State.channel = null;
+
+        // Watch for Channel associated with User
+        const channelQuery = db.ref('channels').orderByChild('uid').equalTo(State.user.uid);
+        channelQuery.on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                const records = snapshot.val();
+                const channelId = Object.keys(records)[0];
+                State.channel = { id: channelId, ...records[channelId] };
+            } else {
+                State.channel = null;
+            }
             YouPage.updateProfileUI();
         });
     },
-    signOut: async () => { await auth.signOut(); window.location.reload(); }
-};
 
-window.handleNativeGoogleSignIn = (idToken) => {
-    const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
-    auth.signInWithCredential(credential).catch(err => UI.toast("Google Error: " + err.message));
-};
-
-// --- CONTROLLERS ---
-const HomeFeed = {
-    init: () => onClick('btn-home-search', () => Router.switchTab('discover')),
-    render: () => {
-        const c = Utils.el('home-feed-container');
-        if (!c) return; c.innerHTML = '';
-        const { videos: v, shorts: s, posts: p } = State.cache;
-        if (!v.length && !s.length && !p.length) {
-            c.innerHTML = `<div style="padding:40px;text-align:center;color:var(--flaynity-text-secondary);">No content available.</div>`;
-            return;
+    signOut: async () => {
+        try {
+            await auth.signOut();
+            window.location.reload();
+        } catch (e) {
+            UI.toast("Error signing out");
         }
-        let vIdx = 0, sIdx = 0, pIdx = 0, isRunning = true;
-        while(isRunning) {
-            let added = false;
-            if (sIdx < s.length) { c.appendChild(HomeFeed.buildShortsGrid(s.slice(sIdx, sIdx + 6))); sIdx += 6; added = true; }
-            if (vIdx < v.length) { v.slice(vIdx, vIdx + 10).forEach(video => c.appendChild(HomeFeed.buildVideoCard(video))); vIdx += 10; added = true; }
-            if (pIdx < p.length) { c.appendChild(HomeFeed.buildPostCard(p[pIdx])); pIdx++; added = true; }
-            if (!added) isRunning = false;
-        }
-    },
-    buildVideoCard: (data) => {
-        const div = document.createElement('div'); div.className = 'long-video-card';
-        div.innerHTML = `<div class="lv-thumbnail-box"><img src="${data.thumbnailUrl || ''}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;"><div class="lv-duration">${data.duration || '0:00'}</div></div>
-            <div class="lv-info-row"><img class="lv-avatar" src="${data.channelAvatar || ''}" alt=""><div class="lv-text"><div class="lv-title">${Utils.secureText(data.title)}</div><div class="lv-meta">${Utils.secureText(data.channelName)} • ${Utils.formatViews(data.views || 0)} views • ${Utils.timeAgo(data.createdAt)}</div></div></div>`;
-        div.onclick = () => Player.open(data); return div;
-    },
-    buildShortsGrid: (data) => {
-        const sec = document.createElement('div'); sec.className = 'shorts-grid-section';
-        let html = `<div class="shorts-grid-header"><span class="material-symbols-outlined">app_shortcut</span> Shorts</div><div class="s-grid">`;
-        data.forEach(s => { html += `<div class="s-card" data-id="${s.id}"><img src="${s.thumbnailUrl || s.cdnVideoUrl}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;"><div class="s-card-title">${Utils.secureText(s.title)}</div></div>`; });
-        html += `</div>`; sec.innerHTML = html;
-        sec.querySelectorAll('.s-card').forEach(card => card.onclick = () => { Router.switchTab('shorts'); ShortsPlayer.scrollTo(card.dataset.id); });
-        return sec;
-    },
-    buildPostCard: (data) => {
-        const div = document.createElement('div'); div.className = 'post-card';
-        div.innerHTML = `<div class="post-header"><img class="post-avatar" src="${data.channelAvatar || ''}"><div><div class="post-user">${Utils.secureText(data.channelName)}</div><div class="post-time">${Utils.timeAgo(data.createdAt)}</div></div><div class="post-subscribe">Subscribe</div></div>
-            <div class="post-text">${Utils.secureText(data.text || '')}</div>${data.imageUrl ? `<div class="post-image-grid count-1"><img src="${data.imageUrl}"></div>` : ''}
-            <div class="post-stats"><div class="post-reactions-icons">👍 ❤️ ${data.likes || 0}</div><div>${data.comments || 0} comments</div></div>
-            <div class="post-actions"><div class="p-action-btn"><span class="material-symbols-outlined">thumb_up</span> Like</div><div class="p-action-btn"><span class="material-symbols-outlined">chat_bubble</span> Comment</div><div class="p-action-btn"><span class="material-symbols-outlined">share</span> Share</div></div>`;
-        return div;
     }
 };
 
+// Global Bridge Invocation for Android native Google Sign-in
+window.handleNativeGoogleSignIn = (idToken) => {
+    try {
+        const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
+        auth.signInWithCredential(credential).catch((error) => {
+            UI.toast("Native Google Sign-In Failed: " + error.message);
+        });
+    } catch (e) {
+        console.error("Token verification error:", e);
+    }
+};
+
+// ==========================================
+// 5. HOME FEED ENGINE (6 Shorts -> 10 Videos -> 1 Post)
+// ==========================================
+const HomeFeed = {
+    init: () => {
+        onClick('btn-home-search', () => Router.switchTab('discover'));
+        
+        // Category Chips
+        const chips = document.querySelectorAll('.category-chips-container .chip');
+        chips.forEach((chip) => {
+            chip.onclick = () => {
+                chips.forEach((c) => c.classList.remove('active'));
+                chip.classList.add('active');
+                HomeFeed.filterCategory(chip.innerText.trim());
+            };
+        });
+    },
+
+    filterCategory: (type) => {
+        const container = Utils.el('home-feed-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (type === 'Shorts') {
+            container.appendChild(HomeFeed.buildShortsGrid(State.cache.shorts));
+        } else if (type === 'Posts') {
+            State.cache.posts.forEach((post) => {
+                container.appendChild(HomeFeed.buildPostCard(post));
+            });
+        } else {
+            HomeFeed.render();
+        }
+    },
+
+    render: () => {
+        const container = Utils.el('home-feed-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const { videos, shorts, posts } = State.cache;
+
+        if (videos.length === 0 && shorts.length === 0 && posts.length === 0) {
+            container.innerHTML = `
+                <div style="padding: 60px 20px; text-align: center; color: var(--flaynity-text-secondary);">
+                    <span class="material-symbols-outlined" style="font-size: 56px; margin-bottom: 12px;">video_library</span>
+                    <h3 style="font-size: 18px; margin-bottom: 6px;">No Content Yet</h3>
+                    <p style="font-size: 13px;">Publish your first video, short or community post!</p>
+                </div>
+            `;
+            return;
+        }
+
+        let videoIdx = 0;
+        let shortsIdx = 0;
+        let postIdx = 0;
+        let active = true;
+
+        while (active) {
+            let chunkAdded = false;
+
+            // Pattern Step 1: 6 Shorts Grid
+            if (shortsIdx < shorts.length) {
+                const batch = shorts.slice(shortsIdx, shortsIdx + 6);
+                shortsIdx += 6;
+                container.appendChild(HomeFeed.buildShortsGrid(batch));
+                chunkAdded = true;
+            }
+
+            // Pattern Step 2: 10 Long Videos
+            if (videoIdx < videos.length) {
+                const batch = videos.slice(videoIdx, videoIdx + 10);
+                videoIdx += 10;
+                batch.forEach((video) => {
+                    container.appendChild(HomeFeed.buildVideoCard(video));
+                });
+                chunkAdded = true;
+            }
+
+            // Pattern Step 3: 1 Community Post
+            if (postIdx < posts.length) {
+                container.appendChild(HomeFeed.buildPostCard(posts[postIdx]));
+                postIdx++;
+                chunkAdded = true;
+            }
+
+            if (!chunkAdded) active = false;
+        }
+    },
+
+    buildVideoCard: (data) => {
+        const card = document.createElement('div');
+        card.className = 'long-video-card';
+        card.innerHTML = `
+            <div class="lv-thumbnail-box">
+                <img src="${data.thumbnailUrl || data.cdnVideoUrl}" loading="lazy" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">
+                <div class="lv-duration">${data.duration || '0:00'}</div>
+            </div>
+            <div class="lv-info-row">
+                <img class="lv-avatar" src="${data.channelAvatar || 'https://via.placeholder.com/40'}" alt="">
+                <div class="lv-text">
+                    <div class="lv-title">${Utils.secureText(data.title)}</div>
+                    <div class="lv-meta">${Utils.secureText(data.channelName)} • ${Utils.formatViews(data.views || 0)} views • ${Utils.timeAgo(data.createdAt)}</div>
+                </div>
+            </div>
+        `;
+        card.onclick = () => Player.open(data);
+        return card;
+    },
+
+    buildShortsGrid: (shortsBatch) => {
+        const section = document.createElement('div');
+        section.className = 'shorts-grid-section';
+        let html = `
+            <div class="shorts-grid-header">
+                <span class="material-symbols-outlined">app_shortcut</span> Shorts
+            </div>
+            <div class="s-grid">
+        `;
+
+        shortsBatch.forEach((item) => {
+            html += `
+                <div class="s-card" data-id="${item.id}">
+                    <img src="${item.thumbnailUrl || item.cdnVideoUrl}" loading="lazy" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">
+                    <div class="s-card-title">${Utils.secureText(item.title)}</div>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+        section.innerHTML = html;
+
+        section.querySelectorAll('.s-card').forEach((card) => {
+            card.onclick = () => {
+                Router.switchTab('shorts');
+                ShortsPlayer.scrollTo(card.dataset.id);
+            };
+        });
+
+        return section;
+    },
+
+    buildPostCard: (data) => {
+        const card = document.createElement('div');
+        card.className = 'post-card';
+        card.id = `post-${data.id}`;
+
+        const isLiked = State.cache.userReactions[data.id] !== undefined;
+
+        card.innerHTML = `
+            <div class="post-header">
+                <img class="post-avatar" src="${data.channelAvatar || 'https://via.placeholder.com/40'}">
+                <div>
+                    <div class="post-user">${Utils.secureText(data.channelName)}</div>
+                    <div class="post-time">${Utils.timeAgo(data.createdAt)}</div>
+                </div>
+                <div class="post-subscribe" data-channel="${data.channelId}">Subscribe</div>
+            </div>
+            <div class="post-text">${Utils.secureText(data.text || '')}</div>
+            ${data.imageUrl ? `<div class="post-image-grid count-1"><img src="${data.imageUrl}" loading="lazy"></div>` : ''}
+            <div class="post-stats">
+                <div class="post-reactions-icons">
+                    <span class="reaction-preview">❤️ 👍 🥰</span> <span class="reaction-count">${Utils.formatViews(data.likes || 0)}</span>
+                </div>
+                <div>${Utils.formatViews(data.comments || 0)} comments</div>
+            </div>
+            <div class="post-actions">
+                <div class="p-action-btn like-action-btn ${isLiked ? 'active' : ''}">
+                    <span class="material-symbols-outlined">${isLiked ? 'favorite' : 'thumb_up'}</span> Like
+                </div>
+                <div class="p-action-btn comment-action-btn">
+                    <span class="material-symbols-outlined">chat_bubble</span> Comment
+                </div>
+                <div class="p-action-btn share-action-btn">
+                    <span class="material-symbols-outlined">share</span> Share
+                </div>
+            </div>
+        `;
+
+        // Like Button Interaction
+        const likeBtn = card.querySelector('.like-action-btn');
+        likeBtn.onclick = () => PostReactions.toggleLike(data.id);
+
+        return card;
+    }
+};
+
+// ==========================================
+// 6. POST REACTION & COMMENTS ENGINE
+// ==========================================
+const PostReactions = {
+    toggleLike: async (postId) => {
+        if (!State.user) {
+            return UI.toast("Please log in to like.");
+        }
+        Utils.vibrate();
+
+        const postRef = db.ref(`posts/${postId}/likes`);
+        const userReactionRef = db.ref(`post_reactions/${postId}/${State.user.uid}`);
+
+        const snapshot = await userReactionRef.once('value');
+        if (snapshot.exists()) {
+            await userReactionRef.remove();
+            await postRef.transaction((current) => Math.max((current || 1) - 1, 0));
+            delete State.cache.userReactions[postId];
+        } else {
+            await userReactionRef.set('like');
+            await postRef.transaction((current) => (current || 0) + 1);
+            State.cache.userReactions[postId] = 'like';
+        }
+
+        HomeFeed.render();
+    }
+};
+
+// ==========================================
+// 7. CINEMA VIDEO PLAYER ENGINE
+// ==========================================
 const Player = {
-    init: () => onClick('btn-close-watch', Player.close),
+    currentVideoData: null,
+
+    init: () => {
+        onClick('btn-close-watch', Player.close);
+        onClick('wp-subscribe-btn', Player.toggleSubscribe);
+    },
+
     open: (videoData) => {
-        const layer = Utils.el('flaynity-watch-page'); const videoEl = Utils.el('main-video-player');
-        if(!layer || !videoEl) return;
+        Player.currentVideoData = videoData;
+        const layer = Utils.el('flaynity-watch-page');
+        const videoEl = Utils.el('main-video-player');
+
+        if (!layer || !videoEl) return;
+
         Utils.el('wp-title').innerText = videoData.title;
         Utils.el('wp-stats').innerText = `${Utils.formatViews(videoData.views || 0)} views • ${Utils.timeAgo(videoData.createdAt)}`;
         Utils.el('wp-channel-handle').innerText = videoData.channelName;
         Utils.el('wp-like-count').innerText = Utils.formatViews(videoData.likes || 0);
-        Utils.el('wp-channel-avatar').src = videoData.channelAvatar || ''; Utils.show('wp-channel-avatar');
-        videoEl.src = videoData.cdnVideoUrl; videoEl.play().catch(e => console.log("Autoplay prevented"));
-        layer.classList.add('active'); State.currentPlayingVideo = videoEl; Router.addBackState('player');
-        if (videoData.id) db.ref(`videos/${videoData.id}/views`).transaction(c => (c || 0) + 1);
+        Utils.el('wp-channel-avatar').src = videoData.channelAvatar || 'https://via.placeholder.com/36';
+        Utils.show('wp-channel-avatar');
+
+        videoEl.src = videoData.cdnVideoUrl;
+        videoEl.play().catch(() => console.warn("Video auto-play prevented by browser policy"));
+
+        layer.classList.add('active');
+        State.currentPlayingVideo = videoEl;
+        Router.addBackState('watch-page');
+
+        // Increment Views Safely
+        if (videoData.id) {
+            db.ref(`videos/${videoData.id}/views`).transaction((count) => (count || 0) + 1);
+        }
+
+        Player.loadRecommended(videoData.id);
     },
+
     close: () => {
-        const layer = Utils.el('flaynity-watch-page'); const videoEl = Utils.el('main-video-player');
-        if(videoEl) { videoEl.pause(); videoEl.src = ''; }
-        if(layer) layer.classList.remove('active');
+        const layer = Utils.el('flaynity-watch-page');
+        const videoEl = Utils.el('main-video-player');
+        if (videoEl) {
+            videoEl.pause();
+            videoEl.src = '';
+        }
+        if (layer) layer.classList.remove('active');
         State.currentPlayingVideo = null;
+        Player.currentVideoData = null;
+    },
+
+    toggleSubscribe: async () => {
+        if (!State.user || !Player.currentVideoData) {
+            return UI.toast("Log in to subscribe.");
+        }
+        Utils.vibrate();
+        const targetChannelId = Player.currentVideoData.channelId;
+        const subRef = db.ref(`subscriptions/${targetChannelId}/${State.user.uid}`);
+        const channelSubsCountRef = db.ref(`channels/${targetChannelId}/subscribersCount`);
+
+        const snapshot = await subRef.once('value');
+        const btn = Utils.el('wp-subscribe-btn');
+
+        if (snapshot.exists()) {
+            await subRef.remove();
+            await channelSubsCountRef.transaction((count) => Math.max((count || 1) - 1, 0));
+            btn.innerText = "Subscribe";
+            btn.style.background = "var(--flaynity-text)";
+            btn.style.color = "var(--flaynity-bg)";
+            UI.toast("Unsubscribed");
+        } else {
+            await subRef.set(true);
+            await channelSubsCountRef.transaction((count) => (count || 0) + 1);
+            btn.innerText = "Subscribed";
+            btn.style.background = "var(--flaynity-skeleton)";
+            btn.style.color = "var(--flaynity-text)";
+            UI.toast("Subscribed!");
+        }
+    },
+
+    loadRecommended: (excludeId) => {
+        const recArea = Utils.el('wp-recommended-feed');
+        if (!recArea) return;
+        recArea.innerHTML = '';
+
+        const list = State.cache.videos.filter((v) => v.id !== excludeId);
+        list.slice(0, 8).forEach((item) => {
+            recArea.appendChild(HomeFeed.buildVideoCard(item));
+        });
     }
 };
 
+// ==========================================
+// 8. SHORTS VERTICAL STREAM ENGINE
+// ==========================================
 const ShortsPlayer = {
     observer: null,
+
     init: () => {
-        const c = Utils.el('shorts-feed-container'); if (!c) return;
+        const container = Utils.el('shorts-feed-container');
+        if (!container) return;
+
         ShortsPlayer.observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                const v = entry.target.querySelector('video'); if (!v) return;
-                if (entry.isIntersecting) { v.play().catch(e=>{}); State.currentPlayingVideo = v; }
-                else { v.pause(); v.currentTime = 0; }
-            });
-        }, { threshold: 0.6 });
-    },
-    render: () => {
-        const c = Utils.el('shorts-feed-container'); if (!c) return; c.innerHTML = '';
-        if (!State.cache.shorts.length) { c.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;">No Shorts available.</div>`; return; }
-        State.cache.shorts.forEach(s => {
-            const div = document.createElement('div'); div.className = 'short-view-container'; div.id = `short-view-${s.id}`;
-            div.innerHTML = `<video class="short-video-element" src="${s.cdnVideoUrl}" loop playsinline preload="auto"></video>
-                <div class="short-ui-overlay"><div class="short-actions-sidebar"><div class="s-action-btn like-btn"><span class="material-symbols-outlined">favorite</span><span class="count">${Utils.formatViews(s.likes || 0)}</span></div><div class="s-action-btn"><span class="material-symbols-outlined">chat</span><span class="count">${Utils.formatViews(s.comments || 0)}</span></div><div class="music-disc-wrapper disc-spin"><span class="material-symbols-outlined">music_note</span></div></div>
-                <div class="short-bottom-details"><div class="short-channel-row"><img src="${s.channelAvatar || ''}"><span class="short-handle">${Utils.secureText(s.channelName)}</span><button class="short-sub-btn">Subscribe</button></div><div class="short-title-text">${Utils.secureText(s.title)}</div></div><div class="short-center-play-indicator"><span class="material-symbols-outlined">play_arrow</span></div></div>`;
-            
-            let lastTap = 0;
-            div.addEventListener('click', (e) => {
-                const now = new Date().getTime(); const ts = now - lastTap;
-                if (ts < 300 && ts > 0) {
-                    Utils.vibrate(); const i = div.querySelector('.like-btn .material-symbols-outlined');
-                    i.style.color = 'var(--flaynity-accent)'; i.style.transform = 'scale(1.3)'; setTimeout(() => i.style.transform = 'scale(1)', 200);
+            entries.forEach((entry) => {
+                const video = entry.target.querySelector('.short-video-element');
+                const disc = entry.target.querySelector('.music-disc-wrapper');
+                if (!video) return;
+
+                if (entry.isIntersecting) {
+                    video.play().catch(() => {});
+                    State.currentPlayingVideo = video;
+                    if (disc) disc.classList.add('disc-spin');
                 } else {
-                    const v = div.querySelector('video'), ind = div.querySelector('.short-center-play-indicator');
-                    if (v.paused) { v.play(); ind.querySelector('span').innerText = 'play_arrow'; } else { v.pause(); ind.querySelector('span').innerText = 'pause'; }
-                    ind.classList.add('indicator-flash'); setTimeout(() => ind.classList.remove('indicator-flash'), 400);
+                    video.pause();
+                    video.currentTime = 0;
+                    if (disc) disc.classList.remove('disc-spin');
+                }
+            });
+        }, { threshold: 0.65 });
+    },
+
+    render: () => {
+        const container = Utils.el('shorts-feed-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const shorts = State.cache.shorts;
+
+        if (shorts.length === 0) {
+            container.innerHTML = `
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;text-align:center;padding:24px;">
+                    <span class="material-symbols-outlined" style="font-size:64px;margin-bottom:12px;">app_shortcut</span>
+                    <h3>No Shorts Available</h3>
+                    <p style="color:#aaa;font-size:13px;">Create and share your first 60-second video!</p>
+                </div>
+            `;
+            return;
+        }
+
+        shorts.forEach((s) => {
+            const card = document.createElement('div');
+            card.className = 'short-view-container';
+            card.id = `short-view-${s.id}`;
+            card.innerHTML = `
+                <video class="short-video-element" src="${s.cdnVideoUrl}" loop playsinline preload="auto"></video>
+                <div class="short-ui-overlay">
+                    <div class="short-actions-sidebar">
+                        <div class="s-action-btn like-btn">
+                            <span class="material-symbols-outlined">favorite</span>
+                            <span class="count">${Utils.formatViews(s.likes || 0)}</span>
+                        </div>
+                        <div class="s-action-btn comment-btn">
+                            <span class="material-symbols-outlined">chat</span>
+                            <span class="count">${Utils.formatViews(s.comments || 0)}</span>
+                        </div>
+                        <div class="s-action-btn share-btn">
+                            <span class="material-symbols-outlined">share</span>
+                            <span class="count">Share</span>
+                        </div>
+                        <div class="music-disc-wrapper disc-spin">
+                            <span class="material-symbols-outlined">music_note</span>
+                        </div>
+                    </div>
+                    <div class="short-bottom-details">
+                        <div class="short-channel-row">
+                            <img src="${s.channelAvatar || 'https://via.placeholder.com/36'}">
+                            <span class="short-handle">${Utils.secureText(s.channelName)}</span>
+                            <button class="short-sub-btn">Subscribe</button>
+                        </div>
+                        <div class="short-title-text">${Utils.secureText(s.title)}</div>
+                    </div>
+                    <div class="short-center-play-indicator">
+                        <span class="material-symbols-outlined">play_arrow</span>
+                    </div>
+                </div>
+            `;
+
+            let lastTap = 0;
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.short-actions-sidebar') || e.target.closest('.short-sub-btn')) return;
+
+                const now = new Date().getTime();
+                const delta = now - lastTap;
+
+                if (delta < 300 && delta > 0) {
+                    // Double Tap Like Trigger
+                    Utils.vibrate(60);
+                    const heartIcon = card.querySelector('.like-btn .material-symbols-outlined');
+                    heartIcon.style.color = 'var(--flaynity-accent)';
+                    heartIcon.style.transform = 'scale(1.4)';
+                    setTimeout(() => heartIcon.style.transform = 'scale(1)', 250);
+
+                    db.ref(`shorts/${s.id}/likes`).transaction((count) => (count || 0) + 1);
+                } else {
+                    // Single Tap Play / Pause
+                    const video = card.querySelector('video');
+                    const indicator = card.querySelector('.short-center-play-indicator');
+                    const disc = card.querySelector('.music-disc-wrapper');
+
+                    if (video.paused) {
+                        video.play();
+                        indicator.querySelector('span').innerText = 'play_arrow';
+                        if (disc) disc.classList.add('disc-spin');
+                    } else {
+                        video.pause();
+                        indicator.querySelector('span').innerText = 'pause';
+                        if (disc) disc.classList.remove('disc-spin');
+                    }
+                    indicator.classList.add('indicator-flash');
+                    setTimeout(() => indicator.classList.remove('indicator-flash'), 400);
                 }
                 lastTap = now;
             });
-            c.appendChild(div); ShortsPlayer.observer.observe(div);
+
+            container.appendChild(card);
+            ShortsPlayer.observer.observe(card);
         });
     },
-    scrollTo: (id) => { const e = Utils.el(`short-view-${id}`); if(e) e.scrollIntoView({behavior: 'smooth'}); }
+
+    scrollTo: (shortId) => {
+        const target = Utils.el(`short-view-${shortId}`);
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+    }
 };
 
+// ==========================================
+// 9. UPLOAD STUDIO & R2 ENGINE
+// ==========================================
 const UploadPage = {
     activeFile: null,
+
     init: () => {
         onClick('btn-close-upload-sheet', UploadPage.closeSheet);
-        onClick('upload-backdrop', (e) => { if(e.target.id === 'upload-backdrop') UploadPage.closeSheet(); });
+        onClick('upload-backdrop', (e) => {
+            if (e.target.id === 'upload-backdrop') UploadPage.closeSheet();
+        });
+
         onClick('btn-create-video', () => UploadPage.openFlow('flow-video'));
         onClick('btn-create-short', () => UploadPage.openFlow('flow-short'));
         onClick('btn-create-post', () => UploadPage.openFlow('flow-post'));
+
         onClick('btn-close-video-flow', UploadPage.closeAll);
         onClick('btn-close-short-flow', UploadPage.closeAll);
         onClick('btn-close-post-flow', UploadPage.closeAll);
         onClick('btn-back-short-details', () => Utils.hide('short-details-ui'));
 
-        onClick('video-file-picker-trigger', () => { const f=Utils.el('input-video-file'); if(f) f.click(); });
-        const vInput = Utils.el('input-video-file');
-        if (vInput) vInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if(file) { UploadPage.activeFile = file; Utils.el('video-preview-element').src = URL.createObjectURL(file); Utils.show('video-preview-element'); }
-        };
+        // File Selectors
+        onClick('video-file-picker-trigger', () => {
+            const input = Utils.el('input-video-file');
+            if (input) input.click();
+        });
 
-        onClick('post-image-picker-trigger', () => { const f=Utils.el('input-post-file'); if(f) f.click(); });
-        const pInput = Utils.el('input-post-file');
-        if (pInput) pInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if(file) { UploadPage.activeFile = file; Utils.el('post-image-preview').src = URL.createObjectURL(file); Utils.show('post-image-preview'); }
-        };
+        const videoInput = Utils.el('input-video-file');
+        if (videoInput) {
+            videoInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    UploadPage.activeFile = file;
+                    const preview = Utils.el('video-preview-element');
+                    preview.src = URL.createObjectURL(file);
+                    Utils.show('video-preview-element');
+                }
+            };
+        }
+
+        onClick('post-image-picker-trigger', () => {
+            const input = Utils.el('input-post-file');
+            if (input) input.click();
+        });
+
+        const postInput = Utils.el('input-post-file');
+        if (postInput) {
+            postInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    UploadPage.activeFile = file;
+                    const preview = Utils.el('post-image-preview');
+                    preview.src = URL.createObjectURL(file);
+                    Utils.show('post-image-preview');
+                }
+            };
+        }
+
+        onClick('btn-short-gallery', () => {
+            const input = Utils.el('input-short-file');
+            if (input) input.click();
+        });
+
+        const shortInput = Utils.el('input-short-file');
+        if (shortInput) {
+            shortInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    UploadPage.activeFile = file;
+                    Utils.show('short-details-ui');
+                }
+            };
+        }
 
         onClick('btn-publish-video', () => UploadPage.publish('video'));
-        onClick('btn-publish-post', () => UploadPage.publish('post'));
         onClick('btn-publish-short', () => UploadPage.publish('short'));
-        
+        onClick('btn-publish-post', () => UploadPage.publish('post'));
         onClick('btn-short-next', () => Utils.show('short-details-ui'));
-        onClick('btn-short-gallery', () => { const f=Utils.el('input-short-file'); if(f) f.click(); });
-        const sInput = Utils.el('input-short-file');
-        if(sInput) sInput.onchange = (e) => { if(e.target.files[0]) { UploadPage.activeFile = e.target.files[0]; Utils.show('short-details-ui'); } };
     },
+
     openSheet: () => {
-        if (!State.channel) { UI.toast("Create a channel first."); Router.switchTab('you'); return; }
-        const b = Utils.el('upload-backdrop'), s = Utils.el('upload-sheet');
-        if(b && s) { b.style.display = 'flex'; void b.offsetWidth; b.classList.add('active'); s.classList.add('active'); Router.addBackState('upload-sheet'); }
-    },
-    closeSheet: () => {
-        const b = Utils.el('upload-backdrop'), s = Utils.el('upload-sheet');
-        if(b && s) { b.classList.remove('active'); s.classList.remove('active'); setTimeout(() => b.style.display = 'none', 300); }
-    },
-    openFlow: (id) => {
-        UploadPage.closeSheet(); UploadPage.activeFile = null;
-        Utils.hide('video-preview-element'); Utils.hide('post-image-preview');
-        const f = Utils.el(id); if(f) { f.classList.remove('flaynity-hidden'); setTimeout(() => f.classList.add('active'), 10); Router.addBackState('upload-flow'); }
-    },
-    closeAll: () => {
-        ['flow-video', 'flow-short', 'flow-post', 'short-details-ui'].forEach(id => {
-            const el = Utils.el(id); if(el) { el.classList.remove('active'); setTimeout(() => el.classList.add('flaynity-hidden'), 300); }
-        }); UploadPage.activeFile = null;
-    },
-    publish: async (type) => {
-        if (!State.channel) return UI.toast("Channel required.");
-        let meta = { uid: State.user.uid, channelId: State.channel.id, channelName: State.channel.channelName, channelAvatar: State.channel.avatarUrl || '', createdAt: firebase.database.ServerValue.TIMESTAMP, views: 0, likes: 0, comments: 0 };
-        if (type === 'video') {
-            meta.title = Utils.el('input-video-title').value.trim();
-            if (!meta.title || !UploadPage.activeFile) return UI.toast("Title and Video are required.");
-            meta.description = Utils.el('input-video-desc').value; meta.visibility = Utils.el('input-video-visibility').value; meta.category = Utils.el('input-video-category').value;
-        } else if (type === 'short') {
-            meta.title = Utils.el('input-short-title').value.trim();
-            if (!meta.title || !UploadPage.activeFile) return UI.toast("Caption/Video required.");
-            meta.visibility = Utils.el('input-short-visibility').value;
-        } else if (type === 'post') {
-            meta.text = Utils.el('input-post-text').value.trim();
-            if (!meta.text && !UploadPage.activeFile) return UI.toast("Content required.");
+        if (!State.channel) {
+            UI.toast("Please create a channel first.");
+            Router.switchTab('you');
+            return;
         }
+        const backdrop = Utils.el('upload-backdrop');
+        const sheet = Utils.el('upload-sheet');
+        if (backdrop && sheet) {
+            backdrop.style.display = 'flex';
+            void backdrop.offsetWidth;
+            backdrop.classList.add('active');
+            sheet.classList.add('active');
+            Router.addBackState('upload-sheet');
+        }
+    },
+
+    closeSheet: () => {
+        const backdrop = Utils.el('upload-backdrop');
+        const sheet = Utils.el('upload-sheet');
+        if (backdrop && sheet) {
+            backdrop.classList.remove('active');
+            sheet.classList.remove('active');
+            setTimeout(() => backdrop.style.display = 'none', 300);
+        }
+    },
+
+    openFlow: (flowId) => {
+        UploadPage.closeSheet();
+        UploadPage.activeFile = null;
+        Utils.hide('video-preview-element');
+        Utils.hide('post-image-preview');
+
+        const flow = Utils.el(flowId);
+        if (flow) {
+            flow.classList.remove('flaynity-hidden');
+            setTimeout(() => flow.classList.add('active'), 10);
+            Router.addBackState('upload-flow');
+        }
+    },
+
+    closeAll: () => {
+        ['flow-video', 'flow-short', 'flow-post', 'short-details-ui'].forEach((id) => {
+            const el = Utils.el(id);
+            if (el) {
+                el.classList.remove('active');
+                setTimeout(() => el.classList.add('flaynity-hidden'), 300);
+            }
+        });
+        UploadPage.activeFile = null;
+    },
+
+    publish: async (type) => {
+        if (!State.channel) return UI.toast("Active channel required.");
+
+        let metadata = {
+            uid: State.user.uid,
+            channelId: State.channel.id,
+            channelName: State.channel.channelName,
+            channelAvatar: State.channel.avatarUrl || '',
+            createdAt: firebase.database.ServerValue.TIMESTAMP,
+            views: 0,
+            likes: 0,
+            comments: 0
+        };
+
+        if (type === 'video') {
+            metadata.title = Utils.el('input-video-title').value.trim();
+            if (!metadata.title || !UploadPage.activeFile) return UI.toast("Title and Video file are required.");
+            metadata.description = Utils.el('input-video-desc').value;
+            metadata.visibility = Utils.el('input-video-visibility').value;
+            metadata.category = Utils.el('input-video-category').value;
+        } else if (type === 'short') {
+            metadata.title = Utils.el('input-short-title').value.trim();
+            if (!metadata.title || !UploadPage.activeFile) return UI.toast("Caption and Video file are required.");
+            metadata.visibility = Utils.el('input-short-visibility').value;
+        } else if (type === 'post') {
+            metadata.text = Utils.el('input-post-text').value.trim();
+            if (!metadata.text && !UploadPage.activeFile) return UI.toast("Text content or Image required.");
+        }
+
         try {
             UI.showUploadProgress();
+
             if (UploadPage.activeFile) {
-                const r2Url = await Services.uploadFile(UploadPage.activeFile, `${type}s/${State.user.uid}`);
-                if (type === 'post') meta.imageUrl = r2Url; else meta.cdnVideoUrl = r2Url;
+                const cdnUrl = await Services.uploadFile(UploadPage.activeFile, `${type}s/${State.user.uid}`);
+                if (type === 'post') {
+                    metadata.imageUrl = cdnUrl;
+                } else {
+                    metadata.cdnVideoUrl = cdnUrl;
+                }
             }
-            await db.ref(`${type}s`).push().set(meta);
-            UI.hideUploadProgress(); UI.toast("Published!"); UploadPage.closeAll(); Router.switchTab('home');
-        } catch (e) { UI.hideUploadProgress(); UI.toast("Upload failed."); }
+
+            await db.ref(`${type}s`).push().set(metadata);
+
+            UI.hideUploadProgress();
+            UI.toast("Published successfully!");
+            UploadPage.closeAll();
+            Router.switchTab('home');
+        } catch (error) {
+            UI.hideUploadProgress();
+            UI.toast("Upload failed: " + error.message);
+        }
     }
 };
 
+// ==========================================
+// 10. DISCOVER & SEARCH ENGINE
+// ==========================================
 const DiscoverPage = {
     init: () => {
-        document.querySelectorAll('.discover-categories-scroll .d-chip').forEach(c => c.onclick = () => {
-            document.querySelectorAll('.d-chip').forEach(x => x.classList.remove('active')); c.classList.add('active');
+        const chips = document.querySelectorAll('.discover-categories-scroll .d-chip');
+        chips.forEach((c) => {
+            c.onclick = () => {
+                chips.forEach((x) => x.classList.remove('active'));
+                c.classList.add('active');
+            };
         });
     }
 };
 
+// ==========================================
+// 11. YOU / CHANNEL STUDIO & ANALYTICS
+// ==========================================
 const YouPage = {
     init: () => {
         onClick('btn-sign-out', AuthSystem.signOut);
-        onClick('btn-create-channel', () => { const l=Utils.el('layer-create-channel'); if(l){ l.classList.add('active'); Router.addBackState('layer'); } });
-        onClick('btn-view-channel', () => { YouPage.openViewChannel(); Router.addBackState('layer'); });
-        onClick('btn-open-edit-channel', () => { YouPage.openEditChannel(); Router.addBackState('layer'); });
-        onClick('btn-open-analytics', () => { const l=Utils.el('layer-analytics'); if(l){ l.classList.add('active'); Router.addBackState('layer'); } });
-        
-        document.querySelectorAll('.btn-back-layer').forEach(btn => btn.onclick = (e) => e.target.closest('.you-sub-layer').classList.remove('active'));
-        document.querySelectorAll('.vc-tab').forEach(tab => tab.onclick = (e) => {
-            document.querySelectorAll('.vc-tab').forEach(t => t.classList.remove('active')); e.target.classList.add('active'); YouPage.renderChannelContent(e.target.dataset.tab);
+        onClick('btn-create-channel', () => {
+            const layer = Utils.el('layer-create-channel');
+            if (layer) {
+                layer.classList.add('active');
+                Router.addBackState('layer');
+            }
         });
 
-        onClick('picker-create-avatar', () => { const f=Utils.el('input-create-avatar'); if(f) f.click(); });
-        let createAvFile = null; const avInp = Utils.el('input-create-avatar');
-        if(avInp) avInp.onchange = (e) => { createAvFile = e.target.files[0]; if(createAvFile) Utils.el('preview-create-avatar').src = URL.createObjectURL(createAvFile); };
+        onClick('btn-view-channel', () => {
+            YouPage.openViewChannel();
+            Router.addBackState('layer');
+        });
+
+        onClick('btn-open-edit-channel', () => {
+            YouPage.openEditChannel();
+            Router.addBackState('layer');
+        });
+
+        onClick('btn-open-analytics', () => {
+            YouPage.loadAnalytics();
+            const layer = Utils.el('layer-analytics');
+            if (layer) {
+                layer.classList.add('active');
+                Router.addBackState('layer');
+            }
+        });
+
+        document.querySelectorAll('.btn-back-layer').forEach((btn) => {
+            btn.onclick = (e) => e.target.closest('.you-sub-layer').classList.remove('active');
+        });
+
+        document.querySelectorAll('.vc-tab').forEach((tab) => {
+            tab.onclick = (e) => {
+                document.querySelectorAll('.vc-tab').forEach((t) => t.classList.remove('active'));
+                e.target.classList.add('active');
+                YouPage.renderChannelContent(e.target.dataset.tab);
+            };
+        });
+
+        // Channel Creation Form Bindings
+        onClick('picker-create-avatar', () => {
+            const input = Utils.el('input-create-avatar');
+            if (input) input.click();
+        });
+
+        let avatarFile = null;
+        const avatarInput = Utils.el('input-create-avatar');
+        if (avatarInput) {
+            avatarInput.onchange = (e) => {
+                avatarFile = e.target.files[0];
+                if (avatarFile) {
+                    Utils.el('preview-create-avatar').src = URL.createObjectURL(avatarFile);
+                }
+            };
+        }
 
         onClick('btn-submit-create-channel', async () => {
-            const name = Utils.el('input-create-name').value.trim(), handle = Utils.el('input-create-handle').value.trim();
-            if(!name || !handle) return UI.toast("Name and handle required.");
+            const name = Utils.el('input-create-name').value.trim();
+            const handle = Utils.el('input-create-handle').value.trim().toLowerCase();
+
+            if (!name || !handle) return UI.toast("Name and handle are required.");
+
             try {
                 UI.showUploadProgress();
-                let avatarUrl = State.user.photoURL; 
-                if(createAvFile) avatarUrl = await Services.uploadFile(createAvFile, `avatars/${State.user.uid}`);
-                await db.ref('channels').push().set({ uid: State.user.uid, channelName: name, handle: handle, avatarUrl: avatarUrl, category: Utils.el('input-create-category').value, createdAt: firebase.database.ServerValue.TIMESTAMP, subscribersCount: 0 });
-                UI.hideUploadProgress(); UI.toast("Channel created!"); Utils.el('layer-create-channel').classList.remove('active');
-            } catch(e) { UI.hideUploadProgress(); UI.toast("Error creating channel."); }
+                let avatarUrl = State.user.photoURL || '';
+
+                if (avatarFile) {
+                    avatarUrl = await Services.uploadFile(avatarFile, `avatars/${State.user.uid}`);
+                }
+
+                await db.ref('channels').push().set({
+                    uid: State.user.uid,
+                    channelName: name,
+                    handle: `@${handle.replace('@', '')}`,
+                    avatarUrl: avatarUrl,
+                    category: Utils.el('input-create-category').value,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP,
+                    subscribersCount: 0,
+                    totalViews: 0
+                });
+
+                UI.hideUploadProgress();
+                UI.toast("Channel created successfully!");
+                Utils.el('layer-create-channel').classList.remove('active');
+            } catch (e) {
+                UI.hideUploadProgress();
+                UI.toast("Failed to create channel: " + e.message);
+            }
         });
     },
+
     updateProfileUI: () => {
-        const a = Utils.el('you-google-avatar'), n = Utils.el('you-google-name'), e = Utils.el('you-google-email');
-        if(a) a.src = State.user.photoURL || ''; if(n) n.innerText = State.user.displayName || 'User'; if(e) e.innerText = State.user.email || '';
-        if (State.channel) { Utils.hide('btn-create-channel'); Utils.show('btn-view-channel'); } else { Utils.show('btn-create-channel'); Utils.hide('btn-view-channel'); }
-    },
-    openViewChannel: () => {
-        if (!State.channel) return;
-        const l = Utils.el('layer-view-channel'); if(l) l.classList.add('active');
-        const ch = State.channel;
-        Utils.el('vc-avatar-img').src = ch.avatarUrl || State.user.photoURL;
-        if(ch.bannerUrl) { Utils.el('vc-banner-img').src = ch.bannerUrl; Utils.show('vc-banner-img'); }
-        Utils.el('vc-name-text').innerText = ch.channelName; Utils.el('vc-handle-text').innerText = ch.handle;
-        Utils.el('vc-subs-text').innerText = Utils.formatViews(ch.subscribersCount || 0);
-        YouPage.renderChannelContent('videos');
-    },
-    renderChannelContent: (tabName) => {
-        const area = Utils.el('vc-content-area'); if(!area) return; area.innerHTML = '';
-        let items = [];
-        if (tabName === 'videos') items = State.cache.videos.filter(v => v.uid === State.user.uid);
-        else if (tabName === 'shorts') items = State.cache.shorts.filter(s => s.uid === State.user.uid);
-        else if (tabName === 'posts') items = State.cache.posts.filter(p => p.uid === State.user.uid);
+        const avatar = Utils.el('you-google-avatar');
+        const name = Utils.el('you-google-name');
+        const email = Utils.el('you-google-email');
 
-        if (items.length === 0) { area.innerHTML = `<div style="text-align:center;padding:32px;color:var(--flaynity-text-secondary);">No ${tabName} found.</div>`; return; }
-        items.forEach(item => { const div = document.createElement('div'); div.style.padding = '12px 0'; div.style.borderBottom = '1px solid var(--flaynity-divider)'; div.innerText = item.title || item.text || 'Untitled'; area.appendChild(div); });
-    },
-    openEditChannel: () => {
-        const ch = State.channel; if(!ch) return;
-        const l = Utils.el('layer-edit-channel'); if(l) l.classList.add('active');
-        Utils.el('input-edit-name').value = ch.channelName || ''; Utils.el('input-edit-handle').value = ch.handle || ''; Utils.el('input-edit-desc').value = ch.description || '';
-    }
-};
+        if (avatar) avatar.src = State.user.photoURL || 'https://via.placeholder.com/80';
+        if (name) name.innerText = State.user.displayName || 'Flaynity User';
+        if (email) email.innerText = State.user.email || '';
 
-// --- ROUTER & NAVIGATION ---
-const Router = {
-    pages: ['home', 'shorts', 'upload', 'discover', 'you'], history: ['home'],
-    fetchPages: async () => {
-        const appRoot = document.getElementById('app');
-        for (const p of Router.pages) {
-            const res = await fetch(`pages/${p}.html`);
-            if (!res.ok) throw new Error(`Could not find 'pages/${p}.html' on server.`);
-            const html = await res.text();
-            if (html.includes('<title>Flaynity</title>')) throw new Error(`Folder Error: Cloudflare returned index.html instead of ${p}.html. Ensure 'pages' folder exists!`);
-            const c = document.createElement('div'); c.id = `page-container-${p}`;
-            c.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;display:' + (p === 'home' ? 'block' : 'none');
-            c.innerHTML = html; appRoot.appendChild(c);
+        if (State.channel) {
+            Utils.hide('btn-create-channel');
+            Utils.show('btn-view-channel');
+        } else {
+            Utils.show('btn-create-channel');
+            Utils.hide('btn-view-channel');
         }
     },
-    bindGlobalNavigation: () => {
-        document.querySelectorAll('.nav-item').forEach(el => el.addEventListener('click', () => {
-            const tab = el.dataset.tab; if (tab === 'upload') UploadPage.openSheet(); else Router.switchTab(tab);
-        }));
-    },
-    switchTab: (tabName) => {
-        if(tabName === 'upload') return;
-        if (State.currentPlayingVideo && tabName !== 'shorts') State.currentPlayingVideo.pause();
-        Router.pages.forEach(p => { if (p !== 'upload') { const el = document.getElementById(`page-container-${p}`); if (el) el.style.display = 'none'; } });
-        const target = document.getElementById(`page-container-${tabName}`); if (target) target.style.display = 'block';
-        document.querySelectorAll('.nav-item').forEach(el => { if (el.dataset.tab !== 'upload') el.classList.toggle('active', el.dataset.tab === tabName); });
-        State.currentTab = tabName;
-        if (Router.history[Router.history.length - 1] !== tabName) { Router.history.push(tabName); Router.updateAndroidBackStack(); }
-        if (tabName === 'shorts') ShortsPlayer.render();
-    },
-    updateAndroidBackStack: () => { if (window.AndroidBridge && typeof AndroidBridge.setBackStackStatus === 'function') AndroidBridge.setBackStackStatus(Router.history.length > 1); },
-    addBackState: (stateType) => { Router.history.push(stateType); Router.updateAndroidBackStack(); }
-};
 
-window.app = {
-    executeBackAction: () => {
-        const wPage = Utils.el('flaynity-watch-page'), uSheet = Utils.el('upload-sheet');
-        if (wPage && wPage.classList.contains('active')) { Player.close(); Router.history.pop(); Router.updateAndroidBackStack(); return; }
-        if (uSheet && uSheet.classList.contains('active')) { UploadPage.closeSheet(); Router.history.pop(); Router.updateAndroidBackStack(); return; }
-        if ((Utils.el('flow-video') && Utils.el('flow-video').classList.contains('active')) || (Utils.el('flow-short') && Utils.el('flow-short').classList.contains('active')) || (Utils.el('flow-post') && Utils.el('flow-post').classList.contains('active'))) { UploadPage.closeAll(); Router.history.pop(); Router.updateAndroidBackStack(); return; }
-        
-        const subLayers = document.querySelectorAll('.you-sub-layer.active');
-        if (subLayers.length > 0) { subLayers.forEach(l => l.classList.remove('active')); Router.history.pop(); Router.updateAndroidBackStack(); return; }
+    openViewChannel: () => {
+        if (!State.channel) return;
+        const layer = Utils.el('layer-view-channel');
+        if (layer) layer.classList.add('active');
 
-        if (Router.history.length > 1) { Router.history.pop(); Router.switchTab(Router.history.pop()); }
+        const ch = State.channel;
+        Utils.el('vc-avatar-img').src = ch.avatarUrl || State.user.photoURL;
+        if (ch.bannerUrl) {
+            Utils.el('vc-banner-img').src = ch.bannerUrl;
+            Utils.show('vc-banner-img');
+        }
+        Utils.el('vc-name-text').innerText = ch.channelName;
+        Utils.el('vc-handle-text').innerText = ch.handle;
+        Utils.el('vc-subs-text').innerText = Utils.formatViews(ch.subscribersCount || 0);
+
+        YouPage.renderChannelContent('videos');
+    },
+
+    renderChannelContent: (tabName) => {
+        const area = Utils.el('vc-content-area');
+        if (!area) return;
+        area.innerHTML = '';
+
+        let items = [];
+        if (tabName === 'videos') items = State.cache.videos.filter((v) => v.uid === State.user.uid);
+        else if (tabName === 'shorts') items = State.cache.shorts.filter((s) => s.uid === State.user.uid);
+        else if (tabName === 'posts') items = State.cache.posts.filter((p) => p.uid === State.user.uid);
+
+        if (items.length === 0) {
+            area.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--flaynity-text-secondary);">No ${tabName} published yet.</div>`;
+            return;
+        }
+
+        items.forEach((item) => {
+            if (tabName === 'videos') area.appendChild(HomeFeed.buildVideoCard(item));
+            else if (tabName === 'posts') area.appendChild(HomeFeed.buildPostCard(item));
+            else {
+                const div = document.createElement('div');
+                div.style.padding = '12px 0';
+                div.style.borderBottom = '1px solid var(--flaynity-divider)';
+                div.innerText = item.title || 'Untitled Short';
+                area.appendChild(div);
+            }
+        });
+    },
+
+    loadAnalytics: () => {
+        const userVideos = State.cache.videos.filter((v) => v.uid === State.user.uid);
+        const totalViews = userVideos.reduce((acc, curr) => acc + (curr.views || 0), 0);
+        const totalLikes = userVideos.reduce((acc, curr) => acc + (curr.likes || 0), 0);
+
+        if (Utils.el('stat-views')) Utils.el('stat-views').innerText = Utils.formatViews(totalViews);
+        if (Utils.el('stat-likes')) Utils.el('stat-likes').innerText = Utils.formatViews(totalLikes);
+        if (Utils.el('stat-subs')) Utils.el('stat-subs').innerText = Utils.formatViews(State.channel ? State.channel.subscribersCount : 0);
+    },
+
+    openEditChannel: () => {
+        const ch = State.channel;
+        if (!ch) return;
+        const layer = Utils.el('layer-edit-channel');
+        if (layer) layer.classList.add('active');
+
+        Utils.el('input-edit-name').value = ch.channelName || '';
+        Utils.el('input-edit-handle').value = ch.handle || '';
+        Utils.el('input-edit-desc').value = ch.description || '';
     }
 };
 
-// --- BOOTSTRAP ENGINE ---
+// ==========================================
+// 12. ROUTER & ANDROID BACK-STACK SYNC
+// ==========================================
+const Router = {
+    pages: ['home', 'shorts', 'upload', 'discover', 'you'],
+    history: ['home'],
+
+    fetchPages: async () => {
+        const appRoot = document.getElementById('app');
+        for (const page of Router.pages) {
+            const response = await fetch(`pages/${page}.html`);
+            if (!response.ok) {
+                throw new Error(`Failed to load component: pages/${page}.html (Status: ${response.status})`);
+            }
+            const html = await response.text();
+
+            if (html.includes('<title>Flaynity</title>')) {
+                throw new Error(`Server returned index.html for pages/${page}.html. Ensure the 'pages' directory is uploaded.`);
+            }
+
+            const container = document.createElement('div');
+            container.id = `page-container-${page}`;
+            container.style.cssText = `width:100%;height:100%;position:absolute;top:0;left:0;display:${page === 'home' ? 'block' : 'none'};`;
+            container.innerHTML = html;
+            appRoot.appendChild(container);
+        }
+    },
+
+    bindGlobalNavigation: () => {
+        document.querySelectorAll('.nav-item').forEach((el) => {
+            el.addEventListener('click', () => {
+                const tab = el.dataset.tab;
+                if (tab === 'upload') {
+                    UploadPage.openSheet();
+                } else {
+                    Router.switchTab(tab);
+                }
+            });
+        });
+    },
+
+    switchTab: (tabName) => {
+        if (tabName === 'upload') return;
+
+        if (State.currentPlayingVideo && tabName !== 'shorts') {
+            State.currentPlayingVideo.pause();
+        }
+
+        Router.pages.forEach((p) => {
+            if (p !== 'upload') {
+                const el = document.getElementById(`page-container-${p}`);
+                if (el) el.style.display = 'none';
+            }
+        });
+
+        const target = document.getElementById(`page-container-${tabName}`);
+        if (target) target.style.display = 'block';
+
+        document.querySelectorAll('.nav-item').forEach((el) => {
+            if (el.dataset.tab !== 'upload') {
+                el.classList.toggle('active', el.dataset.tab === tabName);
+            }
+        });
+
+        State.currentTab = tabName;
+
+        if (Router.history[Router.history.length - 1] !== tabName) {
+            Router.history.push(tabName);
+            Router.updateAndroidBackStack();
+        }
+
+        if (tabName === 'shorts') {
+            ShortsPlayer.render();
+        }
+    },
+
+    updateAndroidBackStack: () => {
+        if (window.AndroidBridge && typeof AndroidBridge.setBackStackStatus === 'function') {
+            AndroidBridge.setBackStackStatus(Router.history.length > 1);
+        }
+    },
+
+    addBackState: (stateId) => {
+        Router.history.push(stateId);
+        Router.updateAndroidBackStack();
+    }
+};
+
+// Android Native Back Action Listener (Triggered by MainActivity.java)
+window.app = {
+    executeBackAction: () => {
+        const watchPage = Utils.el('flaynity-watch-page');
+        const uploadSheet = Utils.el('upload-sheet');
+
+        if (watchPage && watchPage.classList.contains('active')) {
+            Player.close();
+            Router.history.pop();
+            Router.updateAndroidBackStack();
+            return;
+        }
+
+        if (uploadSheet && uploadSheet.classList.contains('active')) {
+            UploadPage.closeSheet();
+            Router.history.pop();
+            Router.updateAndroidBackStack();
+            return;
+        }
+
+        const activeLayers = document.querySelectorAll('.upload-flow-layer.active, .you-sub-layer.active');
+        if (activeLayers.length > 0) {
+            activeLayers.forEach((l) => l.classList.remove('active'));
+            Router.history.pop();
+            Router.updateAndroidBackStack();
+            return;
+        }
+
+        if (Router.history.length > 1) {
+            Router.history.pop();
+            Router.switchTab(Router.history.pop());
+        }
+    }
+};
+
+// ==========================================
+// 13. LIFECYCLE BOOTSTRAP ENGINE
+// ==========================================
 const App = {
     bootstrap: async () => {
+        if (State.isBootstrapped) return;
+        State.isBootstrapped = true;
+
+        // Failsafe Splash Dismissal: Never stay stuck for more than 2.5 seconds
+        const splashFailsafe = setTimeout(() => {
+            const splash = Utils.el('flaynity-splash');
+            if (splash && !splash.classList.contains('flaynity-hidden')) {
+                console.warn("[Failsafe] Dismissing splash screen automatically.");
+                Utils.hide('flaynity-splash');
+                if (!State.user) Utils.show('flaynity-auth');
+            }
+        }, 2500);
+
         try {
-            if (typeof firebase === 'undefined') throw new Error("Firebase SDK failed to load. Check your internet connection.");
-            
+            if (typeof firebase === 'undefined') {
+                throw new Error("Firebase SDK is not available. Please verify network connectivity.");
+            }
+
+            // 1. Fetch and Mount Page Templates
             await Router.fetchPages();
+
+            // 2. Initialize Backend Services
             Services.init();
+
+            // 3. Initialize Controller Hubs
             HomeFeed.init();
             Player.init();
             ShortsPlayer.init();
@@ -483,40 +1346,75 @@ const App = {
             YouPage.init();
             Router.bindGlobalNavigation();
 
-            window.addEventListener('offline', () => { State.online = false; Utils.show('flaynity-offline'); });
-            window.addEventListener('online', () => { State.online = true; Utils.hide('flaynity-offline'); });
-            onClick('btn-retry-network', () => {
-                if (window.AndroidBridge && typeof AndroidBridge.retryConnection === 'function') AndroidBridge.retryConnection();
-                else if (navigator.onLine) { State.online = true; Utils.hide('flaynity-offline'); }
+            // 4. Network Status Listeners
+            window.addEventListener('offline', () => {
+                State.online = false;
+                Utils.show('flaynity-offline');
             });
 
+            window.addEventListener('online', () => {
+                State.online = true;
+                Utils.hide('flaynity-offline');
+            });
+
+            onClick('btn-retry-network', () => {
+                if (window.AndroidBridge && typeof AndroidBridge.retryConnection === 'function') {
+                    AndroidBridge.retryConnection();
+                } else if (navigator.onLine) {
+                    State.online = true;
+                    Utils.hide('flaynity-offline');
+                }
+            });
+
+            // 5. Initialize Auth Engine
             AuthSystem.init();
 
+            clearTimeout(splashFailsafe);
         } catch (error) {
-            console.error("Bootstrap Error:", error);
+            clearTimeout(splashFailsafe);
+            console.error("App Bootstrap Failed:", error);
+
             const splash = document.getElementById('flaynity-splash');
             if (splash) {
                 splash.innerHTML = `
-                    <div style="padding: 20px; color: #ff4444; text-align: center; background: #fff; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center;">
-                        <span class="material-symbols-outlined" style="font-size: 48px; margin-bottom: 10px;">error</span>
-                        <h2 style="margin-bottom: 10px;">App Loading Failed</h2>
-                        <p style="font-size: 14px; font-weight: bold;">${error.message}</p>
-                        <p style="font-size: 13px; color: #666; margin-top: 20px; line-height: 1.5;">
-                            <b>Solutions:</b><br>
-                            1. Go to Android Settings > Apps > Clear Data & Cache for this app.<br>
-                            2. Ensure the 'pages' folder is properly uploaded to Cloudflare.
-                        </p>
-                    </div>`;
-            } else {
-                alert("Error Loading App: " + error.message);
+                    <div style="padding: 24px; color: #ff3b30; text-align: center; background: #ffffff; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
+                        <span class="material-symbols-outlined" style="font-size: 56px; margin-bottom: 12px;">error_outline</span>
+                        <h2 style="font-size: 20px; font-weight: 700; color: #111; margin-bottom: 8px;">Initialization Failed</h2>
+                        <p style="font-size: 14px; color: #666; margin-bottom: 20px; max-width: 320px;">${error.message}</p>
+                        <button onclick="window.location.reload()" style="background:#111;color:#fff;border:none;padding:12px 24px;border-radius:24px;font-weight:600;cursor:pointer;">Retry</button>
+                    </div>
+                `;
             }
         }
     },
+
     startRealtimeListeners: () => {
-        Services.addListener('videos', 'videos', (s) => { State.cache.videos = Object.keys(s.val()||{}).map(k=>({id:k,...s.val()[k]})).sort((a,b)=>b.createdAt-a.createdAt); if(State.currentTab==='home') HomeFeed.render(); });
-        Services.addListener('shorts', 'shorts', (s) => { State.cache.shorts = Object.keys(s.val()||{}).map(k=>({id:k,...s.val()[k]})).sort((a,b)=>b.createdAt-a.createdAt); if(State.currentTab==='home') HomeFeed.render(); if(State.currentTab==='shorts') ShortsPlayer.render(); });
-        Services.addListener('posts', 'posts', (s) => { State.cache.posts = Object.keys(s.val()||{}).map(k=>({id:k,...s.val()[k]})).sort((a,b)=>b.createdAt-a.createdAt); if(State.currentTab==='home') HomeFeed.render(); });
+        Services.addListener('videos', 'videos', (snap) => {
+            const data = snap.val() || {};
+            State.cache.videos = Object.keys(data).map((k) => ({ id: k, ...data[k] })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            if (State.currentTab === 'home') HomeFeed.render();
+        });
+
+        Services.addListener('shorts', 'shorts', (snap) => {
+            const data = snap.val() || {};
+            State.cache.shorts = Object.keys(data).map((k) => ({ id: k, ...data[k] })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            if (State.currentTab === 'home') HomeFeed.render();
+            if (State.currentTab === 'shorts') ShortsPlayer.render();
+        });
+
+        Services.addListener('posts', 'posts', (snap) => {
+            const data = snap.val() || {};
+            State.cache.posts = Object.keys(data).map((k) => ({ id: k, ...data[k] })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            if (State.currentTab === 'home') HomeFeed.render();
+        });
     }
 };
 
-window.addEventListener('DOMContentLoaded', () => App.bootstrap());
+// ==========================================
+// 14. MULTI-PLATFORM DOM BOOTSTRAP TRIGGER
+// ==========================================
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => App.bootstrap());
+} else {
+    App.bootstrap();
+}

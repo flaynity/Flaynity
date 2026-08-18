@@ -1,206 +1,160 @@
-<!-- Upload Manager Queue View -->
-<div class="upload-header">
-    <div class="upload-header-title">Studio</div>
-    <div class="header-actions">
-        <span class="material-symbols-outlined">search</span>
-        <span class="material-symbols-outlined">more_vert</span>
+<div class="upload-tabs">
+    <div class="upload-tab active">Uploading</div>
+    <div class="upload-tab">Completed</div>
+    <div class="upload-tab">Drafts</div>
+</div>
+
+<div class="queue-list" id="upload-queue">
+    <!-- Empty state injected by JS if empty -->
+</div>
+
+<div class="fab-container">
+    <button class="fab-btn" onclick="UI.openBottomSheet()">
+        <span class="material-symbols-outlined">add</span>
+    </button>
+</div>
+
+    <div class="creation-carousel" id="creation-carousel">
+        <div class="creation-item" data-type="video">Video</div>
+        <div class="creation-item active" data-type="short">Short</div>
+        <div class="creation-item" data-type="post">Post</div>
+    </div>
+
+    <button class="sheet-action-btn" onclick="UI.handleCreationSelection()">Continue</button>
+</div>
+
+<div class="cam-top-controls">
+    <button class="icon-btn" onclick="UI.backToMain()"><span class="material-symbols-outlined">close</span></button>
+    <div class="cam-sound-btn">
+        <span class="material-symbols-outlined" style="font-size: 18px;">music_note</span> Add Sound
+    </div>
+    <div style="width:40px"></div>
+</div>
+
+<div style="position:absolute; right:16px; top:100px;" class="cam-tools-right">
+    <div class="cam-tool" onclick="CameraManager.switchCamera()">
+        <span class="material-symbols-outlined">cameraswitch</span> Flip
+    </div>
+    <div class="cam-tool" onclick="CameraManager.toggleDuration()">
+        <span class="material-symbols-outlined">timer</span> <span id="cam-dur-label">15s</span>
+    </div>
+    <div class="cam-tool">
+        <span class="material-symbols-outlined">speed</span> Speed
+    </div>
+    <div class="cam-tool">
+        <span class="material-symbols-outlined">face_retouching_natural</span> Beauty
     </div>
 </div>
 
-<div class="manager-tabs">
-    <div class="manager-tab active">Uploading</div>
-    <div class="manager-tab">Completed</div>
-    <div class="manager-tab">Drafts</div>
-</div>
-
-<div class="upload-queue" id="queue-container">
-    <div class="empty-state" id="empty-queue">
-        <span class="material-symbols-outlined">cloud_upload</span>
-        <div style="font-size: 18px; font-weight: 600;">No active uploads</div>
-        <div style="font-size: 14px; margin-top: 8px;">Create a Short or Video to get started</div>
+<div class="cam-bottom-controls">
+    <div class="cam-tool" onclick="UI.showScreen('screen-gallery')">
+        <div style="width:40px;height:40px;border-radius:8px;background:var(--bg-surface);border:2px solid white;margin-bottom:4px;"></div>
+        Gallery
     </div>
-</div>
-
-<!-- FAB -->
-<div class="fab-create" onclick="UI.showBottomSheet()">
-    <span class="material-symbols-outlined">add</span>
-</div>
-
-<!-- Create Bottom Sheet -->
-<div class="sheet-overlay" id="create-sheet">
-    <div class="bottom-sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-title">
-            Create
-            <span class="material-symbols-outlined" style="cursor:pointer" onclick="UI.hideBottomSheet()">close</span>
-        </div>
-        
-        <div class="type-selector" id="type-selector">
-            <div class="type-item" data-type="video">Video</div>
-            <div class="type-item selected" data-type="short">Short</div>
-            <div class="type-item" data-type="post">Post</div>
-        </div>
-
-        <button class="continue-btn" onclick="UI.handleSelection()">Continue</button>
-    </div>
-</div>
-
-<!-- Shorts Camera View -->
-<div class="fullscreen-view" id="camera-view">
-    <video id="camera-preview" autoplay muted playsinline></video>
     
-    <div class="camera-ui-top">
-        <span class="material-symbols-outlined" style="font-size: 32px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);" onclick="UI.closeCamera()">close</span>
-        <div style="background: rgba(0,0,0,0.5); padding: 6px 16px; border-radius: 20px; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(4px);">
-            <span class="material-symbols-outlined" style="font-size: 18px;">music_note</span>
-            <span style="font-size: 14px; font-weight: 600;">Add Sound</span>
-        </div>
-        <span style="width: 32px;"></span> <!-- spacer -->
+    <div class="record-btn-wrapper">
+        <div class="record-ring"></div>
+        <div class="record-progress" id="record-progress"></div>
+        <button class="record-btn" id="record-btn"
+            ontouchstart="CameraManager.startRecord()" ontouchend="CameraManager.stopRecord()"
+            onmousedown="CameraManager.startRecord()" onmouseup="CameraManager.stopRecord()"></button>
     </div>
 
-    <div class="camera-tools-right">
-        <button class="tool-btn" onclick="Camera.switchCamera()">
-            <span class="material-symbols-outlined">cameraswitch</span>
-            Switch
-        </button>
-        <button class="tool-btn" onclick="Camera.toggleDuration()">
-            <span class="material-symbols-outlined">timer</span>
-            <span id="cam-duration">15s</span>
-        </button>
-        <button class="tool-btn">
-            <span class="material-symbols-outlined">speed</span>
-            Speed
-        </button>
-        <button class="tool-btn">
-            <span class="material-symbols-outlined">face_retouching_natural</span>
-            Beauty
-        </button>
-    </div>
-
-    <div class="camera-bottom">
-        <button class="tool-btn" onclick="document.getElementById('native-video-picker').click()">
-            <div style="width: 40px; height: 40px; background: var(--bg-surface); border-radius: 8px; border: 2px solid white;"></div>
-            Gallery
-        </button>
-
-        <div class="record-btn-container">
-            <div class="record-ring"></div>
-            <div class="record-progress" id="record-progress"></div>
-            <button class="record-btn" id="record-btn" 
-                ontouchstart="Camera.startRecording()" 
-                ontouchend="Camera.stopRecording()"
-                onmousedown="Camera.startRecording()" 
-                onmouseup="Camera.stopRecording()"></button>
-        </div>
-
-        <button class="tool-btn" onclick="Camera.confirmRecording()" style="visibility: hidden;" id="cam-next-btn">
-            <span class="material-symbols-outlined" style="background: white; color: black; border-radius: 50%; padding: 8px;">check</span>
-        </button>
-    </div>
+    <button class="icon-btn" id="cam-done-btn" style="visibility:hidden; background:white; color:black; padding:12px;" onclick="EditorManager.loadFromCamera()">
+        <span class="material-symbols-outlined">check</span>
+    </button>
 </div>
 
-<!-- Native File Picker (Acts as standard responsive gallery in WebView) -->
-<input type="file" id="native-video-picker" accept="video/*" class="hidden-input" onchange="Editor.loadFromFile(event)">
+<div class="editor-workspace" id="editor-workspace">
+    <video id="hidden-video" class="hidden" crossOrigin="anonymous"></video>
+    <canvas id="edit-canvas"></canvas>
+</div>
 
-<!-- Editor View (For both Short and Video) -->
-<div class="fullscreen-view" id="editor-view">
-    <div class="editor-header">
-        <span class="material-symbols-outlined" onclick="UI.closeEditor()">arrow_back</span>
-        <div style="font-weight: 600; font-size: 18px;" id="editor-title">Edit Video</div>
-        <span class="material-symbols-outlined" onclick="Editor.proceedToDetails()">arrow_forward</span>
-    </div>
-
-    <div class="editor-preview-container">
-        <video id="edit-video-player" loop playsinline></video>
-    </div>
-
-    <div class="editor-controls">
-        <div class="timeline-container">
-            <div class="timeline-frames" id="timeline-frames"></div>
-            <div class="trim-slider" id="trim-slider" style="left: 0%; right: 0%;">
-                <div class="trim-handle left" id="trim-handle-left"></div>
-                <div class="trim-handle right" id="trim-handle-right"></div>
-            </div>
+<div class="editor-toolbar">
+    <div class="timeline" id="timeline-container">
+        <div class="timeline-frames" id="timeline-frames"></div>
+        <div class="trim-box" id="trim-box" style="left:0%; right:0%;">
+            <div class="trim-handle left" id="trim-left"></div>
+            <div class="trim-handle right" id="trim-right"></div>
         </div>
+    </div>
 
-        <div class="editor-tools">
-            <button class="tool-btn">
-                <span class="material-symbols-outlined">content_cut</span>
-                Trim
-            </button>
-            <button class="tool-btn" onclick="Editor.applyFilter('contrast(1.2) saturate(1.2)')">
-                <span class="material-symbols-outlined">auto_awesome</span>
-                Filter
-            </button>
-            <button class="tool-btn">
-                <span class="material-symbols-outlined">text_fields</span>
-                Text
-            </button>
-            <button class="tool-btn">
-                <span class="material-symbols-outlined">volume_up</span>
-                Volume
-            </button>
-            <button class="tool-btn" onclick="Editor.reset()">
-                <span class="material-symbols-outlined">restart_alt</span>
-                Reset
-            </button>
+    <div class="tools-scroller">
+        <div class="cam-tool" onclick="EditorManager.applyFilter('brightness(1.2) contrast(1.1)')">
+            <span class="material-symbols-outlined">auto_awesome</span> Filter
+        </div>
+        <div class="cam-tool" onclick="EditorManager.rotate()">
+            <span class="material-symbols-outlined">rotate_right</span> Rotate
+        </div>
+        <div class="cam-tool">
+            <span class="material-symbols-outlined">text_fields</span> Text
+        </div>
+        <div class="cam-tool">
+            <span class="material-symbols-outlined">graphic_eq</span> Noise Red.
+        </div>
+        <div class="cam-tool">
+            <span class="material-symbols-outlined">closed_caption</span> Caption
         </div>
     </div>
 </div>
 
-<!-- Details View -->
-<div class="fullscreen-view" id="details-view">
-    <div class="details-header">
-        <span class="material-symbols-outlined" onclick="UI.closeDetails()">arrow_back</span>
-        <div style="font-weight: 700; font-size: 18px; margin-left: 16px;">Details</div>
-        <button class="header-publish-btn" onclick="Uploader.start()">Upload</button>
+<div class="form-container">
+    <div class="thumbnail-picker" id="thumbnail-picker">
+        <div class="thumb-card custom-add" onclick="document.getElementById('native-thumb-picker').click()">
+            <span class="material-symbols-outlined">add_photo_alternate</span>
+            <span style="font-size:12px; margin-top:8px;">Custom</span>
+        </div>
+        <!-- Auto generated thumbs here -->
+    </div>
+    <input type="file" id="native-thumb-picker" accept="image/*" class="hidden" onchange="DetailsManager.handleCustomThumb(event)">
+
+    <div class="input-group">
+        <label>Title</label>
+        <input type="text" id="meta-title" class="input-field" placeholder="Caption your video..." maxlength="100" oninput="DetailsManager.updateCharCount('title-count', this, 100)">
+        <span class="char-count" id="title-count">0/100</span>
     </div>
 
-    <div class="details-form">
-        
-        <div class="thumb-selector" id="thumb-selector">
-            <div class="thumb-item add-custom" onclick="document.getElementById('native-thumb-picker').click()">
-                <span class="material-symbols-outlined">add_photo_alternate</span>
-                <span style="font-size: 12px; margin-top: 8px;">Custom</span>
-            </div>
-            <!-- Auto extracted frames go here -->
-        </div>
-        <input type="file" id="native-thumb-picker" accept="image/*" class="hidden-input">
+    <div class="input-group">
+        <label>Description</label>
+        <textarea id="meta-desc" class="input-field" placeholder="Add details..." maxlength="5000" oninput="DetailsManager.updateCharCount('desc-count', this, 5000)"></textarea>
+        <span class="char-count" id="desc-count">0/5000</span>
+    </div>
 
-        <div class="input-group">
-            <label>Title</label>
-            <input type="text" id="meta-title" class="input-field" placeholder="Caption your video..." maxlength="100">
-        </div>
+    <div class="input-group">
+        <label>Visibility</label>
+        <select id="meta-vis" class="input-field">
+            <option value="public">Public</option>
+            <option value="unlisted">Unlisted</option>
+            <option value="private">Private</option>
+        </select>
+    </div>
+    
+    <div class="input-group">
+        <label>Tags</label>
+        <input type="text" id="meta-tags" class="input-field" placeholder="e.g. gaming, vlog (comma separated)">
+    </div>
 
-        <div class="input-group">
-            <label>Description</label>
-            <textarea id="meta-desc" class="input-field" placeholder="Add details..."></textarea>
+    <div class="setting-row">
+        <div class="setting-info">
+            <div class="setting-title">Allow Comments</div>
+            <div class="setting-desc">Viewers can comment</div>
         </div>
+        <input type="checkbox" id="meta-comments" checked style="width:24px;height:24px;accent-color:var(--text-primary)">
+    </div>
 
-        <div class="input-group">
-            <label>Visibility</label>
-            <select id="meta-visibility" class="input-field">
-                <option value="public">Public</option>
-                <option value="private">Private</option>
-                <option value="unlisted">Unlisted</option>
-            </select>
+    <div class="setting-row">
+        <div class="setting-info">
+            <div class="setting-title">Premium Content</div>
+            <div class="setting-desc">Subscribers only</div>
         </div>
-
-        <div class="setting-row">
-            <div class="setting-info">
-                <div class="setting-title">Allow Comments</div>
-                <div class="setting-desc">Viewers can comment on this video</div>
-            </div>
-            <input type="checkbox" id="meta-comments" checked style="width: 24px; height: 24px; accent-color: var(--text-primary);">
+        <input type="checkbox" id="meta-premium" style="width:24px;height:24px;accent-color:var(--text-primary)">
+    </div>
+    
+    <div class="setting-row">
+        <div class="setting-info">
+            <div class="setting-title">Schedule</div>
+            <div class="setting-desc">Publish at a later time</div>
         </div>
-        
-        <div class="setting-row">
-            <div class="setting-info">
-                <div class="setting-title">Premium Content</div>
-                <div class="setting-desc">Restrict access to subscribers</div>
-            </div>
-            <input type="checkbox" id="meta-premium" style="width: 24px; height: 24px; accent-color: var(--text-primary);">
-        </div>
-
+        <input type="datetime-local" id="meta-schedule" class="input-field" style="width: auto; padding: 8px;">
     </div>
 </div>

@@ -1,8 +1,7 @@
 /*
  * ==============================================================================
- * FLAYNITY - ENTERPRISE SOCIAL VIDEO PLATFORM (PRODUCTION CORE)
+ * FLAYNITY - MASTER APPLICATION LOGIC (Persistent Global Navigation Core)
  * ==============================================================================
- * Architecture:
  * 1. Global Configurations & State Management
  * 2. High-Precision Utility Engine (Formatting, DOM, Haptics, Security)
  * 3. Offline/Online Synchronizer & Android Native Bridge
@@ -12,11 +11,11 @@
  * 7. Home Feed Interleaved Generator (6 Shorts -> 10 Videos -> 1 Post)
  * 8. Cinema Video Watch Player & Comments System
  * 9. Vertical Shorts Player (IntersectionObserver, Snapping & Double Tap)
- * 10. Community Post & 7-Reaction Engine (Love, Like, Care, Haha, Wow, Sad, Angry)
+ * 10. Community Post & 7-Reaction Engine
  * 11. Upload Studio Pipeline (Video, Short, Post -> R2 Storage -> Database)
  * 12. Discover & Search Filter Engine
  * 13. Channel Management, Handle Validation & Realtime Analytics
- * 14. Single Page Router & Dynamic Page Loader
+ * 14. Global Persistent Bottom Navigation & Router Engine
  * 15. Application Lifecycle Bootstrap & Fail-Safe Splash Engine
  * ==============================================================================
  */
@@ -122,14 +121,6 @@ const Utils = {
         const temp = document.createElement('div');
         temp.textContent = str;
         return temp.innerHTML;
-    },
-
-    debounce: (func, wait) => {
-        let timeout;
-        return function (...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
     }
 };
 
@@ -188,7 +179,6 @@ const UI = {
     }
 };
 
-// Safe DOM Event Binder to eliminate null-reference crashes
 const onClick = (id, callback) => {
     const el = Utils.el(id);
     if (el) {
@@ -283,7 +273,6 @@ const Services = {
 const AuthSystem = {
     init: () => {
         auth.onAuthStateChanged(async (user) => {
-            // Dismiss Splash immediately when Auth state resolves
             Utils.hide('flaynity-splash');
 
             if (user) {
@@ -325,7 +314,15 @@ const AuthSystem = {
             lastLogin: firebase.database.ServerValue.TIMESTAMP
         });
 
-        // Watch for Channel associated with User
+        // Set You tab navigation avatar to user's Google photo
+        const youNavTab = document.querySelector('.nav-item[data-tab="you"]');
+        if (youNavTab && State.user.photoURL) {
+            youNavTab.innerHTML = `
+                <img src="${State.user.photoURL}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1.5px solid currentColor;">
+                <span class="label">You</span>
+            `;
+        }
+
         const channelQuery = db.ref('channels').orderByChild('uid').equalTo(State.user.uid);
         channelQuery.on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -349,7 +346,6 @@ const AuthSystem = {
     }
 };
 
-// Global Bridge Invocation for Android native Google Sign-in
 window.handleNativeGoogleSignIn = (idToken) => {
     try {
         const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
@@ -362,13 +358,12 @@ window.handleNativeGoogleSignIn = (idToken) => {
 };
 
 // ==========================================
-// 5. HOME FEED ENGINE (6 Shorts -> 10 Videos -> 1 Post)
+// 5. HOME FEED ENGINE
 // ==========================================
 const HomeFeed = {
     init: () => {
         onClick('btn-home-search', () => Router.switchTab('discover'));
         
-        // Category Chips
         const chips = document.querySelectorAll('.category-chips-container .chip');
         chips.forEach((chip) => {
             chip.onclick = () => {
@@ -421,7 +416,6 @@ const HomeFeed = {
         while (active) {
             let chunkAdded = false;
 
-            // Pattern Step 1: 6 Shorts Grid
             if (shortsIdx < shorts.length) {
                 const batch = shorts.slice(shortsIdx, shortsIdx + 6);
                 shortsIdx += 6;
@@ -429,7 +423,6 @@ const HomeFeed = {
                 chunkAdded = true;
             }
 
-            // Pattern Step 2: 10 Long Videos
             if (videoIdx < videos.length) {
                 const batch = videos.slice(videoIdx, videoIdx + 10);
                 videoIdx += 10;
@@ -439,7 +432,6 @@ const HomeFeed = {
                 chunkAdded = true;
             }
 
-            // Pattern Step 3: 1 Community Post
             if (postIdx < posts.length) {
                 container.appendChild(HomeFeed.buildPostCard(posts[postIdx]));
                 postIdx++;
@@ -539,7 +531,6 @@ const HomeFeed = {
             </div>
         `;
 
-        // Like Button Interaction
         const likeBtn = card.querySelector('.like-action-btn');
         likeBtn.onclick = () => PostReactions.toggleLike(data.id);
 
@@ -548,7 +539,7 @@ const HomeFeed = {
 };
 
 // ==========================================
-// 6. POST REACTION & COMMENTS ENGINE
+// 6. POST REACTION ENGINE
 // ==========================================
 const PostReactions = {
     toggleLike: async (postId) => {
@@ -607,7 +598,6 @@ const Player = {
         State.currentPlayingVideo = videoEl;
         Router.addBackState('watch-page');
 
-        // Increment Views Safely
         if (videoData.id) {
             db.ref(`videos/${videoData.id}/views`).transaction((count) => (count || 0) + 1);
         }
@@ -761,7 +751,6 @@ const ShortsPlayer = {
                 const delta = now - lastTap;
 
                 if (delta < 300 && delta > 0) {
-                    // Double Tap Like Trigger
                     Utils.vibrate(60);
                     const heartIcon = card.querySelector('.like-btn .material-symbols-outlined');
                     heartIcon.style.color = 'var(--flaynity-accent)';
@@ -770,7 +759,6 @@ const ShortsPlayer = {
 
                     db.ref(`shorts/${s.id}/likes`).transaction((count) => (count || 0) + 1);
                 } else {
-                    // Single Tap Play / Pause
                     const video = card.querySelector('video');
                     const indicator = card.querySelector('.short-center-play-indicator');
                     const disc = card.querySelector('.music-disc-wrapper');
@@ -822,7 +810,6 @@ const UploadPage = {
         onClick('btn-close-post-flow', UploadPage.closeAll);
         onClick('btn-back-short-details', () => Utils.hide('short-details-ui'));
 
-        // File Selectors
         onClick('video-file-picker-trigger', () => {
             const input = Utils.el('input-video-file');
             if (input) input.click();
@@ -1047,7 +1034,6 @@ const YouPage = {
             };
         });
 
-        // Channel Creation Form Bindings
         onClick('picker-create-avatar', () => {
             const input = Utils.el('input-create-avatar');
             if (input) input.click();
@@ -1186,7 +1172,7 @@ const YouPage = {
 };
 
 // ==========================================
-// 12. ROUTER & ANDROID BACK-STACK SYNC
+// 14. ROUTER & GLOBAL PERSISTENT NAVIGATION
 // ==========================================
 const Router = {
     pages: ['home', 'shorts', 'upload', 'discover', 'you'],
@@ -1211,6 +1197,15 @@ const Router = {
             container.innerHTML = html;
             appRoot.appendChild(container);
         }
+
+        // --- 🔴 CRITICAL FIX: Make Bottom Navigation Permanently Global ---
+        // Move bottom navigation out of page-container-home directly into #app root
+        const bottomNav = Utils.el('flaynity-bottom-nav');
+        if (bottomNav) {
+            appRoot.appendChild(bottomNav);
+            bottomNav.style.zIndex = '1000';
+            bottomNav.style.display = 'flex';
+        }
     },
 
     bindGlobalNavigation: () => {
@@ -1233,6 +1228,7 @@ const Router = {
             State.currentPlayingVideo.pause();
         }
 
+        // Hide all page containers EXCEPT the bottom navigation
         Router.pages.forEach((p) => {
             if (p !== 'upload') {
                 const el = document.getElementById(`page-container-${p}`);
@@ -1240,9 +1236,15 @@ const Router = {
             }
         });
 
+        // Show selected tab page
         const target = document.getElementById(`page-container-${tabName}`);
         if (target) target.style.display = 'block';
 
+        // Keep Bottom Navigation permanently visible
+        const bottomNav = Utils.el('flaynity-bottom-nav');
+        if (bottomNav) bottomNav.style.display = 'flex';
+
+        // Update active tab button style
         document.querySelectorAll('.nav-item').forEach((el) => {
             if (el.dataset.tab !== 'upload') {
                 el.classList.toggle('active', el.dataset.tab === tabName);
@@ -1273,7 +1275,7 @@ const Router = {
     }
 };
 
-// Android Native Back Action Listener (Triggered by MainActivity.java)
+// Android Native Back Action Listener
 window.app = {
     executeBackAction: () => {
         const watchPage = Utils.el('flaynity-watch-page');
@@ -1309,14 +1311,13 @@ window.app = {
 };
 
 // ==========================================
-// 13. LIFECYCLE BOOTSTRAP ENGINE
+// 15. LIFECYCLE BOOTSTRAP ENGINE
 // ==========================================
 const App = {
     bootstrap: async () => {
         if (State.isBootstrapped) return;
         State.isBootstrapped = true;
 
-        // Failsafe Splash Dismissal: Never stay stuck for more than 2.5 seconds
         const splashFailsafe = setTimeout(() => {
             const splash = Utils.el('flaynity-splash');
             if (splash && !splash.classList.contains('flaynity-hidden')) {
@@ -1331,7 +1332,7 @@ const App = {
                 throw new Error("Firebase SDK is not available. Please verify network connectivity.");
             }
 
-            // 1. Fetch and Mount Page Templates
+            // 1. Fetch Page Templates & Mount Global Navigation
             await Router.fetchPages();
 
             // 2. Initialize Backend Services
@@ -1411,7 +1412,7 @@ const App = {
 };
 
 // ==========================================
-// 14. MULTI-PLATFORM DOM BOOTSTRAP TRIGGER
+// 16. MULTI-PLATFORM DOM BOOTSTRAP TRIGGER
 // ==========================================
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => App.bootstrap());

@@ -1,1405 +1,238 @@
+<!-- pages/home.html -->
 <style>
-/* Deep Light Theme Variables */
-:root {
---bg-primary: #FFFFFF; /* Deep Light */
---text-primary: #000000; /* Deep Dark for text */
---bg-surface: #F0F0F0; /* Unselected / Light Gray */
---bg-surface-light: #E0E0E0;
---text-secondary: #555555;
---accent-color: #000000;
---safe-area-top: env(safe-area-inset-top, 24px);
---safe-area-bottom: env(safe-area-inset-bottom, 0px);
---nav-height: 56px;
+/* HOME COMPONENT STYLES */
+.page-home-root {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: var(--flaynity-bg);
 }
 
-* {
-box-sizing: border-box;
-margin: 0;
-padding: 0;
-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
--webkit-tap-highlight-color: transparent;
+/* --- SPLASH & AUTH & OFFLINE --- */
+.splash-layer, .auth-layer, .offline-layer {
+    position: absolute; inset: 0; z-index: 9999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--flaynity-bg); transition: opacity 0.3s ease;
 }
-
-.home-page {
-width: 100%;
-height: calc(100vh - var(--nav-height) - var(--safe-area-bottom));
-overflow-y: auto;
-overflow-x: hidden;
-background-color: var(--bg-primary);
-padding-top: var(--safe-area-top);
-padding-bottom: 20px;
+.flaynity-brand-large { font-size: 32px; font-weight: 800; color: var(--flaynity-accent); letter-spacing: -1px; }
+.auth-box { padding: 32px; text-align: center; width: 100%; max-width: 400px; }
+.auth-box h1 { font-size: 24px; margin-bottom: 8px; font-weight: 700; }
+.auth-box p { font-size: 14px; color: var(--flaynity-text-secondary); margin-bottom: 32px; }
+.google-sign-in-btn {
+    width: 100%; background: var(--flaynity-text); color: var(--flaynity-bg);
+    border: none; padding: 14px 20px; border-radius: 28px; font-size: 16px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
+.google-sign-in-btn img { width: 20px; height: 20px; background: white; border-radius: 50%; padding: 2px; }
+.offline-icon { font-size: 48px; color: var(--flaynity-text-secondary); margin-bottom: 16px; }
+.retry-btn { margin-top: 24px; background: var(--flaynity-skeleton); color: var(--flaynity-text); border: none; padding: 10px 24px; border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer; }
 
-/* Top Header */
-.home-header {
-position: sticky;
-top: 0;
-z-index: 50;
-background-color: var(--bg-primary);
-display: flex;
-justify-content: flex-start;
-align-items: center;
-padding: 12px 16px;
+/* --- MAIN HOME UI --- */
+.home-main-ui { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding-top: var(--safe-area-top); }
+.top-app-bar { height: var(--top-bar-height); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; }
+.top-app-bar .brand { font-size: 22px; font-weight: 800; color: var(--flaynity-accent); letter-spacing: -0.5px; }
+.top-app-bar .actions { display: flex; gap: 16px; color: var(--flaynity-text); }
+.top-app-bar .actions .material-symbols-outlined { font-size: 24px; }
+
+.category-chips-container { display: flex; padding: 8px 16px; gap: 12px; flex-shrink: 0; border-bottom: 1px solid var(--flaynity-divider); }
+.chip { flex: 1; text-align: center; padding: 8px 0; background: var(--flaynity-skeleton); border-radius: 24px; font-size: 14px; font-weight: 600; color: var(--flaynity-text); transition: 0.2s; }
+.chip.active { background: var(--flaynity-text); color: var(--flaynity-bg); }
+
+.feed-scroll-view { flex: 1; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; padding-bottom: calc(var(--bottom-nav-height) + var(--safe-area-bottom)); }
+.feed-scroll-view::-webkit-scrollbar { display: none; }
+
+/* Feed Components */
+.long-video-card { margin-bottom: 20px; width: 100%; }
+.lv-thumbnail-box { width: 100%; aspect-ratio: 16/9; background: var(--flaynity-skeleton); position: relative; }
+.lv-duration { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.8); color: #fff; font-size: 12px; font-weight: 600; padding: 4px 6px; border-radius: 4px; }
+.lv-info-row { display: flex; padding: 12px 16px; gap: 12px; }
+.lv-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--flaynity-skeleton); flex-shrink: 0; object-fit: cover; }
+.lv-text { flex: 1; overflow: hidden; }
+.lv-title { font-size: 15px; font-weight: 600; line-height: 1.3; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.lv-meta { font-size: 13px; color: var(--flaynity-text-secondary); }
+
+.shorts-grid-section { padding: 0 16px 20px; }
+.shorts-grid-header { font-size: 18px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.shorts-grid-header .material-symbols-outlined { color: var(--flaynity-accent); }
+.s-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.s-card { width: 100%; aspect-ratio: 2/3; border-radius: 12px; background: var(--flaynity-skeleton); position: relative; overflow: hidden; }
+.s-card-title { position: absolute; bottom: 8px; left: 8px; right: 8px; color: #fff; font-size: 13px; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.post-card { margin-bottom: 20px; border-top: 6px solid var(--flaynity-skeleton); border-bottom: 6px solid var(--flaynity-skeleton); padding-top: 12px; }
+.post-header { display: flex; align-items: center; padding: 0 16px; gap: 10px; margin-bottom: 12px; }
+.post-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--flaynity-skeleton); object-fit: cover; }
+.post-user { font-size: 15px; font-weight: 600; }
+.post-time { font-size: 12px; color: var(--flaynity-text-secondary); margin-top: 2px; }
+.post-subscribe { margin-left: auto; color: var(--flaynity-accent); font-weight: 600; font-size: 14px; }
+.post-text { padding: 0 16px 12px; font-size: 15px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.post-image-grid { width: 100%; display: grid; gap: 2px; }
+.post-image-grid.count-1 { grid-template-columns: 1fr; }
+.post-image-grid img { width: 100%; aspect-ratio: 3/4; object-fit: cover; background: var(--flaynity-skeleton); }
+.post-stats { display: flex; justify-content: space-between; padding: 12px 16px; font-size: 13px; color: var(--flaynity-text-secondary); }
+.post-reactions-icons { display: flex; align-items: center; gap: 4px; }
+.post-actions { display: flex; border-top: 1px solid var(--flaynity-divider); padding: 4px 16px; }
+.p-action-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 0; font-size: 14px; font-weight: 600; color: var(--flaynity-text-secondary); }
+
+/* --- WATCH PAGE --- */
+.watch-page-layer { position: absolute; inset: 0; background: var(--flaynity-bg); z-index: 2000; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.watch-page-layer.active { transform: translateY(0); }
+.wp-player { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; padding-top: var(--safe-area-top); }
+.wp-player video { width: 100%; height: 100%; object-fit: contain; }
+.wp-close { position: absolute; top: max(16px, var(--safe-area-top)); left: 16px; color: #fff; background: rgba(0,0,0,0.5); border-radius: 50%; padding: 4px; z-index: 10; display: flex; }
+.wp-scroll { flex: 1; overflow-y: auto; scrollbar-width: none; overflow-x: hidden; }
+.wp-title { font-size: 18px; font-weight: 700; padding: 16px; line-height: 1.3; }
+.wp-stats { padding: 0 16px 12px; font-size: 13px; color: var(--flaynity-text-secondary); display: flex; gap: 8px; font-weight: 500; }
+.wp-actions-row { display: flex; align-items: center; gap: 12px; padding: 0 16px 16px; overflow-x: auto; scrollbar-width: none; }
+.wp-channel { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.wp-channel img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+.wp-channel-info { display: flex; flex-direction: column; }
+.wp-handle { font-weight: 600; font-size: 15px; }
+.wp-subs { font-size: 12px; color: var(--flaynity-text-secondary); }
+.wp-sub-btn { background: var(--flaynity-text); color: var(--flaynity-bg); padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; flex-shrink: 0; margin-left: auto; }
+.wp-pill { display: flex; align-items: center; gap: 6px; background: var(--flaynity-skeleton); padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; flex-shrink: 0; }
+.wp-comments-box { margin: 16px; padding: 12px; background: var(--flaynity-skeleton); border-radius: 12px; }
+.wp-comments-header { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; gap: 8px; }
+.wp-comments-preview { font-size: 13px; display: flex; gap: 8px; align-items: center; }
+
+/* --- BOTTOM NAVIGATION GLOBAL --- */
+.bottom-nav-bar {
+    position: absolute; bottom: 0; width: 100%; height: calc(var(--bottom-nav-height) + var(--safe-area-bottom));
+    background: var(--flaynity-bg); border-top: 1px solid var(--flaynity-divider);
+    display: flex; justify-content: space-around; align-items: center; padding-bottom: var(--safe-area-bottom);
+    z-index: 1000;
 }
+.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 20%; color: var(--flaynity-text); height: 100%; gap: 4px; }
+.nav-item .icon { font-size: 26px; }
+.nav-item .label { font-size: 10px; font-weight: 500; }
+.nav-item.active { color: var(--flaynity-accent); }
+.nav-item.active .icon { font-variation-settings: 'FILL' 1; }
+.nav-upload { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--flaynity-text); display: flex; align-items: center; justify-content: center; color: var(--flaynity-text); background: var(--flaynity-bg); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.nav-upload .icon { font-size: 32px; font-weight: 300; }
 
-.brand-logo {
-font-size: 24px;
-font-weight: 800;
-letter-spacing: -0.5px;
-color: var(--text-primary);
-}
-
-/* Category Chips */
-.category-chips {
-display: flex;
-width: 100%;
-background-color: var(--bg-primary);
-padding: 10px 16px;
-position: sticky;
-top: 54px; /* Below header */
-z-index: 49;
-overflow: hidden; /* Horizontal Scroll completely disabled */
-gap: 8px;
-}
-
-.chip {
-flex: 1; /* 3 parts equal width */
-text-align: center;
-padding: 10px 0;
-border-radius: 24px;
-font-weight: 600;
-font-size: 14px;
-color: var(--text-primary);
-background-color: var(--bg-surface); /* Light Gray */
-transition: background-color 0.3s ease, color 0.3s ease;
-cursor: pointer;
-}
-
-.chip.active {
-background-color: var(--text-primary); /* Black Background */
-color: var(--bg-primary); /* White Text */
-}
-
-/* Feed Containers */
-.feed-container {
-display: flex;
-flex-direction: column;
-width: 100%;
-overflow-x: hidden;
-}
-
-/* Skeleton Loading & Animations */
+/* Animations */
+@keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
 .skeleton {
-background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-surface-light) 50%, var(--bg-surface) 75%);
-background-size: 200% 100%;
-animation: loading 1.5s infinite linear;
+    background: linear-gradient(90deg, var(--flaynity-skeleton) 25%, var(--flaynity-divider) 50%, var(--flaynity-skeleton) 75%);
+    background-size: 1000px 100%; animation: shimmer 2s infinite linear;
 }
-
-@keyframes loading {
-0% { background-position: 200% 0; }
-100% { background-position: -200% 0; }
-}
-
-/* Shorts Grid (Home & Shorts Category) */
-.shorts-section {
-width: 100%;
-padding: 16px;
-background-color: var(--bg-primary);
-}
-
-.shorts-grid {
-display: grid;
-grid-template-columns: repeat(2, 1fr); /* 2 Columns */
-gap: 12px; /* Equal margin/gap */
-}
-
-.short-card {
-width: 100%;
-aspect-ratio: 2 / 3; /* Card Ratio 2:3 */
-border-radius: 12px; /* Rounded Corner */
-background-color: var(--bg-surface);
-position: relative;
-overflow: hidden;
-cursor: pointer;
-}
-
-.short-card img {
-width: 100%;
-height: 100%;
-object-fit: cover;
-}
-
-.short-title {
-position: absolute;
-bottom: 8px;
-left: 8px;
-right: 8px;
-font-size: 14px;
-font-weight: 600;
-color: #FFFFFF;
-text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-display: -webkit-box;
--webkit-line-clamp: 1; /* 1 Line Title */
--webkit-box-orient: vertical;
-overflow: hidden;
-}
-
-.short-views {
-position: absolute;
-top: 8px;
-right: 8px;
-font-size: 12px;
-font-weight: 600;
-color: #FFFFFF;
-text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-}
-
-/* Long Video Card */
-.video-card {
-width: 100%;
-margin-bottom: 24px;
-background-color: var(--bg-primary);
-}
-
-.video-thumbnail {
-width: 100%;
-aspect-ratio: 16 / 9; /* 16:9 Thumbnail */
-background-color: var(--bg-surface);
-position: relative;
-cursor: pointer;
-}
-
-.video-thumbnail img {
-width: 100%;
-height: 100%;
-object-fit: cover;
-}
-
-.video-duration {
-position: absolute;
-bottom: 8px;
-right: 8px;
-background-color: rgba(0,0,0,0.85);
-color: #FFFFFF;
-padding: 4px 6px;
-border-radius: 4px;
-font-size: 12px;
-font-weight: 600;
-}
-
-.video-info {
-display: flex;
-padding: 12px 16px 0;
-gap: 12px;
-}
-
-.channel-avatar {
-width: 40px;
-height: 40px;
-border-radius: 50%;
-background-color: var(--bg-surface);
-object-fit: cover;
-}
-
-.video-text {
-flex: 1;
-display: flex;
-flex-direction: column;
-}
-
-.video-title {
-font-size: 16px;
-font-weight: 600;
-color: var(--text-primary);
-display: -webkit-box;
--webkit-line-clamp: 1; /* Maximum 1 Line */
--webkit-box-orient: vertical;
-overflow: hidden;
-margin-bottom: 4px;
-}
-
-.video-meta {
-font-size: 13px;
-color: var(--text-secondary);
-display: flex;
-flex-wrap: wrap;
-gap: 4px;
-align-items: center;
-}
-
-/* Watch Page Overlay */
-.watch-page-overlay {
-position: fixed;
-top: 0; left: 0; width: 100%; height: 100%;
-background-color: var(--bg-primary);
-z-index: 100;
-display: none;
-flex-direction: column;
-transform: translateY(100%);
-transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-overflow-y: auto;
-overflow-x: hidden;
-}
-
-.watch-page-overlay.active {
-display: flex;
-transform: translateY(0);
-}
-
-/* Video Player Area */
-.player-container {
-width: 100%;
-aspect-ratio: 16/9; /* 16:9 Aspect Ratio */
-background-color: #000000; /* Black Background when load */
-position: sticky;
-top: 0;
-z-index: 101;
-display: flex;
-align-items: center;
-justify-content: center;
-/* Rounded Corner থাকবে না -> No border-radius */
-}
-
-.player-container video {
-width: 100%;
-height: 100%;
-object-fit: contain;
-}
-
-/* Buffer Animation */
-.buffer-spinner {
-position: absolute;
-width: 40px; height: 40px;
-border: 4px solid rgba(255,255,255,0.3);
-border-top-color: #FFFFFF;
-border-radius: 50%;
-animation: spin 1s infinite linear;
-display: none;
-}
-
-@keyframes spin { 100% { transform: rotate(360deg); } }
-
-/* Recommended Auto Show inside player */
-.auto-show-overlay {
-position: absolute;
-top: 0; left: 0; width: 100%; height: 100%;
-background: rgba(0,0,0,0.8);
-display: none;
-flex-direction: column;
-justify-content: center;
-align-items: center;
-color: #FFF;
-}
-
-.auto-show-overlay img {
-width: 50%;
-aspect-ratio: 16/9;
-object-fit: cover;
-border-radius: 8px;
-margin-top: 10px;
-}
-
-/* Premium White Card */
-.premium-info-card {
-background-color: var(--bg-primary); /* Premium White */
-padding: 16px;
-width: 100%;
-}
-
-.watch-title {
-font-size: 18px;
-font-weight: 700; /* Bold Font */
-color: var(--text-primary);
-display: -webkit-box;
--webkit-line-clamp: 1; /* Maximum 1 line */
--webkit-box-orient: vertical;
-overflow: hidden;
-margin-bottom: 8px;
-}
-
-.watch-metadata-row {
-display: flex;
-align-items: center;
-flex-wrap: wrap;
-font-size: 13px;
-color: var(--text-secondary);
-gap: 6px;
-margin-bottom: 16px;
-}
-
-.more-btn {
-color: var(--text-primary);
-font-weight: 600;
-cursor: pointer;
-}
-
-/* Channel Action Row */
-.channel-action-row {
-display: flex;
-align-items: center;
-gap: 12px;
-width: 100%;
-overflow-x: auto;
-padding-bottom: 8px;
-}
-
-.channel-action-row::-webkit-scrollbar { display: none; }
-
-.subscribe-btn {
-background-color: var(--text-primary); /* Black Background */
-color: var(--bg-primary); /* White Text */
-border-radius: 24px; /* Pill */
-padding: 8px 16px;
-font-weight: 600;
-font-size: 14px;
-border: none;
-cursor: pointer;
-transition: background-color 0.2s, color 0.2s;
-}
-.subscribe-btn.subscribed {
-background-color: var(--bg-surface-light);
-color: var(--text-primary);
-}
-
-.action-btn {
-display: flex;
-align-items: center;
-gap: 6px;
-background-color: var(--bg-surface);
-padding: 8px 16px;
-border-radius: 24px; /* Rounded Rectangle */
-font-size: 14px;
-font-weight: 500;
-color: var(--text-primary);
-white-space: nowrap;
-cursor: pointer;
-position: relative;
-overflow: hidden;
-}
-
-/* Ripple Material Animation */
-.action-btn::after {
-content: ""; position: absolute; background: rgba(0,0,0,0.1);
-display: block; width: 100%; height: 100%;
-top: 0; left: 0; opacity: 0; transition: all 0.3s;
-}
-.action-btn:active::after { opacity: 1; transition: 0s; }
-
-/* Comment Preview Card */
-.comment-preview-card {
-background-color: var(--bg-surface);
-border-radius: 12px;
-padding: 12px;
-margin: 16px;
-cursor: pointer;
-}
-
-.comment-preview-header {
-display: flex;
-align-items: center;
-gap: 8px;
-font-weight: 600;
-font-size: 14px;
-margin-bottom: 8px;
-color: var(--text-primary);
-}
-
-.comment-preview-body {
-display: flex;
-align-items: center;
-gap: 10px;
-}
-
-.comment-avatar {
-width: 24px; height: 24px; border-radius: 50%;
-background-color: var(--bg-surface-light);
-}
-
-.comment-text {
-font-size: 13px; color: var(--text-primary);
-display: -webkit-box; -webkit-line-clamp: 1; /* Maximum 1 line */
--webkit-box-orient: vertical; overflow: hidden; flex: 1;
-}
-
-/* Bottom Sheet Description & Comments */
-.bottom-sheet-overlay {
-position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-background: rgba(0,0,0,0.5); z-index: 200;
-display: none; flex-direction: column; justify-content: flex-end;
-opacity: 0; transition: opacity 0.3s;
-}
-.bottom-sheet-overlay.active { display: flex; opacity: 1; }
-
-.bottom-sheet-content {
-background: var(--bg-primary); width: 100%; height: 70vh;
-border-radius: 24px 24px 0 0; /* Rounded Top Corner */
-display: flex; flex-direction: column;
-transform: translateY(100%); transition: transform 0.3s ease-out;
-}
-.bottom-sheet-overlay.active .bottom-sheet-content { transform: translateY(0); }
-
-.comments-content { height: 75vh; } /* Slightly taller for comments */
-
-.drag-handle {
-width: 40px; height: 4px; border-radius: 2px;
-background: var(--bg-surface-light); margin: 12px auto;
-}
-
-.bottom-sheet-header {
-display: flex; justify-content: space-between; align-items: center;
-padding: 0 16px 12px; border-bottom: 1px solid var(--bg-surface);
-}
-.bottom-sheet-title { font-weight: 700; font-size: 16px; color: var(--text-primary); }
-
-.bottom-sheet-scroll {
-flex: 1; overflow-y: auto; padding: 16px; font-size: 14px; color: var(--text-primary);
-}
-
-.stats-row { display: flex; gap: 24px; margin-bottom: 16px; font-weight: 600; font-size: 16px;}
-.stats-col { display: flex; flex-direction: column; align-items: center; }
-.stats-label { font-size: 12px; color: var(--text-secondary); font-weight: 400; margin-top: 4px;}
-
-/* Comments System Styles */
-.comments-scroll-area {
-flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px;
-}
-.comment-item { display: flex; gap: 12px; }
-.comment-item img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--bg-surface-light); }
-.comment-content { flex: 1; }
-.comment-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.comment-author { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-.comment-time { font-size: 12px; color: var(--text-secondary); }
-.comment-text-body { font-size: 14px; color: var(--text-primary); line-height: 1.4; }
-
-.comment-input-area {
-display: flex; align-items: center; gap: 12px; padding: 12px 16px;
-border-top: 1px solid var(--bg-surface-light); background: var(--bg-primary);
-padding-bottom: calc(12px + var(--safe-area-bottom));
-}
-.comment-input-area img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: var(--bg-surface-light); }
-.comment-input-area input {
-flex: 1; background: var(--bg-surface); border: none; padding: 10px 16px;
-border-radius: 20px; font-size: 14px; color: var(--text-primary); outline: none;
-}
-.comment-input-area .send-btn { color: var(--text-primary); cursor: pointer; font-size: 26px; }
-
-/* Posts Category - Facebook Style */
-.post-card {
-background-color: var(--bg-primary);
-padding: 16px 0 0 0;
-margin-bottom: 12px;
-border-bottom: 8px solid var(--bg-surface);
-}
-
-.post-header {
-display: flex; align-items: center; padding: 0 16px 12px; gap: 12px;
-}
-
-.post-author-info { flex: 1; display: flex; flex-direction: column; }
-
-.post-author-name { font-weight: 600; font-size: 15px; color: var(--text-primary); }
-.post-time { font-size: 12px; color: var(--text-secondary); }
-
-.post-subscribe-btn {
-color: var(--text-primary); font-weight: 600; font-size: 14px; cursor: pointer;
-}
-
-.post-caption {
-padding: 0 16px 12px; font-size: 15px; line-height: 1.5; color: var(--text-primary);
-}
-.post-caption.collapsed {
-display: -webkit-box; -webkit-line-clamp: 2; /* Maximum 2 Line */
--webkit-box-orient: vertical; overflow: hidden;
-}
-.post-caption-more { font-weight: 600; color: var(--text-secondary); cursor: pointer; display: none; margin-left: 16px; margin-bottom: 12px;}
-
-.post-media {
-width: 100%; /* Screen 2 site width */
-aspect-ratio: 3 / 4; /* Aspect Ratio 3:4 */
-border-radius: 12px; /* Rounded Corner */
-background-color: var(--bg-surface);
-overflow: hidden;
-cursor: pointer;
-}
-
-.post-media img {
-width: 100%; height: 100%; object-fit: cover;
-}
-
-.post-reactions-summary {
-display: flex; justify-content: space-between; align-items: center;
-padding: 12px 16px; font-size: 13px; color: var(--text-secondary);
-border-bottom: 1px solid var(--bg-surface-light);
-}
-
-.reaction-emojis { display: flex; align-items: center; gap: 4px; font-size: 16px;}
-
-.post-actions {
-display: flex; padding: 4px 8px;
-}
-
-.post-action-btn {
-flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;
-padding: 10px 0; color: var(--text-secondary); font-weight: 600; font-size: 14px;
-border-radius: 8px; cursor: pointer; user-select: none; transition: background-color 0.3s;
-}
-.post-action-btn:active { background: var(--bg-surface-light); }
-.post-action-btn.liked { color: var(--text-primary); }
-.post-action-btn.liked .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
-
-.post-action-btn .material-symbols-outlined { font-size: 22px; }
-
-/* Post Image Preview Full Screen */
-.image-preview-overlay {
-position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-background: #000000; z-index: 300; display: none; align-items: center; justify-content: center;
-}
-.image-preview-overlay.active { display: flex; }
-.image-preview-overlay img { width: 100%; object-fit: contain; max-height: 100%; }
-.preview-close-btn {
-position: absolute; top: var(--safe-area-top); left: 16px;
-color: #FFFFFF; font-size: 32px; cursor: pointer; padding: 8px;
-}
-
-/* Reaction Picker */
-.reaction-picker {
-position: absolute; background: var(--bg-primary); border-radius: 30px;
-padding: 8px 12px; display: flex; gap: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-z-index: 100; transform: scale(0); opacity: 0; transform-origin: bottom left;
-transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.reaction-picker.active { transform: scale(1); opacity: 1; }
-
-.reaction-emoji {
-font-size: 28px; cursor: pointer; transition: transform 0.2s;
-/* Animated Emojis */
-animation: pulse 2s infinite alternate;
-}
-.reaction-emoji:hover { transform: scale(1.3) translateY(-5px); /* Hover bounce */ }
-
-@keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
-
-/* Reacted Users Page */
-.reacted-users-page {
-position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-background-color: var(--bg-primary); z-index: 150;
-display: none; flex-direction: column;
-transform: translateX(100%); transition: transform 0.3s ease;
-}
-.reacted-users-page.active { display: flex; transform: translateX(0); }
-
-.reacted-header {
-display: flex; align-items: center; padding: 12px 16px;
-padding-top: var(--safe-area-top); border-bottom: 1px solid var(--bg-surface-light);
-}
-.reacted-title { font-size: 18px; font-weight: 700; flex: 1; text-align: center; margin-right: 24px;}
-
-.reaction-categories {
-display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto;
-border-bottom: 1px solid var(--bg-surface-light);
-}
-.reaction-categories::-webkit-scrollbar { display: none; }
-
-.react-chip {
-padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;
-background: var(--bg-surface); color: var(--text-primary); white-space: nowrap;
-cursor: pointer; transition: 0.3s;
-}
-.react-chip.active { background: var(--text-primary); color: var(--bg-primary); }
-
-.reacted-list { flex: 1; overflow-y: auto; }
-.reacted-user-row {
-display: flex; align-items: center; gap: 12px; padding: 12px 16px;
-}
-.reacted-user-row img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-.reacted-user-name { font-weight: 600; font-size: 15px; flex: 1; }
-.reacted-user-emoji { font-size: 20px; }
-
-/* Floating Animation for Reaction Select */
-.floating-reaction {
-position: fixed; font-size: 40px; pointer-events: none; z-index: 1000;
-animation: floatUp 1s cubic-bezier(0.2, 1, 0.3, 1) forwards;
-}
-@keyframes floatUp {
-0% { transform: scale(0.5) translateY(0); opacity: 1; }
-100% { transform: scale(1.5) translateY(-100px); opacity: 0; }
-}
-
-/* Material Symbols Outlined */
-.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-.filled-icon { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; color: var(--text-primary); }
-
 </style>
-<div class="home-page" id="home-page">
-<!-- Top Bar -->
-<div class="home-header">
-<div class="brand-logo">Flaynity</div>
-</div>
-code
-Code
-<!-- Category Chips -->
-<div class="category-chips">
-    <div class="chip active" data-tab="all" onclick="switchCategory('all')">All</div>
-    <div class="chip" data-tab="posts" onclick="switchCategory('posts')">Posts</div>
-    <div class="chip" data-tab="shorts" onclick="switchCategory('shorts')">Shorts</div>
-</div>
 
-<!-- Main Feed Container -->
-<div class="feed-container" id="feed-container">
-    <!-- Data dynamically injected via Realtime Firebase Listeners -->
-</div>
-</div>
-<div class="watch-page-overlay" id="watch-page">
-<div class="player-container" id="player-container">
-<!-- Top Left Back inside player area -->
-<div style="position: absolute; top: var(--safe-area-top); left: 16px; z-index: 102; cursor: pointer;" onclick="closeWatchPage()">
-<span class="material-symbols-outlined" style="color:#FFF; font-size:28px; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">keyboard_arrow_down</span>
-</div>
-<div class="buffer-spinner" id="video-buffer"></div>
-<video id="main-video-player" controls preload="metadata"></video>
-code
-Code
-<div class="auto-show-overlay" id="video-end-overlay">
-        <h3 style="font-size: 16px; font-weight: 600;">Up Next</h3>
-        <img id="auto-show-thumb" src="">
-        <p id="auto-show-title" style="margin-top:8px; font-size:14px; text-align:center; padding: 0 16px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;"></p>
-    </div>
-</div>
-
-<!-- Premium White Card -->
-<div class="premium-info-card">
-    <div class="watch-title" id="watch-title"></div>
-    <div class="watch-metadata-row" id="watch-metadata">
-        <!-- Dynamic Injection -->
+<div class="page-home-root" id="home-root">
+    
+    <!-- Splash Screen -->
+    <div id="flaynity-splash" class="splash-layer">
+        <div class="flaynity-brand-large">FLAYNITY</div>
     </div>
 
-    <div class="channel-action-row">
-        <img id="watch-avatar" class="channel-avatar" src="" alt="">
-        <button class="subscribe-btn" id="watch-subscribe-btn" onclick="toggleSubscribeWatch()">Subscribe</button>
-        <div class="action-btn" onclick="toggleLikeWatch()" id="watch-like-btn">
-            <span class="material-symbols-outlined" id="watch-like-icon">thumb_up</span>
-            <span id="watch-like-count">Like</span>
-        </div>
-        <div class="action-btn" onclick="toggleDislikeWatch()">
-            <span class="material-symbols-outlined" id="watch-dislike-icon">thumb_down</span>
-        </div>
-        <div class="action-btn" onclick="downloadVideo()">
-            <span class="material-symbols-outlined">download</span>
-            <span>Download</span>
+    <!-- Auth Screen -->
+    <div id="flaynity-auth" class="auth-layer flaynity-hidden">
+        <div class="auth-box">
+            <div class="flaynity-brand-large" style="margin-bottom: 24px;">FLAYNITY</div>
+            <h1>Welcome</h1>
+            <p>Sign in to like, comment, and subscribe.</p>
+            <button class="google-sign-in-btn" id="btn-google-signin">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
+                Sign in with Google
+            </button>
         </div>
     </div>
-</div>
 
-<!-- Comment Preview Card -->
-<div class="comment-preview-card" onclick="openComments(currentPlayingVideoId, 'videos')">
-    <div class="comment-preview-header">
-        <span>Comments</span>
-        <span id="watch-comment-count">0</span>
+    <!-- Offline Screen -->
+    <div id="flaynity-offline" class="offline-layer flaynity-hidden">
+        <span class="material-symbols-outlined offline-icon">wifi_off</span>
+        <h2 style="font-size: 20px; margin-bottom: 8px;">You're offline</h2>
+        <p style="font-size: 14px; color: var(--flaynity-text-secondary);">Check your connection.</p>
+        <button class="retry-btn" id="btn-retry-network">Retry</button>
     </div>
-    <div class="comment-preview-body">
-        <img id="preview-comment-avatar" class="comment-avatar" src="">
-        <div class="comment-text" id="preview-comment-text">Loading...</div>
+
+    <!-- Main Home UI -->
+    <div id="flaynity-home-ui" class="home-main-ui flaynity-hidden">
+        <div class="top-app-bar">
+            <div class="brand">Flaynity</div>
+            <div class="actions">
+                <span class="material-symbols-outlined" id="btn-home-search">search</span>
+                <span class="material-symbols-outlined" id="btn-home-settings">settings</span>
+            </div>
+        </div>
+        
+        <div class="category-chips-container">
+            <div class="chip active">All</div>
+            <div class="chip">Posts</div>
+            <div class="chip">Shorts</div>
+        </div>
+
+        <div class="feed-scroll-view" id="home-feed-container">
+            <!-- Feed Injection Point -->
+            <div id="home-feed-skeleton">
+                <div class="long-video-card">
+                    <div class="lv-thumbnail-box skeleton"></div>
+                    <div class="lv-info-row">
+                        <div class="lv-avatar skeleton"></div>
+                        <div class="lv-text">
+                            <div class="skeleton" style="height: 16px; width: 90%; margin-bottom: 8px; border-radius: 4px;"></div>
+                            <div class="skeleton" style="height: 14px; width: 60%; border-radius: 4px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Watch Page Layer -->
+    <div id="flaynity-watch-page" class="watch-page-layer">
+        <div class="wp-player">
+            <div class="wp-close" id="btn-close-watch"><span class="material-symbols-outlined">expand_more</span></div>
+            <video id="main-video-player" playsinline></video>
+        </div>
+        <div class="wp-scroll">
+            <div class="wp-title" id="wp-title"></div>
+            <div class="wp-stats" id="wp-stats"></div>
+            <div class="wp-actions-row">
+                <div class="wp-channel">
+                    <img id="wp-channel-avatar" src="" alt="" style="display:none;">
+                    <div class="wp-channel-info">
+                        <span class="wp-handle" id="wp-channel-handle"></span>
+                        <span class="wp-subs" id="wp-channel-subs"></span>
+                    </div>
+                </div>
+                <div class="wp-sub-btn" id="wp-subscribe-btn">Subscribe</div>
+                <div class="wp-pill"><span class="material-symbols-outlined">thumb_up</span> <span id="wp-like-count"></span></div>
+                <div class="wp-pill"><span class="material-symbols-outlined">thumb_down</span></div>
+                <div class="wp-pill"><span class="material-symbols-outlined">download</span></div>
+            </div>
+            <div class="wp-comments-box" id="wp-comments-trigger">
+                <div class="wp-comments-header">Comments <span id="wp-comments-count"></span></div>
+                <div class="wp-comments-preview">
+                    <span id="wp-comment-text" style="color: var(--flaynity-text-secondary);">Add a comment...</span>
+                </div>
+            </div>
+            <div id="wp-recommended-feed" style="padding-top: 16px;"></div>
+        </div>
+    </div>
+
+    <!-- Global Bottom Navigation Component -->
+    <div class="bottom-nav-bar" id="flaynity-bottom-nav">
+        <div class="nav-item active" data-tab="home">
+            <span class="material-symbols-outlined icon">home</span>
+            <span class="label">Home</span>
+        </div>
+        <div class="nav-item" data-tab="shorts">
+            <span class="material-symbols-outlined icon">play_circle</span>
+            <span class="label">Shorts</span>
+        </div>
+        <div class="nav-item" data-tab="upload">
+            <div class="nav-upload"><span class="material-symbols-outlined icon">add</span></div>
+        </div>
+        <div class="nav-item" data-tab="discover">
+            <span class="material-symbols-outlined icon">explore</span>
+            <span class="label">Discover</span>
+        </div>
+        <div class="nav-item" data-tab="you">
+            <span class="material-symbols-outlined icon">person</span>
+            <span class="label">You</span>
+        </div>
     </div>
 </div>
-
-<!-- Recommended Feed -->
-<div id="recommended-feed" class="feed-container">
-    <!-- Auto filled with Long Videos -->
-</div>
-</div>
-<div class="bottom-sheet-overlay" id="description-sheet">
-<div class="bottom-sheet-content">
-<div class="drag-handle" id="desc-drag-handle"></div>
-<div class="bottom-sheet-header">
-<span class="bottom-sheet-title">Description</span>
-<span class="material-symbols-outlined" style="cursor:pointer;" onclick="closeDescription()">close</span>
-</div>
-<div class="bottom-sheet-scroll">
-<div class="watch-title" id="desc-full-title" style="-webkit-line-clamp: unset; margin-bottom: 24px;"></div>
-<div class="stats-row">
-<div class="stats-col"><span id="desc-likes">0</span><span class="stats-label">Likes</span></div>
-<div class="stats-col"><span id="desc-views">0</span><span class="stats-label">Views</span></div>
-<div class="stats-col"><span id="desc-date">Date</span><span class="stats-label">Upload Time</span></div>
-</div>
-<div id="desc-full-text" style="white-space: pre-wrap; line-height: 1.5;"></div>
-</div>
-</div>
-</div>
-<div class="bottom-sheet-overlay" id="comments-sheet">
-<div class="bottom-sheet-content comments-content">
-<div class="drag-handle" id="comments-drag-handle"></div>
-<div class="bottom-sheet-header">
-<span class="bottom-sheet-title">Comments</span>
-<span class="material-symbols-outlined" style="cursor:pointer;" onclick="closeComments()">close</span>
-</div>
-<div class="comments-scroll-area" id="comments-list">
-<!-- Comments automatically injected here -->
-</div>
-<div class="comment-input-area">
-<img src="" id="current-user-avatar-comment" class="comment-avatar">
-<input type="text" id="comment-input" placeholder="Add a comment...">
-<span class="material-symbols-outlined send-btn" onclick="submitComment()">send</span>
-</div>
-</div>
-</div>
-<div class="image-preview-overlay" id="image-preview">
-<span class="material-symbols-outlined preview-close-btn" onclick="closeImagePreview()">close</span>
-<img id="preview-full-img" src="">
-</div>
-<div class="reacted-users-page" id="reacted-page">
-<div class="reacted-header">
-<span class="material-symbols-outlined" style="font-size:28px; cursor:pointer;" onclick="closeReactedPage()">arrow_back</span>
-<span class="reacted-title">All People Reacted</span>
-</div>
-<div class="reaction-categories" id="react-categories">
-<!-- Chips Auto Generated -->
-</div>
-<div class="reacted-list" id="reacted-list">
-<!-- Users Auto Generated -->
-</div>
-</div>
-<script>
-// System Core - Firebase Init Check
-const db = window.firebase ? window.firebase.database() : null;
-const auth = window.firebase ? window.firebase.auth() : null;
-
-// Variables for State
-let currentCategory = 'all';
-let currentUser = null; // Should be loaded via Firebase Auth
-let globalReactionTimer;
-let currentPlayingVideoId = null;
-
-// Comments System State
-let currentCommentTarget = { id: null, type: null };
-let commentsRef = null;
-
-// Pattern Tracking for 'All' Category
-let shortsQueue = [];
-let videosQueue = [];
-let postsQueue = [];
-
-// Limits
-const BATCH_SHORTS = 6;
-const BATCH_VIDEOS = 10;
-const BATCH_POSTS = 1;
-
-// Ensure Firebase User (Fallback logic for Sketchware without auth data built in yet)
-if(auth) {
-auth.onAuthStateChanged(user => { currentUser = user; });
-} else {
-currentUser = { uid: "user_123", displayName: "My Name", photoURL: "https://via.placeholder.com/150" };
-}
-
-// Navigation Logic
-function switchCategory(tab) {
-currentCategory = tab;
-document.querySelectorAll('.chip').forEach(c => {
-if(c.dataset.tab === tab) c.classList.add('active');
-else c.classList.remove('active');
-});
-
-const container = document.getElementById('feed-container');
-container.innerHTML = '';
-
-// Reset specific queues
-shortsQueue = []; videosQueue = []; postsQueue = [];
-
-if(tab === 'all') initAllFeedListener();
-else if(tab === 'posts') initPostsFeedListener();
-else if(tab === 'shorts') initShortsFeedListener();
-}
-
-// Feed Initializers based on Realtime Listeners
-function initAllFeedListener() {
-if(!db) return;
-db.ref('shorts').orderByChild('timestamp').limitToLast(30).on('child_added', snap => {
-shortsQueue.push({ id: snap.key, ...snap.val() });
-processPatternFeed();
-});
-db.ref('videos').orderByChild('timestamp').limitToLast(30).on('child_added', snap => {
-videosQueue.push({ id: snap.key, ...snap.val() });
-processPatternFeed();
-});
-db.ref('posts').orderByChild('timestamp').limitToLast(10).on('child_added', snap => {
-postsQueue.push({ id: snap.key, ...snap.val() });
-processPatternFeed();
-});
-}
-
-// Pattern Processor: 6 Shorts -> 10 Videos -> 1 Post -> Loop
-function processPatternFeed() {
-if(currentCategory !== 'all') return;
-const container = document.getElementById('feed-container');
-
-// Need 6 shorts
-if(shortsQueue.length >= BATCH_SHORTS) {
-let chunk = shortsQueue.splice(0, BATCH_SHORTS);
-container.appendChild(buildShortsGrid(chunk));
-}
-// Need 10 videos
-if(videosQueue.length >= BATCH_VIDEOS) {
-let chunk = videosQueue.splice(0, BATCH_VIDEOS);
-chunk.forEach(vid => container.appendChild(buildLongVideoCard(vid)));
-}
-// Need 1 post
-if(postsQueue.length >= BATCH_POSTS) {
-let chunk = postsQueue.splice(0, BATCH_POSTS);
-chunk.forEach(post => container.appendChild(buildPostCard(post)));
-}
-}
-
-// Specific Category Initializers
-function initPostsFeedListener() {
-if(!db) return;
-const container = document.getElementById('feed-container');
-db.ref('posts').orderByChild('timestamp').limitToLast(20).on('child_added', snap => {
-container.insertAdjacentElement('afterbegin', buildPostCard({ id: snap.key, ...snap.val() }));
-});
-}
-
-function initShortsFeedListener() {
-if(!db) return;
-const container = document.getElementById('feed-container');
-const grid = document.createElement('div');
-grid.className = 'shorts-grid';
-grid.style.padding = '16px';
-container.appendChild(grid);
-
-db.ref('shorts').orderByChild('timestamp').limitToLast(20).on('child_added', snap => {
-grid.insertAdjacentHTML('afterbegin', generateShortCardHTML({ id: snap.key, ...snap.val() }));
-});
-}
-
-// Builders
-function buildShortsGrid(shortsArray) {
-const wrapper = document.createElement('div');
-wrapper.className = 'shorts-section';
-const grid = document.createElement('div');
-grid.className = 'shorts-grid';
-
-shortsArray.forEach(short => {
-grid.innerHTML += generateShortCardHTML(short);
-});
-wrapper.appendChild(grid);
-return wrapper;
-}
-
-function generateShortCardHTML(short) {
-return `
-<div class="short-card" onclick="window.location.hash='#shorts?id=${short.id}'">
-<img src="${short.thumbnail || ''}" loading="lazy">
-<div class="short-views">${formatNumber(short.views || 0)} Views</div>
-<div class="short-title">${short.title || ''}</div>
-</div>
-`;
-}
-
-function buildLongVideoCard(video) {
-const div = document.createElement('div');
-div.className = 'video-card';
-div.onclick = () => openWatchPage(video.id);
-
-const uploadTime = timeAgo(video.timestamp || Date.now());
-
-div.innerHTML = `
-<div class="video-thumbnail">
-<img src="${video.thumbnail || ''}" loading="lazy">
-<div class="video-duration">${video.duration || '0:00'}</div>
-</div>
-<div class="video-info">
-<img src="${video.channelAvatar || ''}" class="channel-avatar">
-<div class="video-text">
-<div class="video-title">${video.title || ''}</div>
-<div class="video-meta">
-<span>${video.channelName || ''}</span> •
-<span>${formatNumber(video.views || 0)} Views</span> •
-<span>${uploadTime}</span>
-</div>
-</div>
-</div>
-`;
-return div;
-}
-
-function buildPostCard(post) {
-const div = document.createElement('div');
-div.className = 'post-card';
-div.id = `post-${post.id}`;
-
-const uploadTime = timeAgo(post.timestamp || Date.now());
-let reactionsStr = '';
-if(post.reactions) {
-let counts = {};
-Object.values(post.reactions).forEach(r => { counts[r.type] = (counts[r.type] || 0) + 1; });
-let sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]).slice(0,3);
-let map = { love: '❤️', like: '👍', care: '🥰', haha: '😆', wow: '😮', sad: '😭', angry: '😡' };
-reactionsStr = sorted.map(k => map[k]).join('');
-}
-let totalReactions = post.reactions ? Object.keys(post.reactions).length : 0;
-let totalComments = post.comments ? Object.keys(post.comments).length : 0;
-
-div.innerHTML = `
-<div class="post-header">
-<img src="${post.userAvatar || ''}" class="channel-avatar">
-<div class="post-author-info">
-<div class="post-author-name">${post.userName || ''}</div>
-<div class="post-time">${uploadTime}</div>
-</div>
-<div class="post-subscribe-btn" onclick="toggleSubscribe('${post.userId}', this)">Subscribe</div>
-</div>
-
-<div class="post-caption collapsed" id="cap-${post.id}">${post.caption || ''}</div>
-${(post.caption && post.caption.length > 80) ? `<div class="post-caption-more" onclick="expandPostCaption('${post.id}', this)">...more</div>` : ''}
-
-${post.image ? `<div class="post-media" onclick="openImagePreview('${post.image}')"><img src="${post.image}" loading="lazy"></div>` : ''}
-
-<div class="post-reactions-summary">
-<div class="reaction-emojis" onclick="openReactedUsersPage('${post.id}')" id="react-emojis-${post.id}">${reactionsStr}</div>
-<div style="font-size:13px; color:var(--text-secondary); margin-left:4px; flex:1;" id="react-count-${post.id}">${totalReactions > 0 ? totalReactions + ' Reactions' : ''}</div>
-<div id="comment-count-${post.id}">${totalComments} Comments</div>
-</div>
-
-<div class="post-actions" style="position:relative;">
-<div class="post-action-btn" id="love-btn-${post.id}"
-ontouchstart="startReactionTimer('${post.id}', event)"
-ontouchend="clearReactionTimer()"
-onmousedown="startReactionTimer('${post.id}', event)"
-onmouseup="clearReactionTimer()"
-onclick="quickLove('${post.id}')">
-<span class="material-symbols-outlined">favorite</span> Love
-</div>
-<div class="post-action-btn" onclick="openComments('${post.id}', 'posts')">
-<span class="material-symbols-outlined">chat_bubble</span> Comment
-</div>
-</div>
-`;
-return div;
-}
-
-// --- Interaction Functions ---
-
-function expandPostCaption(id, btn) {
-document.getElementById(`cap-${id}`).classList.remove('collapsed');
-btn.style.display = 'none';
-}
-
-function openImagePreview(url) {
-document.getElementById('preview-full-img').src = url;
-document.getElementById('image-preview').classList.add('active');
-}
-function closeImagePreview() {
-document.getElementById('image-preview').classList.remove('active');
-}
-
-// --- Like / Reaction System (Optimistic UI applied) ---
-function startReactionTimer(postId, e) {
-e.preventDefault();
-globalReactionTimer = setTimeout(() => {
-showReactionPicker(postId, e.target.closest('.post-action-btn'));
-}, 500);
-}
-function clearReactionTimer() {
-clearTimeout(globalReactionTimer);
-}
-function quickLove(postId) {
-setReaction(postId, 'love');
-}
-
-function showReactionPicker(postId, btnElem) {
-let existing = document.querySelector('.reaction-picker');
-if(existing) existing.remove();
-
-const picker = document.createElement('div');
-picker.className = 'reaction-picker';
-const emojis = [
-{ type: 'love', char: '❤️' }, { type: 'like', char: '👍' }, { type: 'care', char: '🥰' },
-{ type: 'haha', char: '😆' }, { type: 'wow', char: '😮' }, { type: 'sad', char: '😭' }, { type: 'angry', char: '😡' }
-];
-
-emojis.forEach(e => {
-const span = document.createElement('span');
-span.className = 'reaction-emoji';
-span.innerText = e.char;
-span.onclick = (event) => {
-event.stopPropagation();
-triggerFloatingReaction(e.char, event.clientX, event.clientY);
-setReaction(postId, e.type);
-picker.classList.remove('active');
-setTimeout(() => picker.remove(), 300);
-};
-picker.appendChild(span);
-});
-
-btnElem.appendChild(picker);
-picker.style.bottom = '50px';
-picker.style.left = '10px';
-
-requestAnimationFrame(() => picker.classList.add('active'));
-
-document.addEventListener('click', function closePicker(ev) {
-if(!picker.contains(ev.target)) {
-picker.classList.remove('active');
-setTimeout(() => picker.remove(), 300);
-document.removeEventListener('click', closePicker);
-}
-});
-}
-
-function triggerFloatingReaction(char, x, y) {
-const floatElem = document.createElement('div');
-floatElem.className = 'floating-reaction';
-floatElem.innerText = char;
-floatElem.style.left = x + 'px';
-floatElem.style.top = y + 'px';
-document.body.appendChild(floatElem);
-setTimeout(() => floatElem.remove(), 1000);
-}
-
-function setReaction(postId, type) {
-// Optimistic UI Update instantly so user knows Like works
-const map = { love: '❤️', like: '👍', care: '🥰', haha: '😆', wow: '😮', sad: '😭', angry: '😡' };
-
-const loveBtn = document.getElementById(`love-btn-${postId}`);
-if(loveBtn) {
-loveBtn.classList.add('liked'); // Highlights the button icon to filled
-}
-
-const emojisDiv = document.getElementById(`react-emojis-${postId}`);
-if(emojisDiv && !emojisDiv.innerHTML.includes(map[type])) {
-emojisDiv.innerHTML = map[type] + emojisDiv.innerHTML;
-}
-
-// Realtime DB update
-if(!db || !currentUser) return;
-db.ref(`posts/${postId}/reactions/${currentUser.uid}`).set({
-type: type,
-timestamp: Date.now(),
-userAvatar: currentUser.photoURL || '',
-userName: currentUser.displayName || 'User'
-});
-}
-
-// --- Comments System ---
-function openComments(id, type) {
-if(!id) return;
-currentCommentTarget = { id, type };
-document.getElementById('comments-sheet').classList.add('active');
-document.getElementById('comments-list').innerHTML = '';
-document.getElementById('comment-input').value = '';
-
-if(currentUser && currentUser.photoURL) {
-document.getElementById('current-user-avatar-comment').src = currentUser.photoURL;
-}
-
-if(!db) return;
-commentsRef = db.ref(`${type}/${id}/comments`);
-commentsRef.on('child_added', snap => {
-appendCommentToUI(snap.val(), true);
-});
-}
-
-function closeComments() {
-document.getElementById('comments-sheet').classList.remove('active');
-if(commentsRef) commentsRef.off('child_added');
-currentCommentTarget = { id: null, type: null };
-}
-
-function submitComment() {
-const text = document.getElementById('comment-input').value.trim();
-if(!text) return;
-
-const commentObj = {
-userId: currentUser ? currentUser.uid : 'temp_id',
-userName: currentUser ? (currentUser.displayName || 'User') : 'Me',
-userAvatar: currentUser ? (currentUser.photoURL || '') : '',
-text: text,
-timestamp: Date.now()
-};
-
-// Instant UI Update (Optimistic UI)
-appendCommentToUI(commentObj, false); // append to bottom visually
-document.getElementById('comment-input').value = '';
-
-// Firebase Sync
-if(db && currentCommentTarget.id) {
-db.ref(`${currentCommentTarget.type}/${currentCommentTarget.id}/comments`).push(commentObj);
-}
-}
-
-function appendCommentToUI(c, fromFirebase = false) {
-// Prevent duplicate append if Firebase syncs the exact same comment we just optimistic-added
-// We'd usually check IDs, but simple structure here allows basic append
-const html = `
-<div class="comment-item">
-<img src="${c.userAvatar || ''}">
-<div class="comment-content">
-<div class="comment-header">
-<span class="comment-author">${c.userName || 'User'}</span>
-<span class="comment-time">${timeAgo(c.timestamp || Date.now())}</span>
-</div>
-<div class="comment-text-body">${c.text || ''}</div>
-</div>
-</div>
-`;
-const list = document.getElementById('comments-list');
-list.insertAdjacentHTML('beforeend', html);
-list.scrollTop = list.scrollHeight; // Auto scroll to bottom
-}
-
-// Drag to close logic for Comments Bottom Sheet
-let commentStartY;
-const commentSheetContent = document.querySelector('.comments-content');
-
-document.getElementById('comments-drag-handle').addEventListener('touchstart', e => {
-commentStartY = e.touches[0].clientY;
-}, {passive: true});
-
-document.getElementById('comments-drag-handle').addEventListener('touchmove', e => {
-let currentY = e.touches[0].clientY;
-if(currentY > commentStartY) {
-commentSheetContent.style.transform = `translateY(${currentY - commentStartY}px)`;
-}
-}, {passive: true});
-
-document.getElementById('comments-drag-handle').addEventListener('touchend', e => {
-let endY = e.changedTouches[0].clientY;
-if(endY - commentStartY > 100) {
-closeComments();
-}
-commentSheetContent.style.transform = ''; // reset
-});
-
-// --- Reacted Users Page Logic ---
-function openReactedUsersPage(postId) {
-if(!db) return;
-const page = document.getElementById('reacted-page');
-page.classList.add('active');
-
-const catContainer = document.getElementById('react-categories');
-const listContainer = document.getElementById('reacted-list');
-catContainer.innerHTML = ''; listContainer.innerHTML = '';
-
-db.ref(`posts/${postId}/reactions`).once('value', snap => {
-let reactions = [];
-snap.forEach(c => { reactions.push(c.val()); });
-
-let counts = { all: reactions.length };
-reactions.forEach(r => counts[r.type] = (counts[r.type] || 0) + 1);
-
-const map = { all: 'All', love: '❤️ Love', like: '👍 Like', care: '🥰 Care', haha: '😆 Haha', wow: '😮 Wow', sad: '😭 Sad', angry: '😡 Angry' };
-
-Object.keys(counts).forEach((k, idx) => {
-let chip = document.createElement('div');
-chip.className = `react-chip ${idx === 0 ? 'active' : ''}`;
-chip.innerText = `${map[k]} (${counts[k]})`;
-chip.onclick = () => renderReactedList(reactions, k, catContainer, chip, listContainer);
-catContainer.appendChild(chip);
-});
-renderReactedList(reactions, 'all', catContainer, catContainer.firstChild, listContainer);
-});
-}
-
-function renderReactedList(reactions, filterType, catContainer, selectedChip, listContainer) {
-Array.from(catContainer.children).forEach(c => c.classList.remove('active'));
-if(selectedChip) selectedChip.classList.add('active');
-
-listContainer.innerHTML = '';
-const map = { love: '❤️', like: '👍', care: '🥰', haha: '😆', wow: '😮', sad: '😭', angry: '😡' };
-
-let filtered = filterType === 'all' ? reactions : reactions.filter(r => r.type === filterType);
-filtered.forEach(r => {
-listContainer.innerHTML += `
-<div class="reacted-user-row">
-<img src="${r.userAvatar || ''}">
-<div class="reacted-user-name">${r.userName || 'User'}</div>
-<div class="reacted-user-emoji">${map[r.type]}</div>
-</div>
-`;
-});
-}
-
-function closeReactedPage() { document.getElementById('reacted-page').classList.remove('active'); }
-
-// --- Watch Page Logic ---
-function openWatchPage(videoId) {
-if(!db) return;
-currentPlayingVideoId = videoId;
-const page = document.getElementById('watch-page');
-page.style.display = 'flex';
-requestAnimationFrame(() => page.classList.add('active'));
-
-const player = document.getElementById('main-video-player');
-const buffer = document.getElementById('video-buffer');
-buffer.style.display = 'block';
-
-document.getElementById('watch-title').innerText = '';
-document.getElementById('watch-metadata').innerHTML = '';
-document.getElementById('video-end-overlay').style.display = 'none';
-
-db.ref(`videos/${videoId}`).once('value', snap => {
-if(!snap.exists()) return;
-const data = snap.val();
-
-player.src = data.videoUrl || '';
-player.play().catch(e=>console.log(e));
-
-document.getElementById('watch-title').innerText = data.title || '';
-document.getElementById('watch-avatar').src = data.channelAvatar || '';
-
-let handle = data.channelHandle || '@' + (data.channelName || '').replace(/\s+/g,'').toLowerCase();
-let likes = formatNumber(data.likesCount || 0);
-let views = formatNumber(data.views || 0);
-let time = timeAgo(data.timestamp || Date.now());
-
-document.getElementById('watch-metadata').innerHTML = `
-<b>${handle}</b> • ${likes} Likes • ${views} Views • ${time} <span class="more-btn" onclick="openDescription()">...more</span>
-`;
-
-document.getElementById('desc-full-title').innerText = data.title;
-document.getElementById('desc-likes').innerText = likes;
-document.getElementById('desc-views').innerText = views;
-document.getElementById('desc-date').innerText = new Date(data.timestamp).toLocaleDateString();
-document.getElementById('desc-full-text').innerText = data.description || 'No description available.';
-
-if(data.comments) {
-let keys = Object.keys(data.comments);
-document.getElementById('watch-comment-count').innerText = keys.length;
-let lastKey = keys[keys.length-1];
-let lastComment = data.comments[lastKey];
-document.getElementById('preview-comment-avatar').src = lastComment.userAvatar || '';
-document.getElementById('preview-comment-text').innerText = lastComment.text || '';
-} else {
-document.getElementById('watch-comment-count').innerText = '0';
-document.getElementById('preview-comment-text').innerText = 'Add a comment...';
-}
-
-loadRecommendedVideos();
-});
-
-player.onwaiting = () => buffer.style.display = 'block';
-player.onplaying = () => buffer.style.display = 'none';
-player.onended = () => showAutoNext();
-}
-
-function closeWatchPage() {
-const page = document.getElementById('watch-page');
-page.classList.remove('active');
-document.getElementById('main-video-player').pause();
-setTimeout(() => page.style.display = 'none', 300);
-currentPlayingVideoId = null;
-}
-
-function toggleLikeWatch() {
-// Optimistic UI update instantly for Video Like
-const icon = document.getElementById('watch-like-icon');
-const dislikeIcon = document.getElementById('watch-dislike-icon');
-
-if (icon.classList.contains('filled-icon')) {
-icon.classList.remove('filled-icon');
-} else {
-icon.classList.add('filled-icon');
-dislikeIcon.classList.remove('filled-icon');
-}
-
-if(!db || !currentUser || !currentPlayingVideoId) return;
-const ref = db.ref(`videos/${currentPlayingVideoId}/likes/${currentUser.uid}`);
-ref.once('value', snap => {
-if(snap.exists()) ref.remove();
-else {
-ref.set(true);
-db.ref(`videos/${currentPlayingVideoId}/dislikes/${currentUser.uid}`).remove();
-}
-});
-}
-
-function toggleDislikeWatch() {
-// Optimistic UI update
-const icon = document.getElementById('watch-dislike-icon');
-const likeIcon = document.getElementById('watch-like-icon');
-
-if (icon.classList.contains('filled-icon')) {
-icon.classList.remove('filled-icon');
-} else {
-icon.classList.add('filled-icon');
-likeIcon.classList.remove('filled-icon');
-}
-
-if(!db || !currentUser || !currentPlayingVideoId) return;
-const ref = db.ref(`videos/${currentPlayingVideoId}/dislikes/${currentUser.uid}`);
-ref.once('value', snap => {
-if(snap.exists()) ref.remove();
-else {
-ref.set(true);
-db.ref(`videos/${currentPlayingVideoId}/likes/${currentUser.uid}`).remove();
-}
-});
-}
-
-function showAutoNext() {
-if(!db) return;
-db.ref('videos').limitToLast(2).once('value', snap => {
-let nextVid = null;
-snap.forEach(c => { if(c.key !== currentPlayingVideoId) nextVid = c.val(); });
-if(nextVid) {
-document.getElementById('auto-show-thumb').src = nextVid.thumbnail;
-document.getElementById('auto-show-title').innerText = nextVid.title;
-document.getElementById('video-end-overlay').style.display = 'flex';
-}
-});
-}
-
-function loadRecommendedVideos() {
-const cont = document.getElementById('recommended-feed');
-cont.innerHTML = '';
-if(!db) return;
-db.ref('videos').orderByChild('timestamp').limitToLast(5).on('child_added', snap => {
-if(snap.key !== currentPlayingVideoId) {
-cont.appendChild(buildLongVideoCard({ id: snap.key, ...snap.val() }));
-}
-});
-}
-
-// --- Description Bottom Sheet Logic ---
-function openDescription() { document.getElementById('description-sheet').classList.add('active'); }
-function closeDescription() { document.getElementById('description-sheet').classList.remove('active'); }
-
-let descStartY;
-const descSheetContent = document.querySelector('.bottom-sheet-content');
-
-document.getElementById('desc-drag-handle').addEventListener('touchstart', e => {
-descStartY = e.touches[0].clientY;
-}, {passive: true});
-
-document.getElementById('desc-drag-handle').addEventListener('touchmove', e => {
-let currentY = e.touches[0].clientY;
-if(currentY > descStartY) descSheetContent.style.transform = `translateY(${currentY - descStartY}px)`;
-}, {passive: true});
-
-document.getElementById('desc-drag-handle').addEventListener('touchend', e => {
-let endY = e.changedTouches[0].clientY;
-if(endY - descStartY > 100) closeDescription();
-descSheetContent.style.transform = '';
-});
-
-// Utilities
-function formatNumber(num) {
-if(num >= 1000000) return (num/1000000).toFixed(1) + 'M';
-if(num >= 1000) return (num/1000).toFixed(1) + 'K';
-return num.toString();
-}
-
-function timeAgo(timestamp) {
-const diff = Date.now() - timestamp;
-const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-if(days > 0) return days === 1 ? '1 day ago' : `${days} days ago`;
-const hours = Math.floor(diff / (1000 * 60 * 60));
-if(hours > 0) return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
-const mins = Math.floor(diff / (1000 * 60));
-if(mins > 0) return mins === 1 ? '1 min ago' : `${mins} mins ago`;
-return 'Just now';
-}
-
-window.onload = () => {
-switchCategory('all');
-};
-</script>

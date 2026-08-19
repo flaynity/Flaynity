@@ -127,7 +127,6 @@ const Utils = {
             video.onloadeddata = async () => {
                 duration = video.duration || 0;
                 
-                // Timeline Strip Generator
                 if (canvasTrackId && duration > 0) {
                     const track = Utils.el(canvasTrackId);
                     if (track) {
@@ -148,7 +147,6 @@ const Utils = {
                     }
                 }
 
-                // Final Main Thumbnail Seek
                 video.currentTime = Math.min(1, duration / 2 || 0);
             };
 
@@ -458,7 +456,6 @@ const HomeFeed = {
         while (active) {
             let chunkAdded = false;
 
-            // Pattern Step 1: 6 Shorts Grid
             if (shortsIdx < shorts.length) {
                 const batch = shorts.slice(shortsIdx, shortsIdx + 6);
                 shortsIdx += 6;
@@ -466,7 +463,6 @@ const HomeFeed = {
                 chunkAdded = true;
             }
 
-            // Pattern Step 2: 10 Long Videos
             if (videoIdx < videos.length) {
                 const batch = videos.slice(videoIdx, videoIdx + 10);
                 videoIdx += 10;
@@ -476,7 +472,6 @@ const HomeFeed = {
                 chunkAdded = true;
             }
 
-            // Pattern Step 3: 1 Community Post
             if (postIdx < posts.length) {
                 container.appendChild(HomeFeed.buildPostCard(posts[postIdx]));
                 postIdx++;
@@ -834,11 +829,18 @@ let studioActiveData = { type: null, sourceFile: null, finalThumbBlob: null, dur
 
 const UploadEngineUI = {
     openSelectorSheet: () => {
+        const container = Utils.el('page-container-upload');
+        if (container) {
+            container.style.display = 'block';
+        }
         const root = Utils.el('f-upload-system-root');
         if (root) root.style.pointerEvents = 'auto';
+
         const backdrop = Utils.el('f-sheet-backdrop');
-        if (backdrop) backdrop.classList.add('active');
-        Router.addBackState('f-up-backdrop');
+        if (backdrop) {
+            backdrop.classList.add('active');
+            Router.addBackState('f-sheet-backdrop');
+        }
     },
 
     closeAllLayers: () => {
@@ -849,6 +851,13 @@ const UploadEngineUI = {
         setTimeout(() => {
             const root = Utils.el('f-upload-system-root');
             if (root) root.style.pointerEvents = 'none';
+            const anyFlowActive = document.querySelector('.f-up-flow-layer.active');
+            if (!anyFlowActive) {
+                const container = Utils.el('page-container-upload');
+                if (container && State.currentTab !== 'upload') {
+                    // keep mounted transparently for next click
+                }
+            }
         }, 300);
 
         CameraStudio.shutdown();
@@ -861,6 +870,11 @@ const UploadEngineUI = {
     },
 
     goto: (id) => {
+        const container = Utils.el('page-container-upload');
+        if (container) container.style.display = 'block';
+        const root = Utils.el('f-upload-system-root');
+        if (root) root.style.pointerEvents = 'auto';
+
         document.querySelectorAll('.f-up-flow-layer').forEach((l) => l.classList.remove('active'));
         const target = Utils.el(id);
         if (target) {
@@ -895,6 +909,19 @@ const UploadEngineUI = {
         if (metadata.url && Utils.el('f-detail-thumb-preview')) Utils.el('f-detail-thumb-preview').src = metadata.url;
 
         if (vidNode) vidNode.play().catch(() => {});
+    },
+
+    toggleVideoPlay: () => {
+        const v = Utils.el('f-video-element');
+        const btn = Utils.el('f-vid-play-pause');
+        if (!v) return;
+        if (v.paused) {
+            v.play();
+            if (btn) btn.innerHTML = `<span class="material-symbols-outlined">pause</span>`;
+        } else {
+            v.pause();
+            if (btn) btn.innerHTML = `<span class="material-symbols-outlined">play_arrow</span>`;
+        }
     },
 
     goToDetails: (typeFlow) => {
@@ -1044,11 +1071,6 @@ const CameraStudio = {
         await CameraStudio.init();
     },
 
-    toggleTimer: () => {
-        UI.toast("Timer: 3s armed");
-        Utils.vibrate();
-    },
-
     startHoldRecording: () => {
         if (!CameraStudio.stream) return;
         Utils.vibrate(60);
@@ -1174,13 +1196,11 @@ const UploadManager = {
             let r2ThumbUrl = '';
             let r2MediaUrl = '';
 
-            // 1. Upload Thumbnail
             if (studioActiveData.finalThumbBlob) {
                 UploadManager.toggleStatusPanel(true, "Uploading Thumbnail...", "Cloudflare Object Storage", true);
                 r2ThumbUrl = await Services.uploadResilientFile(studioActiveData.finalThumbBlob, `thumbnails/${State.user.uid}`);
             }
 
-            // 2. Upload Media
             if (studioActiveData.sourceFile) {
                 UploadManager.toggleStatusPanel(true, `Uploading ${ctxMode.toUpperCase()}...`, "Streaming chunks to R2", true);
                 r2MediaUrl = await Services.uploadResilientFile(studioActiveData.sourceFile, `${ctxMode}s/${State.user.uid}`, (pct, loaded, total) => {
@@ -1188,7 +1208,6 @@ const UploadManager = {
                 });
             }
 
-            // 3. Save Metadata to Realtime DB
             UploadManager.toggleStatusPanel(true, "Saving Details...", "Syncing Firebase Database", true);
 
             const metadataBlock = {
@@ -1443,7 +1462,12 @@ const Router = {
 
             const container = document.createElement('div');
             container.id = `page-container-${page}`;
-            container.style.cssText = `width:100%;height:100%;position:absolute;top:0;left:0;display:${page === 'home' ? 'block' : 'none'};`;
+            
+            if (page === 'upload') {
+                container.style.cssText = `width:100%;height:100%;position:absolute;top:0;left:0;z-index:3000;pointer-events:none;display:block;`;
+            } else {
+                container.style.cssText = `width:100%;height:100%;position:absolute;top:0;left:0;display:${page === 'home' ? 'block' : 'none'};`;
+            }
             container.innerHTML = html;
             appRoot.appendChild(container);
         }
@@ -1457,13 +1481,13 @@ const Router = {
     },
 
     bindGlobalNavigation: () => {
-        document.querySelectorAll('.nav-item').forEach((el) => {
+        document.querySelectorAll('.nav-item, #btn-nav-upload, [data-tab="upload"]').forEach((el) => {
             el.addEventListener('click', (e) => {
                 const targetNav = e.currentTarget;
-                const tab = targetNav.dataset.tab;
+                const tab = targetNav.dataset.tab || (targetNav.id === 'btn-nav-upload' ? 'upload' : null);
                 if (tab === 'upload') {
                     UploadEngineUI.openSelectorSheet();
-                } else {
+                } else if (tab) {
                     Router.switchTab(tab);
                 }
             });
@@ -1471,7 +1495,10 @@ const Router = {
     },
 
     switchTab: (tabName) => {
-        if (tabName === 'upload') return;
+        if (tabName === 'upload') {
+            UploadEngineUI.openSelectorSheet();
+            return;
+        }
 
         if (State.currentPlayingVideo && tabName !== 'shorts') {
             State.currentPlayingVideo.pause();
@@ -1591,9 +1618,6 @@ const App = {
             DiscoverPage.init();
             YouPage.init();
             Router.bindGlobalNavigation();
-
-            // Bind Upload Sheet Close
-            onClick('f-btn-close-sheet', UploadEngineUI.closeAllLayers);
 
             // 4. Network Listeners
             window.addEventListener('offline', () => {

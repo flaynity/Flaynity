@@ -27,23 +27,23 @@
 
 /* MODAL BACKDROP (Shared Bottom Sheet) */
 .f-up-backdrop {
-    position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4);
+    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-    opacity: 0; transition: opacity 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-    display: none; flex-direction: column; justify-content: flex-end;
+    opacity: 0; visibility: hidden; transition: opacity 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.3s;
+    display: flex; flex-direction: column; justify-content: flex-end;
     pointer-events: auto; z-index: 3050;
 }
-.f-up-backdrop.active { opacity: 1; display: flex; }
+.f-up-backdrop.active { opacity: 1; visibility: visible; }
 
 /* BOTTOM SHEET: CREATE CONTENT */
 .f-up-sheet {
     background: var(--f-up-bg); width: 100%;
     border-radius: 28px 28px 0 0; padding: 20px 24px calc(24px + var(--safe-bottom));
     transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-    box-shadow: 0 -4px 30px rgba(0,0,0,0.1); position: relative;
+    box-shadow: 0 -4px 30px rgba(0,0,0,0.15); position: relative; pointer-events: auto;
 }
 .f-up-backdrop.active .f-up-sheet { transform: translateY(0); }
-.f-up-drag-handle { width: 40px; height: 4px; border-radius: 2px; background: #DBDBDB; margin: 0 auto 24px; }
+.f-up-drag-handle { width: 40px; height: 4px; border-radius: 2px; background: #DBDBDB; margin: 0 auto 20px; }
 .f-up-sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
 .f-up-sheet-title { font-size: 22px; font-weight: 700; color: var(--f-up-text); }
 .f-up-sheet-close { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: var(--f-up-surface-alt); border-radius: 50%; color: var(--f-up-text); cursor: pointer; transition: background 0.2s; }
@@ -60,13 +60,13 @@
 .f-up-option-card:active { background: var(--f-up-surface-alt); transform: scale(0.97); }
 .f-up-option-card.active-state { border: 2px solid var(--f-up-text); background: var(--f-up-surface); }
 .f-up-icon-circle { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--f-up-surface-alt); color: var(--f-up-text); }
-.f-up-option-card .material-symbols-outlined { font-size: 32px; font-variation-settings: 'FILL' 1; }
-.f-up-label { font-size: 15px; font-weight: 600; color: var(--f-up-text); }
+.f-up-option-card .material-symbols-outlined { font-size: 30px; font-variation-settings: 'FILL' 1; }
+.f-up-label { font-size: 14px; font-weight: 600; color: var(--f-up-text); }
 
-/* FLOW LAYERS (Premium Fullscreen) */
+/* FLOW LAYERS (Fullscreen) */
 .f-up-flow-layer {
-    position: absolute; inset: 0; background: var(--f-up-bg); z-index: 3100;
-    display: none; flex-direction: column; transform: translateX(10px); opacity: 0;
+    position: fixed; inset: 0; background: var(--f-up-bg); z-index: 3100;
+    display: none; flex-direction: column; transform: translateX(20px); opacity: 0;
     transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease; pointer-events: auto;
 }
 .f-up-flow-layer.active { display: flex; transform: translateX(0); opacity: 1; }
@@ -81,11 +81,10 @@
 .f-header .left-side, .f-header .right-side { display: flex; align-items: center; gap: 16px; min-width: 60px; }
 .f-header .right-side { justify-content: flex-end; }
 .f-header .title { font-size: 18px; font-weight: 700; color: var(--f-up-text); text-align: center; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.icon-btn { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; color: var(--f-up-text); border-radius: 50%; cursor: pointer; transition: background 0.2s; }
+.icon-btn { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; color: var(--f-up-text); border-radius: 50%; cursor: pointer; }
 .icon-btn:active { background: var(--f-up-surface-alt); }
 .f-btn-primary { background: var(--f-up-accent); color: #fff; border: none; padding: 10px 24px; border-radius: 24px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
 .f-btn-primary:active { opacity: 0.8; transform: scale(0.96); }
-.f-btn-primary:disabled { background: var(--f-up-divider); color: var(--f-up-text-secondary); cursor: not-allowed; transform: none; opacity: 1; }
 
 /* VIDEO & DETAILS CONTENT AREA */
 .f-scroll-area { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: calc(40px + var(--safe-bottom)); display: flex; flex-direction: column; gap: 24px; background: var(--f-up-bg); }
@@ -97,96 +96,85 @@
 /* TRIMMER & EDIT CONTROLS */
 .f-edit-controls-strip { position: absolute; bottom: 0; left: 0; width: 100%; padding: 24px 16px calc(16px + var(--safe-bottom)); background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); display: flex; flex-direction: column; gap: 16px; pointer-events: none; }
 .f-controls-layer { display: flex; justify-content: space-between; align-items: center; pointer-events: auto; }
-.f-floating-btn { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.2); color: #fff; backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; cursor: pointer; border: 1.5px solid rgba(255,255,255,0.3); transition: background 0.2s; }
+.f-floating-btn { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.2); color: #fff; backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; cursor: pointer; border: 1.5px solid rgba(255,255,255,0.3); }
 .f-floating-btn:active { background: rgba(255,255,255,0.4); }
 
-/* CUSTOM TIMELINE TRIMMER */
 .f-trim-timeline { width: 100%; height: 56px; border-radius: 8px; background: rgba(255,255,255,0.1); position: relative; display: flex; pointer-events: auto; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.3); overflow: hidden; align-items: center; padding: 0 16px; }
 .f-trim-track-imgs { position: absolute; inset: 0; display: flex; width: 100%; height: 100%; z-index: 1; }
 .f-trim-track-imgs canvas { height: 100%; object-fit: cover; flex: 1; border-right: 1px solid rgba(255,255,255,0.1); }
-.f-trim-handle-group { position: absolute; inset: -1px; display: flex; z-index: 3; pointer-events: none; }
-.f-trim-mask { flex: 0 0 0%; background: rgba(0,0,0,0.6); pointer-events: auto; transition: flex-basis 0.1s; }
-.f-trim-playhead { width: 4px; height: 100%; background: #FFF; position: absolute; left: 0; z-index: 5; box-shadow: 0 0 6px rgba(0,0,0,0.5); border-radius: 2px; }
+.f-trim-handle-group { position: absolute; inset: -1px; display: flex; z-index: 3; pointer-events: none; width: 100%; }
 .f-trim-center-area { flex: 1; border-top: 3px solid #FFF; border-bottom: 3px solid #FFF; pointer-events: auto; display: flex; justify-content: space-between; }
 .f-trim-handle { width: 16px; height: calc(100% + 6px); background: #FFF; border-radius: 4px; position: relative; top: -3px; display: flex; align-items: center; justify-content: center; pointer-events: auto; margin: 0 -8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
 .f-trim-handle::after { content: ''; width: 2px; height: 12px; background: #606060; border-radius: 1px; }
 
 /* IN-APP CAMERA FOR SHORTS */
-.f-camera-container { width: 100%; flex: 1; position: relative; background: #000; overflow: hidden; border-radius: 24px 24px 0 0; }
-.f-camera-video { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.f-camera-container { width: 100%; flex: 1; position: relative; background: #000; overflow: hidden; }
+.f-camera-video { width: 100%; height: 100%; object-fit: cover; }
 .f-cam-overlay-top { position: absolute; top: 0; left: 0; width: 100%; padding: 16px; display: flex; justify-content: space-between; z-index: 2; pointer-events: auto; background: linear-gradient(rgba(0,0,0,0.5), transparent); }
 .f-cam-overlay-right { position: absolute; top: 80px; right: 16px; display: flex; flex-direction: column; gap: 16px; z-index: 2; pointer-events: auto; }
-.f-cam-tool-btn { background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); border: none; color: #FFF; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; position: relative; }
+.f-cam-tool-btn { background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); border: none; color: #FFF; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .f-cam-tool-btn.active { color: #f9d342; background: rgba(255,255,255,0.2); }
 .f-cam-overlay-bottom { position: absolute; bottom: 0; left: 0; width: 100%; padding: 24px 16px calc(16px + var(--safe-bottom)); display: flex; justify-content: center; align-items: center; z-index: 2; pointer-events: auto; background: linear-gradient(transparent, rgba(0,0,0,0.6)); gap: 40px; }
 .f-cam-record-group { display: flex; flex-direction: column; align-items: center; position: relative; }
 .f-cam-progress-ring { width: 88px; height: 88px; border-radius: 50%; position: absolute; inset: -8px; border: 4px solid rgba(255,255,255,0.3); z-index: 0; pointer-events: none; }
-.f-cam-progress-active { border-color: transparent; border-top-color: var(--f-up-danger); border-right-color: var(--f-up-danger); transition: transform 0.1s linear; }
-.f-cam-btn-record { width: 72px; height: 72px; border-radius: 50%; background: var(--f-up-danger); border: 4px solid #fff; cursor: pointer; z-index: 1; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: center; }
+.f-cam-progress-active { border-color: transparent; border-top-color: var(--f-up-danger); border-right-color: var(--f-up-danger); }
+.f-cam-btn-record { width: 72px; height: 72px; border-radius: 50%; background: var(--f-up-danger); border: 4px solid #fff; cursor: pointer; z-index: 1; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 .f-cam-btn-record.recording { transform: scale(0.65); border-radius: 12px; }
 .f-cam-secondary { color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; gap: 4px; font-weight: 500; text-transform: uppercase; cursor: pointer; padding: 10px; width: 64px; }
-.f-cam-timer { position: absolute; inset: 0; background: rgba(0,0,0,0.7); color: #fff; font-size: 96px; font-weight: 800; display: flex; justify-content: center; align-items: center; z-index: 10; display: none; }
 
 /* FORMS AND DETAILS (Material 3 Style) */
 .f-form-section { display: flex; flex-direction: column; gap: 20px; }
-.f-input-wrap { display: flex; flex-direction: column; position: relative; background: var(--f-up-bg); border: 1.5px solid var(--f-up-divider); border-radius: 16px; transition: border-color 0.2s, background 0.2s; overflow: hidden; padding: 8px 16px; }
-.f-input-wrap.focus-ring { border-color: var(--f-up-accent); background: var(--f-up-surface); }
-.f-input-wrap.f-error { border-color: var(--f-up-danger); }
+.f-input-wrap { display: flex; flex-direction: column; position: relative; background: var(--f-up-bg); border: 1.5px solid var(--f-up-divider); border-radius: 16px; padding: 8px 16px; }
 .f-label { font-size: 12px; font-weight: 600; color: var(--f-up-text-secondary); margin-bottom: 2px; }
-.f-field { width: 100%; border: none; background: transparent; color: var(--f-up-text); font-family: inherit; font-size: 15px; font-weight: 500; outline: none; padding: 4px 0; resize: none; line-height: 1.4; }
-.f-field::placeholder { color: #A0A0A0; font-weight: 400; }
+.f-field { width: 100%; border: none; background: transparent; color: var(--f-up-text); font-family: inherit; font-size: 15px; font-weight: 500; outline: none; padding: 4px 0; resize: none; }
 .f-field-count { font-size: 11px; color: var(--f-up-text-secondary); align-self: flex-end; margin-top: 4px; }
-.f-input-wrap select { appearance: none; -webkit-appearance: none; cursor: pointer; }
 
-/* METADATA PICKERS */
 .f-media-metadata-box { display: flex; gap: 16px; margin-bottom: 8px; }
-.f-thumb-selector { width: 120px; height: 180px; border-radius: 12px; background: var(--f-up-surface-alt); border: 2px dashed var(--f-up-divider); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; cursor: pointer; overflow: hidden; color: var(--f-up-text-secondary); }
+.f-thumb-selector { width: 120px; height: 160px; border-radius: 12px; background: var(--f-up-surface-alt); border: 2px dashed var(--f-up-divider); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; cursor: pointer; overflow: hidden; color: var(--f-up-text-secondary); }
 .f-thumb-selector img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
 .f-thumb-selector .action-cap { z-index: 2; position: absolute; bottom: 0; left: 0; right: 0; padding: 6px; background: rgba(0,0,0,0.6); color: #fff; font-size: 11px; font-weight: 600; text-align: center; }
 .f-publish-desc { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-.f-publish-title-h { font-size: 18px; font-weight: 700; color: var(--f-up-text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; margin-bottom: 8px; }
+.f-publish-title-h { font-size: 16px; font-weight: 700; color: var(--f-up-text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; margin-bottom: 8px; }
 
-/* POST REUSE PROTECTED STYLING */
-.f-post-trigger-area { width: 100%; aspect-ratio: 4/5; background: var(--f-up-surface-alt); border-radius: 16px; border: 1.5px dashed var(--f-up-divider); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--f-up-text-secondary); overflow: hidden; position: relative; }
+.f-post-trigger-area { width: 100%; aspect-ratio: 4/5; background: var(--f-up-surface-alt); border-radius: 16px; border: 1.5px dashed var(--f-up-divider); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--f-up-text-secondary); overflow: hidden; position: relative; cursor: pointer; }
 .f-post-trigger-area img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; display: none; }
 
-/* SYSTEM ENGINE / NOTIFICATIONS */
+/* FLOATING ENGINE NOTIFICATION */
 .f-engine-modal { position: fixed; bottom: 24px; left: 16px; right: 16px; background: #1C1C1E; color: #FFF; border-radius: 16px; padding: 16px 20px; z-index: 9000; box-shadow: 0 10px 40px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 16px; transform: translateY(150%); transition: transform 0.4s cubic-bezier(0.2,0.8,0.2,1); }
 .f-engine-modal.show { transform: translateY(0); }
-.f-engine-icon { border: 2.5px solid transparent; border-top-color: var(--f-up-accent); border-right-color: var(--f-up-accent); width: 32px; height: 32px; border-radius: 50%; animation: f-spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; flex-shrink: 0; }
+.f-engine-icon { border: 2.5px solid transparent; border-top-color: var(--f-up-accent); border-right-color: var(--f-up-accent); width: 32px; height: 32px; border-radius: 50%; animation: f-spin 1s linear infinite; flex-shrink: 0; }
 .f-engine-content { flex: 1; }
 .f-engine-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
 .f-engine-subtitle { font-size: 12px; color: #AAAAAA; }
 
 @keyframes f-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-.f-hidden-input { display: none; }
+.f-hidden-input { display: none !important; }
 </style>
 
 <!-- MAIN STUDIO ROOT -->
 <div class="page-upload-root" id="f-upload-system-root">
     
     <!-- SYSTEM SELECTOR SHEET -->
-    <div class="f-up-backdrop" id="f-sheet-backdrop">
+    <div class="f-up-backdrop" id="f-sheet-backdrop" onclick="if(event.target.id === 'f-sheet-backdrop') UploadEngineUI.closeAllLayers()">
         <div class="f-up-sheet" id="f-selector-sheet">
             <div class="f-up-drag-handle"></div>
             <div class="f-up-sheet-head">
                 <div class="f-up-sheet-title">Create</div>
-                <div class="f-up-sheet-close" id="f-btn-close-sheet"><span class="material-symbols-outlined">close</span></div>
+                <div class="f-up-sheet-close" onclick="UploadEngineUI.closeAllLayers()"><span class="material-symbols-outlined">close</span></div>
             </div>
             
             <div class="f-up-options-row">
-                <!-- Video Native Trigger mapped securely -->
+                <!-- Video Native Trigger -->
                 <div class="f-up-option-card active-state" id="f-card-video" onclick="document.getElementById('f-native-vid-picker').click()">
-                    <div class="f-icon-circle"><span class="material-symbols-outlined" style="font-size:28px;">upload_file</span></div>
+                    <div class="f-icon-circle"><span class="material-symbols-outlined">upload_file</span></div>
                     <div class="f-label">Video</div>
                 </div>
-                <!-- Camera Flow trigger -->
+                <!-- Camera Flow Trigger -->
                 <div class="f-up-option-card" id="f-card-short" onclick="UploadEngineUI.openShortCamera()">
                     <div class="f-icon-circle" style="background:#FFE6E6;color:#CC0000;"><span class="material-symbols-outlined">app_shortcut</span></div>
                     <div class="f-label">Short</div>
                 </div>
-                <!-- Existing Post Trigger securely mapping via HTML -->
+                <!-- Post Flow Trigger -->
                 <div class="f-up-option-card" id="f-card-post" onclick="UploadEngineUI.openPostSystem()">
                     <div class="f-icon-circle" style="background:#E6F0FF;color:#0556F3;"><span class="material-symbols-outlined">edit_square</span></div>
                     <div class="f-label">Post</div>
@@ -210,24 +198,19 @@
         <div class="f-workspace" id="f-vid-workspace">
             <video id="f-video-element" playsinline></video>
             
-            <!-- Real Editor Interaction Controls -->
             <div class="f-edit-controls-strip">
                 <div class="f-controls-layer" style="padding-bottom:12px;">
-                    <div class="f-floating-btn" id="f-vid-play-pause"><span class="material-symbols-outlined">play_arrow</span></div>
-                    <div class="f-floating-btn"><span class="material-symbols-outlined" onclick="UploadEngineUI.applyNextFilter()">magic_button</span></div>
-                    <div class="f-floating-btn"><span class="material-symbols-outlined" onclick="UploadEngineUI.toggleVolume()">volume_up</span></div>
+                    <div class="f-floating-btn" id="f-vid-play-pause" onclick="UploadEngineUI.toggleVideoPlay()"><span class="material-symbols-outlined">play_arrow</span></div>
+                    <div class="f-floating-btn" onclick="UploadEngineUI.applyNextFilter()"><span class="material-symbols-outlined">magic_button</span></div>
+                    <div class="f-floating-btn" onclick="UploadEngineUI.toggleVolume()"><span class="material-symbols-outlined">volume_up</span></div>
                 </div>
-                <!-- Interactive Thumbnail Strip / Trimmer bounds logic for native or pure CSS offset -->
                 <div class="f-trim-timeline" id="f-timeline-track">
                     <div class="f-trim-track-imgs" id="f-canvas-frames"></div>
                     <div class="f-trim-handle-group">
-                        <div class="f-trim-mask" id="f-mask-start"></div>
                         <div class="f-trim-center-area">
                             <div class="f-trim-handle"></div>
                             <div class="f-trim-handle"></div>
                         </div>
-                        <div class="f-trim-mask" id="f-mask-end" style="flex: 0 0 0%;"></div>
-                        <div class="f-trim-playhead" id="f-playhead-indicator"></div>
                     </div>
                 </div>
             </div>
@@ -245,14 +228,14 @@
             <div class="f-media-metadata-box">
                 <div class="f-thumb-selector" onclick="document.getElementById('f-native-thumb').click()">
                     <span class="material-symbols-outlined" style="font-size:32px;margin-bottom:8px;">photo_library</span>
-                    <span style="font-size:12px;font-weight:600;">Custom Thumbnail</span>
+                    <span style="font-size:11px;font-weight:600;">Thumbnail</span>
                     <img id="f-detail-thumb-preview" src="">
                     <div class="action-cap" id="f-thumb-duration">0:00</div>
                     <input type="file" id="f-native-thumb" class="f-hidden-input" accept="image/*" onchange="UploadEngineUI.setCustomThumb(event)">
                 </div>
                 <div class="f-publish-desc">
-                    <div class="f-publish-title-h" id="f-video-details-filename">Video Metadata Loading...</div>
-                    <div style="font-size:12px;color:var(--f-up-text-secondary);"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:bottom;margin-right:4px;">done_all</span> Video Processing Complete</div>
+                    <div class="f-publish-title-h" id="f-video-details-filename">Video Selected</div>
+                    <div style="font-size:12px;color:var(--f-up-text-secondary);"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:bottom;margin-right:4px;">check_circle</span> Ready to Publish</div>
                 </div>
             </div>
             
@@ -292,11 +275,10 @@
         </div>
     </div>
 
-    <!-- WEB RTC NATIVE IN-APP CAMERA ENGINE (SHORTS) -->
+    <!-- WEBRTC CAMERA ENGINE (SHORTS) -->
     <div class="f-up-flow-layer" id="flow-layer-short-camera">
         <div class="f-camera-container">
             <video id="f-camera-feed" class="f-camera-video" autoplay muted playsinline></video>
-            <div class="f-cam-timer" id="f-camera-timer-display">3</div>
             
             <div class="f-cam-overlay-top">
                 <div class="f-cam-tool-btn" onclick="UploadEngineUI.closeAllLayers()"><span class="material-symbols-outlined">close</span></div>
@@ -308,8 +290,7 @@
             <div class="f-cam-overlay-right">
                 <div class="f-cam-tool-btn" onclick="CameraStudio.flipCamera()"><span class="material-symbols-outlined">flip_camera_ios</span></div>
                 <div class="f-cam-tool-btn" id="f-cam-flash" onclick="CameraStudio.toggleFlash()"><span class="material-symbols-outlined">bolt</span></div>
-                <div class="f-cam-tool-btn" id="f-cam-time-sel" onclick="CameraStudio.toggleTimer()"><span class="material-symbols-outlined">timer</span></div>
-                <div class="f-cam-tool-btn"><span class="material-symbols-outlined" onclick="UploadEngineUI.applyNextFilterCamera()">magic_button</span></div>
+                <div class="f-cam-tool-btn" onclick="UploadEngineUI.applyNextFilterCamera()"><span class="material-symbols-outlined">magic_button</span></div>
             </div>
             
             <div class="f-cam-overlay-bottom">
@@ -366,7 +347,7 @@
         </div>
     </div>
 
-    <!-- REUSED EXISTING POST SYSTEM HOUSING -->
+    <!-- POST SYSTEM LAYER -->
     <div class="f-up-flow-layer" id="flow-layer-post">
         <div class="f-header">
             <div class="left-side"><div class="icon-btn" onclick="UploadEngineUI.closeAllLayers()"><span class="material-symbols-outlined">close</span></div></div>
@@ -374,7 +355,6 @@
             <div class="right-side"><button class="f-btn-primary" id="f-post-publish-btn" onclick="UploadManager.triggerPublish('post')">Post</button></div>
         </div>
         <div class="f-scroll-area">
-            <!-- Protected structure linked back directly to standard processing inside app.js -->
             <div class="f-post-trigger-area" onclick="document.getElementById('f-post-file-inp').click()">
                 <span class="material-symbols-outlined" style="font-size:40px;">add_photo_alternate</span>
                 <span style="font-weight:600;font-size:14px;">Select Image (3:4 ratio)</span>
@@ -396,8 +376,3 @@
         </div>
     </div>
 </div>
-
-<script>
-// Logic strictly bridges cleanly back into the main robust architectures inside app.js 
-// ensuring safe initialization decoupled from heavy layout rendering execution issues in Webviews.
-</script>

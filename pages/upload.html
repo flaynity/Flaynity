@@ -1,354 +1,354 @@
+<!-- pages/upload.html-App Code <!DOCTYPE html> দিবানা <style> থেকে শুরু হবে -->
 <style>
-/* FLAYNITY M3 PREMIUM UPLOAD STUDIO STYLES */
-:root {
-    --f-up-bg: #FFFFFF;
-    --f-up-surface: #FAFAFA;
-    --f-up-surface-alt: #F4F4F4;
-    --f-up-text: #0F0F0F;
-    --f-up-text-secondary: #606060;
-    --f-up-divider: #E5E5E5;
-    --f-up-accent: #0556F3;
-    --f-up-danger: #CC0000;
-    --safe-top: max(var(--safe-area-top), 24px);
-    --safe-bottom: max(var(--safe-area-bottom), 16px);
-}
-
-.page-upload-root * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
+/* UPLOAD COMPONENT STYLES */
 .page-upload-root {
     width: 100%;
     height: 100%;
     position: relative;
     z-index: 3000;
+}
+
+/* Backdrop for bottom sheet */
+.upload-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+.upload-backdrop.active { opacity: 1; }
+
+/* Bottom Sheet */
+.upload-bottom-sheet {
+    background: var(--flaynity-surface);
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 24px 16px max(24px, var(--safe-area-bottom));
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+}
+.upload-bottom-sheet.active { transform: translateY(0); }
+
+.upload-sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+.upload-sheet-title { font-size: 20px; font-weight: 700; color: var(--flaynity-text); }
+.upload-sheet-close {
+    background: var(--flaynity-skeleton);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--flaynity-text);
+}
+
+.upload-options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+.upload-option-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 8px;
+    background: var(--flaynity-bg);
+    border: 1px solid var(--flaynity-divider);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.upload-option-card:active { background: var(--flaynity-skeleton); }
+.upload-option-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--flaynity-skeleton);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--flaynity-text);
+}
+.upload-option-icon .material-symbols-outlined { font-size: 28px; font-variation-settings: 'FILL' 1; }
+.upload-option-label { font-size: 14px; font-weight: 600; color: var(--flaynity-text); }
+
+/* Full Screen Flow Layers (Video, Short, Post) */
+.upload-flow-layer {
+    position: absolute;
+    inset: 0;
+    background: var(--flaynity-bg);
+    z-index: 3100;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.upload-flow-layer.active { transform: translateY(0); }
+
+/* Common Flow Top Bar */
+.flow-top-bar {
+    height: var(--top-bar-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    padding-top: var(--safe-area-top);
+    border-bottom: 1px solid var(--flaynity-divider);
+    background: var(--flaynity-surface);
+}
+.flow-top-bar .title { font-size: 18px; font-weight: 700; color: var(--flaynity-text); }
+.flow-btn-primary {
+    background: var(--flaynity-text);
+    color: var(--flaynity-bg);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+}
+.flow-btn-primary:disabled { opacity: 0.5; }
+
+/* Upload Forms & Editors */
+.upload-form-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    padding-bottom: calc(16px + var(--safe-area-bottom));
+}
+.form-group { margin-bottom: 24px; }
+.form-label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--flaynity-text); }
+.form-input, .form-textarea, .form-select {
+    width: 100%;
+    background: var(--flaynity-skeleton);
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 15px;
+    color: var(--flaynity-text);
     font-family: inherit;
-    background: transparent;
+    transition: border 0.2s;
+}
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+    border-color: var(--flaynity-text);
+    outline: none;
+}
+.form-textarea { resize: none; min-height: 120px; }
+
+/* Video Preview Box */
+.video-preview-box {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.video-preview-box video { width: 100%; height: 100%; object-fit: contain; }
+
+/* Short Camera UI Simulator */
+.short-camera-view {
+    flex: 1;
+    background: #000;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+.camera-preview { width: 100%; height: 100%; object-fit: cover; }
+.camera-controls-overlay {
+    position: absolute;
+    inset: 0;
     pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px 16px max(32px, var(--safe-area-bottom));
 }
+.camera-top-actions { display: flex; justify-content: space-between; align-items: flex-start; pointer-events: auto; }
+.camera-side-tools { display: flex; flex-direction: column; gap: 16px; }
+.cam-tool { background: rgba(0,0,0,0.5); color: #fff; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.camera-bottom-actions { display: flex; justify-content: center; align-items: center; gap: 32px; pointer-events: auto; }
+.cam-record-btn { width: 72px; height: 72px; border-radius: 50%; border: 4px solid #fff; background: var(--flaynity-accent); transition: transform 0.2s; }
+.cam-record-btn:active { transform: scale(0.9); }
 
-/* MODAL BACKDROP (Shared Bottom Sheet) */
-.f-up-backdrop {
-    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-    opacity: 0; visibility: hidden; transition: opacity 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.3s;
-    display: flex; flex-direction: column; justify-content: flex-end;
-    pointer-events: auto; z-index: 3050;
+/* Post Image Grid Maker */
+.post-image-picker-box {
+    width: 100%; aspect-ratio: 3/4; background: var(--flaynity-skeleton); border-radius: 12px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--flaynity-text-secondary);
+    border: 2px dashed var(--flaynity-divider); cursor: pointer; margin-bottom: 16px; overflow: hidden; position: relative;
 }
-.f-up-backdrop.active { opacity: 1; visibility: visible; }
+.post-image-picker-box img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1; }
 
-/* BOTTOM SHEET: CREATE CONTENT */
-.f-up-sheet {
-    background: var(--f-up-bg); width: 100%;
-    border-radius: 28px 28px 0 0; padding: 20px 24px calc(24px + var(--safe-bottom));
-    transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-    box-shadow: 0 -4px 30px rgba(0,0,0,0.15); position: relative; pointer-events: auto;
-}
-.f-up-backdrop.active .f-up-sheet { transform: translateY(0); }
-.f-up-drag-handle { width: 40px; height: 4px; border-radius: 2px; background: #DBDBDB; margin: 0 auto 20px; }
-.f-up-sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-.f-up-sheet-title { font-size: 22px; font-weight: 700; color: var(--f-up-text); }
-.f-up-sheet-close { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: var(--f-up-surface-alt); border-radius: 50%; color: var(--f-up-text); cursor: pointer; }
-.f-up-sheet-close:active { background: #E5E5E5; }
-
-/* CREATION OPTIONS ROW */
-.f-up-options-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.f-up-option-card {
+/* Upload Progress Engine Overlay */
+.upload-progress-overlay {
+    position: absolute; inset: 0; background: var(--flaynity-surface); z-index: 4000;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: var(--f-up-bg); padding: 20px 12px; gap: 12px;
-    border: 1px solid var(--f-up-divider); border-radius: 20px;
-    cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+    text-align: center; padding: 32px;
 }
-.f-up-option-card:active { background: var(--f-up-surface-alt); transform: scale(0.97); }
-.f-up-icon-circle { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--f-up-surface-alt); color: var(--f-up-text); }
-.f-up-option-card .material-symbols-outlined { font-size: 30px; font-variation-settings: 'FILL' 1; }
-.f-up-label { font-size: 14px; font-weight: 600; color: var(--f-up-text); }
-
-/* FLOW LAYERS (Fullscreen) */
-.f-up-flow-layer {
-    position: fixed; inset: 0; background: var(--f-up-bg); z-index: 3100;
-    display: none; flex-direction: column; transform: translateX(20px); opacity: 0;
-    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease; pointer-events: auto;
-}
-.f-up-flow-layer.active { display: flex; transform: translateX(0); opacity: 1; }
-
-/* STANDARD HEADER */
-.f-header {
-    height: calc(56px + var(--safe-top)); padding: var(--safe-top) 16px 0;
-    display: flex; align-items: center; justify-content: space-between;
-    background: var(--f-up-bg); border-bottom: 1px solid var(--f-up-divider);
-    flex-shrink: 0;
-}
-.f-header .left-side, .f-header .right-side { display: flex; align-items: center; gap: 16px; min-width: 60px; }
-.f-header .right-side { justify-content: flex-end; }
-.f-header .title { font-size: 18px; font-weight: 700; color: var(--f-up-text); text-align: center; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.icon-btn { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; color: var(--f-up-text); border-radius: 50%; cursor: pointer; }
-.icon-btn:active { background: var(--f-up-surface-alt); }
-.f-btn-primary { background: var(--f-up-accent); color: #fff; border: none; padding: 10px 24px; border-radius: 24px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-.f-btn-primary:active { opacity: 0.8; transform: scale(0.96); }
-
-/* VIDEO & DETAILS CONTENT AREA */
-.f-scroll-area { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: calc(40px + var(--safe-bottom)); display: flex; flex-direction: column; gap: 24px; background: var(--f-up-bg); }
-
-/* PREVIEW WORKSPACE */
-.f-workspace { position: relative; width: 100%; flex: 1; background: #000; display: flex; flex-direction: column; overflow: hidden; justify-content: center; align-items: center; }
-.f-workspace video { max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; }
-
-/* EDIT CONTROLS */
-.f-edit-controls-strip { position: absolute; bottom: 0; left: 0; width: 100%; padding: 24px 16px calc(16px + var(--safe-bottom)); background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); display: flex; flex-direction: column; gap: 16px; pointer-events: none; }
-.f-controls-layer { display: flex; justify-content: space-between; align-items: center; pointer-events: auto; }
-.f-floating-btn { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.25); color: #fff; backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; cursor: pointer; border: 1.5px solid rgba(255,255,255,0.4); }
-.f-floating-btn:active { background: rgba(255,255,255,0.5); }
-
-/* CAMERA (SHORTS) */
-.f-camera-container { width: 100%; flex: 1; position: relative; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-.f-camera-video { width: 100%; height: 100%; object-fit: cover; }
-.f-cam-overlay-top { position: absolute; top: 0; left: 0; width: 100%; padding: var(--safe-top) 16px 16px; display: flex; justify-content: space-between; z-index: 10; pointer-events: auto; background: linear-gradient(rgba(0,0,0,0.6), transparent); }
-.f-cam-overlay-right { position: absolute; top: calc(var(--safe-top) + 60px); right: 16px; display: flex; flex-direction: column; gap: 16px; z-index: 10; pointer-events: auto; }
-.f-cam-tool-btn { background: rgba(0,0,0,0.45); backdrop-filter: blur(8px); border: none; color: #FFF; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.f-cam-tool-btn.active { color: #f9d342; background: rgba(255,255,255,0.3); }
-.f-cam-overlay-bottom { position: absolute; bottom: 0; left: 0; width: 100%; padding: 24px 16px calc(16px + var(--safe-bottom)); display: flex; justify-content: space-between; align-items: center; z-index: 10; pointer-events: auto; background: linear-gradient(transparent, rgba(0,0,0,0.7)); }
-.f-cam-record-group { display: flex; flex-direction: column; align-items: center; position: relative; margin: 0 auto; }
-.f-cam-progress-ring { width: 88px; height: 88px; border-radius: 50%; position: absolute; inset: -8px; border: 4px solid rgba(255,255,255,0.3); z-index: 0; pointer-events: none; }
-.f-cam-progress-active { border-color: transparent; border-top-color: var(--f-up-danger); border-right-color: var(--f-up-danger); animation: f-spin 1s linear infinite; }
-.f-cam-btn-record { width: 72px; height: 72px; border-radius: 50%; background: var(--f-up-danger); border: 4px solid #fff; cursor: pointer; z-index: 1; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-.f-cam-btn-record.recording { transform: scale(0.65); border-radius: 12px; }
-.f-cam-secondary { color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; gap: 4px; font-weight: 600; text-transform: uppercase; cursor: pointer; padding: 10px; width: 64px; }
-
-/* FORMS AND DETAILS */
-.f-form-section { display: flex; flex-direction: column; gap: 18px; }
-.f-input-wrap { display: flex; flex-direction: column; position: relative; background: var(--f-up-bg); border: 1.5px solid var(--f-up-divider); border-radius: 16px; padding: 10px 16px; }
-.f-label { font-size: 12px; font-weight: 600; color: var(--f-up-text-secondary); margin-bottom: 4px; }
-.f-field { width: 100%; border: none; background: transparent; color: var(--f-up-text); font-family: inherit; font-size: 15px; font-weight: 500; outline: none; padding: 2px 0; resize: none; }
-.f-field-count { font-size: 11px; color: var(--f-up-text-secondary); align-self: flex-end; margin-top: 4px; }
-
-.f-media-metadata-box { display: flex; gap: 16px; margin-bottom: 8px; align-items: center; }
-.f-thumb-selector { width: 110px; height: 150px; border-radius: 12px; background: #000; border: 1.5px dashed var(--f-up-divider); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; cursor: pointer; overflow: hidden; color: #fff; flex-shrink: 0; }
-.f-thumb-selector img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
-.f-thumb-selector .action-cap { z-index: 2; position: absolute; bottom: 0; left: 0; right: 0; padding: 4px; background: rgba(0,0,0,0.65); color: #fff; font-size: 10px; font-weight: 700; text-align: center; }
-.f-publish-desc { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-.f-publish-title-h { font-size: 16px; font-weight: 700; color: var(--f-up-text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; margin-bottom: 6px; }
-
-.f-post-trigger-area { width: 100%; aspect-ratio: 4/5; background: var(--f-up-surface-alt); border-radius: 16px; border: 1.5px dashed var(--f-up-divider); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--f-up-text-secondary); overflow: hidden; position: relative; cursor: pointer; }
-.f-post-trigger-area img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; display: none; }
-
-/* FLOATING ENGINE NOTIFICATION */
-.f-engine-modal { position: fixed; bottom: 24px; left: 16px; right: 16px; background: #1C1C1E; color: #FFF; border-radius: 16px; padding: 16px 20px; z-index: 9999; box-shadow: 0 10px 40px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 16px; transform: translateY(150%); transition: transform 0.4s cubic-bezier(0.2,0.8,0.2,1); }
-.f-engine-modal.show { transform: translateY(0); }
-.f-engine-icon { border: 2.5px solid transparent; border-top-color: var(--f-up-accent); border-right-color: var(--f-up-accent); width: 32px; height: 32px; border-radius: 50%; animation: f-spin 1s linear infinite; flex-shrink: 0; }
-.f-engine-content { flex: 1; }
-.f-engine-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
-.f-engine-subtitle { font-size: 12px; color: #AAAAAA; }
-
-@keyframes f-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-.f-hidden-input { display: none !important; }
+.progress-ring { width: 80px; height: 80px; border-radius: 50%; border: 4px solid var(--flaynity-skeleton); border-top-color: var(--flaynity-accent); animation: spin 1s linear infinite; margin-bottom: 24px; }
+.progress-text { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.progress-subtext { font-size: 14px; color: var(--flaynity-text-secondary); }
 </style>
 
-<!-- MAIN STUDIO ROOT -->
-<div class="page-upload-root" id="f-upload-system-root">
+<div class="page-upload-root" id="upload-root">
     
-    <!-- SYSTEM SELECTOR SHEET -->
-    <div class="f-up-backdrop" id="f-sheet-backdrop" onclick="if(event.target.id === 'f-sheet-backdrop') UploadEngineUI.closeAllLayers()">
-        <div class="f-up-sheet" id="f-selector-sheet">
-            <div class="f-up-drag-handle"></div>
-            <div class="f-up-sheet-head">
-                <div class="f-up-sheet-title">Create</div>
-                <div class="f-up-sheet-close" onclick="UploadEngineUI.closeAllLayers()"><span class="material-symbols-outlined">close</span></div>
+    <!-- Backdrop & Bottom Sheet Selection -->
+    <div class="upload-backdrop" id="upload-backdrop">
+        <div class="upload-bottom-sheet" id="upload-sheet">
+            <div class="upload-sheet-header">
+                <div class="upload-sheet-title">Create</div>
+                <div class="upload-sheet-close" id="btn-close-upload-sheet">
+                    <span class="material-symbols-outlined">close</span>
+                </div>
             </div>
             
-            <div class="f-up-options-row">
-                <div class="f-up-option-card" id="f-card-video" onclick="document.getElementById('f-native-vid-picker').click()">
-                    <div class="f-icon-circle"><span class="material-symbols-outlined">upload_file</span></div>
-                    <div class="f-label">Video</div>
+            <div class="upload-options-grid">
+                <div class="upload-option-card" id="btn-create-video">
+                    <div class="upload-option-icon"><span class="material-symbols-outlined">upload_file</span></div>
+                    <div class="upload-option-label">Video</div>
                 </div>
-                <div class="f-up-option-card" id="f-card-short" onclick="UploadEngineUI.openShortCamera()">
-                    <div class="f-icon-circle" style="background:#FFE6E6;color:#CC0000;"><span class="material-symbols-outlined">app_shortcut</span></div>
-                    <div class="f-label">Short</div>
+                <div class="upload-option-card" id="btn-create-short">
+                    <div class="upload-option-icon"><span class="material-symbols-outlined">app_shortcut</span></div>
+                    <div class="upload-option-label">Short</div>
                 </div>
-                <div class="f-up-option-card" id="f-card-post" onclick="UploadEngineUI.openPostSystem()">
-                    <div class="f-icon-circle" style="background:#E6F0FF;color:#0556F3;"><span class="material-symbols-outlined">edit_square</span></div>
-                    <div class="f-label">Post</div>
-                </div>
-            </div>
-            <input type="file" class="f-hidden-input" accept="video/*" id="f-native-vid-picker" onchange="UploadEngineUI.handleVideoSelection(event)">
-        </div>
-    </div>
-
-    <!-- PREVIEW WORKSPACE : LONG VIDEO -->
-    <div class="f-up-flow-layer" id="flow-layer-video-preview">
-        <div class="f-header" style="background:#000; border:none;">
-            <div class="left-side">
-                <div class="icon-btn" onclick="UploadEngineUI.closeAllLayers()" style="color:#FFF;"><span class="material-symbols-outlined">close</span></div>
-            </div>
-            <div class="title" style="color:#FFF; font-weight:600;">Preview Video</div>
-            <div class="right-side">
-                <button class="f-btn-primary" onclick="UploadEngineUI.goToDetails('video')" style="background:#FFF;color:#000;">Next</button>
-            </div>
-        </div>
-        <div class="f-workspace" id="f-vid-workspace">
-            <video id="f-video-element" playsinline webkit-playsinline></video>
-            
-            <div class="f-edit-controls-strip">
-                <div class="f-controls-layer">
-                    <div class="f-floating-btn" id="f-vid-play-pause" onclick="UploadEngineUI.toggleVideoPlay()"><span class="material-symbols-outlined">play_arrow</span></div>
-                    <div class="f-floating-btn" onclick="UploadEngineUI.applyNextFilter()"><span class="material-symbols-outlined">magic_button</span></div>
-                    <div class="f-floating-btn" onclick="UploadEngineUI.toggleVolume()"><span class="material-symbols-outlined">volume_up</span></div>
+                <div class="upload-option-card" id="btn-create-post">
+                    <div class="upload-option-icon"><span class="material-symbols-outlined">edit_square</span></div>
+                    <div class="upload-option-label">Post</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- DETAILS : LONG VIDEO -->
-    <div class="f-up-flow-layer" id="flow-layer-video-details">
-        <div class="f-header">
-            <div class="left-side"><div class="icon-btn" onclick="UploadEngineUI.goto('flow-layer-video-preview')"><span class="material-symbols-outlined">arrow_back</span></div></div>
-            <div class="title">Details</div>
-            <div class="right-side"><button class="f-btn-primary" id="f-vid-publish-btn" onclick="UploadManager.triggerPublish('video')">Upload</button></div>
+    <!-- Video Upload Flow -->
+    <div class="upload-flow-layer flaynity-hidden" id="flow-video">
+        <div class="flow-top-bar">
+            <span class="material-symbols-outlined" id="btn-close-video-flow" style="cursor:pointer;">arrow_back</span>
+            <div class="title">Upload Video</div>
+            <button class="flow-btn-primary" id="btn-publish-video">Publish</button>
         </div>
-        <div class="f-scroll-area">
-            <div class="f-media-metadata-box">
-                <div class="f-thumb-selector" onclick="document.getElementById('f-native-thumb').click()">
-                    <img id="f-detail-thumb-preview" src="">
-                    <div class="action-cap" id="f-thumb-duration">0:00</div>
-                    <input type="file" id="f-native-thumb" class="f-hidden-input" accept="image/*" onchange="UploadEngineUI.setCustomThumb(event)">
-                </div>
-                <div class="f-publish-desc">
-                    <div class="f-publish-title-h" id="f-video-details-filename">Video Selected</div>
-                    <div style="font-size:12px;color:var(--f-up-text-secondary);"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:bottom;margin-right:4px;">check_circle</span> Ready to Publish</div>
-                </div>
+        <div class="upload-form-scroll">
+            <div class="video-preview-box" id="video-file-picker-trigger">
+                <span class="material-symbols-outlined" style="font-size: 48px; color: var(--flaynity-text-secondary);">add_photo_alternate</span>
+                <video id="video-preview-element" class="flaynity-hidden" controls></video>
+                <input type="file" id="input-video-file" accept="video/*" class="flaynity-hidden">
             </div>
             
-            <div class="f-form-section">
-                <div class="f-input-wrap">
-                    <div class="f-label">Title (required)</div>
-                    <textarea class="f-field" id="f-inp-video-title" rows="2" placeholder="Create a title" oninput="UploadEngineUI.updateCharCount(this, 100, 'f-cnt-vt')"></textarea>
-                    <div class="f-field-count" id="f-cnt-vt">0 / 100</div>
-                </div>
-                
-                <div class="f-input-wrap">
-                    <div class="f-label">Description</div>
-                    <textarea class="f-field" id="f-inp-video-desc" rows="4" placeholder="Add a description" oninput="UploadEngineUI.updateCharCount(this, 5000, 'f-cnt-vd')"></textarea>
-                    <div class="f-field-count" id="f-cnt-vd">0 / 5000</div>
-                </div>
-                
-                <div class="f-input-wrap">
-                    <div class="f-label">Visibility</div>
-                    <select class="f-field" id="f-inp-video-vis">
-                        <option value="public">🌍 Public (Everyone can view)</option>
-                        <option value="private">🔒 Private (Only you can view)</option>
-                    </select>
-                </div>
-                
-                <div class="f-input-wrap">
-                    <div class="f-label">Category</div>
-                    <select class="f-field" id="f-inp-video-cat">
-                        <option value="Entertainment">Entertainment</option>
-                        <option value="Education">Education</option>
-                        <option value="Gaming">Gaming</option>
-                        <option value="Vlog">Vlogs</option>
-                        <option value="Music">Music</option>
-                        <option value="Tech">Technology</option>
-                    </select>
-                </div>
+            <div class="form-group">
+                <label class="form-label">Title</label>
+                <input type="text" class="form-input" id="input-video-title" placeholder="Create a title">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" id="input-video-desc" placeholder="Add a description"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Visibility</label>
+                <select class="form-select" id="input-video-visibility">
+                    <option value="public">Public</option>
+                    <option value="private">Private</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="input-video-category">
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Gaming">Gaming</option>
+                    <option value="Education">Education</option>
+                    <option value="Music">Music</option>
+                    <option value="Technology">Technology</option>
+                </select>
             </div>
         </div>
     </div>
 
-    <!-- WEBRTC CAMERA ENGINE (SHORTS) -->
-    <div class="f-up-flow-layer" id="flow-layer-short-camera">
-        <div class="f-camera-container">
-            <video id="f-camera-feed" class="f-camera-video" autoplay muted playsinline webkit-playsinline></video>
-            
-            <div class="f-cam-overlay-top">
-                <div class="f-cam-tool-btn" onclick="UploadEngineUI.closeAllLayers()"><span class="material-symbols-outlined">close</span></div>
-                <div class="f-cam-tool-btn" style="border-radius:24px; padding:0 16px; width:auto; font-size:14px; font-weight:600; gap:8px;" onclick="document.getElementById('f-native-short-picker').click()">
-                    <span class="material-symbols-outlined" style="font-size:20px;">music_note</span> Add Sound
+    <!-- Short Upload Flow (Camera Simulator & Details) -->
+    <div class="upload-flow-layer flaynity-hidden" id="flow-short">
+        <!-- Camera View -->
+        <div class="short-camera-view" id="short-camera-ui">
+            <video class="camera-preview" id="short-camera-video" autoplay muted playsinline></video>
+            <div class="camera-controls-overlay">
+                <div class="camera-top-actions">
+                    <div class="cam-tool" id="btn-close-short-flow"><span class="material-symbols-outlined">close</span></div>
+                    <div class="camera-side-tools">
+                        <div class="cam-tool"><span class="material-symbols-outlined">flip_camera_ios</span></div>
+                        <div class="cam-tool"><span class="material-symbols-outlined">speed</span></div>
+                        <div class="cam-tool"><span class="material-symbols-outlined">timer</span></div>
+                    </div>
+                </div>
+                <div class="camera-bottom-actions">
+                    <div class="cam-tool" id="btn-short-gallery"><span class="material-symbols-outlined">photo_library</span></div>
+                    <div class="cam-record-btn" id="btn-record-short"></div>
+                    <div class="cam-tool" id="btn-short-next"><span class="material-symbols-outlined">check</span></div>
                 </div>
             </div>
-            
-            <div class="f-cam-overlay-right">
-                <div class="f-cam-tool-btn" onclick="CameraStudio.flipCamera()"><span class="material-symbols-outlined">flip_camera_ios</span></div>
-                <div class="f-cam-tool-btn" id="f-cam-flash" onclick="CameraStudio.toggleFlash()"><span class="material-symbols-outlined">bolt</span></div>
-                <div class="f-cam-tool-btn" onclick="UploadEngineUI.applyNextFilterCamera()"><span class="material-symbols-outlined">magic_button</span></div>
-            </div>
-            
-            <div class="f-cam-overlay-bottom">
-                <div class="f-cam-secondary" onclick="document.getElementById('f-native-short-picker').click()">
-                    <span class="material-symbols-outlined" style="font-size:32px;">video_library</span>
-                    <span>Gallery</span>
-                    <input type="file" class="f-hidden-input" id="f-native-short-picker" accept="video/*" onchange="UploadEngineUI.handleShortGallery(event)">
-                </div>
-                
-                <div class="f-cam-record-group">
-                    <div class="f-cam-progress-ring" id="f-record-ring"></div>
-                    <div class="f-cam-btn-record" id="f-btn-record" onclick="CameraStudio.toggleRecord()"></div>
-                </div>
-                
-                <div class="f-cam-secondary" id="f-short-next-trigger" style="opacity: 0.3; pointer-events:none;" onclick="CameraStudio.finishRecording()">
-                    <span class="material-symbols-outlined" style="font-size:32px;">check_circle</span>
-                    <span>Next</span>
-                </div>
-            </div>
+            <input type="file" id="input-short-file" accept="video/*" class="flaynity-hidden">
         </div>
-    </div>
-    
-    <!-- DETAILS : SHORT -->
-    <div class="f-up-flow-layer" id="flow-layer-short-details">
-        <div class="f-header">
-            <div class="left-side"><div class="icon-btn" onclick="UploadEngineUI.goto('flow-layer-short-camera')"><span class="material-symbols-outlined">arrow_back</span></div></div>
-            <div class="title">Shorts Details</div>
-            <div class="right-side"><button class="f-btn-primary" id="f-short-publish-btn" onclick="UploadManager.triggerPublish('short')">Upload Short</button></div>
-        </div>
-        <div class="f-scroll-area">
-            <div class="f-media-metadata-box" style="justify-content:center;">
-                <div class="f-thumb-selector" onclick="document.getElementById('f-native-short-thumb').click()">
-                    <img id="f-short-detail-preview" src="">
-                    <input type="file" id="f-native-short-thumb" class="f-hidden-input" accept="image/*" onchange="UploadEngineUI.setCustomThumb(event, 'f-short-detail-preview')">
-                </div>
+        
+        <!-- Short Details View -->
+        <div class="upload-flow-layer flaynity-hidden" id="short-details-ui" style="z-index: 3101;">
+            <div class="flow-top-bar">
+                <span class="material-symbols-outlined" id="btn-back-short-details" style="cursor:pointer;">arrow_back</span>
+                <div class="title">Details</div>
+                <button class="flow-btn-primary" id="btn-publish-short">Upload Short</button>
             </div>
-            
-            <div class="f-form-section">
-                <div class="f-input-wrap">
-                    <div class="f-label">Caption your Short</div>
-                    <textarea class="f-field" id="f-inp-short-title" rows="3" placeholder="Write a caption with #hashtags..." oninput="UploadEngineUI.updateCharCount(this, 100, 'f-cnt-st')"></textarea>
-                    <div class="f-field-count" id="f-cnt-st">0 / 100</div>
+            <div class="upload-form-scroll">
+                <div class="form-group">
+                    <label class="form-label">Caption your Short</label>
+                    <textarea class="form-textarea" id="input-short-title" placeholder="Write a caption..." style="min-height: 80px;"></textarea>
                 </div>
-                
-                <div class="f-input-wrap">
-                    <div class="f-label">Visibility</div>
-                    <select class="f-field" id="f-inp-short-vis">
-                        <option value="public">🌍 Public</option>
-                        <option value="private">🔒 Private</option>
+                <div class="form-group">
+                    <label class="form-label">Visibility</label>
+                    <select class="form-select" id="input-short-visibility">
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
                     </select>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- POST SYSTEM LAYER -->
-    <div class="f-up-flow-layer" id="flow-layer-post">
-        <div class="f-header">
-            <div class="left-side"><div class="icon-btn" onclick="UploadEngineUI.closeAllLayers()"><span class="material-symbols-outlined">close</span></div></div>
+    <!-- Post Creation Flow -->
+    <div class="upload-flow-layer flaynity-hidden" id="flow-post">
+        <div class="flow-top-bar">
+            <span class="material-symbols-outlined" id="btn-close-post-flow" style="cursor:pointer;">close</span>
             <div class="title">Create Post</div>
-            <div class="right-side"><button class="f-btn-primary" id="f-post-publish-btn" onclick="UploadManager.triggerPublish('post')">Post</button></div>
+            <button class="flow-btn-primary" id="btn-publish-post">Post</button>
         </div>
-        <div class="f-scroll-area">
-            <div class="f-post-trigger-area" onclick="document.getElementById('f-post-file-inp').click()">
-                <span class="material-symbols-outlined" style="font-size:40px;">add_photo_alternate</span>
-                <span style="font-weight:600;font-size:14px;">Select Image</span>
-                <img id="f-post-image-preview">
-                <input type="file" id="f-post-file-inp" class="f-hidden-input" accept="image/*" onchange="UploadEngineUI.handlePostImage(event)">
+        <div class="upload-form-scroll">
+            <div class="post-image-picker-box" id="post-image-picker-trigger">
+                <span class="material-symbols-outlined" style="font-size: 32px; margin-bottom: 8px;">add_photo_alternate</span>
+                <span style="font-size: 13px; font-weight: 500;">Select Image (3:4 ratio)</span>
+                <img id="post-image-preview" src="" class="flaynity-hidden">
+                <input type="file" id="input-post-file" accept="image/*" class="flaynity-hidden">
             </div>
-            <div class="f-input-wrap" style="flex:1;">
-                <textarea class="f-field" id="f-post-text-area" style="height:100%; min-height:120px;" placeholder="What's on your mind?"></textarea>
+            <div class="form-group">
+                <textarea class="form-textarea" id="input-post-text" placeholder="What's on your mind?"></textarea>
             </div>
         </div>
     </div>
 
-    <!-- FLOATING ENGINE NOTIFICATION -->
-    <div class="f-engine-modal" id="f-engine-status">
-        <div class="f-engine-icon" id="f-eng-spin"></div>
-        <div class="f-engine-content">
-            <div class="f-engine-title" id="f-eng-ttl">Uploading to Cloudflare R2...</div>
-            <div class="f-engine-subtitle" id="f-eng-sub">Please wait securely</div>
-        </div>
+    <!-- Global Upload Engine Progress -->
+    <div class="upload-progress-overlay flaynity-hidden" id="upload-progress-engine">
+        <div class="progress-ring"></div>
+        <div class="progress-text">Uploading to Flaynity...</div>
+        <div class="progress-subtext" id="upload-progress-percentage">0%</div>
     </div>
+
 </div>

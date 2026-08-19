@@ -102,9 +102,7 @@ const Utils = {
     vibrate: (ms = 40) => {
         try {
             if (navigator.vibrate) navigator.vibrate(ms);
-        } catch (e) {
-            console.warn("Haptic feedback unavailable");
-        }
+        } catch (e) {}
     },
 
     secureText: (str) => {
@@ -114,46 +112,29 @@ const Utils = {
         return temp.innerHTML;
     },
 
-    generateVideoThumbnailFrames: (file, outputWidth = 640, canvasTrackId = null) => {
+    generateVideoThumbnailFrames: (file, outputWidth = 640) => {
         return new Promise((resolve) => {
             const video = document.createElement('video');
-            video.preload = 'metadata';
+            video.preload = 'auto';
             video.src = URL.createObjectURL(file);
             video.muted = true;
             video.playsInline = true;
+            video.crossOrigin = 'anonymous';
 
             let duration = 0;
 
-            video.onloadeddata = async () => {
+            video.onloadedmetadata = () => {
                 duration = video.duration || 0;
-                
-                if (canvasTrackId && duration > 0) {
-                    const track = Utils.el(canvasTrackId);
-                    if (track) {
-                        track.innerHTML = '';
-                        const frameCount = 8;
-                        for (let i = 0; i < frameCount; i++) {
-                            const seekTime = (duration / frameCount) * i;
-                            video.currentTime = seekTime;
-                            await new Promise((r) => { video.onseeked = r; });
-
-                            const canvas = document.createElement('canvas');
-                            canvas.height = 64;
-                            canvas.width = (video.videoWidth / video.videoHeight) * 64 || 64;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                            track.appendChild(canvas);
-                        }
-                    }
-                }
-
-                video.currentTime = Math.min(1, duration / 2 || 0);
+                video.currentTime = Math.min(1, duration > 1 ? 1 : duration / 2);
             };
 
             video.onseeked = () => {
                 const canvas = document.createElement('canvas');
                 canvas.width = outputWidth;
-                canvas.height = (video.videoHeight / video.videoWidth) * outputWidth || (outputWidth * 9 / 16);
+                canvas.height = (video.videoHeight && video.videoWidth) 
+                    ? (video.videoHeight / video.videoWidth) * outputWidth 
+                    : (outputWidth * 9 / 16);
+                
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
@@ -161,7 +142,7 @@ const Utils = {
                     const thumbUrl = blob ? URL.createObjectURL(blob) : '';
                     URL.revokeObjectURL(video.src);
                     resolve({ blob, dur: duration, url: thumbUrl });
-                }, 'image/jpeg', 0.85);
+                }, 'image/jpeg', 0.9);
             };
 
             video.onerror = () => {
@@ -215,9 +196,7 @@ const UI = {
 
 const onClick = (id, callback) => {
     const el = Utils.el(id);
-    if (el) {
-        el.onclick = callback;
-    }
+    if (el) el.onclick = callback;
 };
 
 // ==========================================
@@ -254,11 +233,17 @@ const Services = {
                 return reject(new Error("Cloudflare R2 Client is uninitialized."));
             }
 
+            let mimeType = fileOrBlob.type || 'application/octet-stream';
             let extension = 'mp4';
+
             if (fileOrBlob.name) {
                 extension = fileOrBlob.name.split('.').pop();
-            } else if (fileOrBlob.type) {
-                extension = fileOrBlob.type.split('/')[1] || 'bin';
+            } else if (mimeType.includes('jpeg') || mimeType.includes('jpg')) {
+                extension = 'jpg';
+            } else if (mimeType.includes('png')) {
+                extension = 'png';
+            } else if (mimeType.includes('webm')) {
+                extension = 'webm';
             }
 
             const uniqueKey = `${folderPath}/${Date.now()}_${Math.random().toString(36).substring(5)}.${extension}`;
@@ -267,7 +252,7 @@ const Services = {
                 Bucket: CONFIG.r2.bucket,
                 Key: uniqueKey,
                 Body: fileOrBlob,
-                ContentType: fileOrBlob.type || 'application/octet-stream'
+                ContentType: mimeType
             };
 
             const uploadRequest = s3Client.upload(uploadParams, { partSize: 5 * 1024 * 1024, queueSize: 1 });
@@ -281,7 +266,7 @@ const Services = {
 
             uploadRequest.send((err, data) => {
                 if (err) {
-                    console.error("Cloudflare R2 Upload Error:", err);
+                    console.error("R2 Upload Error:", err);
                     reject(err);
                 } else {
                     const finalCdnUrl = `${CONFIG.r2.publicUrl}/${uniqueKey}`;
@@ -398,7 +383,7 @@ window.handleNativeGoogleSignIn = (idToken) => {
 };
 
 // ==========================================
-// 5. HOME FEED ENGINE (6 Shorts -> 10 Videos -> 1 Post)
+// 5. HOME FEED ENGINE
 // ==========================================
 const HomeFeed = {
     init: () => {
@@ -583,9 +568,7 @@ const HomeFeed = {
 // ==========================================
 const PostReactions = {
     toggleLike: async (postId) => {
-        if (!State.user) {
-            return UI.toast("Please log in to like.");
-        }
+        if (!State.user) return UI.toast("Please log in to like.");
         Utils.vibrate();
 
         const postRef = db.ref(`posts/${postId}/likes`);
@@ -605,7 +588,7 @@ const PostReactions = {
 };
 
 // ==========================================
-// 7. CINEMA VIDEO PLAYER (CLOUDFLARE CDN)
+// 7. CINEMA VIDEO PLAYER
 // ==========================================
 const Player = {
     currentVideoData: null,
@@ -632,7 +615,7 @@ const Player = {
         }
 
         videoEl.src = videoData.cdnVideoUrl;
-        videoEl.play().catch(() => console.warn("Autoplay blocked by WebView"));
+        videoEl.play().catch(() => {});
 
         layer.classList.add('active');
         State.currentPlayingVideo = videoEl;
@@ -658,9 +641,7 @@ const Player = {
     },
 
     toggleSubscribe: async () => {
-        if (!State.user || !Player.currentVideoData) {
-            return UI.toast("Log in to subscribe.");
-        }
+        if (!State.user || !Player.currentVideoData) return UI.toast("Log in to subscribe.");
         Utils.vibrate();
         const targetChannelId = Player.currentVideoData.channelId;
         const subRef = db.ref(`subscriptions/${targetChannelId}/${State.user.uid}`);
@@ -703,7 +684,7 @@ const Player = {
 };
 
 // ==========================================
-// 8. SHORTS VERTICAL STREAM (CLOUDFLARE CDN)
+// 8. SHORTS VERTICAL STREAM
 // ==========================================
 const ShortsPlayer = {
     observer: null,
@@ -715,17 +696,14 @@ const ShortsPlayer = {
         ShortsPlayer.observer = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
                 const video = entry.target.querySelector('.short-video-element');
-                const disc = entry.target.querySelector('.music-disc-wrapper');
                 if (!video) return;
 
                 if (entry.isIntersecting) {
                     video.play().catch(() => {});
                     State.currentPlayingVideo = video;
-                    if (disc) disc.classList.add('disc-spin');
                 } else {
                     video.pause();
                     video.currentTime = 0;
-                    if (disc) disc.classList.remove('disc-spin');
                 }
             });
         }, { threshold: 0.65 });
@@ -743,7 +721,7 @@ const ShortsPlayer = {
                 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;text-align:center;padding:24px;">
                     <span class="material-symbols-outlined" style="font-size:64px;margin-bottom:12px;">app_shortcut</span>
                     <h3>No Shorts Available</h3>
-                    <p style="color:#aaa;font-size:13px;">Create and share your first 60-second video!</p>
+                    <p style="color:#aaa;font-size:13px;">Create and share your first short video!</p>
                 </div>
             `;
             return;
@@ -756,7 +734,7 @@ const ShortsPlayer = {
             card.style.cssText = `position:relative; width:100%; height:100%; scroll-snap-align:start; background:#000; overflow:hidden;`;
 
             card.innerHTML = `
-                <video class="short-video-element" src="${s.cdnVideoUrl}" loop playsinline preload="auto" style="width:100%;height:100%;object-fit:cover;"></video>
+                <video class="short-video-element" src="${s.cdnVideoUrl}" loop playsinline webkit-playsinline preload="auto" style="width:100%;height:100%;object-fit:cover;"></video>
                 <div class="short-ui-overlay" style="position:absolute; inset:0; display:flex; flex-direction:column; justify-content:space-between; padding:16px; padding-bottom:calc(70px + var(--safe-area-bottom, 16px)); pointer-events:none;">
                     <div style="height:40px;"></div>
                     <div style="display:flex; justify-content:space-between; align-items:flex-end; pointer-events:auto;">
@@ -795,17 +773,16 @@ const ShortsPlayer = {
                 if (delta < 300 && delta > 0) {
                     Utils.vibrate(60);
                     const heartIcon = card.querySelector('.like-btn .material-symbols-outlined');
-                    heartIcon.style.color = 'var(--flaynity-accent, #0556F3)';
-                    heartIcon.style.transform = 'scale(1.4)';
-                    setTimeout(() => heartIcon.style.transform = 'scale(1)', 250);
-
+                    if (heartIcon) {
+                        heartIcon.style.color = 'var(--flaynity-accent, #0556F3)';
+                        heartIcon.style.transform = 'scale(1.4)';
+                        setTimeout(() => heartIcon.style.transform = 'scale(1)', 250);
+                    }
                     db.ref(`shorts/${s.id}/likes`).transaction((count) => (count || 0) + 1);
                 } else {
                     const video = card.querySelector('video');
-                    if (video.paused) {
-                        video.play();
-                    } else {
-                        video.pause();
+                    if (video) {
+                        video.paused ? video.play() : video.pause();
                     }
                 }
                 lastTap = now;
@@ -823,16 +800,14 @@ const ShortsPlayer = {
 };
 
 // ==========================================
-// 9. PREMIUM M3 STUDIO & UPLOAD ENGINE
+// 9. PREMIUM STUDIO & UPLOAD CONTROLLER
 // ==========================================
 let studioActiveData = { type: null, sourceFile: null, finalThumbBlob: null, durationMeta: "0:00", activeFilters: 0 };
 
 const UploadEngineUI = {
     openSelectorSheet: () => {
         const container = Utils.el('page-container-upload');
-        if (container) {
-            container.style.display = 'block';
-        }
+        if (container) container.style.display = 'block';
         const root = Utils.el('f-upload-system-root');
         if (root) root.style.pointerEvents = 'auto';
 
@@ -851,13 +826,6 @@ const UploadEngineUI = {
         setTimeout(() => {
             const root = Utils.el('f-upload-system-root');
             if (root) root.style.pointerEvents = 'none';
-            const anyFlowActive = document.querySelector('.f-up-flow-layer.active');
-            if (!anyFlowActive) {
-                const container = Utils.el('page-container-upload');
-                if (container && State.currentTab !== 'upload') {
-                    // keep mounted transparently for next click
-                }
-            }
         }, 300);
 
         CameraStudio.shutdown();
@@ -900,11 +868,11 @@ const UploadEngineUI = {
         const backdrop = Utils.el('f-sheet-backdrop');
         if (backdrop) backdrop.classList.remove('active');
 
-        const metadata = await Utils.generateVideoThumbnailFrames(file, 640, 'f-canvas-frames');
+        const metadata = await Utils.generateVideoThumbnailFrames(file, 640);
         studioActiveData.finalThumbBlob = metadata.blob;
         studioActiveData.durationMeta = Utils.formatDuration(metadata.dur);
 
-        if (Utils.el('f-video-details-filename')) Utils.el('f-video-details-filename').innerText = file.name || "Upload Video";
+        if (Utils.el('f-video-details-filename')) Utils.el('f-video-details-filename').innerText = file.name || "Video Selected";
         if (Utils.el('f-thumb-duration')) Utils.el('f-thumb-duration').innerText = studioActiveData.durationMeta;
         if (metadata.url && Utils.el('f-detail-thumb-preview')) Utils.el('f-detail-thumb-preview').src = metadata.url;
 
@@ -965,7 +933,7 @@ const UploadEngineUI = {
 
     applyNextFilter: () => {
         studioActiveData.activeFilters++;
-        const filters = ['none', 'grayscale(1)', 'sepia(0.8)', 'contrast(1.5) saturate(1.5)', 'invert(0.1) hue-rotate(180deg)'];
+        const filters = ['none', 'grayscale(1)', 'sepia(0.8)', 'contrast(1.4) saturate(1.4)', 'invert(0.1)'];
         const vid = Utils.el('f-video-element');
         if (vid) vid.style.filter = filters[studioActiveData.activeFilters % filters.length];
         Utils.vibrate();
@@ -973,7 +941,7 @@ const UploadEngineUI = {
 
     applyNextFilterCamera: () => {
         studioActiveData.activeFilters++;
-        const filters = ['none', 'contrast(1.2)', 'sepia(1)', 'hue-rotate(45deg) saturate(2)', 'saturate(0.5)'];
+        const filters = ['none', 'contrast(1.2)', 'sepia(0.9)', 'saturate(1.8)', 'grayscale(0.8)'];
         const cam = Utils.el('f-camera-feed');
         if (cam) cam.style.filter = filters[studioActiveData.activeFilters % filters.length];
         Utils.vibrate();
@@ -998,9 +966,7 @@ const UploadEngineUI = {
 
     updateCharCount: (elem, max, idLabel) => {
         const len = elem.value.length;
-        if (len > max) {
-            elem.value = elem.value.substring(0, max);
-        }
+        if (len > max) elem.value = elem.value.substring(0, max);
         const label = Utils.el(idLabel);
         if (label) label.innerText = `${Math.min(len, max)} / ${max}`;
     },
@@ -1026,14 +992,14 @@ const UploadEngineUI = {
 };
 
 // ==========================================
-// 10. WEBRTC CAMERA STUDIO (SHORTS RECORDER)
+// 10. WEBRTC CAMERA STUDIO
 // ==========================================
 const CameraStudio = {
     stream: null,
     mediaRecorder: null,
     recordedChunks: [],
     recording: false,
-    faceMode: 'user',
+    faceMode: 'environment',
     flashEnabled: false,
 
     init: async () => {
@@ -1041,18 +1007,27 @@ const CameraStudio = {
             if (CameraStudio.stream) {
                 CameraStudio.stream.getTracks().forEach((t) => t.stop());
             }
-            const videoOptions = { facingMode: CameraStudio.faceMode };
-            if (CameraStudio.faceMode === 'environment') {
-                videoOptions.advanced = [{ torch: CameraStudio.flashEnabled }];
-            }
-            const stream = await navigator.mediaDevices.getUserMedia({ video: videoOptions, audio: true });
+
+            const constraints = {
+                video: {
+                    facingMode: CameraStudio.faceMode,
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
+                audio: true
+            };
+
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
             CameraStudio.stream = stream;
+            
             const feed = Utils.el('f-camera-feed');
-            if (feed) feed.srcObject = stream;
+            if (feed) {
+                feed.srcObject = stream;
+                feed.play().catch(() => {});
+            }
             return true;
         } catch (e) {
-            console.error("Camera access failed:", e);
-            UI.toast("Camera permission required.");
+            console.error("Camera Init Error:", e);
             return false;
         }
     },
@@ -1064,14 +1039,37 @@ const CameraStudio = {
     },
 
     toggleFlash: async () => {
-        CameraStudio.flashEnabled = !CameraStudio.flashEnabled;
-        Utils.vibrate();
-        const flashBtn = Utils.el('f-cam-flash');
-        if (flashBtn) flashBtn.classList.toggle('active');
-        await CameraStudio.init();
+        if (!CameraStudio.stream) return;
+        const track = CameraStudio.stream.getVideoTracks()[0];
+        if (!track) return;
+
+        try {
+            const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+            if (capabilities.torch) {
+                CameraStudio.flashEnabled = !CameraStudio.flashEnabled;
+                await track.applyConstraints({
+                    advanced: [{ torch: CameraStudio.flashEnabled }]
+                });
+                const flashBtn = Utils.el('f-cam-flash');
+                if (flashBtn) flashBtn.classList.toggle('active', CameraStudio.flashEnabled);
+                Utils.vibrate();
+            } else {
+                UI.toast("Flashlight is not supported on this lens.");
+            }
+        } catch (err) {
+            UI.toast("Flash control unavailable.");
+        }
     },
 
-    startHoldRecording: () => {
+    toggleRecord: () => {
+        if (CameraStudio.recording) {
+            CameraStudio.stopRecord();
+        } else {
+            CameraStudio.startRecord();
+        }
+    },
+
+    startRecord: () => {
         if (!CameraStudio.stream) return;
         Utils.vibrate(60);
         CameraStudio.recording = true;
@@ -1082,8 +1080,17 @@ const CameraStudio = {
         if (recBtn) recBtn.classList.add('recording');
         if (ring) ring.classList.add('f-cam-progress-active');
 
+        let mimeType = 'video/webm;codecs=vp8,opus';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = 'video/mp4';
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                mimeType = '';
+            }
+        }
+
         try {
-            CameraStudio.mediaRecorder = new MediaRecorder(CameraStudio.stream, { mimeType: 'video/mp4' });
+            const options = mimeType ? { mimeType } : {};
+            CameraStudio.mediaRecorder = new MediaRecorder(CameraStudio.stream, options);
         } catch (e) {
             CameraStudio.mediaRecorder = new MediaRecorder(CameraStudio.stream);
         }
@@ -1091,10 +1098,10 @@ const CameraStudio = {
         CameraStudio.mediaRecorder.ondataavailable = (e) => {
             if (e.data && e.data.size > 0) CameraStudio.recordedChunks.push(e.data);
         };
-        CameraStudio.mediaRecorder.start();
+        CameraStudio.mediaRecorder.start(100);
     },
 
-    stopHoldRecording: () => {
+    stopRecord: () => {
         if (!CameraStudio.recording || !CameraStudio.mediaRecorder) return;
         CameraStudio.recording = false;
         Utils.vibrate(30);
@@ -1113,7 +1120,8 @@ const CameraStudio = {
     },
 
     finishRecording: async () => {
-        const blob = new Blob(CameraStudio.recordedChunks, { type: 'video/mp4' });
+        const mimeType = CameraStudio.mediaRecorder ? CameraStudio.mediaRecorder.mimeType : 'video/mp4';
+        const blob = new Blob(CameraStudio.recordedChunks, { type: mimeType });
         studioActiveData.sourceFile = blob;
 
         const metadata = await Utils.generateVideoThumbnailFrames(blob, 320);
@@ -1132,11 +1140,12 @@ const CameraStudio = {
             const feed = Utils.el('f-camera-feed');
             if (feed) feed.srcObject = null;
         }
+        CameraStudio.recording = false;
     }
 };
 
 // ==========================================
-// 11. PUBLISHING ENGINE (R2 + REALTIME DB)
+// 11. PUBLISHING PIPELINE (R2 + REALTIME DB)
 // ==========================================
 const UploadManager = {
     toggleStatusPanel: (state, title, desc, spinning = false) => {
@@ -1152,10 +1161,7 @@ const UploadManager = {
     },
 
     triggerPublish: async (ctxMode) => {
-        if (!State.user) {
-            UI.toast("Please log in first.");
-            return;
-        }
+        if (!State.user) return UI.toast("Please log in first.");
         if (!State.channel) {
             UI.toast("Please create a channel first under 'You' tab.");
             Router.switchTab('you');
@@ -1190,25 +1196,25 @@ const UploadManager = {
         }
 
         UploadEngineUI.closeAllLayers();
-        UploadManager.toggleStatusPanel(true, "Preparing...", "Connecting to Cloudflare R2", true);
+        UploadManager.toggleStatusPanel(true, "Uploading Media...", "Uploading to Cloudflare R2", true);
 
         try {
             let r2ThumbUrl = '';
             let r2MediaUrl = '';
 
+            // STEP 1: Upload to Cloudflare R2
             if (studioActiveData.finalThumbBlob) {
-                UploadManager.toggleStatusPanel(true, "Uploading Thumbnail...", "Cloudflare Object Storage", true);
                 r2ThumbUrl = await Services.uploadResilientFile(studioActiveData.finalThumbBlob, `thumbnails/${State.user.uid}`);
             }
 
             if (studioActiveData.sourceFile) {
-                UploadManager.toggleStatusPanel(true, `Uploading ${ctxMode.toUpperCase()}...`, "Streaming chunks to R2", true);
                 r2MediaUrl = await Services.uploadResilientFile(studioActiveData.sourceFile, `${ctxMode}s/${State.user.uid}`, (pct, loaded, total) => {
                     UploadManager.toggleStatusPanel(true, `Uploading ${Math.round(pct)}%`, `${(loaded / (1024 * 1024)).toFixed(1)}MB / ${(total / (1024 * 1024)).toFixed(1)}MB`, true);
                 });
             }
 
-            UploadManager.toggleStatusPanel(true, "Saving Details...", "Syncing Firebase Database", true);
+            // STEP 2: Save Metadata in Firebase Realtime Database
+            UploadManager.toggleStatusPanel(true, "Saving Details...", "Updating Realtime Database", true);
 
             const metadataBlock = {
                 uid: State.user.uid,
@@ -1217,7 +1223,7 @@ const UploadManager = {
                 channelAvatar: State.channel.avatarUrl || '',
                 cdnVideoUrl: ctxMode === 'post' ? null : r2MediaUrl,
                 imageUrl: ctxMode === 'post' ? r2MediaUrl : null,
-                thumbnailUrl: r2ThumbUrl || r2MediaUrl,
+                thumbnailUrl: r2ThumbUrl || (ctxMode === 'post' ? r2MediaUrl : ''),
                 title: ctxMode !== 'post' ? fdTitle : null,
                 description: fdDesc || '',
                 text: fdDesc || '',
@@ -1234,8 +1240,17 @@ const UploadManager = {
             const targetRef = db.ref(`${ctxMode}s`).push();
             await targetRef.set(metadataBlock);
 
-            UploadManager.toggleStatusPanel(true, "Published Successfully! 🚀", "Visible across all feeds", false);
-            setTimeout(() => UploadManager.toggleStatusPanel(false), 3000);
+            // STEP 3: Instant Local UI Update (<2s sync)
+            const createdItem = { id: targetRef.key, ...metadataBlock, createdAt: Date.now() };
+            if (ctxMode === 'video') State.cache.videos.unshift(createdItem);
+            if (ctxMode === 'short') State.cache.shorts.unshift(createdItem);
+            if (ctxMode === 'post') State.cache.posts.unshift(createdItem);
+
+            HomeFeed.render();
+            if (ctxMode === 'short') ShortsPlayer.render();
+
+            UploadManager.toggleStatusPanel(true, "Published Successfully! 🚀", "Updated across all feeds", false);
+            setTimeout(() => UploadManager.toggleStatusPanel(false), 2500);
 
             Router.switchTab(ctxMode === 'short' ? 'shorts' : 'home');
         } catch (error) {
@@ -1445,7 +1460,7 @@ const YouPage = {
 };
 
 // ==========================================
-// 14. ROUTER & GLOBAL APP NAVIGATION
+// 14. ROUTER & GLOBAL NAVIGATION
 // ==========================================
 const Router = {
     pages: ['home', 'shorts', 'upload', 'discover', 'you'],
@@ -1605,13 +1620,9 @@ const App = {
                 throw new Error("Firebase SDK is not available.");
             }
 
-            // 1. Fetch & Mount Page Templates
             await Router.fetchPages();
-
-            // 2. Initialize Backend Services
             Services.init();
 
-            // 3. Initialize Controller Hubs
             HomeFeed.init();
             Player.init();
             ShortsPlayer.init();
@@ -1619,7 +1630,6 @@ const App = {
             YouPage.init();
             Router.bindGlobalNavigation();
 
-            // 4. Network Listeners
             window.addEventListener('offline', () => {
                 State.online = false;
                 Utils.show('flaynity-offline');
@@ -1639,9 +1649,7 @@ const App = {
                 }
             });
 
-            // 5. Auth State Initialization
             AuthSystem.init();
-
             clearTimeout(splashFailsafe);
         } catch (error) {
             clearTimeout(splashFailsafe);
@@ -1662,7 +1670,6 @@ const App = {
     },
 
     startRealtimeListeners: () => {
-        // Realtime Long Videos Listener
         Services.addListener('videos', 'videos', (snap) => {
             const data = snap.val() || {};
             State.cache.videos = Object.keys(data).map((k) => ({ id: k, ...data[k] })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -1675,7 +1682,6 @@ const App = {
             }
         });
 
-        // Realtime Shorts Listener
         Services.addListener('shorts', 'shorts', (snap) => {
             const data = snap.val() || {};
             State.cache.shorts = Object.keys(data).map((k) => ({ id: k, ...data[k] })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -1686,7 +1692,6 @@ const App = {
             }
         });
 
-        // Realtime Community Posts Listener
         Services.addListener('posts', 'posts', (snap) => {
             const data = snap.val() || {};
             State.cache.posts = Object.keys(data).map((k) => ({ id: k, ...data[k] })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));

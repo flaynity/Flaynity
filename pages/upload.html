@@ -1,40 +1,40 @@
 <style>
 /* ==========================================
-PREMIUM UPLOAD STUDIO THEME (DEEP LIGHT)
-========================================== */
+   PREMIUM UPLOAD STUDIO THEME (DEEP LIGHT)
+   ========================================== */
 :root {
---up-bg: #ffffff;
---up-surface: #f8f8f8;
---up-text: #000000;
---up-text-sec: #606060;
---up-accent: #000000;
---up-divider: #e5e5e5;
---up-radius: 24px;
---up-safe-top: max(env(safe-area-inset-top), 24px);
---up-safe-bottom: max(env(safe-area-inset-bottom), 24px);
+    --up-bg: #ffffff;
+    --up-surface: #f8f8f8;
+    --up-text: #000000;
+    --up-text-sec: #606060;
+    --up-accent: #000000;
+    --up-divider: #e5e5e5;
+    --up-radius: 24px;
+    --up-safe-top: max(env(safe-area-inset-top), 24px);
+    --up-safe-bottom: max(env(safe-area-inset-bottom), 24px);
 }
 
 .page-upload-root {
-width: 100%; height: 100%; position: absolute; z-index: 3000; top: 0; left: 0;
-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-color: var(--up-text); pointer-events: none;
+    width: 100%; height: 100%; position: absolute; z-index: 3000; top: 0; left: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--up-text); pointer-events: none;
 }
 
 /* ==========================================
-BOTTOM SHEET (DRAGGABLE CAROUSEL)
-========================================== */
+   BOTTOM SHEET (DRAGGABLE CAROUSEL)
+   ========================================== */
 .up-backdrop {
-position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
--webkit-backdrop-filter: blur(8px); opacity: 0; transition: opacity 0.3s cubic-bezier(0.2,0.8,0.2,1);
-display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none;
+    position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px); opacity: 0; transition: opacity 0.3s cubic-bezier(0.2,0.8,0.2,1);
+    display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none;
 }
 .up-backdrop.active { opacity: 1; pointer-events: auto; }
 
 .up-sheet {
-background: var(--up-bg); width: 100%; border-radius: 32px 32px 0 0;
-padding: 16px 0 calc(24px + var(--up-safe-bottom));
-transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2,0.8,0.2,1);
-box-shadow: 0 -10px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center;
+    background: var(--up-bg); width: 100%; border-radius: 32px 32px 0 0;
+    padding: 16px 0 calc(24px + var(--up-safe-bottom));
+    transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2,0.8,0.2,1);
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center;
 }
 .up-sheet.active { transform: translateY(0); }
 
@@ -44,43 +44,43 @@ box-shadow: 0 -10px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column;
 
 /* Draggable Carousel */
 .up-carousel {
-display: flex; width: 100%; overflow-x: auto; scroll-snap-type: x mandatory;
-scroll-behavior: smooth; padding: 0 calc(50vw - 60px); gap: 24px;
-scrollbar-width: none;
+    display: flex; width: 100%; overflow-x: auto; scroll-snap-type: x mandatory;
+    scroll-behavior: smooth; padding: 0 calc(50vw - 60px); gap: 24px;
+    scrollbar-width: none;
 }
 .up-carousel::-webkit-scrollbar { display: none; }
 .up-option {
-min-width: 120px; height: 120px; flex-shrink: 0; scroll-snap-align: center;
-display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
-background: var(--up-surface); border-radius: var(--up-radius); border: 2px solid transparent;
-transition: all 0.3s cubic-bezier(0.2,0.8,0.2,1); opacity: 0.5; transform: scale(0.9); cursor: pointer;
+    min-width: 120px; height: 120px; flex-shrink: 0; scroll-snap-align: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+    background: var(--up-surface); border-radius: var(--up-radius); border: 2px solid transparent;
+    transition: all 0.3s cubic-bezier(0.2,0.8,0.2,1); opacity: 0.5; transform: scale(0.9); cursor: pointer;
 }
 .up-option.selected { opacity: 1; transform: scale(1.1); border-color: var(--up-text); background: var(--up-bg); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
 .up-option .icon { font-size: 36px; font-variation-settings: 'FILL' 1; }
 .up-option .label { font-size: 15px; font-weight: 700; }
 
 .up-continue-btn {
-margin-top: 32px; background: var(--up-text); color: var(--up-bg); padding: 16px 48px;
-border-radius: 32px; font-size: 16px; font-weight: 700; border: none; cursor: pointer;
-box-shadow: 0 8px 24px rgba(0,0,0,0.2); transition: transform 0.2s;
+    margin-top: 32px; background: var(--up-text); color: var(--up-bg); padding: 16px 48px;
+    border-radius: 32px; font-size: 16px; font-weight: 700; border: none; cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2); transition: transform 0.2s;
 }
 .up-continue-btn:active { transform: scale(0.95); }
 
 /* ==========================================
-FULL SCREEN FLOW LAYERS (60FPS Transitions)
-========================================== */
+   FULL SCREEN FLOW LAYERS (60FPS Transitions)
+   ========================================== */
 .up-flow-layer {
-position: absolute; inset: 0; background: var(--up-bg); z-index: 3100;
-display: flex; flex-direction: column; transform: translateY(100%);
-transition: transform 0.4s cubic-bezier(0.2,0.8,0.2,1); pointer-events: none;
+    position: absolute; inset: 0; background: var(--up-bg); z-index: 3100;
+    display: flex; flex-direction: column; transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.2,0.8,0.2,1); pointer-events: none;
 }
 .up-flow-layer.active { transform: translateY(0); pointer-events: auto; }
 .up-flow-layer.bg-dark { background: #000000; color: #ffffff; --up-text: #ffffff; --up-surface: #1a1a1a; --up-bg: #000000; --up-divider: #333333; }
 
 .up-top-bar {
-height: calc(56px + var(--up-safe-top)); padding: var(--up-safe-top) 16px 0;
-display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-background: transparent; z-index: 10;
+    height: calc(56px + var(--up-safe-top)); padding: var(--up-safe-top) 16px 0;
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    background: transparent; z-index: 10;
 }
 .up-top-bar.bordered { border-bottom: 1px solid var(--up-divider); background: var(--up-bg); }
 .up-top-bar .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; background: rgba(0,0,0,0.05); }
@@ -92,8 +92,8 @@ background: transparent; z-index: 10;
 .up-scroll-area { flex: 1; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; padding-bottom: var(--up-safe-bottom); }
 
 /* ==========================================
-VIDEO UI: GALLERY, PREVIEW, EDIT, DETAILS
-========================================== */
+   VIDEO UI: GALLERY, PREVIEW, EDIT, DETAILS
+   ========================================== */
 .up-gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
 .up-gallery-item { aspect-ratio: 9/16; background: var(--up-surface); position: relative; overflow: hidden; cursor: pointer; }
 .up-gallery-item img, .up-gallery-item video { width: 100%; height: 100%; object-fit: cover; }
@@ -145,8 +145,8 @@ VIDEO UI: GALLERY, PREVIEW, EDIT, DETAILS
 .up-char-count { text-align: right; font-size: 12px; color: var(--up-text-sec); margin-top: 4px; }
 
 /* ==========================================
-SHORTS CAMERA UI (PROFESSIONAL)
-========================================== */
+   SHORTS CAMERA UI (PROFESSIONAL)
+   ========================================== */
 .up-camera-view { flex: 1; position: relative; background: #000; overflow: hidden; border-radius: 0 0 24px 24px; }
 .up-cam-video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); /* Mirror for front cam */ transition: filter 0.3s; }
 .up-cam-overlay { position: absolute; inset: 0; padding: var(--up-safe-top) 16px 24px; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
@@ -174,16 +174,16 @@ SHORTS CAMERA UI (PROFESSIONAL)
 .up-cam-next.show { opacity: 1; pointer-events: auto; }
 
 /* ==========================================
-POST UPLOAD (Existing style kept clean)
-========================================== */
+   POST UPLOAD (Existing style kept clean)
+   ========================================== */
 .up-post-box { padding: 16px; }
 .up-post-image-picker { width: 100%; aspect-ratio: 3/4; background: var(--up-surface); border: 2px dashed var(--up-divider); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--up-text-sec); cursor: pointer; position: relative; overflow: hidden; margin-bottom: 16px; }
 .up-post-image-picker img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1; }
 .up-post-text { width: 100%; min-height: 120px; background: var(--up-surface); border: none; border-radius: 16px; padding: 16px; font-size: 16px; color: var(--up-text); resize: none; outline: none; }
 
 /* ==========================================
-UPLOAD MANAGER & PROGRESS UI
-========================================== */
+   UPLOAD MANAGER & PROGRESS UI
+   ========================================== */
 .up-manager-overlay { position: absolute; inset: 0; background: var(--up-bg); z-index: 4000; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2,0.8,0.2,1); }
 .up-manager-overlay.active { transform: translateY(0); }
 .up-manager-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px; text-align: center; }
@@ -201,272 +201,273 @@ UPLOAD MANAGER & PROGRESS UI
 
 @keyframes upSpin { 100% { transform: rotate(405deg); } }
 </style>
+
 <div class="page-upload-root" id="upload-root">
-code
-Code
-<!-- UPLOAD BOTTOM SHEET CAROUSEL -->
-<div class="up-backdrop" id="up-backdrop">
-    <div class="up-sheet" id="up-sheet">
-        <div class="up-drag-handle"></div>
-        <div class="up-sheet-title">
-            <span>Create</span>
-            <div class="up-sheet-close" id="btn-up-close"><span class="material-symbols-outlined">close</span></div>
-        </div>
-        
-        <div class="up-carousel" id="up-carousel">
-            <div class="up-option" data-type="video">
-                <span class="material-symbols-outlined icon">upload_file</span>
-                <span class="label">Video</span>
-            </div>
-            <div class="up-option selected" data-type="short">
-                <span class="material-symbols-outlined icon">app_shortcut</span>
-                <span class="label">Short</span>
-            </div>
-            <div class="up-option" data-type="post">
-                <span class="material-symbols-outlined icon">edit_square</span>
-                <span class="label">Post</span>
-            </div>
-        </div>
-        
-        <button class="up-continue-btn" id="btn-up-continue">Continue</button>
-    </div>
-</div>
 
-<!-- NATIVE FILE PICKERS (HIDDEN) -->
-<input type="file" id="up-native-video-picker" accept="video/*" class="flaynity-hidden">
-<input type="file" id="up-native-thumb-picker" accept="image/*" class="flaynity-hidden">
-<input type="file" id="up-native-post-picker" accept="image/*" class="flaynity-hidden">
-
-<!-- ==============================================
-     VIDEO & SHORT FLOW: PREVIEW & EDIT LAYER
-     ============================================== -->
-<div class="up-flow-layer bg-dark" id="up-layer-edit">
-    <div class="up-top-bar">
-        <div class="icon-btn" id="btn-edit-back"><span class="material-symbols-outlined">arrow_back</span></div>
-        <div class="up-cam-add-sound"><span class="material-symbols-outlined">music_note</span> Add Sound</div>
-        <div class="icon-btn"><span class="material-symbols-outlined">volume_up</span></div>
-    </div>
-    
-    <div class="up-preview-container" id="up-preview-clicker">
-        <video class="up-preview-video" id="up-main-video" playsinline preload="auto" loop></video>
-        <div class="up-play-overlay"><span class="material-symbols-outlined up-play-icon" id="up-play-anim">play_arrow</span></div>
-    </div>
-
-    <div class="up-editor-tools">
-        <div class="up-trim-slider-box">
-            <span style="font-size:12px; font-weight:600; width:36px;" id="up-trim-start-time">0:00</span>
-            <div class="up-trim-track" id="up-trim-track">
-                <div class="up-trim-thumb left" id="up-trim-left"></div>
-                <div class="up-trim-progress" id="up-trim-prog"></div>
-                <div class="up-trim-thumb right" id="up-trim-right"></div>
+    <!-- UPLOAD BOTTOM SHEET CAROUSEL -->
+    <div class="up-backdrop" id="up-backdrop">
+        <div class="up-sheet" id="up-sheet">
+            <div class="up-drag-handle"></div>
+            <div class="up-sheet-title">
+                <span>Create</span>
+                <div class="up-sheet-close" id="btn-up-close"><span class="material-symbols-outlined">close</span></div>
             </div>
-            <span style="font-size:12px; font-weight:600; width:36px; text-align:right;" id="up-trim-end-time">0:00</span>
-        </div>
-        
-        <div class="up-tool-ribbon">
-            <div class="up-tool-item" id="btn-tool-filter">
-                <span class="material-symbols-outlined">auto_awesome</span>
-                <span class="label">Filters</span>
-            </div>
-            <div class="up-tool-item" id="btn-tool-speed">
-                <span class="material-symbols-outlined">speed</span>
-                <span class="label">Speed</span>
-            </div>
-            <div class="up-tool-item">
-                <span class="material-symbols-outlined">crop</span>
-                <span class="label">Crop</span>
-            </div>
-            <div class="up-tool-item">
-                <span class="material-symbols-outlined">text_fields</span>
-                <span class="label">Text</span>
-            </div>
-            <div class="up-tool-item">
-                <span class="material-symbols-outlined">mood</span>
-                <span class="label">Sticker</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="up-top-bar bordered" style="background:var(--up-surface); height: 60px; padding-top:0; border-top:1px solid var(--up-divider);">
-        <div style="flex:1"></div>
-        <button class="up-btn-primary" id="btn-edit-next" style="background:#fff; color:#000;">Next</button>
-    </div>
-
-    <!-- Filter Sub-Panel -->
-    <div class="up-sub-panel bg-dark" id="up-panel-filter">
-        <div class="up-sub-header">
-            <span>Filters</span>
-            <span class="material-symbols-outlined" id="btn-close-filter" style="cursor:pointer;">close</span>
-        </div>
-        <div class="up-filter-scroll" id="up-filter-list">
-            <!-- Injected via JS -->
-        </div>
-    </div>
-    
-    <!-- Speed Sub-Panel -->
-    <div class="up-sub-panel bg-dark" id="up-panel-speed">
-        <div class="up-sub-header">
-            <span>Speed</span>
-            <span class="material-symbols-outlined" id="btn-close-speed" style="cursor:pointer;">close</span>
-        </div>
-        <div class="up-filter-scroll" style="justify-content:space-around; padding: 16px 0;">
-            <div class="up-dur-opt speed-opt" data-val="0.5">0.5x</div>
-            <div class="up-dur-opt speed-opt active" data-val="1">1x</div>
-            <div class="up-dur-opt speed-opt" data-val="1.5">1.5x</div>
-            <div class="up-dur-opt speed-opt" data-val="2">2x</div>
-        </div>
-    </div>
-</div>
-
-<!-- ==============================================
-     SHORTS CAMERA FLOW
-     ============================================== -->
-<div class="up-flow-layer bg-dark" id="up-layer-camera">
-    <div class="up-camera-view">
-        <video class="up-cam-video" id="up-live-cam" autoplay muted playsinline></video>
-        <div class="up-cam-overlay">
-            <div class="up-cam-top-row">
-                <div class="icon-btn" id="btn-cam-close" style="color:#fff;"><span class="material-symbols-outlined">close</span></div>
-                <div class="up-cam-add-sound"><span class="material-symbols-outlined">music_note</span> Add Sound</div>
-                <div class="up-cam-tools-right">
-                    <div class="up-cam-tool" id="btn-cam-flip"><span class="material-symbols-outlined">flip_camera_ios</span><span>Flip</span></div>
-                    <div class="up-cam-tool"><span class="material-symbols-outlined">speed</span><span>Speed</span></div>
-                    <div class="up-cam-tool"><span class="material-symbols-outlined">timer</span><span>Timer</span></div>
-                    <div class="up-cam-tool"><span class="material-symbols-outlined">auto_awesome</span><span>Effects</span></div>
+            
+            <div class="up-carousel" id="up-carousel">
+                <div class="up-option" data-type="video">
+                    <span class="material-symbols-outlined icon">upload_file</span>
+                    <span class="label">Video</span>
+                </div>
+                <div class="up-option selected" data-type="short">
+                    <span class="material-symbols-outlined icon">app_shortcut</span>
+                    <span class="label">Short</span>
+                </div>
+                <div class="up-option" data-type="post">
+                    <span class="material-symbols-outlined icon">edit_square</span>
+                    <span class="label">Post</span>
                 </div>
             </div>
             
-            <div class="up-cam-bottom">
-                <div class="up-duration-selector">
-                    <div class="up-dur-opt active">15s</div>
-                    <div class="up-dur-opt">60s</div>
-                </div>
-                <div class="up-record-row">
-                    <div class="up-gallery-shortcut" id="btn-cam-gallery"><span class="material-symbols-outlined" style="color:#fff; padding:8px;">photo_library</span></div>
-                    <div class="up-record-btn-wrapper" id="up-cam-record-wrap">
-                        <div class="up-record-ring"></div>
-                        <div class="up-record-ring-progress"></div>
-                        <div class="up-record-btn" id="btn-cam-record"></div>
-                    </div>
-                    <div class="up-cam-next" id="btn-cam-next"><span class="material-symbols-outlined">check</span></div>
-                </div>
-            </div>
+            <button class="up-continue-btn" id="btn-up-continue">Continue</button>
         </div>
     </div>
-</div>
 
-<!-- ==============================================
-     DETAILS PAGE (VIDEO & SHORT)
-     ============================================== -->
-<div class="up-flow-layer" id="up-layer-details">
-    <div class="up-top-bar bordered">
-        <div class="icon-btn" id="btn-details-back"><span class="material-symbols-outlined">arrow_back</span></div>
-        <div class="title" id="up-details-title">Add Details</div>
-        <button class="up-btn-primary" id="btn-publish-final">Upload</button>
-    </div>
-    
-    <div class="up-scroll-area">
-        <div class="up-form-group">
-            <div class="up-thumb-picker" id="btn-pick-custom-thumb">
-                <img id="up-final-thumb" src="">
-                <div class="edit-badge"><span class="material-symbols-outlined" style="font-size:14px;">image</span> Edit</div>
-            </div>
+    <!-- NATIVE FILE PICKERS (HIDDEN) -->
+    <input type="file" id="up-native-video-picker" accept="video/*" class="flaynity-hidden">
+    <input type="file" id="up-native-thumb-picker" accept="image/*" class="flaynity-hidden">
+    <input type="file" id="up-native-post-picker" accept="image/*" class="flaynity-hidden">
+
+    <!-- ==============================================
+         VIDEO & SHORT FLOW: PREVIEW & EDIT LAYER
+         ============================================== -->
+    <div class="up-flow-layer bg-dark" id="up-layer-edit">
+        <div class="up-top-bar">
+            <div class="icon-btn" id="btn-edit-back"><span class="material-symbols-outlined">arrow_back</span></div>
+            <div class="up-cam-add-sound"><span class="material-symbols-outlined">music_note</span> Add Sound</div>
+            <div class="icon-btn"><span class="material-symbols-outlined">volume_up</span></div>
         </div>
         
-        <div class="up-form-group">
-            <input type="text" class="up-input-title" id="up-input-title" placeholder="Create a title" maxlength="100">
-            <div class="up-char-count"><span id="up-title-count">0</span>/100</div>
-            <textarea class="up-input-desc" id="up-input-desc" placeholder="Add description" maxlength="5000"></textarea>
+        <div class="up-preview-container" id="up-preview-clicker">
+            <video class="up-preview-video" id="up-main-video" playsinline preload="auto" loop></video>
+            <div class="up-play-overlay"><span class="material-symbols-outlined up-play-icon" id="up-play-anim">play_arrow</span></div>
         </div>
-        
-        <div class="up-form-group" style="padding: 0 20px;">
-            <div class="up-list-item">
-                <div class="up-list-left">
-                    <span class="material-symbols-outlined">visibility</span>
-                    <div>
-                        Visibility
-                        <span class="up-list-sub" id="up-vis-label">Public</span>
-                    </div>
+
+        <div class="up-editor-tools">
+            <div class="up-trim-slider-box">
+                <span style="font-size:12px; font-weight:600; width:36px;" id="up-trim-start-time">0:00</span>
+                <div class="up-trim-track" id="up-trim-track">
+                    <div class="up-trim-thumb left" id="up-trim-left"></div>
+                    <div class="up-trim-progress" id="up-trim-prog"></div>
+                    <div class="up-trim-thumb right" id="up-trim-right"></div>
                 </div>
-                <select id="up-input-vis" style="opacity:0; position:absolute; width:100%; height:48px;">
-                    <option value="public">Public</option>
-                    <option value="private">Private</option>
-                </select>
-                <span class="material-symbols-outlined">chevron_right</span>
+                <span style="font-size:12px; font-weight:600; width:36px; text-align:right;" id="up-trim-end-time">0:00</span>
             </div>
             
-            <div class="up-list-item" id="up-cat-container">
-                <div class="up-list-left">
-                    <span class="material-symbols-outlined">category</span>
-                    <div>
-                        Category
-                        <span class="up-list-sub" id="up-cat-label">Entertainment</span>
+            <div class="up-tool-ribbon">
+                <div class="up-tool-item" id="btn-tool-filter">
+                    <span class="material-symbols-outlined">auto_awesome</span>
+                    <span class="label">Filters</span>
+                </div>
+                <div class="up-tool-item" id="btn-tool-speed">
+                    <span class="material-symbols-outlined">speed</span>
+                    <span class="label">Speed</span>
+                </div>
+                <div class="up-tool-item">
+                    <span class="material-symbols-outlined">crop</span>
+                    <span class="label">Crop</span>
+                </div>
+                <div class="up-tool-item">
+                    <span class="material-symbols-outlined">text_fields</span>
+                    <span class="label">Text</span>
+                </div>
+                <div class="up-tool-item">
+                    <span class="material-symbols-outlined">mood</span>
+                    <span class="label">Sticker</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="up-top-bar bordered" style="background:var(--up-surface); height: 60px; padding-top:0; border-top:1px solid var(--up-divider);">
+            <div style="flex:1"></div>
+            <button class="up-btn-primary" id="btn-edit-next" style="background:#fff; color:#000;">Next</button>
+        </div>
+
+        <!-- Filter Sub-Panel -->
+        <div class="up-sub-panel bg-dark" id="up-panel-filter">
+            <div class="up-sub-header">
+                <span>Filters</span>
+                <span class="material-symbols-outlined" id="btn-close-filter" style="cursor:pointer;">close</span>
+            </div>
+            <div class="up-filter-scroll" id="up-filter-list">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+        
+        <!-- Speed Sub-Panel -->
+        <div class="up-sub-panel bg-dark" id="up-panel-speed">
+            <div class="up-sub-header">
+                <span>Speed</span>
+                <span class="material-symbols-outlined" id="btn-close-speed" style="cursor:pointer;">close</span>
+            </div>
+            <div class="up-filter-scroll" style="justify-content:space-around; padding: 16px 0;">
+                <div class="up-dur-opt speed-opt" data-val="0.5">0.5x</div>
+                <div class="up-dur-opt speed-opt active" data-val="1">1x</div>
+                <div class="up-dur-opt speed-opt" data-val="1.5">1.5x</div>
+                <div class="up-dur-opt speed-opt" data-val="2">2x</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================================
+         SHORTS CAMERA FLOW
+         ============================================== -->
+    <div class="up-flow-layer bg-dark" id="up-layer-camera">
+        <div class="up-camera-view">
+            <video class="up-cam-video" id="up-live-cam" autoplay muted playsinline></video>
+            <div class="up-cam-overlay">
+                <div class="up-cam-top-row">
+                    <div class="icon-btn" id="btn-cam-close" style="color:#fff;"><span class="material-symbols-outlined">close</span></div>
+                    <div class="up-cam-add-sound"><span class="material-symbols-outlined">music_note</span> Add Sound</div>
+                    <div class="up-cam-tools-right">
+                        <div class="up-cam-tool" id="btn-cam-flip"><span class="material-symbols-outlined">flip_camera_ios</span><span>Flip</span></div>
+                        <div class="up-cam-tool"><span class="material-symbols-outlined">speed</span><span>Speed</span></div>
+                        <div class="up-cam-tool"><span class="material-symbols-outlined">timer</span><span>Timer</span></div>
+                        <div class="up-cam-tool"><span class="material-symbols-outlined">auto_awesome</span><span>Effects</span></div>
                     </div>
                 </div>
-                <select id="up-input-cat" style="opacity:0; position:absolute; width:100%; height:48px;">
-                    <option value="Entertainment">Entertainment</option>
-                    <option value="Gaming">Gaming</option>
-                    <option value="Education">Education</option>
-                    <option value="Music">Music</option>
-                </select>
-                <span class="material-symbols-outlined">chevron_right</span>
+                
+                <div class="up-cam-bottom">
+                    <div class="up-duration-selector">
+                        <div class="up-dur-opt active">15s</div>
+                        <div class="up-dur-opt">60s</div>
+                    </div>
+                    <div class="up-record-row">
+                        <div class="up-gallery-shortcut" id="btn-cam-gallery"><span class="material-symbols-outlined" style="color:#fff; padding:8px;">photo_library</span></div>
+                        <div class="up-record-btn-wrapper" id="up-cam-record-wrap">
+                            <div class="up-record-ring"></div>
+                            <div class="up-record-ring-progress"></div>
+                            <div class="up-record-btn" id="btn-cam-record"></div>
+                        </div>
+                        <div class="up-cam-next" id="btn-cam-next"><span class="material-symbols-outlined">check</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================================
+         DETAILS PAGE (VIDEO & SHORT)
+         ============================================== -->
+    <div class="up-flow-layer" id="up-layer-details">
+        <div class="up-top-bar bordered">
+            <div class="icon-btn" id="btn-details-back"><span class="material-symbols-outlined">arrow_back</span></div>
+            <div class="title" id="up-details-title">Add Details</div>
+            <button class="up-btn-primary" id="btn-publish-final">Upload</button>
+        </div>
+        
+        <div class="up-scroll-area">
+            <div class="up-form-group">
+                <div class="up-thumb-picker" id="btn-pick-custom-thumb">
+                    <img id="up-final-thumb" src="">
+                    <div class="edit-badge"><span class="material-symbols-outlined" style="font-size:14px;">image</span> Edit</div>
+                </div>
             </div>
             
-            <div class="up-list-item">
-                <div class="up-list-left">
-                    <span class="material-symbols-outlined">chat</span>
-                    <div>
-                        Comments
-                        <span class="up-list-sub">On</span>
+            <div class="up-form-group">
+                <input type="text" class="up-input-title" id="up-input-title" placeholder="Create a title" maxlength="100">
+                <div class="up-char-count"><span id="up-title-count">0</span>/100</div>
+                <textarea class="up-input-desc" id="up-input-desc" placeholder="Add description" maxlength="5000"></textarea>
+            </div>
+            
+            <div class="up-form-group" style="padding: 0 20px;">
+                <div class="up-list-item">
+                    <div class="up-list-left">
+                        <span class="material-symbols-outlined">visibility</span>
+                        <div>
+                            Visibility
+                            <span class="up-list-sub" id="up-vis-label">Public</span>
+                        </div>
                     </div>
+                    <select id="up-input-vis" style="opacity:0; position:absolute; width:100%; height:48px;">
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
+                    </select>
+                    <span class="material-symbols-outlined">chevron_right</span>
                 </div>
-                <span class="material-symbols-outlined">chevron_right</span>
+                
+                <div class="up-list-item" id="up-cat-container">
+                    <div class="up-list-left">
+                        <span class="material-symbols-outlined">category</span>
+                        <div>
+                            Category
+                            <span class="up-list-sub" id="up-cat-label">Entertainment</span>
+                        </div>
+                    </div>
+                    <select id="up-input-cat" style="opacity:0; position:absolute; width:100%; height:48px;">
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Gaming">Gaming</option>
+                        <option value="Education">Education</option>
+                        <option value="Music">Music</option>
+                    </select>
+                    <span class="material-symbols-outlined">chevron_right</span>
+                </div>
+                
+                <div class="up-list-item">
+                    <div class="up-list-left">
+                        <span class="material-symbols-outlined">chat</span>
+                        <div>
+                            Comments
+                            <span class="up-list-sub">On</span>
+                        </div>
+                    </div>
+                    <span class="material-symbols-outlined">chevron_right</span>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- ==============================================
-     POST FLOW (Simple text/image)
-     ============================================== -->
-<div class="up-flow-layer" id="up-layer-post">
-    <div class="up-top-bar bordered">
-        <div class="icon-btn" id="btn-post-back"><span class="material-symbols-outlined">close</span></div>
-        <div class="title">Create Post</div>
-        <button class="up-btn-primary" id="btn-publish-post">Post</button>
-    </div>
-    <div class="up-scroll-area up-post-box">
-        <div class="up-post-image-picker" id="btn-pick-post-image">
-            <span class="material-symbols-outlined" style="font-size:36px; margin-bottom:8px;">add_photo_alternate</span>
-            <span style="font-weight:600; font-size:14px;">Select Image (3:4)</span>
-            <img id="up-post-preview" src="" class="flaynity-hidden">
+    <!-- ==============================================
+         POST FLOW (Simple text/image)
+         ============================================== -->
+    <div class="up-flow-layer" id="up-layer-post">
+        <div class="up-top-bar bordered">
+            <div class="icon-btn" id="btn-post-back"><span class="material-symbols-outlined">close</span></div>
+            <div class="title">Create Post</div>
+            <button class="up-btn-primary" id="btn-publish-post">Post</button>
         </div>
-        <textarea class="up-post-text" id="up-post-text" placeholder="What's on your mind?"></textarea>
+        <div class="up-scroll-area up-post-box">
+            <div class="up-post-image-picker" id="btn-pick-post-image">
+                <span class="material-symbols-outlined" style="font-size:36px; margin-bottom:8px;">add_photo_alternate</span>
+                <span style="font-weight:600; font-size:14px;">Select Image (3:4)</span>
+                <img id="up-post-preview" src="" class="flaynity-hidden">
+            </div>
+            <textarea class="up-post-text" id="up-post-text" placeholder="What's on your mind?"></textarea>
+        </div>
     </div>
-</div>
 
-<!-- ==============================================
-     UPLOAD MANAGER PROGRESS ENGINE
-     ============================================== -->
-<div class="up-manager-overlay" id="up-manager">
-    <div class="up-top-bar" style="justify-content:flex-end;">
-        <div class="icon-btn" id="btn-manager-minimize"><span class="material-symbols-outlined">expand_more</span></div>
-    </div>
-    <div class="up-manager-center">
-        <div class="up-progress-circle">
-            <svg class="up-progress-svg" viewBox="0 0 120 120">
-                <circle class="up-progress-bg" cx="60" cy="60" r="54"></circle>
-                <circle class="up-progress-bar" id="up-prog-ring" cx="60" cy="60" r="54"></circle>
-            </svg>
-            <div class="up-progress-text-center" id="up-prog-pct">0%</div>
+    <!-- ==============================================
+         UPLOAD MANAGER PROGRESS ENGINE
+         ============================================== -->
+    <div class="up-manager-overlay" id="up-manager">
+        <div class="up-top-bar" style="justify-content:flex-end;">
+            <div class="icon-btn" id="btn-manager-minimize"><span class="material-symbols-outlined">expand_more</span></div>
         </div>
-        <div class="up-manager-status" id="up-prog-status">Uploading to Flaynity...</div>
-        <div class="up-manager-details" id="up-prog-detail">About 0 seconds remaining</div>
-        
-        <div class="up-manager-controls">
-            <button class="up-mc-btn pause" id="btn-manager-pause"><span class="material-symbols-outlined">pause</span> Pause</button>
-            <button class="up-mc-btn cancel" id="btn-manager-cancel"><span class="material-symbols-outlined">close</span> Cancel</button>
+        <div class="up-manager-center">
+            <div class="up-progress-circle">
+                <svg class="up-progress-svg" viewBox="0 0 120 120">
+                    <circle class="up-progress-bg" cx="60" cy="60" r="54"></circle>
+                    <circle class="up-progress-bar" id="up-prog-ring" cx="60" cy="60" r="54"></circle>
+                </svg>
+                <div class="up-progress-text-center" id="up-prog-pct">0%</div>
+            </div>
+            <div class="up-manager-status" id="up-prog-status">Uploading to Flaynity...</div>
+            <div class="up-manager-details" id="up-prog-detail">About 0 seconds remaining</div>
+            
+            <div class="up-manager-controls">
+                <button class="up-mc-btn pause" id="btn-manager-pause"><span class="material-symbols-outlined">pause</span> Pause</button>
+                <button class="up-mc-btn cancel" id="btn-manager-cancel"><span class="material-symbols-outlined">close</span> Cancel</button>
+            </div>
         </div>
     </div>
-</div>
+
 </div>

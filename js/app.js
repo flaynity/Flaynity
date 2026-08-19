@@ -250,7 +250,7 @@ const AuthSystem = {
                 State.user = user;
                 Utils.hide('flaynity-auth');
                 Utils.show('flaynity-home-ui');
-                Router.switchTab('home'); // Explicitly switch to home after successful load
+                Router.switchTab('home'); 
                 
                 await AuthSystem.syncUserProfile();
                 App.startRealtimeListeners();
@@ -267,7 +267,7 @@ const AuthSystem = {
             } else {
                 try {
                     const provider = new firebase.auth.GoogleAuthProvider();
-                    await auth.signInWithPopup(provider); // Changed to Popup to avoid WebView breakages
+                    await auth.signInWithPopup(provider);
                 } catch (error) {
                     UI.toast("Google Login Failed: " + error.message);
                 }
@@ -288,7 +288,7 @@ const AuthSystem = {
                 lastLogin: firebase.database.ServerValue.TIMESTAMP
             });
         } catch (error) {
-            console.warn("Could not sync user profile (Database Rules or Offline):", error);
+            console.warn("Could not sync user profile:", error);
         }
 
         const youNavTab = document.querySelector('.nav-item[data-tab="you"]');
@@ -846,9 +846,14 @@ const UploadPage = {
 
     openSheet: () => {
         const root = Utils.el('upload-root'), bd = Utils.el('up-backdrop'), sheet = Utils.el('up-sheet');
-        if(root) root.style.pointerEvents = 'auto';
-        if(bd) bd.classList.add('active');
-        if(sheet) sheet.classList.add('active');
+        
+        if (!root || !bd || !sheet) {
+            return UI.toast("Upload module is loading...");
+        }
+
+        root.style.pointerEvents = 'auto';
+        bd.classList.add('active');
+        sheet.classList.add('active');
         Router.addBackState('upload-sheet');
     },
 
@@ -856,7 +861,11 @@ const UploadPage = {
         const bd = Utils.el('up-backdrop'), sheet = Utils.el('up-sheet'), root = Utils.el('upload-root');
         if(bd) bd.classList.remove('active');
         if(sheet) sheet.classList.remove('active');
-        setTimeout(() => { if (root && !document.querySelector('.up-flow-layer.active')) root.style.pointerEvents = 'none'; }, 400);
+        setTimeout(() => { 
+            if (root && !document.querySelector('.up-flow-layer.active')) {
+                root.style.pointerEvents = 'none'; 
+            } 
+        }, 400);
     },
 
     closeAll: () => {
@@ -866,7 +875,9 @@ const UploadPage = {
         
         const vid = Utils.el('up-main-video'), root = Utils.el('upload-root');
         if(vid) { vid.pause(); vid.src = ''; }
-        if(root) root.style.pointerEvents = 'none';
+        if(root) {
+            setTimeout(() => { root.style.pointerEvents = 'none'; }, 400); 
+        }
         
         UploadPage.activeFile = null; UploadPage.activeBlob = null; UploadPage.activeThumbBlob = null;
         
@@ -1220,7 +1231,15 @@ const Router = {
 
                 const container = document.createElement('div');
                 container.id = `page-container-${page}`;
-                container.style.cssText = `width:100%;height:100%;position:absolute;top:0;left:0;display:${page === 'home' ? 'block' : 'none'};`;
+                
+                // [FIXED]: Upload is an Overlay, so it must ALWAYS be display: block but pointer-events: none initially
+                let isOverlay = (page === 'upload');
+                container.style.cssText = `
+                    width: 100%; height: 100%; position: absolute; top: 0; left: 0;
+                    display: ${isOverlay || page === 'home' ? 'block' : 'none'}; 
+                    pointer-events: ${isOverlay ? 'none' : 'auto'};
+                `;
+                
                 container.innerHTML = html;
                 appRoot.appendChild(container);
             } catch (err) {
@@ -1252,7 +1271,11 @@ const Router = {
         if (State.currentPlayingVideo && tabName !== 'shorts') State.currentPlayingVideo.pause();
 
         Router.pages.forEach((p) => {
-            if (p !== 'upload') { const el = document.getElementById(`page-container-${p}`); if (el) el.style.display = 'none'; }
+            // [FIXED]: Never hide the upload overlay container
+            if (p !== 'upload') { 
+                const el = document.getElementById(`page-container-${p}`); 
+                if (el) el.style.display = 'none'; 
+            }
         });
 
         const target = document.getElementById(`page-container-${tabName}`);
@@ -1325,7 +1348,6 @@ const App = {
                 console.warn("[Failsafe] Dismissing splash screen automatically.");
                 Utils.hide('flaynity-splash');
                 
-                // Force UI Show fallback
                 if (!State.user) Utils.show('flaynity-auth');
                 else { Utils.show('flaynity-home-ui'); Router.switchTab('home'); }
             }

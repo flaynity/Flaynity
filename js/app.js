@@ -1,5 +1,5 @@
 // ==========================================
-// 1. CONFIGURATION & GLOBAL APP STATE
+// 1. CONFIGURATION & STATE
 // ==========================================
 const CONFIG = {
     firebase: {
@@ -48,18 +48,12 @@ const Utils = {
 
     show: (id) => {
         const target = Utils.el(id);
-        if (target) {
-            target.classList.remove('flaynity-hidden', 'f-hidden-input');
-            target.style.display = '';
-        }
+        if (target) target.classList.remove('flaynity-hidden');
     },
 
     hide: (id) => {
         const target = Utils.el(id);
-        if (target) {
-            target.classList.add('flaynity-hidden');
-            target.style.display = 'none';
-        }
+        if (target) target.classList.add('flaynity-hidden');
     },
 
     timeAgo: (timestamp) => {
@@ -102,7 +96,9 @@ const Utils = {
     vibrate: (ms = 40) => {
         try {
             if (navigator.vibrate) navigator.vibrate(ms);
-        } catch (e) {}
+        } catch (e) {
+            console.warn("Haptic feedback unavailable");
+        }
     },
 
     secureText: (str) => {
@@ -112,42 +108,36 @@ const Utils = {
         return temp.innerHTML;
     },
 
-    generateVideoThumbnailFrames: (file, outputWidth = 640) => {
+    // Client-side instant video frame extractor for R2 thumbnail upload
+    generateVideoThumbnail: (file) => {
         return new Promise((resolve) => {
             const video = document.createElement('video');
-            video.preload = 'auto';
+            video.preload = 'metadata';
             video.src = URL.createObjectURL(file);
             video.muted = true;
             video.playsInline = true;
-            video.crossOrigin = 'anonymous';
 
-            let duration = 0;
-
-            video.onloadedmetadata = () => {
-                duration = video.duration || 0;
-                video.currentTime = Math.min(1, duration > 1 ? 1 : duration / 2);
+            video.onloadeddata = () => {
+                video.currentTime = Math.min(1, (video.duration / 2) || 0);
             };
 
             video.onseeked = () => {
                 const canvas = document.createElement('canvas');
-                canvas.width = outputWidth;
-                canvas.height = (video.videoHeight && video.videoWidth) 
-                    ? (video.videoHeight / video.videoWidth) * outputWidth 
-                    : (outputWidth * 9 / 16);
-                
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 360;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
                 canvas.toBlob((blob) => {
-                    const thumbUrl = blob ? URL.createObjectURL(blob) : '';
+                    const duration = video.duration || 0;
                     URL.revokeObjectURL(video.src);
-                    resolve({ blob, dur: duration, url: thumbUrl });
-                }, 'image/jpeg', 0.9);
+                    resolve({ blob, duration });
+                }, 'image/jpeg', 0.85);
             };
 
             video.onerror = () => {
                 URL.revokeObjectURL(video.src);
-                resolve({ blob: null, dur: 0, url: '' });
+                resolve({ blob: null, duration: 0 });
             };
         });
     }
@@ -162,7 +152,7 @@ const UI = {
         toast.className = 'flaynity-toast';
         toast.style.cssText = `
             position: fixed;
-            bottom: calc(var(--bottom-nav-height, 60px) + 24px + var(--safe-area-bottom, 16px));
+            bottom: calc(var(--bottom-nav-height) + 24px + var(--safe-area-bottom));
             left: 50%;
             transform: translateX(-50%) translateY(20px);
             background: #1e1e1e;
@@ -191,12 +181,32 @@ const UI = {
             toast.style.transform = 'translateX(-50%) translateY(10px)';
             setTimeout(() => toast.remove(), 300);
         }, duration);
+    },
+
+    showUploadProgress: (titleText = "Uploading to Cloudflare R2...") => {
+        const title = document.querySelector('#upload-progress-engine .progress-text');
+        if (title) title.innerText = titleText;
+        Utils.show('upload-progress-engine');
+    },
+
+    hideUploadProgress: () => {
+        Utils.hide('upload-progress-engine');
+        UI.updateUploadProgress(0);
+    },
+
+    updateUploadProgress: (pct) => {
+        const txt = Utils.el('upload-progress-percentage');
+        if (txt) txt.innerText = `${Math.round(pct)}%`;
     }
 };
 
 const onClick = (id, callback) => {
     const el = Utils.el(id);
-    if (el) el.onclick = callback;
+    if (el) {
+        el.onclick = callback;
+    } else {
+        console.warn(`[SafeBinder] Element #${id} not found.`);
+    }
 };
 
 // ==========================================
@@ -207,7 +217,7 @@ let auth, db, s3Client;
 const Services = {
     init: () => {
         if (!window.firebase) {
-            throw new Error("Firebase SDK is not available.");
+            throw new Error("Firebase Core SDK is not loaded.");
         }
         if (!firebase.apps.length) {
             firebase.initializeApp(CONFIG.firebase);
@@ -215,6 +225,7 @@ const Services = {
         auth = firebase.auth();
         db = firebase.database();
 
+        // Configure AWS S3 SDK for Cloudflare R2
         if (typeof AWS !== 'undefined') {
             s3Client = new AWS.S3({
                 accessKeyId: CONFIG.r2.accessKey,
@@ -227,48 +238,49 @@ const Services = {
         }
     },
 
-    uploadResilientFile: (fileOrBlob, folderPath, statusCb) => {
+    // Upload to Cloudflare R2 and return Fast CDN URL
+    uploadFile: (fileOrBlob, folderPath, customExt = null) => {
         return new Promise((resolve, reject) => {
             if (!s3Client) {
                 return reject(new Error("Cloudflare R2 Client is uninitialized."));
             }
 
-            let mimeType = fileOrBlob.type || 'application/octet-stream';
-            let extension = 'mp4';
-
-            if (fileOrBlob.name) {
-                extension = fileOrBlob.name.split('.').pop();
-            } else if (mimeType.includes('jpeg') || mimeType.includes('jpg')) {
-                extension = 'jpg';
-            } else if (mimeType.includes('png')) {
-                extension = 'png';
-            } else if (mimeType.includes('webm')) {
-                extension = 'webm';
+            let extension = customExt;
+            if (!extension) {
+                if (fileOrBlob.name) {
+                    extension = fileOrBlob.name.split('.').pop();
+                } else if (fileOrBlob.type) {
+                    extension = fileOrBlob.type.split('/')[1] || 'bin';
+                } else {
+                    extension = 'bin';
+                }
             }
 
-            const uniqueKey = `${folderPath}/${Date.now()}_${Math.random().toString(36).substring(5)}.${extension}`;
+            const uniqueKey = `${folderPath}/${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`;
 
+            // Note: Cloudflare R2 does NOT support 'ACL: public-read'. Omit ACL to prevent 400 Bad Request.
             const uploadParams = {
                 Bucket: CONFIG.r2.bucket,
                 Key: uniqueKey,
                 Body: fileOrBlob,
-                ContentType: mimeType
+                ContentType: fileOrBlob.type || 'application/octet-stream'
             };
 
-            const uploadRequest = s3Client.upload(uploadParams, { partSize: 5 * 1024 * 1024, queueSize: 1 });
+            const uploadRequest = s3Client.upload(uploadParams);
 
             uploadRequest.on('httpUploadProgress', (event) => {
-                if (event.total && statusCb) {
+                if (event.total) {
                     const percentage = (event.loaded / event.total) * 100;
-                    statusCb(percentage, event.loaded, event.total);
+                    UI.updateUploadProgress(percentage);
                 }
             });
 
             uploadRequest.send((err, data) => {
                 if (err) {
-                    console.error("R2 Upload Error:", err);
+                    console.error("Cloudflare R2 Upload Error:", err);
                     reject(err);
                 } else {
+                    // Direct Cloudflare CDN delivery URL
                     const finalCdnUrl = `${CONFIG.r2.publicUrl}/${uniqueKey}`;
                     resolve(finalCdnUrl);
                 }
@@ -383,7 +395,7 @@ window.handleNativeGoogleSignIn = (idToken) => {
 };
 
 // ==========================================
-// 5. HOME FEED ENGINE
+// 5. HOME FEED ENGINE (6 Shorts -> 10 Videos -> 1 Post)
 // ==========================================
 const HomeFeed = {
     init: () => {
@@ -424,9 +436,9 @@ const HomeFeed = {
 
         if (videos.length === 0 && shorts.length === 0 && posts.length === 0) {
             container.innerHTML = `
-                <div style="padding: 60px 20px; text-align: center; color: var(--flaynity-text-secondary, #888);">
+                <div style="padding: 60px 20px; text-align: center; color: var(--flaynity-text-secondary);">
                     <span class="material-symbols-outlined" style="font-size: 56px; margin-bottom: 12px;">video_library</span>
-                    <h3 style="font-size: 18px; margin-bottom: 6px; color: var(--flaynity-text, #111);">No Content Yet</h3>
+                    <h3 style="font-size: 18px; margin-bottom: 6px;">No Content Yet</h3>
                     <p style="font-size: 13px;">Publish your first video, short or community post!</p>
                 </div>
             `;
@@ -441,6 +453,7 @@ const HomeFeed = {
         while (active) {
             let chunkAdded = false;
 
+            // Pattern Step 1: 6 Shorts Grid
             if (shortsIdx < shorts.length) {
                 const batch = shorts.slice(shortsIdx, shortsIdx + 6);
                 shortsIdx += 6;
@@ -448,6 +461,7 @@ const HomeFeed = {
                 chunkAdded = true;
             }
 
+            // Pattern Step 2: 10 Long Videos
             if (videoIdx < videos.length) {
                 const batch = videos.slice(videoIdx, videoIdx + 10);
                 videoIdx += 10;
@@ -457,6 +471,7 @@ const HomeFeed = {
                 chunkAdded = true;
             }
 
+            // Pattern Step 3: 1 Community Post
             if (postIdx < posts.length) {
                 container.appendChild(HomeFeed.buildPostCard(posts[postIdx]));
                 postIdx++;
@@ -471,15 +486,15 @@ const HomeFeed = {
         const card = document.createElement('div');
         card.className = 'long-video-card';
         card.innerHTML = `
-            <div class="lv-thumbnail-box" style="position:relative; width:100%; aspect-ratio:16/9; background:#000; overflow:hidden;">
+            <div class="lv-thumbnail-box">
                 <img src="${data.thumbnailUrl || data.cdnVideoUrl}" loading="lazy" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">
-                <div class="lv-duration" style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.8); color:#fff; padding:2px 6px; border-radius:4px; font-size:12px; font-weight:600;">${data.duration || '0:00'}</div>
+                <div class="lv-duration">${data.duration || '0:00'}</div>
             </div>
-            <div class="lv-info-row" style="display:flex; gap:12px; padding:12px 16px;">
-                <img class="lv-avatar" src="${data.channelAvatar || 'https://via.placeholder.com/40'}" style="width:38px; height:38px; border-radius:50%; object-fit:cover;">
-                <div class="lv-text" style="flex:1; overflow:hidden;">
-                    <div class="lv-title" style="font-size:15px; font-weight:600; line-height:1.3; margin-bottom:4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${Utils.secureText(data.title)}</div>
-                    <div class="lv-meta" style="font-size:12px; color:var(--flaynity-text-secondary, #606060);">${Utils.secureText(data.channelName)} • ${Utils.formatViews(data.views || 0)} views • ${Utils.timeAgo(data.createdAt)}</div>
+            <div class="lv-info-row">
+                <img class="lv-avatar" src="${data.channelAvatar || 'https://via.placeholder.com/40'}" alt="">
+                <div class="lv-text">
+                    <div class="lv-title">${Utils.secureText(data.title)}</div>
+                    <div class="lv-meta">${Utils.secureText(data.channelName)} • ${Utils.formatViews(data.views || 0)} views • ${Utils.timeAgo(data.createdAt)}</div>
                 </div>
             </div>
         `;
@@ -491,17 +506,17 @@ const HomeFeed = {
         const section = document.createElement('div');
         section.className = 'shorts-grid-section';
         let html = `
-            <div class="shorts-grid-header" style="display:flex; align-items:center; gap:8px; padding:16px; font-size:18px; font-weight:700;">
-                <span class="material-symbols-outlined" style="color:var(--flaynity-accent, #0556F3);">app_shortcut</span> Shorts
+            <div class="shorts-grid-header">
+                <span class="material-symbols-outlined">app_shortcut</span> Shorts
             </div>
-            <div class="s-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; padding:0 16px 16px;">
+            <div class="s-grid">
         `;
 
         shortsBatch.forEach((item) => {
             html += `
-                <div class="s-card" data-id="${item.id}" style="position:relative; aspect-ratio:9/16; border-radius:12px; overflow:hidden; background:#000; cursor:pointer;">
+                <div class="s-card" data-id="${item.id}">
                     <img src="${item.thumbnailUrl || item.cdnVideoUrl}" loading="lazy" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">
-                    <div class="s-card-title" style="position:absolute; bottom:8px; left:8px; right:8px; color:#fff; font-size:12px; font-weight:600; text-shadow:0 1px 3px rgba(0,0,0,0.8); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${Utils.secureText(item.title)}</div>
+                    <div class="s-card-title">${Utils.secureText(item.title)}</div>
                 </div>
             `;
         });
@@ -523,35 +538,35 @@ const HomeFeed = {
         const card = document.createElement('div');
         card.className = 'post-card';
         card.id = `post-${data.id}`;
-        card.style.cssText = `padding:16px; border-bottom:1px solid var(--flaynity-divider, #e5e5e5);`;
 
         const isLiked = State.cache.userReactions[data.id] !== undefined;
 
         card.innerHTML = `
-            <div class="post-header" style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
-                <img class="post-avatar" src="${data.channelAvatar || 'https://via.placeholder.com/40'}" style="width:38px; height:38px; border-radius:50%; object-fit:cover;">
-                <div style="flex:1;">
-                    <div class="post-user" style="font-weight:600; font-size:14px;">${Utils.secureText(data.channelName)}</div>
-                    <div class="post-time" style="font-size:12px; color:var(--flaynity-text-secondary, #606060);">${Utils.timeAgo(data.createdAt)}</div>
+            <div class="post-header">
+                <img class="post-avatar" src="${data.channelAvatar || 'https://via.placeholder.com/40'}">
+                <div>
+                    <div class="post-user">${Utils.secureText(data.channelName)}</div>
+                    <div class="post-time">${Utils.timeAgo(data.createdAt)}</div>
                 </div>
+                <div class="post-subscribe" data-channel="${data.channelId}">Subscribe</div>
             </div>
-            <div class="post-text" style="font-size:14px; line-height:1.4; margin-bottom:12px; white-space:pre-line;">${Utils.secureText(data.text || '')}</div>
-            ${data.imageUrl ? `<div class="post-image-grid" style="border-radius:12px; overflow:hidden; margin-bottom:12px; aspect-ratio:4/5;"><img src="${data.imageUrl}" loading="lazy" style="width:100%;height:100%;object-fit:cover;"></div>` : ''}
-            <div class="post-stats" style="display:flex; justify-content:space-between; font-size:12px; color:var(--flaynity-text-secondary, #606060); margin-bottom:12px;">
+            <div class="post-text">${Utils.secureText(data.text || '')}</div>
+            ${data.imageUrl ? `<div class="post-image-grid count-1"><img src="${data.imageUrl}" loading="lazy"></div>` : ''}
+            <div class="post-stats">
                 <div class="post-reactions-icons">
-                    <span class="reaction-preview">❤️ 👍</span> <span class="reaction-count">${Utils.formatViews(data.likes || 0)}</span>
+                    <span class="reaction-preview">❤️ 👍 🥰</span> <span class="reaction-count">${Utils.formatViews(data.likes || 0)}</span>
                 </div>
                 <div>${Utils.formatViews(data.comments || 0)} comments</div>
             </div>
-            <div class="post-actions" style="display:flex; border-top:1px solid var(--flaynity-divider, #e5e5e5); padding-top:8px;">
-                <div class="p-action-btn like-action-btn ${isLiked ? 'active' : ''}" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; font-size:13px; font-weight:600; cursor:pointer; padding:8px 0; color:${isLiked ? 'var(--flaynity-accent, #0556F3)' : 'inherit'};">
-                    <span class="material-symbols-outlined" style="font-size:18px;">${isLiked ? 'favorite' : 'thumb_up'}</span> Like
+            <div class="post-actions">
+                <div class="p-action-btn like-action-btn ${isLiked ? 'active' : ''}">
+                    <span class="material-symbols-outlined">${isLiked ? 'favorite' : 'thumb_up'}</span> Like
                 </div>
-                <div class="p-action-btn comment-action-btn" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; font-size:13px; font-weight:600; cursor:pointer; padding:8px 0;">
-                    <span class="material-symbols-outlined" style="font-size:18px;">chat_bubble</span> Comment
+                <div class="p-action-btn comment-action-btn">
+                    <span class="material-symbols-outlined">chat_bubble</span> Comment
                 </div>
-                <div class="p-action-btn share-action-btn" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; font-size:13px; font-weight:600; cursor:pointer; padding:8px 0;">
-                    <span class="material-symbols-outlined" style="font-size:18px;">share</span> Share
+                <div class="p-action-btn share-action-btn">
+                    <span class="material-symbols-outlined">share</span> Share
                 </div>
             </div>
         `;
@@ -568,7 +583,9 @@ const HomeFeed = {
 // ==========================================
 const PostReactions = {
     toggleLike: async (postId) => {
-        if (!State.user) return UI.toast("Please log in to like.");
+        if (!State.user) {
+            return UI.toast("Please log in to like.");
+        }
         Utils.vibrate();
 
         const postRef = db.ref(`posts/${postId}/likes`);
@@ -588,7 +605,7 @@ const PostReactions = {
 };
 
 // ==========================================
-// 7. CINEMA VIDEO PLAYER
+// 7. CINEMA VIDEO PLAYER (CLOUDFLARE CDN)
 // ==========================================
 const Player = {
     currentVideoData: null,
@@ -605,17 +622,16 @@ const Player = {
 
         if (!layer || !videoEl) return;
 
-        if (Utils.el('wp-title')) Utils.el('wp-title').innerText = videoData.title;
-        if (Utils.el('wp-stats')) Utils.el('wp-stats').innerText = `${Utils.formatViews(videoData.views || 0)} views • ${Utils.timeAgo(videoData.createdAt)}`;
-        if (Utils.el('wp-channel-handle')) Utils.el('wp-channel-handle').innerText = videoData.channelName;
-        if (Utils.el('wp-like-count')) Utils.el('wp-like-count').innerText = Utils.formatViews(videoData.likes || 0);
-        if (Utils.el('wp-channel-avatar')) {
-            Utils.el('wp-channel-avatar').src = videoData.channelAvatar || 'https://via.placeholder.com/36';
-            Utils.show('wp-channel-avatar');
-        }
+        Utils.el('wp-title').innerText = videoData.title;
+        Utils.el('wp-stats').innerText = `${Utils.formatViews(videoData.views || 0)} views • ${Utils.timeAgo(videoData.createdAt)}`;
+        Utils.el('wp-channel-handle').innerText = videoData.channelName;
+        Utils.el('wp-like-count').innerText = Utils.formatViews(videoData.likes || 0);
+        Utils.el('wp-channel-avatar').src = videoData.channelAvatar || 'https://via.placeholder.com/36';
+        Utils.show('wp-channel-avatar');
 
+        // Play directly via Cloudflare CDN URL
         videoEl.src = videoData.cdnVideoUrl;
-        videoEl.play().catch(() => {});
+        videoEl.play().catch(() => console.warn("Autoplay blocked by WebView"));
 
         layer.classList.add('active');
         State.currentPlayingVideo = videoEl;
@@ -641,7 +657,9 @@ const Player = {
     },
 
     toggleSubscribe: async () => {
-        if (!State.user || !Player.currentVideoData) return UI.toast("Log in to subscribe.");
+        if (!State.user || !Player.currentVideoData) {
+            return UI.toast("Log in to subscribe.");
+        }
         Utils.vibrate();
         const targetChannelId = Player.currentVideoData.channelId;
         const subRef = db.ref(`subscriptions/${targetChannelId}/${State.user.uid}`);
@@ -653,20 +671,16 @@ const Player = {
         if (snapshot.exists()) {
             await subRef.remove();
             await channelSubsCountRef.transaction((count) => Math.max((count || 1) - 1, 0));
-            if (btn) {
-                btn.innerText = "Subscribe";
-                btn.style.background = "var(--flaynity-text, #111)";
-                btn.style.color = "var(--flaynity-bg, #fff)";
-            }
+            btn.innerText = "Subscribe";
+            btn.style.background = "var(--flaynity-text)";
+            btn.style.color = "var(--flaynity-bg)";
             UI.toast("Unsubscribed");
         } else {
             await subRef.set(true);
             await channelSubsCountRef.transaction((count) => (count || 0) + 1);
-            if (btn) {
-                btn.innerText = "Subscribed";
-                btn.style.background = "var(--flaynity-skeleton, #eee)";
-                btn.style.color = "var(--flaynity-text, #111)";
-            }
+            btn.innerText = "Subscribed";
+            btn.style.background = "var(--flaynity-skeleton)";
+            btn.style.color = "var(--flaynity-text)";
             UI.toast("Subscribed!");
         }
     },
@@ -684,7 +698,7 @@ const Player = {
 };
 
 // ==========================================
-// 8. SHORTS VERTICAL STREAM
+// 8. SHORTS VERTICAL STREAM (CLOUDFLARE CDN)
 // ==========================================
 const ShortsPlayer = {
     observer: null,
@@ -696,14 +710,17 @@ const ShortsPlayer = {
         ShortsPlayer.observer = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
                 const video = entry.target.querySelector('.short-video-element');
+                const disc = entry.target.querySelector('.music-disc-wrapper');
                 if (!video) return;
 
                 if (entry.isIntersecting) {
                     video.play().catch(() => {});
                     State.currentPlayingVideo = video;
+                    if (disc) disc.classList.add('disc-spin');
                 } else {
                     video.pause();
                     video.currentTime = 0;
+                    if (disc) disc.classList.remove('disc-spin');
                 }
             });
         }, { threshold: 0.65 });
@@ -721,7 +738,7 @@ const ShortsPlayer = {
                 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;text-align:center;padding:24px;">
                     <span class="material-symbols-outlined" style="font-size:64px;margin-bottom:12px;">app_shortcut</span>
                     <h3>No Shorts Available</h3>
-                    <p style="color:#aaa;font-size:13px;">Create and share your first short video!</p>
+                    <p style="color:#aaa;font-size:13px;">Create and share your first 60-second video!</p>
                 </div>
             `;
             return;
@@ -731,41 +748,43 @@ const ShortsPlayer = {
             const card = document.createElement('div');
             card.className = 'short-view-container';
             card.id = `short-view-${s.id}`;
-            card.style.cssText = `position:relative; width:100%; height:100%; scroll-snap-align:start; background:#000; overflow:hidden;`;
-
             card.innerHTML = `
-                <video class="short-video-element" src="${s.cdnVideoUrl}" loop playsinline webkit-playsinline preload="auto" style="width:100%;height:100%;object-fit:cover;"></video>
-                <div class="short-ui-overlay" style="position:absolute; inset:0; display:flex; flex-direction:column; justify-content:space-between; padding:16px; padding-bottom:calc(70px + var(--safe-area-bottom, 16px)); pointer-events:none;">
-                    <div style="height:40px;"></div>
-                    <div style="display:flex; justify-content:space-between; align-items:flex-end; pointer-events:auto;">
-                        <div class="short-bottom-details" style="flex:1; margin-right:16px; color:#fff;">
-                            <div class="short-channel-row" style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                                <img src="${s.channelAvatar || 'https://via.placeholder.com/36'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
-                                <span class="short-handle" style="font-weight:700;font-size:14px;">${Utils.secureText(s.channelName)}</span>
-                            </div>
-                            <div class="short-title-text" style="font-size:14px; text-shadow:0 1px 3px rgba(0,0,0,0.8);">${Utils.secureText(s.title)}</div>
+                <video class="short-video-element" src="${s.cdnVideoUrl}" loop playsinline preload="auto"></video>
+                <div class="short-ui-overlay">
+                    <div class="short-actions-sidebar">
+                        <div class="s-action-btn like-btn">
+                            <span class="material-symbols-outlined">favorite</span>
+                            <span class="count">${Utils.formatViews(s.likes || 0)}</span>
                         </div>
-                        <div class="short-actions-sidebar" style="display:flex; flex-direction:column; gap:20px; align-items:center; color:#fff;">
-                            <div class="s-action-btn like-btn" style="display:flex; flex-direction:column; align-items:center; cursor:pointer;">
-                                <span class="material-symbols-outlined" style="font-size:28px;">favorite</span>
-                                <span class="count" style="font-size:12px; font-weight:600;">${Utils.formatViews(s.likes || 0)}</span>
-                            </div>
-                            <div class="s-action-btn comment-btn" style="display:flex; flex-direction:column; align-items:center; cursor:pointer;">
-                                <span class="material-symbols-outlined" style="font-size:28px;">chat</span>
-                                <span class="count" style="font-size:12px; font-weight:600;">${Utils.formatViews(s.comments || 0)}</span>
-                            </div>
-                            <div class="s-action-btn share-btn" style="display:flex; flex-direction:column; align-items:center; cursor:pointer;">
-                                <span class="material-symbols-outlined" style="font-size:28px;">share</span>
-                                <span class="count" style="font-size:12px; font-weight:600;">Share</span>
-                            </div>
+                        <div class="s-action-btn comment-btn">
+                            <span class="material-symbols-outlined">chat</span>
+                            <span class="count">${Utils.formatViews(s.comments || 0)}</span>
                         </div>
+                        <div class="s-action-btn share-btn">
+                            <span class="material-symbols-outlined">share</span>
+                            <span class="count">Share</span>
+                        </div>
+                        <div class="music-disc-wrapper disc-spin">
+                            <span class="material-symbols-outlined">music_note</span>
+                        </div>
+                    </div>
+                    <div class="short-bottom-details">
+                        <div class="short-channel-row">
+                            <img src="${s.channelAvatar || 'https://via.placeholder.com/36'}">
+                            <span class="short-handle">${Utils.secureText(s.channelName)}</span>
+                            <button class="short-sub-btn">Subscribe</button>
+                        </div>
+                        <div class="short-title-text">${Utils.secureText(s.title)}</div>
+                    </div>
+                    <div class="short-center-play-indicator">
+                        <span class="material-symbols-outlined">play_arrow</span>
                     </div>
                 </div>
             `;
 
             let lastTap = 0;
             card.addEventListener('click', (e) => {
-                if (e.target.closest('.short-actions-sidebar')) return;
+                if (e.target.closest('.short-actions-sidebar') || e.target.closest('.short-sub-btn')) return;
 
                 const now = new Date().getTime();
                 const delta = now - lastTap;
@@ -773,17 +792,27 @@ const ShortsPlayer = {
                 if (delta < 300 && delta > 0) {
                     Utils.vibrate(60);
                     const heartIcon = card.querySelector('.like-btn .material-symbols-outlined');
-                    if (heartIcon) {
-                        heartIcon.style.color = 'var(--flaynity-accent, #0556F3)';
-                        heartIcon.style.transform = 'scale(1.4)';
-                        setTimeout(() => heartIcon.style.transform = 'scale(1)', 250);
-                    }
+                    heartIcon.style.color = 'var(--flaynity-accent)';
+                    heartIcon.style.transform = 'scale(1.4)';
+                    setTimeout(() => heartIcon.style.transform = 'scale(1)', 250);
+
                     db.ref(`shorts/${s.id}/likes`).transaction((count) => (count || 0) + 1);
                 } else {
                     const video = card.querySelector('video');
-                    if (video) {
-                        video.paused ? video.play() : video.pause();
+                    const indicator = card.querySelector('.short-center-play-indicator');
+                    const disc = card.querySelector('.music-disc-wrapper');
+
+                    if (video.paused) {
+                        video.play();
+                        indicator.querySelector('span').innerText = 'play_arrow';
+                        if (disc) disc.classList.add('disc-spin');
+                    } else {
+                        video.pause();
+                        indicator.querySelector('span').innerText = 'pause';
+                        if (disc) disc.classList.remove('disc-spin');
                     }
+                    indicator.classList.add('indicator-flash');
+                    setTimeout(() => indicator.classList.remove('indicator-flash'), 400);
                 }
                 lastTap = now;
             });
@@ -800,471 +829,268 @@ const ShortsPlayer = {
 };
 
 // ==========================================
-// 9. PREMIUM STUDIO & UPLOAD CONTROLLER
+// 9. CONTENT PUBLISH PIPELINE (R2 + REALTIME DB)
 // ==========================================
-let studioActiveData = { type: null, sourceFile: null, finalThumbBlob: null, durationMeta: "0:00", activeFilters: 0 };
+const UploadPage = {
+    activeFile: null,
 
-const UploadEngineUI = {
-    openSelectorSheet: () => {
-        const container = Utils.el('page-container-upload');
-        if (container) container.style.display = 'block';
-        const root = Utils.el('f-upload-system-root');
-        if (root) root.style.pointerEvents = 'auto';
+    init: () => {
+        onClick('btn-close-upload-sheet', UploadPage.closeSheet);
+        onClick('upload-backdrop', (e) => {
+            if (e.target.id === 'upload-backdrop') UploadPage.closeSheet();
+        });
 
-        const backdrop = Utils.el('f-sheet-backdrop');
-        if (backdrop) {
-            backdrop.classList.add('active');
-            Router.addBackState('f-sheet-backdrop');
-        }
-    },
+        onClick('btn-create-video', () => UploadPage.openFlow('flow-video'));
+        onClick('btn-create-short', () => UploadPage.openFlow('flow-short'));
+        onClick('btn-create-post', () => UploadPage.openFlow('flow-post'));
 
-    closeAllLayers: () => {
-        const backdrop = Utils.el('f-sheet-backdrop');
-        if (backdrop) backdrop.classList.remove('active');
-        document.querySelectorAll('.f-up-flow-layer').forEach((l) => l.classList.remove('active'));
-        
-        setTimeout(() => {
-            const root = Utils.el('f-upload-system-root');
-            if (root) root.style.pointerEvents = 'none';
-        }, 300);
+        onClick('btn-close-video-flow', UploadPage.closeAll);
+        onClick('btn-close-short-flow', UploadPage.closeAll);
+        onClick('btn-close-post-flow', UploadPage.closeAll);
+        onClick('btn-back-short-details', () => Utils.hide('short-details-ui'));
 
-        CameraStudio.shutdown();
-        studioActiveData = { type: null, sourceFile: null, finalThumbBlob: null, durationMeta: "0:00", activeFilters: 0 };
-        const vidNode = Utils.el('f-video-element');
-        if (vidNode) {
-            vidNode.pause();
-            vidNode.src = '';
-        }
-    },
+        // File Selectors
+        onClick('video-file-picker-trigger', () => {
+            const input = Utils.el('input-video-file');
+            if (input) input.click();
+        });
 
-    goto: (id) => {
-        const container = Utils.el('page-container-upload');
-        if (container) container.style.display = 'block';
-        const root = Utils.el('f-upload-system-root');
-        if (root) root.style.pointerEvents = 'auto';
-
-        document.querySelectorAll('.f-up-flow-layer').forEach((l) => l.classList.remove('active'));
-        const target = Utils.el(id);
-        if (target) {
-            target.classList.add('active');
-            Router.addBackState(id);
-        }
-    },
-
-    handleVideoSelection: async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        studioActiveData.type = 'video';
-        studioActiveData.sourceFile = file;
-
-        const url = URL.createObjectURL(file);
-        const vidNode = Utils.el('f-video-element');
-        if (vidNode) {
-            vidNode.src = url;
-            vidNode.load();
-        }
-
-        UploadEngineUI.goto('flow-layer-video-preview');
-        const backdrop = Utils.el('f-sheet-backdrop');
-        if (backdrop) backdrop.classList.remove('active');
-
-        const metadata = await Utils.generateVideoThumbnailFrames(file, 640);
-        studioActiveData.finalThumbBlob = metadata.blob;
-        studioActiveData.durationMeta = Utils.formatDuration(metadata.dur);
-
-        if (Utils.el('f-video-details-filename')) Utils.el('f-video-details-filename').innerText = file.name || "Video Selected";
-        if (Utils.el('f-thumb-duration')) Utils.el('f-thumb-duration').innerText = studioActiveData.durationMeta;
-        if (metadata.url && Utils.el('f-detail-thumb-preview')) Utils.el('f-detail-thumb-preview').src = metadata.url;
-
-        if (vidNode) vidNode.play().catch(() => {});
-    },
-
-    toggleVideoPlay: () => {
-        const v = Utils.el('f-video-element');
-        const btn = Utils.el('f-vid-play-pause');
-        if (!v) return;
-        if (v.paused) {
-            v.play();
-            if (btn) btn.innerHTML = `<span class="material-symbols-outlined">pause</span>`;
-        } else {
-            v.pause();
-            if (btn) btn.innerHTML = `<span class="material-symbols-outlined">play_arrow</span>`;
-        }
-    },
-
-    goToDetails: (typeFlow) => {
-        if (typeFlow === 'video') {
-            const vid = Utils.el('f-video-element');
-            if (vid) vid.pause();
-            UploadEngineUI.goto('flow-layer-video-details');
-        } else if (typeFlow === 'short') {
-            UploadEngineUI.goto('flow-layer-short-details');
-        }
-    },
-
-    openShortCamera: async () => {
-        const backdrop = Utils.el('f-sheet-backdrop');
-        if (backdrop) backdrop.classList.remove('active');
-        studioActiveData.type = 'short';
-        UploadEngineUI.goto('flow-layer-short-camera');
-        
-        const success = await CameraStudio.init();
-        if (!success) {
-            const picker = Utils.el('f-native-short-picker');
-            if (picker) picker.click();
-            UploadEngineUI.closeAllLayers();
-        }
-    },
-
-    handleShortGallery: async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        studioActiveData.type = 'short';
-        studioActiveData.sourceFile = file;
-
-        const metadata = await Utils.generateVideoThumbnailFrames(file, 320);
-        studioActiveData.finalThumbBlob = metadata.blob;
-        studioActiveData.durationMeta = Utils.formatDuration(metadata.dur);
-        if (metadata.url && Utils.el('f-short-detail-preview')) Utils.el('f-short-detail-preview').src = metadata.url;
-
-        CameraStudio.shutdown();
-        UploadEngineUI.goto('flow-layer-short-details');
-    },
-
-    applyNextFilter: () => {
-        studioActiveData.activeFilters++;
-        const filters = ['none', 'grayscale(1)', 'sepia(0.8)', 'contrast(1.4) saturate(1.4)', 'invert(0.1)'];
-        const vid = Utils.el('f-video-element');
-        if (vid) vid.style.filter = filters[studioActiveData.activeFilters % filters.length];
-        Utils.vibrate();
-    },
-
-    applyNextFilterCamera: () => {
-        studioActiveData.activeFilters++;
-        const filters = ['none', 'contrast(1.2)', 'sepia(0.9)', 'saturate(1.8)', 'grayscale(0.8)'];
-        const cam = Utils.el('f-camera-feed');
-        if (cam) cam.style.filter = filters[studioActiveData.activeFilters % filters.length];
-        Utils.vibrate();
-    },
-
-    toggleVolume: () => {
-        const v = Utils.el('f-video-element');
-        if (v) {
-            v.muted = !v.muted;
-            Utils.vibrate();
-        }
-    },
-
-    setCustomThumb: (e, idTarget = 'f-detail-thumb-preview') => {
-        const file = e.target.files[0];
-        if (file) {
-            studioActiveData.finalThumbBlob = file;
-            const preview = Utils.el(idTarget);
-            if (preview) preview.src = URL.createObjectURL(file);
-        }
-    },
-
-    updateCharCount: (elem, max, idLabel) => {
-        const len = elem.value.length;
-        if (len > max) elem.value = elem.value.substring(0, max);
-        const label = Utils.el(idLabel);
-        if (label) label.innerText = `${Math.min(len, max)} / ${max}`;
-    },
-
-    openPostSystem: () => {
-        const backdrop = Utils.el('f-sheet-backdrop');
-        if (backdrop) backdrop.classList.remove('active');
-        UploadEngineUI.goto('flow-layer-post');
-    },
-
-    handlePostImage: (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            studioActiveData.type = 'post';
-            studioActiveData.sourceFile = file;
-            const preview = Utils.el('f-post-image-preview');
-            if (preview) {
-                preview.src = URL.createObjectURL(file);
-                preview.style.display = 'block';
-            }
-        }
-    }
-};
-
-// ==========================================
-// 10. WEBRTC CAMERA STUDIO
-// ==========================================
-const CameraStudio = {
-    stream: null,
-    mediaRecorder: null,
-    recordedChunks: [],
-    recording: false,
-    faceMode: 'environment',
-    flashEnabled: false,
-
-    init: async () => {
-        try {
-            if (CameraStudio.stream) {
-                CameraStudio.stream.getTracks().forEach((t) => t.stop());
-            }
-
-            const constraints = {
-                video: {
-                    facingMode: CameraStudio.faceMode,
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                },
-                audio: true
+        const videoInput = Utils.el('input-video-file');
+        if (videoInput) {
+            videoInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    UploadPage.activeFile = file;
+                    const preview = Utils.el('video-preview-element');
+                    preview.src = URL.createObjectURL(file);
+                    Utils.show('video-preview-element');
+                }
             };
+        }
 
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            CameraStudio.stream = stream;
-            
-            const feed = Utils.el('f-camera-feed');
-            if (feed) {
-                feed.srcObject = stream;
-                feed.play().catch(() => {});
+        onClick('post-image-picker-trigger', () => {
+            const input = Utils.el('input-post-file');
+            if (input) input.click();
+        });
+
+        const postInput = Utils.el('input-post-file');
+        if (postInput) {
+            postInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    UploadPage.activeFile = file;
+                    const preview = Utils.el('post-image-preview');
+                    preview.src = URL.createObjectURL(file);
+                    Utils.show('post-image-preview');
+                }
+            };
+        }
+
+        onClick('btn-short-gallery', () => {
+            const input = Utils.el('input-short-file');
+            if (input) input.click();
+        });
+
+        const shortInput = Utils.el('input-short-file');
+        if (shortInput) {
+            shortInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    UploadPage.activeFile = file;
+                    Utils.show('short-details-ui');
+                }
+            };
+        }
+
+        onClick('btn-publish-video', () => UploadPage.publish('video'));
+        onClick('btn-publish-short', () => UploadPage.publish('short'));
+        onClick('btn-publish-post', () => UploadPage.publish('post'));
+        onClick('btn-short-next', () => Utils.show('short-details-ui'));
+    },
+
+    openSheet: () => {
+        const uploadContainer = Utils.el('page-container-upload');
+        if (uploadContainer) {
+            uploadContainer.style.display = 'block';
+            uploadContainer.style.pointerEvents = 'auto';
+        }
+
+        const backdrop = Utils.el('upload-backdrop');
+        const sheet = Utils.el('upload-sheet');
+        if (backdrop && sheet) {
+            backdrop.style.display = 'flex';
+            void backdrop.offsetWidth;
+            backdrop.classList.add('active');
+            sheet.classList.add('active');
+            Router.addBackState('upload-sheet');
+        }
+    },
+
+    closeSheet: () => {
+        const backdrop = Utils.el('upload-backdrop');
+        const sheet = Utils.el('upload-sheet');
+        if (backdrop && sheet) {
+            backdrop.classList.remove('active');
+            sheet.classList.remove('active');
+            setTimeout(() => {
+                backdrop.style.display = 'none';
+                const anyFlowActive = document.querySelector('.upload-flow-layer.active');
+                if (!anyFlowActive) {
+                    const uploadContainer = Utils.el('page-container-upload');
+                    if (uploadContainer) {
+                        uploadContainer.style.display = 'none';
+                    }
+                }
+            }, 300);
+        }
+    },
+
+    openFlow: (flowId) => {
+        const uploadContainer = Utils.el('page-container-upload');
+        if (uploadContainer) {
+            uploadContainer.style.display = 'block';
+            uploadContainer.style.pointerEvents = 'auto';
+        }
+
+        UploadPage.closeSheet();
+        UploadPage.activeFile = null;
+        Utils.hide('video-preview-element');
+        Utils.hide('post-image-preview');
+
+        const flow = Utils.el(flowId);
+        if (flow) {
+            flow.classList.remove('flaynity-hidden');
+            setTimeout(() => flow.classList.add('active'), 10);
+            Router.addBackState('upload-flow');
+        }
+    },
+
+    closeAll: () => {
+        ['flow-video', 'flow-short', 'flow-post', 'short-details-ui'].forEach((id) => {
+            const el = Utils.el(id);
+            if (el) {
+                el.classList.remove('active');
+                setTimeout(() => el.classList.add('flaynity-hidden'), 300);
             }
-            return true;
-        } catch (e) {
-            console.error("Camera Init Error:", e);
-            return false;
-        }
-    },
+        });
+        UploadPage.activeFile = null;
 
-    flipCamera: async () => {
-        CameraStudio.faceMode = CameraStudio.faceMode === 'user' ? 'environment' : 'user';
-        Utils.vibrate();
-        await CameraStudio.init();
-    },
-
-    toggleFlash: async () => {
-        if (!CameraStudio.stream) return;
-        const track = CameraStudio.stream.getVideoTracks()[0];
-        if (!track) return;
-
-        try {
-            const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-            if (capabilities.torch) {
-                CameraStudio.flashEnabled = !CameraStudio.flashEnabled;
-                await track.applyConstraints({
-                    advanced: [{ torch: CameraStudio.flashEnabled }]
-                });
-                const flashBtn = Utils.el('f-cam-flash');
-                if (flashBtn) flashBtn.classList.toggle('active', CameraStudio.flashEnabled);
-                Utils.vibrate();
-            } else {
-                UI.toast("Flashlight is not supported on this lens.");
+        setTimeout(() => {
+            const uploadContainer = Utils.el('page-container-upload');
+            if (uploadContainer) {
+                uploadContainer.style.display = 'none';
             }
-        } catch (err) {
-            UI.toast("Flash control unavailable.");
-        }
+        }, 300);
     },
 
-    toggleRecord: () => {
-        if (CameraStudio.recording) {
-            CameraStudio.stopRecord();
-        } else {
-            CameraStudio.startRecord();
-        }
-    },
-
-    startRecord: () => {
-        if (!CameraStudio.stream) return;
-        Utils.vibrate(60);
-        CameraStudio.recording = true;
-        CameraStudio.recordedChunks = [];
-
-        const recBtn = Utils.el('f-btn-record');
-        const ring = Utils.el('f-record-ring');
-        if (recBtn) recBtn.classList.add('recording');
-        if (ring) ring.classList.add('f-cam-progress-active');
-
-        let mimeType = 'video/webm;codecs=vp8,opus';
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-            mimeType = 'video/mp4';
-            if (!MediaRecorder.isTypeSupported(mimeType)) {
-                mimeType = '';
-            }
-        }
-
-        try {
-            const options = mimeType ? { mimeType } : {};
-            CameraStudio.mediaRecorder = new MediaRecorder(CameraStudio.stream, options);
-        } catch (e) {
-            CameraStudio.mediaRecorder = new MediaRecorder(CameraStudio.stream);
-        }
-
-        CameraStudio.mediaRecorder.ondataavailable = (e) => {
-            if (e.data && e.data.size > 0) CameraStudio.recordedChunks.push(e.data);
-        };
-        CameraStudio.mediaRecorder.start(100);
-    },
-
-    stopRecord: () => {
-        if (!CameraStudio.recording || !CameraStudio.mediaRecorder) return;
-        CameraStudio.recording = false;
-        Utils.vibrate(30);
-
-        const recBtn = Utils.el('f-btn-record');
-        const ring = Utils.el('f-record-ring');
-        if (recBtn) recBtn.classList.remove('recording');
-        if (ring) ring.classList.remove('f-cam-progress-active');
-
-        CameraStudio.mediaRecorder.stop();
-        const nextTrig = Utils.el('f-short-next-trigger');
-        if (nextTrig) {
-            nextTrig.style.opacity = '1';
-            nextTrig.style.pointerEvents = 'auto';
-        }
-    },
-
-    finishRecording: async () => {
-        const mimeType = CameraStudio.mediaRecorder ? CameraStudio.mediaRecorder.mimeType : 'video/mp4';
-        const blob = new Blob(CameraStudio.recordedChunks, { type: mimeType });
-        studioActiveData.sourceFile = blob;
-
-        const metadata = await Utils.generateVideoThumbnailFrames(blob, 320);
-        studioActiveData.finalThumbBlob = metadata.blob;
-        studioActiveData.durationMeta = Utils.formatDuration(metadata.dur);
-        if (metadata.url && Utils.el('f-short-detail-preview')) Utils.el('f-short-detail-preview').src = metadata.url;
-
-        CameraStudio.shutdown();
-        UploadEngineUI.goto('flow-layer-short-details');
-    },
-
-    shutdown: () => {
-        if (CameraStudio.stream) {
-            CameraStudio.stream.getTracks().forEach((t) => t.stop());
-            CameraStudio.stream = null;
-            const feed = Utils.el('f-camera-feed');
-            if (feed) feed.srcObject = null;
-        }
-        CameraStudio.recording = false;
-    }
-};
-
-// ==========================================
-// 11. PUBLISHING PIPELINE (R2 + REALTIME DB)
-// ==========================================
-const UploadManager = {
-    toggleStatusPanel: (state, title, desc, spinning = false) => {
-        const panel = Utils.el('f-engine-status');
-        if (!panel) return;
-        if (!state) {
-            panel.classList.remove('show');
-            return;
-        }
-        if (Utils.el('f-eng-ttl')) Utils.el('f-eng-ttl').innerText = title;
-        if (Utils.el('f-eng-sub')) Utils.el('f-eng-sub').innerText = desc;
-        panel.classList.add('show');
-    },
-
-    triggerPublish: async (ctxMode) => {
-        if (!State.user) return UI.toast("Please log in first.");
+    // 🚀 STEP 1 -> STEP 2 -> STEP 3 PUBLISH ENGINE
+    publish: async (type) => {
         if (!State.channel) {
             UI.toast("Please create a channel first under 'You' tab.");
+            UploadPage.closeAll();
             Router.switchTab('you');
-            UploadEngineUI.closeAllLayers();
             return;
         }
 
-        let fdTitle = '';
-        let fdDesc = '';
-        let fdCat = 'Entertainment';
-        let fdVis = 'public';
+        let titleVal = '';
+        let descVal = '';
+        let catVal = 'Entertainment';
+        let visVal = 'public';
+        let textVal = '';
 
-        if (ctxMode === 'video') {
-            fdTitle = Utils.el('f-inp-video-title').value.trim();
-            fdDesc = Utils.el('f-inp-video-desc').value.trim();
-            fdCat = Utils.el('f-inp-video-cat').value;
-            fdVis = Utils.el('f-inp-video-vis').value;
-            if (!fdTitle || !studioActiveData.sourceFile) {
-                return UI.toast("Title and video file are required.");
-            }
-        } else if (ctxMode === 'short') {
-            fdTitle = Utils.el('f-inp-short-title').value.trim();
-            fdVis = Utils.el('f-inp-short-vis').value;
-            if (!fdTitle || !studioActiveData.sourceFile) {
-                return UI.toast("Caption and video are required.");
-            }
-        } else if (ctxMode === 'post') {
-            fdDesc = Utils.el('f-post-text-area').value.trim();
-            if (!fdDesc && !studioActiveData.sourceFile) {
-                return UI.toast("Text or image is required to post.");
-            }
+        if (type === 'video') {
+            titleVal = Utils.el('input-video-title').value.trim();
+            if (!titleVal || !UploadPage.activeFile) return UI.toast("Video title and file are required.");
+            descVal = Utils.el('input-video-desc').value.trim();
+            visVal = Utils.el('input-video-visibility').value;
+            catVal = Utils.el('input-video-category').value;
+        } else if (type === 'short') {
+            titleVal = Utils.el('input-short-title').value.trim();
+            if (!titleVal || !UploadPage.activeFile) return UI.toast("Short caption and video are required.");
+            visVal = Utils.el('input-short-visibility').value;
+        } else if (type === 'post') {
+            textVal = Utils.el('input-post-text').value.trim();
+            if (!textVal && !UploadPage.activeFile) return UI.toast("Post content or Image required.");
         }
 
-        UploadEngineUI.closeAllLayers();
-        UploadManager.toggleStatusPanel(true, "Uploading Media...", "Uploading to Cloudflare R2", true);
-
         try {
-            let r2ThumbUrl = '';
-            let r2MediaUrl = '';
+            UI.showUploadProgress("Uploading media to Cloudflare R2...");
 
-            // STEP 1: Upload to Cloudflare R2
-            if (studioActiveData.finalThumbBlob) {
-                r2ThumbUrl = await Services.uploadResilientFile(studioActiveData.finalThumbBlob, `thumbnails/${State.user.uid}`);
-            }
+            let cdnVideoUrl = '';
+            let thumbnailUrl = '';
+            let imageUrl = '';
+            let durationFormatted = '0:00';
 
-            if (studioActiveData.sourceFile) {
-                r2MediaUrl = await Services.uploadResilientFile(studioActiveData.sourceFile, `${ctxMode}s/${State.user.uid}`, (pct, loaded, total) => {
-                    UploadManager.toggleStatusPanel(true, `Uploading ${Math.round(pct)}%`, `${(loaded / (1024 * 1024)).toFixed(1)}MB / ${(total / (1024 * 1024)).toFixed(1)}MB`, true);
-                });
+            // STEP 1: Upload Media File to Cloudflare R2
+            if (type === 'video' || type === 'short') {
+                // Upload main video
+                cdnVideoUrl = await Services.uploadFile(UploadPage.activeFile, `${type}s/${State.user.uid}`);
+
+                // Generate & Upload Thumbnail to Cloudflare R2
+                try {
+                    UI.showUploadProgress("Generating video thumbnail...");
+                    const thumbResult = await Utils.generateVideoThumbnail(UploadPage.activeFile);
+                    if (thumbResult && thumbResult.blob) {
+                        durationFormatted = Utils.formatDuration(thumbResult.duration);
+                        thumbnailUrl = await Services.uploadFile(thumbResult.blob, `thumbnails/${State.user.uid}`, 'jpg');
+                    }
+                } catch (thumbErr) {
+                    console.warn("Thumbnail upload warning:", thumbErr);
+                }
+            } else if (type === 'post') {
+                if (UploadPage.activeFile) {
+                    imageUrl = await Services.uploadFile(UploadPage.activeFile, `posts/${State.user.uid}`);
+                }
             }
 
             // STEP 2: Save Metadata in Firebase Realtime Database
-            UploadManager.toggleStatusPanel(true, "Saving Details...", "Updating Realtime Database", true);
-
-            const metadataBlock = {
+            UI.showUploadProgress("Saving metadata to Realtime Database...");
+            const metadata = {
                 uid: State.user.uid,
                 channelId: State.channel.id,
                 channelName: State.channel.channelName,
                 channelAvatar: State.channel.avatarUrl || '',
-                cdnVideoUrl: ctxMode === 'post' ? null : r2MediaUrl,
-                imageUrl: ctxMode === 'post' ? r2MediaUrl : null,
-                thumbnailUrl: r2ThumbUrl || (ctxMode === 'post' ? r2MediaUrl : ''),
-                title: ctxMode !== 'post' ? fdTitle : null,
-                description: fdDesc || '',
-                text: fdDesc || '',
-                category: fdCat || 'Entertainment',
-                visibility: fdVis || 'public',
-                duration: studioActiveData.durationMeta || "0:00",
+                cdnVideoUrl: cdnVideoUrl,
+                thumbnailUrl: thumbnailUrl || cdnVideoUrl,
+                imageUrl: imageUrl,
+                title: titleVal,
+                description: descVal,
+                category: catVal,
+                visibility: visVal,
+                text: textVal,
+                duration: durationFormatted,
                 views: 0,
                 likes: 0,
                 comments: 0,
-                status: 'published',
                 createdAt: firebase.database.ServerValue.TIMESTAMP
             };
 
-            const targetRef = db.ref(`${ctxMode}s`).push();
-            await targetRef.set(metadataBlock);
+            const targetRef = db.ref(`${type}s`).push();
+            await targetRef.set(metadata);
 
-            // STEP 3: Instant Local UI Update (<2s sync)
-            const createdItem = { id: targetRef.key, ...metadataBlock, createdAt: Date.now() };
-            if (ctxMode === 'video') State.cache.videos.unshift(createdItem);
-            if (ctxMode === 'short') State.cache.shorts.unshift(createdItem);
-            if (ctxMode === 'post') State.cache.posts.unshift(createdItem);
+            // STEP 3: Close modal & instant redirect (<2s refresh via listeners)
+            UI.updateUploadProgress(100);
+            UI.hideUploadProgress();
+            UI.toast("Published successfully! 🚀");
+            UploadPage.closeAll();
+            
+            // Clean inputs
+            if (Utils.el('input-video-title')) Utils.el('input-video-title').value = '';
+            if (Utils.el('input-video-desc')) Utils.el('input-video-desc').value = '';
+            if (Utils.el('input-short-title')) Utils.el('input-short-title').value = '';
+            if (Utils.el('input-post-text')) Utils.el('input-post-text').value = '';
 
-            HomeFeed.render();
-            if (ctxMode === 'short') ShortsPlayer.render();
-
-            UploadManager.toggleStatusPanel(true, "Published Successfully! 🚀", "Updated across all feeds", false);
-            setTimeout(() => UploadManager.toggleStatusPanel(false), 2500);
-
-            Router.switchTab(ctxMode === 'short' ? 'shorts' : 'home');
+            Router.switchTab(type === 'short' ? 'shorts' : 'home');
         } catch (error) {
-            console.error("Publish Error:", error);
-            UploadManager.toggleStatusPanel(false);
+            console.error("Publish Failed:", error);
+            UI.hideUploadProgress();
             UI.toast("Upload failed: " + (error.message || "Network Error"));
         }
-
-        studioActiveData = { type: null, sourceFile: null, finalThumbBlob: null, durationMeta: "0:00", activeFilters: 0 };
     }
 };
 
 // ==========================================
-// 12. DISCOVER & SEARCH ENGINE
+// 10. DISCOVER & SEARCH ENGINE
 // ==========================================
 const DiscoverPage = {
     init: () => {
@@ -1279,12 +1105,11 @@ const DiscoverPage = {
 };
 
 // ==========================================
-// 13. YOU / CHANNEL STUDIO & ANALYTICS
+// 11. YOU / CHANNEL STUDIO & ANALYTICS
 // ==========================================
 const YouPage = {
     init: () => {
         onClick('btn-sign-out', AuthSystem.signOut);
-        
         onClick('btn-create-channel', () => {
             const layer = Utils.el('layer-create-channel');
             if (layer) {
@@ -1347,10 +1172,11 @@ const YouPage = {
             if (!name || !handle) return UI.toast("Name and handle are required.");
 
             try {
+                UI.showUploadProgress("Uploading Channel Avatar to R2...");
                 let avatarUrl = State.user.photoURL || '';
 
                 if (avatarFile) {
-                    avatarUrl = await Services.uploadResilientFile(avatarFile, `avatars/${State.user.uid}`);
+                    avatarUrl = await Services.uploadFile(avatarFile, `avatars/${State.user.uid}`);
                 }
 
                 await db.ref('channels').push().set({
@@ -1364,10 +1190,11 @@ const YouPage = {
                     totalViews: 0
                 });
 
+                UI.hideUploadProgress();
                 UI.toast("Channel created successfully!");
-                const layer = Utils.el('layer-create-channel');
-                if (layer) layer.classList.remove('active');
+                Utils.el('layer-create-channel').classList.remove('active');
             } catch (e) {
+                UI.hideUploadProgress();
                 UI.toast("Failed to create channel: " + e.message);
             }
         });
@@ -1397,14 +1224,14 @@ const YouPage = {
         if (layer) layer.classList.add('active');
 
         const ch = State.channel;
-        if (Utils.el('vc-avatar-img')) Utils.el('vc-avatar-img').src = ch.avatarUrl || State.user.photoURL;
-        if (ch.bannerUrl && Utils.el('vc-banner-img')) {
+        Utils.el('vc-avatar-img').src = ch.avatarUrl || State.user.photoURL;
+        if (ch.bannerUrl) {
             Utils.el('vc-banner-img').src = ch.bannerUrl;
             Utils.show('vc-banner-img');
         }
-        if (Utils.el('vc-name-text')) Utils.el('vc-name-text').innerText = ch.channelName;
-        if (Utils.el('vc-handle-text')) Utils.el('vc-handle-text').innerText = ch.handle;
-        if (Utils.el('vc-subs-text')) Utils.el('vc-subs-text').innerText = Utils.formatViews(ch.subscribersCount || 0);
+        Utils.el('vc-name-text').innerText = ch.channelName;
+        Utils.el('vc-handle-text').innerText = ch.handle;
+        Utils.el('vc-subs-text').innerText = Utils.formatViews(ch.subscribersCount || 0);
 
         YouPage.renderChannelContent('videos');
     },
@@ -1420,7 +1247,7 @@ const YouPage = {
         else if (tabName === 'posts') items = State.cache.posts.filter((p) => p.uid === State.user.uid);
 
         if (items.length === 0) {
-            area.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--flaynity-text-secondary, #888);">No ${tabName} published yet.</div>`;
+            area.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--flaynity-text-secondary);">No ${tabName} published yet.</div>`;
             return;
         }
 
@@ -1429,8 +1256,8 @@ const YouPage = {
             else if (tabName === 'posts') area.appendChild(HomeFeed.buildPostCard(item));
             else {
                 const div = document.createElement('div');
-                div.style.padding = '12px 16px';
-                div.style.borderBottom = '1px solid var(--flaynity-divider, #eee)';
+                div.style.padding = '12px 0';
+                div.style.borderBottom = '1px solid var(--flaynity-divider)';
                 div.innerText = item.title || 'Untitled Short';
                 area.appendChild(div);
             }
@@ -1453,14 +1280,14 @@ const YouPage = {
         const layer = Utils.el('layer-edit-channel');
         if (layer) layer.classList.add('active');
 
-        if (Utils.el('input-edit-name')) Utils.el('input-edit-name').value = ch.channelName || '';
-        if (Utils.el('input-edit-handle')) Utils.el('input-edit-handle').value = ch.handle || '';
-        if (Utils.el('input-edit-desc')) Utils.el('input-edit-desc').value = ch.description || '';
+        Utils.el('input-edit-name').value = ch.channelName || '';
+        Utils.el('input-edit-handle').value = ch.handle || '';
+        Utils.el('input-edit-desc').value = ch.description || '';
     }
 };
 
 // ==========================================
-// 14. ROUTER & GLOBAL NAVIGATION
+// 12. ROUTER & GLOBAL PERSISTENT NAVIGATION
 // ==========================================
 const Router = {
     pages: ['home', 'shorts', 'upload', 'discover', 'you'],
@@ -1475,18 +1302,18 @@ const Router = {
             }
             const html = await response.text();
 
+            if (html.includes('<title>Flaynity</title>')) {
+                throw new Error(`Server returned index.html for pages/${page}.html. Ensure the 'pages' directory is uploaded.`);
+            }
+
             const container = document.createElement('div');
             container.id = `page-container-${page}`;
-            
-            if (page === 'upload') {
-                container.style.cssText = `width:100%;height:100%;position:absolute;top:0;left:0;z-index:3000;pointer-events:none;display:block;`;
-            } else {
-                container.style.cssText = `width:100%;height:100%;position:absolute;top:0;left:0;display:${page === 'home' ? 'block' : 'none'};`;
-            }
+            container.style.cssText = `width:100%;height:100%;position:absolute;top:0;left:0;display:${page === 'home' ? 'block' : 'none'};`;
             container.innerHTML = html;
             appRoot.appendChild(container);
         }
 
+        // Global Bottom Navigation mount
         const bottomNav = Utils.el('flaynity-bottom-nav');
         if (bottomNav) {
             appRoot.appendChild(bottomNav);
@@ -1496,13 +1323,13 @@ const Router = {
     },
 
     bindGlobalNavigation: () => {
-        document.querySelectorAll('.nav-item, #btn-nav-upload, [data-tab="upload"]').forEach((el) => {
+        document.querySelectorAll('.nav-item').forEach((el) => {
             el.addEventListener('click', (e) => {
                 const targetNav = e.currentTarget;
-                const tab = targetNav.dataset.tab || (targetNav.id === 'btn-nav-upload' ? 'upload' : null);
+                const tab = targetNav.dataset.tab;
                 if (tab === 'upload') {
-                    UploadEngineUI.openSelectorSheet();
-                } else if (tab) {
+                    UploadPage.openSheet();
+                } else {
                     Router.switchTab(tab);
                 }
             });
@@ -1510,10 +1337,7 @@ const Router = {
     },
 
     switchTab: (tabName) => {
-        if (tabName === 'upload') {
-            UploadEngineUI.openSelectorSheet();
-            return;
-        }
+        if (tabName === 'upload') return;
 
         if (State.currentPlayingVideo && tabName !== 'shorts') {
             State.currentPlayingVideo.pause();
@@ -1564,11 +1388,11 @@ const Router = {
     }
 };
 
-// Android Native Back Button Interceptor
+// Android Native Back Action Listener
 window.app = {
     executeBackAction: () => {
         const watchPage = Utils.el('flaynity-watch-page');
-        const uploadSheet = Utils.el('f-sheet-backdrop');
+        const uploadSheet = Utils.el('upload-sheet');
 
         if (watchPage && watchPage.classList.contains('active')) {
             Player.close();
@@ -1578,13 +1402,13 @@ window.app = {
         }
 
         if (uploadSheet && uploadSheet.classList.contains('active')) {
-            UploadEngineUI.closeAllLayers();
+            UploadPage.closeSheet();
             Router.history.pop();
             Router.updateAndroidBackStack();
             return;
         }
 
-        const activeLayers = document.querySelectorAll('.f-up-flow-layer.active, .you-sub-layer.active');
+        const activeLayers = document.querySelectorAll('.upload-flow-layer.active, .you-sub-layer.active');
         if (activeLayers.length > 0) {
             activeLayers.forEach((l) => l.classList.remove('active'));
             Router.history.pop();
@@ -1600,7 +1424,7 @@ window.app = {
 };
 
 // ==========================================
-// 15. LIFECYCLE BOOTSTRAP & REALTIME HUB
+// 13. LIFECYCLE BOOTSTRAP & REALTIME SYNC HUB
 // ==========================================
 const App = {
     bootstrap: async () => {
@@ -1610,6 +1434,7 @@ const App = {
         const splashFailsafe = setTimeout(() => {
             const splash = Utils.el('flaynity-splash');
             if (splash && !splash.classList.contains('flaynity-hidden')) {
+                console.warn("[Failsafe] Dismissing splash screen automatically.");
                 Utils.hide('flaynity-splash');
                 if (!State.user) Utils.show('flaynity-auth');
             }
@@ -1617,19 +1442,25 @@ const App = {
 
         try {
             if (typeof firebase === 'undefined') {
-                throw new Error("Firebase SDK is not available.");
+                throw new Error("Firebase SDK is not available. Please verify network connectivity.");
             }
 
+            // 1. Fetch Page Templates & Mount Navigation
             await Router.fetchPages();
+
+            // 2. Initialize R2 & Database Services
             Services.init();
 
+            // 3. Initialize Controller Hubs
             HomeFeed.init();
             Player.init();
             ShortsPlayer.init();
+            UploadPage.init();
             DiscoverPage.init();
             YouPage.init();
             Router.bindGlobalNavigation();
 
+            // 4. Network Listeners
             window.addEventListener('offline', () => {
                 State.online = false;
                 Utils.show('flaynity-offline');
@@ -1649,7 +1480,9 @@ const App = {
                 }
             });
 
+            // 5. Initialize Auth Engine
             AuthSystem.init();
+
             clearTimeout(splashFailsafe);
         } catch (error) {
             clearTimeout(splashFailsafe);
@@ -1658,7 +1491,7 @@ const App = {
             const splash = document.getElementById('flaynity-splash');
             if (splash) {
                 splash.innerHTML = `
-                    <div style="padding: 24px; color: #ff3b30; text-align: center; background: #ffffff; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <div style="padding: 24px; color: #ff3b30; text-align: center; background: #ffffff; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
                         <span class="material-symbols-outlined" style="font-size: 56px; margin-bottom: 12px;">error_outline</span>
                         <h2 style="font-size: 20px; font-weight: 700; color: #111; margin-bottom: 8px;">Initialization Failed</h2>
                         <p style="font-size: 14px; color: #666; margin-bottom: 20px; max-width: 320px;">${error.message}</p>
@@ -1669,10 +1502,14 @@ const App = {
         }
     },
 
+    // ⚡ INSTANT REALTIME LISTENER PIPELINE (<2s auto refresh)
     startRealtimeListeners: () => {
+        // Realtime Long Videos Listener
         Services.addListener('videos', 'videos', (snap) => {
             const data = snap.val() || {};
             State.cache.videos = Object.keys(data).map((k) => ({ id: k, ...data[k] })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            
+            // Automatic instant update across screens
             HomeFeed.render();
             if (State.currentTab === 'you' && State.channel) {
                 YouPage.renderChannelContent('videos');
@@ -1682,9 +1519,11 @@ const App = {
             }
         });
 
+        // Realtime Shorts Listener
         Services.addListener('shorts', 'shorts', (snap) => {
             const data = snap.val() || {};
             State.cache.shorts = Object.keys(data).map((k) => ({ id: k, ...data[k] })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            
             HomeFeed.render();
             ShortsPlayer.render();
             if (State.currentTab === 'you' && State.channel) {
@@ -1692,9 +1531,11 @@ const App = {
             }
         });
 
+        // Realtime Community Posts Listener
         Services.addListener('posts', 'posts', (snap) => {
             const data = snap.val() || {};
             State.cache.posts = Object.keys(data).map((k) => ({ id: k, ...data[k] })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            
             HomeFeed.render();
             if (State.currentTab === 'you' && State.channel) {
                 YouPage.renderChannelContent('posts');
@@ -1704,7 +1545,7 @@ const App = {
 };
 
 // ==========================================
-// 16. MULTI-PLATFORM DOM BOOTSTRAP TRIGGER
+// 14. MULTI-PLATFORM DOM BOOTSTRAP TRIGGER
 // ==========================================
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => App.bootstrap());

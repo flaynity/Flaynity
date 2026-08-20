@@ -11,7 +11,6 @@
     --studio-text: #ffffff;
     --studio-text-sub: #aaaaaa;
     --studio-accent: #ff0000;
-    --studio-accent-hover: #cc0000;
     --studio-border: rgba(255, 255, 255, 0.12);
     --safe-bottom: env(safe-area-inset-bottom, 16px);
     --safe-top: env(safe-area-inset-top, 16px);
@@ -20,10 +19,10 @@
 .upload-studio-root {
     position: fixed;
     inset: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     background-color: var(--studio-bg);
-    z-index: 9000;
+    z-index: 99999;
     display: none;
     flex-direction: column;
     overflow: hidden;
@@ -34,7 +33,7 @@
 }
 
 .upload-studio-root.open {
-    display: flex;
+    display: flex !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -341,7 +340,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   MODE 3: POST UPLOAD (Image Pick Trigger Card)
+   MODE 3: POST UPLOAD
    -------------------------------------------------------------------------- */
 .post-picker-container {
     width: 100%;
@@ -374,7 +373,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   BOTTOM TEXT CAROUSEL MODE SWITCHER (NO ICONS, YOUTUBE INSPIRED)
+   BOTTOM TEXT CAROUSEL MODE SWITCHER (NO ICONS, YOUTUBE STYLE)
    -------------------------------------------------------------------------- */
 .studio-bottom-bar-wrapper {
     height: 80px;
@@ -427,7 +426,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   FULLSCREEN SUB-LAYERS: PREVIEW & DETAILS PAGES
+   FULLSCREEN SUB-LAYERS: PREVIEW & DETAILS
    -------------------------------------------------------------------------- */
 .studio-sub-layer {
     position: fixed;
@@ -480,7 +479,7 @@
     color: #ffffff;
 }
 
-/* Video Preview Player & Timeline Trimmer */
+/* Video Preview Player & Trimmer */
 .preview-player-stage {
     flex: 1;
     display: flex;
@@ -532,12 +531,6 @@
     pointer-events: none;
 }
 
-.trimmer-thumbnails-strip canvas {
-    height: 100%;
-    flex: 1;
-    object-fit: cover;
-}
-
 .trimmer-highlight-window {
     position: absolute;
     top: 0;
@@ -569,7 +562,7 @@
 .trim-handle.start { left: 0%; transform: translateX(-50%); }
 .trim-handle.end { right: 0%; transform: translateX(50%); }
 
-/* Details Scrollable Form (YouTube Mobile UI) */
+/* Details Scroll Form */
 .details-form-scroll {
     flex: 1;
     overflow-y: auto;
@@ -725,11 +718,11 @@
 
 /* Progress Overlay */
 .upload-progress-overlay {
-    position: absolute;
+    position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.88);
     backdrop-filter: blur(8px);
-    z-index: 9999;
+    z-index: 100000;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -773,7 +766,6 @@
                     <div style="width:24px;"></div>
                 </div>
                 <div class="video-grid-scroll" id="video-device-grid">
-                    <!-- Dynamic Video Items or Storage Trigger -->
                     <div class="video-upload-trigger-card" id="btn-browse-device-video">
                         <span class="material-symbols-outlined" style="font-size:40px;color:var(--studio-text-sub);">video_file</span>
                         <span style="font-size:14px;font-weight:600;">Choose Video from Device</span>

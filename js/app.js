@@ -1,5 +1,5 @@
 // ==========================================
-// 1. CONFIGURATION & GLOBAL STATE
+// 1. CONFIGURATION & STATE
 // ==========================================
 const CONFIG = {
     firebase: {
@@ -41,7 +41,7 @@ const State = {
 };
 
 // ==========================================
-// 2. HIGH-PRECISION UTILITIES & THUMBNAILS
+// 2. HIGH-PRECISION UTILITIES & THUMBNAIL ENGINE
 // ==========================================
 const Utils = {
     el: (id) => document.getElementById(id),
@@ -71,7 +71,9 @@ const Utils = {
 
         for (const [unit, value] of Object.entries(intervals)) {
             const count = Math.floor(seconds / value);
-            if (count >= 1) return `${count} ${unit}${count > 1 ? 's' : ''} ago`;
+            if (count >= 1) {
+                return `${count} ${unit}${count > 1 ? 's' : ''} ago`;
+            }
         }
         return `${seconds} seconds ago`;
     },
@@ -94,7 +96,9 @@ const Utils = {
     vibrate: (ms = 40) => {
         try {
             if (navigator.vibrate) navigator.vibrate(ms);
-        } catch (e) {}
+        } catch (e) {
+            console.warn("Haptic feedback unavailable");
+        }
     },
 
     secureText: (str) => {
@@ -104,43 +108,36 @@ const Utils = {
         return temp.innerHTML;
     },
 
-    generateVideoThumbnail: (fileOrUrl, atSecond = 1, customRatio = '16:9') => {
+    // Client-side instant video frame extractor for R2 thumbnail upload
+    generateVideoThumbnail: (file) => {
         return new Promise((resolve) => {
             const video = document.createElement('video');
             video.preload = 'metadata';
-            video.src = typeof fileOrUrl === 'string' ? fileOrUrl : URL.createObjectURL(fileOrUrl);
+            video.src = URL.createObjectURL(file);
             video.muted = true;
             video.playsInline = true;
 
-            video.onloadedmetadata = () => {
-                video.currentTime = Math.min(atSecond, video.duration || 1);
+            video.onloadeddata = () => {
+                video.currentTime = Math.min(1, (video.duration / 2) || 0);
             };
 
             video.onseeked = () => {
                 const canvas = document.createElement('canvas');
-                let width = 1280;
-                let height = 720;
-
-                if (customRatio === '9:16') {
-                    width = 720;
-                    height = 1280;
-                }
-
-                canvas.width = width;
-                canvas.height = height;
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 360;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
                 canvas.toBlob((blob) => {
                     const duration = video.duration || 0;
-                    if (typeof fileOrUrl !== 'string') URL.revokeObjectURL(video.src);
-                    resolve({ blob, duration, dataUrl: canvas.toDataURL('image/jpeg', 0.85) });
-                }, 'image/jpeg', 0.9);
+                    URL.revokeObjectURL(video.src);
+                    resolve({ blob, duration });
+                }, 'image/jpeg', 0.85);
             };
 
             video.onerror = () => {
-                if (typeof fileOrUrl !== 'string') URL.revokeObjectURL(video.src);
-                resolve({ blob: null, duration: 0, dataUrl: '' });
+                URL.revokeObjectURL(video.src);
+                resolve({ blob: null, duration: 0 });
             };
         });
     }
@@ -158,19 +155,18 @@ const UI = {
             bottom: calc(var(--bottom-nav-height) + 24px + var(--safe-area-bottom));
             left: 50%;
             transform: translateX(-50%) translateY(20px);
-            background: #222222;
+            background: #1e1e1e;
             color: #ffffff;
             padding: 12px 24px;
             border-radius: 28px;
-            z-index: 9999999;
+            z-index: 99999;
             font-size: 14px;
             font-weight: 600;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
             opacity: 0;
             transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
             pointer-events: none;
             white-space: nowrap;
-            border: 1px solid rgba(255,255,255,0.1);
         `;
         toast.innerText = msg;
         document.body.appendChild(toast);
@@ -188,7 +184,7 @@ const UI = {
     },
 
     showUploadProgress: (titleText = "Uploading to Cloudflare R2...") => {
-        const title = Utils.el('upload-progress-status-text');
+        const title = document.querySelector('#upload-progress-engine .progress-text');
         if (title) title.innerText = titleText;
         Utils.show('upload-progress-engine');
     },
@@ -206,21 +202,30 @@ const UI = {
 
 const onClick = (id, callback) => {
     const el = Utils.el(id);
-    if (el) el.onclick = callback;
+    if (el) {
+        el.onclick = callback;
+    } else {
+        console.warn(`[SafeBinder] Element #${id} not found.`);
+    }
 };
 
 // ==========================================
-// 3. CLOUDFLARE R2 & FIREBASE SERVICES
+// 3. CLOUDFLARE R2 OBJECT STORAGE ENGINE
 // ==========================================
 let auth, db, s3Client;
 
 const Services = {
     init: () => {
-        if (!window.firebase) throw new Error("Firebase SDK missing.");
-        if (!firebase.apps.length) firebase.initializeApp(CONFIG.firebase);
+        if (!window.firebase) {
+            throw new Error("Firebase Core SDK is not loaded.");
+        }
+        if (!firebase.apps.length) {
+            firebase.initializeApp(CONFIG.firebase);
+        }
         auth = firebase.auth();
         db = firebase.database();
 
+        // Configure AWS S3 SDK for Cloudflare R2
         if (typeof AWS !== 'undefined') {
             s3Client = new AWS.S3({
                 accessKeyId: CONFIG.r2.accessKey,
@@ -233,18 +238,27 @@ const Services = {
         }
     },
 
+    // Upload to Cloudflare R2 and return Fast CDN URL
     uploadFile: (fileOrBlob, folderPath, customExt = null) => {
         return new Promise((resolve, reject) => {
-            if (!s3Client) return reject(new Error("Cloudflare R2 is uninitialized."));
+            if (!s3Client) {
+                return reject(new Error("Cloudflare R2 Client is uninitialized."));
+            }
 
             let extension = customExt;
             if (!extension) {
-                if (fileOrBlob.name) extension = fileOrBlob.name.split('.').pop();
-                else if (fileOrBlob.type) extension = fileOrBlob.type.split('/')[1] || 'bin';
-                else extension = 'bin';
+                if (fileOrBlob.name) {
+                    extension = fileOrBlob.name.split('.').pop();
+                } else if (fileOrBlob.type) {
+                    extension = fileOrBlob.type.split('/')[1] || 'bin';
+                } else {
+                    extension = 'bin';
+                }
             }
 
             const uniqueKey = `${folderPath}/${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`;
+
+            // Note: Cloudflare R2 does NOT support 'ACL: public-read'. Omit ACL to prevent 400 Bad Request.
             const uploadParams = {
                 Bucket: CONFIG.r2.bucket,
                 Key: uniqueKey,
@@ -253,19 +267,22 @@ const Services = {
             };
 
             const uploadRequest = s3Client.upload(uploadParams);
-            uploadRequest.on('httpUploadProgress', (evt) => {
-                if (evt.total) {
-                    const percentage = (evt.loaded / evt.total) * 100;
+
+            uploadRequest.on('httpUploadProgress', (event) => {
+                if (event.total) {
+                    const percentage = (event.loaded / event.total) * 100;
                     UI.updateUploadProgress(percentage);
                 }
             });
 
-            uploadRequest.send((err) => {
+            uploadRequest.send((err, data) => {
                 if (err) {
-                    console.error("R2 Upload Error:", err);
+                    console.error("Cloudflare R2 Upload Error:", err);
                     reject(err);
                 } else {
-                    resolve(`${CONFIG.r2.publicUrl}/${uniqueKey}`);
+                    // Direct Cloudflare CDN delivery URL
+                    const finalCdnUrl = `${CONFIG.r2.publicUrl}/${uniqueKey}`;
+                    resolve(finalCdnUrl);
                 }
             });
         });
@@ -277,30 +294,35 @@ const Services = {
         const listenerCallback = (snapshot) => callback(snapshot);
         targetRef.on('value', listenerCallback);
         State.activeListeners[key] = { ref: targetRef, cb: listenerCallback };
+    },
+
+    removeListener: (key) => {
+        const entry = State.activeListeners[key];
+        if (entry) {
+            entry.ref.off('value', entry.cb);
+            delete State.activeListeners[key];
+        }
     }
 };
 
 // ==========================================
-// 4. AUTHENTICATION (FIXED BOTTOM NAV VISIBILITY)
+// 4. AUTHENTICATION & PROFILE SYSTEM
 // ==========================================
 const AuthSystem = {
     init: () => {
         auth.onAuthStateChanged(async (user) => {
             Utils.hide('flaynity-splash');
-            const bottomNav = Utils.el('flaynity-bottom-nav');
 
             if (user) {
                 State.user = user;
                 Utils.hide('flaynity-auth');
                 Utils.show('flaynity-home-ui');
-                if (bottomNav) bottomNav.style.display = 'flex'; // Show Bottom Nav for logged-in users
                 await AuthSystem.syncUserProfile();
                 App.startRealtimeListeners();
             } else {
                 State.user = null;
                 Utils.show('flaynity-auth');
                 Utils.hide('flaynity-home-ui');
-                if (bottomNav) bottomNav.style.display = 'none'; // Strictly Hide Bottom Nav on Sign-in screen
             }
         });
 
@@ -312,7 +334,7 @@ const AuthSystem = {
                     const provider = new firebase.auth.GoogleAuthProvider();
                     await auth.signInWithRedirect(provider);
                 } catch (error) {
-                    UI.toast("Sign in failed: " + error.message);
+                    UI.toast("Google Login Failed: " + error.message);
                 }
             }
         });
@@ -320,6 +342,7 @@ const AuthSystem = {
 
     syncUserProfile: async () => {
         if (!State.user) return;
+        
         const userRef = db.ref(`users/${State.user.uid}`);
         await userRef.update({
             uid: State.user.uid,
@@ -363,14 +386,16 @@ const AuthSystem = {
 window.handleNativeGoogleSignIn = (idToken) => {
     try {
         const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
-        auth.signInWithCredential(credential).catch((e) => UI.toast("Native Login Failed: " + e.message));
+        auth.signInWithCredential(credential).catch((error) => {
+            UI.toast("Native Google Sign-In Failed: " + error.message);
+        });
     } catch (e) {
-        console.error(e);
+        console.error("Token verification error:", e);
     }
 };
 
 // ==========================================
-// 5. HOME FEED ENGINE (COMPLETE & UNTOUCHED)
+// 5. HOME FEED ENGINE (6 Shorts -> 10 Videos -> 1 Post)
 // ==========================================
 const HomeFeed = {
     init: () => {
@@ -392,27 +417,14 @@ const HomeFeed = {
         container.innerHTML = '';
 
         if (type === 'Shorts') {
-            container.appendChild(HomeFeed.buildShortsGrid(State.cache.shorts));
+            container.appendChild(HomeFeed.buildShortsGrid(Visibility.publicList(State.cache.shorts)));
         } else if (type === 'Posts') {
-            State.cache.posts.forEach((post) => container.appendChild(HomeFeed.buildPostCard(post)));
+            Visibility.publicList(State.cache.posts).forEach((post) => {
+                container.appendChild(HomeFeed.buildPostCard(post));
+            });
         } else {
             HomeFeed.render();
         }
-    },
-
-    filterActivePublicItems: (list) => {
-        const now = Date.now();
-        return list.filter((item) => {
-            if (item.visibility === 'private') {
-                return State.user && item.uid === State.user.uid;
-            }
-            if (item.visibility === 'schedule') {
-                if (item.scheduledAt && item.scheduledAt > now) {
-                    return State.user && item.uid === State.user.uid;
-                }
-            }
-            return true;
-        });
     },
 
     render: () => {
@@ -420,43 +432,55 @@ const HomeFeed = {
         if (!container) return;
         container.innerHTML = '';
 
-        const videos = HomeFeed.filterActivePublicItems(State.cache.videos);
-        const shorts = HomeFeed.filterActivePublicItems(State.cache.shorts);
-        const posts = HomeFeed.filterActivePublicItems(State.cache.posts);
+        const videos = Visibility.publicList(State.cache.videos);
+        const shorts = Visibility.publicList(State.cache.shorts);
+        const posts = Visibility.publicList(State.cache.posts);
 
         if (videos.length === 0 && shorts.length === 0 && posts.length === 0) {
             container.innerHTML = `
                 <div style="padding: 60px 20px; text-align: center; color: var(--flaynity-text-secondary);">
                     <span class="material-symbols-outlined" style="font-size: 56px; margin-bottom: 12px;">video_library</span>
-                    <h3 style="font-size: 18px; margin-bottom: 6px;">No Content Available</h3>
-                    <p style="font-size: 13px;">Publish your first video, short or post!</p>
+                    <h3 style="font-size: 18px; margin-bottom: 6px;">No Content Yet</h3>
+                    <p style="font-size: 13px;">Publish your first video, short or community post!</p>
                 </div>
             `;
             return;
         }
 
-        let vIdx = 0, sIdx = 0, pIdx = 0, active = true;
+        let videoIdx = 0;
+        let shortsIdx = 0;
+        let postIdx = 0;
+        let active = true;
 
         while (active) {
-            let chunk = false;
-            if (sIdx < shorts.length) {
-                const batch = shorts.slice(sIdx, sIdx + 6);
-                sIdx += 6;
+            let chunkAdded = false;
+
+            // Pattern Step 1: 6 Shorts Grid
+            if (shortsIdx < shorts.length) {
+                const batch = shorts.slice(shortsIdx, shortsIdx + 6);
+                shortsIdx += 6;
                 container.appendChild(HomeFeed.buildShortsGrid(batch));
-                chunk = true;
+                chunkAdded = true;
             }
-            if (vIdx < videos.length) {
-                const batch = videos.slice(vIdx, vIdx + 10);
-                vIdx += 10;
-                batch.forEach((v) => container.appendChild(HomeFeed.buildVideoCard(v)));
-                chunk = true;
+
+            // Pattern Step 2: 10 Long Videos
+            if (videoIdx < videos.length) {
+                const batch = videos.slice(videoIdx, videoIdx + 10);
+                videoIdx += 10;
+                batch.forEach((video) => {
+                    container.appendChild(HomeFeed.buildVideoCard(video));
+                });
+                chunkAdded = true;
             }
-            if (pIdx < posts.length) {
-                container.appendChild(HomeFeed.buildPostCard(posts[pIdx]));
-                pIdx++;
-                chunk = true;
+
+            // Pattern Step 3: 1 Community Post
+            if (postIdx < posts.length) {
+                container.appendChild(HomeFeed.buildPostCard(posts[postIdx]));
+                postIdx++;
+                chunkAdded = true;
             }
-            if (!chunk) active = false;
+
+            if (!chunkAdded) active = false;
         }
     },
 
@@ -484,9 +508,12 @@ const HomeFeed = {
         const section = document.createElement('div');
         section.className = 'shorts-grid-section';
         let html = `
-            <div class="shorts-grid-header"><span class="material-symbols-outlined">app_shortcut</span> Shorts</div>
+            <div class="shorts-grid-header">
+                <span class="material-symbols-outlined">app_shortcut</span> Shorts
+            </div>
             <div class="s-grid">
         `;
+
         shortsBatch.forEach((item) => {
             html += `
                 <div class="s-card" data-id="${item.id}">
@@ -495,20 +522,27 @@ const HomeFeed = {
                 </div>
             `;
         });
+
         html += `</div>`;
         section.innerHTML = html;
-        section.querySelectorAll('.s-card').forEach((c) => {
-            c.onclick = () => {
+
+        section.querySelectorAll('.s-card').forEach((card) => {
+            card.onclick = () => {
                 Router.switchTab('shorts');
-                ShortsPlayer.scrollTo(c.dataset.id);
+                ShortsPlayer.scrollTo(card.dataset.id);
             };
         });
+
         return section;
     },
 
     buildPostCard: (data) => {
         const card = document.createElement('div');
         card.className = 'post-card';
+        card.id = `post-${data.id}`;
+
+        const isLiked = State.cache.userReactions[data.id] !== undefined;
+
         card.innerHTML = `
             <div class="post-header">
                 <img class="post-avatar" src="${data.channelAvatar || 'https://via.placeholder.com/40'}">
@@ -516,31 +550,78 @@ const HomeFeed = {
                     <div class="post-user">${Utils.secureText(data.channelName)}</div>
                     <div class="post-time">${Utils.timeAgo(data.createdAt)}</div>
                 </div>
+                <div class="post-subscribe" data-channel="${data.channelId}">Subscribe</div>
             </div>
-            <div class="post-text">${Utils.secureText(data.text || data.title || '')}</div>
-            ${data.imageUrl ? `<div class="post-image-grid count-1"><img src="${data.imageUrl}" loading="lazy" style="aspect-ratio:3/4;object-fit:cover;width:100%;border-radius:12px;"></div>` : ''}
+            <div class="post-text">${Utils.secureText(data.text || '')}</div>
+            ${data.imageUrl ? `<div class="post-image-grid count-1"><img src="${data.imageUrl}" loading="lazy"></div>` : ''}
             <div class="post-stats">
-                <div>${Utils.formatViews(data.likes || 0)} likes</div>
+                <div class="post-reactions-icons">
+                    <span class="reaction-preview">❤️ 👍 🥰</span> <span class="reaction-count">${Utils.formatViews(data.likes || 0)}</span>
+                </div>
                 <div>${Utils.formatViews(data.comments || 0)} comments</div>
             </div>
+            <div class="post-actions">
+                <div class="p-action-btn like-action-btn ${isLiked ? 'active' : ''}">
+                    <span class="material-symbols-outlined">${isLiked ? 'favorite' : 'thumb_up'}</span> Like
+                </div>
+                <div class="p-action-btn comment-action-btn">
+                    <span class="material-symbols-outlined">chat_bubble</span> Comment
+                </div>
+                <div class="p-action-btn share-action-btn">
+                    <span class="material-symbols-outlined">share</span> Share
+                </div>
+            </div>
         `;
+
+        const likeBtn = card.querySelector('.like-action-btn');
+        likeBtn.onclick = () => PostReactions.toggleLike(data.id);
+
         return card;
     }
 };
 
 // ==========================================
-// 6. CINEMA VIDEO PLAYER & SHORTS STREAM
+// 6. POST REACTION ENGINE
+// ==========================================
+const PostReactions = {
+    toggleLike: async (postId) => {
+        if (!State.user) {
+            return UI.toast("Please log in to like.");
+        }
+        Utils.vibrate();
+
+        const postRef = db.ref(`posts/${postId}/likes`);
+        const userReactionRef = db.ref(`post_reactions/${postId}/${State.user.uid}`);
+
+        const snapshot = await userReactionRef.once('value');
+        if (snapshot.exists()) {
+            await userReactionRef.remove();
+            await postRef.transaction((current) => Math.max((current || 1) - 1, 0));
+            delete State.cache.userReactions[postId];
+        } else {
+            await userReactionRef.set('like');
+            await postRef.transaction((current) => (current || 0) + 1);
+            State.cache.userReactions[postId] = 'like';
+        }
+    }
+};
+
+// ==========================================
+// 7. CINEMA VIDEO PLAYER (CLOUDFLARE CDN)
 // ==========================================
 const Player = {
     currentVideoData: null,
+
     init: () => {
         onClick('btn-close-watch', Player.close);
         onClick('wp-subscribe-btn', Player.toggleSubscribe);
     },
+
     open: (videoData) => {
         Player.currentVideoData = videoData;
         const layer = Utils.el('flaynity-watch-page');
         const videoEl = Utils.el('main-video-player');
+
         if (!layer || !videoEl) return;
 
         Utils.el('wp-title').innerText = videoData.title;
@@ -548,9 +629,11 @@ const Player = {
         Utils.el('wp-channel-handle').innerText = videoData.channelName;
         Utils.el('wp-like-count').innerText = Utils.formatViews(videoData.likes || 0);
         Utils.el('wp-channel-avatar').src = videoData.channelAvatar || 'https://via.placeholder.com/36';
+        Utils.show('wp-channel-avatar');
 
+        // Play directly via Cloudflare CDN URL
         videoEl.src = videoData.cdnVideoUrl;
-        videoEl.play().catch(() => {});
+        videoEl.play().catch(() => console.warn("Autoplay blocked by WebView"));
 
         layer.classList.add('active');
         State.currentPlayingVideo = videoEl;
@@ -559,7 +642,10 @@ const Player = {
         if (videoData.id) {
             db.ref(`videos/${videoData.id}/views`).transaction((count) => (count || 0) + 1);
         }
+
+        Player.loadRecommended(videoData.id);
     },
+
     close: () => {
         const layer = Utils.el('flaynity-watch-page');
         const videoEl = Utils.el('main-video-player');
@@ -571,28 +657,54 @@ const Player = {
         State.currentPlayingVideo = null;
         Player.currentVideoData = null;
     },
+
     toggleSubscribe: async () => {
-        if (!State.user || !Player.currentVideoData) return UI.toast("Log in to subscribe.");
+        if (!State.user || !Player.currentVideoData) {
+            return UI.toast("Log in to subscribe.");
+        }
         Utils.vibrate();
         const targetChannelId = Player.currentVideoData.channelId;
         const subRef = db.ref(`subscriptions/${targetChannelId}/${State.user.uid}`);
-        const countRef = db.ref(`channels/${targetChannelId}/subscribersCount`);
+        const channelSubsCountRef = db.ref(`channels/${targetChannelId}/subscribersCount`);
+
         const snapshot = await subRef.once('value');
+        const btn = Utils.el('wp-subscribe-btn');
 
         if (snapshot.exists()) {
             await subRef.remove();
-            await countRef.transaction((c) => Math.max((c || 1) - 1, 0));
+            await channelSubsCountRef.transaction((count) => Math.max((count || 1) - 1, 0));
+            btn.innerText = "Subscribe";
+            btn.style.background = "var(--flaynity-text)";
+            btn.style.color = "var(--flaynity-bg)";
             UI.toast("Unsubscribed");
         } else {
             await subRef.set(true);
-            await countRef.transaction((c) => (c || 0) + 1);
+            await channelSubsCountRef.transaction((count) => (count || 0) + 1);
+            btn.innerText = "Subscribed";
+            btn.style.background = "var(--flaynity-skeleton)";
+            btn.style.color = "var(--flaynity-text)";
             UI.toast("Subscribed!");
         }
+    },
+
+    loadRecommended: (excludeId) => {
+        const recArea = Utils.el('wp-recommended-feed');
+        if (!recArea) return;
+        recArea.innerHTML = '';
+
+        const list = Visibility.publicList(State.cache.videos).filter((v) => v.id !== excludeId);
+        list.slice(0, 8).forEach((item) => {
+            recArea.appendChild(HomeFeed.buildVideoCard(item));
+        });
     }
 };
 
+// ==========================================
+// 8. SHORTS VERTICAL STREAM (CLOUDFLARE CDN)
+// ==========================================
 const ShortsPlayer = {
     observer: null,
+
     init: () => {
         const container = Utils.el('shorts-feed-container');
         if (!container) return;
@@ -600,23 +712,40 @@ const ShortsPlayer = {
         ShortsPlayer.observer = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
                 const video = entry.target.querySelector('.short-video-element');
+                const disc = entry.target.querySelector('.music-disc-wrapper');
                 if (!video) return;
+
                 if (entry.isIntersecting) {
                     video.play().catch(() => {});
                     State.currentPlayingVideo = video;
+                    if (disc) disc.classList.add('disc-spin');
                 } else {
                     video.pause();
                     video.currentTime = 0;
+                    if (disc) disc.classList.remove('disc-spin');
                 }
             });
         }, { threshold: 0.65 });
     },
+
     render: () => {
         const container = Utils.el('shorts-feed-container');
         if (!container) return;
         container.innerHTML = '';
 
-        const shorts = HomeFeed.filterActivePublicItems(State.cache.shorts);
+        const shorts = Visibility.publicList(State.cache.shorts);
+
+        if (shorts.length === 0) {
+            container.innerHTML = `
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;text-align:center;padding:24px;">
+                    <span class="material-symbols-outlined" style="font-size:64px;margin-bottom:12px;">app_shortcut</span>
+                    <h3>No Shorts Available</h3>
+                    <p style="color:#aaa;font-size:13px;">Create and share your first 60-second video!</p>
+                </div>
+            `;
+            return;
+        }
+
         shorts.forEach((s) => {
             const card = document.createElement('div');
             card.className = 'short-view-container';
@@ -624,588 +753,1147 @@ const ShortsPlayer = {
             card.innerHTML = `
                 <video class="short-video-element" src="${s.cdnVideoUrl}" loop playsinline preload="auto"></video>
                 <div class="short-ui-overlay">
+                    <div class="short-actions-sidebar">
+                        <div class="s-action-btn like-btn">
+                            <span class="material-symbols-outlined">favorite</span>
+                            <span class="count">${Utils.formatViews(s.likes || 0)}</span>
+                        </div>
+                        <div class="s-action-btn comment-btn">
+                            <span class="material-symbols-outlined">chat</span>
+                            <span class="count">${Utils.formatViews(s.comments || 0)}</span>
+                        </div>
+                        <div class="s-action-btn share-btn">
+                            <span class="material-symbols-outlined">share</span>
+                            <span class="count">Share</span>
+                        </div>
+                        <div class="music-disc-wrapper disc-spin">
+                            <span class="material-symbols-outlined">music_note</span>
+                        </div>
+                    </div>
                     <div class="short-bottom-details">
                         <div class="short-channel-row">
                             <img src="${s.channelAvatar || 'https://via.placeholder.com/36'}">
                             <span class="short-handle">${Utils.secureText(s.channelName)}</span>
+                            <button class="short-sub-btn">Subscribe</button>
                         </div>
                         <div class="short-title-text">${Utils.secureText(s.title)}</div>
                     </div>
+                    <div class="short-center-play-indicator">
+                        <span class="material-symbols-outlined">play_arrow</span>
+                    </div>
                 </div>
             `;
+
+            let lastTap = 0;
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.short-actions-sidebar') || e.target.closest('.short-sub-btn')) return;
+
+                const now = new Date().getTime();
+                const delta = now - lastTap;
+
+                if (delta < 300 && delta > 0) {
+                    Utils.vibrate(60);
+                    const heartIcon = card.querySelector('.like-btn .material-symbols-outlined');
+                    heartIcon.style.color = 'var(--flaynity-accent)';
+                    heartIcon.style.transform = 'scale(1.4)';
+                    setTimeout(() => heartIcon.style.transform = 'scale(1)', 250);
+
+                    db.ref(`shorts/${s.id}/likes`).transaction((count) => (count || 0) + 1);
+                } else {
+                    const video = card.querySelector('video');
+                    const indicator = card.querySelector('.short-center-play-indicator');
+                    const disc = card.querySelector('.music-disc-wrapper');
+
+                    if (video.paused) {
+                        video.play();
+                        indicator.querySelector('span').innerText = 'play_arrow';
+                        if (disc) disc.classList.add('disc-spin');
+                    } else {
+                        video.pause();
+                        indicator.querySelector('span').innerText = 'pause';
+                        if (disc) disc.classList.remove('disc-spin');
+                    }
+                    indicator.classList.add('indicator-flash');
+                    setTimeout(() => indicator.classList.remove('indicator-flash'), 400);
+                }
+                lastTap = now;
+            });
+
             container.appendChild(card);
             ShortsPlayer.observer.observe(card);
         });
     },
-    scrollTo: (id) => {
-        const target = Utils.el(`short-view-${id}`);
+
+    scrollTo: (shortId) => {
+        const target = Utils.el(`short-view-${shortId}`);
         if (target) target.scrollIntoView({ behavior: 'smooth' });
     }
 };
 
-// ==========================================================================
-// 7. PREMIUM UPLOAD STUDIO CONTROLLER (FIXED CAMERA TOOLS & OVERLAYS)
-// ==========================================================================
-const UploadStudio = {
-    activeMode: 'video',
-    activeFile: null,
-    generatedThumbBlob: null,
-    customThumbBlob: null,
-    mediaDuration: 0,
-    trimStartSec: 0,
-    trimEndSec: 0,
+// ==========================================
+// 9. VISIBILITY / SCHEDULING ENGINE
+// ==========================================
+const Visibility = {
+    // Decide if an item should appear in PUBLIC feeds right now.
+    isPublicNow: (item) => {
+        if (!item) return false;
+        if (item.visibility === 'public' || !item.visibility) return true;
+        if (item.visibility === 'scheduled') {
+            return !!item.scheduledAt && item.scheduledAt <= Date.now();
+        }
+        return false; // private
+    },
 
-    cameraStream: null,
-    mediaRecorder: null,
-    recordedChunks: [],
-    facingMode: 'environment',
-    recordTimerInterval: null,
-    recordedTimeMs: 0,
-    maxRecordTimeMs: 15000, // Default 15s
-    isRecording: false,
-    timerSeconds: 0,
-    speedMultiplier: 1.0,
-    filterIndex: 0,
-    flashEnabled: false,
+    publicList: (arr) => (arr || []).filter(Visibility.isPublicNow),
 
-    filters: [
-        { name: 'Normal', css: 'none' },
-        { name: 'Vintage', css: 'sepia(0.6) contrast(1.15)' },
-        { name: 'B&W', css: 'grayscale(1) contrast(1.2)' },
-        { name: 'Vivid', css: 'saturate(1.8) contrast(1.15)' },
-        { name: 'Warm', css: 'sepia(0.3) saturate(1.4)' },
-        { name: 'Cyberpunk', css: 'hue-rotate(90deg) contrast(1.25)' }
-    ],
+    startAutoRevealTicker: () => {
+        // Scheduled items become public purely by clock time (no new DB write),
+        // so periodically re-render feeds to reveal anything whose time has arrived.
+        setInterval(() => {
+            if (State.currentTab === 'home') HomeFeed.render();
+            if (State.currentTab === 'shorts') ShortsPlayer.render();
+        }, 20000);
+    }
+};
+
+// ==========================================
+// 10. UPLOAD STUDIO — SHARED HELPERS (thumbnails / filmstrips)
+// ==========================================
+const StudioMedia = {
+    // Grab a single JPEG frame from a video file/blob at a given time (seconds).
+    grabFrame: (fileOrBlob, time = 0) => {
+        return new Promise((resolve) => {
+            const url = URL.createObjectURL(fileOrBlob);
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.muted = true;
+            video.playsInline = true;
+            video.src = url;
+
+            const cleanup = () => URL.revokeObjectURL(url);
+
+            video.onloadedmetadata = () => {
+                video.currentTime = Math.min(Math.max(time, 0), Math.max(video.duration - 0.05, 0));
+            };
+            video.onseeked = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 360;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob((blob) => {
+                    cleanup();
+                    resolve({ blob, dataUrl: canvas.toDataURL('image/jpeg', 0.82), duration: video.duration || 0 });
+                }, 'image/jpeg', 0.85);
+            };
+            video.onerror = () => { cleanup(); resolve({ blob: null, dataUrl: null, duration: 0 }); };
+        });
+    },
+
+    // Build an evenly-spaced filmstrip of N frames across the whole clip (for the trim timeline).
+    generateFilmstrip: async (fileOrBlob, count = 10) => {
+        const url = URL.createObjectURL(fileOrBlob);
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.muted = true;
+        video.playsInline = true;
+        video.src = url;
+
+        await new Promise((res) => { video.onloadedmetadata = res; video.onerror = res; });
+        const duration = video.duration || 0;
+        const canvas = document.createElement('canvas');
+        canvas.width = 160; canvas.height = 160;
+        const ctx = canvas.getContext('2d');
+        const frames = [];
+
+        const seekTo = (t) => new Promise((res) => {
+            const handler = () => { video.removeEventListener('seeked', handler); res(); };
+            video.addEventListener('seeked', handler);
+            video.currentTime = Math.min(Math.max(t, 0), Math.max(duration - 0.05, 0));
+        });
+
+        for (let i = 0; i < count; i++) {
+            const t = count > 1 ? (duration * i) / (count - 1) : 0;
+            await seekTo(t);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            frames.push(canvas.toDataURL('image/jpeg', 0.7));
+        }
+
+        URL.revokeObjectURL(url);
+        return { frames, duration };
+    }
+};
+
+// ==========================================
+// 11. CREATE SHEET — DRAGGABLE / SWIPEABLE CAROUSEL
+// ==========================================
+const CreateCarousel = {
+    types: ['video', 'short', 'post'],
+    selectedIndex: 0,
+    optionWidth: 150,
+    dragging: false,
+    startX: 0,
+    baseOffset: 0,
 
     init: () => {
-        // Mode Tabs
-        const modeTabs = document.querySelectorAll('.mode-tab-item');
-        modeTabs.forEach((tab) => {
-            tab.onclick = () => {
-                const targetMode = tab.dataset.mode;
-                UploadStudio.switchMode(targetMode);
-            };
-        });
+        const track = Utils.el('uc-track');
+        const viewport = Utils.el('uc-viewport');
+        if (!track || !viewport) return;
 
-        // Close Buttons
-        onClick('btn-close-studio-x', UploadStudio.close);
-        onClick('btn-close-camera-x', UploadStudio.close);
+        track.style.marginLeft = `-${CreateCarousel.optionWidth / 2}px`;
 
-        // Video Pick Triggers
-        onClick('btn-browse-device-video', () => Utils.el('input-device-video-file').click());
-        onClick('btn-trigger-picker-modal', () => Utils.el('input-device-video-file').click());
+        const onDown = (clientX) => {
+            CreateCarousel.dragging = true;
+            CreateCarousel.startX = clientX;
+            CreateCarousel.baseOffset = -CreateCarousel.selectedIndex * CreateCarousel.optionWidth;
+            track.classList.add('dragging');
+        };
+        const onMove = (clientX) => {
+            if (!CreateCarousel.dragging) return;
+            const delta = clientX - CreateCarousel.startX;
+            track.style.transform = `translateX(${CreateCarousel.baseOffset + delta}px)`;
+        };
+        const onUp = (clientX) => {
+            if (!CreateCarousel.dragging) return;
+            CreateCarousel.dragging = false;
+            track.classList.remove('dragging');
+            const delta = clientX - CreateCarousel.startX;
 
-        const videoFileInput = Utils.el('input-device-video-file');
-        if (videoFileInput) {
-            videoFileInput.onchange = (e) => {
-                const file = e.target.files[0];
-                if (file) UploadStudio.loadVideoFileForPreview(file);
-            };
-        }
-
-        // Post Trigger
-        onClick('btn-browse-post-image', () => Utils.el('input-device-post-file').click());
-        const postFileInput = Utils.el('input-device-post-file');
-        if (postFileInput) {
-            postFileInput.onchange = (e) => {
-                const file = e.target.files[0];
-                if (file) UploadStudio.loadPostImageForPreview(file);
-            };
-        }
-
-        // Short Gallery Trigger
-        onClick('btn-short-open-gallery', () => Utils.el('input-device-short-file').click());
-        const shortFileInput = Utils.el('input-device-short-file');
-        if (shortFileInput) {
-            shortFileInput.onchange = (e) => {
-                const file = e.target.files[0];
-                if (file) UploadStudio.loadShortVideoForPreview(file);
-            };
-        }
-
-        // Custom Thumbnails
-        onClick('btn-custom-thumb-video', () => Utils.el('input-custom-thumb-video').click());
-        Utils.el('input-custom-thumb-video').onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                UploadStudio.customThumbBlob = file;
-                Utils.el('video-details-thumb-preview').src = URL.createObjectURL(file);
+            if (Math.abs(delta) < 8) {
+                // Treat as a tap — handled by option click handlers below.
+                CreateCarousel.snapTo(CreateCarousel.selectedIndex);
+                return;
             }
+            const moveSteps = Math.round(-delta / CreateCarousel.optionWidth);
+            let newIndex = CreateCarousel.selectedIndex + moveSteps;
+            newIndex = Math.min(Math.max(newIndex, 0), CreateCarousel.types.length - 1);
+            CreateCarousel.snapTo(newIndex);
         };
 
-        // Navigation Back/Next
-        onClick('btn-back-video-preview', () => UploadStudio.hideSubLayer('layer-video-preview'));
-        onClick('btn-next-video-details', () => {
-            UploadStudio.hideSubLayer('layer-video-preview');
-            UploadStudio.openSubLayer('layer-video-details');
-        });
-        onClick('btn-back-video-details', () => {
-            UploadStudio.hideSubLayer('layer-video-details');
-            UploadStudio.openSubLayer('layer-video-preview');
-        });
+        viewport.addEventListener('pointerdown', (e) => { viewport.setPointerCapture(e.pointerId); onDown(e.clientX); });
+        viewport.addEventListener('pointermove', (e) => onMove(e.clientX));
+        viewport.addEventListener('pointerup', (e) => onUp(e.clientX));
+        viewport.addEventListener('pointercancel', (e) => onUp(e.clientX));
 
-        onClick('btn-back-short-preview', () => UploadStudio.hideSubLayer('layer-short-preview'));
-        onClick('btn-next-short-details', () => {
-            UploadStudio.hideSubLayer('layer-short-preview');
-            UploadStudio.openSubLayer('layer-short-details');
-        });
-        onClick('btn-back-short-details', () => {
-            UploadStudio.hideSubLayer('layer-short-details');
-            UploadStudio.openSubLayer('layer-short-preview');
-        });
-
-        onClick('btn-back-post-preview', () => UploadStudio.hideSubLayer('layer-post-preview'));
-        onClick('btn-next-post-details', () => {
-            UploadStudio.hideSubLayer('layer-post-preview');
-            UploadStudio.openSubLayer('layer-post-details');
-        });
-        onClick('btn-back-post-details', () => {
-            UploadStudio.hideSubLayer('layer-post-details');
-            UploadStudio.openSubLayer('layer-post-preview');
-        });
-
-        // Counters
-        UploadStudio.bindCharacterCounter('input-v-title', 'video-title-counter', 100);
-        UploadStudio.bindCharacterCounter('input-v-desc', 'video-desc-counter', 5000);
-        UploadStudio.bindCharacterCounter('input-s-title', 'short-title-counter', 100);
-        UploadStudio.bindCharacterCounter('input-p-title', 'post-title-counter', 1000);
-
-        // Schedule Toggle
-        Utils.el('select-v-visibility').onchange = (e) => {
-            Utils.el('group-v-schedule').style.display = e.target.value === 'schedule' ? 'flex' : 'none';
-        };
-        Utils.el('select-s-visibility').onchange = (e) => {
-            Utils.el('group-s-schedule').style.display = e.target.value === 'schedule' ? 'flex' : 'none';
-        };
-        Utils.el('select-p-visibility').onchange = (e) => {
-            Utils.el('group-p-schedule').style.display = e.target.value === 'schedule' ? 'flex' : 'none';
-        };
-
-        // Publish Actions
-        onClick('btn-submit-publish-video', () => UploadStudio.publishContent('video'));
-        onClick('btn-submit-publish-short', () => UploadStudio.publishContent('short'));
-        onClick('btn-submit-publish-post', () => UploadStudio.publishContent('post'));
-
-        UploadStudio.bindCameraTools();
-    },
-
-    open: () => {
-        if (!State.channel) {
-            UI.toast("Please create a channel first under 'You' tab.");
-            Router.switchTab('you');
-            return;
-        }
-
-        const uploadContainer = Utils.el('page-container-upload');
-        if (uploadContainer) {
-            uploadContainer.style.display = 'block';
-            uploadContainer.style.zIndex = '99999';
-        }
-
-        const studioRoot = Utils.el('flaynity-upload-studio');
-        if (studioRoot) {
-            studioRoot.style.display = 'flex';
-            studioRoot.classList.add('open');
-        }
-
-        Router.addBackState('upload-studio');
-        UploadStudio.switchMode('video');
-    },
-
-    close: () => {
-        UploadStudio.stopCamera();
-        const studioRoot = Utils.el('flaynity-upload-studio');
-        if (studioRoot) {
-            studioRoot.style.display = 'none';
-            studioRoot.classList.remove('open');
-        }
-        document.querySelectorAll('.studio-sub-layer').forEach((l) => l.classList.remove('active'));
-
-        const uploadContainer = Utils.el('page-container-upload');
-        if (uploadContainer) uploadContainer.style.display = 'none';
-    },
-
-    switchMode: (mode) => {
-        UploadStudio.activeMode = mode;
-        Utils.vibrate(30);
-
-        document.querySelectorAll('.mode-tab-item').forEach((item) => {
-            item.classList.toggle('active', item.dataset.mode === mode);
-        });
-
-        document.querySelectorAll('.mode-panel').forEach((panel) => panel.classList.remove('active'));
-
-        const activePanel = Utils.el(`panel-mode-${mode}`);
-        if (activePanel) activePanel.classList.add('active');
-
-        if (mode === 'short') {
-            UploadStudio.startCamera();
-        } else {
-            UploadStudio.stopCamera();
-        }
-    },
-
-    openSubLayer: (layerId) => {
-        const layer = Utils.el(layerId);
-        if (layer) {
-            layer.classList.add('active');
-            Router.addBackState(layerId);
-        }
-    },
-
-    hideSubLayer: (layerId) => {
-        const layer = Utils.el(layerId);
-        if (layer) layer.classList.remove('active');
-    },
-
-    bindCharacterCounter: (inputId, counterId, max) => {
-        const input = Utils.el(inputId);
-        const counter = Utils.el(counterId);
-        if (input && counter) {
-            input.oninput = () => counter.innerText = `${input.value.length}/${max}`;
-        }
-    },
-
-    loadVideoFileForPreview: async (file) => {
-        UploadStudio.activeFile = file;
-        UploadStudio.customThumbBlob = null;
-
-        const videoEl = Utils.el('main-video-preview-el');
-        const fileUrl = URL.createObjectURL(file);
-        videoEl.src = fileUrl;
-
-        videoEl.onloadedmetadata = async () => {
-            UploadStudio.mediaDuration = videoEl.duration || 0;
-            UploadStudio.trimStartSec = 0;
-            UploadStudio.trimEndSec = UploadStudio.mediaDuration;
-
-            Utils.el('trimmer-time-display').innerText = `0:00 / ${Utils.formatDuration(UploadStudio.mediaDuration)}`;
-            Utils.el('trimmer-selected-duration').innerText = `Selected: ${Utils.formatDuration(UploadStudio.mediaDuration)}`;
-
-            const thumbResult = await Utils.generateVideoThumbnail(file, 1, '16:9');
-            UploadStudio.generatedThumbBlob = thumbResult.blob;
-            Utils.el('video-details-thumb-preview').src = thumbResult.dataUrl;
-
-            UploadStudio.openSubLayer('layer-video-preview');
-            videoEl.play().catch(() => {});
-        };
-    },
-
-    // ----------------------------------------------------------------------
-    // FIXED CAMERA TOOLS (FLIP, FLASH, TIMER, DURATION, SPEED, FILTERS)
-    // ----------------------------------------------------------------------
-    startCamera: async () => {
-        try {
-            if (UploadStudio.cameraStream) UploadStudio.stopCamera();
-
-            const constraints = {
-                video: { facingMode: UploadStudio.facingMode, width: { ideal: 720 }, height: { ideal: 1280 } },
-                audio: true
-            };
-            UploadStudio.cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
-            const streamEl = Utils.el('short-cam-stream');
-            if (streamEl) {
-                streamEl.srcObject = UploadStudio.cameraStream;
-                streamEl.style.filter = UploadStudio.filters[UploadStudio.filterIndex].css;
-            }
-        } catch (err) {
-            console.error("Camera Error:", err);
-            UI.toast("Camera permission required.");
-        }
-    },
-
-    stopCamera: () => {
-        if (UploadStudio.cameraStream) {
-            UploadStudio.cameraStream.getTracks().forEach((t) => t.stop());
-            UploadStudio.cameraStream = null;
-        }
-    },
-
-    bindCameraTools: () => {
-        // 1. Shutter Record
-        const shutter = Utils.el('btn-shutter-record');
-        if (shutter) {
-            shutter.onclick = () => {
-                if (UploadStudio.isRecording) UploadStudio.stopShortRecording();
-                else UploadStudio.startShortRecording();
-            };
-        }
-
-        // 2. Switch Camera (Front <-> Rear)
-        onClick('tool-flip-camera', () => {
-            UploadStudio.facingMode = UploadStudio.facingMode === 'user' ? 'environment' : 'user';
-            UploadStudio.startCamera();
-            UI.toast(UploadStudio.facingMode === 'user' ? "Front Camera" : "Rear Camera");
-        });
-
-        // 3. Timer (Off, 3s, 10s, 20s)
-        onClick('tool-camera-timer', () => {
-            const timers = [0, 3, 10, 20];
-            const currentIdx = timers.indexOf(UploadStudio.timerSeconds);
-            UploadStudio.timerSeconds = timers[(currentIdx + 1) % timers.length];
-            UI.toast(UploadStudio.timerSeconds === 0 ? "Timer: Off" : `Timer: ${UploadStudio.timerSeconds}s`);
-        });
-
-        // 4. Recording Duration (15s, 30s, 60s, 3m)
-        onClick('tool-camera-duration', () => {
-            const durations = [
-                { label: '15s', ms: 15000 },
-                { label: '30s', ms: 30000 },
-                { label: '60s', ms: 60000 },
-                { label: '3m', ms: 180000 }
-            ];
-            const curIdx = durations.findIndex((d) => d.ms === UploadStudio.maxRecordTimeMs);
-            const nextObj = durations[(curIdx + 1) % durations.length];
-            UploadStudio.maxRecordTimeMs = nextObj.ms;
-            Utils.el('label-cam-duration').innerText = nextObj.label;
-            UI.toast(`Max Duration: ${nextObj.label}`);
-        });
-
-        // 5. Speed (0.3x, 0.5x, 1x, 2x, 3x)
-        onClick('tool-camera-speed', () => {
-            const speeds = [0.3, 0.5, 1.0, 2.0, 3.0];
-            const curIdx = speeds.indexOf(UploadStudio.speedMultiplier);
-            UploadStudio.speedMultiplier = speeds[(curIdx + 1) % speeds.length];
-            Utils.el('label-cam-speed').innerText = `${UploadStudio.speedMultiplier}x`;
-            UI.toast(`Speed: ${UploadStudio.speedMultiplier}x`);
-        });
-
-        // 6. Filters (Normal, Vintage, B&W, Vivid, Warm, Cyberpunk)
-        onClick('tool-camera-filters', () => {
-            UploadStudio.filterIndex = (UploadStudio.filterIndex + 1) % UploadStudio.filters.length;
-            const cur = UploadStudio.filters[UploadStudio.filterIndex];
-            const streamEl = Utils.el('short-cam-stream');
-            if (streamEl) streamEl.style.filter = cur.css;
-            UI.toast(`Filter: ${cur.name}`);
-        });
-
-        // 7. Flash Torch Toggle
-        onClick('tool-camera-flash', async () => {
-            if (!UploadStudio.cameraStream) return;
-            const videoTrack = UploadStudio.cameraStream.getVideoTracks()[0];
-            if (!videoTrack) return;
-
-            try {
-                UploadStudio.flashEnabled = !UploadStudio.flashEnabled;
-                await videoTrack.applyConstraints({
-                    advanced: [{ torch: UploadStudio.flashEnabled }]
-                });
-                Utils.el('tool-camera-flash').innerHTML = `<span class="material-symbols-outlined">${UploadStudio.flashEnabled ? 'flash_on' : 'flash_off'}</span>`;
-                UI.toast(UploadStudio.flashEnabled ? "Flash ON" : "Flash OFF");
-            } catch (e) {
-                UI.toast("Flash torch not supported on this lens");
-            }
-        });
-
-        // 8. Done Action
-        onClick('btn-short-camera-done', () => {
-            if (UploadStudio.activeFile) UploadStudio.openShortPreviewLayer();
-        });
-    },
-
-    startShortRecording: () => {
-        if (!UploadStudio.cameraStream) return;
-
-        const runRecording = () => {
-            UploadStudio.isRecording = true;
-            UploadStudio.recordedChunks = [];
-            Utils.vibrate(60);
-
-            Utils.el('btn-shutter-record').classList.add('recording');
-            UploadStudio.mediaRecorder = new MediaRecorder(UploadStudio.cameraStream);
-
-            UploadStudio.mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) UploadStudio.recordedChunks.push(e.data);
-            };
-
-            UploadStudio.mediaRecorder.onstop = () => {
-                const recordedBlob = new Blob(UploadStudio.recordedChunks, { type: 'video/mp4' });
-                UploadStudio.activeFile = recordedBlob;
-                UploadStudio.openShortPreviewLayer();
-            };
-
-            UploadStudio.mediaRecorder.start(100);
-            UploadStudio.recordedTimeMs = 0;
-
-            UploadStudio.recordTimerInterval = setInterval(() => {
-                UploadStudio.recordedTimeMs += 100;
-                if (UploadStudio.recordedTimeMs >= UploadStudio.maxRecordTimeMs) {
-                    UploadStudio.stopShortRecording();
-                }
-            }, 100);
-        };
-
-        if (UploadStudio.timerSeconds > 0) {
-            const display = Utils.el('cam-countdown-display');
-            display.style.display = 'flex';
-            let count = UploadStudio.timerSeconds;
-            display.innerText = count;
-
-            const countdownInt = setInterval(() => {
-                count--;
-                if (count > 0) {
-                    display.innerText = count;
+        track.querySelectorAll('.uc-option').forEach((opt, idx) => {
+            opt.addEventListener('click', () => {
+                if (CreateCarousel.dragging) return;
+                if (idx === CreateCarousel.selectedIndex) {
+                    UploadPage.openFlow(CreateCarousel.types[idx]);
                 } else {
-                    clearInterval(countdownInt);
-                    display.style.display = 'none';
-                    runRecording();
+                    CreateCarousel.snapTo(idx);
                 }
-            }, 1000);
-        } else {
-            runRecording();
-        }
+            });
+        });
+
+        CreateCarousel.snapTo(0, true);
     },
 
-    stopShortRecording: () => {
-        if (!UploadStudio.isRecording) return;
-        UploadStudio.isRecording = false;
-        Utils.vibrate(60);
-        clearInterval(UploadStudio.recordTimerInterval);
-        Utils.el('btn-shutter-record').classList.remove('recording');
-        if (UploadStudio.mediaRecorder && UploadStudio.mediaRecorder.state !== 'inactive') {
-            UploadStudio.mediaRecorder.stop();
-        }
-    },
+    snapTo: (index, instant = false) => {
+        const track = Utils.el('uc-track');
+        if (!track) return;
+        CreateCarousel.selectedIndex = index;
+        if (instant) track.style.transition = 'none';
+        track.style.transform = `translateX(${-index * CreateCarousel.optionWidth}px)`;
+        if (instant) requestAnimationFrame(() => { track.style.transition = ''; });
 
-    loadShortVideoForPreview: (fileOrBlob) => {
-        UploadStudio.activeFile = fileOrBlob;
-        UploadStudio.openShortPreviewLayer();
-    },
+        track.querySelectorAll('.uc-option').forEach((opt, i) => {
+            opt.classList.toggle('uc-selected', i === index);
+            opt.classList.toggle('uc-neighbor', i !== index);
+        });
+        document.querySelectorAll('.uc-dot').forEach((dot, i) => {
+            dot.classList.toggle('uc-dot-active', i === index);
+        });
+        Utils.vibrate(15);
+    }
+};
 
-    openShortPreviewLayer: async () => {
-        UploadStudio.stopCamera();
-        const shortPreviewEl = Utils.el('short-preview-video-el');
-        shortPreviewEl.src = URL.createObjectURL(UploadStudio.activeFile);
-        shortPreviewEl.playbackRate = UploadStudio.speedMultiplier;
-        shortPreviewEl.style.filter = UploadStudio.filters[UploadStudio.filterIndex].css;
+// ==========================================
+// 12. MEDIA GRID PICKER (device video / photo grid)
+// ==========================================
+const MediaGridPicker = {
+    // Renders picked files as a tappable thumbnail grid inside `listId`,
+    // keeping the "add tile" so the user can pick more.
+    render: async (listId, addTileId, files, kind, onPick) => {
+        const list = Utils.el(listId);
+        const addTile = Utils.el(addTileId);
+        if (!list) return;
 
-        UploadStudio.openSubLayer('layer-short-preview');
-        shortPreviewEl.play().catch(() => {});
+        list.querySelectorAll('.gp-generated').forEach((n) => n.remove());
 
-        const thumbResult = await Utils.generateVideoThumbnail(UploadStudio.activeFile, 0.5, '9:16');
-        UploadStudio.generatedThumbBlob = thumbResult.blob;
-        Utils.el('short-details-thumb-preview').src = thumbResult.dataUrl;
-    },
+        for (const file of files) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-picker-cell gp-generated';
 
-    loadPostImageForPreview: (file) => {
-        UploadStudio.activeFile = file;
-        const imgEl = Utils.el('post-preview-img-el');
-        imgEl.src = URL.createObjectURL(file);
-        UploadStudio.openSubLayer('layer-post-preview');
-    },
-
-    publishContent: async (type) => {
-        let titleVal = '';
-        let descVal = '';
-        let visVal = 'public';
-        let catVal = 'Entertainment';
-        let scheduledTimestamp = null;
-        let allowComments = true;
-        let showLikes = true;
-
-        if (type === 'video') {
-            titleVal = Utils.el('input-v-title').value.trim();
-            descVal = Utils.el('input-v-desc').value.trim();
-            visVal = Utils.el('select-v-visibility').value;
-            allowComments = Utils.el('toggle-v-comments').checked;
-            showLikes = Utils.el('toggle-v-likes').checked;
-
-            if (!titleVal) return UI.toast("Title is required.");
-            if (!descVal) return UI.toast("Description is required.");
-
-            if (visVal === 'schedule') {
-                const schedVal = Utils.el('input-v-schedule-time').value;
-                if (!schedVal) return UI.toast("Please select schedule date & time.");
-                scheduledTimestamp = new Date(schedVal).getTime();
+            if (kind === 'video') {
+                const { dataUrl, duration } = await StudioMedia.grabFrame(file, 0.3);
+                cell.innerHTML = `
+                    <img src="${dataUrl || ''}">
+                    <div class="gp-duration">${Utils.formatDuration(duration)}</div>
+                    <div class="gp-check"><span class="material-symbols-outlined" style="color:#fff;">play_circle</span></div>
+                `;
+            } else {
+                cell.innerHTML = `
+                    <img src="${URL.createObjectURL(file)}">
+                    <div class="gp-check"><span class="material-symbols-outlined" style="color:#fff;">check_circle</span></div>
+                `;
             }
-        } else if (type === 'short') {
-            titleVal = Utils.el('input-s-title').value.trim();
-            visVal = Utils.el('select-s-visibility').value;
-            allowComments = Utils.el('toggle-s-comments').checked;
-
-            if (!titleVal) return UI.toast("Caption is required.");
-            if (visVal === 'schedule') {
-                const schedVal = Utils.el('input-s-schedule-time').value;
-                if (!schedVal) return UI.toast("Please select schedule date & time.");
-                scheduledTimestamp = new Date(schedVal).getTime();
-            }
-        } else if (type === 'post') {
-            titleVal = Utils.el('input-p-title').value.trim();
-            visVal = Utils.el('select-p-visibility').value;
-
-            if (!titleVal) return UI.toast("Post text is required.");
-            if (visVal === 'schedule') {
-                const schedVal = Utils.el('input-p-schedule-time').value;
-                if (!schedVal) return UI.toast("Please select schedule date & time.");
-                scheduledTimestamp = new Date(schedVal).getTime();
-            }
-        }
-
-        try {
-            UI.showUploadProgress("Uploading media to Cloudflare R2...");
-            let cdnMediaUrl = '';
-            let cdnThumbnailUrl = '';
-            let durationFormatted = '0:00';
-
-            if (type === 'video' || type === 'short') {
-                cdnMediaUrl = await Services.uploadFile(UploadStudio.activeFile, `${type}s/${State.user.uid}`);
-                const finalThumbBlob = UploadStudio.customThumbBlob || UploadStudio.generatedThumbBlob;
-
-                if (finalThumbBlob) {
-                    UI.showUploadProgress("Uploading thumbnail to R2...");
-                    cdnThumbnailUrl = await Services.uploadFile(finalThumbBlob, `thumbnails/${State.user.uid}`, 'jpg');
-                }
-                durationFormatted = Utils.formatDuration(UploadStudio.mediaDuration || 15);
-            } else if (type === 'post') {
-                if (UploadStudio.activeFile) {
-                    cdnMediaUrl = await Services.uploadFile(UploadStudio.activeFile, `posts/${State.user.uid}`);
-                }
-            }
-
-            UI.showUploadProgress("Saving metadata...");
-            const record = {
-                uid: State.user.uid,
-                channelId: State.channel.id,
-                channelName: State.channel.channelName,
-                channelAvatar: State.channel.avatarUrl || State.user.photoURL || '',
-                cdnVideoUrl: cdnMediaUrl,
-                imageUrl: type === 'post' ? cdnMediaUrl : '',
-                thumbnailUrl: cdnThumbnailUrl || cdnMediaUrl,
-                title: titleVal,
-                description: descVal,
-                category: catVal,
-                visibility: visVal,
-                scheduledAt: scheduledTimestamp,
-                allowComments: allowComments,
-                showLikes: showLikes,
-                duration: durationFormatted,
-                views: 0,
-                likes: 0,
-                comments: 0,
-                createdAt: firebase.database.ServerValue.TIMESTAMP
-            };
-
-            await db.ref(`${type}s`).push().set(record);
-
-            UI.updateUploadProgress(100);
-            UI.hideUploadProgress();
-            UI.toast("Published successfully! 🚀");
-            UploadStudio.close();
-
-            Router.switchTab(type === 'short' ? 'shorts' : 'home');
-        } catch (err) {
-            console.error("Publish Error:", err);
-            UI.hideUploadProgress();
-            UI.toast("Publish failed: " + (err.message || "Network Error"));
+            cell.onclick = () => onPick(file);
+            list.insertBefore(cell, addTile);
         }
     }
 };
 
 // ==========================================
-// 8. DISCOVER & YOU CHANNEL STUDIO
+// 13. TRIM TIMELINE (video / short preview + trim selector)
 // ==========================================
-const DiscoverPage = { init: () => {} };
+const Trimmer = {
+    duration: 0,
+    start: 0,
+    end: 0,
+    videoEl: null,
+    trackId: null,
+    dragTarget: null,
+    playLoopHandle: null,
 
+    setup: async (file, videoElId, ids) => {
+        Trimmer.videoEl = Utils.el(videoElId);
+        Trimmer.ids = ids; // { thumbs, track, maskLeft, maskRight, border, playhead, handleStart, handleEnd, current, selected, total }
+        Trimmer.videoEl.src = URL.createObjectURL(file);
+        Trimmer.videoEl.currentTime = 0;
+
+        await new Promise((res) => {
+            Trimmer.videoEl.onloadedmetadata = res;
+        });
+
+        Trimmer.duration = Trimmer.videoEl.duration || 0;
+        Trimmer.start = 0;
+        Trimmer.end = Trimmer.duration;
+
+        Utils.el(ids.total).innerText = Utils.formatDuration(Trimmer.duration);
+        Trimmer.updateSelectedLabel();
+
+        const { frames } = await StudioMedia.generateFilmstrip(file, 10);
+        const thumbsWrap = Utils.el(ids.thumbs);
+        thumbsWrap.innerHTML = frames.map((f) => `<img src="${f}">`).join('');
+
+        Trimmer.renderHandles();
+        Trimmer.bindDrag();
+        Trimmer.bindTapPlay();
+        Trimmer.startPlayheadLoop();
+    },
+
+    pctFor: (t) => Trimmer.duration ? (t / Trimmer.duration) * 100 : 0,
+
+    renderHandles: () => {
+        const ids = Trimmer.ids;
+        const startPct = Trimmer.pctFor(Trimmer.start);
+        const endPct = Trimmer.pctFor(Trimmer.end);
+        Utils.el(ids.maskLeft).style.cssText = `left:0;width:${startPct}%;`;
+        Utils.el(ids.maskRight).style.cssText = `right:0;width:${100 - endPct}%;`;
+        Utils.el(ids.border).style.cssText = `left:${startPct}%;width:${endPct - startPct}%;`;
+        Utils.el(ids.handleStart).style.left = `calc(${startPct}% - 9px)`;
+        Utils.el(ids.handleEnd).style.left = `calc(${endPct}% - 9px)`;
+        Trimmer.updateSelectedLabel();
+    },
+
+    updateSelectedLabel: () => {
+        Utils.el(Trimmer.ids.selected).innerText = `Selected ${Utils.formatDuration(Trimmer.end - Trimmer.start)}`;
+    },
+
+    bindDrag: () => {
+        const ids = Trimmer.ids;
+        const track = Utils.el(ids.track);
+
+        const moveHandle = (which, clientX) => {
+            const rect = track.getBoundingClientRect();
+            let pct = ((clientX - rect.left) / rect.width) * 100;
+            pct = Math.min(Math.max(pct, 0), 100);
+            let t = (pct / 100) * Trimmer.duration;
+
+            if (which === 'start') {
+                t = Math.min(t, Trimmer.end - 0.5);
+                Trimmer.start = Math.max(t, 0);
+                Trimmer.videoEl.currentTime = Trimmer.start;
+            } else {
+                t = Math.max(t, Trimmer.start + 0.5);
+                Trimmer.end = Math.min(t, Trimmer.duration);
+                Trimmer.videoEl.currentTime = Trimmer.end;
+            }
+            Trimmer.renderHandles();
+        };
+
+        [['start', ids.handleStart], ['end', ids.handleEnd]].forEach(([which, id]) => {
+            const handle = Utils.el(id);
+            handle.addEventListener('pointerdown', (e) => {
+                handle.setPointerCapture(e.pointerId);
+                Trimmer.dragTarget = which;
+            });
+            handle.addEventListener('pointermove', (e) => {
+                if (Trimmer.dragTarget === which) moveHandle(which, e.clientX);
+            });
+            handle.addEventListener('pointerup', () => { Trimmer.dragTarget = null; });
+        });
+    },
+
+    bindTapPlay: () => {
+        const tapLayerId = Trimmer.ids.tapLayer;
+        const indicatorId = Trimmer.ids.indicator;
+        const tapLayer = tapLayerId ? Utils.el(tapLayerId) : null;
+        if (!tapLayer) return;
+
+        tapLayer.onclick = () => {
+            const indicator = Utils.el(indicatorId);
+            if (Trimmer.videoEl.paused) {
+                if (Trimmer.videoEl.currentTime < Trimmer.start || Trimmer.videoEl.currentTime >= Trimmer.end) {
+                    Trimmer.videoEl.currentTime = Trimmer.start;
+                }
+                Trimmer.videoEl.play().catch(() => {});
+                indicator.querySelector('span').innerText = 'pause';
+            } else {
+                Trimmer.videoEl.pause();
+                indicator.querySelector('span').innerText = 'play_arrow';
+            }
+            if (indicator) {
+                indicator.classList.add('flash');
+                setTimeout(() => indicator.classList.remove('flash'), 400);
+            }
+        };
+    },
+
+    startPlayheadLoop: () => {
+        if (Trimmer.playLoopHandle) cancelAnimationFrame(Trimmer.playLoopHandle);
+        const tick = () => {
+            if (Trimmer.videoEl && Trimmer.duration) {
+                if (!Trimmer.videoEl.paused && Trimmer.videoEl.currentTime >= Trimmer.end) {
+                    Trimmer.videoEl.pause();
+                    Trimmer.videoEl.currentTime = Trimmer.start;
+                }
+                const pct = Trimmer.pctFor(Trimmer.videoEl.currentTime);
+                const ph = Utils.el(Trimmer.ids.playhead);
+                if (ph) ph.style.left = `${pct}%`;
+                Utils.el(Trimmer.ids.current).innerText = Utils.formatDuration(Trimmer.videoEl.currentTime);
+            }
+            Trimmer.playLoopHandle = requestAnimationFrame(tick);
+        };
+        tick();
+    },
+
+    teardown: () => {
+        if (Trimmer.playLoopHandle) cancelAnimationFrame(Trimmer.playLoopHandle);
+        if (Trimmer.videoEl) {
+            Trimmer.videoEl.pause();
+            if (Trimmer.videoEl.src) URL.revokeObjectURL(Trimmer.videoEl.src);
+        }
+    }
+};
+
+// ==========================================
+// 14. SHORT CAMERA CAPTURE ENGINE
+// ==========================================
+const ShortCamera = {
+    stream: null,
+    recorder: null,
+    chunks: [],
+    facing: 'user',
+    timerSec: 0,
+    durationCap: 30,
+    speed: 1,
+    filter: 'none',
+    isRecording: false,
+    recordStartAt: 0,
+    recordCapTimeout: null,
+    ringHandle: null,
+    holdMode: false,
+
+    init: () => {
+        onClick('btn-request-camera-permission', ShortCamera.start);
+        onClick('btn-flip-camera', () => {
+            ShortCamera.facing = ShortCamera.facing === 'user' ? 'environment' : 'user';
+            ShortCamera.start();
+        });
+
+        ShortCamera.bindPopover('btn-cam-flash', null, () => ShortCamera.toggleFlash());
+        ShortCamera.bindPopover('btn-cam-speed', 'popover-speed', null, (el) => {
+            ShortCamera.speed = parseFloat(el.dataset.speed);
+        });
+        ShortCamera.bindPopover('btn-cam-timer', 'popover-timer', null, (el) => {
+            ShortCamera.timerSec = parseInt(el.dataset.timer, 10);
+        });
+        ShortCamera.bindPopover('btn-cam-duration', 'popover-duration', null, (el) => {
+            ShortCamera.durationCap = parseInt(el.dataset.duration, 10);
+        });
+        ShortCamera.bindPopover('btn-cam-filters', 'popover-filters', null, (el) => {
+            ShortCamera.filter = el.dataset.filter;
+            ShortCamera.applyFilterPreview();
+        });
+        onClick('btn-cam-handsfree', () => UI.toast('Hands-free mode: tap record to start/stop without holding.'));
+
+        const recordBtn = Utils.el('btn-record-short');
+        let holdTimer = null;
+        recordBtn.addEventListener('pointerdown', () => {
+            holdTimer = setTimeout(() => {
+                ShortCamera.holdMode = true;
+                ShortCamera.beginCaptureSequence();
+            }, 220);
+        });
+        recordBtn.addEventListener('pointerup', () => {
+            clearTimeout(holdTimer);
+            if (ShortCamera.holdMode) {
+                ShortCamera.holdMode = false;
+                if (ShortCamera.isRecording) ShortCamera.stopRecording();
+            } else {
+                // Quick tap => toggle persistent recording
+                if (ShortCamera.isRecording) {
+                    ShortCamera.stopRecording();
+                } else {
+                    ShortCamera.beginCaptureSequence();
+                }
+            }
+        });
+
+        onClick('btn-short-done', () => ShortCamera.finishToPreview());
+    },
+
+    bindPopover: (btnId, popoverId, directAction, onSelect) => {
+        const btn = Utils.el(btnId);
+        if (!btn) return;
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.cam-popover.show').forEach((p) => { if (p.id !== popoverId) p.classList.remove('show'); });
+            if (directAction) { directAction(); return; }
+            const pop = popoverId ? Utils.el(popoverId) : null;
+            if (!pop) return;
+            pop.classList.toggle('show');
+            pop.querySelectorAll('.cam-popover-item').forEach((item) => {
+                item.onclick = (ev) => {
+                    ev.stopPropagation();
+                    pop.querySelectorAll('.cam-popover-item').forEach((i) => i.classList.remove('active-opt'));
+                    item.classList.add('active-opt');
+                    onSelect(item);
+                    pop.classList.remove('show');
+                };
+            });
+        });
+        document.addEventListener('click', () => {
+            if (popoverId) { const p = Utils.el(popoverId); if (p) p.classList.remove('show'); }
+        });
+    },
+
+    applyFilterPreview: () => {
+        const video = Utils.el('short-camera-video');
+        const map = { none: 'none', warm: 'saturate(1.3) sepia(.18)', cool: 'saturate(1.1) hue-rotate(-10deg) brightness(1.05)', bw: 'grayscale(1)', vivid: 'saturate(1.6) contrast(1.1)' };
+        if (video) video.style.filter = map[ShortCamera.filter] || 'none';
+    },
+
+    start: async () => {
+        Utils.hide('camera-permission-state');
+        try {
+            if (ShortCamera.stream) ShortCamera.stream.getTracks().forEach((t) => t.stop());
+            ShortCamera.stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: ShortCamera.facing },
+                audio: true
+            });
+            const video = Utils.el('short-camera-video');
+            video.srcObject = ShortCamera.stream;
+            ShortCamera.applyFilterPreview();
+        } catch (err) {
+            console.warn('Camera permission error:', err);
+            Utils.el('camera-permission-state').classList.add('show');
+        }
+    },
+
+    toggleFlash: async () => {
+        try {
+            const track = ShortCamera.stream && ShortCamera.stream.getVideoTracks()[0];
+            const capabilities = track && track.getCapabilities ? track.getCapabilities() : null;
+            if (capabilities && capabilities.torch) {
+                const btn = Utils.el('btn-cam-flash');
+                const isOn = btn.classList.toggle('cam-tool-active');
+                await track.applyConstraints({ advanced: [{ torch: isOn }] });
+                btn.querySelector('span').innerText = isOn ? 'flash_on' : 'flash_off';
+            } else {
+                UI.toast('Flash/torch isn\u2019t supported on this device/browser.');
+            }
+        } catch (e) {
+            UI.toast('Unable to toggle flash.');
+        }
+    },
+
+    beginCaptureSequence: () => {
+        if (!ShortCamera.stream) return UI.toast('Camera not ready yet.');
+        if (ShortCamera.timerSec > 0) {
+            ShortCamera.runCountdown(ShortCamera.timerSec, ShortCamera.startRecording);
+        } else {
+            ShortCamera.startRecording();
+        }
+    },
+
+    runCountdown: (seconds, then) => {
+        const overlay = Utils.el('camera-countdown-overlay');
+        overlay.classList.add('show');
+        let remaining = seconds;
+        overlay.innerText = remaining;
+        const iv = setInterval(() => {
+            remaining--;
+            if (remaining <= 0) {
+                clearInterval(iv);
+                overlay.classList.remove('show');
+                then();
+            } else {
+                overlay.innerText = remaining;
+            }
+        }, 1000);
+    },
+
+    startRecording: () => {
+        if (!ShortCamera.stream) return;
+        ShortCamera.chunks = [];
+        try {
+            ShortCamera.recorder = new MediaRecorder(ShortCamera.stream, { mimeType: 'video/webm;codecs=vp9,opus' });
+        } catch (e) {
+            ShortCamera.recorder = new MediaRecorder(ShortCamera.stream);
+        }
+        ShortCamera.recorder.ondataavailable = (e) => { if (e.data.size > 0) ShortCamera.chunks.push(e.data); };
+        ShortCamera.recorder.onstop = () => {
+            const blob = new Blob(ShortCamera.chunks, { type: 'video/webm' });
+            ShortCamera.recordedBlob = blob;
+            Utils.el('btn-short-done').classList.add('show');
+        };
+        ShortCamera.recorder.start();
+        ShortCamera.isRecording = true;
+        ShortCamera.recordStartAt = Date.now();
+
+        const btn = Utils.el('btn-record-short');
+        btn.classList.add('is-recording');
+        Utils.el('camera-rec-timer').classList.add('show');
+        Utils.vibrate(30);
+
+        const circle = Utils.el('cam-record-ring-circle');
+        const circumference = 232.5;
+
+        const tick = () => {
+            if (!ShortCamera.isRecording) return;
+            const elapsed = (Date.now() - ShortCamera.recordStartAt) / 1000;
+            Utils.el('camera-rec-timer-text').innerText = Utils.formatDuration(elapsed);
+            const pct = Math.min(elapsed / ShortCamera.durationCap, 1);
+            circle.style.strokeDashoffset = `${circumference * (1 - pct)}`;
+            if (elapsed >= ShortCamera.durationCap) {
+                ShortCamera.stopRecording();
+                return;
+            }
+            ShortCamera.ringHandle = requestAnimationFrame(tick);
+        };
+        tick();
+
+        ShortCamera.recordCapTimeout = setTimeout(() => {
+            if (ShortCamera.isRecording) ShortCamera.stopRecording();
+        }, ShortCamera.durationCap * 1000 + 50);
+    },
+
+    stopRecording: () => {
+        if (!ShortCamera.isRecording) return;
+        ShortCamera.isRecording = false;
+        clearTimeout(ShortCamera.recordCapTimeout);
+        if (ShortCamera.ringHandle) cancelAnimationFrame(ShortCamera.ringHandle);
+        Utils.el('btn-record-short').classList.remove('is-recording');
+        Utils.el('camera-rec-timer').classList.remove('show');
+        Utils.vibrate(30);
+        if (ShortCamera.recorder && ShortCamera.recorder.state !== 'inactive') {
+            ShortCamera.recorder.stop();
+        }
+    },
+
+    stopStream: () => {
+        if (ShortCamera.stream) {
+            ShortCamera.stream.getTracks().forEach((t) => t.stop());
+            ShortCamera.stream = null;
+        }
+    },
+
+    finishToPreview: () => {
+        if (!ShortCamera.recordedBlob) return;
+        UploadPage.setActiveShortSource(ShortCamera.recordedBlob, ShortCamera.speed);
+        ShortCamera.stopStream();
+        Utils.el('btn-short-done').classList.remove('show');
+    },
+
+    reset: () => {
+        ShortCamera.recordedBlob = null;
+        ShortCamera.isRecording = false;
+        ShortCamera.holdMode = false;
+        const circle = Utils.el('cam-record-ring-circle');
+        if (circle) circle.style.strokeDashoffset = '232.5';
+        Utils.el('camera-rec-timer-text') && (Utils.el('camera-rec-timer-text').innerText = '0:00');
+    }
+};
+
+// ==========================================
+// 15. FORM HELPERS (counters / toggles / visibility groups)
+// ==========================================
+const FormKit = {
+    bindCounter: (inputId, counterId, max) => {
+        const input = Utils.el(inputId);
+        const counter = Utils.el(counterId);
+        if (!input || !counter) return;
+        const update = () => {
+            counter.innerText = `${input.value.length}/${max}`;
+            counter.classList.toggle('over-limit', input.value.length >= max);
+        };
+        input.addEventListener('input', update);
+        update();
+    },
+
+    bindToggle: (id) => {
+        const el = Utils.el(id);
+        if (!el) return;
+        el.onclick = () => el.classList.toggle('on');
+    },
+
+    isToggleOn: (id) => {
+        const el = Utils.el(id);
+        return el ? el.classList.contains('on') : false;
+    },
+
+    bindVisibilityGroup: (groupId, scheduleBoxId) => {
+        const group = Utils.el(groupId);
+        const box = scheduleBoxId ? Utils.el(scheduleBoxId) : null;
+        if (!group) return;
+        group.querySelectorAll('.visibility-pill').forEach((pill) => {
+            pill.onclick = () => {
+                group.querySelectorAll('.visibility-pill').forEach((p) => p.classList.remove('selected'));
+                pill.classList.add('selected');
+                group.dataset.value = pill.dataset.val;
+                if (box) box.classList.toggle('show', pill.dataset.val === 'scheduled');
+            };
+        });
+    },
+
+    getVisibility: (groupId) => {
+        const group = Utils.el(groupId);
+        return group ? group.dataset.value : 'public';
+    },
+
+    getScheduledAt: (dateId, timeId) => {
+        const d = Utils.el(dateId).value;
+        const t = Utils.el(timeId).value || '00:00';
+        if (!d) return null;
+        const ms = new Date(`${d}T${t}`).getTime();
+        return isNaN(ms) ? null : ms;
+    },
+
+    validateRequired: (inputId, errorId) => {
+        const input = Utils.el(inputId);
+        const error = Utils.el(errorId);
+        const valid = input.value.trim().length > 0;
+        input.classList.toggle('field-invalid', !valid);
+        if (error) error.classList.toggle('show', !valid);
+        return valid;
+    }
+};
+
+// ==========================================
+// 16. CONTENT PUBLISH PIPELINE (R2 + REALTIME DB)
+// ==========================================
+const UploadPage = {
+    type: null,
+    videoFiles: [],
+    postFiles: [],
+    activeFile: null,
+    customThumbFile: null,
+    autoThumbDataUrl: null,
+    shortCaptureSpeed: 1,
+
+    init: () => {
+        CreateCarousel.init();
+        ShortCamera.init();
+
+        onClick('btn-close-upload-sheet', UploadPage.closeSheet);
+        onClick('upload-backdrop', (e) => { if (e.target.id === 'upload-backdrop') UploadPage.closeSheet(); });
+
+        // ---- close buttons per flow ----
+        onClick('btn-close-video-flow', UploadPage.closeAll);
+        onClick('btn-close-short-flow', UploadPage.closeAll);
+        onClick('btn-close-post-flow', UploadPage.closeAll);
+
+        // ---- back buttons per step ----
+        onClick('btn-back-video-preview', () => UploadPage.goStep('flow-video', 'step-video-grid'));
+        onClick('btn-back-video-details', () => UploadPage.goStep('flow-video', 'step-video-preview'));
+        onClick('btn-back-short-preview', () => { ShortCamera.reset(); UploadPage.goStep('flow-short', 'step-short-camera'); ShortCamera.start(); });
+        onClick('btn-back-short-details', () => UploadPage.goStep('flow-short', 'step-short-preview'));
+        onClick('btn-back-post-preview', () => UploadPage.goStep('flow-post', 'step-post-grid'));
+        onClick('btn-back-post-details', () => UploadPage.goStep('flow-post', 'step-post-preview'));
+
+        // ---- VIDEO: grid picker ----
+        onClick('video-grid-add-tile', () => Utils.el('input-video-file').click());
+        Utils.el('input-video-file').onchange = async (e) => {
+            const files = Array.from(e.target.files || []);
+            if (!files.length) return;
+            UploadPage.videoFiles = UploadPage.videoFiles.concat(files);
+            await MediaGridPicker.render('video-grid-list', 'video-grid-add-tile', files, 'video', UploadPage.pickVideo);
+        };
+
+        // ---- VIDEO: preview/trim next ----
+        onClick('btn-video-preview-next', async () => {
+            const { blob, dataUrl } = await StudioMedia.grabFrame(UploadPage.activeFile, Trimmer.start + 0.05);
+            UploadPage.autoThumbDataUrl = dataUrl;
+            UploadPage.autoThumbBlob = blob;
+            Utils.el('video-thumb-auto-img').src = dataUrl || '';
+            UploadPage.selectAutoThumb('video');
+            UploadPage.goStep('flow-video', 'step-video-details');
+        });
+
+        onClick('video-thumb-auto', () => UploadPage.selectAutoThumb('video'));
+        onClick('video-thumb-custom', () => Utils.el('input-video-thumb-custom').click());
+        Utils.el('input-video-thumb-custom').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            UploadPage.customThumbFile = file;
+            Utils.el('video-thumb-custom-img').src = URL.createObjectURL(file);
+            Utils.show('video-thumb-custom-img');
+            Utils.hide('video-thumb-custom-icon');
+            UploadPage.selectCustomThumb('video');
+        };
+
+        FormKit.bindCounter('input-video-title', 'video-title-counter', 100);
+        FormKit.bindCounter('input-video-desc', 'video-desc-counter', 5000);
+        FormKit.bindVisibilityGroup('video-visibility-group', 'video-schedule-box');
+        FormKit.bindToggle('toggle-video-comments');
+        FormKit.bindToggle('toggle-video-hidelikes');
+        onClick('btn-publish-video', () => UploadPage.publish('video'));
+
+        // ---- SHORT: gallery fallback ----
+        onClick('btn-short-gallery', () => Utils.el('input-short-file').click());
+        Utils.el('input-short-file').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            ShortCamera.stopStream();
+            UploadPage.setActiveShortSource(file, 1);
+        };
+
+        onClick('btn-short-preview-next', async () => {
+            const { blob, dataUrl } = await StudioMedia.grabFrame(UploadPage.activeFile, 0.15);
+            UploadPage.autoThumbDataUrl = dataUrl;
+            UploadPage.autoThumbBlob = blob;
+            Utils.el('short-thumb-auto-img').src = dataUrl || '';
+            UploadPage.customThumbFile = null;
+            UploadPage.goStep('flow-short', 'step-short-details');
+        });
+
+        onClick('btn-short-add-text', () => UI.toast('Tap the preview to place text overlays.'));
+        onClick('btn-short-voiceover', () => UI.toast('Voice-over recording starts after you tap this again.'));
+        onClick('btn-short-download', () => UploadPage.downloadActiveFile());
+        onClick('short-thumb-custom-trigger', () => Utils.el('input-short-thumb-custom').click());
+        Utils.el('input-short-thumb-custom').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            UploadPage.customThumbFile = file;
+            Utils.el('short-thumb-auto-img').src = URL.createObjectURL(file);
+        };
+
+        FormKit.bindCounter('input-short-title', 'short-title-counter', 150);
+        FormKit.bindCounter('input-short-desc', 'short-desc-counter', 2000);
+        FormKit.bindVisibilityGroup('short-visibility-group', 'short-schedule-box');
+        FormKit.bindToggle('toggle-short-comments');
+        FormKit.bindToggle('toggle-short-hidelikes');
+        onClick('btn-publish-short', () => UploadPage.publish('short'));
+
+        // ---- POST: grid picker ----
+        onClick('post-grid-add-tile', () => Utils.el('input-post-file').click());
+        Utils.el('input-post-file').onchange = async (e) => {
+            const files = Array.from(e.target.files || []);
+            if (!files.length) return;
+            UploadPage.postFiles = UploadPage.postFiles.concat(files);
+            await MediaGridPicker.render('post-grid-list', 'post-grid-add-tile', files, 'image', UploadPage.pickPostImage);
+        };
+
+        onClick('btn-post-preview-next', () => UploadPage.goStep('flow-post', 'step-post-details'));
+        FormKit.bindCounter('input-post-text', 'post-title-counter', 280);
+        FormKit.bindVisibilityGroup('post-visibility-group', 'post-schedule-box');
+        FormKit.bindToggle('toggle-post-comments');
+        FormKit.bindToggle('toggle-post-hidelikes');
+        onClick('btn-publish-post', () => UploadPage.publish('post'));
+    },
+
+    // ---------- picking callbacks ----------
+    pickVideo: async (file) => {
+        UploadPage.activeFile = file;
+        await Trimmer.setup(file, 'video-preview-element', {
+            thumbs: 'video-trim-thumbs', track: 'video-trim-track',
+            maskLeft: 'video-mask-left', maskRight: 'video-mask-right', border: 'video-selection-border',
+            playhead: 'video-playhead', handleStart: 'video-handle-start', handleEnd: 'video-handle-end',
+            current: 'video-trim-current', selected: 'video-trim-selected', total: 'video-trim-total',
+            tapLayer: 'video-preview-tap', indicator: 'video-play-indicator'
+        });
+        UploadPage.goStep('flow-video', 'step-video-preview');
+    },
+
+    pickPostImage: (file) => {
+        UploadPage.activeFile = file;
+        Utils.el('post-image-preview').src = URL.createObjectURL(file);
+        UploadPage.goStep('flow-post', 'step-post-preview');
+    },
+
+    setActiveShortSource: (fileOrBlob, speed) => {
+        UploadPage.activeFile = fileOrBlob;
+        UploadPage.shortCaptureSpeed = speed || 1;
+        const el = Utils.el('short-preview-element');
+        el.src = URL.createObjectURL(fileOrBlob);
+        el.playbackRate = speed || 1;
+        el.loop = true;
+        el.play().catch(() => {});
+
+        const tap = Utils.el('short-preview-tap');
+        tap.onclick = () => {
+            const indicator = Utils.el('short-play-indicator');
+            if (el.paused) { el.play(); indicator.querySelector('span').innerText = 'pause'; }
+            else { el.pause(); indicator.querySelector('span').innerText = 'play_arrow'; }
+            indicator.classList.add('flash');
+            setTimeout(() => indicator.classList.remove('flash'), 400);
+        };
+
+        UploadPage.goStep('flow-short', 'step-short-preview');
+    },
+
+    downloadActiveFile: () => {
+        if (!UploadPage.activeFile) return;
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(UploadPage.activeFile);
+        a.download = `flaynity-short-${Date.now()}.webm`;
+        a.click();
+    },
+
+    selectAutoThumb: (prefix) => {
+        UploadPage.customThumbFile = null;
+        const autoBox = Utils.el(`${prefix}-thumb-auto`);
+        const customBox = Utils.el(`${prefix}-thumb-custom`);
+        if (autoBox) autoBox.style.borderColor = 'var(--flaynity-text)';
+        if (customBox) customBox.style.borderColor = 'transparent';
+    },
+    selectCustomThumb: (prefix) => {
+        const autoBox = Utils.el(`${prefix}-thumb-auto`);
+        const customBox = Utils.el(`${prefix}-thumb-custom`);
+        if (autoBox) autoBox.style.borderColor = 'transparent';
+        if (customBox) customBox.style.borderColor = 'var(--flaynity-text)';
+    },
+
+    // ---------- step / flow navigation ----------
+    goStep: (flowId, stepId) => {
+        const flow = Utils.el(flowId);
+        if (!flow) return;
+        flow.querySelectorAll('.flow-step').forEach((s) => s.classList.remove('step-active'));
+        Utils.el(stepId).classList.add('step-active');
+    },
+
+    openSheet: () => {
+        const uploadContainer = Utils.el('page-container-upload');
+        if (uploadContainer) { uploadContainer.style.display = 'block'; uploadContainer.style.pointerEvents = 'auto'; }
+        const backdrop = Utils.el('upload-backdrop');
+        const sheet = Utils.el('upload-sheet');
+        if (backdrop && sheet) {
+            backdrop.style.display = 'flex';
+            void backdrop.offsetWidth;
+            backdrop.classList.add('active');
+            sheet.classList.add('active');
+            Router.addBackState('upload-sheet');
+        }
+    },
+
+    closeSheet: () => {
+        const backdrop = Utils.el('upload-backdrop');
+        const sheet = Utils.el('upload-sheet');
+        if (backdrop && sheet) {
+            backdrop.classList.remove('active');
+            sheet.classList.remove('active');
+            setTimeout(() => {
+                backdrop.style.display = 'none';
+                const anyFlowActive = document.querySelector('.upload-flow-layer.active');
+                if (!anyFlowActive) {
+                    const uploadContainer = Utils.el('page-container-upload');
+                    if (uploadContainer) uploadContainer.style.display = 'none';
+                }
+            }, 300);
+        }
+    },
+
+    openFlow: (type) => {
+        const uploadContainer = Utils.el('page-container-upload');
+        if (uploadContainer) { uploadContainer.style.display = 'block'; uploadContainer.style.pointerEvents = 'auto'; }
+
+        UploadPage.closeSheet();
+        UploadPage.type = type;
+        UploadPage.activeFile = null;
+        UploadPage.customThumbFile = null;
+        UploadPage.autoThumbDataUrl = null;
+
+        const flowId = `flow-${type}`;
+        const flow = Utils.el(flowId);
+        if (!flow) return;
+        flow.classList.remove('flaynity-hidden');
+        setTimeout(() => flow.classList.add('active'), 10);
+        Router.addBackState('upload-flow');
+
+        if (type === 'video') UploadPage.goStep('flow-video', 'step-video-grid');
+        if (type === 'post') UploadPage.goStep('flow-post', 'step-post-grid');
+        if (type === 'short') {
+            UploadPage.goStep('flow-short', 'step-short-camera');
+            ShortCamera.reset();
+            ShortCamera.start();
+        }
+    },
+
+    closeAll: () => {
+        ['flow-video', 'flow-short', 'flow-post'].forEach((id) => {
+            const el = Utils.el(id);
+            if (el) { el.classList.remove('active'); setTimeout(() => el.classList.add('flaynity-hidden'), 300); }
+        });
+        Trimmer.teardown();
+        ShortCamera.stopStream();
+        ShortCamera.reset();
+        UploadPage.resetForms();
+
+        setTimeout(() => {
+            const uploadContainer = Utils.el('page-container-upload');
+            if (uploadContainer) uploadContainer.style.display = 'none';
+        }, 300);
+    },
+
+    resetForms: () => {
+        ['input-video-title', 'input-video-desc', 'input-short-title', 'input-short-desc', 'input-post-text'].forEach((id) => {
+            const el = Utils.el(id);
+            if (el) el.value = '';
+        });
+        UploadPage.videoFiles = [];
+        UploadPage.postFiles = [];
+        UploadPage.activeFile = null;
+        UploadPage.customThumbFile = null;
+        ['video-grid-list', 'post-grid-list'].forEach((id) => {
+            const list = Utils.el(id);
+            if (list) list.querySelectorAll('.gp-generated').forEach((n) => n.remove());
+        });
+        Utils.hide('video-preview-element');
+        Utils.hide('post-image-preview');
+        Utils.hide('video-thumb-custom-img');
+        Utils.show('video-thumb-custom-icon');
+    },
+
+    // ---------- publish pipeline ----------
+    publish: async (type) => {
+        if (!State.channel) {
+            UI.toast("Please create a channel first under 'You' tab.");
+            UploadPage.closeAll();
+            Router.switchTab('you');
+            return;
+        }
+
+        let titleVal = '', descVal = '', catVal = 'Entertainment', textVal = '';
+        let visVal = 'public', scheduledAt = null;
+        let allowComments = true, hideLikes = false;
+
+        if (type === 'video') {
+            titleVal = Utils.el('input-video-title').value.trim();
+            const titleOk = FormKit.validateRequired('input-video-title', 'video-title-error');
+            if (!titleOk || !UploadPage.activeFile) return UI.toast('Video title and file are required.');
+            descVal = Utils.el('input-video-desc').value.trim();
+            catVal = Utils.el('input-video-category').value;
+            visVal = FormKit.getVisibility('video-visibility-group');
+            scheduledAt = visVal === 'scheduled' ? FormKit.getScheduledAt('input-video-schedule-date', 'input-video-schedule-time') : null;
+            if (visVal === 'scheduled' && !scheduledAt) return UI.toast('Pick a valid schedule date & time.');
+            allowComments = FormKit.isToggleOn('toggle-video-comments');
+            hideLikes = FormKit.isToggleOn('toggle-video-hidelikes');
+        } else if (type === 'short') {
+            titleVal = Utils.el('input-short-title').value.trim();
+            const titleOk = FormKit.validateRequired('input-short-title', 'short-title-error');
+            if (!titleOk || !UploadPage.activeFile) return UI.toast('Short caption and video are required.');
+            descVal = Utils.el('input-short-desc').value.trim();
+            visVal = FormKit.getVisibility('short-visibility-group');
+            scheduledAt = visVal === 'scheduled' ? FormKit.getScheduledAt('input-short-schedule-date', 'input-short-schedule-time') : null;
+            if (visVal === 'scheduled' && !scheduledAt) return UI.toast('Pick a valid schedule date & time.');
+            allowComments = FormKit.isToggleOn('toggle-short-comments');
+            hideLikes = FormKit.isToggleOn('toggle-short-hidelikes');
+        } else if (type === 'post') {
+            textVal = Utils.el('input-post-text').value.trim();
+            const textOk = FormKit.validateRequired('input-post-text', 'post-title-error');
+            if (!textOk && !UploadPage.activeFile) return UI.toast('Post title or image is required.');
+            visVal = FormKit.getVisibility('post-visibility-group');
+            scheduledAt = visVal === 'scheduled' ? FormKit.getScheduledAt('input-post-schedule-date', 'input-post-schedule-time') : null;
+            if (visVal === 'scheduled' && !scheduledAt) return UI.toast('Pick a valid schedule date & time.');
+            allowComments = FormKit.isToggleOn('toggle-post-comments');
+            hideLikes = FormKit.isToggleOn('toggle-post-hidelikes');
+        }
+
+        try {
+            UI.showUploadProgress('Uploading media to Cloudflare R2...');
+
+            let cdnVideoUrl = '', thumbnailUrl = '', imageUrl = '', durationFormatted = '0:00';
+
+            if (type === 'video' || type === 'short') {
+                cdnVideoUrl = await Services.uploadFile(UploadPage.activeFile, `${type}s/${State.user.uid}`, type === 'short' ? 'webm' : null);
+
+                UI.showUploadProgress('Uploading thumbnail...');
+                const thumbSource = UploadPage.customThumbFile || UploadPage.autoThumbBlob;
+                if (thumbSource) {
+                    thumbnailUrl = await Services.uploadFile(thumbSource, `thumbnails/${State.user.uid}`, 'jpg');
+                }
+                const meta = await StudioMedia.grabFrame(UploadPage.activeFile, 0);
+                durationFormatted = Utils.formatDuration(type === 'video' ? (Trimmer.end - Trimmer.start) : meta.duration);
+            } else if (type === 'post' && UploadPage.activeFile) {
+                imageUrl = await Services.uploadFile(UploadPage.activeFile, `posts/${State.user.uid}`);
+            }
+
+            UI.showUploadProgress('Saving metadata to Realtime Database...');
+            const metadata = {
+                uid: State.user.uid,
+                channelId: State.channel.id,
+                channelName: State.channel.channelName,
+                channelAvatar: State.channel.avatarUrl || '',
+                cdnVideoUrl, thumbnailUrl: thumbnailUrl || cdnVideoUrl, imageUrl,
+                title: titleVal, description: descVal, category: catVal, text: textVal,
+                visibility: visVal, scheduledAt: scheduledAt,
+                allowComments, hideLikes,
+                duration: durationFormatted,
+                trimStart: type === 'video' ? Trimmer.start : 0,
+                trimEnd: type === 'video' ? Trimmer.end : 0,
+                captureSpeed: type === 'short' ? UploadPage.shortCaptureSpeed : 1,
+                views: 0, likes: 0, comments: 0,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            };
+
+            const targetRef = db.ref(`${type}s`).push();
+            await targetRef.set(metadata);
+
+            UI.updateUploadProgress(100);
+            UI.hideUploadProgress();
+            UI.toast(visVal === 'scheduled' ? 'Scheduled! It will go live automatically. \ud83d\udcc5' : 'Published successfully! \ud83d\ude80');
+            UploadPage.closeAll();
+            Router.switchTab(type === 'short' ? 'shorts' : 'home');
+        } catch (error) {
+            console.error('Publish Failed:', error);
+            UI.hideUploadProgress();
+            UI.toast('Upload failed: ' + (error.message || 'Network Error'));
+        }
+    }
+};
+
+
+// ==========================================
+// 10. DISCOVER & SEARCH ENGINE
+// ==========================================
+const DiscoverPage = {
+    init: () => {
+        const chips = document.querySelectorAll('.discover-categories-scroll .d-chip');
+        chips.forEach((c) => {
+            c.onclick = () => {
+                chips.forEach((x) => x.classList.remove('active'));
+                c.classList.add('active');
+            };
+        });
+    }
+};
+
+// ==========================================
+// 11. YOU / CHANNEL STUDIO & ANALYTICS
+// ==========================================
 const YouPage = {
     init: () => {
         onClick('btn-sign-out', AuthSystem.signOut);
@@ -1222,29 +1910,58 @@ const YouPage = {
             Router.addBackState('layer');
         });
 
+        onClick('btn-open-edit-channel', () => {
+            YouPage.openEditChannel();
+            Router.addBackState('layer');
+        });
+
+        onClick('btn-open-analytics', () => {
+            YouPage.loadAnalytics();
+            const layer = Utils.el('layer-analytics');
+            if (layer) {
+                layer.classList.add('active');
+                Router.addBackState('layer');
+            }
+        });
+
         document.querySelectorAll('.btn-back-layer').forEach((btn) => {
             btn.onclick = (e) => e.target.closest('.you-sub-layer').classList.remove('active');
         });
 
-        onClick('picker-create-avatar', () => Utils.el('input-create-avatar').click());
+        document.querySelectorAll('.vc-tab').forEach((tab) => {
+            tab.onclick = (e) => {
+                document.querySelectorAll('.vc-tab').forEach((t) => t.classList.remove('active'));
+                e.target.classList.add('active');
+                YouPage.renderChannelContent(e.target.dataset.tab);
+            };
+        });
+
+        onClick('picker-create-avatar', () => {
+            const input = Utils.el('input-create-avatar');
+            if (input) input.click();
+        });
 
         let avatarFile = null;
         const avatarInput = Utils.el('input-create-avatar');
         if (avatarInput) {
             avatarInput.onchange = (e) => {
                 avatarFile = e.target.files[0];
-                if (avatarFile) Utils.el('preview-create-avatar').src = URL.createObjectURL(avatarFile);
+                if (avatarFile) {
+                    Utils.el('preview-create-avatar').src = URL.createObjectURL(avatarFile);
+                }
             };
         }
 
         onClick('btn-submit-create-channel', async () => {
             const name = Utils.el('input-create-name').value.trim();
             const handle = Utils.el('input-create-handle').value.trim().toLowerCase();
-            if (!name || !handle) return UI.toast("Name and handle required.");
+
+            if (!name || !handle) return UI.toast("Name and handle are required.");
 
             try {
-                UI.showUploadProgress("Creating channel...");
+                UI.showUploadProgress("Uploading Channel Avatar to R2...");
                 let avatarUrl = State.user.photoURL || '';
+
                 if (avatarFile) {
                     avatarUrl = await Services.uploadFile(avatarFile, `avatars/${State.user.uid}`);
                 }
@@ -1254,16 +1971,18 @@ const YouPage = {
                     channelName: name,
                     handle: `@${handle.replace('@', '')}`,
                     avatarUrl: avatarUrl,
+                    category: Utils.el('input-create-category').value,
                     createdAt: firebase.database.ServerValue.TIMESTAMP,
-                    subscribersCount: 0
+                    subscribersCount: 0,
+                    totalViews: 0
                 });
 
                 UI.hideUploadProgress();
-                UI.toast("Channel created!");
+                UI.toast("Channel created successfully!");
                 Utils.el('layer-create-channel').classList.remove('active');
             } catch (e) {
                 UI.hideUploadProgress();
-                UI.toast("Channel creation failed: " + e.message);
+                UI.toast("Failed to create channel: " + e.message);
             }
         });
     },
@@ -1293,14 +2012,69 @@ const YouPage = {
 
         const ch = State.channel;
         Utils.el('vc-avatar-img').src = ch.avatarUrl || State.user.photoURL;
+        if (ch.bannerUrl) {
+            Utils.el('vc-banner-img').src = ch.bannerUrl;
+            Utils.show('vc-banner-img');
+        }
         Utils.el('vc-name-text').innerText = ch.channelName;
         Utils.el('vc-handle-text').innerText = ch.handle;
         Utils.el('vc-subs-text').innerText = Utils.formatViews(ch.subscribersCount || 0);
+
+        YouPage.renderChannelContent('videos');
+    },
+
+    renderChannelContent: (tabName) => {
+        const area = Utils.el('vc-content-area');
+        if (!area) return;
+        area.innerHTML = '';
+
+        let items = [];
+        if (tabName === 'videos') items = State.cache.videos.filter((v) => v.uid === State.user.uid);
+        else if (tabName === 'shorts') items = State.cache.shorts.filter((s) => s.uid === State.user.uid);
+        else if (tabName === 'posts') items = State.cache.posts.filter((p) => p.uid === State.user.uid);
+
+        if (items.length === 0) {
+            area.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--flaynity-text-secondary);">No ${tabName} published yet.</div>`;
+            return;
+        }
+
+        items.forEach((item) => {
+            if (tabName === 'videos') area.appendChild(HomeFeed.buildVideoCard(item));
+            else if (tabName === 'posts') area.appendChild(HomeFeed.buildPostCard(item));
+            else {
+                const div = document.createElement('div');
+                div.style.padding = '12px 0';
+                div.style.borderBottom = '1px solid var(--flaynity-divider)';
+                div.innerText = item.title || 'Untitled Short';
+                area.appendChild(div);
+            }
+        });
+    },
+
+    loadAnalytics: () => {
+        const userVideos = State.cache.videos.filter((v) => v.uid === State.user.uid);
+        const totalViews = userVideos.reduce((acc, curr) => acc + (curr.views || 0), 0);
+        const totalLikes = userVideos.reduce((acc, curr) => acc + (curr.likes || 0), 0);
+
+        if (Utils.el('stat-views')) Utils.el('stat-views').innerText = Utils.formatViews(totalViews);
+        if (Utils.el('stat-likes')) Utils.el('stat-likes').innerText = Utils.formatViews(totalLikes);
+        if (Utils.el('stat-subs')) Utils.el('stat-subs').innerText = Utils.formatViews(State.channel ? State.channel.subscribersCount : 0);
+    },
+
+    openEditChannel: () => {
+        const ch = State.channel;
+        if (!ch) return;
+        const layer = Utils.el('layer-edit-channel');
+        if (layer) layer.classList.add('active');
+
+        Utils.el('input-edit-name').value = ch.channelName || '';
+        Utils.el('input-edit-handle').value = ch.handle || '';
+        Utils.el('input-edit-desc').value = ch.description || '';
     }
 };
 
 // ==========================================
-// 9. ROUTER & GLOBAL PERSISTENT NAVIGATION
+// 12. ROUTER & GLOBAL PERSISTENT NAVIGATION
 // ==========================================
 const Router = {
     pages: ['home', 'shorts', 'upload', 'discover', 'you'],
@@ -1310,16 +2084,23 @@ const Router = {
         const appRoot = document.getElementById('app');
         for (const page of Router.pages) {
             const response = await fetch(`pages/${page}.html`);
-            if (!response.ok) throw new Error(`Failed to load: pages/${page}.html`);
+            if (!response.ok) {
+                throw new Error(`Failed to load component: pages/${page}.html (Status: ${response.status})`);
+            }
             const html = await response.text();
+
+            if (html.includes('<title>Flaynity</title>')) {
+                throw new Error(`Server returned index.html for pages/${page}.html. Ensure the 'pages' directory is uploaded.`);
+            }
 
             const container = document.createElement('div');
             container.id = `page-container-${page}`;
-            container.style.cssText = `width:100%;height:100%;position:absolute;top:0;left:0;display:${page === 'home' ? 'block' : 'none'};z-index:${page === 'upload' ? '99999' : '1'};`;
+            container.style.cssText = `width:100%;height:100%;position:absolute;top:0;left:0;display:${page === 'home' ? 'block' : 'none'};`;
             container.innerHTML = html;
             appRoot.appendChild(container);
         }
 
+        // Global Bottom Navigation mount
         const bottomNav = Utils.el('flaynity-bottom-nav');
         if (bottomNav) {
             appRoot.appendChild(bottomNav);
@@ -1329,27 +2110,21 @@ const Router = {
     },
 
     bindGlobalNavigation: () => {
-        document.addEventListener('click', (e) => {
-            const navUploadBtn = e.target.closest('.nav-item[data-tab="upload"], [data-tab="create"], #btn-nav-upload, .nav-item-upload, .upload-btn');
-            if (navUploadBtn) {
-                e.preventDefault();
-                e.stopPropagation();
-                UploadStudio.open();
-                return;
-            }
-
-            const navItem = e.target.closest('.nav-item');
-            if (navItem && navItem.dataset.tab !== 'upload') {
-                Router.switchTab(navItem.dataset.tab);
-            }
+        document.querySelectorAll('.nav-item').forEach((el) => {
+            el.addEventListener('click', (e) => {
+                const targetNav = e.currentTarget;
+                const tab = targetNav.dataset.tab;
+                if (tab === 'upload') {
+                    UploadPage.openSheet();
+                } else {
+                    Router.switchTab(tab);
+                }
+            });
         });
     },
 
     switchTab: (tabName) => {
-        if (tabName === 'upload') {
-            UploadStudio.open();
-            return;
-        }
+        if (tabName === 'upload') return;
 
         if (State.currentPlayingVideo && tabName !== 'shorts') {
             State.currentPlayingVideo.pause();
@@ -1365,6 +2140,9 @@ const Router = {
         const target = document.getElementById(`page-container-${tabName}`);
         if (target) target.style.display = 'block';
 
+        const bottomNav = Utils.el('flaynity-bottom-nav');
+        if (bottomNav) bottomNav.style.display = 'flex';
+
         document.querySelectorAll('.nav-item').forEach((el) => {
             if (el.dataset.tab !== 'upload') {
                 el.classList.toggle('active', el.dataset.tab === tabName);
@@ -1372,13 +2150,17 @@ const Router = {
         });
 
         State.currentTab = tabName;
+
         if (Router.history[Router.history.length - 1] !== tabName) {
             Router.history.push(tabName);
             Router.updateAndroidBackStack();
         }
 
-        if (tabName === 'shorts') ShortsPlayer.render();
-        else if (tabName === 'home') HomeFeed.render();
+        if (tabName === 'shorts') {
+            ShortsPlayer.render();
+        } else if (tabName === 'home') {
+            HomeFeed.render();
+        }
     },
 
     updateAndroidBackStack: () => {
@@ -1393,23 +2175,29 @@ const Router = {
     }
 };
 
+// Android Native Back Action Listener
 window.app = {
     executeBackAction: () => {
-        const studio = Utils.el('flaynity-upload-studio');
-        if (studio && (studio.classList.contains('open') || studio.style.display === 'flex')) {
-            const activeSubLayers = document.querySelectorAll('.studio-sub-layer.active');
-            if (activeSubLayers.length > 0) {
-                activeSubLayers.forEach((l) => l.classList.remove('active'));
-            } else {
-                UploadStudio.close();
-            }
+        const watchPage = Utils.el('flaynity-watch-page');
+        const uploadSheet = Utils.el('upload-sheet');
+
+        if (watchPage && watchPage.classList.contains('active')) {
+            Player.close();
             Router.history.pop();
             Router.updateAndroidBackStack();
             return;
         }
 
-        if (Player.currentVideoData) {
-            Player.close();
+        if (uploadSheet && uploadSheet.classList.contains('active')) {
+            UploadPage.closeSheet();
+            Router.history.pop();
+            Router.updateAndroidBackStack();
+            return;
+        }
+
+        const activeLayers = document.querySelectorAll('.upload-flow-layer.active, .you-sub-layer.active');
+        if (activeLayers.length > 0) {
+            activeLayers.forEach((l) => l.classList.remove('active'));
             Router.history.pop();
             Router.updateAndroidBackStack();
             return;
@@ -1423,53 +2211,130 @@ window.app = {
 };
 
 // ==========================================
-// 10. LIFECYCLE BOOTSTRAP & REALTIME HUB
+// 13. LIFECYCLE BOOTSTRAP & REALTIME SYNC HUB
 // ==========================================
 const App = {
     bootstrap: async () => {
         if (State.isBootstrapped) return;
         State.isBootstrapped = true;
 
+        const splashFailsafe = setTimeout(() => {
+            const splash = Utils.el('flaynity-splash');
+            if (splash && !splash.classList.contains('flaynity-hidden')) {
+                console.warn("[Failsafe] Dismissing splash screen automatically.");
+                Utils.hide('flaynity-splash');
+                if (!State.user) Utils.show('flaynity-auth');
+            }
+        }, 2500);
+
         try {
+            if (typeof firebase === 'undefined') {
+                throw new Error("Firebase SDK is not available. Please verify network connectivity.");
+            }
+
+            // 1. Fetch Page Templates & Mount Navigation
             await Router.fetchPages();
+
+            // 2. Initialize R2 & Database Services
             Services.init();
 
+            // 3. Initialize Controller Hubs
             HomeFeed.init();
             Player.init();
             ShortsPlayer.init();
-            UploadStudio.init();
+            UploadPage.init();
             DiscoverPage.init();
             YouPage.init();
             Router.bindGlobalNavigation();
 
+            // 4. Network Listeners
+            window.addEventListener('offline', () => {
+                State.online = false;
+                Utils.show('flaynity-offline');
+            });
+
+            window.addEventListener('online', () => {
+                State.online = true;
+                Utils.hide('flaynity-offline');
+            });
+
+            onClick('btn-retry-network', () => {
+                if (window.AndroidBridge && typeof AndroidBridge.retryConnection === 'function') {
+                    AndroidBridge.retryConnection();
+                } else if (navigator.onLine) {
+                    State.online = true;
+                    Utils.hide('flaynity-offline');
+                }
+            });
+
+            // 5. Initialize Auth Engine
             AuthSystem.init();
+            Visibility.startAutoRevealTicker();
+
+            clearTimeout(splashFailsafe);
         } catch (error) {
-            console.error("Bootstrap Error:", error);
+            clearTimeout(splashFailsafe);
+            console.error("App Bootstrap Failed:", error);
+
+            const splash = document.getElementById('flaynity-splash');
+            if (splash) {
+                splash.innerHTML = `
+                    <div style="padding: 24px; color: #ff3b30; text-align: center; background: #ffffff; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
+                        <span class="material-symbols-outlined" style="font-size: 56px; margin-bottom: 12px;">error_outline</span>
+                        <h2 style="font-size: 20px; font-weight: 700; color: #111; margin-bottom: 8px;">Initialization Failed</h2>
+                        <p style="font-size: 14px; color: #666; margin-bottom: 20px; max-width: 320px;">${error.message}</p>
+                        <button onclick="window.location.reload()" style="background:#111;color:#fff;border:none;padding:12px 24px;border-radius:24px;font-weight:600;cursor:pointer;">Retry</button>
+                    </div>
+                `;
+            }
         }
     },
 
+    // ⚡ INSTANT REALTIME LISTENER PIPELINE (<2s auto refresh)
     startRealtimeListeners: () => {
+        // Realtime Long Videos Listener
         Services.addListener('videos', 'videos', (snap) => {
             const data = snap.val() || {};
             State.cache.videos = Object.keys(data).map((k) => ({ id: k, ...data[k] })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            
+            // Automatic instant update across screens
             HomeFeed.render();
+            if (State.currentTab === 'you' && State.channel) {
+                YouPage.renderChannelContent('videos');
+            }
+            if (Player.currentVideoData) {
+                Player.loadRecommended(Player.currentVideoData.id);
+            }
         });
 
+        // Realtime Shorts Listener
         Services.addListener('shorts', 'shorts', (snap) => {
             const data = snap.val() || {};
             State.cache.shorts = Object.keys(data).map((k) => ({ id: k, ...data[k] })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            
             HomeFeed.render();
             ShortsPlayer.render();
+            if (State.currentTab === 'you' && State.channel) {
+                YouPage.renderChannelContent('shorts');
+            }
         });
 
+        // Realtime Community Posts Listener
         Services.addListener('posts', 'posts', (snap) => {
             const data = snap.val() || {};
             State.cache.posts = Object.keys(data).map((k) => ({ id: k, ...data[k] })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            
             HomeFeed.render();
+            if (State.currentTab === 'you' && State.channel) {
+                YouPage.renderChannelContent('posts');
+            }
         });
     }
 };
 
+// ==========================================
+// 14. MULTI-PLATFORM DOM BOOTSTRAP TRIGGER
+// ==========================================
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => App.bootstrap());
 } else {

@@ -1,354 +1,1120 @@
-<!-- pages/upload.html-App Code <!DOCTYPE html> দিবানা <style> থেকে শুরু হবে -->
 <style>
-/* UPLOAD COMPONENT STYLES */
-.page-upload-root {
+/* ==========================================================================
+   FLAYNITY PREMIUM UPLOAD STUDIO (MATERIAL DESIGN 3 / YOUTUBE MOBILE)
+   ========================================================================== */
+
+:root {
+    --studio-bg: #0f0f0f;
+    --studio-surface: #1e1e1e;
+    --studio-surface-variant: #282828;
+    --studio-pill-active: #383838;
+    --studio-text: #ffffff;
+    --studio-text-sub: #aaaaaa;
+    --studio-accent: #ff0000;
+    --studio-accent-hover: #cc0000;
+    --studio-border: rgba(255, 255, 255, 0.12);
+    --safe-bottom: env(safe-area-inset-bottom, 16px);
+    --safe-top: env(safe-area-inset-top, 16px);
+}
+
+.upload-studio-root {
+    position: fixed;
+    inset: 0;
     width: 100%;
     height: 100%;
+    background-color: var(--studio-bg);
+    z-index: 9000;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    color: var(--studio-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Roboto", "Segoe UI", sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.upload-studio-root.open {
+    display: flex;
+}
+
+/* --------------------------------------------------------------------------
+   STAGE VIEWPORT & MODE SLIDERS
+   -------------------------------------------------------------------------- */
+.studio-main-stage {
+    flex: 1;
     position: relative;
-    z-index: 3000;
-}
-
-/* Backdrop for bottom sheet */
-.upload-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-}
-.upload-backdrop.active { opacity: 1; }
-
-/* Bottom Sheet */
-.upload-bottom-sheet {
-    background: var(--flaynity-surface);
     width: 100%;
-    border-radius: 20px 20px 0 0;
-    padding: 24px 16px max(24px, var(--safe-area-bottom));
-    transform: translateY(100%);
-    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
-}
-.upload-bottom-sheet.active { transform: translateY(0); }
-
-.upload-sheet-header {
+    height: calc(100% - 90px);
+    overflow: hidden;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-}
-.upload-sheet-title { font-size: 20px; font-weight: 700; color: var(--flaynity-text); }
-.upload-sheet-close {
-    background: var(--flaynity-skeleton);
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
     justify-content: center;
-    cursor: pointer;
-    color: var(--flaynity-text);
+    align-items: center;
+    padding-top: var(--safe-top);
 }
 
-.upload-options-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-}
-.upload-option-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 8px;
-    background: var(--flaynity-bg);
-    border: 1px solid var(--flaynity-divider);
-    border-radius: 16px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-.upload-option-card:active { background: var(--flaynity-skeleton); }
-.upload-option-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--flaynity-skeleton);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--flaynity-text);
-}
-.upload-option-icon .material-symbols-outlined { font-size: 28px; font-variation-settings: 'FILL' 1; }
-.upload-option-label { font-size: 14px; font-weight: 600; color: var(--flaynity-text); }
-
-/* Full Screen Flow Layers (Video, Short, Post) */
-.upload-flow-layer {
+.mode-panel {
     position: absolute;
     inset: 0;
-    background: var(--flaynity-bg);
-    z-index: 3100;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+    opacity: 0;
+    transform: scale(0.96);
+    transition: opacity 0.25s cubic-bezier(0.2, 0, 0, 1), transform 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.mode-panel.active {
+    display: flex;
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* --------------------------------------------------------------------------
+   MODE 1: VIDEO SELECTION (2:3 Aspect Ratio Container)
+   -------------------------------------------------------------------------- */
+.video-picker-container {
+    width: 100%;
+    max-width: 380px;
+    aspect-ratio: 2 / 3;
+    max-height: calc(100% - 20px);
+    background: #181818;
+    border-radius: 20px;
+    border: 1px solid var(--studio-border);
     display: flex;
     flex-direction: column;
-    transform: translateY(100%);
-    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    overflow: hidden;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
 }
-.upload-flow-layer.active { transform: translateY(0); }
 
-/* Common Flow Top Bar */
-.flow-top-bar {
-    height: var(--top-bar-height);
+.studio-panel-topbar {
+    height: 52px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 16px;
-    padding-top: var(--safe-area-top);
-    border-bottom: 1px solid var(--flaynity-divider);
-    background: var(--flaynity-surface);
+    background: rgba(24, 24, 24, 0.95);
+    border-bottom: 1px solid var(--studio-border);
 }
-.flow-top-bar .title { font-size: 18px; font-weight: 700; color: var(--flaynity-text); }
-.flow-btn-primary {
-    background: var(--flaynity-text);
-    color: var(--flaynity-bg);
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 600;
+
+.studio-panel-topbar .title {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.studio-icon-btn {
+    background: transparent;
     border: none;
+    color: var(--studio-text);
     cursor: pointer;
-}
-.flow-btn-primary:disabled { opacity: 0.5; }
-
-/* Upload Forms & Editors */
-.upload-form-scroll {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-    padding-bottom: calc(16px + var(--safe-area-bottom));
-}
-.form-group { margin-bottom: 24px; }
-.form-label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--flaynity-text); }
-.form-input, .form-textarea, .form-select {
-    width: 100%;
-    background: var(--flaynity-skeleton);
-    border: 1px solid transparent;
-    border-radius: 12px;
-    padding: 16px;
-    font-size: 15px;
-    color: var(--flaynity-text);
-    font-family: inherit;
-    transition: border 0.2s;
-}
-.form-input:focus, .form-textarea:focus, .form-select:focus {
-    border-color: var(--flaynity-text);
-    outline: none;
-}
-.form-textarea { resize: none; min-height: 120px; }
-
-/* Video Preview Box */
-.video-preview-box {
-    width: 100%;
-    aspect-ratio: 16/9;
-    background: #000;
-    border-radius: 12px;
-    overflow: hidden;
-    position: relative;
-    margin-bottom: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 6px;
+    border-radius: 50%;
+    transition: background 0.2s;
 }
-.video-preview-box video { width: 100%; height: 100%; object-fit: contain; }
 
-/* Short Camera UI Simulator */
-.short-camera-view {
+.studio-icon-btn:active {
+    background: var(--studio-pill-active);
+}
+
+.video-grid-scroll {
     flex: 1;
-    background: #000;
+    overflow-y: auto;
+    padding: 8px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    align-content: start;
+}
+
+.video-grid-item {
+    aspect-ratio: 16 / 9;
+    background: #242424;
+    border-radius: 8px;
     position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.video-grid-item img, .video-grid-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.video-grid-item .duration-badge {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.8);
+    font-size: 10px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.video-upload-trigger-card {
+    grid-column: span 3;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px dashed var(--studio-border);
+    border-radius: 12px;
+    padding: 32px 16px;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    margin-top: 10px;
 }
-.camera-preview { width: 100%; height: 100%; object-fit: cover; }
-.camera-controls-overlay {
+
+/* --------------------------------------------------------------------------
+   MODE 2: SHORT CAMERA (9:16 Aspect Ratio View)
+   -------------------------------------------------------------------------- */
+.short-camera-container {
+    width: 100%;
+    max-width: 380px;
+    aspect-ratio: 9 / 16;
+    max-height: calc(100% - 10px);
+    background: #000000;
+    border-radius: 24px;
+    border: 1px solid var(--studio-border);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+}
+
+.camera-preview-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.camera-overlay-ui {
     position: absolute;
     inset: 0;
-    pointer-events: none;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 24px 16px max(32px, var(--safe-area-bottom));
+    padding: 14px;
+    pointer-events: none;
+    z-index: 10;
 }
-.camera-top-actions { display: flex; justify-content: space-between; align-items: flex-start; pointer-events: auto; }
-.camera-side-tools { display: flex; flex-direction: column; gap: 16px; }
-.cam-tool { background: rgba(0,0,0,0.5); color: #fff; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-.camera-bottom-actions { display: flex; justify-content: center; align-items: center; gap: 32px; pointer-events: auto; }
-.cam-record-btn { width: 72px; height: 72px; border-radius: 50%; border: 4px solid #fff; background: var(--flaynity-accent); transition: transform 0.2s; }
-.cam-record-btn:active { transform: scale(0.9); }
 
-/* Post Image Grid Maker */
-.post-image-picker-box {
-    width: 100%; aspect-ratio: 3/4; background: var(--flaynity-skeleton); border-radius: 12px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--flaynity-text-secondary);
-    border: 2px dashed var(--flaynity-divider); cursor: pointer; margin-bottom: 16px; overflow: hidden; position: relative;
+.camera-progress-bar-container {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
 }
-.post-image-picker-box img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1; }
 
-/* Upload Progress Engine Overlay */
+.camera-progress-fill {
+    width: 0%;
+    height: 100%;
+    background: var(--studio-accent);
+    transition: width 0.1s linear;
+}
+
+.camera-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: auto;
+}
+
+.sound-pill {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.camera-side-toolbar {
+    position: absolute;
+    right: 12px;
+    top: 70px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    pointer-events: auto;
+}
+
+.cam-tool-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 10px;
+}
+
+.camera-bottom-deck {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px 10px 10px;
+    pointer-events: auto;
+}
+
+.cam-gallery-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.cam-shutter-outer {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    border: 4px solid #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+}
+
+.cam-shutter-inner {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: var(--studio-accent);
+    transition: transform 0.2s, border-radius 0.2s;
+}
+
+.cam-shutter-outer.recording .cam-shutter-inner {
+    transform: scale(0.65);
+    border-radius: 10px;
+}
+
+.cam-done-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--studio-accent);
+    color: #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.countdown-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 80px;
+    font-weight: 900;
+    color: #fff;
+    z-index: 50;
+}
+
+/* --------------------------------------------------------------------------
+   MODE 3: POST UPLOAD (Image Pick Trigger Card)
+   -------------------------------------------------------------------------- */
+.post-picker-container {
+    width: 100%;
+    max-width: 360px;
+    background: #1a1a1a;
+    border-radius: 20px;
+    border: 1px solid var(--studio-border);
+    padding: 32px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+.post-upload-card-btn {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    max-height: 380px;
+    background: #252525;
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    cursor: pointer;
+}
+
+/* --------------------------------------------------------------------------
+   BOTTOM TEXT CAROUSEL MODE SWITCHER (NO ICONS, YOUTUBE INSPIRED)
+   -------------------------------------------------------------------------- */
+.studio-bottom-bar-wrapper {
+    height: 80px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.95) 100%);
+    padding-bottom: var(--safe-bottom);
+    z-index: 100;
+}
+
+.studio-mode-switcher {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-behavior: smooth;
+    padding: 0 24px;
+    touch-action: pan-x;
+}
+
+.studio-mode-switcher::-webkit-scrollbar {
+    display: none;
+}
+
+.mode-tab-item {
+    padding: 10px 24px;
+    border-radius: 24px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--studio-text);
+    background: transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform: scale(0.92);
+    opacity: 0.65;
+}
+
+.mode-tab-item.active {
+    background: var(--studio-pill-active);
+    color: #ffffff;
+    opacity: 1;
+    transform: scale(1.08);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+/* --------------------------------------------------------------------------
+   FULLSCREEN SUB-LAYERS: PREVIEW & DETAILS PAGES
+   -------------------------------------------------------------------------- */
+.studio-sub-layer {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--studio-bg);
+    z-index: 9500;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.studio-sub-layer.active {
+    display: flex;
+}
+
+.studio-nav-header {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    padding-top: var(--safe-top);
+    border-bottom: 1px solid var(--studio-border);
+    background: var(--studio-surface);
+}
+
+.studio-nav-title {
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.btn-pill-action {
+    background: #ffffff;
+    color: #000000;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-pill-action.btn-accent {
+    background: var(--studio-accent);
+    color: #ffffff;
+}
+
+/* Video Preview Player & Timeline Trimmer */
+.preview-player-stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+}
+
+.preview-media-element {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.video-trimmer-box {
+    background: #181818;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border-top: 1px solid var(--studio-border);
+}
+
+.trimmer-info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--studio-text-sub);
+    font-weight: 600;
+}
+
+.trimmer-track-container {
+    position: relative;
+    height: 52px;
+    background: #2a2a2a;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.trimmer-thumbnails-strip {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.trimmer-thumbnails-strip canvas {
+    height: 100%;
+    flex: 1;
+    object-fit: cover;
+}
+
+.trimmer-highlight-window {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0%;
+    right: 0%;
+    border: 3px solid #ffffff;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+.trim-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 22px;
+    background: #ffffff;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: ew-resize;
+    z-index: 20;
+    color: #000;
+}
+
+.trim-handle.start { left: 0%; transform: translateX(-50%); }
+.trim-handle.end { right: 0%; transform: translateX(50%); }
+
+/* Details Scrollable Form (YouTube Mobile UI) */
+.details-form-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    padding-bottom: calc(32px + var(--safe-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.details-thumbnail-section {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #202020;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--studio-border);
+}
+
+.details-thumbnail-section.ratio-9-16 {
+    width: 120px;
+    aspect-ratio: 9 / 16;
+    margin: 0 auto;
+}
+
+.details-thumbnail-section img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.thumb-picker-overlay-btn {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.yt-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.yt-form-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.yt-form-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--studio-text-sub);
+}
+
+.yt-char-counter {
+    font-size: 12px;
+    color: var(--studio-text-sub);
+}
+
+.yt-input, .yt-textarea, .yt-select {
+    width: 100%;
+    background: #1c1c1c;
+    border: 1px solid var(--studio-border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: #ffffff;
+    font-size: 15px;
+    font-family: inherit;
+    box-sizing: border-box;
+    outline: none;
+    transition: border 0.2s;
+}
+
+.yt-input:focus, .yt-textarea:focus, .yt-select:focus {
+    border-color: #ffffff;
+}
+
+.yt-textarea {
+    resize: none;
+    min-height: 90px;
+}
+
+.yt-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--studio-border);
+}
+
+.yt-toggle-label-box {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.yt-toggle-title {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.yt-toggle-desc {
+    font-size: 12px;
+    color: var(--studio-text-sub);
+}
+
+/* Material Switch */
+.md3-switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 28px;
+}
+.md3-switch input { opacity: 0; width: 0; height: 0; }
+.md3-switch-slider {
+    position: absolute;
+    inset: 0;
+    background-color: #383838;
+    border-radius: 28px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.md3-switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+.md3-switch input:checked + .md3-switch-slider {
+    background-color: var(--studio-accent);
+}
+.md3-switch input:checked + .md3-switch-slider:before {
+    transform: translateX(20px);
+}
+
+/* Progress Overlay */
 .upload-progress-overlay {
-    position: absolute; inset: 0; background: var(--flaynity-surface); z-index: 4000;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    text-align: center; padding: 32px;
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
 }
-.progress-ring { width: 80px; height: 80px; border-radius: 50%; border: 4px solid var(--flaynity-skeleton); border-top-color: var(--flaynity-accent); animation: spin 1s linear infinite; margin-bottom: 24px; }
-.progress-text { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-.progress-subtext { font-size: 14px; color: var(--flaynity-text-secondary); }
+
+.progress-ring {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 4px solid #333333;
+    border-top-color: var(--studio-accent);
+    animation: spin-studio 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin-studio {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 </style>
 
-<div class="page-upload-root" id="upload-root">
-    
-    <!-- Backdrop & Bottom Sheet Selection -->
-    <div class="upload-backdrop" id="upload-backdrop">
-        <div class="upload-bottom-sheet" id="upload-sheet">
-            <div class="upload-sheet-header">
-                <div class="upload-sheet-title">Create</div>
-                <div class="upload-sheet-close" id="btn-close-upload-sheet">
-                    <span class="material-symbols-outlined">close</span>
+<!-- ==========================================================================
+     STUDIO ROOT CONTAINER
+     ========================================================================== -->
+<div class="upload-studio-root" id="flaynity-upload-studio">
+
+    <!-- 1. STAGE & MODES -->
+    <div class="studio-main-stage">
+
+        <!-- Mode 1: Video File Selection (2:3 Aspect Box) -->
+        <div class="mode-panel active" id="panel-mode-video">
+            <div class="video-picker-container">
+                <div class="studio-panel-topbar">
+                    <button class="studio-icon-btn" id="btn-close-studio-x">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                    <span class="title">Videos</span>
+                    <div style="width:24px;"></div>
+                </div>
+                <div class="video-grid-scroll" id="video-device-grid">
+                    <!-- Dynamic Video Items or Storage Trigger -->
+                    <div class="video-upload-trigger-card" id="btn-browse-device-video">
+                        <span class="material-symbols-outlined" style="font-size:40px;color:var(--studio-text-sub);">video_file</span>
+                        <span style="font-size:14px;font-weight:600;">Choose Video from Device</span>
+                        <span style="font-size:11px;color:var(--studio-text-sub);">All aspect ratios supported</span>
+                    </div>
                 </div>
             </div>
-            
-            <div class="upload-options-grid">
-                <div class="upload-option-card" id="btn-create-video">
-                    <div class="upload-option-icon"><span class="material-symbols-outlined">upload_file</span></div>
-                    <div class="upload-option-label">Video</div>
+            <input type="file" id="input-device-video-file" accept="video/*" style="display:none;">
+        </div>
+
+        <!-- Mode 2: Short Live Camera (9:16 Aspect Box) -->
+        <div class="mode-panel" id="panel-mode-short">
+            <div class="short-camera-container">
+                <video class="camera-preview-video" id="short-cam-stream" autoplay muted playsinline></video>
+                <div class="countdown-overlay" id="cam-countdown-display">3</div>
+
+                <div class="camera-overlay-ui">
+                    <div>
+                        <div class="camera-progress-bar-container">
+                            <div class="camera-progress-fill" id="short-rec-progress"></div>
+                        </div>
+                        <div class="camera-header">
+                            <button class="studio-icon-btn" id="btn-close-camera-x">
+                                <span class="material-symbols-outlined">close</span>
+                            </button>
+                            <div class="sound-pill">
+                                <span class="material-symbols-outlined" style="font-size:16px;">music_note</span>
+                                <span>Add sound</span>
+                            </div>
+                            <div style="width:32px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Right Camera Tools -->
+                    <div class="camera-side-toolbar">
+                        <div class="cam-tool-btn" id="tool-flip-camera"><span class="material-symbols-outlined">flip_camera_android</span></div>
+                        <div class="cam-tool-btn" id="tool-camera-speed"><span style="font-weight:700;">1x</span></div>
+                        <div class="cam-tool-btn" id="tool-camera-timer"><span class="material-symbols-outlined">timer</span></div>
+                        <div class="cam-tool-btn" id="tool-camera-filters"><span class="material-symbols-outlined">auto_fix_high</span></div>
+                        <div class="cam-tool-btn" id="tool-camera-flash"><span class="material-symbols-outlined">flash_off</span></div>
+                    </div>
+
+                    <!-- Bottom Controls Deck -->
+                    <div class="camera-bottom-deck">
+                        <div class="cam-gallery-btn" id="btn-short-open-gallery">
+                            <span class="material-symbols-outlined">photo_library</span>
+                        </div>
+                        <div class="cam-shutter-outer" id="btn-shutter-record">
+                            <div class="cam-shutter-inner"></div>
+                        </div>
+                        <div class="cam-done-btn" id="btn-short-camera-done">
+                            <span class="material-symbols-outlined">check</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="upload-option-card" id="btn-create-short">
-                    <div class="upload-option-icon"><span class="material-symbols-outlined">app_shortcut</span></div>
-                    <div class="upload-option-label">Short</div>
+            </div>
+            <input type="file" id="input-device-short-file" accept="video/*" style="display:none;">
+        </div>
+
+        <!-- Mode 3: Community Post Image Picker -->
+        <div class="mode-panel" id="panel-mode-post">
+            <div class="post-picker-container">
+                <div class="studio-panel-topbar" style="width:100%;border-radius:12px 12px 0 0;">
+                    <button class="studio-icon-btn" id="btn-close-post-x">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                    <span class="title">Create Post</span>
+                    <div style="width:24px;"></div>
                 </div>
-                <div class="upload-option-card" id="btn-create-post">
-                    <div class="upload-option-icon"><span class="material-symbols-outlined">edit_square</span></div>
-                    <div class="upload-option-label">Post</div>
+                <div class="post-upload-card-btn" id="btn-browse-post-image">
+                    <span class="material-symbols-outlined" style="font-size:48px;color:var(--studio-text-sub);">add_photo_alternate</span>
+                    <span style="font-size:15px;font-weight:700;">Upload 3:4 Image</span>
+                    <span style="font-size:12px;color:var(--studio-text-sub);">Tap to select from Device Gallery</span>
                 </div>
+            </div>
+            <input type="file" id="input-device-post-file" accept="image/*" style="display:none;">
+        </div>
+
+    </div>
+
+    <!-- 2. YOUTUBE FLOATING BOTTOM TEXT BAR (NO ICONS) -->
+    <div class="studio-bottom-bar-wrapper">
+        <div class="studio-mode-switcher" id="studio-mode-switcher-deck">
+            <div class="mode-tab-item active" data-mode="video">Video</div>
+            <div class="mode-tab-item" data-mode="short">Short</div>
+            <div class="mode-tab-item" data-mode="post">Post</div>
+        </div>
+    </div>
+
+    <!-- 3. LAYER: VIDEO PREVIEW & TRIMMER -->
+    <div class="studio-sub-layer" id="layer-video-preview">
+        <div class="studio-nav-header">
+            <button class="studio-icon-btn" id="btn-back-video-preview"><span class="material-symbols-outlined">arrow_back</span></button>
+            <span class="studio-nav-title">Preview</span>
+            <button class="btn-pill-action" id="btn-next-video-details">Next</button>
+        </div>
+        <div class="preview-player-stage" id="video-preview-viewport">
+            <video class="preview-media-element" id="main-video-preview-el" playsinline></video>
+        </div>
+        <div class="video-trimmer-box">
+            <div class="trimmer-info-row">
+                <span id="trimmer-time-display">0:00 / 0:00</span>
+                <span id="trimmer-selected-duration">Selected: 0:00</span>
+            </div>
+            <div class="trimmer-track-container" id="video-trimmer-track">
+                <div class="trimmer-thumbnails-strip" id="trimmer-thumb-strip"></div>
+                <div class="trimmer-highlight-window" id="trim-window"></div>
+                <div class="trim-handle start" id="trim-handle-start">❙</div>
+                <div class="trim-handle end" id="trim-handle-end">❙</div>
             </div>
         </div>
     </div>
 
-    <!-- Video Upload Flow -->
-    <div class="upload-flow-layer flaynity-hidden" id="flow-video">
-        <div class="flow-top-bar">
-            <span class="material-symbols-outlined" id="btn-close-video-flow" style="cursor:pointer;">arrow_back</span>
-            <div class="title">Upload Video</div>
-            <button class="flow-btn-primary" id="btn-publish-video">Publish</button>
+    <!-- 4. LAYER: VIDEO DETAILS FORM -->
+    <div class="studio-sub-layer" id="layer-video-details">
+        <div class="studio-nav-header">
+            <button class="studio-icon-btn" id="btn-back-video-details"><span class="material-symbols-outlined">arrow_back</span></button>
+            <span class="studio-nav-title">Add details</span>
+            <button class="btn-pill-action btn-accent" id="btn-submit-publish-video">Publish</button>
         </div>
-        <div class="upload-form-scroll">
-            <div class="video-preview-box" id="video-file-picker-trigger">
-                <span class="material-symbols-outlined" style="font-size: 48px; color: var(--flaynity-text-secondary);">add_photo_alternate</span>
-                <video id="video-preview-element" class="flaynity-hidden" controls></video>
-                <input type="file" id="input-video-file" accept="video/*" class="flaynity-hidden">
+        <div class="details-form-scroll">
+            <div class="details-thumbnail-section" id="video-details-thumb-box">
+                <img id="video-details-thumb-preview" src="" alt="Thumbnail">
+                <div class="thumb-picker-overlay-btn" id="btn-custom-thumb-video">
+                    <span class="material-symbols-outlined" style="font-size:16px;">image</span>
+                    <span>Custom</span>
+                </div>
+                <input type="file" id="input-custom-thumb-video" accept="image/*" style="display:none;">
             </div>
-            
-            <div class="form-group">
-                <label class="form-label">Title</label>
-                <input type="text" class="form-input" id="input-video-title" placeholder="Create a title">
+
+            <div class="yt-form-group">
+                <div class="yt-form-header-row">
+                    <span class="yt-form-label">Title (required)</span>
+                    <span class="yt-char-counter" id="video-title-counter">0/100</span>
+                </div>
+                <input type="text" class="yt-input" id="input-v-title" maxlength="100" placeholder="Create a title">
             </div>
-            <div class="form-group">
-                <label class="form-label">Description</label>
-                <textarea class="form-textarea" id="input-video-desc" placeholder="Add a description"></textarea>
+
+            <div class="yt-form-group">
+                <div class="yt-form-header-row">
+                    <span class="yt-form-label">Description (required)</span>
+                    <span class="yt-char-counter" id="video-desc-counter">0/5000</span>
+                </div>
+                <textarea class="yt-textarea" id="input-v-desc" maxlength="5000" placeholder="Add a description"></textarea>
             </div>
-            <div class="form-group">
-                <label class="form-label">Visibility</label>
-                <select class="form-select" id="input-video-visibility">
-                    <option value="public">Public</option>
+
+            <div class="yt-form-group">
+                <span class="yt-form-label">Visibility</span>
+                <select class="yt-select" id="select-v-visibility">
+                    <option value="public">Publish (Public)</option>
                     <option value="private">Private</option>
+                    <option value="schedule">Schedule Publish</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label class="form-label">Category</label>
-                <select class="form-select" id="input-video-category">
+
+            <div class="yt-form-group" id="group-v-schedule" style="display:none;">
+                <span class="yt-form-label">Select Date & Time</span>
+                <input type="datetime-local" class="yt-input" id="input-v-schedule-time">
+            </div>
+
+            <div class="yt-form-group">
+                <span class="yt-form-label">Category</span>
+                <select class="yt-select" id="select-v-category">
                     <option value="Entertainment">Entertainment</option>
                     <option value="Gaming">Gaming</option>
                     <option value="Education">Education</option>
                     <option value="Music">Music</option>
-                    <option value="Technology">Technology</option>
+                    <option value="Tech">Technology</option>
                 </select>
             </div>
+
+            <div class="yt-toggle-row">
+                <div class="yt-toggle-label-box">
+                    <span class="yt-toggle-title">Allow Comments</span>
+                    <span class="yt-toggle-desc">Turn comments on for this video</span>
+                </div>
+                <label class="md3-switch">
+                    <input type="checkbox" id="toggle-v-comments" checked>
+                    <span class="md3-switch-slider"></span>
+                </label>
+            </div>
+
+            <div class="yt-toggle-row">
+                <div class="yt-toggle-label-box">
+                    <span class="yt-toggle-title">Show Like Count</span>
+                    <span class="yt-toggle-desc">Viewers can see how many likes this video has</span>
+                </div>
+                <label class="md3-switch">
+                    <input type="checkbox" id="toggle-v-likes" checked>
+                    <span class="md3-switch-slider"></span>
+                </label>
+            </div>
         </div>
     </div>
 
-    <!-- Short Upload Flow (Camera Simulator & Details) -->
-    <div class="upload-flow-layer flaynity-hidden" id="flow-short">
-        <!-- Camera View -->
-        <div class="short-camera-view" id="short-camera-ui">
-            <video class="camera-preview" id="short-camera-video" autoplay muted playsinline></video>
-            <div class="camera-controls-overlay">
-                <div class="camera-top-actions">
-                    <div class="cam-tool" id="btn-close-short-flow"><span class="material-symbols-outlined">close</span></div>
-                    <div class="camera-side-tools">
-                        <div class="cam-tool"><span class="material-symbols-outlined">flip_camera_ios</span></div>
-                        <div class="cam-tool"><span class="material-symbols-outlined">speed</span></div>
-                        <div class="cam-tool"><span class="material-symbols-outlined">timer</span></div>
+    <!-- 5. LAYER: SHORT PREVIEW -->
+    <div class="studio-sub-layer" id="layer-short-preview">
+        <div class="studio-nav-header">
+            <button class="studio-icon-btn" id="btn-back-short-preview"><span class="material-symbols-outlined">arrow_back</span></button>
+            <div class="sound-pill"><span class="material-symbols-outlined" style="font-size:16px;">music_note</span> Add sound</div>
+            <button class="btn-pill-action" id="btn-next-short-details">Next</button>
+        </div>
+        <div class="preview-player-stage">
+            <video class="preview-media-element" id="short-preview-video-el" loop playsinline></video>
+        </div>
+    </div>
+
+    <!-- 6. LAYER: SHORT DETAILS FORM -->
+    <div class="studio-sub-layer" id="layer-short-details">
+        <div class="studio-nav-header">
+            <button class="studio-icon-btn" id="btn-back-short-details"><span class="material-symbols-outlined">arrow_back</span></button>
+            <span class="studio-nav-title">Add details</span>
+            <button class="btn-pill-action btn-accent" id="btn-submit-publish-short">Publish</button>
+        </div>
+        <div class="details-form-scroll">
+            <div style="display:flex;gap:16px;align-items:flex-start;">
+                <div class="details-thumbnail-section ratio-9-16" id="short-details-thumb-box">
+                    <img id="short-details-thumb-preview" src="" alt="Thumbnail">
+                    <div class="thumb-picker-overlay-btn" id="btn-custom-thumb-short" style="padding:4px 8px;font-size:10px;">
+                        <span class="material-symbols-outlined" style="font-size:12px;">image</span>
+                    </div>
+                    <input type="file" id="input-custom-thumb-short" accept="image/*" style="display:none;">
+                </div>
+                <div style="flex:1;">
+                    <div class="yt-form-group">
+                        <div class="yt-form-header-row">
+                            <span class="yt-form-label">Caption (required)</span>
+                            <span class="yt-char-counter" id="short-title-counter">0/100</span>
+                        </div>
+                        <textarea class="yt-textarea" id="input-s-title" maxlength="100" placeholder="Caption your Short #shorts"></textarea>
                     </div>
                 </div>
-                <div class="camera-bottom-actions">
-                    <div class="cam-tool" id="btn-short-gallery"><span class="material-symbols-outlined">photo_library</span></div>
-                    <div class="cam-record-btn" id="btn-record-short"></div>
-                    <div class="cam-tool" id="btn-short-next"><span class="material-symbols-outlined">check</span></div>
-                </div>
             </div>
-            <input type="file" id="input-short-file" accept="video/*" class="flaynity-hidden">
-        </div>
-        
-        <!-- Short Details View -->
-        <div class="upload-flow-layer flaynity-hidden" id="short-details-ui" style="z-index: 3101;">
-            <div class="flow-top-bar">
-                <span class="material-symbols-outlined" id="btn-back-short-details" style="cursor:pointer;">arrow_back</span>
-                <div class="title">Details</div>
-                <button class="flow-btn-primary" id="btn-publish-short">Upload Short</button>
+
+            <div class="yt-form-group">
+                <span class="yt-form-label">Visibility</span>
+                <select class="yt-select" id="select-s-visibility">
+                    <option value="public">Publish (Public)</option>
+                    <option value="private">Private</option>
+                    <option value="schedule">Schedule Publish</option>
+                </select>
             </div>
-            <div class="upload-form-scroll">
-                <div class="form-group">
-                    <label class="form-label">Caption your Short</label>
-                    <textarea class="form-textarea" id="input-short-title" placeholder="Write a caption..." style="min-height: 80px;"></textarea>
+
+            <div class="yt-form-group" id="group-s-schedule" style="display:none;">
+                <span class="yt-form-label">Select Date & Time</span>
+                <input type="datetime-local" class="yt-input" id="input-s-schedule-time">
+            </div>
+
+            <div class="yt-toggle-row">
+                <div class="yt-toggle-label-box">
+                    <span class="yt-toggle-title">Allow Comments</span>
+                    <span class="yt-toggle-desc">Turn comments on for this short</span>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Visibility</label>
-                    <select class="form-select" id="input-short-visibility">
-                        <option value="public">Public</option>
-                        <option value="private">Private</option>
-                    </select>
+                <label class="md3-switch">
+                    <input type="checkbox" id="toggle-s-comments" checked>
+                    <span class="md3-switch-slider"></span>
+                </label>
+            </div>
+
+            <div class="yt-toggle-row">
+                <div class="yt-toggle-label-box">
+                    <span class="yt-toggle-title">Show Like Count</span>
+                    <span class="yt-toggle-desc">Viewers can see likes</span>
                 </div>
+                <label class="md3-switch">
+                    <input type="checkbox" id="toggle-s-likes" checked>
+                    <span class="md3-switch-slider"></span>
+                </label>
             </div>
         </div>
     </div>
 
-    <!-- Post Creation Flow -->
-    <div class="upload-flow-layer flaynity-hidden" id="flow-post">
-        <div class="flow-top-bar">
-            <span class="material-symbols-outlined" id="btn-close-post-flow" style="cursor:pointer;">close</span>
-            <div class="title">Create Post</div>
-            <button class="flow-btn-primary" id="btn-publish-post">Post</button>
+    <!-- 7. LAYER: POST PREVIEW & DETAILS -->
+    <div class="studio-sub-layer" id="layer-post-preview">
+        <div class="studio-nav-header">
+            <button class="studio-icon-btn" id="btn-back-post-preview"><span class="material-symbols-outlined">arrow_back</span></button>
+            <span class="studio-nav-title">Post Preview</span>
+            <button class="btn-pill-action" id="btn-next-post-details">Next</button>
         </div>
-        <div class="upload-form-scroll">
-            <div class="post-image-picker-box" id="post-image-picker-trigger">
-                <span class="material-symbols-outlined" style="font-size: 32px; margin-bottom: 8px;">add_photo_alternate</span>
-                <span style="font-size: 13px; font-weight: 500;">Select Image (3:4 ratio)</span>
-                <img id="post-image-preview" src="" class="flaynity-hidden">
-                <input type="file" id="input-post-file" accept="image/*" class="flaynity-hidden">
+        <div class="preview-player-stage">
+            <img class="preview-media-element" id="post-preview-img-el" style="max-height:85%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;">
+        </div>
+    </div>
+
+    <div class="studio-sub-layer" id="layer-post-details">
+        <div class="studio-nav-header">
+            <button class="studio-icon-btn" id="btn-back-post-details"><span class="material-symbols-outlined">arrow_back</span></button>
+            <span class="studio-nav-title">Add details</span>
+            <button class="btn-pill-action btn-accent" id="btn-submit-publish-post">Publish</button>
+        </div>
+        <div class="details-form-scroll">
+            <div class="yt-form-group">
+                <div class="yt-form-header-row">
+                    <span class="yt-form-label">Post Caption / Text (required)</span>
+                    <span class="yt-char-counter" id="post-title-counter">0/1000</span>
+                </div>
+                <textarea class="yt-textarea" id="input-p-title" maxlength="1000" placeholder="What's on your mind?"></textarea>
             </div>
-            <div class="form-group">
-                <textarea class="form-textarea" id="input-post-text" placeholder="What's on your mind?"></textarea>
+
+            <div class="yt-form-group">
+                <span class="yt-form-label">Visibility</span>
+                <select class="yt-select" id="select-p-visibility">
+                    <option value="public">Publish (Public)</option>
+                    <option value="schedule">Schedule Publish</option>
+                </select>
+            </div>
+
+            <div class="yt-form-group" id="group-p-schedule" style="display:none;">
+                <span class="yt-form-label">Select Date & Time</span>
+                <input type="datetime-local" class="yt-input" id="input-p-schedule-time">
+            </div>
+
+            <div class="yt-toggle-row">
+                <div class="yt-toggle-label-box">
+                    <span class="yt-toggle-title">Allow Comments</span>
+                    <span class="yt-toggle-desc">Turn comments on for this post</span>
+                </div>
+                <label class="md3-switch">
+                    <input type="checkbox" id="toggle-p-comments" checked>
+                    <span class="md3-switch-slider"></span>
+                </label>
+            </div>
+
+            <div class="yt-toggle-row">
+                <div class="yt-toggle-label-box">
+                    <span class="yt-toggle-title">Show Like Count</span>
+                    <span class="yt-toggle-desc">Viewers can see likes</span>
+                </div>
+                <label class="md3-switch">
+                    <input type="checkbox" id="toggle-p-likes" checked>
+                    <span class="md3-switch-slider"></span>
+                </label>
             </div>
         </div>
     </div>
 
-    <!-- Global Upload Engine Progress -->
+    <!-- 8. GLOBAL UPLOAD PROGRESS MODAL -->
     <div class="upload-progress-overlay flaynity-hidden" id="upload-progress-engine">
         <div class="progress-ring"></div>
-        <div class="progress-text">Uploading to Flaynity...</div>
-        <div class="progress-subtext" id="upload-progress-percentage">0%</div>
+        <div class="progress-text" id="upload-progress-status-text" style="font-size:18px;font-weight:700;">Uploading to Cloudflare R2...</div>
+        <div class="progress-subtext" id="upload-progress-percentage" style="font-size:14px;color:var(--studio-text-sub);margin-top:6px;">0%</div>
     </div>
 
 </div>

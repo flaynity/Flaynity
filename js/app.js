@@ -97,7 +97,7 @@ const Utils = {
         try {
             if (navigator.vibrate) navigator.vibrate(ms);
         } catch (e) {
-            console.warn("Haptic unavailable");
+            console.warn("Haptic feedback unavailable");
         }
     },
 
@@ -108,7 +108,6 @@ const Utils = {
         return temp.innerHTML;
     },
 
-    // Extract exact frame blob from video file/url at custom position
     generateVideoThumbnail: (fileOrUrl, atSecond = 1, customRatio = '16:9') => {
         return new Promise((resolve) => {
             const video = document.createElement('video');
@@ -170,7 +169,7 @@ const UI = {
             color: #ffffff;
             padding: 12px 24px;
             border-radius: 28px;
-            z-index: 99999;
+            z-index: 999999;
             font-size: 14px;
             font-weight: 600;
             box-shadow: 0 8px 24px rgba(0,0,0,0.5);
@@ -381,7 +380,7 @@ const HomeFeed = {
             }
             if (item.visibility === 'schedule') {
                 if (item.scheduledAt && item.scheduledAt > now) {
-                    return State.user && item.uid === State.user.uid; // Only visible to owner until time passes
+                    return State.user && item.uid === State.user.uid;
                 }
             }
             return true;
@@ -502,7 +501,7 @@ const HomeFeed = {
 };
 
 // ==========================================
-// 6. CINEMA VIDEO PLAYER & SHORTS VERTICAL STREAM
+// 6. CINEMA VIDEO PLAYER & SHORTS STREAM
 // ==========================================
 const Player = {
     currentVideoData: null,
@@ -598,7 +597,7 @@ const ShortsPlayer = {
 };
 
 // ==========================================================================
-// 7. PREMIUM UPLOAD STUDIO ENGINE (A-Z REBUILD)
+// 7. PREMIUM UPLOAD STUDIO CONTROLLER
 // ==========================================================================
 const UploadStudio = {
     activeMode: 'video',
@@ -609,7 +608,6 @@ const UploadStudio = {
     trimStartSec: 0,
     trimEndSec: 0,
 
-    // Camera & Recorder State
     cameraStream: null,
     mediaRecorder: null,
     recordedChunks: [],
@@ -635,7 +633,7 @@ const UploadStudio = {
         onClick('btn-close-camera-x', UploadStudio.close);
         onClick('btn-close-post-x', UploadStudio.close);
 
-        // Video Pick & Flow Triggers
+        // Video Pick & Flow
         onClick('btn-browse-device-video', () => {
             const input = Utils.el('input-device-video-file');
             if (input) input.click();
@@ -663,7 +661,7 @@ const UploadStudio = {
             };
         }
 
-        // Short Gallery Pick Trigger
+        // Short Gallery Trigger
         onClick('btn-short-open-gallery', () => {
             const input = Utils.el('input-device-short-file');
             if (input) input.click();
@@ -727,13 +725,13 @@ const UploadStudio = {
             UploadStudio.openSubLayer('layer-post-preview');
         });
 
-        // Character Counters & Validation Binding
+        // Counters & Validation
         UploadStudio.bindCharacterCounter('input-v-title', 'video-title-counter', 100);
         UploadStudio.bindCharacterCounter('input-v-desc', 'video-desc-counter', 5000);
         UploadStudio.bindCharacterCounter('input-s-title', 'short-title-counter', 100);
         UploadStudio.bindCharacterCounter('input-p-title', 'post-title-counter', 1000);
 
-        // Visibility Schedule Toggles
+        // Schedule View Toggles
         Utils.el('select-v-visibility').onchange = (e) => {
             Utils.el('group-v-schedule').style.display = e.target.value === 'schedule' ? 'flex' : 'none';
         };
@@ -744,12 +742,11 @@ const UploadStudio = {
             Utils.el('group-p-schedule').style.display = e.target.value === 'schedule' ? 'flex' : 'none';
         };
 
-        // Publish Actions
+        // Publish
         onClick('btn-submit-publish-video', () => UploadStudio.publishContent('video'));
         onClick('btn-submit-publish-short', () => UploadStudio.publishContent('short'));
         onClick('btn-submit-publish-post', () => UploadStudio.publishContent('post'));
 
-        // Camera Shutter & Tools
         UploadStudio.bindCameraTools();
     },
 
@@ -759,8 +756,19 @@ const UploadStudio = {
             Router.switchTab('you');
             return;
         }
+
+        const uploadContainer = Utils.el('page-container-upload');
+        if (uploadContainer) {
+            uploadContainer.style.display = 'block';
+            uploadContainer.style.zIndex = '99999';
+        }
+
         const studioRoot = Utils.el('flaynity-upload-studio');
-        if (studioRoot) studioRoot.classList.add('open');
+        if (studioRoot) {
+            studioRoot.style.display = 'flex';
+            studioRoot.classList.add('open');
+        }
+
         Router.addBackState('upload-studio');
         UploadStudio.switchMode('video');
     },
@@ -768,8 +776,16 @@ const UploadStudio = {
     close: () => {
         UploadStudio.stopCamera();
         const studioRoot = Utils.el('flaynity-upload-studio');
-        if (studioRoot) studioRoot.classList.remove('open');
+        if (studioRoot) {
+            studioRoot.style.display = 'none';
+            studioRoot.classList.remove('open');
+        }
         document.querySelectorAll('.studio-sub-layer').forEach((l) => l.classList.remove('active'));
+
+        const uploadContainer = Utils.el('page-container-upload');
+        if (uploadContainer) {
+            uploadContainer.style.display = 'none';
+        }
     },
 
     switchMode: (mode) => {
@@ -817,9 +833,6 @@ const UploadStudio = {
         }
     },
 
-    // ----------------------------------------------------------------------
-    // VIDEO FLOW & TIMELINE TRIMMER
-    // ----------------------------------------------------------------------
     loadVideoFileForPreview: async (file) => {
         UploadStudio.activeFile = file;
         UploadStudio.customThumbBlob = null;
@@ -836,7 +849,6 @@ const UploadStudio = {
             Utils.el('trimmer-time-display').innerText = `0:00 / ${Utils.formatDuration(UploadStudio.mediaDuration)}`;
             Utils.el('trimmer-selected-duration').innerText = `Selected: ${Utils.formatDuration(UploadStudio.mediaDuration)}`;
 
-            // Auto Generate Initial 16:9 Thumbnail
             const thumbResult = await Utils.generateVideoThumbnail(file, 1, '16:9');
             UploadStudio.generatedThumbBlob = thumbResult.blob;
             Utils.el('video-details-thumb-preview').src = thumbResult.dataUrl;
@@ -846,9 +858,6 @@ const UploadStudio = {
         };
     },
 
-    // ----------------------------------------------------------------------
-    // SHORT CAMERA & LIVE RECORDER ENGINE
-    // ----------------------------------------------------------------------
     startCamera: async () => {
         try {
             const constraints = {
@@ -861,7 +870,7 @@ const UploadStudio = {
                 streamEl.srcObject = UploadStudio.cameraStream;
             }
         } catch (err) {
-            console.error("Camera Access Error:", err);
+            console.error("Camera Error:", err);
             UI.toast("Camera permission required.");
         }
     },
@@ -874,7 +883,6 @@ const UploadStudio = {
     },
 
     bindCameraTools: () => {
-        // Shutter Button (Tap & Hold Record)
         const shutter = Utils.el('btn-shutter-record');
         if (shutter) {
             shutter.onclick = () => {
@@ -886,14 +894,12 @@ const UploadStudio = {
             };
         }
 
-        // Flip Camera
         onClick('tool-flip-camera', () => {
             UploadStudio.facingMode = UploadStudio.facingMode === 'user' ? 'environment' : 'user';
             UploadStudio.stopCamera();
             UploadStudio.startCamera();
         });
 
-        // Timer Selection
         onClick('tool-camera-timer', () => {
             const timers = [0, 3, 10, 20];
             const currentIdx = timers.indexOf(UploadStudio.timerSeconds);
@@ -901,7 +907,6 @@ const UploadStudio = {
             UI.toast(UploadStudio.timerSeconds === 0 ? "Timer Off" : `Timer: ${UploadStudio.timerSeconds}s`);
         });
 
-        // Done button after recording
         onClick('btn-short-camera-done', () => {
             if (UploadStudio.activeFile) {
                 UploadStudio.openShortPreviewLayer();
@@ -989,15 +994,11 @@ const UploadStudio = {
         UploadStudio.openSubLayer('layer-short-preview');
         shortPreviewEl.play().catch(() => {});
 
-        // Generate 9:16 vertical thumbnail
         const thumbResult = await Utils.generateVideoThumbnail(UploadStudio.activeFile, 0.5, '9:16');
         UploadStudio.generatedThumbBlob = thumbResult.blob;
         Utils.el('short-details-thumb-preview').src = thumbResult.dataUrl;
     },
 
-    // ----------------------------------------------------------------------
-    // POST IMAGE FLOW
-    // ----------------------------------------------------------------------
     loadPostImageForPreview: (file) => {
         UploadStudio.activeFile = file;
         const imgEl = Utils.el('post-preview-img-el');
@@ -1005,9 +1006,6 @@ const UploadStudio = {
         UploadStudio.openSubLayer('layer-post-preview');
     },
 
-    // ----------------------------------------------------------------------
-    // PUBLISH PIPELINE: CLOUDFLARE R2 + FIREBASE REALTIME DB
-    // ----------------------------------------------------------------------
     publishContent: async (type) => {
         let titleVal = '';
         let descVal = '';
@@ -1065,7 +1063,6 @@ const UploadStudio = {
             let cdnThumbnailUrl = '';
             let durationFormatted = '0:00';
 
-            // 1. Upload Video or Image File to Cloudflare R2
             if (type === 'video' || type === 'short') {
                 cdnMediaUrl = await Services.uploadFile(UploadStudio.activeFile, `${type}s/${State.user.uid}`);
                 const finalThumbBlob = UploadStudio.customThumbBlob || UploadStudio.generatedThumbBlob;
@@ -1081,7 +1078,6 @@ const UploadStudio = {
                 }
             }
 
-            // 2. Save Full Metadata in Firebase RTDB
             UI.showUploadProgress("Saving metadata...");
             const record = {
                 uid: State.user.uid,
@@ -1235,7 +1231,7 @@ const Router = {
 
             const container = document.createElement('div');
             container.id = `page-container-${page}`;
-            container.style.cssText = `width:100%;height:100%;position:absolute;top:0;left:0;display:${page === 'home' ? 'block' : 'none'};`;
+            container.style.cssText = `width:100%;height:100%;position:absolute;top:0;left:0;display:${page === 'home' ? 'block' : 'none'};z-index:${page === 'upload' ? '99999' : '1'};`;
             container.innerHTML = html;
             appRoot.appendChild(container);
         }
@@ -1249,20 +1245,28 @@ const Router = {
     },
 
     bindGlobalNavigation: () => {
-        document.querySelectorAll('.nav-item').forEach((el) => {
-            el.addEventListener('click', (e) => {
-                const tab = e.currentTarget.dataset.tab;
-                if (tab === 'upload') {
-                    UploadStudio.open();
-                } else {
-                    Router.switchTab(tab);
-                }
-            });
+        // Direct event delegation to guarantee Upload button always triggers
+        document.addEventListener('click', (e) => {
+            const navUploadBtn = e.target.closest('.nav-item[data-tab="upload"], [data-tab="create"], #btn-nav-upload, .nav-item-upload, .upload-btn');
+            if (navUploadBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                UploadStudio.open();
+                return;
+            }
+
+            const navItem = e.target.closest('.nav-item');
+            if (navItem && navItem.dataset.tab !== 'upload') {
+                Router.switchTab(navItem.dataset.tab);
+            }
         });
     },
 
     switchTab: (tabName) => {
-        if (tabName === 'upload') return;
+        if (tabName === 'upload') {
+            UploadStudio.open();
+            return;
+        }
 
         if (State.currentPlayingVideo && tabName !== 'shorts') {
             State.currentPlayingVideo.pause();
@@ -1309,7 +1313,7 @@ const Router = {
 window.app = {
     executeBackAction: () => {
         const studio = Utils.el('flaynity-upload-studio');
-        if (studio && studio.classList.contains('open')) {
+        if (studio && (studio.classList.contains('open') || studio.style.display === 'flex')) {
             const activeSubLayers = document.querySelectorAll('.studio-sub-layer.active');
             if (activeSubLayers.length > 0) {
                 activeSubLayers.forEach((l) => l.classList.remove('active'));

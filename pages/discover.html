@@ -1,147 +1,22 @@
-<!-- pages/discover.html -->
+<!-- Flaynity Discover Page Fragment -->
 <style>
-/* DISCOVER COMPONENT STYLES */
-.page-discover-root {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    background: var(--flaynity-bg);
-    padding-top: var(--safe-area-top);
-}
 
-.discover-top-bar {
-    height: var(--top-bar-height);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 16px;
-    flex-shrink: 0;
-}
-.discover-top-bar .brand { font-size: 22px; font-weight: 800; color: var(--flaynity-accent); letter-spacing: -0.5px; }
-.discover-top-bar .actions { display: flex; gap: 16px; color: var(--flaynity-text); }
-
-.discover-header {
-    padding: 16px;
-    font-size: 28px;
-    font-weight: 800;
-    color: var(--flaynity-text);
-}
-
-.search-bar-container {
-    padding: 0 16px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-.search-input-box {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    background: var(--flaynity-skeleton);
-    border-radius: 24px;
-    padding: 0 16px;
-    height: 48px;
-}
-.search-input-box .material-symbols-outlined { color: var(--flaynity-text-secondary); margin-right: 12px; }
-.search-input-box input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    font-size: 16px;
-    color: var(--flaynity-text);
-    font-family: inherit;
-    outline: none;
-}
-.search-input-box input::placeholder { color: var(--flaynity-text-secondary); }
-.mic-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--flaynity-skeleton);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--flaynity-text);
-    flex-shrink: 0;
-}
-
-.discover-categories-scroll {
-    display: flex;
-    padding: 0 16px 16px;
-    gap: 12px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    border-bottom: 1px solid var(--flaynity-divider);
-}
-.discover-categories-scroll::-webkit-scrollbar { display: none; }
-.d-chip {
-    padding: 10px 20px;
-    background: var(--flaynity-skeleton);
-    border-radius: 24px;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--flaynity-text);
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-.d-chip.active { background: var(--flaynity-text); color: var(--flaynity-bg); }
-
-.discover-content-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 32px;
-    text-align: center;
-}
-.discover-empty-icon {
-    font-size: 64px;
-    color: var(--flaynity-skeleton);
-    margin-bottom: 16px;
-}
-.discover-empty-text {
-    font-size: 16px;
-    color: var(--flaynity-text-secondary);
-    font-weight: 500;
-}
 </style>
-
-<div class="page-discover-root" id="discover-root">
-    
-    <div class="discover-top-bar">
-        <div class="brand">Flaynity</div>
-        <div class="actions">
-            <span class="material-symbols-outlined">settings</span>
-        </div>
-    </div>
-
-    <div class="discover-header">Discover</div>
-
-    <div class="search-bar-container">
-        <div class="search-input-box">
-            <span class="material-symbols-outlined">search</span>
-            <input type="text" placeholder="Search movies, TV shows...">
-        </div>
-        <div class="mic-btn">
-            <span class="material-symbols-outlined">mic</span>
-        </div>
-    </div>
-
-    <div class="discover-categories-scroll">
-        <div class="d-chip active">Action</div>
-        <div class="d-chip">Sci-Fi</div>
-        <div class="d-chip">Horror</div>
-        <div class="d-chip">Comedy</div>
-        <div class="d-chip">Romance</div>
-        <div class="d-chip">Thriller</div>
-        <div class="d-chip">Documentary</div>
-    </div>
-
-    <div class="discover-content-area">
-        <span class="material-symbols-outlined discover-empty-icon">travel_explore</span>
-        <div class="discover-empty-text">Search or use the mic to find movies and videos.</div>
-    </div>
-
+<div class="tab-content" id="search-tab">
+<div class="section-title" style="margin-top:20px;">Discover</div>
+<div class="search-container">
+<input class="search-bar" id="search-input" placeholder="Search movies, TV shows..." type="text"/>
+<button class="mic-btn" onclick="startVoiceSearch(); playUI('click')"><i class="fas fa-microphone"></i></button>
+</div>
+<div class="filters">
+<div class="filter-chip" onclick="applyFilter(28, this); playUI('click')">Action</div>
+<div class="filter-chip" onclick="applyFilter(878, this); playUI('click')">Sci-Fi</div>
+<div class="filter-chip" onclick="applyFilter(27, this); playUI('click')">Horror</div>
+<div class="filter-chip" onclick="applyFilter(35, this); playUI('click')">Comedy</div>
+<div class="filter-chip" onclick="applyFilter(10749, this); playUI('click')">Romance</div>
+<div class="filter-chip" onclick="applyFilter(16, this); playUI('click')">Animation</div>
+</div>
+<div class="movie-grid" id="search-results">
+<p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding: 60px 0; font-weight: 500;">Search or use the mic to find movies.</p>
+</div>
 </div>

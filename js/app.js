@@ -1,27 +1,30 @@
-/* Flaynity Modular Loader */
-(async function(){
-  try {
-    const pages = [
-      ["home", "pages/home.html"],
-      ["shorts", "pages/shorts.html"],
-      ["upload", "pages/upload.html"],
-      ["discover", "pages/discover.html"],
-      ["you", "pages/you.html"]
-    ];
-    const app = document.getElementById("app");
-    for (const [name, url] of pages) {
-      const response = await fetch(url, {cache: "no-store"});
-      if (!response.ok) throw new Error("Failed to load " + url + " (" + response.status + ")");
-      const html = await response.text();
-      const doc = new DOMParser().parseFromString(html, "text/html");
-      const style = doc.querySelector("style");
-      if (style) { const css = document.createElement("style"); css.dataset.flaynityPageCss=name; css.textContent=style.textContent; document.head.appendChild(css); }
-      const host=document.createElement("div"); host.id="page-"+name; host.dataset.page=name;
-      Array.from(doc.body.children).forEach(el=>host.appendChild(el));
-      app.appendChild(host);
+/* Flaynity Modular Loader — preserves original DOM hierarchy */
+(async function () {
+    const pageFiles = [["home","pages/home.html"],["shorts","pages/shorts.html"],["upload","pages/upload.html"],["discover","pages/discover.html"],["you","pages/you.html"]];
+    function addPageStyle(doc,name){ const style=doc.querySelector("style"); if(!style)return; const css=document.createElement("style"); css.setAttribute("data-flaynity-page-css",name); css.textContent=style.textContent; document.head.appendChild(css); }
+    async function loadPage(name,url){ const r=await fetch(url,{cache:"no-store"}); if(!r.ok) throw new Error("Failed to load "+url+" ("+r.status+")"); const doc=new DOMParser().parseFromString(await r.text(),"text/html"); addPageStyle(doc,name); return Array.from(doc.body.children).map(el=>el.cloneNode(true)); }
+    try {
+        const app=document.getElementById("app"); if(!app) throw new Error("#app not found");
+        const loaded=[]; for(const [name,url] of pageFiles) loaded.push([name,await loadPage(name,url)]);
+        const appScreen=document.createElement("div"); appScreen.id="app-screen";
+        const startupIds=new Set(["startupSound","splash-screen","toast-container","network-spinner-overlay","auth-screen"]);
+        for(const node of loaded[0][1]) { if(node.id && startupIds.has(node.id)) app.appendChild(node); else appScreen.appendChild(node); }
+        for(let i=1;i<loaded.length;i++) for(const node of loaded[i][1]) appScreen.appendChild(node);
+        app.appendChild(appScreen);
+        document.querySelectorAll(".tab-content").forEach(el=>el.classList.toggle("active",el.id==="home-tab"));
+        const homeTab=document.getElementById("home-tab"); if(homeTab) homeTab.classList.add("active");
+    } catch(e) { console.error("Flaynity page loader error:",e); }
+})();
+
+
+function __flaynityReady(fn) {
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", fn, { once: true });
+    } else {
+        fn();
     }
-    window.dispatchEvent(new Event("flaynity-pages-ready"));
-    // Original inline JavaScript follows below in its original order.
+}
+
 (function() {
             try {
                 let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
@@ -34,7 +37,7 @@
                 let cachedSession = localStorage.getItem('flaynity_user_session_cache');
                 if (cachedSession) {
                     let data = JSON.parse(cachedSession);
-                    document.addEventListener("DOMContentLoaded", function() {
+                    __flaynityReady(function() {
                         let fullname = document.getElementById('you-fullname-txt');
                         let email = document.getElementById('you-email-txt');
                         let avatarLarge = document.getElementById('you-avatar-large');
@@ -225,7 +228,7 @@
             }
         }
 
-        document.addEventListener("DOMContentLoaded", function() {
+        __flaynityReady(function() {
             applyTheme();
             
             try {
@@ -4913,9 +4916,3 @@
         function hideUpcomingModal() {
             AppNavigation.pop();
         }
-  } catch (error) {
-    console.error("Flaynity app loading error:", error);
-    const app=document.getElementById("app");
-    if(app) app.innerHTML='<div style="padding:24px;font-family:sans-serif">Unable to load Flaynity. Please refresh and try again.</div>';
-  }
-})();

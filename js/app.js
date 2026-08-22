@@ -1,3 +1,102 @@
+/* =========================================================
+   FLAYNITY MODULAR APP LOADER — LOADING/ENTRY FIX
+   Loads page HTML + inline CSS into #app BEFORE the original
+   application JavaScript initializes. Includes offline cache.
+   ========================================================= */
+(function () {
+    'use strict';
+
+    var PAGE_FILES = [
+        'pages/home.html',
+        'pages/shorts.html',
+        'pages/upload.html',
+        'pages/discover.html',
+        'pages/you.html'
+    ];
+
+    var CACHE_PREFIX = 'flaynity_modular_page_v4:';
+    var root = document.getElementById('app');
+
+    if (!root) {
+        console.error('Flaynity: #app root container was not found.');
+        return;
+    }
+
+    function cacheKey(url) {
+        return CACHE_PREFIX + url;
+    }
+
+    function readCache(url) {
+        try {
+            return localStorage.getItem(cacheKey(url)) || '';
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function writeCache(url, html) {
+        if (!html) return;
+        try {
+            localStorage.setItem(cacheKey(url), html);
+        } catch (e) {
+            // Storage quota/full/private mode: page still works online.
+        }
+    }
+
+    function loadPage(url) {
+        var cached = readCache(url);
+
+        // Offline-first: use the last successfully cached page immediately.
+        if (!navigator.onLine && cached) return cached;
+
+        // Online: synchronously fetch the fragment so the rest of app.js
+        // never runs before its required DOM exists.
+        try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url, false);
+            xhr.setRequestHeader('Cache-Control', 'no-cache');
+            xhr.send(null);
+
+            if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 0) {
+                var html = xhr.responseText || '';
+                if (html.trim()) {
+                    writeCache(url, html);
+                    return html;
+                }
+            }
+        } catch (e) {
+            console.warn('Flaynity page fetch failed:', url, e);
+        }
+
+        // Network failed / airplane mode / WebView cache issue.
+        if (cached) return cached;
+        return '';
+    }
+
+    var combined = '';
+    var missing = [];
+
+    PAGE_FILES.forEach(function (url) {
+        var html = loadPage(url);
+        if (html) {
+            combined += '\n<!-- FLAYNITY PAGE: ' + url + ' -->\n' + html + '\n';
+        } else {
+            missing.push(url);
+        }
+    });
+
+    if (combined) {
+        root.innerHTML = combined;
+    }
+
+    window.__FLAYNITY_MODULAR_LOADER_READY__ = missing.length === 0;
+    window.__FLAYNITY_MISSING_PAGES__ = missing;
+
+    if (missing.length) {
+        console.error('Flaynity: required page files could not be loaded:', missing);
+    }
+}());
+
         (function() {
             try {
                 let pref = localStorage.getItem('flaynity-theme-pref') || 'light';

@@ -1,108 +1,17 @@
-/* Flaynity Modular Loader — serial page loading + offline cache */
-(async function () {
-    const pageFiles = [["home","pages/home.html"],["shorts","pages/shorts.html"],["upload","pages/upload.html"],["discover","pages/discover.html"],["you","pages/you.html"]];
-    const CACHE_PREFIX = "flaynity-page-cache-v1:";
-
-    function addPageStyle(doc, name) {
-        const style = doc.querySelector("style");
-        if (!style) return;
-        const css = document.createElement("style");
-        css.setAttribute("data-flaynity-page-css", name);
-        css.textContent = style.textContent;
-        document.head.appendChild(css);
-    }
-
-    async function getPageSource(name, url) {
-        try {
-            const response = await fetch(url, { cache: "no-store" });
-            if (!response.ok) throw new Error("HTTP " + response.status);
-            const text = await response.text();
-            try { localStorage.setItem(CACHE_PREFIX + name, text); } catch (e) {}
-            return text;
-        } catch (error) {
-            try {
-                const cached = localStorage.getItem(CACHE_PREFIX + name);
-                if (cached) return cached;
-            } catch (e) {}
-            throw new Error("Page unavailable offline: " + url);
-        }
-    }
-
-    async function loadPage(name, url) {
-        const text = await getPageSource(name, url);
-        const doc = new DOMParser().parseFromString(text, "text/html");
-        addPageStyle(doc, name);
-        return Array.from(doc.body.children).map(el => el.cloneNode(true));
-    }
-
-    function showOfflineCachedApp() {
-        if (navigator.onLine) return;
-        let cachedSession = null;
-        try { cachedSession = localStorage.getItem('flaynity_user_session_cache'); } catch (e) {}
-        if (!cachedSession) return;
-        const authScr = document.getElementById('auth-screen');
-        const appScr = document.getElementById('app-screen');
-        if (authScr) authScr.style.display = 'none';
-        if (appScr) appScr.style.display = 'block';
-        document.body.classList.remove('auth-active');
-        window.__flaynityOfflineSessionActive = true;
-        try { firebase.database().goOffline(); } catch (e) {}
-    }
-
-    try {
-        const app = document.getElementById("app");
-        if (!app) throw new Error("#app not found");
-        const loaded = [];
-        for (const [name, url] of pageFiles) {
-            loaded.push([name, await loadPage(name, url)]);
-        }
-
-        const appScreen = document.createElement("div");
-        appScreen.id = "app-screen";
-        const startupIds = new Set(["startupSound","splash-screen","toast-container","network-spinner-overlay","auth-screen"]);
-
-        for (const node of loaded[0][1]) {
-            if (node.id && startupIds.has(node.id)) app.appendChild(node);
-            else appScreen.appendChild(node);
-        }
-        for (let i = 1; i < loaded.length; i++) {
-            for (const node of loaded[i][1]) appScreen.appendChild(node);
-        }
-        app.appendChild(appScreen);
-        document.querySelectorAll(".tab-content").forEach(el => el.classList.toggle("active", el.id === "home-tab"));
-        const homeTab = document.getElementById("home-tab");
-        if (homeTab) homeTab.classList.add("active");
-
-        showOfflineCachedApp();
-        window.dispatchEvent(new Event('flaynity-dom-ready'));
-    } catch (e) {
-        console.error("Flaynity page loader error:", e);
-        const app = document.getElementById("app");
-        if (app) app.innerHTML = '<div style="padding:40px;text-align:center;font-family:sans-serif">Unable to load Flaynity. Please reconnect once to prepare offline mode.</div>';
-    }
-})();
-
-function __flaynityReady(fn) {
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", fn, { once: true });
-    } else {
-        fn();
-    }
-}
-
-(function() {
+        (function() {
             try {
                 let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
                 document.documentElement.setAttribute('data-theme', pref);
             } catch (e) {}
         })();
+    
 
-(function() {
+        (function() {
             try {
                 let cachedSession = localStorage.getItem('flaynity_user_session_cache');
                 if (cachedSession) {
                     let data = JSON.parse(cachedSession);
-                    __flaynityReady(function() {
+                    document.addEventListener("DOMContentLoaded", function() {
                         let fullname = document.getElementById('you-fullname-txt');
                         let email = document.getElementById('you-email-txt');
                         let avatarLarge = document.getElementById('you-avatar-large');
@@ -120,8 +29,9 @@ function __flaynityReady(fn) {
                 }
             } catch (e) {}
         })();
+    
 
-// =========================================================
+        // =========================================================
         // YOUTUBE-STYLE ANIMATED SKELETON GENERATORS
         // =========================================================
         function getHomeSkeletonHTML() {
@@ -293,7 +203,7 @@ function __flaynityReady(fn) {
             }
         }
 
-        __flaynityReady(function() {
+        document.addEventListener("DOMContentLoaded", function() {
             applyTheme();
             
             try {
@@ -746,49 +656,224 @@ function __flaynityReady(fn) {
         let postRenderLimit = 30;
 
         // =========================================================
-        // CLOUDFLARE R2 S3 SDK CONFIGURATIONS
+        // CLOUDFLARE R2 SECURE WORKER CONFIGURATION
         // =========================================================
-        const R2_CONFIG = {
-            accessKeyId: "c4d26ef58f7d0818695c8710af083fb6",
-            secretAccessKey: "97bc62a7b0c961001611489e28f9dbd41d2b30cda3e8348bb32d12a7c1d319a8",
-            endpoint: "https://b3741135bd1f3e96b6744f11e6a06600.r2.cloudflarestorage.com",
-            s3ForcePathStyle: true,
-            signatureVersion: 'v4',
-            region: 'auto',
-            maxRetries: 5,
-            httpOptions: {
-                timeout: 300000, // 5 minute timeout per chunk
-                connectTimeout: 30000
-            }
-        };
-        
-        AWS.config.update(R2_CONFIG);
-        const s3 = new AWS.S3({ params: { Bucket: 'flaynity-storage' } });
-        const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev";
+        // Permanent R2 access/secret keys are intentionally NOT stored in
+        // the browser. All R2 operations go through the authenticated Worker.
+        const R2_CONFIG = Object.freeze({
+            uploadApi: "https://flaynity-r2-upload.flaynity.workers.dev",
+            bucket: "flaynity-storage",
+            publicBase: "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev"
+        });
+        const PUBLIC_R2_DOMAIN_PREFIX = R2_CONFIG.publicBase.replace(/\/+$/, "");
 
-        // =========================================================
-        // S3 R2 OBJECT STORAGE MEDIA UPLOAD MODULE
-        // =========================================================
-        async function uploadImageToR2(file, folder = "images", retries = 3) {
-            if (!s3) throw new Error("R2 Client storage unit is not configured.");
-            const uniqueId = "img_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-            const fileKey = `uploads/${folder}/${uniqueId}_${file.name.replace(/\s+/g, '_')}`;
-            const params = {
-                Key: fileKey,
-                Body: file,
-                ContentType: file.type || "image/jpeg"
-            };
+        async function getR2AuthHeaders(contentType = null) {
+            const user = auth.currentUser;
+            if (!user) throw new Error("Please sign in before uploading.");
+            const token = await user.getIdToken(false);
+            const headers = { "Authorization": `Bearer ${token}` };
+            if (contentType) headers["Content-Type"] = contentType;
+            return headers;
+        }
+
+        function buildR2Url(path) {
+            return `${R2_CONFIG.uploadApi}${path}`;
+        }
+
+        function xhrR2(method, url, body, headers = {}, onProgress = null) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open(method, url, true);
+                xhr.timeout = 0;
+                Object.keys(headers).forEach(k => xhr.setRequestHeader(k, headers[k]));
+                if (onProgress) xhr.upload.onprogress = onProgress;
+                xhr.onload = () => {
+                    let payload = null;
+                    try { payload = xhr.responseText ? JSON.parse(xhr.responseText) : {}; } catch(e) {}
+                    if (xhr.status >= 200 && xhr.status < 300) return resolve(payload || {});
+                    const msg = payload?.error || `R2 Worker HTTP ${xhr.status}`;
+                    const error = new Error(msg);
+                    error.status = xhr.status;
+                    reject(error);
+                };
+                xhr.onerror = () => reject(new Error("Network error while uploading to R2."));
+                xhr.ontimeout = () => reject(new Error("R2 upload request timed out."));
+                xhr.onabort = () => {
+                    const error = new Error("R2 upload request aborted.");
+                    error.aborted = true;
+                    reject(error);
+                };
+                xhr.send(body);
+                return xhr;
+            });
+        }
+
+        function getNetworkUploadProfile() {
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            const type = connection?.effectiveType || "4g";
+            const downlink = Number(connection?.downlink || 0);
+            const saveData = !!connection?.saveData;
+
+            if (saveData || type === "slow-2g" || type === "2g") return { partSize: 5 * 1024 * 1024, concurrency: 1 };
+            if (type === "3g") return { partSize: 8 * 1024 * 1024, concurrency: 2 };
+            if (downlink >= 20) return { partSize: 48 * 1024 * 1024, concurrency: 4 };
+            if (downlink >= 8) return { partSize: 32 * 1024 * 1024, concurrency: 3 };
+            if (downlink >= 3) return { partSize: 16 * 1024 * 1024, concurrency: 2 };
+            return { partSize: 8 * 1024 * 1024, concurrency: 1 };
+        }
+
+        async function uploadImageToR2(file, folder = "images", retries = 4) {
+            const uniqueId = "img_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
+            const safeName = String(file.name || "image").replace(/[^a-zA-Z0-9._-]/g, "_");
+            const fileKey = `uploads/${folder}/${uniqueId}_${safeName}`;
 
             for (let attempt = 1; attempt <= retries; attempt++) {
                 try {
-                    await s3.putObject(params).promise();
-                    return `${PUBLIC_R2_DOMAIN_PREFIX}/${fileKey}`;
+                    const headers = await getR2AuthHeaders(file.type || "image/jpeg");
+                    const result = await xhrR2(
+                        "PUT",
+                        buildR2Url(`/object?key=${encodeURIComponent(fileKey)}`),
+                        file,
+                        headers
+                    );
+                    return result.publicUrl || `${PUBLIC_R2_DOMAIN_PREFIX}/${fileKey}`;
                 } catch (err) {
-                    console.warn(`R2 Image Upload attempt ${attempt} failed:`, err);
+                    console.warn(`R2 image upload attempt ${attempt} failed:`, err);
                     if (attempt === retries) throw err;
-                    await new Promise(res => setTimeout(res, 1000 * Math.pow(2, attempt)));
+                    await new Promise(resolve => setTimeout(resolve, Math.min(8000, 1000 * Math.pow(2, attempt - 1))));
                 }
             }
+        }
+
+        // =========================================================
+        // SECURE R2 MULTIPART VIDEO UPLOAD ENGINE
+        // =========================================================
+        async function startR2MultipartUpload(item) {
+            const file = item.file;
+            if (!file) throw new Error("Original video file is not available.");
+
+            const profile = getNetworkUploadProfile();
+            const partSize = Math.max(5 * 1024 * 1024, profile.partSize);
+            let concurrency = profile.concurrency;
+            item.r2PartSize = partSize;
+            item.r2Concurrency = concurrency;
+            item.uploadedParts = Array.isArray(item.uploadedParts) ? item.uploadedParts : [];
+            item.activeXhrs = [];
+
+            if (!item.r2UploadId) {
+                const headers = await getR2AuthHeaders("application/json");
+                const init = await xhrR2(
+                    "POST",
+                    buildR2Url("/multipart/initiate"),
+                    JSON.stringify({ key: item.key, contentType: file.type || "video/mp4" }),
+                    headers
+                );
+                item.r2UploadId = init.uploadId;
+                item.r2PublicUrl = init.publicUrl || `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
+            }
+
+            const totalParts = Math.ceil(file.size / partSize);
+            const completed = new Map((item.uploadedParts || []).map(p => [Number(p.partNumber), p]));
+            const completedBytes = () => {
+                let bytes = 0;
+                completed.forEach((p, number) => {
+                    const start = (number - 1) * partSize;
+                    bytes += Math.min(partSize, Math.max(0, file.size - start));
+                });
+                return bytes;
+            };
+
+            let totalLoaded = completedBytes();
+            const nextPartNumbers = [];
+            for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
+                if (!completed.has(partNumber)) nextPartNumbers.push(partNumber);
+            }
+
+            if (nextPartNumbers.length === 0) {
+                const headers = await getR2AuthHeaders("application/json");
+                await xhrR2("POST", buildR2Url("/multipart/complete"), JSON.stringify({
+                    key: item.key,
+                    uploadId: item.r2UploadId,
+                    parts: Array.from(completed.values()).sort((a,b) => a.partNumber - b.partNumber)
+                }), headers);
+                return item.r2PublicUrl || `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
+            }
+
+            let cursor = 0;
+            const uploadPart = async (partNumber) => {
+                const start = (partNumber - 1) * partSize;
+                const end = Math.min(file.size, start + partSize);
+                const blob = file.slice(start, end);
+                const partStarted = Date.now();
+                let lastLoaded = 0;
+
+                const headers = await getR2AuthHeaders();
+                headers["Content-Type"] = "application/octet-stream";
+                const url = buildR2Url(`/multipart/part?key=${encodeURIComponent(item.key)}&uploadId=${encodeURIComponent(item.r2UploadId)}&partNumber=${partNumber}`);
+
+                const result = await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    item.activeXhrs.push(xhr);
+                    xhr.open("PUT", url, true);
+                    xhr.timeout = 0;
+                    Object.keys(headers).forEach(k => xhr.setRequestHeader(k, headers[k]));
+                    xhr.upload.onprogress = e => {
+                        if (!e.lengthComputable) return;
+                        const delta = Math.max(0, e.loaded - lastLoaded);
+                        lastLoaded = e.loaded;
+                        totalLoaded += delta;
+                        item.progress = Math.min(99, Math.floor((totalLoaded / file.size) * 100));
+                        const elapsed = Math.max(0.1, (Date.now() - (item._uploadStartedAt || Date.now())) / 1000);
+                        item.speed = totalLoaded / elapsed;
+                        item.eta = item.speed > 0 ? Math.max(0, (file.size - totalLoaded) / item.speed) : 0;
+                        updateManagerUI();
+                    };
+                    xhr.onload = () => {
+                        item.activeXhrs = item.activeXhrs.filter(x => x !== xhr);
+                        let payload = {};
+                        try { payload = xhr.responseText ? JSON.parse(xhr.responseText) : {}; } catch(e) {}
+                        if (xhr.status >= 200 && xhr.status < 300 && payload.etag) resolve(payload);
+                        else reject(new Error(payload.error || `R2 part ${partNumber} failed (${xhr.status})`));
+                    };
+                    xhr.onerror = () => {
+                        item.activeXhrs = item.activeXhrs.filter(x => x !== xhr);
+                        reject(new Error(`Network error on R2 part ${partNumber}`));
+                    };
+                    xhr.onabort = () => {
+                        item.activeXhrs = item.activeXhrs.filter(x => x !== xhr);
+                        const e = new Error("Upload aborted"); e.aborted = true; reject(e);
+                    };
+                    xhr.send(blob);
+                });
+
+                completed.set(partNumber, { partNumber, etag: result.etag });
+                item.uploadedParts = Array.from(completed.values()).sort((a,b) => a.partNumber - b.partNumber);
+                item.progress = Math.min(99, Math.floor((totalLoaded / file.size) * 100));
+                item._lastPartMbps = ((blob.size / Math.max(0.1, (Date.now() - partStarted) / 1000)) * 8) / 1000000;
+                updateManagerUI();
+            };
+
+            const worker = async () => {
+                while (true) {
+                    const index = cursor++;
+                    if (index >= nextPartNumbers.length) return;
+                    await uploadPart(nextPartNumbers[index]);
+                }
+            };
+
+            const workers = Array.from({ length: Math.min(concurrency, nextPartNumbers.length) }, () => worker());
+            await Promise.all(workers);
+
+            const headers = await getR2AuthHeaders("application/json");
+            await xhrR2("POST", buildR2Url("/multipart/complete"), JSON.stringify({
+                key: item.key,
+                uploadId: item.r2UploadId,
+                parts: Array.from(completed.values()).sort((a,b) => a.partNumber - b.partNumber)
+            }), headers);
+
+            item.progress = 100;
+            item.videoUrl = item.r2PublicUrl || `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
+            return item.videoUrl;
         }
 
         function dataURLtoBlob(dataurl) {
@@ -921,15 +1006,6 @@ function __flaynityReady(fn) {
                         adjustHeaderForActiveTab(activeTabId);
                     }
                 } else {
-                    // Offline cached-session fallback: do not force the login screen when the user has a saved session.
-                    if (!navigator.onLine && window.__flaynityOfflineSessionActive) {
-                        document.body.classList.remove('auth-active');
-                        const cachedAppScreen = document.getElementById('app-screen');
-                        const cachedAuthScreen = document.getElementById('auth-screen');
-                        if (cachedAppScreen) cachedAppScreen.style.display = 'block';
-                        if (cachedAuthScreen) cachedAuthScreen.style.display = 'none';
-                        return;
-                    }
                     // cleanupUserSessionData already resets _feedListenersAttached
                     cleanupUserSessionData();
                     document.body.classList.add('auth-active');
@@ -1107,7 +1183,9 @@ function __flaynityReady(fn) {
                 thumbKey: `uploads/${uniqueId}/thumbnail.jpg`,
                 thumbUrl: "",
                 videoUrl: "",
-                s3UploadRef: null,
+                r2UploadId: null,
+                uploadedParts: [],
+                activeXhrs: [],
                 retryCount: 0,
                 createdAt: Date.now()
             };
@@ -1145,56 +1223,28 @@ function __flaynityReady(fn) {
 
             item.status = "uploading";
             item.progress = item.progress || 0;
+            item._uploadStartedAt = Date.now();
             updateManagerUI();
 
-            const startTime = Date.now();
-
             try {
-                const params = {
-                    Key: item.key,
-                    Body: item.file,
-                    ContentType: item.file.type || 'video/mp4'
-                };
-                
-                // 5MB optimized multipart chunk size
-                const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
-
-                const s3Upload = s3.upload(params, uploadOpts);
-                item.s3UploadRef = s3Upload;
-
-                s3Upload.on('httpUploadProgress', (evt) => {
-                    if (item.status !== 'uploading') return; 
-                    const pct = Math.round((evt.loaded / evt.total) * 100);
-                    item.progress = pct;
-
-                    const elapsed = (Date.now() - startTime) / 1000;
-                    if (elapsed > 0) {
-                        item.speed = evt.loaded / elapsed; 
-                        item.eta = (evt.total - evt.loaded) / item.speed;
-                    }
-                    updateManagerUI();
-                });
-
-                await s3Upload.promise();
-                
-                item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
+                await startR2MultipartUpload(item);
+                item.videoUrl = item.videoUrl || `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
                 item.status = "processing";
                 item.retryCount = 0;
                 updateManagerUI();
-
                 await runPostUploadProcessingSequence(item);
-
             } catch (err) {
-                if (item.status === 'paused') {
+                if (err && err.aborted) {
+                    console.log("Upload paused safely.");
+                } else if (item.status === 'paused') {
                     console.log("Upload paused safely.");
                 } else if (!navigator.onLine) {
                     item.status = "paused";
                     updateManagerUI();
                     showNotification("Connection lost. Upload paused.", "error");
                 } else {
-                    console.error("Upload error: ", err);
+                    console.error("R2 upload error:", err);
                     item.retryCount = (item.retryCount || 0) + 1;
-                    
                     if (item.retryCount <= 5) {
                         item.status = "waiting";
                         updateManagerUI();
@@ -1206,7 +1256,9 @@ function __flaynityReady(fn) {
                     }
                 }
             } finally {
+                item.activeXhrs = [];
                 activeUploadsCount = Math.max(0, activeUploadsCount - 1);
+                saveQueueStateToLocalStorage();
                 triggerNextActiveUpload();
             }
         }
@@ -1222,10 +1274,9 @@ function __flaynityReady(fn) {
                     try { finalThumbBlob = dataURLtoBlob(item.thumbDataUrl); } catch (e) {}
                 }
 
-                if (finalThumbBlob && s3) {
-                    const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg" };
-                    await s3.putObject(thumbParams).promise();
-                    item.thumbUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
+                if (finalThumbBlob) {
+                    const thumbFile = new File([finalThumbBlob], "thumbnail.jpg", { type: "image/jpeg" });
+                    item.thumbUrl = await uploadImageToR2(thumbFile, "thumbnails");
                 } else {
                     item.thumbUrl = item.thumbDataUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
                 }
@@ -4527,9 +4578,9 @@ function __flaynityReady(fn) {
             const item = uploadQueue.find(i => i.id === id);
             if (item) {
                 item.status = "paused";
-                if (item.s3UploadRef) {
-                    try { item.s3UploadRef.abort(); } catch(e) {}
-                    item.s3UploadRef = null;
+                if (item.activeXhrs && item.activeXhrs.length) {
+                    item.activeXhrs.forEach(xhr => { try { xhr.abort(); } catch(e) {} });
+                    item.activeXhrs = [];
                 }
                 saveQueueStateToLocalStorage();
                 updateManagerUI();
@@ -4581,8 +4632,9 @@ function __flaynityReady(fn) {
             playUI('click');
             if (confirm("Are you sure you want to remove this upload entry?")) {
                 const item = uploadQueue.find(i => i.id === id);
-                if (item && item.s3UploadRef) {
-                    try { item.s3UploadRef.abort(); } catch(e) {}
+                if (item && item.activeXhrs && item.activeXhrs.length) {
+                    item.activeXhrs.forEach(xhr => { try { xhr.abort(); } catch(e) {} });
+                    item.activeXhrs = [];
                 }
                 uploadQueue = uploadQueue.filter(i => i.id !== id);
                 saveQueueStateToLocalStorage();
@@ -4597,7 +4649,6 @@ function __flaynityReady(fn) {
                     const copy = { ...item };
                     delete copy.file; 
                     delete copy.thumbBlob;
-                    delete copy.s3UploadRef;
                     return copy;
                 });
                 localStorage.setItem('flaynity_upload_queue_v2', JSON.stringify(serializableQueue));
@@ -4614,7 +4665,7 @@ function __flaynityReady(fn) {
                     uploadQueue = saved.map(item => {
                         item.file = null; 
                         item.thumbBlob = null;
-                        item.s3UploadRef = null;
+                        item.activeXhrs = [];
                         if (item.status === 'uploading' || item.status === 'waiting' || item.status === 'processing') {
                             item.status = 'paused';
                         }
@@ -4990,3 +5041,4 @@ function __flaynityReady(fn) {
         function hideUpcomingModal() {
             AppNavigation.pop();
         }
+    

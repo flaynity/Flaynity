@@ -1,108 +1,70 @@
-/* Flaynity Modular Loader — serial page loading + offline cache */
-(async function () {
-    const pageFiles = [["home","pages/home.html"],["shorts","pages/shorts.html"],["upload","pages/upload.html"],["discover","pages/discover.html"],["you","pages/you.html"]];
-    const CACHE_PREFIX = "flaynity-page-cache-v1:";
+/* Flaynity modular runtime loader — loads separated HTML/CSS before the original app code runs. */
+(function () {
+    'use strict';
 
-    function addPageStyle(doc, name) {
-        const style = doc.querySelector("style");
-        if (!style) return;
-        const css = document.createElement("style");
-        css.setAttribute("data-flaynity-page-css", name);
-        css.textContent = style.textContent;
-        document.head.appendChild(css);
+    var appRoot = document.getElementById('app');
+    if (!appRoot) {
+        throw new Error('Flaynity: #app root container was not found.');
     }
 
-    async function getPageSource(name, url) {
-        try {
-            const response = await fetch(url, { cache: "no-store" });
-            if (!response.ok) throw new Error("HTTP " + response.status);
-            const text = await response.text();
-            try { localStorage.setItem(CACHE_PREFIX + name, text); } catch (e) {}
-            return text;
-        } catch (error) {
-            try {
-                const cached = localStorage.getItem(CACHE_PREFIX + name);
-                if (cached) return cached;
-            } catch (e) {}
-            throw new Error("Page unavailable offline: " + url);
+    var cssFiles = [
+        'css/home.css',
+        'css/shorts.css',
+        'css/create-content.css',
+        'css/discover.css',
+        'css/you.css'
+    ];
+
+    cssFiles.forEach(function (href) {
+        if (!document.querySelector('link[data-flaynity-css="' + href + '"]')) {
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            link.setAttribute('data-flaynity-css', href);
+            document.head.appendChild(link);
         }
-    }
+    });
 
-    async function loadPage(name, url) {
-        const text = await getPageSource(name, url);
-        const doc = new DOMParser().parseFromString(text, "text/html");
-        addPageStyle(doc, name);
-        return Array.from(doc.body.children).map(el => el.cloneNode(true));
-    }
+    var pageFiles = [
+        'pages/home.html',
+        'pages/shorts.html',
+        'pages/create-content.html',
+        'pages/discover.html',
+        'pages/you.html'
+    ];
 
-    function showOfflineCachedApp() {
-        if (navigator.onLine) return;
-        let cachedSession = null;
-        try { cachedSession = localStorage.getItem('flaynity_user_session_cache'); } catch (e) {}
-        if (!cachedSession) return;
-        const authScr = document.getElementById('auth-screen');
-        const appScr = document.getElementById('app-screen');
-        if (authScr) authScr.style.display = 'none';
-        if (appScr) appScr.style.display = 'block';
-        document.body.classList.remove('auth-active');
-        window.__flaynityOfflineSessionActive = true;
-        try { firebase.database().goOffline(); } catch (e) {}
-    }
-
-    try {
-        const app = document.getElementById("app");
-        if (!app) throw new Error("#app not found");
-        const loaded = [];
-        for (const [name, url] of pageFiles) {
-            loaded.push([name, await loadPage(name, url)]);
+    function loadFragmentSync(url) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, false);
+        xhr.send(null);
+        if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 0) {
+            return xhr.responseText || '';
         }
-
-        const appScreen = document.createElement("div");
-        appScreen.id = "app-screen";
-        const startupIds = new Set(["startupSound","splash-screen","toast-container","network-spinner-overlay","auth-screen"]);
-
-        for (const node of loaded[0][1]) {
-            if (node.id && startupIds.has(node.id)) app.appendChild(node);
-            else appScreen.appendChild(node);
-        }
-        for (let i = 1; i < loaded.length; i++) {
-            for (const node of loaded[i][1]) appScreen.appendChild(node);
-        }
-        app.appendChild(appScreen);
-        document.querySelectorAll(".tab-content").forEach(el => el.classList.toggle("active", el.id === "home-tab"));
-        const homeTab = document.getElementById("home-tab");
-        if (homeTab) homeTab.classList.add("active");
-
-        showOfflineCachedApp();
-        window.dispatchEvent(new Event('flaynity-dom-ready'));
-    } catch (e) {
-        console.error("Flaynity page loader error:", e);
-        const app = document.getElementById("app");
-        if (app) app.innerHTML = '<div style="padding:40px;text-align:center;font-family:sans-serif">Unable to load Flaynity. Please reconnect once to prepare offline mode.</div>';
+        throw new Error('Flaynity: failed to load ' + url + ' (HTTP ' + xhr.status + ').');
     }
-})();
 
-function __flaynityReady(fn) {
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", fn, { once: true });
-    } else {
-        fn();
-    }
-}
+    var html = '';
+    pageFiles.forEach(function (file) {
+        html += loadFragmentSync(file) + '\n';
+    });
+    appRoot.innerHTML = html;
+    window.__FLAYNITY_MODULAR_LOADER_READY__ = true;
+}());
 
-(function() {
+        (function() {
             try {
                 let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
                 document.documentElement.setAttribute('data-theme', pref);
             } catch (e) {}
         })();
+    
 
-(function() {
+        (function() {
             try {
                 let cachedSession = localStorage.getItem('flaynity_user_session_cache');
                 if (cachedSession) {
                     let data = JSON.parse(cachedSession);
-                    __flaynityReady(function() {
+                    document.addEventListener("DOMContentLoaded", function() {
                         let fullname = document.getElementById('you-fullname-txt');
                         let email = document.getElementById('you-email-txt');
                         let avatarLarge = document.getElementById('you-avatar-large');
@@ -120,8 +82,9 @@ function __flaynityReady(fn) {
                 }
             } catch (e) {}
         })();
+    
 
-// =========================================================
+        // =========================================================
         // YOUTUBE-STYLE ANIMATED SKELETON GENERATORS
         // =========================================================
         function getHomeSkeletonHTML() {
@@ -293,7 +256,7 @@ function __flaynityReady(fn) {
             }
         }
 
-        __flaynityReady(function() {
+        document.addEventListener("DOMContentLoaded", function() {
             applyTheme();
             
             try {
@@ -755,16 +718,72 @@ function __flaynityReady(fn) {
             s3ForcePathStyle: true,
             signatureVersion: 'v4',
             region: 'auto',
-            maxRetries: 5,
+            maxRetries: 8,
             httpOptions: {
-                timeout: 300000, // 5 minute timeout per chunk
-                connectTimeout: 30000
+                timeout: 900000,
+                connectTimeout: 60000
             }
         };
-        
+
         AWS.config.update(R2_CONFIG);
-        const s3 = new AWS.S3({ params: { Bucket: 'flaynity-storage' } });
+        const s3 = new AWS.S3({
+            params: { Bucket: 'flaynity-storage' },
+            maxRetries: 8,
+            httpOptions: { timeout: 900000, connectTimeout: 60000 }
+        });
         const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev";
+
+        // =========================================================
+        // ADAPTIVE R2 UPLOAD ENGINE
+        // Selects multipart size/concurrency from the user's network.
+        // Falls back safely when Network Information API is unavailable.
+        // =========================================================
+        function getAdaptiveUploadOptions(fileSize) {
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            const downlinkMbps = connection && Number(connection.downlink) > 0 ? Number(connection.downlink) : 0;
+            const effectiveType = connection && connection.effectiveType ? connection.effectiveType : '';
+
+            let queueSize = 2;
+            let partSize = 8 * 1024 * 1024;
+
+            if (downlinkMbps >= 50 || effectiveType === 'wifi') {
+                queueSize = 4;
+                partSize = 16 * 1024 * 1024;
+            } else if (downlinkMbps >= 15 || effectiveType === '4g') {
+                queueSize = 3;
+                partSize = 12 * 1024 * 1024;
+            } else if (downlinkMbps >= 5) {
+                queueSize = 2;
+                partSize = 8 * 1024 * 1024;
+            } else if (downlinkMbps > 0 || effectiveType === '3g') {
+                queueSize = 1;
+                partSize = 5 * 1024 * 1024;
+            }
+
+            // Keep multipart count safely below S3/R2 limits for large files.
+            const maxParts = 9000;
+            const requiredPartSize = Math.ceil(fileSize / maxParts / (1024 * 1024)) * 1024 * 1024;
+            partSize = Math.max(partSize, 5 * 1024 * 1024, requiredPartSize);
+
+            return { partSize, queueSize };
+        }
+
+        function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+        async function retryAsync(fn, attempts = 5, label = 'operation') {
+            let lastError;
+            for (let attempt = 1; attempt <= attempts; attempt++) {
+                try { return await fn(); }
+                catch (err) {
+                    lastError = err;
+                    if (attempt >= attempts) break;
+                    const delay = Math.min(30000, 1000 * Math.pow(2, attempt - 1));
+                    console.warn(`[R2] ${label} failed (${attempt}/${attempts}). Retrying in ${delay}ms`, err);
+                    await sleep(delay);
+                }
+            }
+            throw lastError;
+        }
 
         // =========================================================
         // S3 R2 OBJECT STORAGE MEDIA UPLOAD MODULE
@@ -921,15 +940,6 @@ function __flaynityReady(fn) {
                         adjustHeaderForActiveTab(activeTabId);
                     }
                 } else {
-                    // Offline cached-session fallback: do not force the login screen when the user has a saved session.
-                    if (!navigator.onLine && window.__flaynityOfflineSessionActive) {
-                        document.body.classList.remove('auth-active');
-                        const cachedAppScreen = document.getElementById('app-screen');
-                        const cachedAuthScreen = document.getElementById('auth-screen');
-                        if (cachedAppScreen) cachedAppScreen.style.display = 'block';
-                        if (cachedAuthScreen) cachedAuthScreen.style.display = 'none';
-                        return;
-                    }
                     // cleanupUserSessionData already resets _feedListenersAttached
                     cleanupUserSessionData();
                     document.body.classList.add('auth-active');
@@ -1144,47 +1154,58 @@ function __flaynityReady(fn) {
             }
 
             item.status = "uploading";
-            item.progress = item.progress || 0;
+            item.progress = Math.max(0, Number(item.progress) || 0);
+            item.processingMsg = "Uploading to Cloudflare R2...";
             updateManagerUI();
 
             const startTime = Date.now();
+            const uploadOptions = getAdaptiveUploadOptions(item.file ? item.file.size : 0);
+            item.uploadPartSize = uploadOptions.partSize;
+            item.uploadQueueSize = uploadOptions.queueSize;
+            item.retryCount = Number(item.retryCount) || 0;
 
             try {
+                if (!item.file) throw new Error("Original video file is no longer available. Please select the video again.");
+
                 const params = {
                     Key: item.key,
                     Body: item.file,
-                    ContentType: item.file.type || 'video/mp4'
+                    ContentType: item.file.type || 'video/mp4',
+                    CacheControl: 'public, max-age=31536000, immutable'
                 };
-                
-                // 5MB optimized multipart chunk size
-                const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
 
-                const s3Upload = s3.upload(params, uploadOpts);
+                console.log('[R2] Upload options:', uploadOptions);
+                const s3Upload = s3.upload(params, uploadOptions);
                 item.s3UploadRef = s3Upload;
 
                 s3Upload.on('httpUploadProgress', (evt) => {
-                    if (item.status !== 'uploading') return; 
-                    const pct = Math.round((evt.loaded / evt.total) * 100);
-                    item.progress = pct;
+                    if (item.status !== 'uploading') return;
+                    const total = Number(evt.total) || item.file.size || 0;
+                    const loaded = Number(evt.loaded) || 0;
+                    item.progress = total > 0 ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
 
-                    const elapsed = (Date.now() - startTime) / 1000;
-                    if (elapsed > 0) {
-                        item.speed = evt.loaded / elapsed; 
-                        item.eta = (evt.total - evt.loaded) / item.speed;
-                    }
+                    const elapsed = Math.max(0.001, (Date.now() - startTime) / 1000);
+                    item.speed = loaded / elapsed;
+                    item.eta = item.speed > 0 ? Math.max(0, (total - loaded) / item.speed) : 0;
                     updateManagerUI();
                 });
 
-                await s3Upload.promise();
-                
+                await retryAsync(() => s3Upload.promise(), 3, 'video upload');
+
+                // R2 object upload is complete. Never turn this successful upload into
+                // a false "failed" state because thumbnail/Firebase publishing has a hiccup.
+                item.progress = 100;
                 item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
                 item.status = "processing";
+                item.processingMsg = "Upload complete. Publishing...";
                 item.retryCount = 0;
                 updateManagerUI();
+                saveQueueStateToLocalStorage();
 
                 await runPostUploadProcessingSequence(item);
 
             } catch (err) {
+                console.error("R2 upload error:", err);
                 if (item.status === 'paused') {
                     console.log("Upload paused safely.");
                 } else if (!navigator.onLine) {
@@ -1192,20 +1213,23 @@ function __flaynityReady(fn) {
                     updateManagerUI();
                     showNotification("Connection lost. Upload paused.", "error");
                 } else {
-                    console.error("Upload error: ", err);
                     item.retryCount = (item.retryCount || 0) + 1;
-                    
                     if (item.retryCount <= 5) {
                         item.status = "waiting";
+                        item.processingMsg = `Network issue. Retrying upload (${item.retryCount}/5)...`;
                         updateManagerUI();
-                        showNotification(`Network hiccup. Retrying (${item.retryCount}/5)...`, "error");
+                        saveQueueStateToLocalStorage();
+                        showNotification(`Network issue. Retrying (${item.retryCount}/5)...`, "error");
                     } else {
                         item.status = "failed";
+                        item.processingMsg = "Upload failed. Please retry.";
                         updateManagerUI();
-                        showNotification(`Upload failed: ${err.message}`, "error");
+                        saveQueueStateToLocalStorage();
+                        showNotification(`Upload failed: ${err && err.message ? err.message : 'Unknown R2 error'}`, "error");
                     }
                 }
             } finally {
+                item.s3UploadRef = null;
                 activeUploadsCount = Math.max(0, activeUploadsCount - 1);
                 triggerNextActiveUpload();
             }
@@ -1213,7 +1237,8 @@ function __flaynityReady(fn) {
 
         async function runPostUploadProcessingSequence(item) {
             item.status = "processing";
-            item.progress = 0;
+            item.progress = 100;
+            item.processingMsg = "Publishing Feed...";
             updateManagerUI();
 
             try {
@@ -1222,30 +1247,52 @@ function __flaynityReady(fn) {
                     try { finalThumbBlob = dataURLtoBlob(item.thumbDataUrl); } catch (e) {}
                 }
 
+                // Thumbnail failure must NOT invalidate a successfully uploaded video.
                 if (finalThumbBlob && s3) {
-                    const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg" };
-                    await s3.putObject(thumbParams).promise();
-                    item.thumbUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
+                    try {
+                        const thumbParams = {
+                            Body: finalThumbBlob,
+                            Key: item.thumbKey,
+                            ContentType: "image/jpeg",
+                            CacheControl: 'public, max-age=31536000, immutable'
+                        };
+                        await retryAsync(() => s3.putObject(thumbParams).promise(), 4, 'thumbnail upload');
+                        item.thumbUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
+                    } catch (thumbErr) {
+                        console.warn('[R2] Thumbnail upload failed; keeping video upload successful:', thumbErr);
+                        item.thumbUrl = item.thumbDataUrl || "";
+                    }
                 } else {
-                    item.thumbUrl = item.thumbDataUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
+                    item.thumbUrl = item.thumbDataUrl || "";
                 }
 
-                item.processingMsg = "Publishing Feed...";
                 item.progress = 100;
+                item.processingMsg = "Saving video information...";
                 updateManagerUI();
 
-                // ⚡ INSTANT PUBLISH ENGINE ⚡
-                await pushVideoMetadataToDatabase(item);
+                // Firebase metadata is retried independently. A successful R2 upload
+                // remains recoverable instead of being incorrectly shown as failed.
+                await retryAsync(() => pushVideoMetadataToDatabase(item), 5, 'Firebase metadata publish');
 
                 item.status = "completed";
+                item.progress = 100;
+                item.processingMsg = "Published";
+                item.retryCount = 0;
                 updateManagerUI();
                 saveQueueStateToLocalStorage();
-                showNotification(`"${item.title}" is published instantly!`, "success");
+                showNotification(`"${item.title}" is published successfully!`, "success");
 
             } catch (err) {
-                item.status = "failed";
+                // R2 upload already succeeded. Keep the item recoverable and retry metadata
+                // later instead of reporting a false video-upload failure at 100%.
+                item.status = "processing";
+                item.progress = 100;
+                item.processingMsg = "Uploaded. Waiting to finish publishing...";
+                item.publishRetryCount = (item.publishRetryCount || 0) + 1;
                 updateManagerUI();
-                showNotification("Post-processing error: " + err.message, "error");
+                saveQueueStateToLocalStorage();
+                console.error("Post-upload publishing error:", err);
+                showNotification("Video uploaded. Publishing will retry automatically.", "error");
             }
         }
 
@@ -4615,8 +4662,11 @@ function __flaynityReady(fn) {
                         item.file = null; 
                         item.thumbBlob = null;
                         item.s3UploadRef = null;
-                        if (item.status === 'uploading' || item.status === 'waiting' || item.status === 'processing') {
+                        if (item.status === 'uploading' || item.status === 'waiting') {
                             item.status = 'paused';
+                        }
+                        if (item.status === 'processing' && item.videoUrl) {
+                            item.status = 'processing';
                         }
                         return item;
                     });
@@ -4990,3 +5040,4 @@ function __flaynityReady(fn) {
         function hideUpcomingModal() {
             AppNavigation.pop();
         }
+    

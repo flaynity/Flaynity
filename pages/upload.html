@@ -5,19 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Flaynity Studio</title>
 <style>
-/* ━━━━━━━━━━━━━━━━━━━━━━
-   PREMIUM STUDIO CSS
-━━━━━━━━━━━━━━━━━━━━━━ */
+/* =======================================================
+   PREMIUM STUDIO CSS (YOUTUBE INSPIRED)
+======================================================= */
 .studio-btn { background: var(--primary); color: white; border: none; border-radius: 24px; padding: 16px 24px; font-size: 1.05rem; font-weight: 800; cursor: pointer; box-shadow: 0 8px 24px var(--primary-glow); transition: 0.2s; }
 .studio-btn:active { transform: scale(0.96); }
 
-.mode-slider-wrap { position: absolute; bottom: 0; left: 0; right: 0; height: 120px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); z-index: 100; }
-.mode-slider { display: flex; gap: 40px; transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); align-items: center; white-space: nowrap; }
-.mode-item { padding: 10px 24px; border-radius: 30px; font-weight: 800; font-size: 1.15rem; cursor: pointer; transition: 0.3s; color: rgba(255,255,255,0.5); }
+/* YouTube Mode Slider */
+.mode-slider-wrap { position: absolute; bottom: 0; left: 0; right: 0; height: 100px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); z-index: 100; }
+.mode-slider { display: flex; gap: 30px; transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); align-items: center; white-space: nowrap; }
+.mode-item { padding: 8px 20px; border-radius: 30px; font-weight: 800; font-size: 1rem; cursor: pointer; transition: 0.3s; color: rgba(255,255,255,0.6); }
 .mode-item.active { background: #333333; color: #FFFFFF; }
 
-.camera-ctrl-btn { background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 44px; height: 44px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); }
+.camera-ctrl-btn { background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 44px; height: 44px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); margin-bottom: 12px;}
 
+/* Timeline */
 .timeline-wrap { position: relative; height: 50px; background: #222; border-radius: 8px; margin: 16px 0; overflow: hidden; border: 2px solid #444; }
 .timeline-playhead { position: absolute; top: 0; bottom: 0; width: 3px; background: white; z-index: 10; box-shadow: 0 0 8px rgba(255,255,255,0.8); pointer-events: none; }
 .timeline-handle-start, .timeline-handle-end { position: absolute; top: 0; bottom: 0; width: 16px; background: var(--primary); z-index: 11; cursor: ew-resize; }
@@ -37,59 +39,61 @@
 </head>
 <body>
 
-<!-- Hidden Native File Inputs -->
-<input accept="video/mp4, video/quicktime, video/mkv, video/webm" id="video-file-input" style="display:none;" type="file" onchange="handleVideoOrShortSelected(this.files[0], 'video-long')"/>
-<input accept="video/mp4, video/quicktime, video/mkv, video/webm" id="short-file-input" style="display:none;" type="file" onchange="handleVideoOrShortSelected(this.files[0], 'video-short')"/>
-<input accept="image/jpeg, image/png, image/webp" id="post-image-input" style="display:none;" type="file" onchange="handlePostImageSelected(this.files[0])"/>
-<input accept="image/jpeg, image/png, image/webp" id="custom-thumb-input" style="display:none;" type="file" onchange="handleCustomThumbSelected(event)"/>
+<!-- File Inputs (Hidden) -->
+<input accept="video/mp4, video/quicktime, video/x-matroska, video/webm" id="video-file-input" onchange="handlePremiumFileSelected(event, 'video-long')" style="display:none;" type="file"/>
+<input accept="video/mp4, video/quicktime, video/x-matroska, video/webm" id="short-file-input" onchange="handlePremiumFileSelected(event, 'video-short')" style="display:none;" type="file"/>
+<input accept="image/jpeg, image/png, image/webp, image/gif" id="post-image-input" multiple="" onchange="handlePremiumImagesSelected(event)" style="display:none;" type="file"/>
+<input accept="image/jpeg, image/png, image/webp" id="custom-thumb-input" onchange="handleCustomThumbSelected(event)" style="display:none;" type="file"/>
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━
-   1. MAIN PREMIUM UPLOAD STUDIO
+   1. PREMIUM BLACK UPLOAD STUDIO
 ━━━━━━━━━━━━━━━━━━━━━━ -->
 <div id="premium-upload-studio" class="fullscreen-page" style="display: none; background: #000; color: #fff; z-index: 9999;">
     
-    <div id="upload-dynamic-area" style="position: absolute; top: 0; left: 0; right: 0; bottom: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; padding-top: 40px;">
+    <div id="upload-dynamic-area" style="position: absolute; top: 0; left: 0; right: 0; bottom: 100px; display: flex; align-items: center; justify-content: center; overflow: hidden; padding-top: 20px;">
         
-        <!-- VIDEO SELECTOR VIEW -->
-        <div id="upload-video-view" style="display: none; width: 100%; height: 100%; max-width: 400px; max-height: 600px; aspect-ratio: 2/3; background: #111; border-radius: 24px; position: relative; overflow: hidden;">
-            <div style="padding: 20px; display: flex; align-items: center; justify-content: space-between; background: #1A1A1A;">
-                <button onclick="closePremiumUploadStudio()" style="background: none; color: white; font-size: 1.5rem; border: none; cursor: pointer;"><i class="fas fa-times"></i></button>
-                <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800;">Videos</h3>
+        <!-- VIDEO UPLOAD BOX (2:3 Ratio) -->
+        <div id="upload-video-view" style="display: none; width: 100%; height: 100%; max-width: 380px; max-height: 570px; aspect-ratio: 2/3; background: #111; border-radius: 16px; position: relative; overflow: hidden; border: 1px solid #333;">
+            <div style="padding: 16px; display: flex; align-items: center; justify-content: space-between; background: #1A1A1A;">
+                <button onclick="closePremiumUploadStudio()" style="background: none; color: white; font-size: 1.4rem; border: none; cursor: pointer;"><i class="fas fa-times"></i></button>
+                <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800;">Videos</h3>
                 <div style="width: 24px;"></div>
             </div>
-            <div style="padding: 24px; text-align: center; height: calc(100% - 70px); display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <i class="fas fa-film" style="font-size: 3rem; color: #555; margin-bottom: 16px;"></i>
-                <p style="color: #888; font-size: 0.95rem; font-weight: 600; margin-bottom: 24px;">Select a video from your device to upload.</p>
-                <button class="studio-btn" style="width: 100%;" onclick="document.getElementById('video-file-input').click()">Browse Device Videos</button>
+            <div style="padding: 24px; text-align: center; height: calc(100% - 60px); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <i class="fas fa-video" style="font-size: 3rem; color: #444; margin-bottom: 16px;"></i>
+                <p style="color: #888; font-size: 0.9rem; font-weight: 600; margin-bottom: 24px;">Select a video from your device to upload.</p>
+                <button class="studio-btn" style="width: 100%;" onclick="document.getElementById('video-file-input').click()">Browse Videos</button>
             </div>
         </div>
 
-        <!-- SHORT CAMERA VIEW -->
-        <div id="upload-short-view" style="display: none; width: 100%; height: 100%; max-width: 400px; max-height: 711px; aspect-ratio: 9/16; background: #111; border-radius: 24px; position: relative; overflow: hidden;">
+        <!-- SHORT CAMERA BOX (9:16 Ratio) -->
+        <div id="upload-short-view" style="display: none; width: 100%; height: 100%; max-width: 380px; max-height: 675px; aspect-ratio: 9/16; background: #111; border-radius: 16px; position: relative; overflow: hidden; border: 1px solid #333;">
+            <!-- Camera Stream -->
             <video id="short-camera-preview" autoplay muted playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
             
-            <div style="position: absolute; top: 16px; left: 16px; right: 16px; display: flex; justify-content: space-between; align-items: center;">
-                <button onclick="closePremiumUploadStudio()" style="background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 44px; height: 44px; font-size: 1.2rem; cursor: pointer;"><i class="fas fa-times"></i></button>
-                <button style="background: rgba(0,0,0,0.4); color: white; border: none; padding: 10px 20px; border-radius: 24px; font-weight: 800; font-size: 0.95rem; cursor: pointer;"><i class="fas fa-music"></i> Add Sound</button>
-                <div style="width: 44px;"></div>
+            <div style="position: absolute; top: 16px; left: 16px; right: 16px; display: flex; justify-content: space-between; align-items: center; z-index: 10;">
+                <button onclick="closePremiumUploadStudio()" style="background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.1rem; cursor: pointer; backdrop-filter: blur(4px);"><i class="fas fa-times"></i></button>
+                <button style="background: rgba(0,0,0,0.4); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 0.85rem; cursor: pointer; backdrop-filter: blur(4px);"><i class="fas fa-music"></i> Add Sound</button>
+                <div style="width: 40px;"></div>
             </div>
 
-            <div style="position: absolute; right: 16px; top: 80px; display: flex; flex-direction: column; gap: 16px; align-items: center;">
+            <div style="position: absolute; right: 16px; top: 80px; display: flex; flex-direction: column; align-items: center; z-index: 10;">
                 <button onclick="toggleShortCamera()" class="camera-ctrl-btn"><i class="fas fa-sync"></i></button>
                 <button class="camera-ctrl-btn"><i class="fas fa-bolt"></i></button>
                 <button class="camera-ctrl-btn"><i class="fas fa-stopwatch"></i></button>
-                <button class="camera-ctrl-btn" style="font-size: 0.9rem; font-weight: 800;">15s</button>
-                <button class="camera-ctrl-btn" style="font-size: 0.9rem; font-weight: 800;">1x</button>
+                <button class="camera-ctrl-btn" style="font-size: 0.8rem; font-weight: 800;">15s</button>
+                <button class="camera-ctrl-btn" style="font-size: 0.8rem; font-weight: 800;">1x</button>
             </div>
 
-            <div style="position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: center; align-items: center;">
-                <button onclick="document.getElementById('short-file-input').click()" style="position: absolute; left: 30px; background: rgba(0,0,0,0.4); color: white; border: none; width: 44px; height: 44px; border-radius: 12px; font-size: 1.2rem; cursor: pointer;"><i class="fas fa-image"></i></button>
+            <!-- Bottom Record Controls -->
+            <div style="position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; z-index: 10;">
+                <button onclick="document.getElementById('short-file-input').click()" style="position: absolute; left: 30px; background: rgba(0,0,0,0.4); color: white; border: none; width: 44px; height: 44px; border-radius: 12px; font-size: 1.2rem; cursor: pointer; backdrop-filter: blur(4px);"><i class="fas fa-image"></i></button>
                 
-                <div id="record-btn-outer" style="width: 76px; height: 76px; border-radius: 50%; border: 4px solid white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                    <div id="record-btn-inner" style="width: 60px; height: 60px; border-radius: 50%; background: #FF2E55; transition: 0.2s;"></div>
+                <div id="record-btn-outer" style="width: 72px; height: 72px; border-radius: 50%; border: 4px solid white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <div id="record-btn-inner" style="width: 58px; height: 58px; border-radius: 50%; background: #FF2E55; transition: 0.2s;"></div>
                 </div>
 
-                <button id="record-done-btn" style="display: none; position: absolute; right: 30px; background: white; color: black; border: none; padding: 12px 20px; border-radius: 24px; font-weight: 800; cursor: pointer;">Done</button>
+                <button id="record-done-btn" style="display: none; position: absolute; right: 30px; background: white; color: black; border: none; padding: 10px 18px; border-radius: 20px; font-weight: 800; cursor: pointer;">Done</button>
             </div>
         </div>
 
@@ -99,8 +103,8 @@
         </div>
     </div>
 
-    <!-- YouTube Style Mode Selector -->
-    <div class="mode-slider-wrap">
+    <!-- YouTube Style Text Mode Slider -->
+    <div class="mode-slider-wrap" id="upload-mode-slider-wrap">
         <div id="mode-slider" class="mode-slider">
             <div class="mode-item" data-mode="video">Video</div>
             <div class="mode-item" data-mode="short">Short</div>
@@ -110,16 +114,17 @@
 </div>
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━
-   2. VIDEO & SHORT PREVIEW PAGES
+   2. VIDEO PREVIEW PAGE
 ━━━━━━━━━━━━━━━━━━━━━━ -->
 <div id="video-preview-page" class="fullscreen-page" style="display: none; background: #000; color: #fff; z-index: 10000; flex-direction: column;">
     <div class="topbar-nav">
         <button onclick="AppNavigation.pop()" style="background: none; color: white; border: none; font-size: 1.4rem; cursor: pointer;"><i class="fas fa-arrow-left"></i></button>
-        <div style="font-size: 1.2rem; cursor: pointer;" onclick="togglePreviewPlay('video-preview-el', 'vp-icon')"><i class="fas fa-play" id="vp-icon"></i></div>
+        <div style="font-size: 1.2rem; cursor: pointer;" onclick="togglePremiumPreviewPlay('video-preview-el', 'vp-icon')"><i class="fas fa-play" id="vp-icon"></i></div>
         <div style="width: 24px;"></div>
     </div>
     <div style="flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
-        <video id="video-preview-el" autoplay loop playsinline style="max-width: 100%; max-height: 100%; object-fit: contain;" onclick="togglePreviewPlay('video-preview-el', 'vp-icon')"></video>
+        <!-- Keeps original aspect ratio -->
+        <video id="video-preview-el" autoplay loop playsinline style="max-width: 100%; max-height: 100%; object-fit: contain;" onclick="togglePremiumPreviewPlay('video-preview-el', 'vp-icon')"></video>
     </div>
     <div style="padding: 24px; background: #111;">
         <div class="timeline-wrap">
@@ -130,33 +135,54 @@
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <span id="vp-time-display" style="font-size: 0.95rem; font-weight: 800; color: #AAA;">00:00 / 00:00</span>
-            <button onclick="gotoUploadDetails('video')" style="background: white; color: black; padding: 12px 30px; border-radius: 24px; font-weight: 800; border: none; cursor: pointer;">Next</button>
+            <button onclick="gotoPremiumUploadDetails('video')" style="background: white; color: black; padding: 12px 30px; border-radius: 24px; font-weight: 800; border: none; cursor: pointer;">Next</button>
         </div>
-    </div>
-</div>
-
-<div id="short-preview-page" class="fullscreen-page" style="display: none; background: #000; color: #fff; z-index: 10000; flex-direction: column;">
-    <div class="topbar-nav">
-        <button onclick="AppNavigation.pop()" style="background: none; color: white; border: none; font-size: 1.4rem; cursor: pointer;"><i class="fas fa-arrow-left"></i></button>
-        <div style="font-size: 1.1rem; font-weight: 800; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; cursor: pointer;"><i class="fas fa-music"></i> Add Sound</div>
-        <div style="font-size: 1.2rem; cursor: pointer;"><i class="fas fa-volume-up"></i></div>
-    </div>
-    <div style="flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
-        <video id="short-preview-el" autoplay loop playsinline style="width: 100%; height: 100%; object-fit: cover;" onclick="togglePreviewPlay('short-preview-el', 'none')"></video>
-        
-        <div style="position: absolute; right: 16px; top: 100px; display: flex; flex-direction: column; gap: 16px;">
-            <button class="camera-ctrl-btn"><i class="fas fa-font"></i></button>
-            <button class="camera-ctrl-btn"><i class="fas fa-microphone"></i></button>
-            <button class="camera-ctrl-btn"><i class="fas fa-download"></i></button>
-        </div>
-    </div>
-    <div style="padding: 20px; background: #111; display: flex; justify-content: flex-end;">
-        <button onclick="gotoUploadDetails('short')" style="background: white; color: black; padding: 12px 30px; border-radius: 24px; font-weight: 800; border: none; cursor: pointer;">Next</button>
     </div>
 </div>
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━
-   3. VIDEO & SHORT DETAILS PAGES
+   3. SHORT PREVIEW PAGE
+━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="short-preview-page" class="fullscreen-page" style="display: none; background: #000; color: #fff; z-index: 10000; flex-direction: column;">
+    <div class="topbar-nav">
+        <button onclick="AppNavigation.pop()" style="background: none; color: white; border: none; font-size: 1.4rem; cursor: pointer;"><i class="fas fa-arrow-left"></i></button>
+        <div style="font-size: 1rem; font-weight: 800; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; cursor: pointer;"><i class="fas fa-music"></i> Add Sound</div>
+        <div style="font-size: 1.2rem; cursor: pointer;"><i class="fas fa-volume-up"></i></div>
+    </div>
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
+        <!-- Enforces 9:16 visually -->
+        <video id="short-preview-el" autoplay loop playsinline style="width: 100%; max-width: 400px; aspect-ratio: 9/16; object-fit: cover; background: #111;" onclick="togglePremiumPreviewPlay('short-preview-el', 'none')"></video>
+        
+        <div style="position: absolute; right: 16px; top: 100px; display: flex; flex-direction: column; gap: 16px;">
+            <button class="camera-ctrl-btn" style="margin-bottom:0;"><i class="fas fa-font"></i></button>
+            <button class="camera-ctrl-btn" style="margin-bottom:0;"><i class="fas fa-microphone"></i></button>
+            <button class="camera-ctrl-btn" style="margin-bottom:0;"><i class="fas fa-download"></i></button>
+        </div>
+    </div>
+    <div style="padding: 20px; background: #111; display: flex; justify-content: flex-end;">
+        <button onclick="gotoPremiumUploadDetails('short')" style="background: white; color: black; padding: 12px 30px; border-radius: 24px; font-weight: 800; border: none; cursor: pointer;">Next</button>
+    </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━
+   4. POST PREVIEW PAGE
+━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="post-preview-page" class="fullscreen-page" style="display: none; background: #000; z-index: 10000; flex-direction: column;">
+    <div class="topbar-nav">
+        <button onclick="AppNavigation.pop()" style="background: none; color: white; border: none; font-size: 1.4rem; cursor: pointer;"><i class="fas fa-arrow-left"></i></button>
+        <div style="width: 24px;"></div>
+    </div>
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; padding-bottom: 80px;">
+        <!-- Image Preview 3:4 -->
+        <img id="post-preview-img" src="" style="width: 100%; max-width: 400px; aspect-ratio: 3/4; object-fit: contain; background: #111;" />
+    </div>
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 24px; background: #111; display: flex; justify-content: flex-end;">
+        <button onclick="gotoPremiumUploadDetails('post')" style="background: white; color: black; padding: 12px 30px; border-radius: 24px; font-weight: 800; border: none; cursor: pointer;">Next</button>
+    </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━
+   5. VIDEO DETAILS PAGE
 ━━━━━━━━━━━━━━━━━━━━━━ -->
 <div id="video-details-page" class="fullscreen-page" style="display: none; background: var(--bg-color); z-index: 10001; flex-direction: column;">
     <div class="topbar-nav solid">
@@ -165,27 +191,28 @@
         <div style="width: 24px;"></div>
     </div>
     <div style="flex: 1; overflow-y: auto; padding: 20px;">
-        <div style="width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 16px; position: relative; overflow: hidden; margin-bottom: 24px;">
+        <!-- 16:9 Thumbnail -->
+        <div style="width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; position: relative; overflow: hidden; margin-bottom: 24px;">
             <img id="vd-thumb" src="" style="width: 100%; height: 100%; object-fit: cover;" />
             <button onclick="document.getElementById('custom-thumb-input').click()" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 8px 16px; border-radius: 12px; border: none; font-size: 0.85rem; font-weight: 800; cursor: pointer;"><i class="fas fa-image"></i> Custom</button>
         </div>
         
         <div class="form-group">
             <label class="form-label">Title (required)</label>
-            <input type="text" id="vd-title" class="form-input" placeholder="Create a title" maxlength="100" oninput="updateCharCount(this, 'vd-title-count')">
+            <input type="text" id="vd-title" class="form-input" placeholder="Create a title" maxlength="100" oninput="updatePremiumCharCount(this, 'vd-title-count')">
             <div class="input-counter" id="vd-title-count" style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; font-weight: 700;">0/100</div>
         </div>
 
         <div class="form-group">
             <label class="form-label">Description (required)</label>
-            <textarea id="vd-desc" class="form-textarea" placeholder="Add a description" maxlength="5000" oninput="updateCharCount(this, 'vd-desc-count')"></textarea>
+            <textarea id="vd-desc" class="form-textarea" placeholder="Add a description" maxlength="5000" oninput="updatePremiumCharCount(this, 'vd-desc-count')"></textarea>
             <div class="input-counter" id="vd-desc-count" style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; font-weight: 700;">0/5000</div>
         </div>
 
         <div class="form-group">
             <label class="form-label">Visibility</label>
-            <select id="vd-visibility" class="form-select" onchange="toggleScheduleDate('vd-visibility', 'vd-schedule-container')">
-                <option value="Public">🌍 Public</option>
+            <select id="vd-visibility" class="form-select" onchange="togglePremiumSchedule('vd-visibility', 'vd-schedule-container')">
+                <option value="Public">🌍 Publish</option>
                 <option value="Private">🔒 Private</option>
                 <option value="Schedule">📅 Schedule Publish</option>
             </select>
@@ -208,10 +235,13 @@
             </div>
         </div>
 
-        <button class="studio-btn" style="margin: 10px 0 40px; width: 100%; padding: 18px;" onclick="publishVideoOrShort('video-long')">PUBLISH VIDEO</button>
+        <button class="studio-btn" style="margin: 10px 0 40px; width: 100%; padding: 18px;" onclick="publishPremiumVideoOrShort('video-long')">PUBLISH VIDEO</button>
     </div>
 </div>
 
+<!-- ━━━━━━━━━━━━━━━━━━━━━━
+   6. SHORT DETAILS PAGE
+━━━━━━━━━━━━━━━━━━━━━━ -->
 <div id="short-details-page" class="fullscreen-page" style="display: none; background: var(--bg-color); z-index: 10001; flex-direction: column;">
     <div class="topbar-nav solid">
         <button onclick="AppNavigation.pop()" style="background: none; color: var(--text-main); border: none; font-size: 1.4rem; cursor: pointer;"><i class="fas fa-arrow-left"></i></button>
@@ -220,27 +250,28 @@
     </div>
     <div style="flex: 1; overflow-y: auto; padding: 20px;">
         <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+            <!-- 9:16 Thumbnail -->
             <div style="width: 100px; aspect-ratio: 9/16; background: #000; border-radius: 12px; position: relative; overflow: hidden; flex-shrink: 0;">
                 <img id="sd-thumb" src="" style="width: 100%; height: 100%; object-fit: cover;" />
                 <button onclick="document.getElementById('custom-thumb-input').click()" style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.6); color: white; padding: 6px 8px; border-radius: 8px; border: none; font-size: 0.75rem; cursor: pointer;"><i class="fas fa-image"></i></button>
             </div>
             <div style="flex: 1;">
                 <label class="form-label">Caption your Short (required)</label>
-                <textarea id="sd-title" class="form-textarea" placeholder="Write a catchy caption..." maxlength="100" style="height: 100%; min-height: 120px;" oninput="updateCharCount(this, 'sd-title-count')"></textarea>
+                <textarea id="sd-title" class="form-textarea" placeholder="Write a catchy caption..." maxlength="100" style="height: 100%; min-height: 120px;" oninput="updatePremiumCharCount(this, 'sd-title-count')"></textarea>
                 <div class="input-counter" id="sd-title-count" style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; font-weight: 700;">0/100</div>
             </div>
         </div>
 
         <div class="form-group">
             <label class="form-label">Description (required)</label>
-            <textarea id="sd-desc" class="form-textarea" placeholder="Add a description" maxlength="5000" oninput="updateCharCount(this, 'sd-desc-count')"></textarea>
+            <textarea id="sd-desc" class="form-textarea" placeholder="Add a description" maxlength="5000" oninput="updatePremiumCharCount(this, 'sd-desc-count')"></textarea>
             <div class="input-counter" id="sd-desc-count" style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; font-weight: 700;">0/5000</div>
         </div>
         
         <div class="form-group">
             <label class="form-label">Visibility</label>
-            <select id="sd-visibility" class="form-select" onchange="toggleScheduleDate('sd-visibility', 'sd-schedule-container')">
-                <option value="Public">🌍 Public</option>
+            <select id="sd-visibility" class="form-select" onchange="togglePremiumSchedule('sd-visibility', 'sd-schedule-container')">
+                <option value="Public">🌍 Publish</option>
                 <option value="Private">🔒 Private</option>
                 <option value="Schedule">📅 Schedule Publish</option>
             </select>
@@ -263,26 +294,13 @@
             </div>
         </div>
 
-        <button class="studio-btn" style="margin: 10px 0 40px; width: 100%; padding: 18px;" onclick="publishVideoOrShort('video-short')">PUBLISH SHORT</button>
+        <button class="studio-btn" style="margin: 10px 0 40px; width: 100%; padding: 18px;" onclick="publishPremiumVideoOrShort('video-short')">PUBLISH SHORT</button>
     </div>
 </div>
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━
-   4. POST PREVIEW & DETAILS PAGES
+   7. POST DETAILS PAGE
 ━━━━━━━━━━━━━━━━━━━━━━ -->
-<div id="post-preview-page" class="fullscreen-page" style="display: none; background: #000; z-index: 10000; flex-direction: column;">
-    <div class="topbar-nav">
-        <button onclick="AppNavigation.pop()" style="background: none; color: white; border: none; font-size: 1.4rem; cursor: pointer;"><i class="fas fa-arrow-left"></i></button>
-        <div style="width: 24px;"></div>
-    </div>
-    <div style="flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; padding-bottom: 80px;">
-        <img id="post-preview-img" src="" style="width: 100%; max-width: 400px; aspect-ratio: 3/4; object-fit: contain; background: #111;" />
-    </div>
-    <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 24px; background: #111; display: flex; justify-content: flex-end;">
-        <button onclick="gotoUploadDetails('post')" style="background: white; color: black; padding: 12px 30px; border-radius: 24px; font-weight: 800; border: none; cursor: pointer;">Next</button>
-    </div>
-</div>
-
 <div id="post-details-page" class="fullscreen-page" style="display: none; background: var(--bg-color); z-index: 10001; flex-direction: column;">
     <div class="topbar-nav solid">
         <button onclick="AppNavigation.pop()" style="background: none; color: var(--text-main); border: none; font-size: 1.4rem; cursor: pointer;"><i class="fas fa-arrow-left"></i></button>
@@ -292,13 +310,13 @@
     <div style="flex: 1; overflow-y: auto; padding: 20px;">
         <div class="form-group">
             <label class="form-label">Title / Caption (required)</label>
-            <textarea id="pd-title" class="form-textarea" placeholder="Write something about this post..." maxlength="1000" oninput="updateCharCount(this, 'pd-title-count')"></textarea>
+            <textarea id="pd-title" class="form-textarea" placeholder="Write something about this post..." maxlength="1000" oninput="updatePremiumCharCount(this, 'pd-title-count')"></textarea>
             <div class="input-counter" id="pd-title-count" style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; font-weight: 700;">0/1000</div>
         </div>
 
         <div class="form-group">
             <label class="form-label">Visibility</label>
-            <select id="pd-visibility" class="form-select" onchange="toggleScheduleDate('pd-visibility', 'pd-schedule-container')">
+            <select id="pd-visibility" class="form-select" onchange="togglePremiumSchedule('pd-visibility', 'pd-schedule-container')">
                 <option value="Public">🌍 Publish</option>
                 <option value="Schedule">📅 Schedule Publish</option>
             </select>
@@ -321,11 +339,13 @@
             </div>
         </div>
 
-        <button class="studio-btn" style="margin: 10px 0 40px; width: 100%; padding: 18px;" onclick="publishPostUpload()">PUBLISH POST</button>
+        <button class="studio-btn" style="margin: 10px 0 40px; width: 100%; padding: 18px;" id="premium-post-publish-btn" onclick="publishPremiumPostAction()">PUBLISH POST</button>
     </div>
 </div>
 
-<!-- Upload Manager Screen (Kept for Queue processing) -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━
+   8. UPLOAD MANAGER (Kept Exactly as it was)
+━━━━━━━━━━━━━━━━━━━━━━ -->
 <div class="premium-download-modal" id="upload-manager-screen" style="z-index: 2050;">
     <div class="premium-download-content" style="max-height: 85vh; height: 85vh;">
         <div class="drag-handle-line"></div>
@@ -342,4 +362,5 @@
     </div>
 </div>
 
-</body></html>
+</body>
+</html>

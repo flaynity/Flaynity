@@ -436,9 +436,10 @@ function __flaynityReady(fn) {
                         db.ref('admin_panel/posts').once('value')
                     ]);
 
-                    allLongVideos      = longsSnap.val()  ? Object.values(longsSnap.val())  : [];
-                    allShorts          = shortsSnap.val() ? Object.values(shortsSnap.val()) : [];
-                    allCommunityPosts  = postsSnap.val()  ? Object.values(postsSnap.val())  : [];
+                    const now = Date.now();
+                    allLongVideos      = longsSnap.val()  ? Object.values(longsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
+                    allShorts          = shortsSnap.val() ? Object.values(shortsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
+                    allCommunityPosts  = postsSnap.val()  ? Object.values(postsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
 
                     // ── Step 4: Re-attach realtime listeners (after data is loaded) ───
                     startRealtimeFeedsListener();
@@ -1037,89 +1038,6 @@ function __flaynityReady(fn) {
             }
         }, 3000);
 
-        function triggerFilePicker(type) {
-            AppNavigation.pop(); 
-            if (type === 'video-long' || type === 'video-short') {
-                const picker = document.getElementById('video-file-input');
-                if (picker) {
-                    picker.dataset.uploadType = type;
-                    picker.click();
-                }
-            } else if (type === 'post-image') {
-                openPostSheet();
-            }
-        }
-
-        async function handleFileSelected(e) {
-            const file = e.target.files[0];
-            const type = e.target.dataset.uploadType;
-            if (!file) return;
-
-            const allowedFormats = ["video/mp4", "video/quicktime", "video/x-matroska", "video/webm"];
-            if (!allowedFormats.includes(file.type)) {
-                showNotification("Invalid format! Supported: MP4, MOV, MKV, WEBM", "error");
-                return;
-            }
-            if (file.size > 10 * 1024 * 1024 * 1024) { 
-                showNotification("File size exceeds 10GB limit!", "error");
-                return;
-            }
-
-            showNotification("Inspecting file frames...", "success");
-
-            let frameMeta = { 
-                duration: 60, 
-                dataUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop", 
-                blob: null 
-            };
-
-            try {
-                frameMeta = await captureFrameAndDuration(file);
-            } catch (err) {
-                console.warn("Using metadata fallback safely.", err);
-            }
-
-            if (type === 'video-short' && frameMeta.duration > 180) {
-                showNotification("This video exceeds Shorts limit (3 mins).", "error");
-                return;
-            }
-
-            const uniqueId = "st_" + Date.now() + "_" + Math.floor(Math.random()*1000);
-            const fileKey = `uploads/${uniqueId}/${file.name.replace(/\s+/g, '_')}`;
-            
-            const queueItem = {
-                id: uniqueId,
-                file: file,
-                key: fileKey,
-                type: type,
-                title: file.name.split('.')[0],
-                description: "",
-                visibility: "Public",
-                allowComments: true,
-                showLikes: true,
-                status: "draft", 
-                progress: 0,
-                speed: 0,
-                eta: 0,
-                duration: frameMeta.duration,
-                thumbDataUrl: frameMeta.dataUrl,
-                thumbBlob: frameMeta.blob, 
-                thumbKey: `uploads/${uniqueId}/thumbnail.jpg`,
-                thumbUrl: "",
-                videoUrl: "",
-                s3UploadRef: null,
-                retryCount: 0,
-                createdAt: Date.now()
-            };
-
-            uploadQueue.push(queueItem);
-            saveQueueStateToLocalStorage(); 
-
-            currentDetailItem = queueItem;
-            openDetailsSheet(queueItem);
-            e.target.value = ""; 
-        }
-
         async function triggerNextActiveUpload() {
             if (!navigator.onLine) return;
 
@@ -1260,6 +1178,8 @@ function __flaynityReady(fn) {
             const resolution = item.type === 'video-short' ? "1080x1920" : "1920x1080";
             const hashtags = extractHashtags(item.description);
 
+            const isScheduled = item.scheduledTime && item.scheduledTime > Date.now();
+
             const moviePayload = {
                 id: item.id,
                 userId: user.uid,
@@ -1276,7 +1196,7 @@ function __flaynityReady(fn) {
                 uploadTime: Date.now(),
                 updateTime: Date.now(),
                 visibility: item.visibility,
-                status: "published",
+                status: isScheduled ? "scheduled" : "published",
                 views: 0,
                 likes: 0,
                 comments: 0,
@@ -1292,7 +1212,8 @@ function __flaynityReady(fn) {
                 showLikes: item.showLikes,
                 username: username,
                 channelAvatar: currentChannelData?.avatarUrl || user.photoURL || "",
-                createdAt: Date.now()
+                createdAt: Date.now(),
+                scheduledTime: item.scheduledTime || 0
             };
 
             // Step 1: Save Metadata to Firebase Realtime Database
@@ -1302,26 +1223,28 @@ function __flaynityReady(fn) {
                 
             await db.ref(targetPath).set(moviePayload);
 
-            // Step 2: Zero-Delay Local Feed Update (< 0.1 Seconds)
-            if (item.type === 'video-short') {
-                const idx = allShorts.findIndex(s => s.id === item.id);
-                if (idx !== -1) allShorts[idx] = moviePayload;
-                else allShorts.unshift(moviePayload);
-                
-                buildShortsPage();
-            } else {
-                const idx = allLongVideos.findIndex(v => v.id === item.id);
-                if (idx !== -1) allLongVideos[idx] = moviePayload;
-                else allLongVideos.unshift(moviePayload);
-            }
+            // Step 2: Zero-Delay Local Feed Update (< 0.1 Seconds) IF NOT SCHEDULED
+            if (!isScheduled) {
+                if (item.type === 'video-short') {
+                    const idx = allShorts.findIndex(s => s.id === item.id);
+                    if (idx !== -1) allShorts[idx] = moviePayload;
+                    else allShorts.unshift(moviePayload);
+                    
+                    buildShortsPage();
+                } else {
+                    const idx = allLongVideos.findIndex(v => v.id === item.id);
+                    if (idx !== -1) allLongVideos[idx] = moviePayload;
+                    else allLongVideos.unshift(moviePayload);
+                }
 
-            // Step 3: Instant A-Z Screen Refresh
-            buildHomeFeed();
+                // Step 3: Instant A-Z Screen Refresh
+                buildHomeFeed();
 
-            const activePage = AppNavigation.current();
-            if (activePage && activePage.id === 'view-channel-page') {
-                if (item.type === 'video-short') renderChannelShorts(user.uid);
-                else renderChannelVideos(user.uid);
+                const activePage = AppNavigation.current();
+                if (activePage && activePage.id === 'view-channel-page') {
+                    if (item.type === 'video-short') renderChannelShorts(user.uid);
+                    else renderChannelVideos(user.uid);
+                }
             }
         }
 
@@ -1344,10 +1267,13 @@ function __flaynityReady(fn) {
 
             try {
                 _feedListenersAttached = true;
+                const now = Date.now();
+
                 db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
                     try {
                         const data = snap.val();
-                        allLongVideos = data ? Object.values(data) : [];
+                        // Filter out scheduled futures
+                        allLongVideos = data ? Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
                         allLongVideos.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                         
                         allLongVideos.forEach(m => {
@@ -1371,7 +1297,7 @@ function __flaynityReady(fn) {
                 db.ref('admin_panel/movies/shorts').on('value', (snap) => {
                     try {
                         const data = snap.val();
-                        allShorts = data ? Object.values(data) : [];
+                        allShorts = data ? Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
                         allShorts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                         
                         if(allShorts.length !== previousShortsCount) {
@@ -1402,7 +1328,7 @@ function __flaynityReady(fn) {
                 db.ref('admin_panel/posts').on('value', (snap) => {
                     try {
                         const data = snap.val();
-                        allCommunityPosts = data ? Object.values(data) : [];
+                        allCommunityPosts = data ? Object.values(data).filter(p => !p.scheduledTime || p.scheduledTime <= now) : [];
                         allCommunityPosts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                         
                         if (allCommunityPosts.length !== previousPostsCount) {
@@ -1486,143 +1412,12 @@ function __flaynityReady(fn) {
         // =========================================================
         // COMMUNITY POST IMPLEMENTATION
         // =========================================================
-        function handleImagesSelected(e) {
-            const files = Array.from(e.target.files);
-            if (files.length === 0) return;
-
-            if (currentPostImages.length + files.length > 5) {
-                showNotification("Maximum 5 images are allowed!", "error");
-                return;
-            }
-
-            const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-            files.forEach(file => {
-                if (!allowed.includes(file.type)) {
-                    showNotification(`Skipped "${file.name}" - Unsupported format!`, "error");
-                    return;
-                }
-                
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    currentPostImages.push({ file: file, dataUrl: event.target.result });
-                    renderPostAttachedImagesUI();
-                };
-                reader.readAsDataURL(file);
-            });
-            e.target.value = "";
-        }
-
-        function renderPostAttachedImagesUI() {
-            const container = document.getElementById('post-preview-grid');
-            const countEl = document.getElementById('attached-images-count');
-            if (!container || !countEl) return;
-            
-            countEl.innerText = currentPostImages.length;
-            container.innerHTML = "";
-
-            if (currentPostImages.length === 0) {
-                container.innerHTML = `
-                    <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px 0; cursor: pointer;" id="no-images-placeholder" onclick="document.getElementById('post-image-input').click()">
-                        <i class="fas fa-cloud-upload-alt" style="font-size: 1.8rem; color: var(--primary); margin-bottom: 6px;"></i><br>
-                        Click to attach photos (Max 5)
-                    </div>
-                `;
-                return;
-            }
-
-            currentPostImages.forEach((img, idx) => {
-                container.innerHTML += `
-                    <div style="position: relative; width: 100%; aspect-ratio:1; border-radius: 8px; overflow: hidden; background: #e2e8f0;">
-                        <img src="${img.dataUrl}" style="width: 100%; height:100%; object-fit: cover;">
-                        <button onclick="removeAttachedPostImage(${idx})" style="position: absolute; top:4px; right:4px; width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,0.6); color:white; border:none; display:flex; align-items:center; justify-content:center; font-size:0.65rem; cursor:pointer;"><i class="fas fa-times"></i></button>
-                    </div>
-                `;
-            });
-        }
-
-        function removeAttachedPostImage(idx) {
-            currentPostImages.splice(idx, 1);
-            renderPostAttachedImagesUI();
-        }
-
         function appendPostHashtag(tag) {
             playUI('click');
             const input = document.getElementById('post-caption-input');
             if (input) {
                 input.value += " " + tag;
                 input.focus();
-            }
-        }
-
-        async function publishPostAction() {
-            playUI('click');
-            const captionInput = document.getElementById('post-caption-input');
-            const caption = captionInput ? captionInput.value.trim() : "";
-            const btn = document.getElementById('post-publish-btn');
-
-            if (!caption && currentPostImages.length === 0) {
-                showNotification("Post cannot be empty!", "error");
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
-
-            try {
-                const user = auth.currentUser;
-                const userSnap = await db.ref(`users/${user.uid}`).once('value');
-                const uData = userSnap.val() || {};
-                const username = uData.username || user.email.split('@')[0];
-                const avatar = currentChannelData?.avatarUrl || user.photoURL || "";
-
-                const uploadedUrls = [];
-
-                for (let i = 0; i < currentPostImages.length; i++) {
-                    const img = currentPostImages[i];
-                    const imgUrl = await uploadImageToR2(img.file, "posts");
-                    uploadedUrls.push(imgUrl);
-                }
-
-                const postPayload = {
-                    id: "post_" + Date.now(),
-                    userId: user.uid,
-                    channelId: user.uid,
-                    title: caption.split('\n')[0].substring(0, 50) || "Community Post",
-                    imageUrl: uploadedUrls[0] || "",
-                    caption: caption,
-                    uploadTime: Date.now(),
-                    visibility: "Public",
-                    status: "published",
-                    isShort: false,
-                    isPost: true,
-                    username: username,
-                    avatar: avatar,
-                    images: uploadedUrls,
-                    hideLikes: document.getElementById('post-hide-likes').checked,
-                    createdAt: Date.now(),
-                    reaction: {},
-                    totalLikes: 0,
-                    totalReaction: 0,
-                    totalComments: 0
-                };
-
-                await db.ref(`admin_panel/posts/${postPayload.id}`).set(postPayload);
-                
-                showNotification("Community Post published successfully!", "success");
-                closePostSheet();
-
-                if (captionInput) captionInput.value = "";
-                currentPostImages = [];
-                const hideLikesCb = document.getElementById('post-hide-likes');
-                if (hideLikesCb) hideLikesCb.checked = false;
-
-                buildHomeFeed();
-
-            } catch (err) {
-                showNotification("Failed to publish: " + err.message, "error");
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = "Publish Post";
             }
         }
 
@@ -4017,22 +3812,6 @@ function __flaynityReady(fn) {
             }
         }
 
-        function openCreateBottomSheet() {
-            if (!currentChannelData) {
-                const promptChan = confirm("You need to create a Channel first before uploading content.\n\nWould you like to create a Channel now?");
-                if (promptChan) {
-                    switchTab('you');
-                    openCreateChannelPage();
-                }
-                return;
-            }
-            AppNavigation.pushModal('create-bottom-sheet');
-        }
-
-        function closeCreateBottomSheet() {
-            AppNavigation.pop();
-        }
-
         function openAnalyticsPage() {
             playUI('click');
             calculateChannelAnalytics();
@@ -4318,312 +4097,6 @@ function __flaynityReady(fn) {
                     btn.disabled = false;
                     btn.innerHTML = "Save Changes";
                 }
-            }
-        }
-
-        function openDetailsSheet(item) {
-            const tLoading = document.getElementById('details-thumb-loading');
-            const tImg = document.getElementById('details-thumb-img');
-            const tInput = document.getElementById('details-title-input');
-            const dInput = document.getElementById('details-desc-input');
-            const visibilitySelect = document.getElementById('details-visibility');
-            const commentsSwitch = document.getElementById('details-comments-switch');
-            const likesSwitch = document.getElementById('details-likes-switch');
-            const sheetTitle = document.getElementById('details-sheet-title');
-            const hashtagSelector = document.getElementById('hashtags-selector-wrapper');
-
-            if (tLoading) tLoading.style.display = 'none';
-            if (tImg) tImg.src = item.thumbDataUrl || "";
-            if (tInput) tInput.value = item.title || "";
-            if (dInput) dInput.value = item.description || "";
-            if (visibilitySelect) visibilitySelect.value = item.visibility || "Public";
-            if (commentsSwitch) commentsSwitch.checked = item.allowComments;
-            if (likesSwitch) likesSwitch.checked = item.showLikes;
-
-            const isShort = item.type === 'video-short';
-            if (sheetTitle) sheetTitle.innerText = isShort ? "Upload Short Clip" : "Upload Video";
-            if (hashtagSelector) hashtagSelector.style.display = isShort ? "block" : "none";
-            
-            AppNavigation.pushModal('upload-details-sheet');
-        }
-
-        function closeDetailsSheet() {
-            AppNavigation.pop();
-        }
-
-        function openPostSheet() {
-            currentPostImages = [];
-            renderPostAttachedImagesUI();
-            AppNavigation.pushModal('create-post-sheet');
-        }
-
-        function closePostSheet() {
-            AppNavigation.pop();
-        }
-
-        function openUploadManager() {
-            updateManagerUI();
-            AppNavigation.pushModal('upload-manager-screen');
-        }
-
-        function closeUploadManager() {
-            AppNavigation.pop();
-        }
-
-        function appendHashtag(tag, el) {
-            playUI('click');
-            const title = document.getElementById('details-title-input');
-            if (title) title.value += " " + tag;
-            if (el) el.classList.add('selected');
-        }
-
-        function syncDetailsFormToState() {
-            if (!currentDetailItem) return;
-            const tInput = document.getElementById('details-title-input');
-            const dInput = document.getElementById('details-desc-input');
-            const vSelect = document.getElementById('details-visibility');
-            const cSwitch = document.getElementById('details-comments-switch');
-            const lSwitch = document.getElementById('details-likes-switch');
-
-            currentDetailItem.title = tInput ? (tInput.value.trim() || currentDetailItem.file.name) : currentDetailItem.file.name;
-            currentDetailItem.description = dInput ? dInput.value.trim() : "";
-            currentDetailItem.visibility = vSelect ? vSelect.value : "Public";
-            currentDetailItem.allowComments = cSwitch ? cSwitch.checked : true;
-            currentDetailItem.showLikes = lSwitch ? lSwitch.checked : true;
-        }
-
-        function handleSaveDraftAction() {
-            playUI('click');
-            syncDetailsFormToState();
-            currentDetailItem.status = "draft"; 
-            saveQueueStateToLocalStorage();
-            showNotification("Draft saved successfully!", "success");
-            AppNavigation.pop(); 
-            openUploadManager();
-        }
-
-        function handleDiscardDetailsSheet() {
-            playUI('click');
-            if (confirm("Are you sure you want to discard this upload?")) {
-                AppNavigation.pop(); 
-                const index = uploadQueue.findIndex(i => i.id === currentDetailItem.id);
-                if (index !== -1) {
-                    uploadQueue.splice(index, 1);
-                    saveQueueStateToLocalStorage();
-                    updateManagerUI();
-                }
-            }
-        }
-
-        function handlePublishAction() {
-            playUI('click');
-            syncDetailsFormToState();
-            currentDetailItem.status = "waiting";
-            saveQueueStateToLocalStorage();
-            AppNavigation.pop(); 
-            showNotification("Added to Upload Queue", "success");
-            openUploadManager();
-            triggerNextActiveUpload();
-        }
-
-        let currentManagerTab = "uploading";
-        function switchManagerTab(type) {
-            playUI('click');
-            currentManagerTab = type;
-            const uTab = document.getElementById('man-tab-uploading');
-            const dTab = document.getElementById('man-tab-drafts');
-            const cTab = document.getElementById('man-tab-completed');
-
-            if (uTab) uTab.classList.toggle('active', type === 'uploading');
-            if (dTab) dTab.classList.toggle('active', type === 'drafts');
-            if (cTab) cTab.classList.toggle('active', type === 'completed');
-            updateManagerUI();
-        }
-
-        function updateManagerUI() {
-            const listContainer = document.getElementById('manager-items-list');
-            if (!listContainer) return;
-
-            const activeItems = uploadQueue.filter(i => i.status !== 'completed' && i.status !== 'draft');
-            const draftItems = uploadQueue.filter(i => i.status === 'draft');
-            const completedItems = uploadQueue.filter(i => i.status === 'completed');
-
-            const activeCount = document.getElementById('man-count-active');
-            const draftsCount = document.getElementById('man-count-drafts');
-            if (activeCount) activeCount.innerText = activeItems.length;
-            if (draftsCount) draftsCount.innerText = draftItems.length;
-
-            let renderSet = [];
-            if (currentManagerTab === "uploading") renderSet = activeItems;
-            else if (currentManagerTab === "drafts") renderSet = draftItems;
-            else renderSet = completedItems;
-
-            if (renderSet.length === 0) {
-                listContainer.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:40px 0;">No items found.</p>`;
-                return;
-            }
-
-            listContainer.innerHTML = renderSet.map(item => {
-                const isDraft = item.status === 'draft';
-                const isFailed = item.status === 'failed';
-                const isPaused = item.status === 'paused';
-                const isUploading = item.status === 'uploading';
-                const isProcessing = item.status === 'processing';
-
-                let progressHtml = '';
-                let statusTextHtml = '';
-
-                if (isUploading) {
-                    const speedFormatted = (item.speed / 1024 / 1024).toFixed(1) + " MB/s";
-                    const etaFormatted = isNaN(item.eta) ? "Calculating..." : Math.ceil(item.eta) + "s remaining";
-                    progressHtml = `<div class="queue-progress-container"><div class="queue-progress-fill" style="width: ${item.progress}%"></div></div>`;
-                    statusTextHtml = `<span>Uploading: ${speedFormatted} • ETA: ${etaFormatted}</span>`;
-                } else if (isProcessing) {
-                    progressHtml = `<div class="queue-progress-container"><div class="queue-progress-fill" style="width: ${item.progress}%"></div></div>`;
-                    statusTextHtml = `<span style="color:var(--primary); font-weight:800;">${item.processingMsg || "Processing..."}</span>`;
-                } else if (isFailed) {
-                    statusTextHtml = `<span style="color:#EF4444;">Upload Failed</span>`;
-                } else if (isPaused) {
-                    statusTextHtml = `<span style="color:var(--text-muted);">Paused</span>`;
-                } else if (isDraft) {
-                    statusTextHtml = `<span>Draft Layout Saved</span>`;
-                } else {
-                    statusTextHtml = `<span style="color:var(--success);">Completed</span>`;
-                }
-
-                let actionBtn = "";
-                if (isUploading) {
-                    actionBtn = `<button class="queue-btn" onclick="pauseQueueItem('${item.id}')" title="Pause"><i class="fas fa-pause"></i></button>`;
-                } else if (isPaused || isFailed) {
-                    actionBtn = `<button class="queue-btn" onclick="resumeQueueItem('${item.id}')" title="Resume"><i class="fas fa-play"></i></button>`;
-                } else if (isDraft) {
-                    actionBtn = `<button class="queue-btn" onclick="continueDraftQueueItem('${item.id}')" title="Edit details"><i class="fas fa-edit"></i></button>`;
-                }
-
-                const deleteBtn = `<button class="queue-btn" onclick="deleteQueueItem('${item.id}')" title="Remove"><i class="fas fa-trash"></i></button>`;
-
-                return `
-                    <div class="queue-item-card">
-                        <img class="queue-thumb" src="${item.thumbDataUrl || ''}">
-                        <div class="queue-details">
-                            <h4 class="queue-title">${item.title}</h4>
-                            <div class="queue-status-txt">
-                                ${statusTextHtml}
-                                <span>${item.progress}%</span>
-                            </div>
-                            ${progressHtml}
-                        </div>
-                        <div class="queue-actions-row">
-                            ${actionBtn}
-                            ${deleteBtn}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function pauseQueueItem(id) {
-            playUI('click');
-            const item = uploadQueue.find(i => i.id === id);
-            if (item) {
-                item.status = "paused";
-                if (item.s3UploadRef) {
-                    try { item.s3UploadRef.abort(); } catch(e) {}
-                    item.s3UploadRef = null;
-                }
-                saveQueueStateToLocalStorage();
-                updateManagerUI();
-                triggerNextActiveUpload();
-            }
-        }
-
-        function resumeQueueItem(id) {
-            playUI('click');
-            const item = uploadQueue.find(i => i.id === id);
-            if (!item) return;
-
-            if (!item.file) {
-                const picker = document.getElementById('video-file-input');
-                if (picker) {
-                    picker.dataset.uploadType = item.type;
-                    picker.onchange = function(e) {
-                        const file = e.target.files[0];
-                        if (file) {
-                            item.file = file;
-                            item.status = "waiting";
-                            saveQueueStateToLocalStorage();
-                            updateManagerUI();
-                            triggerNextActiveUpload();
-                        }
-                    };
-                    picker.click();
-                }
-                showNotification("Please select the original file to resume upload", "success");
-                return;
-            }
-
-            item.status = "waiting";
-            saveQueueStateToLocalStorage();
-            updateManagerUI();
-            triggerNextActiveUpload();
-        }
-
-        function continueDraftQueueItem(id) {
-            playUI('click');
-            const item = uploadQueue.find(i => i.id === id);
-            if (item) {
-                currentDetailItem = item;
-                openDetailsSheet(item);
-            }
-        }
-
-        function deleteQueueItem(id) {
-            playUI('click');
-            if (confirm("Are you sure you want to remove this upload entry?")) {
-                const item = uploadQueue.find(i => i.id === id);
-                if (item && item.s3UploadRef) {
-                    try { item.s3UploadRef.abort(); } catch(e) {}
-                }
-                uploadQueue = uploadQueue.filter(i => i.id !== id);
-                saveQueueStateToLocalStorage();
-                updateManagerUI();
-                triggerNextActiveUpload();
-            }
-        }
-
-        function saveQueueStateToLocalStorage() {
-            try {
-                const serializableQueue = uploadQueue.map(item => {
-                    const copy = { ...item };
-                    delete copy.file; 
-                    delete copy.thumbBlob;
-                    delete copy.s3UploadRef;
-                    return copy;
-                });
-                localStorage.setItem('flaynity_upload_queue_v2', JSON.stringify(serializableQueue));
-            } catch (e) {
-                console.warn("Could not save upload queue state to LocalStorage:", e);
-            }
-        }
-
-        function restoreQueueFromLocalStorage() {
-            try {
-                const data = localStorage.getItem('flaynity_upload_queue_v2');
-                if (data) {
-                    const saved = JSON.parse(data);
-                    uploadQueue = saved.map(item => {
-                        item.file = null; 
-                        item.thumbBlob = null;
-                        item.s3UploadRef = null;
-                        if (item.status === 'uploading' || item.status === 'waiting' || item.status === 'processing') {
-                            item.status = 'paused';
-                        }
-                        return item;
-                    });
-                    updateManagerUI();
-                }
-            } catch (e) {
-                console.warn("Could not restore upload queue state:", e);
             }
         }
 
@@ -4988,5 +4461,446 @@ function __flaynityReady(fn) {
         }
 
         function hideUpcomingModal() {
+            AppNavigation.pop();
+        }
+
+        // =========================================
+        // NEW PREMIUM UPLOAD STUDIO FUNCTIONS
+        // =========================================
+
+        let currentUploadFile = null;
+        let currentUploadFrameMeta = null;
+        let shortCameraStream = null;
+        let shortMediaRecorder = null;
+        let shortChunks = [];
+        let uploadSliderStartX = 0;
+        let uploadSliderCurrentX = 0;
+        let currentUploadMode = 'short'; // Default mode
+
+        // Helper to open the new Studio replacing old Create Sheet
+        function openPremiumUploadStudio() {
+            playUI('click');
+            if (!currentChannelData) {
+                const promptChan = confirm("You need to create a Channel first before uploading content.\n\nWould you like to create a Channel now?");
+                if (promptChan) {
+                    switchTab('you');
+                    openCreateChannelPage();
+                }
+                return;
+            }
+            
+            const studio = document.getElementById('premium-upload-studio');
+            if (studio) {
+                studio.style.display = 'block';
+                studio.style.opacity = 0;
+                requestAnimationFrame(() => {
+                    studio.style.transition = 'opacity 0.3s ease';
+                    studio.style.opacity = 1;
+                });
+                
+                setupModeSliderSwipe();
+                switchUploadMode('short');
+            }
+        }
+
+        // Replaces old openCreateBottomSheet for backwards navigation hook compatibility
+        window.openCreateBottomSheet = openPremiumUploadStudio;
+
+        function closePremiumUploadStudio() {
+            playUI('click');
+            const studio = document.getElementById('premium-upload-studio');
+            if (studio) {
+                studio.style.opacity = 0;
+                setTimeout(() => {
+                    studio.style.display = 'none';
+                    stopShortCamera();
+                }, 300);
+            }
+        }
+
+        // Replaces old closeCreateBottomSheet for backwards navigation hook compatibility
+        window.closeCreateBottomSheet = closePremiumUploadStudio;
+
+        function switchUploadMode(mode) {
+            currentUploadMode = mode;
+            const slider = document.getElementById('mode-slider');
+            const items = document.querySelectorAll('.mode-item');
+            
+            let activeIndex = 0;
+            items.forEach((item, index) => {
+                if (item.dataset.mode === mode) {
+                    item.classList.add('active');
+                    activeIndex = index;
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+
+            if (slider) {
+                // Center the selected item automatically
+                slider.style.transform = `translateX(calc(50vw - ${(activeIndex * 105) + 60}px))`;
+            }
+            
+            document.getElementById('upload-video-view').style.display = mode === 'video' ? 'block' : 'none';
+            document.getElementById('upload-short-view').style.display = mode === 'short' ? 'block' : 'none';
+            document.getElementById('upload-post-view').style.display = mode === 'post' ? 'flex' : 'none';
+
+            if (mode === 'short') {
+                startShortCamera();
+            } else {
+                stopShortCamera();
+            }
+        }
+
+        function setupModeSliderSwipe() {
+            const sliderWrap = document.getElementById('upload-mode-slider-wrap');
+            if (!sliderWrap) return;
+
+            sliderWrap.ontouchstart = (e) => { uploadSliderStartX = e.touches[0].clientX; };
+            sliderWrap.ontouchmove = (e) => { uploadSliderCurrentX = e.touches[0].clientX; };
+            sliderWrap.ontouchend = () => {
+                const diff = uploadSliderStartX - uploadSliderCurrentX;
+                if (Math.abs(diff) > 50 && uploadSliderCurrentX !== 0) {
+                    if (diff > 0) { // Swipe Left -> Next Item
+                        if (currentUploadMode === 'video') switchUploadMode('short');
+                        else if (currentUploadMode === 'short') switchUploadMode('post');
+                    } else { // Swipe Right -> Prev Item
+                        if (currentUploadMode === 'post') switchUploadMode('short');
+                        else if (currentUploadMode === 'short') switchUploadMode('video');
+                    }
+                }
+                uploadSliderStartX = 0; uploadSliderCurrentX = 0;
+            };
+
+            document.querySelectorAll('.mode-item').forEach(item => {
+                item.onclick = () => switchUploadMode(item.dataset.mode);
+            });
+        }
+
+        // Camera Logic
+        async function startShortCamera() {
+            const video = document.getElementById('short-camera-preview');
+            if (video && video.srcObject) return; 
+            
+            try {
+                shortCameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
+                if (video) video.srcObject = shortCameraStream;
+            } catch (err) {
+                showNotification("Camera permission required", "error");
+            }
+        }
+
+        function stopShortCamera() {
+            if (shortCameraStream) {
+                shortCameraStream.getTracks().forEach(t => t.stop());
+                shortCameraStream = null;
+            }
+            const video = document.getElementById('short-camera-preview');
+            if (video) video.srcObject = null;
+        }
+
+        function toggleShortCamera() {
+            playUI('click');
+            stopShortCamera();
+            startShortCamera(); // Resets/toggles
+        }
+
+        function initShortRecordButton() {
+            const recBtn = document.getElementById('record-btn-outer');
+            const innerBtn = document.getElementById('record-btn-inner');
+            const doneBtn = document.getElementById('record-done-btn');
+            
+            if (!recBtn || !innerBtn || !doneBtn) return;
+
+            recBtn.onclick = () => {
+                playUI('click');
+                if (shortMediaRecorder && shortMediaRecorder.state === "recording") {
+                    shortMediaRecorder.stop();
+                    innerBtn.style.transform = 'scale(1)';
+                    innerBtn.style.borderRadius = '50%';
+                } else {
+                    if (!shortCameraStream) return;
+                    shortChunks = [];
+                    shortMediaRecorder = new MediaRecorder(shortCameraStream, { mimeType: 'video/webm' });
+                    shortMediaRecorder.ondataavailable = e => { if (e.data.size > 0) shortChunks.push(e.data); };
+                    shortMediaRecorder.onstop = () => {
+                        const blob = new Blob(shortChunks, { type: 'video/webm' });
+                        const file = new File([blob], "short_" + Date.now() + ".webm", { type: "video/webm" });
+                        handlePremiumFileSelected({ target: { files: [file] } }, 'video-short');
+                    };
+                    shortMediaRecorder.start();
+                    innerBtn.style.transform = 'scale(0.5)';
+                    innerBtn.style.borderRadius = '8px';
+                    doneBtn.style.display = 'block';
+                }
+            };
+
+            doneBtn.onclick = () => {
+                if (shortMediaRecorder && shortMediaRecorder.state === "recording") {
+                    shortMediaRecorder.stop();
+                }
+            };
+        }
+
+        // Studio Flow Controller
+        async function handlePremiumFileSelected(e, type) {
+            const file = e.target && e.target.files ? e.target.files[0] : (e.files ? e.files[0] : null);
+            if (!file) return;
+
+            const allowedFormats = ["video/mp4", "video/quicktime", "video/x-matroska", "video/webm"];
+            if (!allowedFormats.includes(file.type)) {
+                showNotification("Invalid format! Supported: MP4, MOV, MKV, WEBM", "error");
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024 * 1024) { 
+                showNotification("File size exceeds 10GB limit!", "error");
+                return;
+            }
+
+            currentUploadFile = file;
+            showNotification("Processing Video...", "success");
+
+            try {
+                // Will gracefully fail to fallback if captureFrameAndDuration is undefined
+                if (typeof captureFrameAndDuration === 'function') {
+                    currentUploadFrameMeta = await captureFrameAndDuration(file);
+                } else {
+                    throw new Error("Missing frame logic");
+                }
+            } catch (err) {
+                currentUploadFrameMeta = { duration: 60, dataUrl: "", blob: null };
+            }
+
+            if (type === 'video-short' && currentUploadFrameMeta.duration > 180) {
+                showNotification("This video exceeds Shorts limit (3 mins).", "error");
+                return;
+            }
+
+            closePremiumUploadStudio(); 
+            
+            if (type === 'video-short') {
+                const vidEl = document.getElementById('short-preview-el');
+                if (vidEl) vidEl.src = URL.createObjectURL(file);
+                AppNavigation.pushPage('short-preview-page');
+            } else {
+                const vidEl = document.getElementById('video-preview-el');
+                if (vidEl) vidEl.src = URL.createObjectURL(file);
+                
+                const timeDisplay = document.getElementById('vp-time-display');
+                if (timeDisplay) timeDisplay.innerText = `00:00 / ${formatDuration(currentUploadFrameMeta.duration)}`;
+                initVisualTimeline(vidEl, 'vp-playhead', 'vp-time-display');
+                
+                AppNavigation.pushPage('video-preview-page');
+            }
+        }
+
+        function handlePremiumImagesSelected(e) {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+            currentUploadFile = files[0]; // Assuming taking the first one for the preview
+            closePremiumUploadStudio();
+            
+            const imgEl = document.getElementById('post-preview-img');
+            if (imgEl) imgEl.src = URL.createObjectURL(currentUploadFile);
+            
+            AppNavigation.pushPage('post-preview-page');
+        }
+
+        function initVisualTimeline(videoEl, playheadId, timeDisplayId) {
+            const playhead = document.getElementById(playheadId);
+            const timeDisplay = document.getElementById(timeDisplayId);
+            if (!videoEl) return;
+
+            videoEl.ontimeupdate = () => {
+                if (videoEl.duration) {
+                    const percentage = (videoEl.currentTime / videoEl.duration) * 100;
+                    if (playhead) playhead.style.left = `${percentage}%`;
+                    if (timeDisplay) timeDisplay.innerText = `${formatDuration(videoEl.currentTime)} / ${formatDuration(videoEl.duration)}`;
+                }
+            };
+        }
+
+        function togglePremiumPreviewPlay(vidId, iconId) {
+            const vid = document.getElementById(vidId);
+            const icon = iconId !== 'none' ? document.getElementById(iconId) : null;
+            if (vid) {
+                if (vid.paused) {
+                    vid.play().catch(()=>{});
+                    if (icon) icon.className = 'fas fa-pause';
+                } else {
+                    vid.pause();
+                    if (icon) icon.className = 'fas fa-play';
+                }
+            }
+        }
+
+        function updatePremiumCharCount(el, countId) {
+            const countEl = document.getElementById(countId);
+            if (countEl) countEl.innerText = `${el.value.length}/${el.maxLength}`;
+        }
+
+        function togglePremiumSchedule(selectId, containerId) {
+            const select = document.getElementById(selectId);
+            const container = document.getElementById(containerId);
+            if (select && container) {
+                container.style.display = select.value === 'Schedule' ? 'block' : 'none';
+            }
+        }
+
+        function formatDuration(seconds) {
+            const min = Math.floor(seconds / 60);
+            const sec = Math.floor(seconds % 60);
+            return `${min < 10 ? '0' : ''}${min}:${sec < 10 ? '0' : ''}${sec}`;
+        }
+
+        function gotoPremiumUploadDetails(type) {
+            playUI('click');
+            AppNavigation.pop(); 
+            
+            if (type === 'video') {
+                const thumb = document.getElementById('vd-thumb');
+                if (thumb && currentUploadFrameMeta) thumb.src = currentUploadFrameMeta.dataUrl;
+                document.getElementById('vd-title').value = currentUploadFile.name.split('.')[0];
+                document.getElementById('vd-desc').value = "";
+                AppNavigation.pushPage('video-details-page');
+            } else if (type === 'short') {
+                const thumb = document.getElementById('sd-thumb');
+                if (thumb && currentUploadFrameMeta) thumb.src = currentUploadFrameMeta.dataUrl;
+                document.getElementById('sd-title').value = currentUploadFile.name.split('.')[0];
+                document.getElementById('sd-desc').value = "";
+                AppNavigation.pushPage('short-details-page');
+            } else if (type === 'post') {
+                document.getElementById('pd-title').value = "";
+                AppNavigation.pushPage('post-details-page');
+            }
+        }
+
+        async function publishPremiumVideoOrShort(modeType) {
+            playUI('click');
+            const isShort = modeType === 'video-short';
+            const prefix = isShort ? 'sd' : 'vd';
+            
+            const title = document.getElementById(`${prefix}-title`).value.trim();
+            const desc = document.getElementById(`${prefix}-desc`).value.trim();
+            const visibility = document.getElementById(`${prefix}-visibility`).value;
+            const allowComments = document.getElementById(`${prefix}-allow-comments`).checked;
+            const hideLikes = document.getElementById(`${prefix}-hide-likes`).checked;
+            const scheduleDate = document.getElementById(`${prefix}-schedule-date`).value;
+            
+            if (!title || !desc) {
+                showNotification("Title and description are required!", "error");
+                return;
+            }
+
+            const uniqueId = "st_" + Date.now() + "_" + Math.floor(Math.random()*1000);
+            const fileKey = `uploads/${uniqueId}/${currentUploadFile.name.replace(/\s+/g, '_')}`;
+            
+            const queueItem = {
+                id: uniqueId,
+                file: currentUploadFile,
+                key: fileKey,
+                type: modeType,
+                title: title,
+                description: desc,
+                visibility: visibility,
+                allowComments: allowComments,
+                showLikes: !hideLikes,
+                status: "waiting", 
+                progress: 0,
+                speed: 0,
+                eta: 0,
+                duration: currentUploadFrameMeta.duration,
+                thumbDataUrl: currentUploadFrameMeta.dataUrl,
+                thumbBlob: currentUploadFrameMeta.blob, 
+                thumbKey: `uploads/${uniqueId}/thumbnail.jpg`,
+                thumbUrl: "",
+                videoUrl: "",
+                s3UploadRef: null,
+                retryCount: 0,
+                createdAt: Date.now(),
+                scheduledTime: visibility === 'Schedule' && scheduleDate ? new Date(scheduleDate).getTime() : 0
+            };
+
+            uploadQueue.push(queueItem);
+            saveQueueStateToLocalStorage(); 
+            
+            AppNavigation.pop(); 
+            showNotification("Added to Upload Queue", "success");
+            openUploadManager();
+            triggerNextActiveUpload();
+        }
+
+        async function publishPremiumPostAction() {
+            playUI('click');
+            const title = document.getElementById('pd-title').value.trim();
+            const visibility = document.getElementById('pd-visibility').value;
+            const hideLikes = document.getElementById('pd-hide-likes').checked;
+            const scheduleDate = document.getElementById('pd-schedule-date').value;
+            
+            if (!title) {
+                showNotification("Title/Caption is required!", "error");
+                return;
+            }
+            
+            showNotification("Publishing post...", "success");
+            const pubBtn = document.getElementById('premium-post-publish-btn');
+            if (pubBtn) pubBtn.disabled = true;
+
+            try {
+                const user = auth.currentUser;
+                const userSnap = await db.ref(`users/${user.uid}`).once('value');
+                const uData = userSnap.val() || {};
+                const username = uData.username || user.email.split('@')[0];
+                const avatar = currentChannelData?.avatarUrl || user.photoURL || "";
+
+                const imgUrl = await uploadImageToR2(currentUploadFile, "posts");
+                
+                const postPayload = {
+                    id: "post_" + Date.now(),
+                    userId: user.uid,
+                    channelId: user.uid,
+                    title: title.split('\n')[0].substring(0, 50) || "Community Post",
+                    imageUrl: imgUrl || "",
+                    caption: title,
+                    uploadTime: Date.now(),
+                    visibility: visibility,
+                    status: (visibility === 'Schedule' && scheduleDate) ? "scheduled" : "published",
+                    isShort: false,
+                    isPost: true,
+                    username: username,
+                    avatar: avatar,
+                    images: [imgUrl],
+                    hideLikes: hideLikes,
+                    createdAt: Date.now(),
+                    reaction: {},
+                    totalLikes: 0,
+                    totalReaction: 0,
+                    totalComments: 0,
+                    scheduledTime: visibility === 'Schedule' && scheduleDate ? new Date(scheduleDate).getTime() : 0
+                };
+
+                await db.ref(`admin_panel/posts/${postPayload.id}`).set(postPayload);
+                
+                showNotification("Community Post published successfully!", "success");
+                AppNavigation.pop(); 
+                buildHomeFeed();
+            } catch (err) {
+                showNotification("Failed to publish: " + err.message, "error");
+            } finally {
+                if (pubBtn) pubBtn.disabled = false;
+            }
+        }
+
+        // Initialize record button after DOM loads
+        __flaynityReady(function() {
+            initShortRecordButton();
+        });
+
+        function openUploadManager() {
+            updateManagerUI();
+            AppNavigation.pushModal('upload-manager-screen');
+        }
+
+        function closeUploadManager() {
             AppNavigation.pop();
         }

@@ -749,9 +749,9 @@ function __flaynityReady(fn) {
         // CLOUDFLARE R2 S3 SDK CONFIGURATIONS
         // =========================================================
         const R2_CONFIG = {
-            accessKeyId: "76b902c42a3697ad5011ef1c72438306",
-            secretAccessKey: "33902a8ed31914daf36aa6d6f7a715d93ab1cad856cb7eb286edb05e0fe87763",
-            endpoint: "https://b3741135bd1f3e96b6744f11e6a0600.r2.cloudflarestorage.com",
+            accessKeyId: "c4d26ef58f7d0818695c8710af083fb6",
+            secretAccessKey: "97bc62a7b0c961001611489e28f9dbd41d2b30cda3e8348bb32d12a7c1d319a8",
+            endpoint: "https://b3741135bd1f3e96b6744f11e6a06600.r2.cloudflarestorage.com",
             s3ForcePathStyle: true,
             signatureVersion: 'v4',
             region: 'auto',
@@ -764,7 +764,7 @@ function __flaynityReady(fn) {
         
         AWS.config.update(R2_CONFIG);
         const s3 = new AWS.S3({ params: { Bucket: 'flaynity-storage' } });
-        const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-bcff9c709dbe44d7a50c78e9a0f9bd59.r2.dev";
+        const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev";
 
         // =========================================================
         // S3 R2 OBJECT STORAGE MEDIA UPLOAD MODULE

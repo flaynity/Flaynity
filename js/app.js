@@ -1,113 +1,108 @@
+/* Flaynity Modular Loader — serial page loading + offline cache */
+(async function () {
+    const pageFiles = [["home","pages/home.html"],["shorts","pages/shorts.html"],["upload","pages/upload.html"],["discover","pages/discover.html"],["you","pages/you.html"]];
+    const CACHE_PREFIX = "flaynity-page-cache-v1:";
 
-/* =========================================================
-   FLAYNITY MODULAR BOOTSTRAP
-   Serial page loading: home -> shorts -> upload -> discover -> you
-   ========================================================= */
-(function () {
-    'use strict';
+    function addPageStyle(doc, name) {
+        const style = doc.querySelector("style");
+        if (!style) return;
+        const css = document.createElement("style");
+        css.setAttribute("data-flaynity-page-css", name);
+        css.textContent = style.textContent;
+        document.head.appendChild(css);
+    }
 
-    const FLAYNITY_PAGE_ORDER = [
-        ['home', 'pages/home.html'],
-        ['shorts', 'pages/shorts.html'],
-        ['upload', 'pages/upload.html'],
-        ['discover', 'pages/discover.html'],
-        ['you', 'pages/you.html']
-    ];
-
-    const cacheName = 'flaynity-pages-v1';
-
-    async function fetchPage(url) {
+    async function getPageSource(name, url) {
         try {
-            const response = await fetch(url, { cache: 'default' });
-            if (!response.ok) throw new Error(response.status + ' ' + response.statusText);
+            const response = await fetch(url, { cache: "no-store" });
+            if (!response.ok) throw new Error("HTTP " + response.status);
             const text = await response.text();
-            try {
-                const cache = await caches.open(cacheName);
-                await cache.put(url, new Response(text, {headers:{'Content-Type':'text/html;charset=UTF-8'}}));
-            } catch (_) {}
+            try { localStorage.setItem(CACHE_PREFIX + name, text); } catch (e) {}
             return text;
         } catch (error) {
             try {
-                const cache = await caches.open(cacheName);
-                const cached = await cache.match(url);
-                if (cached) return await cached.text();
-            } catch (_) {}
-            throw error;
+                const cached = localStorage.getItem(CACHE_PREFIX + name);
+                if (cached) return cached;
+            } catch (e) {}
+            throw new Error("Page unavailable offline: " + url);
         }
     }
 
-    function bodyOf(html) {
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        return doc.body ? doc.body.innerHTML : html;
+    async function loadPage(name, url) {
+        const text = await getPageSource(name, url);
+        const doc = new DOMParser().parseFromString(text, "text/html");
+        addPageStyle(doc, name);
+        return Array.from(doc.body.children).map(el => el.cloneNode(true));
     }
 
-    async function boot() {
-        const root = document.getElementById('app');
-        if (!root) return;
-
-        const pages = {};
-        for (const [name, url] of FLAYNITY_PAGE_ORDER) {
-            try {
-                pages[name] = bodyOf(await fetchPage(url));
-            } catch (e) {
-                console.warn('[Flaynity] Cannot load ' + url, e);
-                pages[name] = '';
-            }
-        }
-
-        root.innerHTML = pages.home || '';
-
-        const appScreen = document.getElementById('app-screen');
-        if (appScreen) {
-            const bottomNav = appScreen.querySelector('.bottom-nav');
-            const insertBefore = bottomNav || null;
-
-            const add = (html) => {
-                if (!html) return;
-                const wrapper = document.createElement('div');
-                wrapper.setAttribute('data-flaynity-modular-fragment','true');
-                wrapper.innerHTML = html;
-                while (wrapper.firstChild) {
-                    const node = wrapper.firstChild;
-                    if (insertBefore) appScreen.insertBefore(node, insertBefore);
-                    else appScreen.appendChild(node);
-                }
-            };
-
-            add(pages.shorts);
-            add(pages.upload);
-            add(pages.discover);
-            add(pages.you);
-        }
-
-        document.dispatchEvent(new Event('flaynity-pages-ready'));
-        window.dispatchEvent(new Event('flaynity-pages-ready'));
+    function showOfflineCachedApp() {
+        if (navigator.onLine) return;
+        let cachedSession = null;
+        try { cachedSession = localStorage.getItem('flaynity_user_session_cache'); } catch (e) {}
+        if (!cachedSession) return;
+        const authScr = document.getElementById('auth-screen');
+        const appScr = document.getElementById('app-screen');
+        if (authScr) authScr.style.display = 'none';
+        if (appScr) appScr.style.display = 'block';
+        document.body.classList.remove('auth-active');
+        window.__flaynityOfflineSessionActive = true;
+        try { firebase.database().goOffline(); } catch (e) {}
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', boot, {once:true});
-    } else {
-        boot();
+    try {
+        const app = document.getElementById("app");
+        if (!app) throw new Error("#app not found");
+        const loaded = [];
+        for (const [name, url] of pageFiles) {
+            loaded.push([name, await loadPage(name, url)]);
+        }
+
+        const appScreen = document.createElement("div");
+        appScreen.id = "app-screen";
+        const startupIds = new Set(["startupSound","splash-screen","toast-container","network-spinner-overlay","auth-screen"]);
+
+        for (const node of loaded[0][1]) {
+            if (node.id && startupIds.has(node.id)) app.appendChild(node);
+            else appScreen.appendChild(node);
+        }
+        for (let i = 1; i < loaded.length; i++) {
+            for (const node of loaded[i][1]) appScreen.appendChild(node);
+        }
+        app.appendChild(appScreen);
+        document.querySelectorAll(".tab-content").forEach(el => el.classList.toggle("active", el.id === "home-tab"));
+        const homeTab = document.getElementById("home-tab");
+        if (homeTab) homeTab.classList.add("active");
+
+        showOfflineCachedApp();
+        window.dispatchEvent(new Event('flaynity-dom-ready'));
+    } catch (e) {
+        console.error("Flaynity page loader error:", e);
+        const app = document.getElementById("app");
+        if (app) app.innerHTML = '<div style="padding:40px;text-align:center;font-family:sans-serif">Unable to load Flaynity. Please reconnect once to prepare offline mode.</div>';
     }
 })();
 
+function __flaynityReady(fn) {
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", fn, { once: true });
+    } else {
+        fn();
+    }
+}
 
-
-        (function() {
+(function() {
             try {
                 let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
                 document.documentElement.setAttribute('data-theme', pref);
             } catch (e) {}
         })();
-    
 
-
-        (function() {
+(function() {
             try {
                 let cachedSession = localStorage.getItem('flaynity_user_session_cache');
                 if (cachedSession) {
                     let data = JSON.parse(cachedSession);
-                    document.addEventListener("DOMContentLoaded", function() {
+                    __flaynityReady(function() {
                         let fullname = document.getElementById('you-fullname-txt');
                         let email = document.getElementById('you-email-txt');
                         let avatarLarge = document.getElementById('you-avatar-large');
@@ -125,10 +120,8 @@
                 }
             } catch (e) {}
         })();
-    
 
-
-        // =========================================================
+// =========================================================
         // YOUTUBE-STYLE ANIMATED SKELETON GENERATORS
         // =========================================================
         function getHomeSkeletonHTML() {
@@ -300,7 +293,7 @@
             }
         }
 
-        document.addEventListener("DOMContentLoaded", function() {
+        __flaynityReady(function() {
             applyTheme();
             
             try {
@@ -756,9 +749,9 @@
         // CLOUDFLARE R2 S3 SDK CONFIGURATIONS
         // =========================================================
         const R2_CONFIG = {
-            accessKeyId: "76b902c42a3697ad5011ef1c72438306",
-            secretAccessKey: "33902a8ed31914daf36aa6d6f7a715d93ab1cad856cb7eb286edb05e0fe87763",
-            endpoint: "https://b3741135bd1f3e96b6744f11e6a0600.r2.cloudflarestorage.com",
+            accessKeyId: "c4d26ef58f7d0818695c8710af083fb6",
+            secretAccessKey: "97bc62a7b0c961001611489e28f9dbd41d2b30cda3e8348bb32d12a7c1d319a8",
+            endpoint: "https://b3741135bd1f3e96b6744f11e6a06600.r2.cloudflarestorage.com",
             s3ForcePathStyle: true,
             signatureVersion: 'v4',
             region: 'auto',
@@ -771,7 +764,7 @@
         
         AWS.config.update(R2_CONFIG);
         const s3 = new AWS.S3({ params: { Bucket: 'flaynity-storage' } });
-        const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-bcff9c709dbe44d7a50c78e9a0f9bd59.r2.dev";
+        const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev";
 
         // =========================================================
         // S3 R2 OBJECT STORAGE MEDIA UPLOAD MODULE
@@ -928,6 +921,15 @@
                         adjustHeaderForActiveTab(activeTabId);
                     }
                 } else {
+                    // Offline cached-session fallback: do not force the login screen when the user has a saved session.
+                    if (!navigator.onLine && window.__flaynityOfflineSessionActive) {
+                        document.body.classList.remove('auth-active');
+                        const cachedAppScreen = document.getElementById('app-screen');
+                        const cachedAuthScreen = document.getElementById('auth-screen');
+                        if (cachedAppScreen) cachedAppScreen.style.display = 'block';
+                        if (cachedAuthScreen) cachedAuthScreen.style.display = 'none';
+                        return;
+                    }
                     // cleanupUserSessionData already resets _feedListenersAttached
                     cleanupUserSessionData();
                     document.body.classList.add('auth-active');
@@ -4988,4 +4990,3 @@
         function hideUpcomingModal() {
             AppNavigation.pop();
         }
-    

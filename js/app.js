@@ -1,55 +1,97 @@
-/* Flaynity modular runtime loader — loads separated HTML/CSS before the original app code runs. */
+
+/* =========================================================
+   FLAYNITY MODULAR BOOTSTRAP
+   Serial page loading: home -> shorts -> upload -> discover -> you
+   ========================================================= */
 (function () {
     'use strict';
 
-    var appRoot = document.getElementById('app');
-    if (!appRoot) {
-        throw new Error('Flaynity: #app root container was not found.');
-    }
-
-    var cssFiles = [
-        'css/home.css',
-        'css/shorts.css',
-        'css/create-content.css',
-        'css/discover.css',
-        'css/you.css'
+    const FLAYNITY_PAGE_ORDER = [
+        ['home', 'pages/home.html'],
+        ['shorts', 'pages/shorts.html'],
+        ['upload', 'pages/upload.html'],
+        ['discover', 'pages/discover.html'],
+        ['you', 'pages/you.html']
     ];
 
-    cssFiles.forEach(function (href) {
-        if (!document.querySelector('link[data-flaynity-css="' + href + '"]')) {
-            var link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = href;
-            link.setAttribute('data-flaynity-css', href);
-            document.head.appendChild(link);
-        }
-    });
+    const cacheName = 'flaynity-pages-v1';
 
-    var pageFiles = [
-        'pages/home.html',
-        'pages/shorts.html',
-        'pages/create-content.html',
-        'pages/discover.html',
-        'pages/you.html'
-    ];
-
-    function loadFragmentSync(url) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', url, false);
-        xhr.send(null);
-        if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 0) {
-            return xhr.responseText || '';
+    async function fetchPage(url) {
+        try {
+            const response = await fetch(url, { cache: 'default' });
+            if (!response.ok) throw new Error(response.status + ' ' + response.statusText);
+            const text = await response.text();
+            try {
+                const cache = await caches.open(cacheName);
+                await cache.put(url, new Response(text, {headers:{'Content-Type':'text/html;charset=UTF-8'}}));
+            } catch (_) {}
+            return text;
+        } catch (error) {
+            try {
+                const cache = await caches.open(cacheName);
+                const cached = await cache.match(url);
+                if (cached) return await cached.text();
+            } catch (_) {}
+            throw error;
         }
-        throw new Error('Flaynity: failed to load ' + url + ' (HTTP ' + xhr.status + ').');
     }
 
-    var html = '';
-    pageFiles.forEach(function (file) {
-        html += loadFragmentSync(file) + '\n';
-    });
-    appRoot.innerHTML = html;
-    window.__FLAYNITY_MODULAR_LOADER_READY__ = true;
-}());
+    function bodyOf(html) {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        return doc.body ? doc.body.innerHTML : html;
+    }
+
+    async function boot() {
+        const root = document.getElementById('app');
+        if (!root) return;
+
+        const pages = {};
+        for (const [name, url] of FLAYNITY_PAGE_ORDER) {
+            try {
+                pages[name] = bodyOf(await fetchPage(url));
+            } catch (e) {
+                console.warn('[Flaynity] Cannot load ' + url, e);
+                pages[name] = '';
+            }
+        }
+
+        root.innerHTML = pages.home || '';
+
+        const appScreen = document.getElementById('app-screen');
+        if (appScreen) {
+            const bottomNav = appScreen.querySelector('.bottom-nav');
+            const insertBefore = bottomNav || null;
+
+            const add = (html) => {
+                if (!html) return;
+                const wrapper = document.createElement('div');
+                wrapper.setAttribute('data-flaynity-modular-fragment','true');
+                wrapper.innerHTML = html;
+                while (wrapper.firstChild) {
+                    const node = wrapper.firstChild;
+                    if (insertBefore) appScreen.insertBefore(node, insertBefore);
+                    else appScreen.appendChild(node);
+                }
+            };
+
+            add(pages.shorts);
+            add(pages.upload);
+            add(pages.discover);
+            add(pages.you);
+        }
+
+        document.dispatchEvent(new Event('flaynity-pages-ready'));
+        window.dispatchEvent(new Event('flaynity-pages-ready'));
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot, {once:true});
+    } else {
+        boot();
+    }
+})();
+
+
 
         (function() {
             try {
@@ -58,6 +100,7 @@
             } catch (e) {}
         })();
     
+
 
         (function() {
             try {
@@ -83,6 +126,7 @@
             } catch (e) {}
         })();
     
+
 
         // =========================================================
         // YOUTUBE-STYLE ANIMATED SKELETON GENERATORS
@@ -712,78 +756,22 @@
         // CLOUDFLARE R2 S3 SDK CONFIGURATIONS
         // =========================================================
         const R2_CONFIG = {
-            accessKeyId: "c4d26ef58f7d0818695c8710af083fb6",
-            secretAccessKey: "97bc62a7b0c961001611489e28f9dbd41d2b30cda3e8348bb32d12a7c1d319a8",
-            endpoint: "https://b3741135bd1f3e96b6744f11e6a06600.r2.cloudflarestorage.com",
+            accessKeyId: "76b902c42a3697ad5011ef1c72438306",
+            secretAccessKey: "33902a8ed31914daf36aa6d6f7a715d93ab1cad856cb7eb286edb05e0fe87763",
+            endpoint: "https://b3741135bd1f3e96b6744f11e6a0600.r2.cloudflarestorage.com",
             s3ForcePathStyle: true,
             signatureVersion: 'v4',
             region: 'auto',
-            maxRetries: 8,
+            maxRetries: 5,
             httpOptions: {
-                timeout: 900000,
-                connectTimeout: 60000
+                timeout: 300000, // 5 minute timeout per chunk
+                connectTimeout: 30000
             }
         };
-
+        
         AWS.config.update(R2_CONFIG);
-        const s3 = new AWS.S3({
-            params: { Bucket: 'flaynity-storage' },
-            maxRetries: 8,
-            httpOptions: { timeout: 900000, connectTimeout: 60000 }
-        });
-        const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev";
-
-        // =========================================================
-        // ADAPTIVE R2 UPLOAD ENGINE
-        // Selects multipart size/concurrency from the user's network.
-        // Falls back safely when Network Information API is unavailable.
-        // =========================================================
-        function getAdaptiveUploadOptions(fileSize) {
-            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-            const downlinkMbps = connection && Number(connection.downlink) > 0 ? Number(connection.downlink) : 0;
-            const effectiveType = connection && connection.effectiveType ? connection.effectiveType : '';
-
-            let queueSize = 2;
-            let partSize = 8 * 1024 * 1024;
-
-            if (downlinkMbps >= 50 || effectiveType === 'wifi') {
-                queueSize = 4;
-                partSize = 16 * 1024 * 1024;
-            } else if (downlinkMbps >= 15 || effectiveType === '4g') {
-                queueSize = 3;
-                partSize = 12 * 1024 * 1024;
-            } else if (downlinkMbps >= 5) {
-                queueSize = 2;
-                partSize = 8 * 1024 * 1024;
-            } else if (downlinkMbps > 0 || effectiveType === '3g') {
-                queueSize = 1;
-                partSize = 5 * 1024 * 1024;
-            }
-
-            // Keep multipart count safely below S3/R2 limits for large files.
-            const maxParts = 9000;
-            const requiredPartSize = Math.ceil(fileSize / maxParts / (1024 * 1024)) * 1024 * 1024;
-            partSize = Math.max(partSize, 5 * 1024 * 1024, requiredPartSize);
-
-            return { partSize, queueSize };
-        }
-
-        function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
-
-        async function retryAsync(fn, attempts = 5, label = 'operation') {
-            let lastError;
-            for (let attempt = 1; attempt <= attempts; attempt++) {
-                try { return await fn(); }
-                catch (err) {
-                    lastError = err;
-                    if (attempt >= attempts) break;
-                    const delay = Math.min(30000, 1000 * Math.pow(2, attempt - 1));
-                    console.warn(`[R2] ${label} failed (${attempt}/${attempts}). Retrying in ${delay}ms`, err);
-                    await sleep(delay);
-                }
-            }
-            throw lastError;
-        }
+        const s3 = new AWS.S3({ params: { Bucket: 'flaynity-storage' } });
+        const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-bcff9c709dbe44d7a50c78e9a0f9bd59.r2.dev";
 
         // =========================================================
         // S3 R2 OBJECT STORAGE MEDIA UPLOAD MODULE
@@ -1154,58 +1142,47 @@
             }
 
             item.status = "uploading";
-            item.progress = Math.max(0, Number(item.progress) || 0);
-            item.processingMsg = "Uploading to Cloudflare R2...";
+            item.progress = item.progress || 0;
             updateManagerUI();
 
             const startTime = Date.now();
-            const uploadOptions = getAdaptiveUploadOptions(item.file ? item.file.size : 0);
-            item.uploadPartSize = uploadOptions.partSize;
-            item.uploadQueueSize = uploadOptions.queueSize;
-            item.retryCount = Number(item.retryCount) || 0;
 
             try {
-                if (!item.file) throw new Error("Original video file is no longer available. Please select the video again.");
-
                 const params = {
                     Key: item.key,
                     Body: item.file,
-                    ContentType: item.file.type || 'video/mp4',
-                    CacheControl: 'public, max-age=31536000, immutable'
+                    ContentType: item.file.type || 'video/mp4'
                 };
+                
+                // 5MB optimized multipart chunk size
+                const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
 
-                console.log('[R2] Upload options:', uploadOptions);
-                const s3Upload = s3.upload(params, uploadOptions);
+                const s3Upload = s3.upload(params, uploadOpts);
                 item.s3UploadRef = s3Upload;
 
                 s3Upload.on('httpUploadProgress', (evt) => {
-                    if (item.status !== 'uploading') return;
-                    const total = Number(evt.total) || item.file.size || 0;
-                    const loaded = Number(evt.loaded) || 0;
-                    item.progress = total > 0 ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
+                    if (item.status !== 'uploading') return; 
+                    const pct = Math.round((evt.loaded / evt.total) * 100);
+                    item.progress = pct;
 
-                    const elapsed = Math.max(0.001, (Date.now() - startTime) / 1000);
-                    item.speed = loaded / elapsed;
-                    item.eta = item.speed > 0 ? Math.max(0, (total - loaded) / item.speed) : 0;
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    if (elapsed > 0) {
+                        item.speed = evt.loaded / elapsed; 
+                        item.eta = (evt.total - evt.loaded) / item.speed;
+                    }
                     updateManagerUI();
                 });
 
-                await retryAsync(() => s3Upload.promise(), 3, 'video upload');
-
-                // R2 object upload is complete. Never turn this successful upload into
-                // a false "failed" state because thumbnail/Firebase publishing has a hiccup.
-                item.progress = 100;
+                await s3Upload.promise();
+                
                 item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
                 item.status = "processing";
-                item.processingMsg = "Upload complete. Publishing...";
                 item.retryCount = 0;
                 updateManagerUI();
-                saveQueueStateToLocalStorage();
 
                 await runPostUploadProcessingSequence(item);
 
             } catch (err) {
-                console.error("R2 upload error:", err);
                 if (item.status === 'paused') {
                     console.log("Upload paused safely.");
                 } else if (!navigator.onLine) {
@@ -1213,23 +1190,20 @@
                     updateManagerUI();
                     showNotification("Connection lost. Upload paused.", "error");
                 } else {
+                    console.error("Upload error: ", err);
                     item.retryCount = (item.retryCount || 0) + 1;
+                    
                     if (item.retryCount <= 5) {
                         item.status = "waiting";
-                        item.processingMsg = `Network issue. Retrying upload (${item.retryCount}/5)...`;
                         updateManagerUI();
-                        saveQueueStateToLocalStorage();
-                        showNotification(`Network issue. Retrying (${item.retryCount}/5)...`, "error");
+                        showNotification(`Network hiccup. Retrying (${item.retryCount}/5)...`, "error");
                     } else {
                         item.status = "failed";
-                        item.processingMsg = "Upload failed. Please retry.";
                         updateManagerUI();
-                        saveQueueStateToLocalStorage();
-                        showNotification(`Upload failed: ${err && err.message ? err.message : 'Unknown R2 error'}`, "error");
+                        showNotification(`Upload failed: ${err.message}`, "error");
                     }
                 }
             } finally {
-                item.s3UploadRef = null;
                 activeUploadsCount = Math.max(0, activeUploadsCount - 1);
                 triggerNextActiveUpload();
             }
@@ -1237,8 +1211,7 @@
 
         async function runPostUploadProcessingSequence(item) {
             item.status = "processing";
-            item.progress = 100;
-            item.processingMsg = "Publishing Feed...";
+            item.progress = 0;
             updateManagerUI();
 
             try {
@@ -1247,52 +1220,30 @@
                     try { finalThumbBlob = dataURLtoBlob(item.thumbDataUrl); } catch (e) {}
                 }
 
-                // Thumbnail failure must NOT invalidate a successfully uploaded video.
                 if (finalThumbBlob && s3) {
-                    try {
-                        const thumbParams = {
-                            Body: finalThumbBlob,
-                            Key: item.thumbKey,
-                            ContentType: "image/jpeg",
-                            CacheControl: 'public, max-age=31536000, immutable'
-                        };
-                        await retryAsync(() => s3.putObject(thumbParams).promise(), 4, 'thumbnail upload');
-                        item.thumbUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
-                    } catch (thumbErr) {
-                        console.warn('[R2] Thumbnail upload failed; keeping video upload successful:', thumbErr);
-                        item.thumbUrl = item.thumbDataUrl || "";
-                    }
+                    const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg" };
+                    await s3.putObject(thumbParams).promise();
+                    item.thumbUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
                 } else {
-                    item.thumbUrl = item.thumbDataUrl || "";
+                    item.thumbUrl = item.thumbDataUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
                 }
 
+                item.processingMsg = "Publishing Feed...";
                 item.progress = 100;
-                item.processingMsg = "Saving video information...";
                 updateManagerUI();
 
-                // Firebase metadata is retried independently. A successful R2 upload
-                // remains recoverable instead of being incorrectly shown as failed.
-                await retryAsync(() => pushVideoMetadataToDatabase(item), 5, 'Firebase metadata publish');
+                // ⚡ INSTANT PUBLISH ENGINE ⚡
+                await pushVideoMetadataToDatabase(item);
 
                 item.status = "completed";
-                item.progress = 100;
-                item.processingMsg = "Published";
-                item.retryCount = 0;
                 updateManagerUI();
                 saveQueueStateToLocalStorage();
-                showNotification(`"${item.title}" is published successfully!`, "success");
+                showNotification(`"${item.title}" is published instantly!`, "success");
 
             } catch (err) {
-                // R2 upload already succeeded. Keep the item recoverable and retry metadata
-                // later instead of reporting a false video-upload failure at 100%.
-                item.status = "processing";
-                item.progress = 100;
-                item.processingMsg = "Uploaded. Waiting to finish publishing...";
-                item.publishRetryCount = (item.publishRetryCount || 0) + 1;
+                item.status = "failed";
                 updateManagerUI();
-                saveQueueStateToLocalStorage();
-                console.error("Post-upload publishing error:", err);
-                showNotification("Video uploaded. Publishing will retry automatically.", "error");
+                showNotification("Post-processing error: " + err.message, "error");
             }
         }
 
@@ -4662,11 +4613,8 @@
                         item.file = null; 
                         item.thumbBlob = null;
                         item.s3UploadRef = null;
-                        if (item.status === 'uploading' || item.status === 'waiting') {
+                        if (item.status === 'uploading' || item.status === 'waiting' || item.status === 'processing') {
                             item.status = 'paused';
-                        }
-                        if (item.status === 'processing' && item.videoUrl) {
-                            item.status = 'processing';
                         }
                         return item;
                     });

@@ -127,7 +127,6 @@ function __flaynityReady(fn) {
         function getHomeSkeletonHTML() {
             return `
                 <div style="display: flex; flex-direction: column; gap: 20px; margin-top: 10px;">
-                    <!-- Long Video Card Skeleton -->
                     <div style="display: flex; flex-direction: column; gap: 12px;">
                         <div class="skel-box" style="width: 100%; aspect-ratio: 16/9; border-radius: 16px;"></div>
                         <div style="display: flex; gap: 12px; align-items: flex-start; padding: 0 4px;">
@@ -135,48 +134,6 @@ function __flaynityReady(fn) {
                             <div style="display: flex; flex-direction: column; gap: 8px; flex: 1;">
                                 <div class="skel-box" style="width: 85%; height: 16px; border-radius: 4px;"></div>
                                 <div class="skel-box" style="width: 50%; height: 12px; border-radius: 4px;"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 2-Column Shorts Section Skeleton -->
-                    <div style="margin-top: 8px;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                            <div class="skel-box" style="width: 20px; height: 20px; border-radius: 4px;"></div>
-                            <div class="skel-box" style="width: 80px; height: 18px; border-radius: 4px;"></div>
-                        </div>
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
-                            <div style="display: flex; flex-direction: column; gap: 8px;">
-                                <div class="skel-box" style="width: 100%; aspect-ratio: 2/3; border-radius: 12px;"></div>
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                    <div class="skel-box" style="width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;"></div>
-                                    <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
-                                        <div class="skel-box" style="width: 90%; height: 12px; border-radius: 3px;"></div>
-                                        <div class="skel-box" style="width: 50%; height: 10px; border-radius: 3px;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 8px;">
-                                <div class="skel-box" style="width: 100%; aspect-ratio: 2/3; border-radius: 12px;"></div>
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                    <div class="skel-box" style="width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;"></div>
-                                    <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
-                                        <div class="skel-box" style="width: 90%; height: 12px; border-radius: 3px;"></div>
-                                        <div class="skel-box" style="width: 50%; height: 10px; border-radius: 3px;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Another Long Video Card Skeleton -->
-                    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
-                        <div class="skel-box" style="width: 100%; aspect-ratio: 16/9; border-radius: 16px;"></div>
-                        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 0 4px;">
-                            <div class="skel-box" style="width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;"></div>
-                            <div style="display: flex; flex-direction: column; gap: 8px; flex: 1;">
-                                <div class="skel-box" style="width: 75%; height: 16px; border-radius: 4px;"></div>
-                                <div class="skel-box" style="width: 45%; height: 12px; border-radius: 4px;"></div>
                             </div>
                         </div>
                     </div>
@@ -188,20 +145,6 @@ function __flaynityReady(fn) {
             return `
                 <div style="height: 100%; width: 100%; position: relative; background: #000; overflow: hidden;">
                     <div class="skel-box" style="width: 100%; height: 100%; border-radius: 0; opacity: 0.15;"></div>
-                    <div style="position: absolute; right: 16px; bottom: 80px; display: flex; flex-direction: column; gap: 20px; align-items: center;">
-                        <div class="skel-box" style="width: 44px; height: 44px; border-radius: 50%;"></div>
-                        <div class="skel-box" style="width: 44px; height: 44px; border-radius: 50%;"></div>
-                        <div class="skel-box" style="width: 44px; height: 44px; border-radius: 50%;"></div>
-                        <div class="skel-box" style="width: 40px; height: 40px; border-radius: 50%;"></div>
-                    </div>
-                    <div style="position: absolute; bottom: 60px; left: 16px; right: 80px; display: flex; flex-direction: column; gap: 10px;">
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <div class="skel-box" style="width: 36px; height: 36px; border-radius: 50%;"></div>
-                            <div class="skel-box" style="width: 110px; height: 14px; border-radius: 4px;"></div>
-                        </div>
-                        <div class="skel-box" style="width: 80%; height: 16px; border-radius: 4px;"></div>
-                        <div class="skel-box" style="width: 50%; height: 12px; border-radius: 4px;"></div>
-                    </div>
                 </div>
             `;
         }
@@ -209,32 +152,7 @@ function __flaynityReady(fn) {
         function getYouSkeletonHTML() {
             return `
                 <div style="display: flex; flex-direction: column; gap: 20px; margin-top: 15px;">
-                    <div style="background: var(--surface); border: 1px solid var(--border-color); border-radius: 24px; padding: 24px;">
-                        <div style="display: flex; align-items: center; gap: 16px;">
-                            <div class="skel-box" style="width: 80px; height: 80px; border-radius: 50%;"></div>
-                            <div style="display: flex; flex-direction: column; gap: 8px; flex: 1;">
-                                <div class="skel-box" style="width: 60%; height: 20px; border-radius: 4px;"></div>
-                                <div class="skel-box" style="width: 40%; height: 14px; border-radius: 4px;"></div>
-                            </div>
-                        </div>
-                        <div style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
-                            <div class="skel-box" style="width: 100%; height: 48px; border-radius: 20px;"></div>
-                        </div>
-                    </div>
-                    <div style="background: var(--surface); border: 1px solid var(--border-color); border-radius: 24px; padding: 8px;">
-                        <div style="padding: 16px; display: flex; gap: 16px; align-items: center; border-bottom: 1px solid var(--border-color);">
-                            <div class="skel-box" style="width: 24px; height: 24px; border-radius: 50%;"></div>
-                            <div class="skel-box" style="width: 40%; height: 16px; border-radius: 4px;"></div>
-                        </div>
-                        <div style="padding: 16px; display: flex; gap: 16px; align-items: center; border-bottom: 1px solid var(--border-color);">
-                            <div class="skel-box" style="width: 24px; height: 24px; border-radius: 50%;"></div>
-                            <div class="skel-box" style="width: 35%; height: 16px; border-radius: 4px;"></div>
-                        </div>
-                        <div style="padding: 16px; display: flex; gap: 16px; align-items: center;">
-                            <div class="skel-box" style="width: 24px; height: 24px; border-radius: 50%;"></div>
-                            <div class="skel-box" style="width: 30%; height: 16px; border-radius: 4px;"></div>
-                        </div>
-                    </div>
+                    <div class="skel-box" style="width: 100%; height: 48px; border-radius: 20px;"></div>
                 </div>
             `;
         }
@@ -303,15 +221,8 @@ function __flaynityReady(fn) {
                     document.body.addEventListener('click', () => {
                         sound.play().catch(e => console.log("Startup audio block:", e));
                     }, { once: true });
-                    
-                    let playPromise = sound.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => { console.log("Auto-play blocked by client."); });
-                    }
                 }
-            } catch (e) {
-                console.warn("Startup sound engine bypassed:", e);
-            }
+            } catch (e) {}
 
             setTimeout(function() {
                 const splash = document.getElementById('splash-screen');
@@ -326,26 +237,12 @@ function __flaynityReady(fn) {
                 AppNavigation.updateBridge();
             } catch (e) {}
             
-            const slider = document.getElementById('premium-features-slider');
-            const dots = document.querySelectorAll('.slider-dot');
-            if (slider && dots.length > 0) {
-                slider.addEventListener('scroll', () => {
-                    const width = slider.offsetWidth;
-                    const index = Math.round(slider.scrollLeft / width);
-                    dots.forEach((dot, idx) => {
-                        if (idx === index) dot.classList.add('active');
-                        else dot.classList.remove('active');
-                    });
-                });
-            }
-
             initPullToRefresh();
         });
         
         // =========================================================
         // OFFLINE -> ONLINE AUTO SYNC & NETWORK MONITORING
         // =========================================================
-        // Debounce guard: prevent rapid online/offline flapping from firing multiple syncs
         let _networkOnlineDebounceTimer = null;
 
         window.addEventListener('online', () => { window.FlaynityNetworkOnline(); });
@@ -353,12 +250,8 @@ function __flaynityReady(fn) {
 
         window.FlaynityNetworkOnline = function() {
             if (!navigator.onLine) return;
-
-            // Debounce: ignore if another online event fires within 1.5 s
             if (_networkOnlineDebounceTimer) return;
-            _networkOnlineDebounceTimer = setTimeout(() => {
-                _networkOnlineDebounceTimer = null;
-            }, 1500);
+            _networkOnlineDebounceTimer = setTimeout(() => { _networkOnlineDebounceTimer = null; }, 1500);
 
             const spinner = document.getElementById('network-spinner-overlay');
             if (spinner) spinner.style.display = 'none';
@@ -366,49 +259,30 @@ function __flaynityReady(fn) {
             try { firebase.database().goOnline(); } catch(e) {}
             showNotification("Network Restored! Syncing Live Data...", "success");
 
-            // Automatically resume queued uploads (mark paused → waiting)
             const waitingUploads = uploadQueue.filter(i => i.status === 'paused' || i.status === 'waiting');
             if (waitingUploads.length > 0) {
                 waitingUploads.forEach(item => { item.status = 'waiting'; });
                 triggerNextActiveUpload();
             }
 
-            // Sync offline cached likes to the cloud
             syncOfflineLikes();
-
-            // Perform a secure background re-render without reloading WebView
             SyncManager.refreshEverything();
-
-            // Resume any visible video
-            const activeVideo = document.querySelector('.short-slide video[src]');
-            if (activeVideo && activeVideo.paused && activeVideo.readyState > 2) {
-                activeVideo.play().catch(() => {});
-            }
         };
 
         window.FlaynityNetworkOffline = function() {
             try { firebase.database().goOffline(); } catch(e) {}
             showNotification("Offline Mode. Showing Skeletons.", "error");
-
             renderAllSkeletons();
-
-            const activeVideo = document.querySelector('.short-slide video[src]');
-            if (activeVideo && !activeVideo.paused) {
-                activeVideo.pause();
-            }
         };
 
-        // Called by MainActivity.onResume via AndroidBridge to trigger a background refresh
-        // when the app returns to the foreground after being backgrounded.
         window.FlaynityNativeRefresh = function() {
             if (!navigator.onLine) return;
-            // Only refresh if not already in progress
             if (SyncManager.isRefreshing) return;
             SyncManager.refreshEverything();
         };
 
         // =========================================================
-        // GLOBAL SYNC MANAGER (No-Reload Synchronization Engine)
+        // GLOBAL SYNC MANAGER
         // =========================================================
         const SyncManager = {
             isRefreshing: false,
@@ -417,19 +291,14 @@ function __flaynityReady(fn) {
                 this.isRefreshing = true;
 
                 try {
-                    // ── Step 1: Tear down ALL existing global feed listeners ──────────
-                    // This prevents duplicate .on() callbacks accumulating across calls.
                     _detachAllGlobalFeedListeners();
 
-                    // Reset count sentinels so the re-attached listeners always rebuild
                     previousShortsCount = -1;
                     previousLongsCount  = -1;
                     previousPostsCount  = -1;
 
-                    // ── Step 2: Refresh current user profile silently ─────────────────
                     await this.refreshProfile();
 
-                    // ── Step 3: Fetch fresh data snapshots before rebuilding UI ───────
                     const [longsSnap, shortsSnap, postsSnap] = await Promise.all([
                         db.ref('admin_panel/movies/user_uploads').once('value'),
                         db.ref('admin_panel/movies/shorts').once('value'),
@@ -441,10 +310,7 @@ function __flaynityReady(fn) {
                     allShorts          = shortsSnap.val() ? Object.values(shortsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
                     allCommunityPosts  = postsSnap.val()  ? Object.values(postsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
 
-                    // ── Step 4: Re-attach realtime listeners (after data is loaded) ───
                     startRealtimeFeedsListener();
-
-                    // ── Step 5: Rebuild UI ────────────────────────────────────────────
                     buildHomeFeed();
 
                     const shortsTab = document.getElementById('shorts-tab');
@@ -455,7 +321,6 @@ function __flaynityReady(fn) {
                 } catch (err) {
                     console.error("SyncManager Execution Error:", err);
                 } finally {
-                    // Always release the lock so future calls are not permanently blocked
                     this.isRefreshing = false;
                 }
             },
@@ -463,7 +328,6 @@ function __flaynityReady(fn) {
             refreshProfile: async function() {
                 const currentUser = auth.currentUser;
                 if (currentUser) {
-                    // Detach stale per-user listeners before re-fetching
                     try { db.ref(`channels/${currentUser.uid}`).off(); } catch(e) {}
                     try { db.ref(`users/${currentUser.uid}`).off(); } catch(e) {}
 
@@ -484,24 +348,18 @@ function __flaynityReady(fn) {
             }
         };
 
-        // ── Helper: detach every global feed listener in one place ────────────────
-        // Called by SyncManager and cleanupUserSessionData to avoid duplication.
         function _detachAllGlobalFeedListeners() {
             try { db.ref('admin_panel/movies/user_uploads').off(); } catch(e) {}
             try { db.ref('admin_panel/movies/shorts').off(); } catch(e) {}
             try { db.ref('admin_panel/posts').off(); } catch(e) {}
 
-            // Detach per-channel live-UI listeners
             Object.keys(boundChannelListeners).forEach(uid => {
                 try { db.ref(`channels/${uid}`).off(); } catch(e) {}
             });
             for (let key in boundChannelListeners) delete boundChannelListeners[key];
-
-            // Detach per-post reaction listeners
             _detachAllPostReactionListeners();
         }
 
-        // Track which post-reaction listeners are active so we can clean them up
         const _boundPostReactionListeners = {};
         function _detachAllPostReactionListeners() {
             Object.keys(_boundPostReactionListeners).forEach(postId => {
@@ -514,11 +372,8 @@ function __flaynityReady(fn) {
         // =========================================================
         // UNIVERSAL NATIVE YOUTUBE-STYLE PULL TO REFRESH ENGINE
         // =========================================================
-        let touchStartY = 0;
-        let touchStartX = 0;
-        let touchMoveY = 0;
-        let isPTRActive = false;
-        let isRefreshingNow = false;
+        let touchStartY = 0, touchStartX = 0, touchMoveY = 0;
+        let isPTRActive = false, isRefreshingNow = false;
 
         function isPTRAllowedOnCurrentView() {
             const modalsOpen = document.querySelectorAll('.fullscreen-page[style*="display: flex"], .fullscreen-page[style*="display: block"], .premium-download-modal[style*="display: flex"], #full-movie-page[style*="display: block"], #theme-popup-menu[style*="display: flex"], #full-image-preview-overlay[style*="display: flex"]');
@@ -534,14 +389,9 @@ function __flaynityReady(fn) {
             if (!activeNav) return false;
             const activeTabId = activeNav.id.replace('nav-', '');
 
-            if (activeTabId === 'home') {
-                return window.scrollY <= 0 && document.documentElement.scrollTop <= 0;
-            } else if (activeTabId === 'search') {
-                return window.scrollY <= 0 && document.documentElement.scrollTop <= 0;
-            } else if (activeTabId === 'you') {
+            if (activeTabId === 'home' || activeTabId === 'search' || activeTabId === 'you') {
                 return window.scrollY <= 0 && document.documentElement.scrollTop <= 0;
             }
-
             return false;
         }
 
@@ -578,11 +428,9 @@ function __flaynityReady(fn) {
                 const deltaY = currentY - touchStartY;
                 const deltaX = Math.abs(currentX - touchStartX);
 
-                // Require vertical dragging and discourage accidental side-swipes
                 if (deltaY > 20 && deltaY > deltaX * 1.5) {
                     touchMoveY = currentY;
                     const pullDistance = (deltaY - 20) * 0.45;
-
                     if (ptrIndicator) {
                         ptrIndicator.style.opacity = Math.min(1, pullDistance / 40);
                         ptrIndicator.style.transform = `translateX(-50%) translateY(${pullDistance - 65}px)`;
@@ -608,15 +456,13 @@ function __flaynityReady(fn) {
                 const deltaY = touchMoveY - touchStartY;
                 isPTRActive = false;
 
-                if (deltaY > 90) { // Intentional pull threshold reached
+                if (deltaY > 90) { 
                     isRefreshingNow = true;
                     if (ptrIndicator) {
                         ptrIndicator.style.transform = `translateX(-50%) translateY(20px)`;
                         ptrIndicator.style.opacity = '1';
                     }
-                    if (ptrSpinner) {
-                        ptrSpinner.classList.add('ptr-spinning');
-                    }
+                    if (ptrSpinner) ptrSpinner.classList.add('ptr-spinning');
 
                     triggerUniversalPullToRefresh().finally(() => {
                         setTimeout(() => {
@@ -624,9 +470,7 @@ function __flaynityReady(fn) {
                                 ptrIndicator.style.transform = `translateX(-50%) translateY(-70px)`;
                                 ptrIndicator.style.opacity = '0';
                             }
-                            if (ptrSpinner) {
-                                ptrSpinner.classList.remove('ptr-spinning');
-                            }
+                            if (ptrSpinner) ptrSpinner.classList.remove('ptr-spinning');
                             isRefreshingNow = false;
                         }, 400);
                     });
@@ -636,33 +480,21 @@ function __flaynityReady(fn) {
                         ptrIndicator.style.opacity = '0';
                     }
                 }
-                touchStartY = 0;
-                touchMoveY = 0;
+                touchStartY = 0; touchMoveY = 0;
             });
         }
 
         async function triggerUniversalPullToRefresh() {
             playUI('click');
-            if (!navigator.onLine) {
-                showNotification("Offline - Cannot Refresh", "error");
-                return;
-            }
-
+            if (!navigator.onLine) { showNotification("Offline - Cannot Refresh", "error"); return; }
             try {
-                // Trigger the core SyncManager to update entire app state silently
                 await SyncManager.refreshEverything();
                 showNotification("Feed Updated!", "success");
             } catch (e) {
-                console.error("PTR Refresh Exception:", e);
                 showNotification("Refresh failed: " + e.message, "error");
             }
-            // Note: isRefreshingNow is reset in the touchend .finally() block,
-            // so we do not reset it here to avoid a double-reset race.
         }
 
-        // =========================================
-        // UI SOUND ENGINE
-        // =========================================
         const soundClick = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
         const soundSuccess = new Audio('https://assets.mixkit.co/active_storage/sfx/1114/1114-preview.mp3');
         soundClick.volume = 0.3; soundSuccess.volume = 0.4;
@@ -673,9 +505,6 @@ function __flaynityReady(fn) {
             } catch(e) {} 
         }
 
-        // =========================================================
-        // IN-APP NOTIFICATION ENGINE
-        // =========================================================
         let notificationTimer = null;
         function showNotification(message, type = 'error', duration = 2000) {
             const container = document.getElementById('toast-container');
@@ -713,12 +542,8 @@ function __flaynityReady(fn) {
         
         try {
             firebase.initializeApp(firebaseConfig);
-            firebase.database().enablePersistence().catch(err => {
-                console.warn("Offline persistence activation bypassed: ", err.code);
-            });
-        } catch (e) {
-            console.error("Firebase config crash prevented:", e);
-        }
+            firebase.database().enablePersistence().catch(err => {});
+        } catch (e) {}
         
         const auth = firebase.auth();
         const db = firebase.database();
@@ -732,13 +557,9 @@ function __flaynityReady(fn) {
         let allAdminMovies = []; 
         let currentActiveMovie = null; 
         let currentGenre = null;
-
         let activeStatsRef = null;
         let activeCommentsRef = null;
 
-        // =========================================
-        // DYNAMIC FEED DATA VARIABLES
-        // =========================================
         let allShorts = [];
         let allLongVideos = [];
         let allCommunityPosts = [];
@@ -757,35 +578,24 @@ function __flaynityReady(fn) {
             signatureVersion: 'v4',
             region: 'auto',
             maxRetries: 5,
-            httpOptions: {
-                timeout: 300000, // 5 minute timeout per chunk
-                connectTimeout: 30000
-            }
+            httpOptions: { timeout: 300000, connectTimeout: 30000 }
         };
         
         AWS.config.update(R2_CONFIG);
         const s3 = new AWS.S3({ params: { Bucket: 'flaynity-storage' } });
         const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev";
 
-        // =========================================================
-        // S3 R2 OBJECT STORAGE MEDIA UPLOAD MODULE
-        // =========================================================
         async function uploadImageToR2(file, folder = "images", retries = 3) {
             if (!s3) throw new Error("R2 Client storage unit is not configured.");
             const uniqueId = "img_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
             const fileKey = `uploads/${folder}/${uniqueId}_${file.name.replace(/\s+/g, '_')}`;
-            const params = {
-                Key: fileKey,
-                Body: file,
-                ContentType: file.type || "image/jpeg"
-            };
+            const params = { Key: fileKey, Body: file, ContentType: file.type || "image/jpeg" };
 
             for (let attempt = 1; attempt <= retries; attempt++) {
                 try {
                     await s3.putObject(params).promise();
                     return `${PUBLIC_R2_DOMAIN_PREFIX}/${fileKey}`;
                 } catch (err) {
-                    console.warn(`R2 Image Upload attempt ${attempt} failed:`, err);
                     if (attempt === retries) throw err;
                     await new Promise(res => setTimeout(res, 1000 * Math.pow(2, attempt)));
                 }
@@ -795,9 +605,7 @@ function __flaynityReady(fn) {
         function dataURLtoBlob(dataurl) {
             var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
                 bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-            while(n--){
-                u8arr[n] = bstr.charCodeAt(n);
-            }
+            while(n--){ u8arr[n] = bstr.charCodeAt(n); }
             return new Blob([u8arr], {type:mime});
         }
 
@@ -822,10 +630,7 @@ function __flaynityReady(fn) {
                 const exists = accounts.find(acc => acc.uid === user.uid);
                 if (!exists) {
                     accounts.push({
-                        uid: user.uid,
-                        email: user.email,
-                        displayName: user.displayName || user.email.split('@')[0],
-                        photoURL: user.photoURL || ""
+                        uid: user.uid, email: user.email, displayName: user.displayName || user.email.split('@')[0], photoURL: user.photoURL || ""
                     });
                     localStorage.setItem('flaynity_saved_accounts', JSON.stringify(accounts));
                 } else {
@@ -837,20 +642,9 @@ function __flaynityReady(fn) {
         }
 
         function cleanupUserSessionData() {
-            currentChannelData = null;
-            tempCreateAvatarUrl = "";
-            tempEditAvatarUrl = "";
-            tempEditBannerUrl = "";
-            currentPostImages = [];
-            currentDetailItem = null;
-
-            allAdminMovies = [];
-            allShorts = [];
-            allLongVideos = [];
-            allCommunityPosts = [];
-            uploadQueue = [];
-            localStorage.removeItem('flaynity_upload_queue_v2'); 
-            localStorage.removeItem('flaynity_user_session_cache');
+            currentChannelData = null; tempCreateAvatarUrl = ""; tempEditAvatarUrl = ""; tempEditBannerUrl = ""; currentPostImages = []; currentDetailItem = null;
+            allAdminMovies = []; allShorts = []; allLongVideos = []; allCommunityPosts = [];
+            uploadQueue = []; localStorage.removeItem('flaynity_upload_queue_v2'); localStorage.removeItem('flaynity_user_session_cache');
 
             const homeFeed = document.getElementById('home-feed-container');
             if (homeFeed) homeFeed.innerHTML = '';
@@ -858,23 +652,10 @@ function __flaynityReady(fn) {
             const shortsSwiper = document.getElementById('shorts-swiper-container');
             if (shortsSwiper) shortsSwiper.innerHTML = '';
 
-            const searchResults = document.getElementById('search-results');
-            if (searchResults) searchResults.innerHTML = '<p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding: 60px 0; font-weight: 500;">Search or use the mic to find movies.</p>';
-
             const youName = document.getElementById('you-fullname-txt');
             if (youName) youName.innerText = "Logged Out";
-
-            const youEmail = document.getElementById('you-email-txt');
-            if (youEmail) youEmail.innerText = "";
-
-            const youAvatar = document.getElementById('you-avatar-large');
-            if (youAvatar) youAvatar.innerHTML = 'U';
-
             const actionBox = document.getElementById('channel-action-box');
             if (actionBox) actionBox.innerHTML = '';
-
-            const managerList = document.getElementById('manager-items-list');
-            if (managerList) managerList.innerHTML = '';
 
             if (activeStatsRef) { try { activeStatsRef.off(); } catch(e) {} activeStatsRef = null; }
             if (activeCommentsRef) { try { activeCommentsRef.off(); } catch(e) {} activeCommentsRef = null; }
@@ -882,11 +663,8 @@ function __flaynityReady(fn) {
             if (activeChannelShortsListener) { try { activeChannelShortsListener.off(); } catch(e) {} activeChannelShortsListener = null; }
             if (activeChannelPostsListener) { try { activeChannelPostsListener.off(); } catch(e) {} activeChannelPostsListener = null; }
 
-            // Use shared helper to detach all global feed + channel + post-reaction listeners
             _detachAllGlobalFeedListeners();
             _feedListenersAttached = false;
-
-            // Reset SyncManager lock in case it was stuck
             SyncManager.isRefreshing = false;
         }
 
@@ -900,8 +678,6 @@ function __flaynityReady(fn) {
                     if (appScr) appScr.style.display = 'block';
 
                     saveAccountToList(user);
-
-                    // Attach user-avatar listener (safe: only once per sign-in)
                     db.ref(`users/${user.uid}`).on('value', (snapshot) => {
                         try {
                             const userData = snapshot.val();
@@ -910,8 +686,6 @@ function __flaynityReady(fn) {
                         } catch (e) {}
                     });
 
-                    // Reset feed-listener flag so startRealtimeFeedsListener
-                    // cleanly re-attaches after a sign-out / sign-in cycle.
                     _feedListenersAttached = false;
                     startRealtimeFeedsListener();
                     restoreQueueFromLocalStorage();
@@ -922,7 +696,6 @@ function __flaynityReady(fn) {
                         adjustHeaderForActiveTab(activeTabId);
                     }
                 } else {
-                    // Offline cached-session fallback: do not force the login screen when the user has a saved session.
                     if (!navigator.onLine && window.__flaynityOfflineSessionActive) {
                         document.body.classList.remove('auth-active');
                         const cachedAppScreen = document.getElementById('app-screen');
@@ -931,7 +704,6 @@ function __flaynityReady(fn) {
                         if (cachedAuthScreen) cachedAuthScreen.style.display = 'none';
                         return;
                     }
-                    // cleanupUserSessionData already resets _feedListenersAttached
                     cleanupUserSessionData();
                     document.body.classList.add('auth-active');
                     const appScr = document.getElementById('app-screen');
@@ -988,34 +760,6 @@ function __flaynityReady(fn) {
             }
         }
 
-        async function signInWithGoogle() {
-            playUI('click');
-            if (window.AndroidBridge && typeof window.AndroidBridge.triggerGoogleSignIn === 'function') {
-                window.AndroidBridge.triggerGoogleSignIn(); 
-            } else {
-                try { 
-                    const provider = new firebase.auth.GoogleAuthProvider();
-                    provider.setCustomParameters({ prompt: 'select_account' });
-                    const result = await auth.signInWithPopup(provider); 
-                    saveAccountToList(result.user);
-                    showNotification("Google Sign-In Successful!", "success"); 
-                } catch (err) { 
-                    showNotification(err.message, "error"); 
-                }
-            }
-        }
-
-        window.handleNativeGoogleSignIn = function(idToken) {
-            showNotification("Connecting secure session...", "success");
-            const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
-            auth.signInWithCredential(credential)
-                .then((result) => { 
-                    saveAccountToList(result.user);
-                    showNotification("Google Sign-In Successful!", "success"); 
-                })
-                .catch(err => { showNotification("Native Auth Error: " + err.message, "error"); });
-        };
-
         function logout() { 
             cleanupUserSessionData();
             auth.signOut(); 
@@ -1026,24 +770,20 @@ function __flaynityReady(fn) {
         // =========================================================
         let uploadQueue = [];
         let activeUploadsCount = 0;
-        const MAX_CONCURRENT_UPLOADS = 3; // প্যারালল ৩টি আপলোড সাপোর্ট
+        const MAX_CONCURRENT_UPLOADS = 3;
 
-        // Queue Watchdog Engine: আটকে থাকা WAITING ফাইলগুলোকে সচল করার জন্য
         setInterval(() => {
             if (!navigator.onLine) return;
             const hasWaiting = uploadQueue.some(item => item.status === 'waiting');
             if (hasWaiting && activeUploadsCount < MAX_CONCURRENT_UPLOADS) {
-                console.log("[Watchdog] Triggering queued uploads...");
                 triggerNextActiveUpload();
             }
         }, 3000);
 
         async function triggerNextActiveUpload() {
             if (!navigator.onLine) return;
-
             for (let i = 0; i < uploadQueue.length; i++) {
                 if (activeUploadsCount >= MAX_CONCURRENT_UPLOADS) break;
-                
                 const item = uploadQueue[i];
                 if (item.status === 'waiting') {
                     activeUploadsCount++;
@@ -1068,15 +808,8 @@ function __flaynityReady(fn) {
             const startTime = Date.now();
 
             try {
-                const params = {
-                    Key: item.key,
-                    Body: item.file,
-                    ContentType: item.file.type || 'video/mp4'
-                };
-                
-                // 5MB optimized multipart chunk size
+                const params = { Key: item.key, Body: item.file, ContentType: item.file.type || 'video/mp4' };
                 const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
-
                 const s3Upload = s3.upload(params, uploadOpts);
                 item.s3UploadRef = s3Upload;
 
@@ -1084,7 +817,6 @@ function __flaynityReady(fn) {
                     if (item.status !== 'uploading') return; 
                     const pct = Math.round((evt.loaded / evt.total) * 100);
                     item.progress = pct;
-
                     const elapsed = (Date.now() - startTime) / 1000;
                     if (elapsed > 0) {
                         item.speed = evt.loaded / elapsed; 
@@ -1101,7 +833,6 @@ function __flaynityReady(fn) {
                 updateManagerUI();
 
                 await runPostUploadProcessingSequence(item);
-
             } catch (err) {
                 if (item.status === 'paused') {
                     console.log("Upload paused safely.");
@@ -1110,9 +841,7 @@ function __flaynityReady(fn) {
                     updateManagerUI();
                     showNotification("Connection lost. Upload paused.", "error");
                 } else {
-                    console.error("Upload error: ", err);
                     item.retryCount = (item.retryCount || 0) + 1;
-                    
                     if (item.retryCount <= 5) {
                         item.status = "waiting";
                         updateManagerUI();
@@ -1152,13 +881,12 @@ function __flaynityReady(fn) {
                 item.progress = 100;
                 updateManagerUI();
 
-                // ⚡ INSTANT PUBLISH ENGINE ⚡
                 await pushVideoMetadataToDatabase(item);
 
                 item.status = "completed";
                 updateManagerUI();
                 saveQueueStateToLocalStorage();
-                showNotification(`"${item.title}" is published instantly!`, "success");
+                showNotification(`"${item.title}" is published successfully!`, "success");
 
             } catch (err) {
                 item.status = "failed";
@@ -1176,8 +904,7 @@ function __flaynityReady(fn) {
             const username = uData.username || user.email.split('@')[0];
 
             const resolution = item.type === 'video-short' ? "1080x1920" : "1920x1080";
-            const hashtags = extractHashtags(item.description);
-
+            const hashtags = extractHashtags(item.description || "");
             const isScheduled = item.scheduledTime && item.scheduledTime > Date.now();
 
             const moviePayload = {
@@ -1185,7 +912,7 @@ function __flaynityReady(fn) {
                 userId: user.uid,
                 channelId: user.uid,
                 title: item.title,
-                description: item.description,
+                description: item.description || "",
                 tags: hashtags,
                 category: currentChannelData?.category || "Entertainment",
                 duration: formatDuration(item.duration),
@@ -1216,20 +943,17 @@ function __flaynityReady(fn) {
                 scheduledTime: item.scheduledTime || 0
             };
 
-            // Step 1: Save Metadata to Firebase Realtime Database
             const targetPath = item.type === 'video-short' 
                 ? `admin_panel/movies/shorts/${item.id}` 
                 : `admin_panel/movies/user_uploads/${item.id}`;
                 
-            await db.ref(targetPath).set(moviePayload);
+            await db.ref(targetPath).set(moviePayload).catch(err => console.error("Firebase Publish Error:", err));
 
-            // Step 2: Zero-Delay Local Feed Update (< 0.1 Seconds) IF NOT SCHEDULED
             if (!isScheduled) {
                 if (item.type === 'video-short') {
                     const idx = allShorts.findIndex(s => s.id === item.id);
                     if (idx !== -1) allShorts[idx] = moviePayload;
                     else allShorts.unshift(moviePayload);
-                    
                     buildShortsPage();
                 } else {
                     const idx = allLongVideos.findIndex(v => v.id === item.id);
@@ -1237,9 +961,7 @@ function __flaynityReady(fn) {
                     else allLongVideos.unshift(moviePayload);
                 }
 
-                // Step 3: Instant A-Z Screen Refresh
                 buildHomeFeed();
-
                 const activePage = AppNavigation.current();
                 if (activePage && activePage.id === 'view-channel-page') {
                     if (item.type === 'video-short') renderChannelShorts(user.uid);
@@ -1254,10 +976,9 @@ function __flaynityReady(fn) {
         let previousShortsCount = -1;
         let previousLongsCount = -1;
         let previousPostsCount = -1;
-        let _feedListenersAttached = false; // guard against duplicate attachment
+        let _feedListenersAttached = false; 
 
         function startRealtimeFeedsListener() {
-            // Detach any existing listeners before re-attaching to prevent duplicates
             if (_feedListenersAttached) {
                 try { db.ref('admin_panel/movies/user_uploads').off(); } catch(e) {}
                 try { db.ref('admin_panel/movies/shorts').off(); } catch(e) {}
@@ -1272,7 +993,6 @@ function __flaynityReady(fn) {
                 db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
                     try {
                         const data = snap.val();
-                        // Filter out scheduled futures
                         allLongVideos = data ? Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
                         allLongVideos.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                         
@@ -1370,10 +1090,7 @@ function __flaynityReady(fn) {
         const boundChannelListeners = {};
         function bindLiveChannelUI(userId) {
             if (!userId) return;
-
-            // Already have a live listener for this user — skip to avoid duplicates
             if (boundChannelListeners[userId]) return;
-
             if (!navigator.onLine) return;
 
             boundChannelListeners[userId] = true;
@@ -1388,12 +1105,8 @@ function __flaynityReady(fn) {
             const handle = data.handle || "handle";
             const avatar = data.avatarUrl || "";
 
-            document.querySelectorAll(`.live-username-${userId}`).forEach(el => {
-                el.innerText = name;
-            });
-            document.querySelectorAll(`.live-handle-${userId}`).forEach(el => {
-                el.innerText = "@" + handle;
-            });
+            document.querySelectorAll(`.live-username-${userId}`).forEach(el => { el.innerText = name; });
+            document.querySelectorAll(`.live-handle-${userId}`).forEach(el => { el.innerText = "@" + handle; });
             document.querySelectorAll(`.live-avatar-${userId}`).forEach(el => {
                 if (avatar) {
                     el.innerHTML = `<img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
@@ -1409,16 +1122,10 @@ function __flaynityReady(fn) {
             });
         }
 
-        // =========================================================
-        // COMMUNITY POST IMPLEMENTATION
-        // =========================================================
-        function appendPostHashtag(tag) {
-            playUI('click');
-            const input = document.getElementById('post-caption-input');
-            if (input) {
-                input.value += " " + tag;
-                input.focus();
-            }
+        function extractHashtags(text) {
+            const regex = /#\w+/g;
+            const matches = text.match(regex);
+            return matches ? matches.join(' ') : "";
         }
 
         function selectCategoryChip(category, el) {
@@ -1431,7 +1138,6 @@ function __flaynityReady(fn) {
             if (homeTab && !homeTab.classList.contains('active')) {
                 switchTab('home');
             }
-
             buildHomeFeed();
         }
 
@@ -1442,14 +1148,12 @@ function __flaynityReady(fn) {
             const container = document.getElementById('home-feed-container');
             if (!container) return;
 
-            // ⚠️ STRICT REQUIREMENT: If offline, show ONLY Animated Skeletons (NO cached text, images, or cards)
             if (!navigator.onLine) {
                 container.innerHTML = getHomeSkeletonHTML();
                 return;
             }
 
             let html = '';
-
             let shorts = [...allShorts];
             let longs = [...allLongVideos];
             let posts = [...allCommunityPosts];
@@ -1480,7 +1184,6 @@ function __flaynityReady(fn) {
                             </div>
                         </div>
                     `;
-                    
                     db.ref(`movie_stats/${s.id}/views`).once('value', (vSnap) => {
                         const viewsObj = vSnap.val() || {};
                         const count = Object.keys(viewsObj).length;
@@ -1490,7 +1193,6 @@ function __flaynityReady(fn) {
                 });
                 html += `</div></div>`;
                 container.innerHTML = html;
-                
                 uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
                 return;
             }
@@ -1505,25 +1207,18 @@ function __flaynityReady(fn) {
                     html += renderSinglePostSegmentUI(p);
                 });
                 container.innerHTML = html;
-                posts.slice(0, postRenderLimit).forEach(p => {
-                    registerPostReactionsListener(p.id);
-                });
-
+                posts.slice(0, postRenderLimit).forEach(p => { registerPostReactionsListener(p.id); });
                 uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
                 return;
             }
 
-            let shortIdx = 0;
-            let longIdx = 0;
-            let postIdx = 0;
-
+            let shortIdx = 0, longIdx = 0, postIdx = 0;
             if (shorts.length === 0 && longs.length === 0 && posts.length === 0) {
                 container.innerHTML = getHomeSkeletonHTML();
                 return;
             }
 
             let postsToBind = [];
-
             while (longIdx < longs.length || shortIdx < shorts.length || postIdx < posts.length) {
                 if (shortIdx < shorts.length) {
                     const segmentShorts = shorts.slice(shortIdx, shortIdx + 6);
@@ -1531,14 +1226,12 @@ function __flaynityReady(fn) {
                     segmentShorts.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
                     html += renderShortsSegmentUI(segmentShorts);
                 }
-
                 if (longIdx < longs.length) {
                     const segmentLongs = longs.slice(longIdx, longIdx + 10);
                     longIdx += 10;
                     segmentLongs.forEach(l => { if (l.userId) uniqueUserIds.add(l.userId); });
                     html += renderLongVideosSegmentUI(segmentLongs);
                 }
-
                 if (postIdx < posts.length) {
                     const singlePost = posts[postIdx];
                     postIdx++;
@@ -1555,9 +1248,7 @@ function __flaynityReady(fn) {
 
         function renderShortsSegmentUI(segmentShorts) {
             if (segmentShorts.length === 0) return '';
-            
             const limitedShorts = segmentShorts.slice(0, 6);
-            
             let html = `
                 <div class="shorts-section-container" style="margin-bottom: 24px;">
                     <div class="section-title">
@@ -1568,7 +1259,6 @@ function __flaynityReady(fn) {
                     </div>
                     <div class="shorts-home-grid-2col">
             `;
-
             limitedShorts.forEach(s => {
                 html += `
                     <div class="short-home-card-2col" onclick="openShortFromHome('${s.id}')">
@@ -1579,7 +1269,6 @@ function __flaynityReady(fn) {
                         </div>
                     </div>
                 `;
-                
                 db.ref(`movie_stats/${s.id}/views`).once('value', (vSnap) => {
                     const viewsObj = vSnap.val() || {};
                     const count = Object.keys(viewsObj).length;
@@ -1587,24 +1276,17 @@ function __flaynityReady(fn) {
                     if (label) label.innerText = formatCount(count);
                 });
             });
-
-            html += `
-                    </div>
-                </div>
-            `;
+            html += `</div></div>`;
             return html;
         }
 
         function renderLongVideosSegmentUI(segmentLongs) {
             if (segmentLongs.length === 0) return '';
-            
             let html = '';
             segmentLongs.forEach(v => {
                 const viewsId = `home-long-views-${v.id}`;
                 const relTime = getRelativeTime(v.createdAt);
-                
                 const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
-
                 html += `
                     <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
                         <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #000; overflow: hidden;">
@@ -1626,7 +1308,6 @@ function __flaynityReady(fn) {
                         </div>
                     </div>
                 `;
-
                 db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
                     const viewsObj = vSnap.val() || {};
                     const count = Object.keys(viewsObj).length;
@@ -1634,17 +1315,14 @@ function __flaynityReady(fn) {
                     if (label) label.innerText = formatCount(count) + " Views";
                 });
             });
-
             return html;
         }
 
         function renderSinglePostSegmentUI(post) {
             if (!post) return '';
-
             const titleText = post.title || post.caption || '';
             const plainCaption = post.caption || '';
             const combinedText = titleText === plainCaption ? plainCaption : `${titleText}\n\n${plainCaption}`;
-            
             const isLong = combinedText.length > 80; 
             
             let titleHtml = '';
@@ -1682,19 +1360,16 @@ function __flaynityReady(fn) {
             }
 
             const avatarHtml = `<div class="live-avatar-${post.userId}" style="width:40px; height:40px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
-
             let imagesHtml = '';
             if (post.images && post.images.length > 0) {
                 imagesHtml = `
                     <div style="margin-left: -16px; margin-right: -16px; margin-top: 12px; margin-bottom: 12px; width: calc(100% + 32px); aspect-ratio: 3/4; position: relative; background: #000; overflow: hidden; border-radius: 0 !important;">
                         <img src="${post.images[0]}" onclick="openFullScreenImagePreview('${post.images[0]}')" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; display: block; border-radius: 0 !important;" loading="lazy">
-                        
                         <div style="position: absolute; top: 0; left: 0; right: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%); padding: 16px 20px; color: #FFFFFF; z-index: 10;">
                              <div id="title-container-${post.id}" onclick="event.stopPropagation(); togglePostTitleExpand('${post.id}')" style="cursor: pointer; font-size: 0.95rem; font-weight: 800; line-height: 1.4; text-shadow: 0 2px 8px rgba(0,0,0,0.95); font-family: 'Plus Jakarta Sans', sans-serif;">
                                  ${titleHtml}
                              </div>
                         </div>
-
                         ${post.images.length > 1 ? `
                             <div style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; z-index: 12;">
                                 +${post.images.length - 1} More
@@ -1743,20 +1418,10 @@ function __flaynityReady(fn) {
                     </div>
 
                     <div style="display: flex; gap: 8px; margin-top: 12px; padding: 0 4px;">
-                        <button id="${loveBtnId}" 
-                                class="post-action-btn-fb ripple" 
-                                style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--border-color); border: none; padding: 12px; border-radius: 12px; font-size: 0.9rem; font-weight: 800; color: var(--text-main); cursor: pointer; transition: all 0.2s;"
-                                onmousedown="startReactionTimer('${post.id}', event)"
-                                ontouchstart="startReactionTimer('${post.id}', event)"
-                                onmouseup="clearReactionTimer('${post.id}', event)"
-                                ontouchend="clearReactionTimer('${post.id}', event)"
-                                onclick="handleLoveSingleClick('${post.id}')">
+                        <button id="${loveBtnId}" class="post-action-btn-fb ripple" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--border-color); border: none; padding: 12px; border-radius: 12px; font-size: 0.9rem; font-weight: 800; color: var(--text-main); cursor: pointer; transition: all 0.2s;" onmousedown="startReactionTimer('${post.id}', event)" ontouchstart="startReactionTimer('${post.id}', event)" onmouseup="clearReactionTimer('${post.id}', event)" ontouchend="clearReactionTimer('${post.id}', event)" onclick="handleLoveSingleClick('${post.id}')">
                             <i class="far fa-heart love-icon-element" id="love-icon-${post.id}"></i> <span id="love-text-${post.id}" style="display: inline-flex; align-items: center; line-height: 1;">Love</span>
                         </button>
-                        
-                        <button class="post-action-btn-fb ripple" 
-                                onclick="openCommentsForPost('${post.id}')"
-                                style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--border-color); border: none; padding: 12px; border-radius: 12px; font-size: 0.9rem; font-weight: 800; color: var(--text-main); cursor: pointer; transition: all 0.2s;">
+                        <button class="post-action-btn-fb ripple" onclick="openCommentsForPost('${post.id}')" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--border-color); border: none; padding: 12px; border-radius: 12px; font-size: 0.9rem; font-weight: 800; color: var(--text-main); cursor: pointer; transition: all 0.2s;">
                             <i class="far fa-comment"></i> Comment
                         </button>
                     </div>
@@ -1800,9 +1465,7 @@ function __flaynityReady(fn) {
         }
 
         function triggerHapticFeedback() {
-            if (navigator.vibrate) {
-                navigator.vibrate(15); 
-            }
+            if (navigator.vibrate) { navigator.vibrate(15); }
         }
 
         function spawnDoubleTapHeart(e, slideElement) {
@@ -1830,7 +1493,6 @@ function __flaynityReady(fn) {
             const container = document.getElementById('shorts-swiper-container');
             if (!container) return;
             
-            // ⚠️ STRICT REQUIREMENT: If offline, show ONLY Animated Skeletons (NO cached items)
             if (!navigator.onLine) {
                 container.innerHTML = getShortsSkeletonHTML();
                 return;
@@ -3159,7 +2821,6 @@ function __flaynityReady(fn) {
             if (!user) return;
 
             if (!navigator.onLine) {
-                // Render from cache if available, otherwise show skeleton
                 if (currentChannelData) {
                     renderYouTabWithData(currentChannelData, user, wrap);
                 } else {
@@ -3168,9 +2829,6 @@ function __flaynityReady(fn) {
                 return;
             }
 
-            // Use .once() to avoid stacking duplicate persistent listeners each time
-            // the You tab is opened. The global startRealtimeFeedsListener already
-            // maintains a live channel listener for the current user.
             db.ref(`channels/${user.uid}`).once('value', (snapshot) => {
                 currentChannelData = snapshot.val();
                 if (currentChannelData) {
@@ -4423,9 +4081,6 @@ function __flaynityReady(fn) {
             });
         }
 
-        // =========================================
-        // DOWNLOAD POP-UP CONTROLLERS
-        // =========================================
         function requestDownloadWithAd() {
             playUI('click');
             if (!currentActiveMovie) return;
@@ -4452,9 +4107,6 @@ function __flaynityReady(fn) {
             triggerFileDownload(currentActiveMovie.videoLink, filename);
         }
 
-        // =========================================
-        // UPCOMING FEATURE POPUP HELPERS
-        // =========================================
         function showUpcomingModal() {
             playUI('click');
             AppNavigation.pushModal('upcoming-modal');
@@ -4463,6 +4115,7 @@ function __flaynityReady(fn) {
         function hideUpcomingModal() {
             AppNavigation.pop();
         }
+
 
         // =========================================
         // NEW PREMIUM UPLOAD STUDIO FUNCTIONS
@@ -4475,10 +4128,19 @@ function __flaynityReady(fn) {
         let shortChunks = [];
         let uploadSliderStartX = 0;
         let uploadSliderCurrentX = 0;
-        let currentUploadMode = 'short'; // Default mode
+        let currentUploadMode = 'short';
+        
+        // Camera options state
+        let currentFacingMode = 'user';
+        let isFlashOn = false;
+        let currentTimer = 0;
+        let currentDurationLimit = 15;
+        let isCameraRecorded = false; 
+        
+        let recordTimerInterval = null;
+        let currentRecordSeconds = 0;
 
-        // Helper to open the new Studio replacing old Create Sheet
-        function openPremiumUploadStudio() {
+        window.openPremiumUploadStudio = function() {
             playUI('click');
             if (!currentChannelData) {
                 const promptChan = confirm("You need to create a Channel first before uploading content.\n\nWould you like to create a Channel now?");
@@ -4502,11 +4164,11 @@ function __flaynityReady(fn) {
                 switchUploadMode('short');
             }
         }
+        
+        // Replace existing navigation hook
+        window.openCreateBottomSheet = window.openPremiumUploadStudio;
 
-        // Replaces old openCreateBottomSheet for backwards navigation hook compatibility
-        window.openCreateBottomSheet = openPremiumUploadStudio;
-
-        function closePremiumUploadStudio() {
+        window.closePremiumUploadStudio = function() {
             playUI('click');
             const studio = document.getElementById('premium-upload-studio');
             if (studio) {
@@ -4517,9 +4179,7 @@ function __flaynityReady(fn) {
                 }, 300);
             }
         }
-
-        // Replaces old closeCreateBottomSheet for backwards navigation hook compatibility
-        window.closeCreateBottomSheet = closePremiumUploadStudio;
+        window.closeCreateBottomSheet = window.closePremiumUploadStudio;
 
         function switchUploadMode(mode) {
             currentUploadMode = mode;
@@ -4537,7 +4197,6 @@ function __flaynityReady(fn) {
             });
 
             if (slider) {
-                // Center the selected item automatically
                 slider.style.transform = `translateX(calc(50vw - ${(activeIndex * 105) + 60}px))`;
             }
             
@@ -4561,10 +4220,10 @@ function __flaynityReady(fn) {
             sliderWrap.ontouchend = () => {
                 const diff = uploadSliderStartX - uploadSliderCurrentX;
                 if (Math.abs(diff) > 50 && uploadSliderCurrentX !== 0) {
-                    if (diff > 0) { // Swipe Left -> Next Item
+                    if (diff > 0) {
                         if (currentUploadMode === 'video') switchUploadMode('short');
                         else if (currentUploadMode === 'short') switchUploadMode('post');
-                    } else { // Swipe Right -> Prev Item
+                    } else {
                         if (currentUploadMode === 'post') switchUploadMode('short');
                         else if (currentUploadMode === 'short') switchUploadMode('video');
                     }
@@ -4577,14 +4236,26 @@ function __flaynityReady(fn) {
             });
         }
 
-        // Camera Logic
+        // =========================================
+        // CAMERA LOGIC
+        // =========================================
         async function startShortCamera() {
             const video = document.getElementById('short-camera-preview');
             if (video && video.srcObject) return; 
             
             try {
-                shortCameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
-                if (video) video.srcObject = shortCameraStream;
+                shortCameraStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: currentFacingMode }, 
+                    audio: true 
+                });
+                if (video) {
+                    video.srcObject = shortCameraStream;
+                    if(currentFacingMode === 'user') {
+                        video.style.transform = 'scaleX(-1)';
+                    } else {
+                        video.style.transform = 'scaleX(1)';
+                    }
+                }
             } catch (err) {
                 showNotification("Camera permission required", "error");
             }
@@ -4599,54 +4270,228 @@ function __flaynityReady(fn) {
             if (video) video.srcObject = null;
         }
 
-        function toggleShortCamera() {
+        window.toggleShortCamera = function() {
             playUI('click');
             stopShortCamera();
-            startShortCamera(); // Resets/toggles
+            startShortCamera();
+        }
+        
+        window.switchCameraFacing = function() {
+            playUI('click');
+            currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+            toggleShortCamera();
         }
 
+        window.toggleCameraFlash = function() {
+            playUI('click');
+            if(!shortCameraStream) return;
+            const track = shortCameraStream.getVideoTracks()[0];
+            if(track) {
+                const capabilities = track.getCapabilities();
+                if(capabilities.torch) {
+                    isFlashOn = !isFlashOn;
+                    track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+                    const btn = document.getElementById('flash-ctrl-btn');
+                    if(btn) btn.classList.toggle('active-state', isFlashOn);
+                } else {
+                    showNotification("Flash not supported on this camera", "error");
+                }
+            }
+        }
+
+        window.toggleCameraTimer = function() {
+            playUI('click');
+            const btn = document.getElementById('timer-ctrl-btn');
+            if(currentTimer === 0) { currentTimer = 3; btn.classList.add('active-state'); btn.innerHTML = '3s'; }
+            else if(currentTimer === 3) { currentTimer = 10; btn.innerHTML = '10s'; }
+            else if(currentTimer === 10) { currentTimer = 20; btn.innerHTML = '20s'; }
+            else { currentTimer = 0; btn.classList.remove('active-state'); btn.innerHTML = '<i class="fas fa-stopwatch"></i>'; }
+        }
+
+        window.toggleCameraDuration = function() {
+            playUI('click');
+            const btn = document.getElementById('duration-ctrl-btn');
+            if(currentDurationLimit === 15) { currentDurationLimit = 30; btn.innerText = '30s'; }
+            else if(currentDurationLimit === 30) { currentDurationLimit = 60; btn.innerText = '60s'; }
+            else if(currentDurationLimit === 60) { currentDurationLimit = 180; btn.innerText = '3m'; }
+            else { currentDurationLimit = 15; btn.innerText = '15s'; }
+        }
+
+        window.toggleCameraSpeed = function() {
+            playUI('click');
+            const btn = document.getElementById('speed-ctrl-btn');
+            let txt = btn.innerText;
+            if(txt === '1x') btn.innerText = '2x';
+            else if(txt === '2x') btn.innerText = '3x';
+            else if(txt === '3x') btn.innerText = '0.3x';
+            else if(txt === '0.3x') btn.innerText = '0.5x';
+            else btn.innerText = '1x';
+            showNotification(`Speed set to ${btn.innerText}. Will apply to preview.`, "success");
+        }
+
+        function updateTimerDisplay() {
+            const display = document.getElementById('camera-timer-display');
+            const progressBar = document.getElementById('record-progress-bar');
+            if(display) display.innerText = formatDuration(currentRecordSeconds);
+            if(progressBar) progressBar.style.width = `${(currentRecordSeconds / currentDurationLimit) * 100}%`;
+        }
+
+        // Robust Record Button (Tap vs Hold)
         function initShortRecordButton() {
             const recBtn = document.getElementById('record-btn-outer');
             const innerBtn = document.getElementById('record-btn-inner');
             const doneBtn = document.getElementById('record-done-btn');
+            const rightControls = document.getElementById('camera-right-controls');
             
-            if (!recBtn || !innerBtn || !doneBtn) return;
+            if (!recBtn || !innerBtn) return;
+            
+            let pressTimer;
+            let isHolding = false;
+            let isRecording = false;
 
-            recBtn.onclick = () => {
-                playUI('click');
-                if (shortMediaRecorder && shortMediaRecorder.state === "recording") {
-                    shortMediaRecorder.stop();
-                    innerBtn.style.transform = 'scale(1)';
-                    innerBtn.style.borderRadius = '50%';
-                } else {
-                    if (!shortCameraStream) return;
+            const startRecordingFlow = () => {
+                if(isRecording || !shortCameraStream) return;
+                
+                const startRec = () => {
+                    playUI('click');
+                    isRecording = true;
+                    isCameraRecorded = true;
                     shortChunks = [];
                     shortMediaRecorder = new MediaRecorder(shortCameraStream, { mimeType: 'video/webm' });
                     shortMediaRecorder.ondataavailable = e => { if (e.data.size > 0) shortChunks.push(e.data); };
                     shortMediaRecorder.onstop = () => {
+                        isRecording = false;
+                        clearInterval(recordTimerInterval);
                         const blob = new Blob(shortChunks, { type: 'video/webm' });
-                        const file = new File([blob], "short_" + Date.now() + ".webm", { type: "video/webm" });
-                        handlePremiumFileSelected({ target: { files: [file] } }, 'video-short');
+                        const file = new File([blob], "recorded_short_" + Date.now() + ".webm", { type: "video/webm" });
+                        processStudioFile(file, 'video-short');
                     };
                     shortMediaRecorder.start();
+                    
                     innerBtn.style.transform = 'scale(0.5)';
                     innerBtn.style.borderRadius = '8px';
-                    doneBtn.style.display = 'block';
+                    if(doneBtn) doneBtn.style.display = 'block';
+                    if(rightControls) rightControls.style.display = 'none';
+
+                    currentRecordSeconds = 0;
+                    updateTimerDisplay();
+                    recordTimerInterval = setInterval(() => {
+                        currentRecordSeconds++;
+                        updateTimerDisplay();
+                        if(currentRecordSeconds >= currentDurationLimit) {
+                            stopRecordingFlow();
+                        }
+                    }, 1000);
+                };
+
+                if(currentTimer > 0) {
+                    let countdown = currentTimer;
+                    const display = document.getElementById('camera-timer-display');
+                    if(display) display.innerText = `Starts in ${countdown}s`;
+                    const cdInterval = setInterval(() => {
+                        countdown--;
+                        if(display) display.innerText = `Starts in ${countdown}s`;
+                        if(countdown <= 0) {
+                            clearInterval(cdInterval);
+                            startRec();
+                        }
+                    }, 1000);
+                } else {
+                    startRec();
                 }
             };
 
-            doneBtn.onclick = () => {
-                if (shortMediaRecorder && shortMediaRecorder.state === "recording") {
+            const stopRecordingFlow = () => {
+                if(shortMediaRecorder && shortMediaRecorder.state === "recording") {
                     shortMediaRecorder.stop();
+                    innerBtn.style.transform = 'scale(1)';
+                    innerBtn.style.borderRadius = '50%';
+                    if(rightControls) rightControls.style.display = 'flex';
                 }
             };
+
+            recBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                pressTimer = setTimeout(() => {
+                    isHolding = true;
+                    startRecordingFlow();
+                }, 300);
+            }, {passive: false});
+
+            recBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                clearTimeout(pressTimer);
+                if(isHolding) {
+                    stopRecordingFlow();
+                    isHolding = false;
+                } else {
+                    // It was a tap
+                    if(isRecording) stopRecordingFlow();
+                    else startRecordingFlow();
+                }
+            }, {passive: false});
+            
+            // Mouse fallbacks
+            recBtn.addEventListener('mousedown', () => {
+                pressTimer = setTimeout(() => { isHolding = true; startRecordingFlow(); }, 300);
+            });
+            recBtn.addEventListener('mouseup', () => {
+                clearTimeout(pressTimer);
+                if(isHolding) { stopRecordingFlow(); isHolding = false; }
+                else { if(isRecording) stopRecordingFlow(); else startRecordingFlow(); }
+            });
+
+            if(doneBtn) {
+                doneBtn.onclick = () => { stopRecordingFlow(); };
+            }
         }
 
-        // Studio Flow Controller
-        async function handlePremiumFileSelected(e, type) {
-            const file = e.target && e.target.files ? e.target.files[0] : (e.files ? e.files[0] : null);
-            if (!file) return;
+        // =========================================
+        // FRAME CAPTURE ENGINE (ROBUST FALLBACK)
+        // =========================================
+        function captureFrameAndDuration(file) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const video = document.createElement('video');
+                    video.preload = 'metadata';
+                    const url = URL.createObjectURL(file);
+                    video.src = url;
+                    
+                    video.onloadedmetadata = () => {
+                        video.currentTime = Math.min(1, video.duration / 2);
+                    };
+                    video.onseeked = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                        canvas.toBlob(blob => {
+                            resolve({ duration: video.duration, dataUrl, blob });
+                            URL.revokeObjectURL(url);
+                        }, 'image/jpeg', 0.8);
+                    };
+                    video.onerror = (e) => {
+                        resolve({ duration: 60, dataUrl: "", blob: null });
+                    };
+                } catch(e) { 
+                    resolve({ duration: 60, dataUrl: "", blob: null });
+                }
+            });
+        }
 
+        // =========================================
+        // STUDIO FLOW CONTROLLER
+        // =========================================
+        window.handleStudioFileSelected = function(e, type) {
+            isCameraRecorded = false; 
+            const file = e.target && e.target.files ? e.target.files[0] : null;
+            if(!file) return;
+            processStudioFile(file, type);
+        };
+
+        async function processStudioFile(file, originalType) {
             const allowedFormats = ["video/mp4", "video/quicktime", "video/x-matroska", "video/webm"];
             if (!allowedFormats.includes(file.type)) {
                 showNotification("Invalid format! Supported: MP4, MOV, MKV, WEBM", "error");
@@ -4658,102 +4503,126 @@ function __flaynityReady(fn) {
             }
 
             currentUploadFile = file;
-            showNotification("Processing Video...", "success");
+            showNotification("Processing Media...", "success");
 
-            try {
-                // Will gracefully fail to fallback if captureFrameAndDuration is undefined
-                if (typeof captureFrameAndDuration === 'function') {
-                    currentUploadFrameMeta = await captureFrameAndDuration(file);
-                } else {
-                    throw new Error("Missing frame logic");
-                }
-            } catch (err) {
-                currentUploadFrameMeta = { duration: 60, dataUrl: "", blob: null };
-            }
+            currentUploadFrameMeta = await captureFrameAndDuration(file);
+            let finalType = originalType;
 
-            if (type === 'video-short' && currentUploadFrameMeta.duration > 180) {
-                showNotification("This video exceeds Shorts limit (3 mins).", "error");
-                return;
+            // Auto Short Rule
+            if (originalType === 'video-long' && currentUploadFrameMeta.duration < 180) {
+                finalType = 'video-short';
+                showNotification("Video under 3 mins. Switched to Short.", "success");
             }
 
             closePremiumUploadStudio(); 
             
-            if (type === 'video-short') {
+            if (finalType === 'video-short') {
                 const vidEl = document.getElementById('short-preview-el');
                 if (vidEl) vidEl.src = URL.createObjectURL(file);
+                initVisualTimeline(vidEl, 'sp-playhead', null);
+                
                 AppNavigation.pushPage('short-preview-page');
             } else {
                 const vidEl = document.getElementById('video-preview-el');
                 if (vidEl) vidEl.src = URL.createObjectURL(file);
                 
-                const timeDisplay = document.getElementById('vp-time-display');
-                if (timeDisplay) timeDisplay.innerText = `00:00 / ${formatDuration(currentUploadFrameMeta.duration)}`;
-                initVisualTimeline(vidEl, 'vp-playhead', 'vp-time-display');
+                const timeDisplay = document.getElementById('vp-duration');
+                if (timeDisplay) timeDisplay.innerText = formatDuration(currentUploadFrameMeta.duration);
+                initVisualTimeline(vidEl, 'vp-playhead', 'vp-duration');
                 
                 AppNavigation.pushPage('video-preview-page');
             }
         }
 
-        function handlePremiumImagesSelected(e) {
+        window.handleStudioPostSelected = function(e) {
             const files = Array.from(e.target.files);
             if (files.length === 0) return;
-            currentUploadFile = files[0]; // Assuming taking the first one for the preview
+            currentUploadFile = files[0]; 
             closePremiumUploadStudio();
             
-            const imgEl = document.getElementById('post-preview-img');
+            const imgEl = document.getElementById('pd-preview-img');
             if (imgEl) imgEl.src = URL.createObjectURL(currentUploadFile);
             
             AppNavigation.pushPage('post-preview-page');
-        }
+        };
 
         function initVisualTimeline(videoEl, playheadId, timeDisplayId) {
             const playhead = document.getElementById(playheadId);
-            const timeDisplay = document.getElementById(timeDisplayId);
+            const timeDisplay = timeDisplayId ? document.getElementById(timeDisplayId) : null;
             if (!videoEl) return;
 
             videoEl.ontimeupdate = () => {
                 if (videoEl.duration) {
                     const percentage = (videoEl.currentTime / videoEl.duration) * 100;
                     if (playhead) playhead.style.left = `${percentage}%`;
-                    if (timeDisplay) timeDisplay.innerText = `${formatDuration(videoEl.currentTime)} / ${formatDuration(videoEl.duration)}`;
+                    if (timeDisplay) timeDisplay.innerText = formatDuration(videoEl.duration - videoEl.currentTime);
                 }
             };
         }
 
-        function togglePremiumPreviewPlay(vidId, iconId) {
+        window.toggleStudioPreviewPlay = function(vidId, iconId) {
             const vid = document.getElementById(vidId);
-            const icon = iconId !== 'none' ? document.getElementById(iconId) : null;
+            const icon = document.getElementById(iconId);
             if (vid) {
                 if (vid.paused) {
                     vid.play().catch(()=>{});
-                    if (icon) icon.className = 'fas fa-pause';
+                    if (icon) {
+                        icon.style.opacity = '1';
+                        icon.className = 'fas fa-play center-play-indicator';
+                        setTimeout(() => icon.style.opacity = '0', 300);
+                    }
                 } else {
                     vid.pause();
-                    if (icon) icon.className = 'fas fa-play';
+                    if (icon) {
+                        icon.style.opacity = '1';
+                        icon.className = 'fas fa-pause center-play-indicator';
+                        setTimeout(() => icon.style.opacity = '0', 300);
+                    }
                 }
             }
-        }
+        };
 
-        function updatePremiumCharCount(el, countId) {
+        window.gotoShortEditPage = function() {
+            playUI('click');
+            AppNavigation.pop(); // Close initial preview
+            
+            const editVid = document.getElementById('short-edit-el');
+            if(editVid) {
+                editVid.src = URL.createObjectURL(currentUploadFile);
+            }
+            
+            // Handle Download Visibility (Only show if recorded via camera)
+            const dlBtn = document.getElementById('short-download-btn');
+            if(dlBtn) {
+                dlBtn.style.display = isCameraRecorded ? 'flex' : 'none';
+            }
+            
+            AppNavigation.pushPage('short-edit-page');
+        };
+
+        window.downloadRecordedShort = function() {
+            playUI('click');
+            if(!currentUploadFile) return;
+            showNotification("Saving video to gallery...", "success");
+            
+            const url = URL.createObjectURL(currentUploadFile);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = currentUploadFile.name || "flaynity_recorded_short.webm";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification("Video saved successfully!", "success");
+        };
+
+        window.updatePremiumCharCount = function(el, countId) {
             const countEl = document.getElementById(countId);
             if (countEl) countEl.innerText = `${el.value.length}/${el.maxLength}`;
-        }
+        };
 
-        function togglePremiumSchedule(selectId, containerId) {
-            const select = document.getElementById(selectId);
-            const container = document.getElementById(containerId);
-            if (select && container) {
-                container.style.display = select.value === 'Schedule' ? 'block' : 'none';
-            }
-        }
-
-        function formatDuration(seconds) {
-            const min = Math.floor(seconds / 60);
-            const sec = Math.floor(seconds % 60);
-            return `${min < 10 ? '0' : ''}${min}:${sec < 10 ? '0' : ''}${sec}`;
-        }
-
-        function gotoPremiumUploadDetails(type) {
+        window.gotoStudioDetails = function(type) {
             playUI('click');
             AppNavigation.pop(); 
             
@@ -4762,33 +4631,113 @@ function __flaynityReady(fn) {
                 if (thumb && currentUploadFrameMeta) thumb.src = currentUploadFrameMeta.dataUrl;
                 document.getElementById('vd-title').value = currentUploadFile.name.split('.')[0];
                 document.getElementById('vd-desc').value = "";
+                document.getElementById('vd-visibility-text').innerHTML = `<i class="fas fa-globe" style="margin-right: 8px;"></i> Publish`;
+                document.getElementById('vd-visibility-val').value = "Publish";
                 AppNavigation.pushPage('video-details-page');
             } else if (type === 'short') {
                 const thumb = document.getElementById('sd-thumb');
                 if (thumb && currentUploadFrameMeta) thumb.src = currentUploadFrameMeta.dataUrl;
-                document.getElementById('sd-title').value = currentUploadFile.name.split('.')[0];
+                document.getElementById('sd-title').value = "";
                 document.getElementById('sd-desc').value = "";
+                document.getElementById('sd-visibility-text').innerHTML = `<i class="fas fa-globe" style="margin-right: 8px;"></i> Publish`;
+                document.getElementById('sd-visibility-val').value = "Publish";
                 AppNavigation.pushPage('short-details-page');
             } else if (type === 'post') {
                 document.getElementById('pd-title').value = "";
+                document.getElementById('pd-visibility-text').innerHTML = `<i class="fas fa-globe" style="margin-right: 8px;"></i> Publish`;
+                document.getElementById('pd-visibility-val').value = "Publish";
                 AppNavigation.pushPage('post-details-page');
             }
-        }
+        };
 
-        async function publishPremiumVideoOrShort(modeType) {
+        // Custom Thumbnail Upload
+        window.triggerStudioCustomThumb = function() {
+            playUI('click');
+            document.getElementById('custom-thumb-input').click();
+        };
+
+        window.handleCustomThumbSelected = function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const dataUrl = event.target.result;
+                if(!currentUploadFrameMeta) currentUploadFrameMeta = {};
+                currentUploadFrameMeta.dataUrl = dataUrl;
+                currentUploadFrameMeta.blob = file;
+
+                const vdThumb = document.getElementById('vd-thumb');
+                const sdThumb = document.getElementById('sd-thumb');
+                if(vdThumb) vdThumb.src = dataUrl;
+                if(sdThumb) sdThumb.src = dataUrl;
+                showNotification("Custom thumbnail applied!", "success");
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // Premium Visibility Popup Logic
+        let currentVisibilityTarget = 'vd';
+        window.openVisibilityPopup = function(targetPrefix) {
+            playUI('click');
+            currentVisibilityTarget = targetPrefix;
+            AppNavigation.pushModal('visibility-popup');
+            document.getElementById('schedule-date-picker-wrap').style.display = 'none';
+        };
+
+        window.applyVisibility = function(val) {
+            playUI('click');
+            const textEl = document.getElementById(`${currentVisibilityTarget}-visibility-text`);
+            const valEl = document.getElementById(`${currentVisibilityTarget}-visibility-val`);
+            
+            if(val === 'Publish') {
+                if(textEl) textEl.innerHTML = `<i class="fas fa-globe" style="margin-right: 8px;"></i> Publish`;
+                if(valEl) valEl.value = "Publish";
+                AppNavigation.pop();
+            } else if(val === 'Private') {
+                if(textEl) textEl.innerHTML = `<i class="fas fa-lock" style="margin-right: 8px;"></i> Private`;
+                if(valEl) valEl.value = "Private";
+                AppNavigation.pop();
+            } else if(val === 'Schedule') {
+                document.getElementById('schedule-date-picker-wrap').style.display = 'block';
+            }
+        };
+
+        window.confirmScheduleDate = function() {
+            playUI('click');
+            const dateVal = document.getElementById('schedule-date-input').value;
+            if(!dateVal) {
+                showNotification("Please select a valid date and time", "error");
+                return;
+            }
+            
+            const textEl = document.getElementById(`${currentVisibilityTarget}-visibility-text`);
+            const valEl = document.getElementById(`${currentVisibilityTarget}-visibility-val`);
+            const schedValEl = document.getElementById(`${currentVisibilityTarget}-schedule-val`);
+            
+            if(textEl) textEl.innerHTML = `<i class="fas fa-calendar-alt" style="margin-right: 8px;"></i> Scheduled`;
+            if(valEl) valEl.value = "Schedule";
+            if(schedValEl) schedValEl.value = dateVal;
+            
+            AppNavigation.pop();
+            showNotification("Schedule confirmed!", "success");
+        };
+
+        // Final Publish System
+        window.publishStudioMedia = async function(modeType) {
             playUI('click');
             const isShort = modeType === 'video-short';
             const prefix = isShort ? 'sd' : 'vd';
             
             const title = document.getElementById(`${prefix}-title`).value.trim();
             const desc = document.getElementById(`${prefix}-desc`).value.trim();
-            const visibility = document.getElementById(`${prefix}-visibility`).value;
+            const visibility = document.getElementById(`${prefix}-visibility-val`).value;
             const allowComments = document.getElementById(`${prefix}-allow-comments`).checked;
             const hideLikes = document.getElementById(`${prefix}-hide-likes`).checked;
-            const scheduleDate = document.getElementById(`${prefix}-schedule-date`).value;
+            const scheduleDate = document.getElementById(`${prefix}-schedule-val`).value;
             
-            if (!title || !desc) {
-                showNotification("Title and description are required!", "error");
+            if (!title) {
+                showNotification(isShort ? "Caption is required!" : "Title is required!", "error");
                 return;
             }
 
@@ -4828,14 +4777,14 @@ function __flaynityReady(fn) {
             showNotification("Added to Upload Queue", "success");
             openUploadManager();
             triggerNextActiveUpload();
-        }
+        };
 
-        async function publishPremiumPostAction() {
+        window.publishStudioPost = async function() {
             playUI('click');
             const title = document.getElementById('pd-title').value.trim();
-            const visibility = document.getElementById('pd-visibility').value;
+            const visibility = document.getElementById('pd-visibility-val').value;
             const hideLikes = document.getElementById('pd-hide-likes').checked;
-            const scheduleDate = document.getElementById('pd-schedule-date').value;
+            const scheduleDate = document.getElementById('pd-schedule-val').value;
             
             if (!title) {
                 showNotification("Title/Caption is required!", "error");
@@ -4843,7 +4792,7 @@ function __flaynityReady(fn) {
             }
             
             showNotification("Publishing post...", "success");
-            const pubBtn = document.getElementById('premium-post-publish-btn');
+            const pubBtn = document.getElementById('pd-publish-btn');
             if (pubBtn) pubBtn.disabled = true;
 
             try {
@@ -4889,18 +4838,9 @@ function __flaynityReady(fn) {
             } finally {
                 if (pubBtn) pubBtn.disabled = false;
             }
-        }
+        };
 
-        // Initialize record button after DOM loads
+        // Initialize Native Button Bindings Automatically When DOM Loads
         __flaynityReady(function() {
             initShortRecordButton();
         });
-
-        function openUploadManager() {
-            updateManagerUI();
-            AppNavigation.pushModal('upload-manager-screen');
-        }
-
-        function closeUploadManager() {
-            AppNavigation.pop();
-        }

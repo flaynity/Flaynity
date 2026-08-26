@@ -744,6 +744,47 @@
             background-color: var(--bg-color) !important;
         }
 
+/* Full-Bleed Feed Media: Long Video + Post Images */
+/* Home .tab-content keeps 16px content padding for text, while media must touch both screen edges. */
+#home-feed-container .long-video-feed-card {
+    width: calc(100% + 32px) !important;
+    margin-left: -16px !important;
+    margin-right: -16px !important;
+    border-radius: 0 !important;
+}
+#home-feed-container .long-video-thumb-container {
+    width: 100% !important;
+    aspect-ratio: 16 / 9 !important;
+    border-radius: 0 !important;
+}
+#home-feed-container .long-video-thumb-container > img {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    object-fit: cover !important;
+}
+#home-feed-container .post-card {
+    border-radius: 0 !important;
+}
+#home-feed-container .post-card .post-image-full-bleed,
+#home-feed-container .post-card .post-image-grid {
+    width: calc(100% + 32px) !important;
+    margin-left: -16px !important;
+    margin-right: -16px !important;
+    border-radius: 0 !important;
+}
+#home-feed-container .post-card .post-image-full-bleed {
+    aspect-ratio: 3 / 4 !important;
+    overflow: hidden !important;
+}
+#home-feed-container .post-card .post-image-full-bleed img {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    object-fit: cover !important;
+    border-radius: 0 !important;
+}
+
 /* Flaynity Professional Long Video Player */
 #full-movie-page .flaynity-player-stage{position:sticky;top:0;z-index:2020;width:100%;aspect-ratio:16/9;background:#000;overflow:hidden;}
 #full-movie-page .flaynity-player-stage .full-page-banner{transition:opacity .18s ease;}

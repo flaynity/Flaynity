@@ -4509,7 +4509,6 @@ function openPremiumUploadStudio() {
             studio.style.opacity = 1;
         });
         setupModeSliderSwipe();
-        // Always switch to Short mode when opening studio
         switchUploadMode('short');
     }
 }
@@ -4526,6 +4525,7 @@ function closePremiumUploadStudio() {
     }
 }
 
+// Fixed Centered Mode Slider
 function switchUploadMode(mode) {
     currentUploadMode = mode;
     const slider = document.getElementById('mode-slider');
@@ -4536,11 +4536,12 @@ function switchUploadMode(mode) {
         else item.classList.remove('active');
     });
 
-    // Auto Center Slider
     const activeItem = document.querySelector(`.mode-item[data-mode="${mode}"]`);
     if (slider && activeItem) {
-        const centerOffset = (window.innerWidth / 2) - (activeItem.offsetLeft + (activeItem.offsetWidth / 2));
-        slider.style.transform = `translateX(${centerOffset}px)`;
+        const wrapWidth = document.getElementById('upload-mode-slider-wrap').offsetWidth;
+        const itemCenter = activeItem.offsetLeft + (activeItem.offsetWidth / 2);
+        const offset = (wrapWidth / 2) - itemCenter;
+        slider.style.transform = `translateX(${offset}px)`;
     }
     
     document.getElementById('upload-video-view').style.display = mode === 'video' ? 'flex' : 'none';
@@ -4670,7 +4671,6 @@ function setCameraSetting(type, val) {
     const modal = document.getElementById(type + '-popup-modal');
     const content = document.getElementById(type + '-popup-content');
     
-    // Update UI Selection
     if(content) {
         content.querySelectorAll('.studio-popup-option').forEach(opt => {
             if (opt.innerText.includes(val) || (val===0 && opt.innerText.includes('Off'))) {
@@ -4694,7 +4694,6 @@ function setCameraSetting(type, val) {
         showNotification(`Preview will play at ${val}x`, "success");
     }
 
-    // Close Modal
     if(content) {
         content.style.transform = 'translateY(100%)';
         setTimeout(() => {
@@ -4703,7 +4702,6 @@ function setCameraSetting(type, val) {
     }
 }
 
-// Close popups on click outside
 document.querySelectorAll('.studio-popup-modal').forEach(modal => {
     modal.addEventListener('click', (e) => {
         if(e.target === modal) {
@@ -4715,37 +4713,51 @@ document.querySelectorAll('.studio-popup-modal').forEach(modal => {
 });
 
 // ---------------------------------------------------------
-// TAP & HOLD TO RECORD LOGIC (Fix)
+// PERFECT TAP & HOLD TO RECORD LOGIC (Fix)
 // ---------------------------------------------------------
 function setupHoldToRecord() {
     const recOuter = document.getElementById('record-btn-outer');
     if(!recOuter) return;
     
     let isRecording = false;
-    let holdTimer = null;
+    let holdTimeout = null;
+    let isHoldAction = false;
 
     const pointerDown = (e) => {
         e.preventDefault();
-        if(isRecording) {
-            // Already recording, stop it
-            stopCameraRecording();
-            isRecording = false;
-        } else {
-            // Start recording sequence
+        isHoldAction = false;
+
+        if (!isRecording) {
             initiateRecordingSequence();
             isRecording = true;
+        } else {
+            // Tap again to stop (Tap to start, Tap to stop mode)
+            stopCameraRecording();
+            isRecording = false;
+            return;
         }
+
+        holdTimeout = setTimeout(() => {
+            isHoldAction = true;
+        }, 350); // Holding for > 350ms means release will stop it
     };
 
     const pointerUp = (e) => {
         e.preventDefault();
-        // If user releases touch, we don't immediately stop unless they were holding for a while.
-        // For simplicity and matching TikTok: Tap to start, Tap to stop. Hold is tricky via JS without pointer events.
-        // We will keep it strictly Tap to Start / Tap to Stop for best mobile WebView compat.
+        clearTimeout(holdTimeout);
+        
+        if (isHoldAction && isRecording) {
+            // It was a hold action, release stops the recording
+            stopCameraRecording();
+            isRecording = false;
+        }
     };
 
     recOuter.addEventListener('touchstart', pointerDown, {passive: false});
     recOuter.addEventListener('mousedown', pointerDown);
+    recOuter.addEventListener('touchend', pointerUp);
+    recOuter.addEventListener('mouseup', pointerUp);
+    recOuter.addEventListener('mouseleave', pointerUp); 
 }
 
 function initiateRecordingSequence() {
@@ -4794,7 +4806,6 @@ function startCameraRecording() {
         innerBtn.style.borderRadius = '8px';
     }
     
-    // Hide UI during recording
     const ctrls = document.getElementById('short-right-controls');
     const gal = document.getElementById('btn-cam-gallery');
     const slider = document.getElementById('upload-mode-slider-wrap');
@@ -4806,7 +4817,7 @@ function startCameraRecording() {
     if(closeBtn) closeBtn.style.display = 'none';
     
     const bottomBar = document.getElementById('camera-bottom-bar');
-    if(bottomBar) bottomBar.style.display = 'flex'; // Ensure record button is visible
+    if(bottomBar) bottomBar.style.display = 'flex'; 
     
     const timerEl = document.getElementById('recording-timer');
     if(timerEl) {
@@ -4849,7 +4860,6 @@ function stopCameraRecording() {
         innerBtn.style.borderRadius = '50%';
     }
     
-    // Restore UI
     const ctrls = document.getElementById('short-right-controls');
     const gal = document.getElementById('btn-cam-gallery');
     const slider = document.getElementById('upload-mode-slider-wrap');
@@ -4858,7 +4868,7 @@ function stopCameraRecording() {
     if(ctrls) ctrls.style.display = 'flex';
     if(gal) gal.style.display = 'block';
     if(slider) slider.style.display = 'flex';
-    if(closeBtn) closeBtn.style.display = 'flex';
+    if(closeBtn) closeBtn.style.display = 'block';
     
     const timerEl = document.getElementById('recording-timer');
     if(timerEl) timerEl.style.display = 'none';
@@ -4909,7 +4919,7 @@ async function handlePremiumFileSelected(e, type) {
     if (type === 'video-long' && currentUploadFrameMeta.duration < 180) {
         showNotification("Video < 3 min! Automatically switching to Short format.", "success");
         type = 'video-short';
-        isShortFromCamera = false; // Because it was selected from gallery
+        isShortFromCamera = false;
     }
 
     closePremiumUploadStudio(); 
@@ -4918,22 +4928,20 @@ async function handlePremiumFileSelected(e, type) {
         const vidEl = document.getElementById('short-preview-el');
         if (vidEl) {
             vidEl.src = URL.createObjectURL(file);
-            vidEl.playbackRate = currentRecordSpeed; // Apply chosen speed to preview
+            vidEl.playbackRate = currentRecordSpeed; 
         }
         
         const dlBtn = document.getElementById('short-preview-download-btn');
         if(dlBtn) dlBtn.style.display = isShortFromCamera ? 'flex' : 'none';
         
-        initVisualTimeline(vidEl, 'sp-timeline-container', 'sp-playhead', null);
+        // Full interactive trimmer for shorts
+        initShortTrimmer(vidEl, 'sp-trimmer-container', 'sp-trim-start', 'sp-trim-end', 'sp-trim-playhead', 'sp-time-display');
         AppNavigation.pushPage('short-preview-page');
     } else {
         const vidEl = document.getElementById('video-preview-el');
         if (vidEl) vidEl.src = URL.createObjectURL(file);
         
-        const timeDisplay = document.getElementById('vp-time-display');
-        if (timeDisplay) timeDisplay.innerText = `00:00 / ${formatDuration(currentUploadFrameMeta.duration)}`;
-        initVisualTimeline(vidEl, 'vp-timeline-container', 'vp-playhead', 'vp-time-display');
-        
+        // Timeline removed for video preview
         AppNavigation.pushPage('video-preview-page');
     }
 }
@@ -4975,52 +4983,96 @@ function captureFrameAndDuration(file) {
 }
 
 // ---------------------------------------------------------
-// DRAGGABLE TIMELINE LOGIC (Fix)
+// SHORT TRIMMER / TIMELINE LOGIC (Perfected)
 // ---------------------------------------------------------
-function initVisualTimeline(videoEl, timelineContainerId, playheadId, timeDisplayId) {
-    const container = document.getElementById(timelineContainerId);
+let activeTrimStart = 0; // percentage 0 to 1
+let activeTrimEnd = 1;   // percentage 0 to 1
+
+function initShortTrimmer(videoEl, containerId, startId, endId, playheadId, timeDisplayId) {
+    const container = document.getElementById(containerId);
+    const startHandle = document.getElementById(startId);
+    const endHandle = document.getElementById(endId);
     const playhead = document.getElementById(playheadId);
     const timeDisplay = document.getElementById(timeDisplayId);
-    if (!videoEl || !container) return;
+    if (!videoEl || !container || !startHandle || !endHandle || !playhead) return;
+
+    activeTrimStart = 0;
+    activeTrimEnd = 1;
+    startHandle.style.left = '0%';
+    endHandle.style.left = '100%';
 
     videoEl.ontimeupdate = () => {
         if (videoEl.duration) {
-            const percentage = (videoEl.currentTime / videoEl.duration) * 100;
-            if (playhead) playhead.style.left = `${percentage}%`;
-            if (timeDisplay) timeDisplay.innerText = `${formatDuration(videoEl.currentTime)} / ${formatDuration(videoEl.duration)}`;
+            const duration = videoEl.duration;
+            let current = videoEl.currentTime;
+            
+            // Loop within bounds
+            if (current >= activeTrimEnd * duration) {
+                videoEl.currentTime = activeTrimStart * duration;
+                current = videoEl.currentTime;
+            } else if (current < activeTrimStart * duration) {
+                videoEl.currentTime = activeTrimStart * duration;
+                current = videoEl.currentTime;
+            }
+
+            const percentage = (current / duration) * 100;
+            playhead.style.left = `${percentage}%`;
+            
+            const selectedDuration = (activeTrimEnd - activeTrimStart) * duration;
+            if (timeDisplay) timeDisplay.innerText = `${formatDuration(current)} / ${formatDuration(selectedDuration)}`;
         }
     };
 
-    const seek = (e) => {
+    let activeDrag = null; // 'start' or 'end'
+
+    const handleMove = (e) => {
+        if(!activeDrag) return;
         const rect = container.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         let x = clientX - rect.left;
         x = Math.max(0, Math.min(x, rect.width));
         const pct = x / rect.width;
-        if(videoEl.duration) videoEl.currentTime = pct * videoEl.duration;
+
+        if (activeDrag === 'start') {
+            if(pct >= activeTrimEnd - 0.05) return; // Min gap
+            activeTrimStart = pct;
+            startHandle.style.left = `${pct * 100}%`;
+            if(videoEl.duration) videoEl.currentTime = pct * videoEl.duration;
+        } else if (activeDrag === 'end') {
+            if(pct <= activeTrimStart + 0.05) return; // Min gap
+            activeTrimEnd = pct;
+            endHandle.style.left = `${pct * 100}%`;
+            if(videoEl.duration) videoEl.currentTime = activeTrimStart * videoEl.duration; // Reset to start
+        }
     };
 
-    container.addEventListener('mousedown', (e) => {
-        seek(e);
-        const onMouseMove = (e) => seek(e);
-        const onMouseUp = () => {
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
+    const attachDrag = (element, type) => {
+        const startDrag = (e) => {
+            e.stopPropagation();
+            activeDrag = type;
+            videoEl.pause(); // Pause while dragging
+            
+            const onMove = (evt) => handleMove(evt);
+            const onEnd = () => {
+                activeDrag = null;
+                videoEl.play().catch(()=>{});
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onEnd);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend', onEnd);
+            };
+            
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+            document.addEventListener('touchmove', onMove, {passive: false});
+            document.addEventListener('touchend', onEnd);
         };
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-    });
+        element.addEventListener('mousedown', startDrag);
+        element.addEventListener('touchstart', startDrag, {passive: false});
+    };
 
-    container.addEventListener('touchstart', (e) => {
-        seek(e);
-        const onTouchMove = (e) => seek(e);
-        const onTouchEnd = () => {
-            document.removeEventListener('touchmove', onTouchMove);
-            document.removeEventListener('touchend', onTouchEnd);
-        };
-        document.addEventListener('touchmove', onTouchMove);
-        document.addEventListener('touchend', onTouchEnd);
-    });
+    attachDrag(startHandle, 'start');
+    attachDrag(endHandle, 'end');
 }
 
 function togglePremiumPreviewPlay(vidId, iconId) {
@@ -5152,6 +5204,12 @@ async function publishPremiumVideoOrShort(modeType) {
     const uniqueId = "st_" + Date.now() + "_" + Math.floor(Math.random()*1000);
     const fileKey = `uploads/${uniqueId}/${currentUploadFile.name.replace(/\s+/g, '_')}`;
     
+    // Convert active trim percentage to actual duration if trimmed
+    let finalDuration = currentUploadFrameMeta.duration;
+    if (isShort && activeTrimEnd !== undefined && activeTrimStart !== undefined) {
+        finalDuration = (activeTrimEnd - activeTrimStart) * currentUploadFrameMeta.duration;
+    }
+
     const queueItem = {
         id: uniqueId,
         file: currentUploadFile,
@@ -5164,7 +5222,7 @@ async function publishPremiumVideoOrShort(modeType) {
         showLikes: true,
         status: "waiting", 
         progress: 0,
-        duration: currentUploadFrameMeta.duration,
+        duration: finalDuration,
         thumbDataUrl: currentUploadFrameMeta.dataUrl,
         thumbBlob: currentUploadFrameMeta.blob, 
         thumbKey: `uploads/${uniqueId}/thumbnail.jpg`,
@@ -5258,7 +5316,3 @@ function openUploadManager() {
 function closeUploadManager() {
     AppNavigation.pop();
 }
-
-// =========================================================
-// END PREMIUM UPLOAD STUDIO FUNCTIONS
-// =========================================================

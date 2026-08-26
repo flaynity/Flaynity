@@ -473,7 +473,7 @@
         .nav-item.active .icon-unselected { display: none !important; }
 
 /* Full Screen Movie Page */
-        #full-movie-page { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--bg-color); z-index: 2000; display: none; overflow-y: auto; overscroll-behavior: contain; animation: slideUpFade 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #full-movie-page { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--bg-color); z-index: 2000; display: none; overflow-y: auto; animation: slideUpFade 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes slideUpFade { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
         .back-btn { position: absolute; top: 20px; left: 20px; background: var(--surface); border: 1px solid var(--glass-border); color: var(--text-main); width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; z-index: 2010; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
@@ -743,82 +743,6 @@
         #full-movie-page {
             background-color: var(--bg-color) !important;
         }
-
-/* Full-Bleed Feed Media: Long Video + Post Images */
-/* Home .tab-content keeps 16px content padding for text, while media must touch both screen edges. */
-#home-feed-container .long-video-feed-card {
-    width: calc(100% + 32px) !important;
-    margin-left: -16px !important;
-    margin-right: -16px !important;
-    border-radius: 0 !important;
-}
-#home-feed-container .long-video-thumb-container {
-    width: 100% !important;
-    aspect-ratio: 16 / 9 !important;
-    border-radius: 0 !important;
-}
-#home-feed-container .long-video-thumb-container > img {
-    width: 100% !important;
-    height: 100% !important;
-    display: block !important;
-    object-fit: cover !important;
-}
-#home-feed-container .post-card {
-    border-radius: 0 !important;
-}
-#home-feed-container .post-card .post-image-full-bleed,
-#home-feed-container .post-card .post-image-grid {
-    width: calc(100% + 32px) !important;
-    margin-left: -16px !important;
-    margin-right: -16px !important;
-    border-radius: 0 !important;
-}
-#home-feed-container .post-card .post-image-full-bleed {
-    aspect-ratio: 3 / 4 !important;
-    overflow: hidden !important;
-}
-#home-feed-container .post-card .post-image-full-bleed img {
-    width: 100% !important;
-    height: 100% !important;
-    display: block !important;
-    object-fit: cover !important;
-    border-radius: 0 !important;
-}
-
-/* Flaynity Professional Long Video Player */
-#full-movie-page .flaynity-player-stage{position:sticky;top:0;z-index:2020;width:100%;aspect-ratio:16/9;background:#000;overflow:hidden;}
-#full-movie-page .flaynity-player-stage .full-page-banner{transition:opacity .18s ease;}
-#full-movie-page .flaynity-player-stage .video-container{border:0!important;}
-.flaynity-long-player{position:relative;width:100%;height:100%;background:#000;overflow:hidden;touch-action:manipulation;}
-.flaynity-long-player video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:block;}
-.flaynity-player-controls{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;justify-content:space-between;padding:10px 12px 8px;background:linear-gradient(to bottom,rgba(0,0,0,.55),transparent 28%,transparent 68%,rgba(0,0,0,.72));opacity:0;visibility:hidden;transition:opacity .18s ease,visibility .18s ease;pointer-events:none;}
-.flaynity-player-controls.visible{opacity:1;visibility:visible;pointer-events:auto;}
-.flaynity-player-top{display:flex;justify-content:flex-end;align-items:center;}
-.flaynity-player-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:28px;}
-.flaynity-player-icon,.flaynity-player-center-btn,.flaynity-player-play{border:0;color:#fff;background:rgba(0,0,0,.38);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;cursor:pointer;}
-.flaynity-player-icon{width:40px;height:40px;border-radius:50%;font-size:16px;}
-.flaynity-player-center-btn{width:48px;height:48px;border-radius:50%;font-size:18px;}
-.flaynity-player-play{width:62px;height:62px;border-radius:50%;font-size:22px;box-shadow:0 6px 20px rgba(0,0,0,.28);}
-.flaynity-player-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#fff;font-size:12px;font-weight:700;margin-top:auto;padding-bottom:7px;}
-.flaynity-player-progress{height:3px;background:rgba(255,255,255,.3);border-radius:99px;overflow:hidden;width:100%;}
-#flaynity-player-progress-fill{height:100%;width:0;background:#fff;border-radius:99px;transition:width .08s linear;}
-.flaynity-player-buffer{position:absolute;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .15s;}
-.flaynity-player-buffer.visible{opacity:1;}
-.flaynity-player-buffer span{width:44px;height:44px;border:4px solid rgba(255,255,255,.18);border-top-color:#fff;border-radius:50%;animation:flaynityPlayerSpin .8s linear infinite;}
-@keyframes flaynityPlayerSpin{to{transform:rotate(360deg)}}
-.flaynity-seek-indicator{position:absolute;top:50%;z-index:40;transform:translateY(-50%) scale(.8);width:92px;height:92px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;background:rgba(0,0,0,.5);font-size:17px;font-weight:900;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;}
-.flaynity-seek-indicator.forward{right:12%;}.flaynity-seek-indicator.backward{left:12%;}.flaynity-seek-indicator.visible{opacity:1;transform:translateY(-50%) scale(1);}
-.flaynity-player-menu,.flaynity-player-submenu{position:absolute;z-index:60;right:12px;top:54px;min-width:180px;padding:6px;border-radius:14px;background:rgba(18,18,18,.96);box-shadow:0 10px 30px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);display:none;}
-.flaynity-player-menu.visible,.flaynity-player-submenu.visible{display:block;}
-.flaynity-player-menu button,.flaynity-player-submenu button{width:100%;border:0;background:transparent;color:#fff;padding:11px 12px;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:13px;font-weight:700;text-align:left;}
-.flaynity-player-menu button:active,.flaynity-player-submenu button:active,.flaynity-player-submenu button.selected{background:rgba(255,255,255,.12);}
-.flaynity-player-submenu{top:54px;max-height:270px;overflow:auto;}
-.flaynity-player-submenu button.locked{opacity:.45;cursor:not-allowed;}
-.flaynity-player-landscape #full-movie-page{z-index:9999999;}
-.flaynity-long-player.landscape-fullscreen{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;z-index:99999999!important;aspect-ratio:auto!important;}
-.flaynity-long-player.landscape-fullscreen video{object-fit:contain;}
-@media (orientation:landscape){.flaynity-long-player.landscape-fullscreen .flaynity-player-center{gap:34px;}}
-
 
         .premium-white-card-watch {
             background: var(--surface);
@@ -1160,7 +1084,7 @@
 <button class="back-btn" onclick="executeBackAction(); playUI('click')">
 <i class="fas fa-arrow-left"></i>
 </button>
-<div class="flaynity-player-stage">
+<div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000000;">
 <div id="video-player-skeleton" style="position: absolute; top:0; left:0; width:100%; height:100%; background:#000000; display:flex; align-items:center; justify-content:center; z-index:11;">
 <div style="width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
 </div>

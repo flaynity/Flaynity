@@ -396,63 +396,63 @@ window.FlaynityNativeRefresh = function() {
     SyncManager.refreshEverything();
 };
 
-let previousShortsCount = -1;
-let previousLongsCount = -1;
-let previousPostsCount = -1;
-let _feedListenersAttached = false;
-let realtimeListenerRegistry = {};
-window.__flaynityFeedGeneration = 0;
-
 // =========================================================
 // GLOBAL SYNC MANAGER (No-Reload Synchronization Engine)
 // =========================================================
 const SyncManager = {
     isRefreshing: false,
-    refreshGeneration: 0,
-
-    // Refresh means: clear the current feed first, then re-attach ONE realtime
-    // listener per collection. Firebase's initial `value` event supplies the
-    // newest snapshot, so no static `.once()` feed fetch is needed.
     refreshEverything: async function() {
         if (this.isRefreshing || !navigator.onLine) return;
         this.isRefreshing = true;
-        const generation = ++this.refreshGeneration;
 
         try {
-            // 1) Remove old listeners and old UI/data immediately.
             _detachAllGlobalFeedListeners();
-            _clearRealtimeFeedState(true);
 
-            // 2) Reconnect Firebase and attach fresh realtime listeners.
-            try { db.goOnline(); } catch (e) {}
-            startRealtimeFeedsListener(generation);
+            previousShortsCount = -1;
+            previousLongsCount  = -1;
+            previousPostsCount  = -1;
 
-            // Profile/channel data is also re-bound through the same realtime
-            // listener manager. Analytics is recalculated from the latest
-            // in-memory state after the feed listeners deliver their snapshots.
-            const activeNav = document.querySelector('.nav-item.active');
-            if (activeNav) {
-                const activeTabId = activeNav.id.replace('nav-', '');
-                adjustHeaderForActiveTab(activeTabId);
-            }
+            await this.refreshProfile();
+
+            const [longsSnap, shortsSnap, postsSnap] = await Promise.all([
+                db.ref('admin_panel/movies/user_uploads').once('value'),
+                db.ref('admin_panel/movies/shorts').once('value'),
+                db.ref('admin_panel/posts').once('value')
+            ]);
+
+            const now = Date.now();
+            allLongVideos      = longsSnap.val()  ? Object.values(longsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
+            allShorts          = shortsSnap.val() ? Object.values(shortsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
+            allCommunityPosts  = postsSnap.val()  ? Object.values(postsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
+
+            startRealtimeFeedsListener();
+
+            buildHomeFeed();
+
+            const shortsTab = document.getElementById('shorts-tab');
+            if (shortsTab && shortsTab.classList.contains('active')) buildShortsPage();
 
             this.refreshAnalytics();
+
         } catch (err) {
-            console.error('SyncManager realtime refresh error:', err);
-            throw err;
+            console.error("SyncManager Execution Error:", err);
         } finally {
             this.isRefreshing = false;
         }
     },
 
     refreshProfile: async function() {
-        // Kept for compatibility with existing callers. Profile data is now
-        // maintained by realtime listeners instead of one-time feed fetches.
         const currentUser = auth.currentUser;
         if (currentUser) {
             try { db.ref(`channels/${currentUser.uid}`).off(); } catch(e) {}
             try { db.ref(`users/${currentUser.uid}`).off(); } catch(e) {}
-            bindRealtimeProfileListeners(currentUser.uid);
+
+            const snap = await db.ref(`channels/${currentUser.uid}`).once('value');
+            currentChannelData = snap.val();
+            if (currentChannelData) {
+                localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+            }
+            initYouTabUI();
         }
     },
 
@@ -464,156 +464,7 @@ const SyncManager = {
     }
 };
 
-function _clearRealtimeFeedState(clearUI = false) {
-    allAdminMovies = [];
-    allShorts = [];
-    allLongVideos = [];
-    allCommunityPosts = [];
-    previousShortsCount = -1;
-    previousLongsCount = -1;
-    previousPostsCount = -1;
-
-    if (!clearUI) return;
-
-    const homeFeed = document.getElementById('home-feed-container');
-    if (homeFeed) homeFeed.innerHTML = getHomeSkeletonHTML();
-
-    const shortsContainer = document.getElementById('shorts-swiper-container');
-    if (shortsContainer) shortsContainer.innerHTML = getShortsSkeletonHTML();
-
-    const searchResults = document.getElementById('search-results');
-    if (searchResults) {
-        searchResults.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);">Loading latest data...</div>';
-    }
-}
-
-function _dedupeById(list) {
-    const seen = new Set();
-    return (Array.isArray(list) ? list : []).filter(item => {
-        const id = item && item.id != null ? String(item.id) : '';
-        if (!id || seen.has(id)) return false;
-        seen.add(id);
-        return true;
-    });
-}
-
-function _sortNewest(list) {
-    return _dedupeById(list).sort((a, b) => {
-        const at = Number(a?.createdAt || a?.timestamp || 0);
-        const bt = Number(b?.createdAt || b?.timestamp || 0);
-        return bt - at;
-    });
-}
-
-function bindRealtimeProfileListeners(userId) {
-    if (!userId || !navigator.onLine) return;
-    const channelRef = db.ref(`channels/${userId}`);
-    const userRef = db.ref(`users/${userId}`);
-
-    channelRef.off();
-    userRef.off();
-
-    channelRef.on('value', snapshot => {
-        try {
-            currentChannelData = snapshot.val();
-            if (currentChannelData) {
-                localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
-            }
-            const activeNav = document.querySelector('.nav-item.active');
-            if (activeNav && activeNav.id === 'nav-you') initYouTabUI();
-            updateBottomNavAvatar();
-        } catch (e) {}
-    });
-
-    userRef.on('value', snapshot => {
-        try {
-            const userData = snapshot.val() || {};
-            const currentUser = auth.currentUser;
-            const photoURL = userData.photoURL || currentUser?.photoURL || '';
-            renderUserAvatar(photoURL, currentUser?.email || '');
-        } catch (e) {}
-    });
-}
-
-function startRealtimeFeedsListener(generation = ++window.__flaynityFeedGeneration) {
-    if (!navigator.onLine) return;
-
-    // Never stack listeners. The previous generation is fully detached first.
-    _detachAllGlobalFeedListeners();
-    _feedListenersAttached = true;
-    window.__flaynityFeedGeneration = generation;
-
-    const now = Date.now();
-    const attach = (path, handler) => {
-        const ref = db.ref(path);
-        ref.on('value', handler);
-        realtimeListenerRegistry[path] = { ref, handler };
-    };
-
-    attach('admin_panel/movies/user_uploads', (snap) => {
-        if (generation !== window.__flaynityFeedGeneration) return;
-        try {
-            const data = snap.val() || {};
-            const values = Object.values(data).filter(m => !m.scheduledTime || Number(m.scheduledTime) <= Date.now());
-            allLongVideos = _sortNewest(values);
-
-            // Keep admin movie cache duplicate-free.
-            const merged = _dedupeById([...allAdminMovies, ...allLongVideos]);
-            allAdminMovies = _sortNewest(merged);
-            previousLongsCount = allLongVideos.length;
-            buildHomeFeed();
-
-            const shortsTab = document.getElementById('shorts-tab');
-            if (shortsTab && shortsTab.classList.contains('active')) buildShortsPage();
-        } catch (e) { console.error('Realtime long-video update:', e); }
-    });
-
-    attach('admin_panel/movies/shorts', (snap) => {
-        if (generation !== window.__flaynityFeedGeneration) return;
-        try {
-            const data = snap.val() || {};
-            allShorts = _sortNewest(Object.values(data).filter(m => !m.scheduledTime || Number(m.scheduledTime) <= Date.now()));
-            previousShortsCount = allShorts.length;
-            buildHomeFeed();
-
-            const shortsTab = document.getElementById('shorts-tab');
-            if (shortsTab && shortsTab.classList.contains('active')) {
-                const activeShortId = document.querySelector('.short-slide video[src]')?.closest('.short-slide')?.getAttribute('data-shortid');
-                buildShortsPage();
-                if (activeShortId) {
-                    setTimeout(() => {
-                        const targetSlide = document.getElementById(`slide-short-${activeShortId}`);
-                        if (targetSlide) targetSlide.scrollIntoView({block:'start'});
-                    }, 50);
-                }
-            }
-        } catch (e) { console.error('Realtime shorts update:', e); }
-    });
-
-    attach('admin_panel/posts', (snap) => {
-        if (generation !== window.__flaynityFeedGeneration) return;
-        try {
-            const data = snap.val() || {};
-            allCommunityPosts = _sortNewest(Object.values(data).filter(p => !p.scheduledTime || Number(p.scheduledTime) <= Date.now()));
-            previousPostsCount = allCommunityPosts.length;
-            buildHomeFeed();
-        } catch (e) { console.error('Realtime posts update:', e); }
-    });
-
-    const currentUser = auth.currentUser;
-    if (currentUser) bindRealtimeProfileListeners(currentUser.uid);
-}
-
 function _detachAllGlobalFeedListeners() {
-    try {
-        Object.keys(realtimeListenerRegistry).forEach(path => {
-            const entry = realtimeListenerRegistry[path];
-            if (entry?.ref) entry.ref.off('value', entry.handler);
-        });
-    } catch (e) {}
-    realtimeListenerRegistry = {};
-
-    // Defensive cleanup for legacy listeners created before this manager.
     try { db.ref('admin_panel/movies/user_uploads').off(); } catch(e) {}
     try { db.ref('admin_panel/movies/shorts').off(); } catch(e) {}
     try { db.ref('admin_panel/posts').off(); } catch(e) {}
@@ -624,7 +475,6 @@ function _detachAllGlobalFeedListeners() {
     for (let key in boundChannelListeners) delete boundChannelListeners[key];
 
     _detachAllPostReactionListeners();
-    _feedListenersAttached = false;
 }
 
 const _boundPostReactionListeners = {};
@@ -1019,9 +869,16 @@ auth.onAuthStateChanged((user) => {
 
             saveAccountToList(user);
 
+            db.ref(`users/${user.uid}`).on('value', (snapshot) => {
+                try {
+                    const userData = snapshot.val();
+                    const photoURL = userData?.photoURL || user.photoURL || '';
+                    renderUserAvatar(photoURL, user.email);
+                } catch (e) {}
+            });
+
             _feedListenersAttached = false;
-            _detachAllGlobalFeedListeners();
-            startRealtimeFeedsListener(++window.__flaynityFeedGeneration);
+            startRealtimeFeedsListener();
             restoreQueueFromLocalStorage();
 
             const activeNav = document.querySelector('.nav-item.active');
@@ -1404,6 +1261,122 @@ function restoreQueueFromLocalStorage() {
     } catch(e) {}
 }
 
+// =========================================================
+// REALTIME LISTENERS FOR ZERO-REFRESH FEED PROPAGATION
+// =========================================================
+let previousShortsCount = -1;
+let previousLongsCount = -1;
+let previousPostsCount = -1;
+let _feedListenersAttached = false; 
+
+function startRealtimeFeedsListener() {
+    if (_feedListenersAttached) {
+        try { db.ref('admin_panel/movies/user_uploads').off(); } catch(e) {}
+        try { db.ref('admin_panel/movies/shorts').off(); } catch(e) {}
+        try { db.ref('admin_panel/posts').off(); } catch(e) {}
+        _feedListenersAttached = false;
+    }
+
+    try {
+        _feedListenersAttached = true;
+        const now = Date.now();
+
+        db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
+            try {
+                const data = snap.val();
+                allLongVideos = data ? Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
+                allLongVideos.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                
+                allLongVideos.forEach(m => {
+                    if (m && m.id && !allAdminMovies.find(x => x.id === m.id)) {
+                        allAdminMovies.push(m);
+                    }
+                });
+
+                if(allLongVideos.length !== previousLongsCount) {
+                    previousLongsCount = allLongVideos.length;
+                    buildHomeFeed();
+                } else {
+                    allLongVideos.forEach(v => {
+                        const titleEl = document.querySelector(`.long-video-feed-card[onclick*="${v.id}"] .long-video-title`);
+                        if (titleEl) titleEl.innerText = escapeHTML(v.title);
+                    });
+                }
+            } catch (e) {}
+        });
+
+        db.ref('admin_panel/movies/shorts').on('value', (snap) => {
+            try {
+                const data = snap.val();
+                allShorts = data ? Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
+                allShorts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                
+                if(allShorts.length !== previousShortsCount) {
+                    previousShortsCount = allShorts.length;
+                    buildHomeFeed();
+                    const shortsTab = document.getElementById('shorts-tab');
+                    if (shortsTab && shortsTab.classList.contains('active')) {
+                        const activeShortId = document.querySelector('.short-slide video[src]')?.closest('.short-slide')?.getAttribute('data-shortid');
+                        buildShortsPage();
+                        if(activeShortId) {
+                             setTimeout(() => {
+                                 const targetSlide = document.getElementById(`slide-short-${activeShortId}`);
+                                 if (targetSlide) targetSlide.scrollIntoView({block: 'start'});
+                             }, 50);
+                        }
+                    }
+                } else {
+                    allShorts.forEach(s => {
+                        const titleEl = document.querySelector(`#slide-short-${s.id} #short-title-val`);
+                        if(titleEl) titleEl.innerHTML = `${escapeHTML(s.title)} <span style="font-weight:400; font-size:0.8rem; color:#ccc; display:block;">Click to view description</span>`;
+                        const thumbEl = document.querySelector(`.short-home-card-2col[onclick*="${s.id}"] img`);
+                        if (thumbEl) thumbEl.src = s.poster;
+                    });
+                }
+            } catch (e) {}
+        });
+
+        db.ref('admin_panel/posts').on('value', (snap) => {
+            try {
+                const data = snap.val();
+                allCommunityPosts = data ? Object.values(data).filter(p => !p.scheduledTime || p.scheduledTime <= now) : [];
+                allCommunityPosts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                
+                if (allCommunityPosts.length !== previousPostsCount) {
+                    previousPostsCount = allCommunityPosts.length;
+                    buildHomeFeed();
+                }
+            } catch (e) {}
+        });
+
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+            db.ref(`channels/${currentUser.uid}`).on('value', (snapshot) => {
+                try {
+                    currentChannelData = snapshot.val();
+                    if (currentChannelData) {
+                        localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                    }
+                    const activeNav = document.querySelector('.nav-item.active');
+                    if (activeNav && activeNav.id === 'nav-you') {
+                        initYouTabUI();
+                    }
+                    updateBottomNavAvatar();
+                } catch (e) {}
+            });
+
+            db.ref(`users/${currentUser.uid}`).on('value', (snapshot) => {
+                try {
+                    const userData = snapshot.val();
+                    const photoURL = userData?.photoURL || currentUser.photoURL || '';
+                    renderUserAvatar(photoURL, currentUser.email);
+                } catch (e) {}
+            });
+        }
+    } catch (err) {
+        console.error("Global database binding exception:", err);
+    }
+}
 
 const boundChannelListeners = {};
 function bindLiveChannelUI(userId) {
@@ -2348,29 +2321,7 @@ function toggleShortSubscribe(channelId, buttonEl) {
 // =========================================================
 let currentActiveShortsIdx = -1;
 
-function normalizeFlaynityMediaUrl(url) {
-    if (!url) return '';
-    const value = String(url).trim();
-    if (!value) return '';
-
-    // Always deliver user video through the configured public Cloudflare
-    // delivery hostname. Never expose/use the authenticated/raw R2 endpoint.
-    if (value.startsWith(PUBLIC_R2_DOMAIN_PREFIX + '/')) return value;
-
-    try {
-        const parsed = new URL(value, window.location.href);
-        const host = parsed.hostname.toLowerCase();
-        if (host.includes('r2.cloudflarestorage.com') || host.includes('.r2.dev')) {
-            return PUBLIC_R2_DOMAIN_PREFIX + parsed.pathname + (parsed.search || '');
-        }
-    } catch (e) {}
-
-    if (/^https?:\/\//i.test(value)) return value;
-    return PUBLIC_R2_DOMAIN_PREFIX + '/' + value.replace(/^\/+/, '');
-}
-
 function attachSmartAdaptiveSource(videoElement, url, shortId) {
-    url = normalizeFlaynityMediaUrl(url);
     if (url && url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
         if(hlsInstances[shortId]) {
             hlsInstances[shortId].destroy();
@@ -2680,7 +2631,7 @@ async function openMoviePage(id, isTMDB = false) {
 
 function startVideoPlayer() {
     if(!currentActiveMovie || !currentActiveMovie.videoLink) { showNotification("No playable links found.", "error"); return; }
-    const link = currentActiveMovie.isTMDB ? currentActiveMovie.videoLink : normalizeFlaynityMediaUrl(currentActiveMovie.videoLink);
+    const link = currentActiveMovie.videoLink;
     const container = document.getElementById('video-player-container');
     const skeleton = document.getElementById('video-player-skeleton');
     const banner = document.getElementById('movie-detail-banner');
@@ -4529,7 +4480,11 @@ let recordDurationLimit = 15;
 let recordTimerCountdown = 0;
 let currentRecordSpeed = 1;
 let recordTimerInterval = null;
+let recordCountdownInterval = null;
 let currentRecordSeconds = 0;
+let isCameraRecording = false;
+let isRecordButtonBound = false;
+let currentRecorderMimeType = 'video/webm';
 
 let uploadSliderStartX = 0;
 let uploadSliderCurrentX = 0;
@@ -4775,76 +4730,125 @@ document.querySelectorAll('.studio-popup-modal').forEach(modal => {
 // ---------------------------------------------------------
 function setupHoldToRecord() {
     const recOuter = document.getElementById('record-btn-outer');
-    if(!recOuter) return;
-    
-    let isRecording = false;
-    let recStartTime = 0;
-    let isTapMode = false;
+    if (!recOuter || isRecordButtonBound) return;
 
-    const pointerDown = (e) => {
-        if (!shortCameraStream) return;
-        if (isRecording) {
-            // Already recording via Tap -> Stop it
-            stopCameraRecording();
-            isRecording = false;
-            isTapMode = false;
+    isRecordButtonBound = true;
+    recOuter.setAttribute('role', 'button');
+    recOuter.setAttribute('aria-label', 'Record short video');
+    recOuter.setAttribute('tabindex', '0');
+
+    let pressStart = 0;
+    let longPressTimer = null;
+    let pointerId = null;
+    let holdTriggered = false;
+
+    const cancelPress = () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    };
+
+    const startPress = (e) => {
+        if (e && e.pointerType === 'mouse' && e.button !== 0) return;
+        if (pointerId !== null) return;
+        pointerId = e?.pointerId ?? null;
+        pressStart = Date.now();
+        holdTriggered = false;
+
+        if (!shortCameraStream) {
+            showNotification('Camera is not ready. Please allow camera and microphone access.', 'error');
+            pointerId = null;
             return;
         }
-        
-        // Start sequence
-        recStartTime = Date.now();
-        isRecording = true;
-        isTapMode = false;
-        initiateRecordingSequence();
-    };
 
-    const pointerUp = (e) => {
-        if (!isRecording) return;
-        
-        const durationHeld = Date.now() - recStartTime;
-        if (durationHeld < 500) {
-            // It was a quick tap. Let it continue recording (Tap Mode)
-            isTapMode = true;
-        } else {
-            // It was a long hold. Releasing stops the recording.
-            if (!isTapMode) {
-                stopCameraRecording();
-                isRecording = false;
-            }
+        // If already recording, a tap stops the recording.
+        if (isCameraRecording) {
+            stopCameraRecording();
+            pointerId = null;
+            return;
         }
+
+        // Start recording immediately. A short tap keeps recording (tap-to-toggle),
+        // while a long press is stopped on release.
+        initiateRecordingSequence();
+
+        longPressTimer = setTimeout(() => {
+            holdTriggered = true;
+        }, 500);
     };
 
-    // Modern pointer events for seamless cross-platform support
-    recOuter.addEventListener('pointerdown', pointerDown);
-    recOuter.addEventListener('pointerup', pointerUp);
-    recOuter.addEventListener('pointercancel', pointerUp);
-    recOuter.addEventListener('pointerleave', pointerUp);
+    const endPress = (e) => {
+        if (pointerId !== null && e?.pointerId != null && e.pointerId !== pointerId) return;
+        cancelPress();
+
+        const heldFor = Date.now() - pressStart;
+        // Only stop on release for a genuine long-press. A quick tap is toggle mode.
+        if (isCameraRecording && (holdTriggered || heldFor >= 500)) {
+            stopCameraRecording();
+        }
+        pointerId = null;
+    };
+
+    recOuter.addEventListener('pointerdown', startPress, { passive: true });
+    recOuter.addEventListener('pointerup', endPress, { passive: true });
+    recOuter.addEventListener('pointercancel', endPress, { passive: true });
+
+    // Do not use pointerleave here. Android WebView can emit pointerleave during
+    // a normal touch gesture, which previously caused recordings to stop instantly.
+    recOuter.addEventListener('lostpointercapture', endPress, { passive: true });
+
+    recOuter.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (isCameraRecording) stopCameraRecording();
+            else initiateRecordingSequence();
+        }
+    });
 }
 
 function initiateRecordingSequence() {
+    if (isCameraRecording) return;
+    if (!shortCameraStream) {
+        showNotification('Camera is not ready. Please allow camera and microphone access.', 'error');
+        return;
+    }
+
+    cancelRecordCountdown();
+
     if (recordTimerCountdown > 0) {
         const bigCount = document.getElementById('big-countdown');
         const ctrls = document.getElementById('short-right-controls');
         const bottom = document.getElementById('camera-bottom-bar');
         const slider = document.getElementById('upload-mode-slider-wrap');
         const closeBtn = document.getElementById('camera-top-bar');
-        
-        if(ctrls) ctrls.style.display = 'none';
-        if(bottom) bottom.style.display = 'none';
-        if(slider) slider.style.display = 'none';
-        if(closeBtn) closeBtn.style.display = 'none';
-        
+
+        if (ctrls) ctrls.style.display = 'none';
+        if (bottom) bottom.style.display = 'none';
+        if (slider) slider.style.display = 'none';
+        if (closeBtn) closeBtn.style.display = 'none';
+
+        if (!bigCount) {
+            startCameraRecording();
+            return;
+        }
+
         bigCount.style.display = 'block';
         let remaining = recordTimerCountdown;
         bigCount.innerText = remaining;
-        
-        const countInterval = setInterval(() => {
+
+        recordCountdownInterval = setInterval(() => {
+            if (!shortCameraStream) {
+                cancelRecordCountdown();
+                restoreCameraControls();
+                return;
+            }
             remaining--;
             if (remaining > 0) {
                 bigCount.innerText = remaining;
                 playUI('click');
             } else {
-                clearInterval(countInterval);
+                cancelRecordCountdown();
                 bigCount.style.display = 'none';
                 startCameraRecording();
             }
@@ -4854,87 +4858,168 @@ function initiateRecordingSequence() {
     }
 }
 
-function startCameraRecording() {
-    if (!shortCameraStream) {
-        showNotification("Camera not ready", "error");
-        return;
+function cancelRecordCountdown() {
+    if (recordCountdownInterval) {
+        clearInterval(recordCountdownInterval);
+        recordCountdownInterval = null;
     }
-    
-    playUI('click');
-    const innerBtn = document.getElementById('record-btn-inner');
-    if(innerBtn) {
-        innerBtn.style.transform = 'scale(0.5)';
-        innerBtn.style.borderRadius = '8px';
-    }
-    
-    const ctrls = document.getElementById('short-right-controls');
-    const gal = document.getElementById('btn-cam-gallery');
-    const slider = document.getElementById('upload-mode-slider-wrap');
-    const closeBtn = document.getElementById('btn-close-studio');
-    
-    if(ctrls) ctrls.style.display = 'none';
-    if(gal) gal.style.display = 'none';
-    if(slider) slider.style.display = 'none';
-    if(closeBtn) closeBtn.style.display = 'none';
-    
-    const bottomBar = document.getElementById('camera-bottom-bar');
-    if(bottomBar) bottomBar.style.display = 'flex'; 
-    
-    const timerEl = document.getElementById('recording-timer');
-    if(timerEl) {
-        timerEl.style.display = 'block';
-        timerEl.innerText = "00:00";
-    }
-    currentRecordSeconds = 0;
-
-    shortChunks = [];
-    shortMediaRecorder = new MediaRecorder(shortCameraStream, { mimeType: 'video/webm' });
-    shortMediaRecorder.ondataavailable = e => { if (e.data.size > 0) shortChunks.push(e.data); };
-    
-    shortMediaRecorder.onstop = () => {
-        const blob = new Blob(shortChunks, { type: 'video/webm' });
-        const file = new File([blob], "short_" + Date.now() + ".webm", { type: "video/webm" });
-        isShortFromCamera = true; 
-        handlePremiumFileSelected({ target: { files: [file] } }, 'video-short');
-    };
-    
-    shortMediaRecorder.start();
-    
-    recordTimerInterval = setInterval(() => {
-        currentRecordSeconds++;
-        if(timerEl) timerEl.innerText = `00:${currentRecordSeconds < 10 ? '0' : ''}${currentRecordSeconds}`;
-        if(currentRecordSeconds >= recordDurationLimit) {
-            stopCameraRecording();
-        }
-    }, 1000);
+    const bigCount = document.getElementById('big-countdown');
+    if (bigCount) bigCount.style.display = 'none';
 }
 
-function stopCameraRecording() {
-    if (shortMediaRecorder && shortMediaRecorder.state === "recording") {
-        shortMediaRecorder.stop();
-    }
-    clearInterval(recordTimerInterval);
-    
-    const innerBtn = document.getElementById('record-btn-inner');
-    if(innerBtn) {
-        innerBtn.style.transform = 'scale(1)';
-        innerBtn.style.borderRadius = '50%';
-    }
-    
+function restoreCameraControls() {
     const ctrls = document.getElementById('short-right-controls');
     const gal = document.getElementById('btn-cam-gallery');
     const slider = document.getElementById('upload-mode-slider-wrap');
     const topBar = document.getElementById('camera-top-bar');
     const closeBtn = document.getElementById('btn-close-studio');
-    
-    if(ctrls) ctrls.style.display = 'flex';
-    if(gal) gal.style.display = 'block';
-    if(slider) slider.style.display = 'flex';
-    if(topBar) topBar.style.display = 'flex';
-    if(closeBtn) closeBtn.style.display = 'block';
-    
+    if (ctrls) ctrls.style.display = 'flex';
+    if (gal) gal.style.display = 'block';
+    if (slider) slider.style.display = 'flex';
+    if (topBar) topBar.style.display = 'flex';
+    if (closeBtn) closeBtn.style.display = 'block';
+}
+
+function getSupportedRecorderMimeType() {
+    if (typeof MediaRecorder === 'undefined') return '';
+    const candidates = [
+        'video/webm;codecs=vp8,opus',
+        'video/webm;codecs=vp9,opus',
+        'video/webm',
+        'video/mp4'
+    ];
+    return candidates.find(type => {
+        try { return MediaRecorder.isTypeSupported(type); } catch (e) { return false; }
+    }) || '';
+}
+
+function startCameraRecording() {
+    if (isCameraRecording) return;
+    if (!shortCameraStream) {
+        showNotification('Camera is not ready. Please allow camera and microphone access.', 'error');
+        return;
+    }
+    if (typeof MediaRecorder === 'undefined') {
+        showNotification('Video recording is not supported by this Android WebView.', 'error');
+        return;
+    }
+
+    const mimeType = getSupportedRecorderMimeType();
+    if (!mimeType) {
+        showNotification('This device does not support camera video recording.', 'error');
+        return;
+    }
+
+    playUI('click');
+    isCameraRecording = true;
+    currentRecorderMimeType = mimeType;
+
+    const innerBtn = document.getElementById('record-btn-inner');
+    if (innerBtn) {
+        innerBtn.style.transform = 'scale(0.5)';
+        innerBtn.style.borderRadius = '8px';
+    }
+
+    const ctrls = document.getElementById('short-right-controls');
+    const gal = document.getElementById('btn-cam-gallery');
+    const slider = document.getElementById('upload-mode-slider-wrap');
+    const closeBtn = document.getElementById('btn-close-studio');
+    if (ctrls) ctrls.style.display = 'none';
+    if (gal) gal.style.display = 'none';
+    if (slider) slider.style.display = 'none';
+    if (closeBtn) closeBtn.style.display = 'none';
+
+    const bottomBar = document.getElementById('camera-bottom-bar');
+    if (bottomBar) bottomBar.style.display = 'flex';
+
     const timerEl = document.getElementById('recording-timer');
-    if(timerEl) timerEl.style.display = 'none';
+    if (timerEl) {
+        timerEl.style.display = 'block';
+        timerEl.innerText = '00:00';
+    }
+    currentRecordSeconds = 0;
+    shortChunks = [];
+
+    try {
+        const options = mimeType ? { mimeType } : undefined;
+        shortMediaRecorder = new MediaRecorder(shortCameraStream, options);
+    } catch (err) {
+        isCameraRecording = false;
+        restoreCameraControls();
+        if (innerBtn) {
+            innerBtn.style.transform = 'scale(1)';
+            innerBtn.style.borderRadius = '50%';
+        }
+        showNotification('Unable to start video recorder: ' + (err.message || 'unsupported format'), 'error');
+        return;
+    }
+
+    shortMediaRecorder.ondataavailable = e => {
+        if (e.data && e.data.size > 0) shortChunks.push(e.data);
+    };
+
+    shortMediaRecorder.onerror = () => {
+        isCameraRecording = false;
+        clearInterval(recordTimerInterval);
+        showNotification('Recording failed. Please try again.', 'error');
+        restoreCameraControls();
+    };
+
+    shortMediaRecorder.onstop = () => {
+        isCameraRecording = false;
+        clearInterval(recordTimerInterval);
+        if (!shortChunks.length) {
+            restoreCameraControls();
+            showNotification('No video was captured. Please try again.', 'error');
+            return;
+        }
+
+        const actualType = shortChunks[0]?.type || currentRecorderMimeType || 'video/webm';
+        const extension = actualType.includes('mp4') ? 'mp4' : 'webm';
+        const blob = new Blob(shortChunks, { type: actualType });
+        const file = new File([blob], `short_${Date.now()}.${extension}`, { type: actualType });
+        isShortFromCamera = true;
+        handlePremiumFileSelected({ target: { files: [file] } }, 'video-short');
+    };
+
+    // A small timeslice makes the recording more reliable on Android WebView and
+    // prevents the entire recording from being held in one large memory chunk.
+    shortMediaRecorder.start(250);
+
+    recordTimerInterval = setInterval(() => {
+        currentRecordSeconds++;
+        if (timerEl) {
+            const mins = Math.floor(currentRecordSeconds / 60);
+            const secs = currentRecordSeconds % 60;
+            timerEl.innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+        if (currentRecordSeconds >= recordDurationLimit) stopCameraRecording();
+    }, 1000);
+}
+
+function stopCameraRecording() {
+    cancelRecordCountdown();
+    clearInterval(recordTimerInterval);
+    recordTimerInterval = null;
+
+    const recorder = shortMediaRecorder;
+    shortMediaRecorder = null;
+    isCameraRecording = false;
+
+    if (recorder && recorder.state !== 'inactive') {
+        try { recorder.stop(); } catch (e) {}
+    }
+
+    const innerBtn = document.getElementById('record-btn-inner');
+    if (innerBtn) {
+        innerBtn.style.transform = 'scale(1)';
+        innerBtn.style.borderRadius = '50%';
+    }
+
+    restoreCameraControls();
+
+    const timerEl = document.getElementById('recording-timer');
+    if (timerEl) timerEl.style.display = 'none';
 }
 
 function triggerShortDownloadLocal() {
@@ -4963,10 +5048,50 @@ async function handlePremiumFileSelected(e, type) {
         isShortFromCamera = false;
     }
 
-    const allowedFormats = ["video/mp4", "video/quicktime", "video/x-matroska", "video/webm"];
-    if (!allowedFormats.includes(file.type)) {
+    // Android MediaRecorder may return a MIME type with codec parameters,
+    // e.g. "video/webm;codecs=vp8,opus". Validate the base MIME type instead
+    // of requiring an exact string match.
+    const rawMimeType = String(file.type || "").toLowerCase().trim();
+    const baseMimeType = rawMimeType.split(";")[0].trim();
+    const fileName = String(file.name || "").toLowerCase();
+    const extension = fileName.includes(".") ? fileName.split(".").pop() : "";
+
+    const allowedFormats = {
+        "mp4": ["video/mp4"],
+        "mov": ["video/quicktime", "video/x-m4v"],
+        "mkv": ["video/x-matroska", "video/matroska"],
+        "webm": ["video/webm"]
+    };
+
+    const extensionAllowed = ["mp4", "mov", "mkv", "webm"].includes(extension);
+    const mimeAllowed = Object.values(allowedFormats).some(types => types.includes(baseMimeType));
+
+    // Camera recordings are generated by MediaRecorder. Some Android WebViews
+    // expose a codec-qualified or even empty MIME type, so do not reject a
+    // recorder-generated video solely because of that browser MIME variation.
+    const cameraRecording = isShortFromCamera === true && type === "video-short";
+    const looksLikeRecordedVideo =
+        cameraRecording &&
+        (baseMimeType.startsWith("video/") || extension === "webm" || extension === "mp4");
+
+    if (!mimeAllowed && !extensionAllowed && !looksLikeRecordedVideo) {
         showNotification("Invalid format! Supported: MP4, MOV, MKV, WEBM", "error");
         return;
+    }
+
+    // Normalize codec-qualified recorder MIME types so downstream video
+    // elements and upload logic receive a standard MIME type.
+    if (cameraRecording && file.type && file.type.includes(";")) {
+        try {
+            const normalizedBlob = new Blob([file], { type: baseMimeType || "video/webm" });
+            file = new File(
+                [normalizedBlob],
+                file.name || `short_${Date.now()}.webm`,
+                { type: baseMimeType || "video/webm", lastModified: Date.now() }
+            );
+        } catch (e) {
+            // Keep the original File if the WebView does not allow re-wrapping it.
+        }
     }
 
     currentUploadFile = file;
@@ -5368,9 +5493,10 @@ async function publishPremiumPostAction() {
     }
 }
 
-__flaynityReady(function() {
-    setupHoldToRecord();
-});
+// upload.html is injected asynchronously by the modular page loader.
+// Bind the recording button only after all page DOM nodes exist.
+window.addEventListener('flaynity-dom-ready', setupHoldToRecord, { once: true });
+__flaynityReady(function() { setupHoldToRecord(); });
 
 function openUploadManager() {
     updateManagerUI();

@@ -4480,7 +4480,11 @@ let recordDurationLimit = 15;
 let recordTimerCountdown = 0;
 let currentRecordSpeed = 1;
 let recordTimerInterval = null;
+let recordCountdownInterval = null;
 let currentRecordSeconds = 0;
+let isCameraRecording = false;
+let isRecordButtonBound = false;
+let currentRecorderMimeType = 'video/webm';
 
 let uploadSliderStartX = 0;
 let uploadSliderCurrentX = 0;
@@ -4726,76 +4730,125 @@ document.querySelectorAll('.studio-popup-modal').forEach(modal => {
 // ---------------------------------------------------------
 function setupHoldToRecord() {
     const recOuter = document.getElementById('record-btn-outer');
-    if(!recOuter) return;
-    
-    let isRecording = false;
-    let recStartTime = 0;
-    let isTapMode = false;
+    if (!recOuter || isRecordButtonBound) return;
 
-    const pointerDown = (e) => {
-        if (!shortCameraStream) return;
-        if (isRecording) {
-            // Already recording via Tap -> Stop it
-            stopCameraRecording();
-            isRecording = false;
-            isTapMode = false;
+    isRecordButtonBound = true;
+    recOuter.setAttribute('role', 'button');
+    recOuter.setAttribute('aria-label', 'Record short video');
+    recOuter.setAttribute('tabindex', '0');
+
+    let pressStart = 0;
+    let longPressTimer = null;
+    let pointerId = null;
+    let holdTriggered = false;
+
+    const cancelPress = () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    };
+
+    const startPress = (e) => {
+        if (e && e.pointerType === 'mouse' && e.button !== 0) return;
+        if (pointerId !== null) return;
+        pointerId = e?.pointerId ?? null;
+        pressStart = Date.now();
+        holdTriggered = false;
+
+        if (!shortCameraStream) {
+            showNotification('Camera is not ready. Please allow camera and microphone access.', 'error');
+            pointerId = null;
             return;
         }
-        
-        // Start sequence
-        recStartTime = Date.now();
-        isRecording = true;
-        isTapMode = false;
-        initiateRecordingSequence();
-    };
 
-    const pointerUp = (e) => {
-        if (!isRecording) return;
-        
-        const durationHeld = Date.now() - recStartTime;
-        if (durationHeld < 500) {
-            // It was a quick tap. Let it continue recording (Tap Mode)
-            isTapMode = true;
-        } else {
-            // It was a long hold. Releasing stops the recording.
-            if (!isTapMode) {
-                stopCameraRecording();
-                isRecording = false;
-            }
+        // If already recording, a tap stops the recording.
+        if (isCameraRecording) {
+            stopCameraRecording();
+            pointerId = null;
+            return;
         }
+
+        // Start recording immediately. A short tap keeps recording (tap-to-toggle),
+        // while a long press is stopped on release.
+        initiateRecordingSequence();
+
+        longPressTimer = setTimeout(() => {
+            holdTriggered = true;
+        }, 500);
     };
 
-    // Modern pointer events for seamless cross-platform support
-    recOuter.addEventListener('pointerdown', pointerDown);
-    recOuter.addEventListener('pointerup', pointerUp);
-    recOuter.addEventListener('pointercancel', pointerUp);
-    recOuter.addEventListener('pointerleave', pointerUp);
+    const endPress = (e) => {
+        if (pointerId !== null && e?.pointerId != null && e.pointerId !== pointerId) return;
+        cancelPress();
+
+        const heldFor = Date.now() - pressStart;
+        // Only stop on release for a genuine long-press. A quick tap is toggle mode.
+        if (isCameraRecording && (holdTriggered || heldFor >= 500)) {
+            stopCameraRecording();
+        }
+        pointerId = null;
+    };
+
+    recOuter.addEventListener('pointerdown', startPress, { passive: true });
+    recOuter.addEventListener('pointerup', endPress, { passive: true });
+    recOuter.addEventListener('pointercancel', endPress, { passive: true });
+
+    // Do not use pointerleave here. Android WebView can emit pointerleave during
+    // a normal touch gesture, which previously caused recordings to stop instantly.
+    recOuter.addEventListener('lostpointercapture', endPress, { passive: true });
+
+    recOuter.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (isCameraRecording) stopCameraRecording();
+            else initiateRecordingSequence();
+        }
+    });
 }
 
 function initiateRecordingSequence() {
+    if (isCameraRecording) return;
+    if (!shortCameraStream) {
+        showNotification('Camera is not ready. Please allow camera and microphone access.', 'error');
+        return;
+    }
+
+    cancelRecordCountdown();
+
     if (recordTimerCountdown > 0) {
         const bigCount = document.getElementById('big-countdown');
         const ctrls = document.getElementById('short-right-controls');
         const bottom = document.getElementById('camera-bottom-bar');
         const slider = document.getElementById('upload-mode-slider-wrap');
         const closeBtn = document.getElementById('camera-top-bar');
-        
-        if(ctrls) ctrls.style.display = 'none';
-        if(bottom) bottom.style.display = 'none';
-        if(slider) slider.style.display = 'none';
-        if(closeBtn) closeBtn.style.display = 'none';
-        
+
+        if (ctrls) ctrls.style.display = 'none';
+        if (bottom) bottom.style.display = 'none';
+        if (slider) slider.style.display = 'none';
+        if (closeBtn) closeBtn.style.display = 'none';
+
+        if (!bigCount) {
+            startCameraRecording();
+            return;
+        }
+
         bigCount.style.display = 'block';
         let remaining = recordTimerCountdown;
         bigCount.innerText = remaining;
-        
-        const countInterval = setInterval(() => {
+
+        recordCountdownInterval = setInterval(() => {
+            if (!shortCameraStream) {
+                cancelRecordCountdown();
+                restoreCameraControls();
+                return;
+            }
             remaining--;
             if (remaining > 0) {
                 bigCount.innerText = remaining;
                 playUI('click');
             } else {
-                clearInterval(countInterval);
+                cancelRecordCountdown();
                 bigCount.style.display = 'none';
                 startCameraRecording();
             }
@@ -4805,87 +4858,168 @@ function initiateRecordingSequence() {
     }
 }
 
-function startCameraRecording() {
-    if (!shortCameraStream) {
-        showNotification("Camera not ready", "error");
-        return;
+function cancelRecordCountdown() {
+    if (recordCountdownInterval) {
+        clearInterval(recordCountdownInterval);
+        recordCountdownInterval = null;
     }
-    
-    playUI('click');
-    const innerBtn = document.getElementById('record-btn-inner');
-    if(innerBtn) {
-        innerBtn.style.transform = 'scale(0.5)';
-        innerBtn.style.borderRadius = '8px';
-    }
-    
-    const ctrls = document.getElementById('short-right-controls');
-    const gal = document.getElementById('btn-cam-gallery');
-    const slider = document.getElementById('upload-mode-slider-wrap');
-    const closeBtn = document.getElementById('btn-close-studio');
-    
-    if(ctrls) ctrls.style.display = 'none';
-    if(gal) gal.style.display = 'none';
-    if(slider) slider.style.display = 'none';
-    if(closeBtn) closeBtn.style.display = 'none';
-    
-    const bottomBar = document.getElementById('camera-bottom-bar');
-    if(bottomBar) bottomBar.style.display = 'flex'; 
-    
-    const timerEl = document.getElementById('recording-timer');
-    if(timerEl) {
-        timerEl.style.display = 'block';
-        timerEl.innerText = "00:00";
-    }
-    currentRecordSeconds = 0;
-
-    shortChunks = [];
-    shortMediaRecorder = new MediaRecorder(shortCameraStream, { mimeType: 'video/webm' });
-    shortMediaRecorder.ondataavailable = e => { if (e.data.size > 0) shortChunks.push(e.data); };
-    
-    shortMediaRecorder.onstop = () => {
-        const blob = new Blob(shortChunks, { type: 'video/webm' });
-        const file = new File([blob], "short_" + Date.now() + ".webm", { type: "video/webm" });
-        isShortFromCamera = true; 
-        handlePremiumFileSelected({ target: { files: [file] } }, 'video-short');
-    };
-    
-    shortMediaRecorder.start();
-    
-    recordTimerInterval = setInterval(() => {
-        currentRecordSeconds++;
-        if(timerEl) timerEl.innerText = `00:${currentRecordSeconds < 10 ? '0' : ''}${currentRecordSeconds}`;
-        if(currentRecordSeconds >= recordDurationLimit) {
-            stopCameraRecording();
-        }
-    }, 1000);
+    const bigCount = document.getElementById('big-countdown');
+    if (bigCount) bigCount.style.display = 'none';
 }
 
-function stopCameraRecording() {
-    if (shortMediaRecorder && shortMediaRecorder.state === "recording") {
-        shortMediaRecorder.stop();
-    }
-    clearInterval(recordTimerInterval);
-    
-    const innerBtn = document.getElementById('record-btn-inner');
-    if(innerBtn) {
-        innerBtn.style.transform = 'scale(1)';
-        innerBtn.style.borderRadius = '50%';
-    }
-    
+function restoreCameraControls() {
     const ctrls = document.getElementById('short-right-controls');
     const gal = document.getElementById('btn-cam-gallery');
     const slider = document.getElementById('upload-mode-slider-wrap');
     const topBar = document.getElementById('camera-top-bar');
     const closeBtn = document.getElementById('btn-close-studio');
-    
-    if(ctrls) ctrls.style.display = 'flex';
-    if(gal) gal.style.display = 'block';
-    if(slider) slider.style.display = 'flex';
-    if(topBar) topBar.style.display = 'flex';
-    if(closeBtn) closeBtn.style.display = 'block';
-    
+    if (ctrls) ctrls.style.display = 'flex';
+    if (gal) gal.style.display = 'block';
+    if (slider) slider.style.display = 'flex';
+    if (topBar) topBar.style.display = 'flex';
+    if (closeBtn) closeBtn.style.display = 'block';
+}
+
+function getSupportedRecorderMimeType() {
+    if (typeof MediaRecorder === 'undefined') return '';
+    const candidates = [
+        'video/webm;codecs=vp8,opus',
+        'video/webm;codecs=vp9,opus',
+        'video/webm',
+        'video/mp4'
+    ];
+    return candidates.find(type => {
+        try { return MediaRecorder.isTypeSupported(type); } catch (e) { return false; }
+    }) || '';
+}
+
+function startCameraRecording() {
+    if (isCameraRecording) return;
+    if (!shortCameraStream) {
+        showNotification('Camera is not ready. Please allow camera and microphone access.', 'error');
+        return;
+    }
+    if (typeof MediaRecorder === 'undefined') {
+        showNotification('Video recording is not supported by this Android WebView.', 'error');
+        return;
+    }
+
+    const mimeType = getSupportedRecorderMimeType();
+    if (!mimeType) {
+        showNotification('This device does not support camera video recording.', 'error');
+        return;
+    }
+
+    playUI('click');
+    isCameraRecording = true;
+    currentRecorderMimeType = mimeType;
+
+    const innerBtn = document.getElementById('record-btn-inner');
+    if (innerBtn) {
+        innerBtn.style.transform = 'scale(0.5)';
+        innerBtn.style.borderRadius = '8px';
+    }
+
+    const ctrls = document.getElementById('short-right-controls');
+    const gal = document.getElementById('btn-cam-gallery');
+    const slider = document.getElementById('upload-mode-slider-wrap');
+    const closeBtn = document.getElementById('btn-close-studio');
+    if (ctrls) ctrls.style.display = 'none';
+    if (gal) gal.style.display = 'none';
+    if (slider) slider.style.display = 'none';
+    if (closeBtn) closeBtn.style.display = 'none';
+
+    const bottomBar = document.getElementById('camera-bottom-bar');
+    if (bottomBar) bottomBar.style.display = 'flex';
+
     const timerEl = document.getElementById('recording-timer');
-    if(timerEl) timerEl.style.display = 'none';
+    if (timerEl) {
+        timerEl.style.display = 'block';
+        timerEl.innerText = '00:00';
+    }
+    currentRecordSeconds = 0;
+    shortChunks = [];
+
+    try {
+        const options = mimeType ? { mimeType } : undefined;
+        shortMediaRecorder = new MediaRecorder(shortCameraStream, options);
+    } catch (err) {
+        isCameraRecording = false;
+        restoreCameraControls();
+        if (innerBtn) {
+            innerBtn.style.transform = 'scale(1)';
+            innerBtn.style.borderRadius = '50%';
+        }
+        showNotification('Unable to start video recorder: ' + (err.message || 'unsupported format'), 'error');
+        return;
+    }
+
+    shortMediaRecorder.ondataavailable = e => {
+        if (e.data && e.data.size > 0) shortChunks.push(e.data);
+    };
+
+    shortMediaRecorder.onerror = () => {
+        isCameraRecording = false;
+        clearInterval(recordTimerInterval);
+        showNotification('Recording failed. Please try again.', 'error');
+        restoreCameraControls();
+    };
+
+    shortMediaRecorder.onstop = () => {
+        isCameraRecording = false;
+        clearInterval(recordTimerInterval);
+        if (!shortChunks.length) {
+            restoreCameraControls();
+            showNotification('No video was captured. Please try again.', 'error');
+            return;
+        }
+
+        const actualType = shortChunks[0]?.type || currentRecorderMimeType || 'video/webm';
+        const extension = actualType.includes('mp4') ? 'mp4' : 'webm';
+        const blob = new Blob(shortChunks, { type: actualType });
+        const file = new File([blob], `short_${Date.now()}.${extension}`, { type: actualType });
+        isShortFromCamera = true;
+        handlePremiumFileSelected({ target: { files: [file] } }, 'video-short');
+    };
+
+    // A small timeslice makes the recording more reliable on Android WebView and
+    // prevents the entire recording from being held in one large memory chunk.
+    shortMediaRecorder.start(250);
+
+    recordTimerInterval = setInterval(() => {
+        currentRecordSeconds++;
+        if (timerEl) {
+            const mins = Math.floor(currentRecordSeconds / 60);
+            const secs = currentRecordSeconds % 60;
+            timerEl.innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+        if (currentRecordSeconds >= recordDurationLimit) stopCameraRecording();
+    }, 1000);
+}
+
+function stopCameraRecording() {
+    cancelRecordCountdown();
+    clearInterval(recordTimerInterval);
+    recordTimerInterval = null;
+
+    const recorder = shortMediaRecorder;
+    shortMediaRecorder = null;
+    isCameraRecording = false;
+
+    if (recorder && recorder.state !== 'inactive') {
+        try { recorder.stop(); } catch (e) {}
+    }
+
+    const innerBtn = document.getElementById('record-btn-inner');
+    if (innerBtn) {
+        innerBtn.style.transform = 'scale(1)';
+        innerBtn.style.borderRadius = '50%';
+    }
+
+    restoreCameraControls();
+
+    const timerEl = document.getElementById('recording-timer');
+    if (timerEl) timerEl.style.display = 'none';
 }
 
 function triggerShortDownloadLocal() {
@@ -5319,9 +5453,10 @@ async function publishPremiumPostAction() {
     }
 }
 
-__flaynityReady(function() {
-    setupHoldToRecord();
-});
+// upload.html is injected asynchronously by the modular page loader.
+// Bind the recording button only after all page DOM nodes exist.
+window.addEventListener('flaynity-dom-ready', setupHoldToRecord, { once: true });
+__flaynityReady(function() { setupHoldToRecord(); });
 
 function openUploadManager() {
     updateManagerUI();

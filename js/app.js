@@ -4462,7 +4462,7 @@ function hideUpcomingModal() {
 }
 
 // =========================================================
-// NEW PREMIUM UPLOAD STUDIO FUNCTIONS
+// NEW PREMIUM UPLOAD STUDIO FUNCTIONS (Replaced Block)
 // =========================================================
 
 let currentUploadFile = null;
@@ -4473,10 +4473,14 @@ let shortMediaRecorder = null;
 let shortChunks = [];
 let isFrontCamera = true;
 let isFlashOn = false;
+let isShortFromCamera = false; 
+
+// Camera settings state
 let recordDurationLimit = 15;
+let recordTimerCountdown = 0;
+let currentRecordSpeed = 1;
 let recordTimerInterval = null;
 let currentRecordSeconds = 0;
-let isShortFromCamera = false; 
 
 let uploadSliderStartX = 0;
 let uploadSliderCurrentX = 0;
@@ -4505,6 +4509,7 @@ function openPremiumUploadStudio() {
             studio.style.opacity = 1;
         });
         setupModeSliderSwipe();
+        // Always switch to Short mode when opening studio
         switchUploadMode('short');
     }
 }
@@ -4526,17 +4531,17 @@ function switchUploadMode(mode) {
     const slider = document.getElementById('mode-slider');
     const items = document.querySelectorAll('.mode-item');
     
-    let activeIndex = 0;
-    items.forEach((item, index) => {
-        if (item.dataset.mode === mode) {
-            item.classList.add('active');
-            activeIndex = index;
-        } else {
-            item.classList.remove('active');
-        }
+    items.forEach(item => {
+        if (item.dataset.mode === mode) item.classList.add('active');
+        else item.classList.remove('active');
     });
 
-    if (slider) slider.style.transform = `translateX(calc(50vw - ${(activeIndex * 105) + 60}px))`;
+    // Auto Center Slider
+    const activeItem = document.querySelector(`.mode-item[data-mode="${mode}"]`);
+    if (slider && activeItem) {
+        const centerOffset = (window.innerWidth / 2) - (activeItem.offsetLeft + (activeItem.offsetWidth / 2));
+        slider.style.transform = `translateX(${centerOffset}px)`;
+    }
     
     document.getElementById('upload-video-view').style.display = mode === 'video' ? 'flex' : 'none';
     document.getElementById('upload-short-view').style.display = mode === 'short' ? 'flex' : 'none';
@@ -4569,7 +4574,29 @@ function setupModeSliderSwipe() {
     });
 }
 
-// Camera Logics
+// ---------------------------------------------------------
+// CUSTOM THUMBNAIL UPLOAD (Fix)
+// ---------------------------------------------------------
+window.handleCustomThumbSelected = function(e) {
+    const file = e.target.files[0];
+    if(!file) return;
+    const url = URL.createObjectURL(file);
+    if(currentUploadFrameMeta) {
+        currentUploadFrameMeta.dataUrl = url;
+        currentUploadFrameMeta.blob = file;
+    } else {
+        currentUploadFrameMeta = { dataUrl: url, blob: file, duration: 15 };
+    }
+    const vdThumb = document.getElementById('vd-thumb');
+    const sdThumb = document.getElementById('sd-thumb');
+    if(vdThumb) vdThumb.src = url;
+    if(sdThumb) sdThumb.src = url;
+    showNotification("Custom thumbnail applied!", "success");
+}
+
+// ---------------------------------------------------------
+// CAMERA LOGICS & POPUPS (Timer, Duration, Speed)
+// ---------------------------------------------------------
 async function startShortCamera() {
     const video = document.getElementById('short-camera-preview');
     if (video && video.srcObject) return; 
@@ -4625,49 +4652,133 @@ function toggleShortFlash() {
     });
 }
 
-function toggleShortDuration() {
+// Studio Popups
+function openStudioPopup(type) {
     playUI('click');
-    recordDurationLimit = recordDurationLimit === 15 ? 60 : 15;
-    const btn = document.getElementById('btn-cam-duration');
-    if(btn) btn.innerText = recordDurationLimit + 's';
+    const modal = document.getElementById(type + '-modal');
+    const content = document.getElementById(type + '-content');
+    if(modal && content) {
+        modal.style.display = 'flex';
+        requestAnimationFrame(() => {
+            content.style.transform = 'translateY(0)';
+        });
+    }
 }
 
-function toggleShortSpeed() {
+function setCameraSetting(type, val) {
     playUI('click');
-    showNotification("Speed effect applied", "success");
+    const modal = document.getElementById(type + '-popup-modal');
+    const content = document.getElementById(type + '-popup-content');
+    
+    // Update UI Selection
+    if(content) {
+        content.querySelectorAll('.studio-popup-option').forEach(opt => {
+            if (opt.innerText.includes(val) || (val===0 && opt.innerText.includes('Off'))) {
+                opt.classList.add('selected');
+                opt.querySelector('.fa-check').style.display = 'block';
+            } else {
+                opt.classList.remove('selected');
+                opt.querySelector('.fa-check').style.display = 'none';
+            }
+        });
+    }
+
+    if(type === 'duration') {
+        recordDurationLimit = val;
+        document.getElementById('cam-duration-val').innerText = (val >= 60) ? (val/60)+'m' : val+'s';
+    } else if (type === 'timer') {
+        recordTimerCountdown = val;
+    } else if (type === 'speed') {
+        currentRecordSpeed = val;
+        document.getElementById('cam-speed-val').innerText = val+'x';
+        showNotification(`Preview will play at ${val}x`, "success");
+    }
+
+    // Close Modal
+    if(content) {
+        content.style.transform = 'translateY(100%)';
+        setTimeout(() => {
+            if(modal) modal.style.display = 'none';
+        }, 300);
+    }
 }
 
-function toggleShortTimer() {
-    playUI('click');
-    showNotification("3s Timer Activated", "success");
-}
+// Close popups on click outside
+document.querySelectorAll('.studio-popup-modal').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+        if(e.target === modal) {
+            const content = modal.querySelector('.studio-popup-content');
+            if(content) content.style.transform = 'translateY(100%)';
+            setTimeout(() => { modal.style.display = 'none'; }, 300);
+        }
+    });
+});
 
-// Hold to Record Logic
+// ---------------------------------------------------------
+// TAP & HOLD TO RECORD LOGIC (Fix)
+// ---------------------------------------------------------
 function setupHoldToRecord() {
     const recOuter = document.getElementById('record-btn-outer');
     if(!recOuter) return;
     
     let isRecording = false;
+    let holdTimer = null;
 
-    const startAction = (e) => {
-        if(e) e.preventDefault();
-        if(isRecording) return;
+    const pointerDown = (e) => {
+        e.preventDefault();
+        if(isRecording) {
+            // Already recording, stop it
+            stopCameraRecording();
+            isRecording = false;
+        } else {
+            // Start recording sequence
+            initiateRecordingSequence();
+            isRecording = true;
+        }
+    };
+
+    const pointerUp = (e) => {
+        e.preventDefault();
+        // If user releases touch, we don't immediately stop unless they were holding for a while.
+        // For simplicity and matching TikTok: Tap to start, Tap to stop. Hold is tricky via JS without pointer events.
+        // We will keep it strictly Tap to Start / Tap to Stop for best mobile WebView compat.
+    };
+
+    recOuter.addEventListener('touchstart', pointerDown, {passive: false});
+    recOuter.addEventListener('mousedown', pointerDown);
+}
+
+function initiateRecordingSequence() {
+    if (recordTimerCountdown > 0) {
+        const bigCount = document.getElementById('big-countdown');
+        const ctrls = document.getElementById('short-right-controls');
+        const bottom = document.getElementById('camera-bottom-bar');
+        const slider = document.getElementById('upload-mode-slider-wrap');
+        const closeBtn = document.getElementById('btn-close-studio');
+        
+        if(ctrls) ctrls.style.display = 'none';
+        if(bottom) bottom.style.display = 'none';
+        if(slider) slider.style.display = 'none';
+        if(closeBtn) closeBtn.style.display = 'none';
+        
+        bigCount.style.display = 'block';
+        let remaining = recordTimerCountdown;
+        bigCount.innerText = remaining;
+        
+        const countInterval = setInterval(() => {
+            remaining--;
+            if (remaining > 0) {
+                bigCount.innerText = remaining;
+                playUI('click');
+            } else {
+                clearInterval(countInterval);
+                bigCount.style.display = 'none';
+                startCameraRecording();
+            }
+        }, 1000);
+    } else {
         startCameraRecording();
-        isRecording = true;
-    };
-    
-    const stopAction = (e) => {
-        if(e) e.preventDefault();
-        if(!isRecording) return;
-        stopCameraRecording();
-        isRecording = false;
-    };
-
-    recOuter.addEventListener('touchstart', startAction, {passive: false});
-    recOuter.addEventListener('mousedown', startAction);
-    recOuter.addEventListener('touchend', stopAction);
-    recOuter.addEventListener('mouseup', stopAction);
-    recOuter.addEventListener('mouseleave', stopAction); 
+    }
 }
 
 function startCameraRecording() {
@@ -4683,10 +4794,19 @@ function startCameraRecording() {
         innerBtn.style.borderRadius = '8px';
     }
     
+    // Hide UI during recording
     const ctrls = document.getElementById('short-right-controls');
-    if(ctrls) ctrls.style.display = 'none';
     const gal = document.getElementById('btn-cam-gallery');
+    const slider = document.getElementById('upload-mode-slider-wrap');
+    const closeBtn = document.getElementById('btn-close-studio');
+    
+    if(ctrls) ctrls.style.display = 'none';
     if(gal) gal.style.display = 'none';
+    if(slider) slider.style.display = 'none';
+    if(closeBtn) closeBtn.style.display = 'none';
+    
+    const bottomBar = document.getElementById('camera-bottom-bar');
+    if(bottomBar) bottomBar.style.display = 'flex'; // Ensure record button is visible
     
     const timerEl = document.getElementById('recording-timer');
     if(timerEl) {
@@ -4729,10 +4849,17 @@ function stopCameraRecording() {
         innerBtn.style.borderRadius = '50%';
     }
     
+    // Restore UI
     const ctrls = document.getElementById('short-right-controls');
-    if(ctrls) ctrls.style.display = 'flex';
     const gal = document.getElementById('btn-cam-gallery');
+    const slider = document.getElementById('upload-mode-slider-wrap');
+    const closeBtn = document.getElementById('btn-close-studio');
+    
+    if(ctrls) ctrls.style.display = 'flex';
     if(gal) gal.style.display = 'block';
+    if(slider) slider.style.display = 'flex';
+    if(closeBtn) closeBtn.style.display = 'flex';
+    
     const timerEl = document.getElementById('recording-timer');
     if(timerEl) timerEl.style.display = 'none';
 }
@@ -4752,6 +4879,9 @@ function triggerShortDownloadLocal() {
     showNotification("Saved to device!", "success");
 }
 
+// ---------------------------------------------------------
+// VALIDATION & CORE PROCESSING (Auto Short Rule)
+// ---------------------------------------------------------
 async function handlePremiumFileSelected(e, type) {
     const file = e.target && e.target.files ? e.target.files[0] : (e.files ? e.files[0] : null);
     if (!file) return;
@@ -4775,23 +4905,26 @@ async function handlePremiumFileSelected(e, type) {
         currentUploadFrameMeta = { duration: 60, dataUrl: "", blob: null };
     }
 
-    // Auto switch to short if duration is less than 3 minutes
+    // Auto switch to short if duration is less than 3 minutes (180s)
     if (type === 'video-long' && currentUploadFrameMeta.duration < 180) {
-        showNotification("Video < 3 min! Switching to Short format.", "success");
+        showNotification("Video < 3 min! Automatically switching to Short format.", "success");
         type = 'video-short';
-        isShortFromCamera = false;
+        isShortFromCamera = false; // Because it was selected from gallery
     }
 
     closePremiumUploadStudio(); 
     
     if (type === 'video-short') {
         const vidEl = document.getElementById('short-preview-el');
-        if (vidEl) vidEl.src = URL.createObjectURL(file);
+        if (vidEl) {
+            vidEl.src = URL.createObjectURL(file);
+            vidEl.playbackRate = currentRecordSpeed; // Apply chosen speed to preview
+        }
         
         const dlBtn = document.getElementById('short-preview-download-btn');
         if(dlBtn) dlBtn.style.display = isShortFromCamera ? 'flex' : 'none';
         
-        initVisualTimeline(vidEl, 'sp-playhead', null);
+        initVisualTimeline(vidEl, 'sp-timeline-container', 'sp-playhead', null);
         AppNavigation.pushPage('short-preview-page');
     } else {
         const vidEl = document.getElementById('video-preview-el');
@@ -4799,7 +4932,7 @@ async function handlePremiumFileSelected(e, type) {
         
         const timeDisplay = document.getElementById('vp-time-display');
         if (timeDisplay) timeDisplay.innerText = `00:00 / ${formatDuration(currentUploadFrameMeta.duration)}`;
-        initVisualTimeline(vidEl, 'vp-playhead', 'vp-time-display');
+        initVisualTimeline(vidEl, 'vp-timeline-container', 'vp-playhead', 'vp-time-display');
         
         AppNavigation.pushPage('video-preview-page');
     }
@@ -4841,10 +4974,14 @@ function captureFrameAndDuration(file) {
     });
 }
 
-function initVisualTimeline(videoEl, playheadId, timeDisplayId) {
+// ---------------------------------------------------------
+// DRAGGABLE TIMELINE LOGIC (Fix)
+// ---------------------------------------------------------
+function initVisualTimeline(videoEl, timelineContainerId, playheadId, timeDisplayId) {
+    const container = document.getElementById(timelineContainerId);
     const playhead = document.getElementById(playheadId);
     const timeDisplay = document.getElementById(timeDisplayId);
-    if (!videoEl) return;
+    if (!videoEl || !container) return;
 
     videoEl.ontimeupdate = () => {
         if (videoEl.duration) {
@@ -4853,6 +4990,37 @@ function initVisualTimeline(videoEl, playheadId, timeDisplayId) {
             if (timeDisplay) timeDisplay.innerText = `${formatDuration(videoEl.currentTime)} / ${formatDuration(videoEl.duration)}`;
         }
     };
+
+    const seek = (e) => {
+        const rect = container.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        let x = clientX - rect.left;
+        x = Math.max(0, Math.min(x, rect.width));
+        const pct = x / rect.width;
+        if(videoEl.duration) videoEl.currentTime = pct * videoEl.duration;
+    };
+
+    container.addEventListener('mousedown', (e) => {
+        seek(e);
+        const onMouseMove = (e) => seek(e);
+        const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    });
+
+    container.addEventListener('touchstart', (e) => {
+        seek(e);
+        const onTouchMove = (e) => seek(e);
+        const onTouchEnd = () => {
+            document.removeEventListener('touchmove', onTouchMove);
+            document.removeEventListener('touchend', onTouchEnd);
+        };
+        document.addEventListener('touchmove', onTouchMove);
+        document.addEventListener('touchend', onTouchEnd);
+    });
 }
 
 function togglePremiumPreviewPlay(vidId, iconId) {
@@ -4892,6 +5060,8 @@ function gotoPremiumUploadDetails(type) {
         if (thumb && currentUploadFrameMeta) thumb.src = currentUploadFrameMeta.dataUrl;
         const titleInput = document.getElementById('sd-title');
         if(titleInput) titleInput.value = "";
+        const descInput = document.getElementById('sd-desc');
+        if(descInput) descInput.value = "";
         AppNavigation.pushPage('short-details-page');
     } else if (type === 'post') {
         const titleInput = document.getElementById('pd-title');
@@ -4907,7 +5077,7 @@ function openVisibilityPicker(targetId) {
     const content = document.getElementById('visibility-picker-content');
     
     const currVal = document.getElementById(targetId).value;
-    document.querySelectorAll('.visibility-option').forEach(opt => {
+    document.querySelectorAll('.studio-popup-option').forEach(opt => {
         if (opt.innerText.includes(currVal) || (currVal==='Public' && opt.innerText.includes('Publish'))) opt.classList.add('selected');
         else opt.classList.remove('selected');
     });
@@ -4943,19 +5113,6 @@ function selectVisibilityOption(val, text, iconClass) {
     }
 }
 
-const visModal = document.getElementById('visibility-picker-modal');
-if(visModal) {
-    visModal.addEventListener('click', (e) => {
-        if(e.target.id === 'visibility-picker-modal') {
-            const content = document.getElementById('visibility-picker-content');
-            if(content) content.style.transform = 'translateY(100%)';
-            setTimeout(() => {
-                e.target.style.display = 'none';
-            }, 300);
-        }
-    });
-}
-
 function updatePremiumCharCount(el, countId) {
     const countEl = document.getElementById(countId);
     if (countEl) countEl.innerText = `${el.value.length}/${el.maxLength}`;
@@ -4967,6 +5124,9 @@ function formatDuration(seconds) {
     return `${min < 10 ? '0' : ''}${min}:${sec < 10 ? '0' : ''}${sec}`;
 }
 
+// ---------------------------------------------------------
+// FAST PUBLISH LOGIC (R2 -> RTDB -> Feed Sync)
+// ---------------------------------------------------------
 async function publishPremiumVideoOrShort(modeType) {
     playUI('click');
     const isShort = modeType === 'video-short';
@@ -4976,7 +5136,7 @@ async function publishPremiumVideoOrShort(modeType) {
     const title = titleEl ? titleEl.value.trim() : "";
     
     const descEl = document.getElementById(`${prefix}-desc`);
-    const desc = isShort ? title : (descEl ? descEl.value.trim() : "");
+    const desc = descEl ? descEl.value.trim() : "";
     
     const visEl = document.getElementById(`${prefix}-visibility`);
     const visibility = visEl ? visEl.value : "Public";
@@ -5098,3 +5258,7 @@ function openUploadManager() {
 function closeUploadManager() {
     AppNavigation.pop();
 }
+
+// =========================================================
+// END PREMIUM UPLOAD STUDIO FUNCTIONS
+// =========================================================

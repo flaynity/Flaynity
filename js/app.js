@@ -4515,15 +4515,24 @@ function openPremiumUploadStudio() {
 
 function closePremiumUploadStudio() {
     playUI('click');
+    document.querySelectorAll('#video-preview-el, #short-preview-el').forEach(v => v.pause()); // Background play fix
     const studio = document.getElementById('premium-upload-studio');
     if (studio) {
         studio.style.opacity = 0;
         setTimeout(() => {
             studio.style.display = 'none';
+            stopCameraRecording(); // Stop if recording
             stopShortCamera();
         }, 300);
     }
 }
+
+// Background Playback Fix for Preview Pages
+window.closeAndPausePreview = function() {
+    playUI('click');
+    document.querySelectorAll('#video-preview-el, #short-preview-el').forEach(v => v.pause());
+    AppNavigation.pop();
+};
 
 // Fixed Centered Mode Slider
 function switchUploadMode(mode) {
@@ -4713,51 +4722,54 @@ document.querySelectorAll('.studio-popup-modal').forEach(modal => {
 });
 
 // ---------------------------------------------------------
-// PERFECT TAP & HOLD TO RECORD LOGIC (Fix)
+// PERFECT TAP & HOLD TO RECORD LOGIC (Fixed)
 // ---------------------------------------------------------
 function setupHoldToRecord() {
     const recOuter = document.getElementById('record-btn-outer');
     if(!recOuter) return;
     
     let isRecording = false;
-    let holdTimeout = null;
-    let isHoldAction = false;
+    let recStartTime = 0;
+    let isTapMode = false;
 
     const pointerDown = (e) => {
-        e.preventDefault();
-        isHoldAction = false;
-
-        if (!isRecording) {
-            initiateRecordingSequence();
-            isRecording = true;
-        } else {
-            // Tap again to stop (Tap to start, Tap to stop mode)
+        if (!shortCameraStream) return;
+        if (isRecording) {
+            // Already recording via Tap -> Stop it
             stopCameraRecording();
             isRecording = false;
+            isTapMode = false;
             return;
         }
-
-        holdTimeout = setTimeout(() => {
-            isHoldAction = true;
-        }, 350); // Holding for > 350ms means release will stop it
+        
+        // Start sequence
+        recStartTime = Date.now();
+        isRecording = true;
+        isTapMode = false;
+        initiateRecordingSequence();
     };
 
     const pointerUp = (e) => {
-        e.preventDefault();
-        clearTimeout(holdTimeout);
+        if (!isRecording) return;
         
-        if (isHoldAction && isRecording) {
-            // It was a hold action, release stops the recording
-            stopCameraRecording();
-            isRecording = false;
+        const durationHeld = Date.now() - recStartTime;
+        if (durationHeld < 500) {
+            // It was a quick tap. Let it continue recording (Tap Mode)
+            isTapMode = true;
+        } else {
+            // It was a long hold. Releasing stops the recording.
+            if (!isTapMode) {
+                stopCameraRecording();
+                isRecording = false;
+            }
         }
     };
 
-    recOuter.addEventListener('touchstart', pointerDown, {passive: false});
-    recOuter.addEventListener('mousedown', pointerDown);
-    recOuter.addEventListener('touchend', pointerUp);
-    recOuter.addEventListener('mouseup', pointerUp);
-    recOuter.addEventListener('mouseleave', pointerUp); 
+    // Modern pointer events for seamless cross-platform support
+    recOuter.addEventListener('pointerdown', pointerDown);
+    recOuter.addEventListener('pointerup', pointerUp);
+    recOuter.addEventListener('pointercancel', pointerUp);
+    recOuter.addEventListener('pointerleave', pointerUp);
 }
 
 function initiateRecordingSequence() {
@@ -4766,7 +4778,7 @@ function initiateRecordingSequence() {
         const ctrls = document.getElementById('short-right-controls');
         const bottom = document.getElementById('camera-bottom-bar');
         const slider = document.getElementById('upload-mode-slider-wrap');
-        const closeBtn = document.getElementById('btn-close-studio');
+        const closeBtn = document.getElementById('camera-top-bar');
         
         if(ctrls) ctrls.style.display = 'none';
         if(bottom) bottom.style.display = 'none';
@@ -4863,11 +4875,13 @@ function stopCameraRecording() {
     const ctrls = document.getElementById('short-right-controls');
     const gal = document.getElementById('btn-cam-gallery');
     const slider = document.getElementById('upload-mode-slider-wrap');
+    const topBar = document.getElementById('camera-top-bar');
     const closeBtn = document.getElementById('btn-close-studio');
     
     if(ctrls) ctrls.style.display = 'flex';
     if(gal) gal.style.display = 'block';
     if(slider) slider.style.display = 'flex';
+    if(topBar) topBar.style.display = 'flex';
     if(closeBtn) closeBtn.style.display = 'block';
     
     const timerEl = document.getElementById('recording-timer');
@@ -4941,7 +4955,7 @@ async function handlePremiumFileSelected(e, type) {
         const vidEl = document.getElementById('video-preview-el');
         if (vidEl) vidEl.src = URL.createObjectURL(file);
         
-        // Timeline removed for video preview
+        // Timeline removed for video preview as requested
         AppNavigation.pushPage('video-preview-page');
     }
 }
@@ -4983,7 +4997,7 @@ function captureFrameAndDuration(file) {
 }
 
 // ---------------------------------------------------------
-// SHORT TRIMMER / TIMELINE LOGIC (Perfected)
+// SHORT TRIMMER / TIMELINE LOGIC (Width Fixed)
 // ---------------------------------------------------------
 let activeTrimStart = 0; // percentage 0 to 1
 let activeTrimEnd = 1;   // percentage 0 to 1
@@ -5097,6 +5111,7 @@ function togglePremiumPreviewPlay(vidId, iconId) {
 
 function gotoPremiumUploadDetails(type) {
     playUI('click');
+    document.querySelectorAll('#video-preview-el, #short-preview-el').forEach(v => v.pause()); // Background play fix
     AppNavigation.pop(); 
     
     if (type === 'video') {

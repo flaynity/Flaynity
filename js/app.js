@@ -1640,7 +1640,7 @@ function renderLongVideosSegmentUI(segmentLongs) {
         const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
 
         html += `
-            <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin: 0 0 24px 0; cursor: pointer; background: var(--surface); border-radius: 0; overflow: hidden; border: 0; box-shadow: none; width: calc(100% + 32px); margin-left: -16px; margin-right: -16px;">
+            <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
                 <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #000; overflow: hidden;">
                     <img src="${v.poster}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
                     <span class="long-video-duration" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">${v.duration || '10:00'}</span>
@@ -1720,7 +1720,7 @@ function renderSinglePostSegmentUI(post) {
     let imagesHtml = '';
     if (post.images && post.images.length > 0) {
         imagesHtml = `
-            <div class="post-image-full-bleed" style="margin-left: -16px; margin-right: -16px; margin-top: 12px; margin-bottom: 12px; width: calc(100% + 32px); aspect-ratio: 3/4; position: relative; background: #000; overflow: hidden; border-radius: 0 !important;">
+            <div style="margin-left: -16px; margin-right: -16px; margin-top: 12px; margin-bottom: 12px; width: calc(100% + 32px); aspect-ratio: 3/4; position: relative; background: #000; overflow: hidden; border-radius: 0 !important;">
                 <img src="${post.images[0]}" onclick="openFullScreenImagePreview('${post.images[0]}')" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; display: block; border-radius: 0 !important;" loading="lazy">
                 
                 <div style="position: absolute; top: 0; left: 0; right: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%); padding: 16px 20px; color: #FFFFFF; z-index: 10;">
@@ -2583,7 +2583,6 @@ const AppNavigation = {
             }
         } else {
             document.body.style.overflow = 'auto';
-            if (longVideoFullscreen) exitLongVideoFullscreen(true);
             const container = document.getElementById('video-player-container');
             if (container) container.innerHTML = '';
             if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
@@ -2623,421 +2622,89 @@ function executeBackAction() {
 async function openMoviePage(id, isTMDB = false) {
     playUI('click');
     if (!navigator.onLine) {
-        showNotification("Offline. Cannot play Long Videos.", "error");
-        return;
+         showNotification("Offline. Cannot play Long Videos.", "error");
+         return;
     }
 
     if (window.AndroidBridge && typeof window.AndroidBridge.showMovieClickInterstitial === 'function') {
-        window.AndroidBridge.showMovieClickInterstitial();
+        window.AndroidBridge.showMovieClickInterstitial(); 
     }
 
     if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
     if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }
 
+    const playerContainer = document.getElementById('video-player-container');
+    const skeleton = document.getElementById('video-player-skeleton');
+
+    if (playerContainer) {
+        playerContainer.style.display = 'none';
+        playerContainer.innerHTML = '';
+    }
+    if (skeleton) skeleton.style.display = 'flex';
+    const banner = document.getElementById('movie-detail-banner');
+    if (banner) banner.style.display = 'block';
+
     if (isTMDB) {
         const res = await fetch(`${BASE_URL}/movie/${id}?append_to_response=videos&api_key=${API_KEY}`);
         const data = await res.json();
-        const trailerKey = data.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube')?.key;
-        currentActiveMovie = {
-            id: data.id,
-            title: data.title,
-            rating: data.vote_average?.toFixed(1) || "N/A",
-            releaseDate: data.release_date?.split('-')[0] || "N/A",
-            poster: IMG_URL + data.poster_path,
-            banner: BG_URL + (data.backdrop_path || data.poster_path),
-            videoLink: trailerKey ? `https://www.youtube.com/watch?v=${trailerKey}` : null,
-            isTMDB: true
+        let trailerKey = data.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube')?.key;
+        currentActiveMovie = { 
+            id: data.id, 
+            title: data.title, 
+            rating: data.vote_average?.toFixed(1) || "N/A", 
+            releaseDate: data.release_date?.split('-')[0] || "N/A", 
+            poster: IMG_URL + data.poster_path, 
+            banner: BG_URL + (data.backdrop_path || data.poster_path), 
+            videoLink: trailerKey ? `https://www.youtube.com/watch?v=${trailerKey}` : null, 
+            isTMDB: true 
         };
     } else {
         currentActiveMovie = allLongVideos.find(m => String(m.id) === String(id));
     }
 
-    if (!currentActiveMovie) return;
-
+    if(!currentActiveMovie) return;
     const bannerImg = document.getElementById('movie-detail-banner');
     const titleEl = document.getElementById('movie-detail-title');
     const handleEl = document.getElementById('movie-detail-channel-handle');
-    if (bannerImg) bannerImg.src = normalizeFlaynityMediaUrl(currentActiveMovie.poster || currentActiveMovie.banner || '');
-    if (titleEl) titleEl.innerText = currentActiveMovie.title || 'Untitled';
+
+    if (bannerImg) bannerImg.src = currentActiveMovie.banner;
+    if (titleEl) titleEl.innerText = currentActiveMovie.title;
     if (handleEl) handleEl.innerText = currentActiveMovie.username ? "@" + currentActiveMovie.username : "@flaynity";
 
-    resetLongVideoPlayerState();
     startVideoPlayer();
     registerViewAndListen(currentActiveMovie.id);
     loadChannelMetaForWatchPage(currentActiveMovie.userId || currentActiveMovie.channelId);
-
+    
     AppNavigation.pushPage('full-movie-page');
 }
 
-function resetLongVideoPlayerState() {
-    const container = document.getElementById('video-player-container');
-    const banner = document.getElementById('movie-detail-banner');
-    const skeleton = document.getElementById('video-player-skeleton');
-    if (longVideoPlayerTimer) { clearTimeout(longVideoPlayerTimer); longVideoPlayerTimer = null; }
-    if (longVideoDoubleTapTimer) { clearTimeout(longVideoDoubleTapTimer); longVideoDoubleTapTimer = null; }
-    longVideoControlsVisible = true;
-    longVideoLastTap = 0;
-    longVideoPendingTap = false;
-    if (container) container.innerHTML = '';
-    if (container) container.style.display = 'none';
-    if (banner) { banner.style.display = 'block'; banner.style.opacity = '1'; }
-    if (skeleton) skeleton.style.display = 'flex';
-    closeLongVideoMenus();
-    exitLongVideoFullscreen(false);
-}
-
-let longVideoPlayerTimer = null;
-let longVideoDoubleTapTimer = null;
-let longVideoLastTap = 0;
-let longVideoPendingTap = false;
-let longVideoControlsVisible = true;
-let longVideoVideoEl = null;
-let longVideoQualityMax = 1080;
-let longVideoQualityMap = {};
-let longVideoFullscreen = false;
-
-function getLongVideoMaxQuality(movie) {
-    const raw = movie?.resolution ?? movie?.quality ?? movie?.videoQuality ?? movie?.maxQuality ?? movie?.height ?? movie?.videoHeight;
-    if (typeof raw === 'number') {
-        if (raw <= 144) return 144;
-        if (raw <= 360) return 360;
-        if (raw <= 720) return 720;
-        return 1080;
-    }
-    const text = String(raw || '').toLowerCase();
-    const match = text.match(/(144|360|480|720|1080)/);
-    if (match) return Number(match[1]) >= 1080 ? 1080 : Number(match[1]) >= 720 ? 720 : Number(match[1]) >= 360 ? 360 : 144;
-    if (movie?.width && movie?.height) {
-        const h = Math.max(Number(movie.width) || 0, Number(movie.height) || 0);
-        if (h >= 1080) return 1080;
-        if (h >= 720) return 720;
-        if (h >= 360) return 360;
-        return 144;
-    }
-    return 1080;
-}
-
-function getLongVideoQualityUrl(movie, q) {
-    const candidates = {
-        144: movie?.video144p || movie?.quality144 || movie?.url144p || movie?.renditions?.['144p'],
-        360: movie?.video360p || movie?.quality360 || movie?.url360p || movie?.renditions?.['360p'],
-        720: movie?.video720p || movie?.quality720 || movie?.url720p || movie?.renditions?.['720p'],
-        1080: movie?.video1080p || movie?.quality1080 || movie?.url1080p || movie?.renditions?.['1080p']
-    };
-    return candidates[q] ? normalizeFlaynityMediaUrl(candidates[q]) : '';
-}
-
 function startVideoPlayer() {
-    if (!currentActiveMovie || !currentActiveMovie.videoLink) {
-        showNotification("No playable links found.", "error");
-        return;
-    }
-
+    if(!currentActiveMovie || !currentActiveMovie.videoLink) { showNotification("No playable links found.", "error"); return; }
+    const link = currentActiveMovie.isTMDB ? currentActiveMovie.videoLink : normalizeFlaynityMediaUrl(currentActiveMovie.videoLink);
     const container = document.getElementById('video-player-container');
     const skeleton = document.getElementById('video-player-skeleton');
     const banner = document.getElementById('movie-detail-banner');
-    if (!container) return;
+    
+    if (banner) banner.style.display = 'none'; 
+    if (skeleton) skeleton.style.display = 'none';
+    if (container) {
+        container.style.display = 'block';
 
-    const link = currentActiveMovie.isTMDB ? currentActiveMovie.videoLink : normalizeFlaynityMediaUrl(currentActiveMovie.videoLink);
-    if (!link) return;
-
-    if (banner) {
-        banner.src = normalizeFlaynityMediaUrl(currentActiveMovie.poster || currentActiveMovie.banner || '');
-        banner.style.display = 'block';
-    }
-    if (skeleton) skeleton.style.display = 'flex';
-    container.style.display = 'block';
-    container.innerHTML = '';
-
-    if (link.includes('youtube.com') || link.includes('youtu.be')) {
-        container.innerHTML = `<iframe src="https://www.youtube.com/embed/${extractVideoID(link)}?autoplay=1&modestbranding=1&rel=0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
-        if (skeleton) skeleton.style.display = 'none';
-        return;
-    }
-
-    container.innerHTML = `
-        <div class="flaynity-long-player" id="flaynity-long-player">
-            <video id="premium-video-watch-el" playsinline webkit-playsinline preload="auto" poster="${escapeHTML(normalizeFlaynityMediaUrl(currentActiveMovie.poster || ''))}"></video>
-            <div class="flaynity-player-buffer" id="flaynity-player-buffer"><span></span></div>
-            <div class="flaynity-player-controls" id="flaynity-player-controls">
-                <div class="flaynity-player-top"><button type="button" class="flaynity-player-icon" onclick="event.stopPropagation(); toggleLongVideoSettings(event)" aria-label="Settings"><i class="fas fa-gear"></i></button></div>
-                <div class="flaynity-player-center">
-                    <button type="button" class="flaynity-player-center-btn" onclick="event.stopPropagation(); seekLongVideo(-10)" aria-label="Rewind 10 seconds"><i class="fas fa-rotate-left"></i></button>
-                    <button type="button" class="flaynity-player-play" id="flaynity-player-play" onclick="event.stopPropagation(); toggleLongVideoPlay()" aria-label="Play"><i class="fas fa-pause"></i></button>
-                    <button type="button" class="flaynity-player-center-btn" onclick="event.stopPropagation(); seekLongVideo(10)" aria-label="Forward 10 seconds"><i class="fas fa-rotate-right"></i></button>
-                </div>
-                <div class="flaynity-player-bottom">
-                    <span id="flaynity-player-time">00:00 / 00:00</span>
-                    <button type="button" class="flaynity-player-icon" onclick="event.stopPropagation(); toggleLongVideoFullscreen()" aria-label="Fullscreen"><i class="fas fa-expand"></i></button>
-                </div>
-                <div class="flaynity-player-progress"><div id="flaynity-player-progress-fill"></div></div>
-            </div>
-            <div class="flaynity-seek-indicator" id="flaynity-seek-indicator"></div>
-            <div class="flaynity-player-menu" id="flaynity-player-menu" onclick="event.stopPropagation()">
-                <button type="button" onclick="openLongVideoSpeedMenu(event)"><span>Playback Speed</span><span id="flaynity-speed-value">1x</span></button>
-                <button type="button" onclick="openLongVideoQualityMenu(event)"><span>Quality</span><span id="flaynity-quality-value">Auto</span></button>
-            </div>
-            <div class="flaynity-player-submenu" id="flaynity-speed-menu"></div>
-            <div class="flaynity-player-submenu" id="flaynity-quality-menu"></div>
-        </div>`;
-
-    longVideoVideoEl = document.getElementById('premium-video-watch-el');
-    const player = document.getElementById('flaynity-long-player');
-    longVideoQualityMax = getLongVideoMaxQuality(currentActiveMovie);
-    longVideoQualityMap = {};
-    [144, 360, 720, 1080].forEach(q => {
-        const qUrl = getLongVideoQualityUrl(currentActiveMovie, q);
-        if (qUrl) longVideoQualityMap[q] = qUrl;
-    });
-
-    if (longVideoVideoEl) {
-        longVideoVideoEl.poster = normalizeFlaynityMediaUrl(currentActiveMovie.poster || '');
-        longVideoVideoEl.muted = false;
-        longVideoVideoEl.controls = false;
-        attachSmartAdaptiveSource(longVideoVideoEl, longVideoQualityMap[longVideoQualityMax] || link, 'long_video_main');
-        bindLongVideoPlayerEvents(longVideoVideoEl, player);
-    }
-    updateLongVideoQualityMenu();
-    updateLongVideoSpeedMenu();
-    setLongVideoControls(true);
-}
-
-function bindLongVideoPlayerEvents(video, player) {
-    if (!video || !player) return;
-    const banner = document.getElementById('movie-detail-banner');
-    const skeleton = document.getElementById('video-player-skeleton');
-
-    const hidePoster = () => { if (banner) banner.style.opacity = '0'; if (skeleton) skeleton.style.display = 'none'; };
-    const showBuffer = () => { const b = document.getElementById('flaynity-player-buffer'); if (b) b.classList.add('visible'); };
-    const hideBuffer = () => { const b = document.getElementById('flaynity-player-buffer'); if (b) b.classList.remove('visible'); };
-
-    video.addEventListener('loadeddata', hidePoster, { once: true });
-    video.addEventListener('canplay', () => { hidePoster(); hideBuffer(); });
-    video.addEventListener('playing', () => { hidePoster(); hideBuffer(); updateLongVideoPlayIcon(); });
-    video.addEventListener('waiting', showBuffer);
-    video.addEventListener('stalled', showBuffer);
-    video.addEventListener('progress', () => { if (video.readyState >= 3) hideBuffer(); });
-    video.addEventListener('pause', updateLongVideoPlayIcon);
-    video.addEventListener('play', updateLongVideoPlayIcon);
-    video.addEventListener('timeupdate', updateLongVideoProgress);
-    video.addEventListener('durationchange', updateLongVideoProgress);
-    video.addEventListener('error', () => { hideBuffer(); });
-    video.addEventListener('ended', playNextRecommendedVideo);
-
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchMoved = false;
-    player.addEventListener('touchstart', e => {
-        if (!e.touches[0]) return;
-        touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; touchMoved = false;
-    }, { passive: true });
-    player.addEventListener('touchmove', e => {
-        if (!e.touches[0]) return;
-        if (Math.abs(e.touches[0].clientX - touchStartX) > 8 || Math.abs(e.touches[0].clientY - touchStartY) > 8) touchMoved = true;
-    }, { passive: true });
-    player.addEventListener('touchend', e => {
-        if (touchMoved || !e.changedTouches[0]) return;
-        const x = e.changedTouches[0].clientX - player.getBoundingClientRect().left;
-        const width = player.getBoundingClientRect().width;
-        handleLongVideoTap(x, width);
-    });
-
-    player.addEventListener('click', e => {
-        if (e.target.closest('button') || e.target.closest('.flaynity-player-menu') || e.target.closest('.flaynity-player-submenu')) return;
-        const rect = player.getBoundingClientRect();
-        handleLongVideoTap(e.clientX - rect.left, rect.width);
-    });
-
-    video.play().catch(() => {
-        setLongVideoControls(true);
-    });
-}
-
-function handleLongVideoTap(x, width) {
-    const now = Date.now();
-    const doubleTapWindow = 280;
-    const isDouble = (now - longVideoLastTap) <= doubleTapWindow;
-    longVideoLastTap = now;
-    if (isDouble) {
-        if (longVideoDoubleTapTimer) clearTimeout(longVideoDoubleTapTimer);
-        const delta = x < width * 0.5 ? -10 : 10;
-        seekLongVideo(delta, true);
-        longVideoLastTap = 0;
-        return;
-    }
-    if (longVideoDoubleTapTimer) clearTimeout(longVideoDoubleTapTimer);
-    longVideoDoubleTapTimer = setTimeout(() => {
-        setLongVideoControls(!longVideoControlsVisible);
-    }, doubleTapWindow);
-}
-
-function setLongVideoControls(show) {
-    const controls = document.getElementById('flaynity-player-controls');
-    if (!controls) return;
-    longVideoControlsVisible = !!show;
-    controls.classList.toggle('visible', longVideoControlsVisible);
-    if (longVideoPlayerTimer) clearTimeout(longVideoPlayerTimer);
-    if (longVideoControlsVisible) {
-        longVideoPlayerTimer = setTimeout(() => setLongVideoControls(false), 2000);
+        if(link.includes('youtube.com') || link.includes('youtu.be')) {
+            const ytId = extractVideoID(link);
+            container.innerHTML = `<iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1&modestbranding=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+        } else {
+            container.innerHTML = `<video id="premium-video-watch-el" controls playsinline style="width:100%; height:100%; object-fit:contain;"></video>`;
+            const videoEl = document.getElementById('premium-video-watch-el');
+            
+            if (videoEl) {
+                attachSmartAdaptiveSource(videoEl, link, 'long_video_main');
+                videoEl.play().catch(()=>{});
+                videoEl.onended = () => { playNextRecommendedVideo(); };
+            }
+        }
     }
 }
-
-function toggleLongVideoPlay() {
-    if (!longVideoVideoEl) return;
-    if (longVideoVideoEl.paused) longVideoVideoEl.play().catch(() => {});
-    else longVideoVideoEl.pause();
-    setLongVideoControls(true);
-}
-
-function updateLongVideoPlayIcon() {
-    const btn = document.getElementById('flaynity-player-play');
-    if (btn) btn.innerHTML = longVideoVideoEl && !longVideoVideoEl.paused ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
-}
-
-function formatPlayerTime(seconds) {
-    if (!isFinite(seconds) || seconds < 0) seconds = 0;
-    seconds = Math.floor(seconds);
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    return h > 0 ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-}
-
-function updateLongVideoProgress() {
-    if (!longVideoVideoEl) return;
-    const current = formatPlayerTime(longVideoVideoEl.currentTime);
-    const total = formatPlayerTime(longVideoVideoEl.duration);
-    const time = document.getElementById('flaynity-player-time');
-    const fill = document.getElementById('flaynity-player-progress-fill');
-    if (time) time.textContent = `${current} / ${total}`;
-    if (fill) fill.style.width = `${longVideoVideoEl.duration ? (longVideoVideoEl.currentTime / longVideoVideoEl.duration) * 100 : 0}%`;
-}
-
-function seekLongVideo(delta, isDoubleTap = false) {
-    if (!longVideoVideoEl || !isFinite(longVideoVideoEl.duration)) return;
-    longVideoVideoEl.currentTime = Math.max(0, Math.min(longVideoVideoEl.duration, longVideoVideoEl.currentTime + delta));
-    const indicator = document.getElementById('flaynity-seek-indicator');
-    if (indicator) {
-        indicator.textContent = delta > 0 ? `+${Math.abs(delta)}s` : `-${Math.abs(delta)}s`;
-        indicator.className = `flaynity-seek-indicator visible ${delta > 0 ? 'forward' : 'backward'}`;
-        clearTimeout(seekLongVideo._timer);
-        seekLongVideo._timer = setTimeout(() => indicator.classList.remove('visible'), 650);
-    }
-    if (!isDoubleTap) setLongVideoControls(true);
-}
-
-function closeLongVideoMenus() {
-    ['flaynity-player-menu','flaynity-speed-menu','flaynity-quality-menu'].forEach(id => {
-        const el = document.getElementById(id); if (el) el.classList.remove('visible');
-    });
-}
-function toggleLongVideoSettings(event) {
-    if (event) event.stopPropagation();
-    const menu = document.getElementById('flaynity-player-menu');
-    if (!menu) return;
-    const willShow = !menu.classList.contains('visible');
-    closeLongVideoMenus();
-    if (willShow) menu.classList.add('visible');
-}
-function openLongVideoSpeedMenu(event) {
-    if (event) event.stopPropagation();
-    const menu = document.getElementById('flaynity-speed-menu');
-    if (!menu) return;
-    closeLongVideoMenus();
-    menu.innerHTML = [0.25,0.5,0.75,1,1.25,1.5,1.75,2].map(v => `<button type="button" class="${longVideoVideoEl?.playbackRate === v ? 'selected' : ''}" onclick="setLongVideoSpeed(${v}); event.stopPropagation();">${v}x</button>`).join('');
-    menu.classList.add('visible');
-}
-function setLongVideoSpeed(rate) {
-    if (longVideoVideoEl) longVideoVideoEl.playbackRate = rate;
-    const label = document.getElementById('flaynity-speed-value'); if (label) label.textContent = `${rate}x`;
-    closeLongVideoMenus();
-}
-function updateLongVideoSpeedMenu() {
-    const saved = 1;
-    if (longVideoVideoEl) longVideoVideoEl.playbackRate = saved;
-    const label = document.getElementById('flaynity-speed-value'); if (label) label.textContent = `${saved}x`;
-}
-function openLongVideoQualityMenu(event) {
-    if (event) event.stopPropagation();
-    const menu = document.getElementById('flaynity-quality-menu');
-    if (!menu) return;
-    closeLongVideoMenus();
-    updateLongVideoQualityMenu();
-    menu.classList.add('visible');
-}
-function updateLongVideoQualityMenu() {
-    const menu = document.getElementById('flaynity-quality-menu');
-    if (!menu) return;
-    const labels = {144:'Low (144p)',360:'Fast (360p)',720:'High Quality (720p)',1080:'Premium (1080p)'};
-    menu.innerHTML = [144,360,720,1080].map(q => {
-        const unlocked = q <= longVideoQualityMax;
-        const hasSource = q === longVideoQualityMax || !!longVideoQualityMap[q] || q < longVideoQualityMax;
-        const disabled = !unlocked || !hasSource;
-        return `<button type="button" class="${disabled ? 'locked' : ''}" ${disabled ? 'disabled' : ''} onclick="setLongVideoQuality(${q}); event.stopPropagation();"><span>${labels[q]}</span><i class="fas ${disabled ? 'fa-lock' : (String(longVideoQualityMax) === String(q) ? 'fa-check' : 'fa-play')}"></i></button>`;
-    }).join('');
-}
-function setLongVideoQuality(q) {
-    if (q > longVideoQualityMax || !longVideoVideoEl) return;
-    const current = longVideoVideoEl.currentTime || 0;
-    const wasPlaying = !longVideoVideoEl.paused;
-    const url = longVideoQualityMap[q] || (q === longVideoQualityMax ? normalizeFlaynityMediaUrl(currentActiveMovie.videoLink) : '');
-    if (!url) return;
-    const oldRate = longVideoVideoEl.playbackRate || 1;
-    longVideoVideoEl.src = url;
-    longVideoVideoEl.playbackRate = oldRate;
-    longVideoVideoEl.addEventListener('loadedmetadata', function restore() {
-        longVideoVideoEl.currentTime = Math.min(current, longVideoVideoEl.duration || current);
-        longVideoVideoEl.removeEventListener('loadedmetadata', restore);
-        if (wasPlaying) longVideoVideoEl.play().catch(()=>{});
-    });
-    const label = document.getElementById('flaynity-quality-value'); if (label) label.textContent = `${q}p`;
-    closeLongVideoMenus();
-}
-
-async function toggleLongVideoFullscreen() {
-    const player = document.getElementById('flaynity-long-player');
-    if (!player) return;
-    if (longVideoFullscreen) {
-        exitLongVideoFullscreen(true);
-        return;
-    }
-    longVideoFullscreen = true;
-    document.body.classList.add('flaynity-player-landscape');
-    player.classList.add('landscape-fullscreen');
-    try {
-        if (player.requestFullscreen) await player.requestFullscreen();
-    } catch(e) {}
-    try {
-        if (screen.orientation?.lock) await screen.orientation.lock('landscape');
-    } catch(e) {}
-    callOrientationBridge('landscape');
-}
-
-async function exitLongVideoFullscreen(useBridge = true) {
-    const player = document.getElementById('flaynity-long-player');
-    longVideoFullscreen = false;
-    document.body.classList.remove('flaynity-player-landscape');
-    if (player) player.classList.remove('landscape-fullscreen');
-    try { if (document.fullscreenElement) await document.exitFullscreen(); } catch(e) {}
-    try { if (screen.orientation?.unlock) screen.orientation.unlock(); } catch(e) {}
-    if (useBridge) callOrientationBridge('portrait');
-}
-
-function callOrientationBridge(mode) {
-    const b = window.AndroidBridge;
-    if (!b) return;
-    try {
-        if (mode === 'landscape' && typeof b.lockLandscape === 'function') b.lockLandscape();
-        else if (mode === 'portrait' && typeof b.lockPortrait === 'function') b.lockPortrait();
-        else if (mode === 'landscape' && typeof b.setLandscape === 'function') b.setLandscape();
-        else if (mode === 'portrait' && typeof b.setPortrait === 'function') b.setPortrait();
-        else if (typeof b.setRequestedOrientation === 'function') b.setRequestedOrientation(mode);
-    } catch(e) {}
-}
-
-document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement && longVideoFullscreen) exitLongVideoFullscreen(true);
-});
 
 function playNextRecommendedVideo() {
     const currentId = currentActiveMovie ? String(currentActiveMovie.id) : null;
@@ -3420,7 +3087,7 @@ function renderMovieWatchRecommendedFeed() {
         const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
 
         html += `
-            <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin: 0 0 24px 0; cursor: pointer; background: var(--surface); border-radius: 0; overflow: hidden; border: 0; box-shadow: none; width: 100%;">
+            <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
                 <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #000; overflow: hidden;">
                     <img src="${v.poster}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
                     <span class="long-video-duration" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">${v.duration || '10:00'}</span>

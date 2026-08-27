@@ -162,6 +162,142 @@
         .nav-avatar-wrap { width: 22px; height: 22px; border-radius: 50%; overflow: hidden; border: 2px solid transparent; transition: border-color 0.1s ease; display: flex; align-items: center; justify-content: center; }
         .nav-item.active .nav-avatar-wrap { border-color: var(--text-main); }
         .nav-avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
+
+/* You page: safe-area + channel form repair (scoped to this page only) */
+.fullscreen-page#you-tab,
+.fullscreen-page#create-channel-page,
+.fullscreen-page#view-channel-page,
+.fullscreen-page#analytics-page,
+.fullscreen-page#edit-channel-page,
+.fullscreen-page#monetization-page {
+    padding-top: env(safe-area-inset-top, 0px);
+    height: 100dvh;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+#create-channel-page > .appbar,
+#view-channel-page > .appbar,
+#analytics-page > .appbar,
+#edit-channel-page > .appbar,
+#monetization-page > .appbar {
+    flex: 0 0 60px;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+/* Keep You-page sub-page titles optically centered while the back button stays left. */
+#create-channel-page > .appbar .centered-page-title,
+#view-channel-page > .appbar .centered-page-title,
+#analytics-page > .appbar .centered-page-title,
+#edit-channel-page > .appbar .centered-page-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    white-space: nowrap;
+    text-align: center;
+}
+
+/* Status-bar-safe top edge: the appbar begins immediately below the phone status bar. */
+.fullscreen-page#you-tab,
+.fullscreen-page#create-channel-page,
+.fullscreen-page#view-channel-page,
+.fullscreen-page#analytics-page,
+.fullscreen-page#edit-channel-page,
+.fullscreen-page#monetization-page {
+    box-sizing: border-box;
+}
+#create-channel-page .page-content,
+#edit-channel-page .page-content,
+#view-channel-page .page-content,
+#analytics-page .page-content,
+#monetization-page .page-content {
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Create Channel */
+#create-channel-page .page-content {
+    padding: 28px 20px 48px !important;
+}
+#create-channel-page .avatar-selector-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    margin: 4px 0 30px;
+}
+#create-channel-page .avatar-preview-container,
+#edit-channel-page .avatar-preview-container {
+    width: 104px; height: 104px; border-radius: 50%; overflow: hidden;
+    position: relative; display: flex; align-items: center; justify-content: center;
+    background: var(--surface); border: 4px solid var(--primary-glow);
+    box-shadow: 0 8px 24px rgba(0,0,0,.10); cursor: pointer;
+}
+#create-channel-page .avatar-placeholder {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    color: var(--primary); background: var(--primary-glow); font-size: 1.7rem;
+}
+#create-channel-page .selector-help {
+    margin: 10px 0 0; color: var(--text-muted); font-size: .78rem; font-weight: 700;
+}
+#you-tab .form-group,
+#create-channel-page .form-group,
+#edit-channel-page .form-group { width: 100%; }
+#create-channel-page .form-label,
+#edit-channel-page .form-label {
+    display: block; margin: 0 0 9px; color: var(--text-main); font-size: .84rem; font-weight: 800;
+}
+#create-channel-page .form-input,
+#create-channel-page .form-select,
+#create-channel-page .form-textarea,
+#edit-channel-page .form-input,
+#edit-channel-page .form-select,
+#edit-channel-page .form-textarea {
+    width: 100%; border: 1px solid var(--glass-border); background: var(--surface);
+    color: var(--text-main); border-radius: 14px; padding: 14px 15px;
+    font-size: .92rem; font-weight: 600; outline: none; box-shadow: none;
+    transition: border-color .2s, box-shadow .2s;
+}
+#create-channel-page .form-input:focus,
+#create-channel-page .form-select:focus,
+#create-channel-page .form-textarea:focus,
+#edit-channel-page .form-input:focus,
+#edit-channel-page .form-select:focus,
+#edit-channel-page .form-textarea:focus {
+    border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow);
+}
+#create-channel-page .form-textarea,
+#edit-channel-page .form-textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
+#create-channel-page .input-counter,
+#edit-channel-page .input-counter { margin-top: 6px; text-align: right; color: var(--text-muted); font-size: .7rem; font-weight: 700; }
+#create-channel-page .handle-input-wrap,
+#edit-channel-page .handle-input-wrap { position: relative; display: flex; align-items: center; }
+#create-channel-page .handle-prefix,
+#edit-channel-page .handle-prefix {
+    position: absolute; left: 15px; z-index: 2; color: var(--text-muted); font-weight: 800;
+}
+#create-channel-page .handle-input-wrap .form-input,
+#edit-channel-page .handle-input-wrap .form-input { padding-left: 32px; }
+#create-channel-page .handle-feedback-txt,
+#edit-channel-page .handle-feedback-txt { min-height: 18px; margin-top: 6px; font-size: .72rem; font-weight: 700; }
+#create-channel-page .btn-primary-action,
+#edit-channel-page .btn-primary-action {
+    min-height: 54px; border: 0; border-radius: 16px; background: var(--primary); color: #fff;
+    font-size: .96rem; font-weight: 800; box-shadow: 0 8px 20px var(--primary-glow); cursor: pointer;
+}
+#create-channel-page .btn-primary-action:disabled,
+#edit-channel-page .btn-primary-action:disabled { opacity: .45; box-shadow: none; cursor: not-allowed; }
+
+/* Edit Channel */
+#edit-channel-page .page-content { padding-bottom: 50px !important; }
+#edit-channel-page .edit-banner-section { height: 170px; }
+#edit-channel-page .edit-avatar-section { margin-top: -52px; margin-bottom: 4px; }
+#edit-channel-page .edit-avatar-section .avatar-preview-container {
+    width: 104px; height: 104px; border-width: 4px;
+}
+#edit-channel-page .edit-form-container { padding: 22px 20px 44px !important; }
+#edit-channel-page .avatar-overlay-camera { opacity: .9; }
 </style></head><body>
 <div class="tab-content" id="you-tab">
 <div class="profile-card-you" style="margin-top: 15px;">
@@ -200,7 +336,7 @@
 <div class="fullscreen-page" id="create-channel-page">
 <header class="appbar">
 <button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
-<h3 class="appbar-title">Enter Your Information</h3>
+<h3 class="appbar-title centered-page-title">Enter Your Information</h3>
 </header>
 <div class="page-content" style="padding-bottom: 40px;">
 <div class="avatar-selector-wrap">
@@ -257,7 +393,7 @@
 <div class="fullscreen-page" id="view-channel-page" style="z-index: 1510;">
 <header class="appbar">
 <button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
-<h3 class="appbar-title" id="view-appbar-title">Channel</h3>
+<h3 class="appbar-title centered-page-title" id="view-appbar-title">Your Channel</h3>
 </header>
 <div class="page-content" style="padding: 0;">
 <div class="channel-banner-container">
@@ -305,7 +441,7 @@
 <div class="fullscreen-page" id="analytics-page" style="z-index: 1520;">
 <header class="appbar">
 <button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
-<h3 class="appbar-title">Analytics</h3>
+<h3 class="appbar-title centered-page-title">Analytics</h3>
 </header>
 <div class="page-content" style="padding-bottom: 40px;">
 <div class="analytics-overview-card">
@@ -376,7 +512,7 @@
 <div class="fullscreen-page" id="edit-channel-page" style="z-index: 1520;">
 <header class="appbar">
 <button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
-<h3 class="appbar-title">Edit Channel</h3>
+<h3 class="appbar-title centered-page-title">Edit Channel</h3>
 </header>
 <div class="page-content" style="padding: 0; padding-bottom: 40px;">
 <div class="edit-banner-section" onclick="triggerBannerSelection()">

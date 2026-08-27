@@ -631,12 +631,14 @@
         }
         .home-scroll-ui {
             will-change: transform;
-            transform: translate3d(0,0,0);
-            transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+            transition: none !important;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
         }
-        .home-scroll-ui.is-hidden {
-            transform: translate3d(0,-126px,0);
-        }
+        /* The Home header is driven continuously by scrollY in app.js.
+           No CSS hide transition is used, so a tiny scroll can never cause
+           an abrupt jump to the top. */
+        .home-scroll-ui.is-hidden { transform: translate3d(0,0,0); }
         .bottom-nav.home-scroll-ui {
             transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
         }

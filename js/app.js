@@ -90,57 +90,6 @@ function __flaynityReady(fn) {
     }
 }
 
-// Home feed immersive scroll: hide top bar + bottom navigation on downward scroll,
-// restore both with a smooth animation on upward scroll. Other pages are untouched.
-(function initHomeFeedScrollBehavior() {
-    let lastScrollY = 0;
-    let ticking = false;
-    let idleTimer = null;
-
-    function updateHomeScrollUI() {
-        ticking = false;
-        if (!document.body || document.body.classList.contains('auth-active')) return;
-        const homeTab = document.getElementById('home-tab');
-        if (!homeTab || !homeTab.classList.contains('active')) {
-            document.body.classList.remove('home-feed-scroll-active');
-            lastScrollY = window.scrollY || 0;
-            return;
-        }
-
-        const currentY = Math.max(0, window.scrollY || window.pageYOffset || 0);
-        const delta = currentY - lastScrollY;
-        if (currentY <= 8) {
-            document.body.classList.remove('home-feed-scroll-active');
-        } else if (delta > 3) {
-            document.body.classList.add('home-feed-scroll-active');
-        } else if (delta < -3) {
-            document.body.classList.remove('home-feed-scroll-active');
-        }
-        lastScrollY = currentY;
-
-        clearTimeout(idleTimer);
-        idleTimer = setTimeout(function() {
-            if ((window.scrollY || 0) <= 8) document.body.classList.remove('home-feed-scroll-active');
-        }, 160);
-    }
-
-    function onScroll() {
-        if (!ticking) {
-            window.requestAnimationFrame(updateHomeScrollUI);
-            ticking = true;
-        }
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('touchcancel', function() {
-        document.body.classList.remove('home-feed-scroll-active');
-    }, { passive: true });
-
-    window.addEventListener('flaynity-dom-ready', function() {
-        lastScrollY = window.scrollY || 0;
-    });
-})();
-
 (function() {
     try {
         let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
@@ -301,6 +250,81 @@ function renderAllSkeletons() {
         youBox.innerHTML = `<div class="skel-box" style="width: 100%; height: 48px; border-radius: 20px;"></div>`;
     }
 }
+
+// =========================================
+// HOME FEED SCROLL UI ENGINE
+// =========================================
+(function initHomeScrollEngine() {
+    let lastY = window.scrollY || document.documentElement.scrollTop || 0;
+    let ticking = false;
+    let hidden = false;
+    const HIDE_DISTANCE = 126;
+    const SHOW_THRESHOLD = 6;
+
+    function isHomeActive() {
+        const home = document.getElementById('home-tab');
+        return !!home && home.classList.contains('active');
+    }
+
+    function applyState(nextHidden) {
+        if (!isHomeActive() || hidden === nextHidden) return;
+        hidden = nextHidden;
+        const header = document.querySelector('header');
+        const chips = document.getElementById('global-category-chips');
+        const nav = document.querySelector('.bottom-nav');
+        if (header) header.classList.toggle('home-scroll-hidden', hidden);
+        if (chips) chips.classList.toggle('home-scroll-hidden', hidden);
+        if (nav) nav.classList.toggle('home-scroll-hidden', hidden);
+    }
+
+    function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+            ticking = false;
+            const y = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
+            const delta = y - lastY;
+
+            // At the top everything is always visible.
+            if (y <= 4) {
+                applyState(false);
+            } else if (delta > SHOW_THRESHOLD) {
+                // Downward feed scroll: bars smoothly leave with the content.
+                applyState(true);
+            } else if (delta < -SHOW_THRESHOLD) {
+                // Upward feed scroll: bars smoothly return.
+                applyState(false);
+            }
+            lastY = y;
+        });
+    }
+
+    function reset() {
+        hidden = false;
+        lastY = window.scrollY || document.documentElement.scrollTop || 0;
+        const header = document.querySelector('header');
+        const chips = document.getElementById('global-category-chips');
+        const nav = document.querySelector('.bottom-nav');
+        if (header) header.classList.remove('home-scroll-hidden');
+        if (chips) chips.classList.remove('home-scroll-hidden');
+        if (nav) nav.classList.remove('home-scroll-hidden');
+    }
+
+    function blockHomeZoom(e) {
+        if (!isHomeActive()) return;
+        if (e.touches && e.touches.length > 1) e.preventDefault();
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    document.addEventListener('touchmove', blockHomeZoom, { passive: false });
+    document.addEventListener('gesturestart', e => { if (isHomeActive()) e.preventDefault(); }, { passive: false });
+    document.addEventListener('gesturechange', e => { if (isHomeActive()) e.preventDefault(); }, { passive: false });
+    document.addEventListener('gestureend', e => { if (isHomeActive()) e.preventDefault(); }, { passive: false });
+    document.addEventListener('wheel', e => { if (isHomeActive() && (e.ctrlKey || e.metaKey)) e.preventDefault(); }, { passive: false });
+    window.addEventListener('flaynity-dom-ready', reset, { once: false });
+    window.addEventListener('flaynity-tab-changed', reset);
+    window.addEventListener('resize', reset);
+})();
 
 // =========================================
 // AUTOMATIC & MANUAL THEME ENGINE
@@ -1664,15 +1688,15 @@ function renderLongVideosSegmentUI(segmentLongs) {
         const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
 
         html += `
-            <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); border-radius: 0; overflow: hidden; border: 0; box-shadow: none;">
+            <div class="long-video-feed-card home-edge-long-video" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer;">
                 <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #000; overflow: hidden;">
-                    <img src="${v.poster}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
+                    <img src="${v.poster}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
                     <span class="long-video-duration" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">${v.duration || '10:00'}</span>
                 </div>
-                <div class="long-video-details" style="padding: 12px 16px 16px; display: flex; gap: 12px; align-items: flex-start;">
+                <div class="long-video-details" style="padding: 14px 16px; display: flex; gap: 12px;">
                     ${avatarHtml}
                     <div class="long-video-meta-text" style="flex-grow: 1; min-width: 0;">
-                        <h4 class="long-video-title" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0 0 5px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(v.title)}</h4>
+                        <h4 class="long-video-title" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(v.title)}</h4>
                         <div class="long-video-subtitle" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;">
                             <span class="live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
                             <span>•</span>
@@ -1744,13 +1768,13 @@ function renderSinglePostSegmentUI(post) {
     let imagesHtml = '';
     if (post.images && post.images.length > 0) {
         imagesHtml = `
-            <div class="home-post-title" style="cursor: pointer; font-size: 0.95rem; font-weight: 800; line-height: 1.4; color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif;" onclick="event.stopPropagation(); togglePostTitleExpand('${post.id}')">
+            <div class="home-post-title-above-media" id="title-container-${post.id}" onclick="event.stopPropagation(); togglePostTitleExpand('${post.id}')" style="cursor: pointer; font-size: 0.95rem; font-weight: 800; line-height: 1.4; font-family: 'Plus Jakarta Sans', sans-serif;">
                 ${titleHtml}
             </div>
-            <div class="home-post-image" style="width:100%; aspect-ratio:3/4; position:relative; background:#000; overflow:hidden; border-radius:0 !important;">
-                <img src="${post.images[0]}" onclick="event.stopPropagation(); openFullScreenImagePreview('${post.images[0]}')" style="width:100%; height:100%; object-fit:cover; cursor:pointer; display:block; border-radius:0 !important;" loading="lazy">
+            <div class="home-edge-post-media" onclick="openFullScreenImagePreview('${post.images[0]}')" style="position: relative; background: #000; overflow: hidden;">
+                <img src="${post.images[0]}" style="cursor: pointer; display: block;" loading="lazy">
                 ${post.images.length > 1 ? `
-                    <div style="position:absolute; bottom:12px; right:12px; background:rgba(0,0,0,0.6); color:white; padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:800; z-index:12;">
+                    <div style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; z-index: 2;">
                         +${post.images.length - 1} More
                     </div>
                 ` : ''}
@@ -1758,10 +1782,8 @@ function renderSinglePostSegmentUI(post) {
         `;
     } else {
         imagesHtml = `
-            <div style="margin-bottom: 12px; padding: 0 4px;">
-                 <div id="title-container-${post.id}" onclick="togglePostTitleExpand('${post.id}')" style="cursor: pointer; font-size: 0.95rem; font-weight: 800; line-height: 1.4; color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif;">
-                     ${titleHtml}
-                 </div>
+            <div class="home-post-title-above-media" id="title-container-${post.id}" onclick="togglePostTitleExpand('${post.id}')" style="cursor: pointer; font-size: 0.95rem; font-weight: 800; line-height: 1.4; font-family: 'Plus Jakarta Sans', sans-serif;">
+                ${titleHtml}
             </div>
         `;
     }
@@ -1772,8 +1794,8 @@ function renderSinglePostSegmentUI(post) {
     const loveBtnId = `post-love-btn-${post.id}`;
 
     return `
-        <div class="post-card" id="post-card-${post.id}" style="margin-bottom:24px; background:transparent; border:0; border-radius:0; padding:12px 0 18px; box-shadow:none; overflow:hidden; border-bottom:1px solid var(--border-color);">
-            <div class="home-post-meta" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding:0 16px;">
+        <div class="post-card" id="post-card-${post.id}" style="margin-bottom: 24px; background: transparent; border: none; border-radius: 0; padding: 12px 0; box-shadow: none; overflow: hidden; border-bottom: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 4px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     ${avatarHtml}
                     <div>
@@ -1786,7 +1808,7 @@ function renderSinglePostSegmentUI(post) {
 
             ${imagesHtml}
 
-            <div class="home-post-meta" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid var(--border-color); font-size:0.85rem; color:var(--text-muted); font-weight:600; background:transparent;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border-color); font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-left: -16px; margin-right: -16px; background: transparent;">
                 <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="openReactedPeoplePage('${post.id}')">
                     <span id="${topEmojisId}" style="display: flex; gap: -4px;"></span>
                     <span id="${totalReactionsId}" style="margin-left: 4px;">0 Reactions</span>
@@ -1796,7 +1818,7 @@ function renderSinglePostSegmentUI(post) {
                 </div>
             </div>
 
-            <div class="home-post-actions" style="display:flex; gap:8px; margin-top:12px; padding:0 16px;">
+            <div style="display: flex; gap: 8px; margin-top: 12px; padding: 0 4px;">
                 <button id="${loveBtnId}" 
                         class="post-action-btn-fb ripple" 
                         style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--border-color); border: none; padding: 12px; border-radius: 12px; font-size: 0.9rem; font-weight: 800; color: var(--text-main); cursor: pointer; transition: all 0.2s;"
@@ -3085,15 +3107,15 @@ function renderMovieWatchRecommendedFeed() {
         const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
 
         html += `
-            <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); border-radius: 0; overflow: hidden; border: 0; box-shadow: none;">
+            <div class="long-video-feed-card home-edge-long-video" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer;">
                 <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #000; overflow: hidden;">
-                    <img src="${v.poster}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
+                    <img src="${v.poster}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
                     <span class="long-video-duration" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">${v.duration || '10:00'}</span>
                 </div>
-                <div class="long-video-details" style="padding: 12px 16px 16px; display: flex; gap: 12px; align-items: flex-start;">
+                <div class="long-video-details" style="padding: 14px 16px; display: flex; gap: 12px;">
                     ${avatarHtml}
                     <div class="long-video-meta-text" style="flex-grow: 1; min-width: 0;">
-                        <h4 class="long-video-title" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0 0 5px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(v.title)}</h4>
+                        <h4 class="long-video-title" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(v.title)}</h4>
                         <div class="long-video-subtitle" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;">
                             <span class="live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
                             <span>•</span>

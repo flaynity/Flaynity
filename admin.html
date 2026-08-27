@@ -16,52 +16,37 @@
    Dark SaaS control-room. Everything here maps to a real,
    existing Flaynity system — see the sidebar / SECTION comments.
    ============================================================ */
-:root{
-  --bg:            #0A0D13;
-  --bg-soft:       #0E1219;
-  --panel:         rgba(20,25,36,0.72);
-  --panel-solid:   #141924;
-  --panel-border:  rgba(255,255,255,0.07);
-  --panel-hover:   rgba(255,255,255,0.03);
-  --line:          rgba(255,255,255,0.08);
-
-  --text:          #E9ECF3;
-  --text-dim:      #A6ADBB;
-  --text-faint:    #6B7285;
-
-  --accent:        #6C5CE7;
-  --accent-2:      #17D6C4;
-  --accent-grad:   linear-gradient(135deg,#6C5CE7 0%,#17D6C4 100%);
-
-  --ok:            #22C58B;
-  --ok-bg:         rgba(34,197,139,0.12);
-  --warn:          #F5A623;
-  --warn-bg:       rgba(245,166,35,0.12);
-  --danger:        #F0466A;
-  --danger-bg:     rgba(240,70,106,0.12);
-  --info:          #4EA1FF;
-  --info-bg:       rgba(78,161,255,0.12);
-  --neutral-bg:    rgba(166,173,187,0.12);
-
-  --radius-lg:     18px;
-  --radius-md:     12px;
-  --radius-sm:     8px;
-  --shadow-lg:     0 20px 60px rgba(0,0,0,0.45);
-  --shadow-sm:     0 6px 20px rgba(0,0,0,0.3);
-
-  --sidebar-w:     252px;
-  --topbar-h:      64px;
-  --font-display:  'Segoe UI', ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono:     'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+ :root{
+  --bg:#FFFFFF;
+  --bg-soft:#F7F7F7;
+  --panel:#FFFFFF;
+  --panel-solid:#FFFFFF;
+  --panel-border:#E8E8E8;
+  --panel-hover:#F2F2F2;
+  --line:#E3E3E3;
+  --text:#111111;
+  --text-dim:#333333;
+  --text-faint:#666666;
+  --accent:#222222;
+  --accent-2:#444444;
+  --accent-grad:linear-gradient(135deg,#111111 0%,#333333 100%);
+  --ok:#146B43; --ok-bg:#EAF7F0;
+  --warn:#7A4A00; --warn-bg:#FFF4DE;
+  --danger:#8A1734; --danger-bg:#FDECEF;
+  --info:#174A7A; --info-bg:#EAF3FB;
+  --neutral-bg:#EEEEEE;
+  --radius-lg:18px; --radius-md:12px; --radius-sm:8px;
+  --shadow-lg:0 20px 60px rgba(0,0,0,.12);
+  --shadow-sm:0 6px 20px rgba(0,0,0,.08);
+  --sidebar-w:252px; --topbar-h:64px;
+  --font-display:'Segoe UI',ui-sans-serif,-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
 }
 
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
 html,body{
   margin:0; padding:0; height:100%;
-  background:
-    radial-gradient(circle at 15% 0%, rgba(108,92,231,0.16), transparent 45%),
-    radial-gradient(circle at 90% 15%, rgba(23,214,196,0.10), transparent 40%),
-    var(--bg);
+  background:#FFFFFF;
   color:var(--text);
   font-family:var(--font-display);
   -webkit-font-smoothing:antialiased;
@@ -355,6 +340,34 @@ tbody tr:hover{background:var(--panel-hover);}
   #hamburger{display:inline-flex; align-items:center; justify-content:center;}
   #content{padding:16px 14px 90px;}
 }
+
+/* Deep Light + Mobile Admin Panel */
+body{background:#FFFFFF!important;color:#111111!important;}
+#sidebar{background:#FFFFFF!important;border-right:1px solid #DDDDDD!important;}
+#topbar{background:#FFFFFF!important;border-bottom:1px solid #DDDDDD!important;}
+.card,.panel,.table-wrap,.modal-card,.stat-card{background:#FFFFFF!important;border-color:#DDDDDD!important;}
+.btn,.input,select,textarea{background:#F4F4F4!important;color:#111111!important;border-color:#D8D8D8!important;}
+.btn.primary{background:#111111!important;color:#FFFFFF!important;}
+.nav-item{color:#333333!important;}
+.nav-item:hover,.nav-item.active{background:#EEEEEE!important;color:#111111!important;}
+@media(max-width:900px){
+  #sidebar{width:min(86vw,320px);box-shadow:12px 0 40px rgba(0,0,0,.16);z-index:100;}
+  #sidebar-overlay{background:rgba(0,0,0,.35)!important;z-index:99;}
+  #main{width:100%;min-width:0;}
+  #topbar{position:sticky;top:0;z-index:90;padding-left:12px;padding-right:12px;}
+  .content{padding:14px!important;}
+  .section-header{gap:10px;flex-wrap:wrap;}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  table{min-width:620px;}
+  .grid-4,.grid-3{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+}
+@media(max-width:560px){
+  .grid-4,.grid-3,.grid-2{grid-template-columns:1fr!important;}
+  .content{padding:10px!important;}
+  .btn{min-height:42px;}
+  .input,select,textarea{min-height:42px;}
+  .modal{padding:10px!important;}
+}
 </style>
 </head>
 <body>
@@ -429,8 +442,6 @@ tbody tr:hover{background:var(--panel-hover);}
     <div class="nav-group">
       <div class="nav-group-label">Monetization</div>
       <div class="nav-item" data-section="monetization"><span class="dot"></span><span class="ic">$</span> Monetization Status</div>
-      <div class="nav-item" data-section="monetization-control"><span class="dot"></span><span class="ic">⚙</span> Monetization Control</div>
-      <div class="nav-item" data-section="monetization-approvals"><span class="dot"></span><span class="ic">✓</span> Monetization Approvals</div>
       <div class="nav-item" data-section="ads"><span class="dot"></span><span class="ic">▭</span> Ads</div>
       <div class="nav-item" data-section="memberships"><span class="dot"></span><span class="ic">✦</span> Memberships</div>
       <div class="nav-item" data-section="supers"><span class="dot"></span><span class="ic">♥</span> Supers</div>
@@ -764,30 +775,6 @@ tbody tr:hover{background:var(--panel-hover);}
         </div>
       </section>
 
-      <!-- ================= MONETIZATION CONTROL ================= -->
-      <section class="section" id="section-monetization-control">
-        <div class="section-head"><div><h2>Monetization Control</h2><p>Admin override and valid public watch-hour eligibility controls.</p></div></div>
-        <div class="card">
-          <div class="field"><label>Minimum Subscribers</label><input class="input" id="control-elig-subs" type="number" min="0"></div>
-          <div class="field"><label>Minimum Valid Public Watch Hours</label><input class="input" id="control-elig-watchhours" type="number" min="0" step="0.1"></div>
-          <div class="field"><label>Minimum Public Views</label><input class="input" id="control-elig-views" type="number" min="0"></div>
-          <button class="btn primary" id="save-control-eligibility">Save Valid Public Watch Hours Control</button>
-        </div>
-        <div class="card" style="margin-top:16px;">
-          <h3 style="margin-top:0">Direct Monetization Activation</h3>
-          <p class="muted">Activate monetization for any existing user without requiring eligibility.</p>
-          <div class="search-bar"><input class="input" id="override-user-search" placeholder="Enter User UID or Channel UID"></div>
-          <button class="btn ok" id="activate-any-user">Activate Monetization Now</button>
-        </div>
-      </section>
-
-      <!-- ================= MONETIZATION APPROVALS ================= -->
-      <section class="section" id="section-monetization-approvals">
-        <div class="search-bar"><input class="input" id="approval-search" placeholder="Search user or channel…"><select class="input" id="approval-filter" style="max-width:170px"><option value="pending">Pending</option><option value="all">All</option></select></div>
-        <div class="table-wrap"><table><thead><tr><th>User</th><th>Subscribers</th><th>Valid Watch Hours</th><th>Public Views</th><th>Status</th><th></th></tr></thead><tbody id="approval-tbody"></tbody></table></div>
-        <div id="approval-empty" class="empty-state" style="display:none"><div class="big">◌</div>No applications available</div>
-      </section>
-
       <!-- ================= ADS ================= -->
       <section class="section" id="section-ads">
         <div class="card">
@@ -799,7 +786,6 @@ tbody tr:hover{background:var(--panel-hover);}
             <div><div class="t">Shorts Feed Ads</div><div class="d">Ads shown inside the Shorts feed</div></div>
             <label class="toggle"><input type="checkbox" data-flag="shortsFeedAdsEnabled"><span class="slider"></span></label>
           </div>
-          <button class="btn sm danger" id="delete-ads-data">Delete Ads Data</button>
         </div>
       </section>
 
@@ -812,7 +798,7 @@ tbody tr:hover{background:var(--panel-hover);}
           </div>
         </div>
         <div class="section-head"><div><h2>Existing Membership Data</h2><p>Read-only view of membership records already in Firebase.</p></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Channel</th><th>Tier</th><th>Members</th><th>Status</th><th></th></tr></thead><tbody id="memberships-tbody"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Channel</th><th>Tier</th><th>Members</th><th>Status</th></tr></thead><tbody id="memberships-tbody"></tbody></table></div>
         <div id="memberships-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
       </section>
 
@@ -825,7 +811,7 @@ tbody tr:hover{background:var(--panel-hover);}
           </div>
         </div>
         <div class="section-head"><div><h2>Existing Supers Data</h2><p>Read-only view of Super transactions already in Firebase.</p></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Channel</th><th>From</th><th>Amount</th><th>Date</th><th></th></tr></thead><tbody id="supers-tbody"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Channel</th><th>From</th><th>Amount</th><th>Date</th></tr></thead><tbody id="supers-tbody"></tbody></table></div>
         <div id="supers-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
       </section>
 
@@ -838,7 +824,7 @@ tbody tr:hover{background:var(--panel-hover);}
           </div>
         </div>
         <div class="section-head"><div><h2>Existing Product Data</h2><p>Read-only view of product listings already in Firebase, if present.</p></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Product</th><th>Channel</th><th>Price</th><th>Status</th><th></th></tr></thead><tbody id="shopping-tbody"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Product</th><th>Channel</th><th>Price</th><th>Status</th></tr></thead><tbody id="shopping-tbody"></tbody></table></div>
         <div id="shopping-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
       </section>
 
@@ -1033,8 +1019,6 @@ const db   = firebase.database();
 
 /* Existing Flaynity nodes (per spec §2) — reuse, never replace */
 const REF = {
-  users:         db.ref('users'),
-  users:         db.ref('users'),
   channels:      db.ref('channels'),
   videos:        db.ref('admin_panel/movies/user_uploads'),
   shorts:        db.ref('admin_panel/movies/shorts'),
@@ -1044,7 +1028,6 @@ const REF = {
   memberships:   db.ref('memberships'),
   supers:        db.ref('supers'),
   shopping:      db.ref('shopping_products'),
-  ads:           db.ref('ads'),
   monetization:  db.ref('monetization_applications'),
   // Admin-only, clearly separated (per spec §2)
   admins:        db.ref('admins'),
@@ -1168,8 +1151,6 @@ const pageMeta = {
   upload:                ['Upload Control', 'Control existing upload systems'],
   download:              ['Download Control', 'Control existing download systems'],
   monetization:          ['Monetization Status', 'Manage existing monetization applications'],
-  'monetization-control': ['Monetization Control', 'Set eligibility and activate monetization for any user'],
-  'monetization-approvals': ['Monetization Approvals', 'Review and approve user applications'],
   ads:                   ['Ads', 'Watch Page Ads & Shorts Feed Ads'],
   memberships:           ['Memberships', 'Existing membership feature'],
   supers:                ['Supers', 'Existing fan-support feature'],
@@ -1343,12 +1324,9 @@ function bootApp(){
   initMaxUploads();
   initMonetization();
   initEligibility();
-  initMonetizationControl();
-  initMonetizationApprovals();
   initReadOnlyLists('memberships', REF.memberships, ['name','channelId','tier','members','status'], memRow);
   initReadOnlyLists('supers', REF.supers, null, null);
   initReadOnlyLists('shopping', REF.shopping, null, null);
-  initAdsDelete();
   initPlatformAnalytics();
   initChannelAnalytics();
   initTheme();
@@ -1364,11 +1342,6 @@ function bootApp(){
 let rawChannels = {}, rawVideos = {}, rawShorts = {}, rawPosts = {}, rawComments = {};
 
 function initDashboard(){
-  trackListener(REF.users, 'value', snap => {
-    const users = snap.val() || {};
-    Object.entries(users).forEach(([uid,u]) => { if(rawChannels[uid]) rawChannels[uid].userStatus = u.userStatus || u.accountStatus || rawChannels[uid].userStatus; });
-    renderUsersTable();
-  });
   trackListener(REF.channels, 'value', snap => { rawChannels = snap.val() || {}; recomputeDashboard(); renderChannelsTable(); renderUsersTable(); renderSubsTable(); });
   trackListener(REF.videos, 'value', snap => { rawVideos = snap.val() || {}; recomputeDashboard(); renderVideosTable(); renderScheduled(); });
   trackListener(REF.shorts, 'value', snap => { rawShorts = snap.val() || {}; recomputeDashboard(); renderShortsTable(); renderScheduled(); });
@@ -1473,22 +1446,18 @@ function renderUsersTable(){
     const id = b.dataset.ban;
     confirmAction({title:'Ban User', target: rawChannels[id]?.channelName || id, current:'active', next:'banned', dangerLabel:'Ban User',
       onConfirm: reason => {
-        Promise.all([
-          REF.channels.child(id).update({userStatus:'banned'}),
-          REF.users.child(id).update({userStatus:'banned', accountStatus:'banned', bannedAt:firebase.database.ServerValue.TIMESTAMP, banReason:reason || null})
-        ]).then(() => { toast('ok','Updated Successfully','User banned.'); logAction('Ban User','user',id,'active','banned',reason); })
-          .catch(err => toast('err', mapFirebaseError(err), ''));
+        safeUpdate(REF.channels.child(id), {userStatus:'banned'}, {successMsg:'User banned.'}).then(ok => {
+          if(ok) logAction('Ban User','user',id,'active','banned',reason);
+        });
       }});
   }));
   tbody.querySelectorAll('[data-unban]').forEach(b => b.addEventListener('click', () => {
     const id = b.dataset.unban;
     confirmAction({title:'Unban User', target: rawChannels[id]?.channelName || id, current:'banned', next:'active', dangerLabel:'Unban User', reasonRequired:false,
       onConfirm: reason => {
-        Promise.all([
-          REF.channels.child(id).update({userStatus:'active'}),
-          REF.users.child(id).update({userStatus:'active', accountStatus:'active', bannedAt:null, banReason:null})
-        ]).then(() => { toast('ok','Updated Successfully','User unbanned.'); logAction('Unban User','user',id,'banned','active',reason); })
-          .catch(err => toast('err', mapFirebaseError(err), ''));
+        safeUpdate(REF.channels.child(id), {userStatus:'active'}, {successMsg:'User unbanned.'}).then(ok => {
+          if(ok) logAction('Unban User','user',id,'banned','active',reason);
+        });
       }});
   }));
 }
@@ -1659,12 +1628,7 @@ function wireContentRowActions(tbody, dataMap, ref, titleField, targetType){
           if(!reason){ toast('err','Reason Required',''); return; }
           if(isNaN(next) || next < 0){ toast('err','Invalid Data','Enter a non-negative number.'); return; }
           closeModal();
-          const patch = field === 'subscribers' ? {subscribers: next, subscribersCount: next} : {[field]: next};
-          const extra = (field === 'views' || field === 'likes') ? { [`movie_stats/${id}/admin${field.charAt(0).toUpperCase()+field.slice(1)}`]: next, [`${ref.path.toString()}/${id}/${field}`]: next, [`${ref.path.toString()}/${id}/${field}Count`]: next } : {};
-          const updates = {};
-          updates[ref.child(id).key + '/' + id] = patch; // retained for clarity; direct update below
-          Promise.all([safeUpdate(ref.child(id), patch, {successMsg:`${field} set to ${next}.`}), Object.keys(extra).length ? db.ref().update(extra) : Promise.resolve(true)])
-            .then(results => { if(results[0] && results[1] !== false) logAction(`Set ${field}`, targetType, id, current, next, reason); });
+          safeUpdate(ref.child(id), {[field]: next}, {successMsg:`${field} set to ${next}.`}).then(ok => { if(ok) logAction(`Set ${field}`, targetType, id, current, next, reason); });
         });
         return;
       }
@@ -1673,11 +1637,7 @@ function wireContentRowActions(tbody, dataMap, ref, titleField, targetType){
       confirmAction({title:`${label} ${field}`, target:(dataMap[id]||{})[titleField]||id, current, next: Math.max(0,current+delta), dangerLabel:'Confirm', reasonRequired:false,
         onConfirm: reason => {
           safeTransaction(ref.child(id).child(field), curr => Math.max(0,(curr||0)+delta), {successMsg:`${field} ${label.toLowerCase()}d.`})
-            .then(newVal => { if(newVal !== null) {
-              if(field === 'subscribers') ref.child(id).update({subscribersCount:newVal});
-              if(field === 'views' || field === 'likes') db.ref(`movie_stats/${id}/admin${field.charAt(0).toUpperCase()+field.slice(1)}`).set(newVal);
-              logAction(`${label} ${field}`, targetType, id, current, newVal, reason);
-            } });
+            .then(newVal => { if(newVal !== null) logAction(`${label} ${field}`, targetType, id, current, newVal, reason); });
         }});
     });
   });
@@ -1884,18 +1844,6 @@ function initMaxUploads(){
    MONETIZATION  (spec §21-§24)
    ========================================================= */
 let rawMonetization = {};
-function setUserMonetizationActive(uid, reason='Admin override') {
-  if(!uid) return;
-  const updates = {};
-  updates[`monetization_applications/${uid}/status`] = 'active';
-  updates[`monetization_applications/${uid}/userId`] = uid;
-  updates[`monetization_applications/${uid}/channelId`] = uid;
-  updates[`monetization_applications/${uid}/reviewedAt`] = firebase.database.ServerValue.TIMESTAMP;
-  updates[`monetization_applications/${uid}/reviewedBy`] = currentUser.uid;
-  updates[`channels/${uid}/monetizationStatus`] = 'active';
-  db.ref().update(updates).then(()=>{ toast('ok','Updated Successfully','Monetization activated by Admin.'); logAction('Manual Monetization Activation','monetization',uid,null,'active',reason); }).catch(err=>toast('err',mapFirebaseError(err),''));
-}
-
 function initMonetization(){
   document.getElementById('mon-search').addEventListener('input', renderMonetizationTable);
   document.getElementById('mon-filter').addEventListener('change', renderMonetizationTable);
@@ -1932,16 +1880,7 @@ function renderMonetizationTable(){
   const setMon = (id,next) => {
     const current = (rawMonetization[id]||{}).status || 'pending';
     confirmAction({title:'Update Monetization Status', target: (rawChannels[(rawMonetization[id]||{}).channelId||id]||{}).channelName || id, current, next, dangerLabel:'Confirm',
-      onConfirm: reason => {
-        const rec = rawMonetization[id] || {};
-        const uid = rec.userId || rec.channelId || id;
-        const updates = {};
-        updates[`monetization_applications/${id}/status`] = next;
-        updates[`monetization_applications/${id}/reviewedAt`] = firebase.database.ServerValue.TIMESTAMP;
-        updates[`monetization_applications/${id}/reviewedBy`] = currentUser.uid;
-        updates[`channels/${uid}/monetizationStatus`] = next === 'active' ? 'active' : next;
-        return db.ref().update(updates).then(() => { toast('ok','Updated Successfully','Monetization status updated.'); logAction('Monetization status → '+next,'monetization',id,current,next,reason); return true; }).catch(err => { toast('err',mapFirebaseError(err),''); return false; });
-      }});
+      onConfirm: reason => safeUpdate(REF.monetization.child(id), {status:next}).then(ok => { if(ok) logAction('Monetization status → '+next,'monetization',id,current,next,reason); })});
   };
   tbody.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', () => setMon(b.dataset.approve,'active')));
   tbody.querySelectorAll('[data-reject]').forEach(b => b.addEventListener('click', () => setMon(b.dataset.reject,'rejected')));
@@ -1957,26 +1896,10 @@ function initEligibility(){
   document.getElementById('save-eligibility').addEventListener('click', () => {
     const minSubscribers = Number(document.getElementById('elig-subs').value)||0;
     const minWatchHours = Number(document.getElementById('elig-watchhours').value)||0;
-    safeUpdate(REF.eligibility, {minSubscribers, minWatchHours, validPublicWatchHours: minWatchHours, minPublicViews: Number(document.getElementById('elig-watchhours').dataset.minViews || 0)}, {successMsg:'Eligibility requirements saved.'})
+    safeUpdate(REF.eligibility, {minSubscribers, minWatchHours}, {successMsg:'Eligibility requirements saved.'})
       .then(ok => { if(ok) logAction('Set monetization eligibility','setting','eligibility',null,{minSubscribers,minWatchHours},''); });
   });
 }
-
-function initAdsDelete(){
-  const b=document.getElementById('delete-ads-data'); if(!b)return;
-  b.addEventListener('click',()=>confirmAction({title:'Delete Ads Data',target:'ads',current:'existing',next:'deleted',dangerLabel:'Delete',onConfirm:reason=>REF.ads.remove().then(()=>{toast('ok','Deleted','Ads data deleted.');logAction('Delete Ads Data','ads','ads','existing','deleted',reason);return true;}).catch(err=>{toast('err',mapFirebaseError(err),'');return false;})}));
-}
-function initMonetizationControl(){
-  const load=()=>trackListener(REF.eligibility,'value',snap=>{const v=snap.val()||{}; const a=document.getElementById('control-elig-subs'),b=document.getElementById('control-elig-watchhours'),c=document.getElementById('control-elig-views'); if(a&&document.activeElement!==a)a.value=v.minSubscribers??''; if(b&&document.activeElement!==b)b.value=v.validPublicWatchHours??v.minWatchHours??''; if(c&&document.activeElement!==c)c.value=v.minPublicViews??'';});
-  load();
-  document.getElementById('save-control-eligibility').addEventListener('click',()=>{const minSubscribers=Number(document.getElementById('control-elig-subs').value)||0; const minWatchHours=Number(document.getElementById('control-elig-watchhours').value)||0; const minPublicViews=Number(document.getElementById('control-elig-views').value)||0; safeUpdate(REF.eligibility,{minSubscribers,minWatchHours,validPublicWatchHours:minWatchHours,minPublicViews},{successMsg:'Valid Public Watch Hours control updated.'});});
-  document.getElementById('activate-any-user').addEventListener('click',()=>{const uid=document.getElementById('override-user-search').value.trim(); if(!uid){toast('err','Missing UID','Enter a user UID.');return;} confirmAction({title:'Activate Monetization',target:uid,current:'not active',next:'active',dangerLabel:'Activate',onConfirm:reason=>{const updates={}; updates[`monetization_applications/${uid}/userId`]=uid; updates[`monetization_applications/${uid}/channelId`]=uid; updates[`monetization_applications/${uid}/status`]='active'; updates[`monetization_applications/${uid}/adminOverride`]=true; updates[`monetization_applications/${uid}/reviewedAt`]=firebase.database.ServerValue.TIMESTAMP; updates[`monetization_applications/${uid}/reviewedBy`]=currentUser.uid; updates[`channels/${uid}/monetizationStatus`]='active'; updates[`channels/${uid}/monetizationAdminOverride`]=true; return db.ref().update(updates).then(()=>{toast('ok','Updated Successfully','Monetization activated without eligibility.');logAction('Direct Monetization Activation','monetization',uid,null,'active',reason);return true;}).catch(err=>{toast('err',mapFirebaseError(err),'');return false;});}});});
-}
-function initMonetizationApprovals(){
-  document.getElementById('approval-search').addEventListener('input',renderApprovalTable); document.getElementById('approval-filter').addEventListener('change',renderApprovalTable);
-  trackListener(REF.monetization,'value',snap=>{rawMonetization=snap.val()||{};renderApprovalTable();});
-}
-function renderApprovalTable(){const q=(document.getElementById('approval-search').value||'').toLowerCase();const f=document.getElementById('approval-filter').value;const rows=Object.entries(rawMonetization).filter(([id,m])=>{const st=m.status||'pending';const uid=(m.userId||m.channelId||id).toLowerCase();return (f==='all'||st==='pending')&&(!q||uid.includes(q)||(rawChannels[m.channelId||id]?.channelName||'').toLowerCase().includes(q));});const tb=document.getElementById('approval-tbody');tb.innerHTML='';document.getElementById('approval-empty').style.display=rows.length?'none':'block';rows.forEach(([id,m])=>{const uid=m.userId||m.channelId||id;const tr=document.createElement('tr');tr.innerHTML=`<td>${escapeHtml((rawChannels[m.channelId||id]||{}).channelName||uid)}</td><td>${fmtNum(m.subscribers||0)}</td><td>${fmtNum(m.watchHours||m.validPublicWatchHours||0)}</td><td>${fmtNum(m.publicViews||0)}</td><td>${statusBadge(m.status||'pending')}</td><td>${m.status==='pending'?`<button class="btn sm ok" data-approval="${id}">Approve</button>`:''}</td>`;tb.appendChild(tr);});tb.querySelectorAll('[data-approval]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.approval;const m=rawMonetization[id]||{};const uid=m.userId||m.channelId||id;const updates={};updates[`monetization_applications/${id}/status`]='active';updates[`monetization_applications/${id}/adminOverride`]=true;updates[`monetization_applications/${id}/reviewedAt`]=firebase.database.ServerValue.TIMESTAMP;updates[`monetization_applications/${id}/reviewedBy`]=currentUser.uid;updates[`channels/${uid}/monetizationStatus`]='active';updates[`channels/${uid}/monetizationAdminOverride`]=true;db.ref().update(updates).then(()=>toast('ok','Approved','User monetization is now active.')).catch(err=>toast('err',mapFirebaseError(err),''));}));}
 
 /* Read-only lists: Memberships / Supers / Shopping — display existing data only, never fabricate rows */
 function initReadOnlyLists(kind, ref, cols, rowFn){
@@ -1991,19 +1914,14 @@ function initReadOnlyLists(kind, ref, cols, rowFn){
     entries.forEach(([id, v]) => {
       const tr = document.createElement('tr');
       if(kind === 'memberships'){
-        tr.innerHTML = `<td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || id)}</td><td>${escapeHtml(v.tier||'—')}</td><td>${fmtNum(v.members||0)}</td><td>${statusBadge(v.status||'active')}</td><td><button class="btn sm danger" data-delete-record="${id}">Delete</button></td>`;
+        tr.innerHTML = `<td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || id)}</td><td>${escapeHtml(v.tier||'—')}</td><td>${fmtNum(v.members||0)}</td><td>${statusBadge(v.status||'active')}</td>`;
       } else if(kind === 'supers'){
-        tr.innerHTML = `<td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || id)}</td><td>${escapeHtml(v.fromName||v.fromUid||'—')}</td><td>${escapeHtml(v.amount!=null?String(v.amount):'—')}</td><td>${fmtDate(v.timestamp)}</td><td><button class="btn sm danger" data-delete-record="${id}">Delete</button></td>`;
+        tr.innerHTML = `<td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || id)}</td><td>${escapeHtml(v.fromName||v.fromUid||'—')}</td><td>${escapeHtml(v.amount!=null?String(v.amount):'—')}</td><td>${fmtDate(v.timestamp)}</td>`;
       } else if(kind === 'shopping'){
-        tr.innerHTML = `<td>${escapeHtml(v.name||id)}</td><td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || '—')}</td><td>${escapeHtml(v.price!=null?String(v.price):'—')}</td><td>${statusBadge(v.status||'active')}</td><td><button class="btn sm danger" data-delete-record="${id}">Delete</button></td>`;
+        tr.innerHTML = `<td>${escapeHtml(v.name||id)}</td><td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || '—')}</td><td>${escapeHtml(v.price!=null?String(v.price):'—')}</td><td>${statusBadge(v.status||'active')}</td>`;
       }
       tbody.appendChild(tr);
     });
-    tbody.querySelectorAll('[data-delete-record]').forEach(b => b.addEventListener('click', () => {
-      const id = b.dataset.deleteRecord;
-      confirmAction({title:'Delete '+kind.slice(0,-1), target:id, current:'active', next:'deleted', dangerLabel:'Delete', reasonRequired:true,
-        onConfirm: reason => ref.child(id).remove().then(()=>logAction('Delete '+kind.slice(0,-1),'record',id,'active','deleted',reason)).catch(err=>toast('err',mapFirebaseError(err),''))});
-    }));
   });
 }
 function memRow(){ /* handled inline above */ }
@@ -2047,7 +1965,7 @@ function initChannelAnalytics(){
 function initTheme(){
   trackListener(REF.settings, 'value', snap => {
     const s = snap.val() || {};
-    if(document.activeElement.id !== 'theme-default') document.getElementById('theme-default').value = s.defaultTheme || 'system';
+    if(document.activeElement.id !== 'theme-default') document.getElementById('theme-default').value = s.defaultTheme || 'light';
     document.getElementById('theme-allow-user').checked = s.allowUserThemeSelection !== false;
   });
   document.getElementById('save-theme').addEventListener('click', () => {

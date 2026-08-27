@@ -785,7 +785,7 @@ tbody tr:hover{background:var(--panel-hover);}
           </div>
         </div>
         <div class="section-head"><div><h2>Existing Membership Data</h2><p>Read-only view of membership records already in Firebase.</p></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Channel</th><th>Tier</th><th>Members</th><th>Status</th></tr></thead><tbody id="memberships-tbody"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Channel</th><th>Tier</th><th>Members</th><th>Status</th><th></th></tr></thead><tbody id="memberships-tbody"></tbody></table></div>
         <div id="memberships-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
       </section>
 
@@ -798,7 +798,7 @@ tbody tr:hover{background:var(--panel-hover);}
           </div>
         </div>
         <div class="section-head"><div><h2>Existing Supers Data</h2><p>Read-only view of Super transactions already in Firebase.</p></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Channel</th><th>From</th><th>Amount</th><th>Date</th></tr></thead><tbody id="supers-tbody"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Channel</th><th>From</th><th>Amount</th><th>Date</th><th></th></tr></thead><tbody id="supers-tbody"></tbody></table></div>
         <div id="supers-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
       </section>
 
@@ -811,7 +811,7 @@ tbody tr:hover{background:var(--panel-hover);}
           </div>
         </div>
         <div class="section-head"><div><h2>Existing Product Data</h2><p>Read-only view of product listings already in Firebase, if present.</p></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Product</th><th>Channel</th><th>Price</th><th>Status</th></tr></thead><tbody id="shopping-tbody"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Product</th><th>Channel</th><th>Price</th><th>Status</th><th></th></tr></thead><tbody id="shopping-tbody"></tbody></table></div>
         <div id="shopping-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
       </section>
 
@@ -1006,6 +1006,7 @@ const db   = firebase.database();
 
 /* Existing Flaynity nodes (per spec §2) — reuse, never replace */
 const REF = {
+  users:         db.ref('users'),
   users:         db.ref('users'),
   channels:      db.ref('channels'),
   videos:        db.ref('admin_panel/movies/user_uploads'),
@@ -1625,7 +1626,12 @@ function wireContentRowActions(tbody, dataMap, ref, titleField, targetType){
           if(!reason){ toast('err','Reason Required',''); return; }
           if(isNaN(next) || next < 0){ toast('err','Invalid Data','Enter a non-negative number.'); return; }
           closeModal();
-          safeUpdate(ref.child(id), field === 'subscribers' ? {subscribers: next, subscribersCount: next} : {[field]: next}, {successMsg:`${field} set to ${next}.`}).then(ok => { if(ok) logAction(`Set ${field}`, targetType, id, current, next, reason); });
+          const patch = field === 'subscribers' ? {subscribers: next, subscribersCount: next} : {[field]: next};
+          const extra = (field === 'views' || field === 'likes') ? { [`movie_stats/${id}/admin${field.charAt(0).toUpperCase()+field.slice(1)}`]: next } : {};
+          const updates = {};
+          updates[ref.child(id).key + '/' + id] = patch; // retained for clarity; direct update below
+          Promise.all([safeUpdate(ref.child(id), patch, {successMsg:`${field} set to ${next}.`}), Object.keys(extra).length ? db.ref().update(extra) : Promise.resolve(true)])
+            .then(results => { if(results[0] && results[1] !== false) logAction(`Set ${field}`, targetType, id, current, next, reason); });
         });
         return;
       }
@@ -1634,7 +1640,11 @@ function wireContentRowActions(tbody, dataMap, ref, titleField, targetType){
       confirmAction({title:`${label} ${field}`, target:(dataMap[id]||{})[titleField]||id, current, next: Math.max(0,current+delta), dangerLabel:'Confirm', reasonRequired:false,
         onConfirm: reason => {
           safeTransaction(ref.child(id).child(field), curr => Math.max(0,(curr||0)+delta), {successMsg:`${field} ${label.toLowerCase()}d.`})
-            .then(newVal => { if(newVal !== null) { if(field === 'subscribers') ref.child(id).update({subscribersCount:newVal}); logAction(`${label} ${field}`, targetType, id, current, newVal, reason); } });
+            .then(newVal => { if(newVal !== null) {
+              if(field === 'subscribers') ref.child(id).update({subscribersCount:newVal});
+              if(field === 'views' || field === 'likes') db.ref(`movie_stats/${id}/admin${field.charAt(0).toUpperCase()+field.slice(1)}`).set(newVal);
+              logAction(`${label} ${field}`, targetType, id, current, newVal, reason);
+            } });
         }});
     });
   });
@@ -1841,6 +1851,18 @@ function initMaxUploads(){
    MONETIZATION  (spec §21-§24)
    ========================================================= */
 let rawMonetization = {};
+function setUserMonetizationActive(uid, reason='Admin override') {
+  if(!uid) return;
+  const updates = {};
+  updates[`monetization_applications/${uid}/status`] = 'active';
+  updates[`monetization_applications/${uid}/userId`] = uid;
+  updates[`monetization_applications/${uid}/channelId`] = uid;
+  updates[`monetization_applications/${uid}/reviewedAt`] = firebase.database.ServerValue.TIMESTAMP;
+  updates[`monetization_applications/${uid}/reviewedBy`] = currentUser.uid;
+  updates[`channels/${uid}/monetizationStatus`] = 'active';
+  db.ref().update(updates).then(()=>{ toast('ok','Updated Successfully','Monetization activated by Admin.'); logAction('Manual Monetization Activation','monetization',uid,null,'active',reason); }).catch(err=>toast('err',mapFirebaseError(err),''));
+}
+
 function initMonetization(){
   document.getElementById('mon-search').addEventListener('input', renderMonetizationTable);
   document.getElementById('mon-filter').addEventListener('change', renderMonetizationTable);
@@ -1877,7 +1899,16 @@ function renderMonetizationTable(){
   const setMon = (id,next) => {
     const current = (rawMonetization[id]||{}).status || 'pending';
     confirmAction({title:'Update Monetization Status', target: (rawChannels[(rawMonetization[id]||{}).channelId||id]||{}).channelName || id, current, next, dangerLabel:'Confirm',
-      onConfirm: reason => safeUpdate(REF.monetization.child(id), {status:next}).then(ok => { if(ok) logAction('Monetization status → '+next,'monetization',id,current,next,reason); })});
+      onConfirm: reason => {
+        const rec = rawMonetization[id] || {};
+        const uid = rec.userId || rec.channelId || id;
+        const updates = {};
+        updates[`monetization_applications/${id}/status`] = next;
+        updates[`monetization_applications/${id}/reviewedAt`] = firebase.database.ServerValue.TIMESTAMP;
+        updates[`monetization_applications/${id}/reviewedBy`] = currentUser.uid;
+        updates[`channels/${uid}/monetizationStatus`] = next === 'active' ? 'active' : next;
+        return db.ref().update(updates).then(() => { toast('ok','Updated Successfully','Monetization status updated.'); logAction('Monetization status → '+next,'monetization',id,current,next,reason); return true; }).catch(err => { toast('err',mapFirebaseError(err),''); return false; });
+      }});
   };
   tbody.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', () => setMon(b.dataset.approve,'active')));
   tbody.querySelectorAll('[data-reject]').forEach(b => b.addEventListener('click', () => setMon(b.dataset.reject,'rejected')));
@@ -1911,14 +1942,19 @@ function initReadOnlyLists(kind, ref, cols, rowFn){
     entries.forEach(([id, v]) => {
       const tr = document.createElement('tr');
       if(kind === 'memberships'){
-        tr.innerHTML = `<td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || id)}</td><td>${escapeHtml(v.tier||'—')}</td><td>${fmtNum(v.members||0)}</td><td>${statusBadge(v.status||'active')}</td>`;
+        tr.innerHTML = `<td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || id)}</td><td>${escapeHtml(v.tier||'—')}</td><td>${fmtNum(v.members||0)}</td><td>${statusBadge(v.status||'active')}</td><td><button class="btn sm danger" data-delete-record="${id}">Delete</button></td>`;
       } else if(kind === 'supers'){
-        tr.innerHTML = `<td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || id)}</td><td>${escapeHtml(v.fromName||v.fromUid||'—')}</td><td>${escapeHtml(v.amount!=null?String(v.amount):'—')}</td><td>${fmtDate(v.timestamp)}</td>`;
+        tr.innerHTML = `<td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || id)}</td><td>${escapeHtml(v.fromName||v.fromUid||'—')}</td><td>${escapeHtml(v.amount!=null?String(v.amount):'—')}</td><td>${fmtDate(v.timestamp)}</td><td><button class="btn sm danger" data-delete-record="${id}">Delete</button></td>`;
       } else if(kind === 'shopping'){
-        tr.innerHTML = `<td>${escapeHtml(v.name||id)}</td><td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || '—')}</td><td>${escapeHtml(v.price!=null?String(v.price):'—')}</td><td>${statusBadge(v.status||'active')}</td>`;
+        tr.innerHTML = `<td>${escapeHtml(v.name||id)}</td><td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || '—')}</td><td>${escapeHtml(v.price!=null?String(v.price):'—')}</td><td>${statusBadge(v.status||'active')}</td><td><button class="btn sm danger" data-delete-record="${id}">Delete</button></td>`;
       }
       tbody.appendChild(tr);
     });
+    tbody.querySelectorAll('[data-delete-record]').forEach(b => b.addEventListener('click', () => {
+      const id = b.dataset.deleteRecord;
+      confirmAction({title:'Delete '+kind.slice(0,-1), target:id, current:'active', next:'deleted', dangerLabel:'Delete', reasonRequired:true,
+        onConfirm: reason => ref.child(id).remove().then(()=>logAction('Delete '+kind.slice(0,-1),'record',id,'active','deleted',reason)).catch(err=>toast('err',mapFirebaseError(err),''))});
+    }));
   });
 }
 function memRow(){ /* handled inline above */ }

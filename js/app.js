@@ -407,7 +407,6 @@ const SyncManager = {
 
         try {
             _detachAllGlobalFeedListeners();
-    postViewsRecorded.clear();
 
             previousShortsCount = -1;
             previousLongsCount  = -1;
@@ -854,203 +853,14 @@ function cleanupUserSessionData() {
     if (activeChannelPostsListener) { try { activeChannelPostsListener.off(); } catch(e) {} activeChannelPostsListener = null; }
 
     _detachAllGlobalFeedListeners();
-    postViewsRecorded.clear();
     _feedListenersAttached = false;
 
     SyncManager.isRefreshing = false;
 }
 
-// =========================================================
-// ADMIN LIVE CONTROL BRIDGE
-// Reads Admin Panel controls from the same Firebase Realtime Database.
-// No manual refresh / app restart is required.
-// =========================================================
-let adminFeatures = {};
-let adminSettings = {};
-let adminEligibility = { minSubscribers: 500, minWatchHours: 50, minPublicViews: 10000 };
-let adminMonetizationStatus = null;
-let adminControlListenersStarted = false;
-let adminUserStatusListener = null;
-let adminFeatureListener = null;
-let adminSettingsListener = null;
-let adminEligibilityListener = null;
-let adminMonetizationListener = null;
-let globalMovieStatsListener = null;
-let globalPostStatsListener = null;
-let postViewObserver = null;
-const postViewsRecorded = new Set();
-
-function startGlobalLiveStatsBridge() {
-    if (globalMovieStatsListener || !db) return;
-    globalMovieStatsListener = db.ref('movie_stats').on('value', snap => {
-        const all = snap.val() || {};
-        Object.keys(all).forEach(id => {
-            const itemStats = all[id] || {};
-            const views = getAdminCount({id}, itemStats, 'views');
-            const likes = getAdminCount({id}, itemStats, 'likes');
-            document.querySelectorAll(`[data-flaynity-stat-id=\"${id}-views\"]`).forEach(el => el.textContent = formatCount(views));
-            document.querySelectorAll(`[data-flaynity-stat-id=\"${id}-likes\"]`).forEach(el => el.textContent = formatCount(likes));
-        });
-    });
-    globalPostStatsListener = db.ref('post_stats').on('value', snap => {
-        const all = snap.val() || {};
-        Object.keys(all).forEach(id => {
-            const st = all[id] || {};
-            const views = getAdminCount({id}, st, 'views');
-            const likes = getAdminCount({id}, st, 'likes');
-            document.querySelectorAll(`[data-flaynity-stat-id=\"${id}-views\"]`).forEach(el => el.textContent = formatCount(views));
-            document.querySelectorAll(`[data-flaynity-stat-id=\"${id}-likes\"]`).forEach(el => el.textContent = formatCount(likes));
-        });
-    });
-}
-
-function recordPostView(postId) {
-    const user = auth.currentUser;
-    if (!postId || !user || postViewsRecorded.has(postId)) return;
-    postViewsRecorded.add(postId);
-    db.ref(`post_stats/${postId}/views/${user.uid}`).set(true).catch(() => postViewsRecorded.delete(postId));
-}
-
-function observePostViews() {
-    if (postViewObserver) postViewObserver.disconnect();
-    postViewObserver = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-                const id = entry.target.id || '';
-                if (id.startsWith('post-card-')) recordPostView(id.slice(10));
-            }
-        });
-    }, {threshold: 0.5});
-    document.querySelectorAll('[id^=\"post-card-\"]').forEach(el => postViewObserver.observe(el));
-}
-
-
-function adminFlag(name, fallback = true) {
-    return Object.prototype.hasOwnProperty.call(adminFeatures, name) ? !!adminFeatures[name] : fallback;
-}
-function adminIsContentVisible(item) {
-    const status = String(item?.status || 'published').toLowerCase();
-    return status !== 'hidden' && status !== 'deleted' && status !== 'disabled' && status !== 'banned';
-}
-function getAdminCount(item, stats, field) {
-    const overrideKey = field === 'views' ? 'adminViews' : field === 'likes' ? 'adminLikes' : null;
-    const candidates = [];
-    if (overrideKey && stats) candidates.push(stats[overrideKey]);
-    if (overrideKey && item) candidates.push(item[overrideKey]);
-    if (stats) candidates.push(stats[field + 'Count']);
-    if (item) candidates.push(item[field + 'Count']);
-    if (item) candidates.push(item[field]);
-    for (const value of candidates) {
-        const n = Number(value);
-        if (Number.isFinite(n) && n >= 0) return n;
-    }
-    const obj = stats?.[field];
-    return obj && typeof obj === 'object' ? Object.keys(obj).length : 0;
-}
-function getAdminCountFromItem(item, field) {
-    return getAdminCount(item, item?.__stats || {}, field);
-}
-function applyLiveStatToElement(id, value, suffix='') {
-    const el = document.getElementById(id);
-    if (el) el.innerText = formatCount(value) + suffix;
-}
-function showAccountBannedPopup(reason) {
-    if (document.getElementById('flaynity-ban-popup')) return;
-    const el = document.createElement('div');
-    el.id = 'flaynity-ban-popup';
-    el.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.72);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:24px;';
-    el.innerHTML = `<div style="width:100%;max-width:390px;background:var(--surface,#fff);color:var(--text-main,#111);border-radius:26px;padding:28px 22px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)">
-        <div style="width:64px;height:64px;border-radius:50%;margin:0 auto 16px;background:rgba(240,70,106,.12);color:#F0466A;display:flex;align-items:center;justify-content:center;font-size:28px"><i class="fas fa-ban"></i></div>
-        <h2 style="margin:0 0 8px;font-size:21px;font-weight:850">Account Banned</h2>
-        <p style="margin:0;color:var(--text-muted,#667085);font-size:14px;line-height:1.55">This account has been banned by Flaynity administration.</p>
-        ${reason ? `<p style="margin:12px 0 0;color:var(--text-muted,#667085);font-size:13px"><b>Reason:</b> ${escapeHTML(String(reason))}</p>` : ''}
-        <button id="flaynity-ban-close" style="margin-top:20px;width:100%;height:48px;border:0;border-radius:16px;background:var(--primary,#ff2e55);color:#fff;font-weight:800;font-size:15px">OK</button>
-    </div>`;
-    document.body.appendChild(el);
-    document.getElementById('flaynity-ban-close').onclick = async () => {
-        el.remove();
-        try { await auth.signOut(); } catch(e) {}
-    };
-}
-function enforceCurrentUserStatus(snapshot) {
-    const data = snapshot.val() || {};
-    const status = String(data.userStatus || data.accountStatus || data.status || 'active').toLowerCase();
-    if (status === 'banned') {
-        showAccountBannedPopup(data.banReason || 'Account access has been restricted.');
-        try { auth.signOut(); } catch(e) {}
-        return false;
-    }
-    return true;
-}
-function startAdminControlBridge(uid) {
-    if (!uid || adminControlListenersStarted) return;
-    adminControlListenersStarted = true;
-    startGlobalLiveStatsBridge();
-
-    adminFeatureListener = db.ref('admin_control/features').on('value', snap => {
-        adminFeatures = snap.val() || {};
-        applyAdminControlsToUI();
-    });
-    adminSettingsListener = db.ref('admin_control/settings').on('value', snap => {
-        adminSettings = snap.val() || {};
-        applyAdminControlsToUI();
-    });
-    adminEligibilityListener = db.ref('admin_control/monetization/eligibility').on('value', snap => {
-        const v = snap.val() || {};
-        adminEligibility = {
-            minSubscribers: Number(v.minSubscribers ?? 500),
-            minWatchHours: Number(v.minWatchHours ?? 50),
-            minPublicViews: Number(v.minPublicViews ?? 10000)
-        };
-        refreshCurrentMonetizationEligibility();
-    });
-    adminMonetizationListener = db.ref(`monetization_applications/${uid}`).on('value', snap => {
-        adminMonetizationStatus = snap.val() || null;
-        if (adminMonetizationStatus && adminMonetizationStatus.status === 'active') {
-            db.ref(`channels/${uid}/monetizationStatus`).set('active').catch(()=>{});
-        }
-        refreshCurrentMonetizationEligibility();
-    });
-    adminUserStatusListener = db.ref(`users/${uid}`).on('value', snap => {
-        if (!enforceCurrentUserStatus(snap)) return;
-        const data = snap.val() || {};
-        const photoURL = data.photoURL || (auth.currentUser && auth.currentUser.photoURL) || '';
-        renderUserAvatar(photoURL, auth.currentUser?.email || '');
-    });
-}
-function refreshCurrentMonetizationEligibility() {
-    if (!currentChannelData) return;
-    const subs = Number(currentChannelData.subscribersCount || currentChannelData.subscribers || 0);
-    updateMonetizationEligibility(subs, window.__flaynityPublicWatchHours || 0, window.__flaynityTotalPublicViews || 0);
-}
-function applyAdminControlsToUI() {
-    const maintenance = adminFlag('maintenanceMode', false);
-    const readOnly = adminFlag('readOnlyMode', false);
-    document.body.classList.toggle('flaynity-read-only', readOnly);
-    document.body.classList.toggle('flaynity-maintenance', maintenance);
-
-    const setDisabled = (selector, disabled) => document.querySelectorAll(selector).forEach(el => {
-        el.disabled = !!disabled;
-        el.style.pointerEvents = disabled ? 'none' : '';
-        el.style.opacity = disabled ? '.55' : '';
-    });
-    if (!adminFlag('downloadEnabled', true)) {
-        setDisabled('.btn-watch-download, [onclick*="requestDownloadWithAd"], [onclick*="triggerShortDownload"]', true);
-    } else {
-        document.querySelectorAll('.btn-watch-download, [onclick*="requestDownloadWithAd"], [onclick*="triggerShortDownload"]').forEach(el => { el.disabled=false; el.style.pointerEvents=''; el.style.opacity=''; });
-    }
-    setDisabled('[onclick*="handlePremiumFileSelected"], #publish-video-btn, #publish-short-btn', !adminFlag('uploadSystemEnabled', true));
-    if (maintenance) {
-        const app = document.getElementById('app-screen');
-        if (app) app.dataset.maintenance = 'true';
-    }
-}
-
-auth.onAuthStateChanged(async (user) => {
+auth.onAuthStateChanged((user) => {
     try {
         if (user) {
-            const statusSnap = await db.ref(`users/${user.uid}`).once('value').catch(()=>null);
-            if (statusSnap && !enforceCurrentUserStatus(statusSnap)) return;
             document.body.classList.remove('auth-active');
             const authScr = document.getElementById('auth-screen');
             const appScr = document.getElementById('app-screen');
@@ -1058,7 +868,6 @@ auth.onAuthStateChanged(async (user) => {
             if (appScr) appScr.style.display = 'block';
 
             saveAccountToList(user);
-            startAdminControlBridge(user.uid);
 
             db.ref(`users/${user.uid}`).on('value', (snapshot) => {
                 try {
@@ -1087,17 +896,6 @@ auth.onAuthStateChanged(async (user) => {
                 return;
             }
             cleanupUserSessionData();
-            try { if (adminFeatureListener) db.ref('admin_control/features').off('value'); } catch(e) {}
-            try { if (adminSettingsListener) db.ref('admin_control/settings').off('value'); } catch(e) {}
-            try { if (adminEligibilityListener) db.ref('admin_control/monetization/eligibility').off('value'); } catch(e) {}
-            try { if (adminMonetizationListener) db.ref(`monetization_applications/${auth.currentUser?.uid || ''}`).off('value'); } catch(e) {}
-            try { if (adminUserStatusListener && auth.currentUser?.uid) db.ref(`users/${auth.currentUser.uid}`).off('value'); } catch(e) {}
-            adminFeatureListener = adminSettingsListener = adminEligibilityListener = adminMonetizationListener = adminUserStatusListener = null;
-            if (globalMovieStatsListener) { try { db.ref('movie_stats').off('value'); } catch(e) {} globalMovieStatsListener = null; }
-            if (globalPostStatsListener) { try { db.ref('post_stats').off('value'); } catch(e) {} globalPostStatsListener = null; }
-            if (postViewObserver) { try { postViewObserver.disconnect(); } catch(e) {} postViewObserver = null; }
-            postViewsRecorded.clear();
-            adminControlListenersStarted = false;
             document.body.classList.add('auth-active');
             const appScr = document.getElementById('app-screen');
             const authScr = document.getElementById('auth-screen');
@@ -1486,20 +1284,8 @@ function startRealtimeFeedsListener() {
         db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
             try {
                 const data = snap.val();
-                allLongVideos = data ? Object.values(data).filter(m => (!m.scheduledTime || m.scheduledTime <= Date.now()) && adminIsContentVisible(m)) : [];
+                allLongVideos = data ? Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
                 allLongVideos.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
-                allLongVideos.forEach(m => {
-                    if (m && m.id) {
-                        db.ref(`movie_stats/${m.id}`).on('value', statSnap => {
-                            const stats = statSnap.val() || {};
-                            const views = getAdminCount(m, stats, 'views');
-                            const likes = getAdminCount(m, stats, 'likes');
-                            m.__stats = stats; m.__adminViews = views; m.__adminLikes = likes;
-                            document.querySelectorAll(`[data-flaynity-stat-id=\"${m.id}-views\"]`).forEach(e=>e.innerText=formatCount(views));
-                            document.querySelectorAll(`[data-flaynity-stat-id=\"${m.id}-likes\"]`).forEach(e=>e.innerText=formatCount(likes));
-                        });
-                    }
-                });
                 
                 allLongVideos.forEach(m => {
                     if (m && m.id && !allAdminMovies.find(x => x.id === m.id)) {
@@ -1522,18 +1308,8 @@ function startRealtimeFeedsListener() {
         db.ref('admin_panel/movies/shorts').on('value', (snap) => {
             try {
                 const data = snap.val();
-                allShorts = data ? Object.values(data).filter(m => (!m.scheduledTime || m.scheduledTime <= Date.now()) && adminIsContentVisible(m)) : [];
+                allShorts = data ? Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
                 allShorts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
-                allShorts.forEach(m => {
-                    if (m && m.id) {
-                        db.ref(`movie_stats/${m.id}`).on('value', statSnap => {
-                            const stats=statSnap.val()||{};
-                            m.__stats=stats; m.__adminViews=getAdminCount(m,stats,'views'); m.__adminLikes=getAdminCount(m,stats,'likes');
-                            document.querySelectorAll(`[data-flaynity-stat-id=\"${m.id}-views\"]`).forEach(e=>e.innerText=formatCount(m.__adminViews));
-                            document.querySelectorAll(`[data-flaynity-stat-id=\"${m.id}-likes\"]`).forEach(e=>e.innerText=formatCount(m.__adminLikes));
-                        });
-                    }
-                });
                 
                 if(allShorts.length !== previousShortsCount) {
                     previousShortsCount = allShorts.length;
@@ -1563,10 +1339,10 @@ function startRealtimeFeedsListener() {
         db.ref('admin_panel/posts').on('value', (snap) => {
             try {
                 const data = snap.val();
-                allCommunityPosts = data ? Object.values(data).filter(p => (!p.scheduledTime || p.scheduledTime <= Date.now()) && adminIsContentVisible(p)) : [];
+                allCommunityPosts = data ? Object.values(data).filter(p => !p.scheduledTime || p.scheduledTime <= now) : [];
                 allCommunityPosts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                 
-                if (true) {
+                if (allCommunityPosts.length !== previousPostsCount) {
                     previousPostsCount = allCommunityPosts.length;
                     buildHomeFeed();
                 }
@@ -1707,14 +1483,14 @@ function buildHomeFeed() {
                     <img src="${s.poster}" loading="lazy">
                     <div class="short-home-meta">
                         <h4 style="font-size: 0.85rem; font-weight: 800; margin: 0 0 2px 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(s.title)}</h4>
-                        <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}" data-flaynity-stat-id="${s.id}-views">0</span></p>
+                        <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}">0</span></p>
                     </div>
                 </div>
             `;
             
             db.ref(`movie_stats/${s.id}/views`).once('value', (vSnap) => {
                 const viewsObj = vSnap.val() || {};
-                const count = getAdminCount(s, {views: viewsObj}, 'views');
+                const count = Object.keys(viewsObj).length;
                 const label = document.getElementById(`home-short-views-${s.id}`);
                 if (label) label.innerText = formatCount(count);
             });
@@ -1738,7 +1514,6 @@ function buildHomeFeed() {
         container.innerHTML = html;
         posts.slice(0, postRenderLimit).forEach(p => {
             registerPostReactionsListener(p.id);
-            setTimeout(observePostViews, 0);
         });
 
         uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
@@ -1782,7 +1557,6 @@ function buildHomeFeed() {
 
     container.innerHTML = html;
     postsToBind.forEach(postId => registerPostReactionsListener(postId));
-    setTimeout(observePostViews, 0);
     uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
 }
 
@@ -1808,14 +1582,14 @@ function renderShortsSegmentUI(segmentShorts) {
                 <img src="${s.poster}" loading="lazy">
                 <div class="short-home-meta">
                     <h4 style="font-size: 0.85rem; font-weight: 800; margin: 0 0 2px 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(s.title)}</h4>
-                    <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}" data-flaynity-stat-id="${s.id}-views">0</span></p>
+                    <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}">0</span></p>
                 </div>
             </div>
         `;
         
         db.ref(`movie_stats/${s.id}/views`).once('value', (vSnap) => {
             const viewsObj = vSnap.val() || {};
-            const count = getAdminCount(s, {views: viewsObj}, 'views');
+            const count = Object.keys(viewsObj).length;
             const label = document.getElementById(`home-short-views-${s.id}`);
             if (label) label.innerText = formatCount(count);
         });
@@ -1851,7 +1625,7 @@ function renderLongVideosSegmentUI(segmentLongs) {
                         <div class="long-video-subtitle" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;">
                             <span class="live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
                             <span>•</span>
-                            <span id="${viewsId}" data-flaynity-stat-id="${v.id}-views">0 Views</span>
+                            <span id="${viewsId}">0 Views</span>
                             <span>•</span>
                             <span>${relTime}</span>
                         </div>
@@ -1862,7 +1636,7 @@ function renderLongVideosSegmentUI(segmentLongs) {
 
         db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
             const viewsObj = vSnap.val() || {};
-            const count = getAdminCount(s, {views: viewsObj}, 'views');
+            const count = Object.keys(viewsObj).length;
             const label = document.getElementById(viewsId);
             if (label) label.innerText = formatCount(count) + " Views";
         });
@@ -1969,7 +1743,6 @@ function renderSinglePostSegmentUI(post) {
                 <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="openReactedPeoplePage('${post.id}')">
                     <span id="${topEmojisId}" style="display: flex; gap: -4px;"></span>
                     <span id="${totalReactionsId}" style="margin-left: 4px;">0 Reactions</span>
-                    <span data-flaynity-stat-id="${post.id}-views" style="margin-left:8px;">0</span> Views
                 </div>
                 <div style="cursor: pointer;" onclick="openCommentsForPost('${post.id}')">
                     <span id="${totalCommentsId}">0 Comments</span>
@@ -2152,7 +1925,7 @@ function buildShortsPage() {
             const stats = snapshot.val() || {};
             const viewsObj = stats.views || {};
             const likesObj = stats.likes || {};
-            const likesCount = getAdminCount(s, {likes: likesObj}, 'likes');
+            const likesCount = Object.keys(likesObj).length;
 
             try {
                 let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
@@ -2318,8 +2091,8 @@ function openShortDescBottomSheet(shortId) {
             const viewsObj = stats.views || {};
             const likesObj = stats.likes || {};
             
-            document.getElementById('short-sheet-views').innerText = formatCount(getAdminCount(s, stats, 'views'));
-            document.getElementById('short-sheet-likes').innerText = formatCount(getAdminCount(s, stats, 'likes'));
+            document.getElementById('short-sheet-views').innerText = formatCount(Object.keys(viewsObj).length);
+            document.getElementById('short-sheet-likes').innerText = formatCount(Object.keys(likesObj).length);
         });
     }
 
@@ -2509,7 +2282,6 @@ async function triggerFileDownload(url, filename) {
 
 function triggerShortDownload(shortId) {
     playUI('click');
-    if (!adminFlag('downloadEnabled', true) || !adminFlag('shortDownloadEnabled', true)) { showNotification('Shorts downloads are disabled by Admin.', 'error'); return; }
     const s = allShorts.find(item => item.id === shortId);
     if (!s) {
         showNotification("No valid short found.", "error");
@@ -2948,8 +2720,8 @@ function registerViewAndListen(movieId) {
         const likesObj = stats.likes || {};
         const dislikesObj = stats.dislikes || {};
 
-        const totalViews = getAdminCount(currentActiveMovie, stats, 'views');
-        const totalLikes = getAdminCount(currentActiveMovie, stats, 'likes');
+        const totalViews = Object.keys(viewsObj).length;
+        const totalLikes = Object.keys(likesObj).length;
 
         const viewsEl = document.getElementById('movie-detail-views');
         const likesEl = document.getElementById('movie-detail-likes');
@@ -3054,7 +2826,14 @@ function toggleMovieLike() {
     const likeRef = db.ref(`movie_stats/${movieId}/likes/${userId}`);
     const dislikeRef = db.ref(`movie_stats/${movieId}/dislikes/${userId}`);
     
-    likeRef.transaction(current => current ? null : true).then(() => dislikeRef.remove()).catch(e => showNotification('Like failed. Please try again.', 'error'));
+    likeRef.once('value', (snap) => {
+        if (snap.exists()) {
+            likeRef.remove();
+        } else {
+            likeRef.set(true);
+            dislikeRef.remove();
+        }
+    });
 }
 
 function toggleMovieDislike() {
@@ -3201,8 +2980,8 @@ function openMoreDescriptionSheet() {
         const movieId = currentActiveMovie.id;
         db.ref(`movie_stats/${movieId}`).once('value', (snap) => {
             const stats = snap.val() || {};
-            const likesCount = getAdminCount(currentDetailItem || currentActiveMovie, stats, 'likes');
-            const viewsCount = getAdminCount(currentDetailItem || currentActiveMovie, stats, 'views');
+            const likesCount = Object.keys(stats.likes || {}).length;
+            const viewsCount = Object.keys(stats.views || {}).length;
             
             const likesVal = document.getElementById('more-sheet-likes-val');
             const viewsVal = document.getElementById('more-sheet-views-val');
@@ -3271,7 +3050,7 @@ function renderMovieWatchRecommendedFeed() {
                         <div class="long-video-subtitle" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;">
                             <span class="live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
                             <span>•</span>
-                            <span id="${viewsId}" data-flaynity-stat-id="${v.id}-views">0 Views</span>
+                            <span id="${viewsId}">0 Views</span>
                             <span>•</span>
                             <span>${relTime}</span>
                         </div>
@@ -3283,7 +3062,7 @@ function renderMovieWatchRecommendedFeed() {
         if(navigator.onLine) {
             db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
                 const viewsObj = vSnap.val() || {};
-                const count = getAdminCount(v, {views: viewsObj}, 'views');
+                const count = Object.keys(viewsObj).length;
                 const label = document.getElementById(viewsId);
                 if (label) label.innerText = formatCount(count) + " Views";
             });
@@ -3800,7 +3579,7 @@ function renderChannelVideos(userId) {
             list.forEach(m => {
                 db.ref(`movie_stats/${m.id}/views`).once('value', (vSnap) => {
                     const viewsObj = vSnap.val() || {};
-                    const count = getAdminCount(s, {views: viewsObj}, 'views');
+                    const count = Object.keys(viewsObj).length;
                     const label = document.getElementById(`chan-vid-views-${m.id}`);
                     if (label) label.innerText = formatCount(count) + " Views";
                 });
@@ -3838,7 +3617,7 @@ function renderChannelShorts(userId) {
             list.forEach(m => {
                 db.ref(`movie_stats/${m.id}/views`).once('value', (vSnap) => {
                     const viewsObj = vSnap.val() || {};
-                    const count = getAdminCount(s, {views: viewsObj}, 'views');
+                    const count = Object.keys(viewsObj).length;
                     const label = document.getElementById(`chan-short-views-${m.id}`);
                     if (label) label.innerText = formatCount(count);
                 });
@@ -4054,10 +3833,10 @@ async function calculateChannelAnalytics() {
             for (let m of vData) {
                 const statSnap = await db.ref(`movie_stats/${m.id}`).once('value');
                 const stat = statSnap.val() || {};
-                const viewsCount = getAdminCount(m, stat, 'views');
+                const viewsCount = Object.keys(stat.views || {}).length;
                 tViews += viewsCount;
                 longViews += viewsCount;
-                tLikes += getAdminCount(m, stat, 'likes');
+                tLikes += Object.keys(stat.likes || {}).length;
 
                 const commSnap = await db.ref(`movie_comments/${m.id}`).once('value');
                 tComments += commSnap.exists() ? Object.keys(commSnap.val()).length : 0;
@@ -4071,10 +3850,10 @@ async function calculateChannelAnalytics() {
             for (let m of sData) {
                 const statSnap = await db.ref(`movie_stats/${m.id}`).once('value');
                 const stat = statSnap.val() || {};
-                const viewsCount = getAdminCount(m, stat, 'views');
+                const viewsCount = Object.keys(stat.views || {}).length;
                 tViews += viewsCount;
                 shortsViews += viewsCount;
-                tLikes += getAdminCount(m, stat, 'likes');
+                tLikes += Object.keys(stat.likes || {}).length;
 
                 const commSnap = await db.ref(`movie_comments/${m.id}`).once('value');
                 tComments += commSnap.exists() ? Object.keys(commSnap.val()).length : 0;
@@ -4093,11 +3872,8 @@ async function calculateChannelAnalytics() {
         estRevenueElement.innerText = '$' + calculatedRevenue.toFixed(2) + ' USDT';
     }
 
-    const calculatedWatchHours = parseFloat(((longViews * 3.5) / 60).toFixed(1)) || 0;
-    const watchHours = Number(currentChannelData?.validPublicWatchHours ?? currentChannelData?.publicWatchHours ?? calculatedWatchHours) || 0;
+    const watchHours = parseFloat(((longViews * 3.5) / 60).toFixed(1)) || 0;
     const totalViews = longViews + shortsViews;
-    window.__flaynityPublicWatchHours = watchHours;
-    window.__flaynityTotalPublicViews = totalViews;
     const subsCount = currentChannelData ? (currentChannelData.subscribersCount || 0) : 0;
 
     const viewsVal = document.getElementById('anal-views');
@@ -4158,74 +3934,51 @@ function openMonetizationPage() {
 }
 
 function updateMonetizationEligibility(subs, hours, views) {
-    const targetSubs = Math.max(0, Number(adminEligibility.minSubscribers ?? 500));
-    const targetHours = Math.max(0, Number(adminEligibility.minWatchHours ?? 50));
-    const targetViews = Math.max(0, Number(adminEligibility.minPublicViews ?? 10000));
-    const subPct = targetSubs ? Math.min(100, (subs / targetSubs) * 100) : 100;
+    const targetSubs = 500;
+    const subPct = Math.min(100, (subs / targetSubs) * 100);
     const reqSubsTxt = document.getElementById('req-subs-txt');
     const reqSubsBar = document.getElementById('req-subs-bar');
-    if (reqSubsTxt) reqSubsTxt.innerText = `${formatCount(subs)} / ${formatCount(targetSubs)}`;
+    if (reqSubsTxt) reqSubsTxt.innerText = `${subs} / ${targetSubs}`;
     if (reqSubsBar) reqSubsBar.style.width = `${subPct}%`;
-    const hourPct = targetHours ? Math.min(100, (hours / targetHours) * 100) : 100;
+
+    const targetHours = 50;
+    const hourPct = Math.min(100, (hours / targetHours) * 100);
     const reqHoursTxt = document.getElementById('req-hours-txt');
     const reqHoursBar = document.getElementById('req-hours-bar');
     if (reqHoursTxt) reqHoursTxt.innerText = `${hours} / ${targetHours} Hours`;
     if (reqHoursBar) reqHoursBar.style.width = `${hourPct}%`;
-    const viewPct = targetViews ? Math.min(100, (views / targetViews) * 100) : 100;
+
+    const targetViews = 10000;
+    const viewPct = Math.min(100, (views / targetViews) * 100);
     const reqViewsTxt = document.getElementById('req-views-txt');
     const reqViewsBar = document.getElementById('req-views-bar');
-    if (reqViewsTxt) reqViewsTxt.innerText = `${formatCount(views)} / ${formatCount(targetViews)}`;
+    if (reqViewsTxt) reqViewsTxt.innerText = `${formatCount(views)} / 10K`;
     if (reqViewsBar) reqViewsBar.style.width = `${viewPct}%`;
 
     const applyBtn = document.getElementById('btn-monetization-apply');
-    if (!applyBtn) return;
-    const status = adminMonetizationStatus?.status || currentChannelData?.monetizationStatus;
-    const adminForcedActive = !!(adminMonetizationStatus?.adminOverride || currentChannelData?.monetizationAdminOverride);
-    if (status === 'active' || adminForcedActive) {
-        applyBtn.disabled = true;
-        applyBtn.innerText = 'Monetization Active';
-        applyBtn.style.background = 'var(--success, #16a34a)';
-        return;
+    if (applyBtn) {
+        if (subs >= targetSubs && hours >= targetHours && views >= targetViews) {
+            applyBtn.disabled = false;
+            applyBtn.style.background = "var(--primary)";
+            applyBtn.style.cursor = "pointer";
+        } else {
+            applyBtn.disabled = true;
+            applyBtn.style.background = "#CBD5E1";
+            applyBtn.style.cursor = "not-allowed";
+        }
     }
-    if (status === 'pending') {
-        applyBtn.disabled = true;
-        applyBtn.innerText = 'Pending';
-        applyBtn.style.background = '#94A3B8';
-        return;
-    }
-    const eligible = subs >= targetSubs && hours >= targetHours && views >= targetViews;
-    applyBtn.disabled = !eligible;
-    applyBtn.innerText = eligible ? 'Apply Now' : 'Apply Now';
-    applyBtn.style.background = eligible ? 'var(--primary)' : '#CBD5E1';
-    applyBtn.style.cursor = eligible ? 'pointer' : 'not-allowed';
 }
 
-async function handleMonetizationApply() {
+function handleMonetizationApply() {
     playUI('success');
-    const user = auth.currentUser;
-    if (!user) { showNotification('Please sign in first.', 'error'); return; }
-    if (adminMonetizationStatus?.status === 'active') { showNotification('Monetization is already active.', 'success'); return; }
-    if (adminMonetizationStatus?.status === 'pending') { showNotification('Your monetization application is Pending.', 'success'); return; }
-    const subs = Number(currentChannelData?.subscribersCount || currentChannelData?.subscribers || 0);
-    const hours = Number(window.__flaynityPublicWatchHours || 0);
-    const views = Number(window.__flaynityTotalPublicViews || 0);
-    const forced = !!(adminMonetizationStatus?.adminOverride || currentChannelData?.monetizationAdminOverride);
-    const eligible = forced || (subs >= Number(adminEligibility.minSubscribers) && hours >= Number(adminEligibility.minWatchHours) && views >= Number(adminEligibility.minPublicViews));
-    if (!eligible) { showNotification('You have not met the current eligibility requirements.', 'error'); return; }
-    try {
-        await db.ref(`monetization_applications/${user.uid}`).set({
-            userId: user.uid,
-            channelId: user.uid,
-            subscribers: subs,
-            watchHours: hours,
-            publicViews: views,
-            status: 'pending',
-            appliedAt: firebase.database.ServerValue.TIMESTAMP
-        });
-        adminMonetizationStatus = { status: 'pending' };
-        updateMonetizationEligibility(subs, hours, views);
-        showNotification('Application submitted. Status: Pending.', 'success');
-    } catch (e) { showNotification('Could not submit monetization application.', 'error'); }
+    const modal = document.getElementById('eligibility-success-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            modal.style.display = 'none';
+            executeBackAction();
+        }, 3000);
+    }
 }
 
 function renderChart(totalViews) {
@@ -4672,15 +4425,11 @@ function loadReactedPeopleData() {
 // =========================================
 function requestDownloadWithAd() {
     playUI('click');
-    if (!adminFlag('downloadEnabled', true) || !adminFlag('videoDownloadEnabled', true)) { showNotification('Long Video downloads are disabled by Admin.', 'error'); return; }
     if (!currentActiveMovie) return;
     openDownloadModal();
 }
 
 function openDownloadModal() {
-    const isShort = !!(currentActiveMovie && currentActiveMovie.isShort);
-    const allowed = adminFlag('downloadEnabled', true) && (isShort ? adminFlag('shortDownloadEnabled', true) : adminFlag('videoDownloadEnabled', true));
-    if (!allowed) { showNotification(isShort ? 'Shorts downloads are disabled by Admin.' : 'Long Video downloads are disabled by Admin.', 'error'); return; }
     AppNavigation.pushModal('premium-download-modal');
 }
 

@@ -407,6 +407,7 @@ const SyncManager = {
 
         try {
             _detachAllGlobalFeedListeners();
+    postViewsRecorded.clear();
 
             previousShortsCount = -1;
             previousLongsCount  = -1;
@@ -853,6 +854,7 @@ function cleanupUserSessionData() {
     if (activeChannelPostsListener) { try { activeChannelPostsListener.off(); } catch(e) {} activeChannelPostsListener = null; }
 
     _detachAllGlobalFeedListeners();
+    postViewsRecorded.clear();
     _feedListenersAttached = false;
 
     SyncManager.isRefreshing = false;
@@ -873,6 +875,55 @@ let adminFeatureListener = null;
 let adminSettingsListener = null;
 let adminEligibilityListener = null;
 let adminMonetizationListener = null;
+let globalMovieStatsListener = null;
+let globalPostStatsListener = null;
+let postViewObserver = null;
+const postViewsRecorded = new Set();
+
+function startGlobalLiveStatsBridge() {
+    if (globalMovieStatsListener || !db) return;
+    globalMovieStatsListener = db.ref('movie_stats').on('value', snap => {
+        const all = snap.val() || {};
+        Object.keys(all).forEach(id => {
+            const itemStats = all[id] || {};
+            const views = getAdminCount({id}, itemStats, 'views');
+            const likes = getAdminCount({id}, itemStats, 'likes');
+            document.querySelectorAll(`[data-flaynity-stat-id=\"${id}-views\"]`).forEach(el => el.textContent = formatCount(views));
+            document.querySelectorAll(`[data-flaynity-stat-id=\"${id}-likes\"]`).forEach(el => el.textContent = formatCount(likes));
+        });
+    });
+    globalPostStatsListener = db.ref('post_stats').on('value', snap => {
+        const all = snap.val() || {};
+        Object.keys(all).forEach(id => {
+            const st = all[id] || {};
+            const views = getAdminCount({id}, st, 'views');
+            const likes = getAdminCount({id}, st, 'likes');
+            document.querySelectorAll(`[data-flaynity-stat-id=\"${id}-views\"]`).forEach(el => el.textContent = formatCount(views));
+            document.querySelectorAll(`[data-flaynity-stat-id=\"${id}-likes\"]`).forEach(el => el.textContent = formatCount(likes));
+        });
+    });
+}
+
+function recordPostView(postId) {
+    const user = auth.currentUser;
+    if (!postId || !user || postViewsRecorded.has(postId)) return;
+    postViewsRecorded.add(postId);
+    db.ref(`post_stats/${postId}/views/${user.uid}`).set(true).catch(() => postViewsRecorded.delete(postId));
+}
+
+function observePostViews() {
+    if (postViewObserver) postViewObserver.disconnect();
+    postViewObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+                const id = entry.target.id || '';
+                if (id.startsWith('post-card-')) recordPostView(id.slice(10));
+            }
+        });
+    }, {threshold: 0.5});
+    document.querySelectorAll('[id^=\"post-card-\"]').forEach(el => postViewObserver.observe(el));
+}
+
 
 function adminFlag(name, fallback = true) {
     return Object.prototype.hasOwnProperty.call(adminFeatures, name) ? !!adminFeatures[name] : fallback;
@@ -934,6 +985,7 @@ function enforceCurrentUserStatus(snapshot) {
 function startAdminControlBridge(uid) {
     if (!uid || adminControlListenersStarted) return;
     adminControlListenersStarted = true;
+    startGlobalLiveStatsBridge();
 
     adminFeatureListener = db.ref('admin_control/features').on('value', snap => {
         adminFeatures = snap.val() || {};
@@ -1041,6 +1093,10 @@ auth.onAuthStateChanged(async (user) => {
             try { if (adminMonetizationListener) db.ref(`monetization_applications/${auth.currentUser?.uid || ''}`).off('value'); } catch(e) {}
             try { if (adminUserStatusListener && auth.currentUser?.uid) db.ref(`users/${auth.currentUser.uid}`).off('value'); } catch(e) {}
             adminFeatureListener = adminSettingsListener = adminEligibilityListener = adminMonetizationListener = adminUserStatusListener = null;
+            if (globalMovieStatsListener) { try { db.ref('movie_stats').off('value'); } catch(e) {} globalMovieStatsListener = null; }
+            if (globalPostStatsListener) { try { db.ref('post_stats').off('value'); } catch(e) {} globalPostStatsListener = null; }
+            if (postViewObserver) { try { postViewObserver.disconnect(); } catch(e) {} postViewObserver = null; }
+            postViewsRecorded.clear();
             adminControlListenersStarted = false;
             document.body.classList.add('auth-active');
             const appScr = document.getElementById('app-screen');
@@ -1682,6 +1738,7 @@ function buildHomeFeed() {
         container.innerHTML = html;
         posts.slice(0, postRenderLimit).forEach(p => {
             registerPostReactionsListener(p.id);
+            setTimeout(observePostViews, 0);
         });
 
         uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
@@ -1725,6 +1782,7 @@ function buildHomeFeed() {
 
     container.innerHTML = html;
     postsToBind.forEach(postId => registerPostReactionsListener(postId));
+    setTimeout(observePostViews, 0);
     uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
 }
 
@@ -1911,6 +1969,7 @@ function renderSinglePostSegmentUI(post) {
                 <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="openReactedPeoplePage('${post.id}')">
                     <span id="${topEmojisId}" style="display: flex; gap: -4px;"></span>
                     <span id="${totalReactionsId}" style="margin-left: 4px;">0 Reactions</span>
+                    <span data-flaynity-stat-id="${post.id}-views" style="margin-left:8px;">0</span> Views
                 </div>
                 <div style="cursor: pointer;" onclick="openCommentsForPost('${post.id}')">
                     <span id="${totalCommentsId}">0 Comments</span>
@@ -2995,14 +3054,7 @@ function toggleMovieLike() {
     const likeRef = db.ref(`movie_stats/${movieId}/likes/${userId}`);
     const dislikeRef = db.ref(`movie_stats/${movieId}/dislikes/${userId}`);
     
-    likeRef.once('value', (snap) => {
-        if (snap.exists()) {
-            likeRef.remove();
-        } else {
-            likeRef.set(true);
-            dislikeRef.remove();
-        }
-    });
+    likeRef.transaction(current => current ? null : true).then(() => dislikeRef.remove()).catch(e => showNotification('Like failed. Please try again.', 'error'));
 }
 
 function toggleMovieDislike() {

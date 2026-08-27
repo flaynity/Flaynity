@@ -1034,7 +1034,6 @@ const db   = firebase.database();
 /* Existing Flaynity nodes (per spec §2) — reuse, never replace */
 const REF = {
   users:         db.ref('users'),
-  users:         db.ref('users'),
   channels:      db.ref('channels'),
   videos:        db.ref('admin_panel/movies/user_uploads'),
   shorts:        db.ref('admin_panel/movies/shorts'),
@@ -1361,13 +1360,14 @@ function bootApp(){
 /* =========================================================
    DASHBOARD  (spec §4)
    ========================================================= */
-let rawChannels = {}, rawVideos = {}, rawShorts = {}, rawPosts = {}, rawComments = {};
+let rawUsers = {}, rawChannels = {}, rawVideos = {}, rawShorts = {}, rawPosts = {}, rawComments = {};
 
 function initDashboard(){
   trackListener(REF.users, 'value', snap => {
-    const users = snap.val() || {};
-    Object.entries(users).forEach(([uid,u]) => { if(rawChannels[uid]) rawChannels[uid].userStatus = u.userStatus || u.accountStatus || rawChannels[uid].userStatus; });
+    rawUsers = snap.val() || {};
+    Object.entries(rawUsers).forEach(([uid,u]) => { if(rawChannels[uid]) rawChannels[uid].userStatus = u.userStatus || u.accountStatus || rawChannels[uid].userStatus; });
     renderUsersTable();
+    recomputeDashboard();
   });
   trackListener(REF.channels, 'value', snap => { rawChannels = snap.val() || {}; recomputeDashboard(); renderChannelsTable(); renderUsersTable(); renderSubsTable(); });
   trackListener(REF.videos, 'value', snap => { rawVideos = snap.val() || {}; recomputeDashboard(); renderVideosTable(); renderScheduled(); });
@@ -1439,54 +1439,59 @@ function initUsersAndChannels(){
 function renderUsersTable(){
   const q = (document.getElementById('users-search').value||'').toLowerCase();
   const filter = document.getElementById('users-filter').value;
-  const rows = Object.entries(rawChannels).filter(([id,c]) => {
-    const status = c.userStatus || c.status || 'active';
+  const ids = new Set([...Object.keys(rawUsers), ...Object.keys(rawChannels)]);
+  const rows = [...ids].map(id => {
+    const u = rawUsers[id] || {};
+    const c = rawChannels[id] || {};
+    return [id, {...c, ...u, channelName: c.channelName || u.displayName || u.gmailName || u.email?.split('@')[0] || 'Unnamed'}];
+  }).filter(([id,c]) => {
+    const status = c.userStatus || c.accountStatus || c.status || 'active';
     if(filter !== 'all' && status !== filter) return false;
     if(!q) return true;
-    return (c.channelName||'').toLowerCase().includes(q) || id.toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q);
+    return (c.channelName||'').toLowerCase().includes(q) || id.toLowerCase().includes(q) || (c.email||c.gmailEmail||'').toLowerCase().includes(q);
   });
   const tbody = document.getElementById('users-tbody');
   tbody.innerHTML = '';
   document.getElementById('users-empty').style.display = rows.length ? 'none' : 'block';
   rows.forEach(([id,c]) => {
-    const status = c.userStatus || c.status || 'active';
+    const status = c.userStatus || c.accountStatus || c.status || 'active';
+    const email = c.email || c.gmailEmail || '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><span class="avatar-sm">${escapeHtml((c.channelName||'?').charAt(0).toUpperCase())}</span>
         <span class="cell-main">${escapeHtml(c.channelName||'Unnamed')}</span>
-        <div class="cell-sub">${escapeHtml(c.email||'')}</div></td>
+        <div class="cell-sub">${escapeHtml(email)}</div></td>
       <td class="id-mono">${escapeHtml(id)}</td>
-      <td>${fmtDate(c.joinedDate||c.createdAt)}</td>
-      <td>${fmtNum(c.subscribers)}</td>
-      <td>${fmtNum(c.videoCount||0)}</td>
+      <td>${fmtDate(c.joinedDate||c.createdAt||c.createdDate)}</td>
+      <td>${fmtNum(c.subscribersCount ?? c.subscribers ?? 0)}</td>
+      <td>${fmtNum(c.videoCount||c.videosCount||0)}</td>
       <td>${statusBadge(status)}</td>
       <td class="btn-row">
         <button class="btn sm" data-view-user="${id}">View</button>
-        ${status==='banned'
-          ? `<button class="btn sm ok" data-unban="${id}">Unban</button>`
-          : `<button class="btn sm danger" data-ban="${id}">Ban</button>`}
+        ${status==='banned' ? `<button class="btn sm ok" data-unban="${id}">Unban</button>` : `<button class="btn sm danger" data-ban="${id}">Ban</button>`}
       </td>`;
     tbody.appendChild(tr);
   });
   tbody.querySelectorAll('[data-view-user]').forEach(b => b.addEventListener('click', () => openUserDetail(b.dataset.viewUser)));
   tbody.querySelectorAll('[data-ban]').forEach(b => b.addEventListener('click', () => {
     const id = b.dataset.ban;
-    confirmAction({title:'Ban User', target: rawChannels[id]?.channelName || id, current:'active', next:'banned', dangerLabel:'Ban User',
+    const oldStatus = rawUsers[id]?.userStatus || rawUsers[id]?.accountStatus || 'active';
+    confirmAction({title:'Ban User', target: rawUsers[id]?.email || rawChannels[id]?.channelName || id, current:oldStatus, next:'banned', dangerLabel:'Ban User',
       onConfirm: reason => {
         Promise.all([
-          REF.channels.child(id).update({userStatus:'banned'}),
-          REF.users.child(id).update({userStatus:'banned', accountStatus:'banned', bannedAt:firebase.database.ServerValue.TIMESTAMP, banReason:reason || null})
-        ]).then(() => { toast('ok','Updated Successfully','User banned.'); logAction('Ban User','user',id,'active','banned',reason); })
+          REF.users.child(id).update({userStatus:'banned', accountStatus:'banned', bannedAt:firebase.database.ServerValue.TIMESTAMP, banReason:reason || null}),
+          REF.channels.child(id).update({userStatus:'banned', accountStatus:'banned', status:'banned'})
+        ]).then(() => { toast('ok','Updated Successfully','User banned. Login will be blocked immediately.'); logAction('Ban User','user',id,oldStatus,'banned',reason); })
           .catch(err => toast('err', mapFirebaseError(err), ''));
       }});
   }));
   tbody.querySelectorAll('[data-unban]').forEach(b => b.addEventListener('click', () => {
     const id = b.dataset.unban;
-    confirmAction({title:'Unban User', target: rawChannels[id]?.channelName || id, current:'banned', next:'active', dangerLabel:'Unban User', reasonRequired:false,
+    confirmAction({title:'Unban User', target: rawUsers[id]?.email || rawChannels[id]?.channelName || id, current:'banned', next:'active', dangerLabel:'Unban User', reasonRequired:false,
       onConfirm: reason => {
         Promise.all([
-          REF.channels.child(id).update({userStatus:'active'}),
-          REF.users.child(id).update({userStatus:'active', accountStatus:'active', bannedAt:null, banReason:null})
+          REF.users.child(id).update({userStatus:'active', accountStatus:'active', bannedAt:null, banReason:null}),
+          REF.channels.child(id).update({userStatus:'active', accountStatus:'active', status:'active'})
         ]).then(() => { toast('ok','Updated Successfully','User unbanned.'); logAction('Unban User','user',id,'banned','active',reason); })
           .catch(err => toast('err', mapFirebaseError(err), ''));
       }});
@@ -1827,8 +1832,8 @@ function renderSubsTable(){
   document.getElementById('subs-empty').style.display = rows.length ? 'none' : 'block';
   rows.slice(0,200).forEach(([id,c]) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${escapeHtml(c.channelName||id)}</td><td>${fmtNum(c.subscribers||0)}</td>
-      <td>${counterCell(id,'subscribers',c.subscribers||0,REF.channels,'channel')}</td>`;
+    tr.innerHTML = `<td>${escapeHtml(c.channelName||id)}</td><td>${fmtNum(c.subscribersCount ?? c.subscribers ?? 0)}</td>
+      <td>${counterCell(id,'subscribers',c.subscribersCount ?? c.subscribers ?? 0,REF.channels,'channel')}</td>`;
     tbody.appendChild(tr);
   });
   wireContentRowActions(tbody, rawChannels, REF.channels, 'channelName', 'channel');
@@ -2035,7 +2040,7 @@ function initChannelAnalytics(){
     const myShorts = Object.values(rawShorts).filter(v => v.channelId === id);
     document.getElementById('ca-views').textContent = fmtNum(myVideos.reduce((a,v)=>a+Number(v.views||0),0)+myShorts.reduce((a,v)=>a+Number(v.views||0),0));
     document.getElementById('ca-watchtime').textContent = myVideos.some(v=>v.watchTime!=null) ? fmtNum(myVideos.reduce((a,v)=>a+Number(v.watchTime||0),0)) : 'No data available';
-    document.getElementById('ca-subs').textContent = fmtNum(c.subscribers||0);
+    document.getElementById('ca-subs').textContent = fmtNum(c.subscribersCount ?? c.subscribers ?? 0);
     const mon = Object.values(rawMonetization).find(m => m.channelId === id);
     document.getElementById('ca-revenue').textContent = mon && mon.estimatedRevenue!=null ? fmtNum(mon.estimatedRevenue) : 'No data available';
   });

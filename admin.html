@@ -1006,6 +1006,7 @@ const db   = firebase.database();
 
 /* Existing Flaynity nodes (per spec §2) — reuse, never replace */
 const REF = {
+  users:         db.ref('users'),
   channels:      db.ref('channels'),
   videos:        db.ref('admin_panel/movies/user_uploads'),
   shorts:        db.ref('admin_panel/movies/shorts'),
@@ -1329,6 +1330,11 @@ function bootApp(){
 let rawChannels = {}, rawVideos = {}, rawShorts = {}, rawPosts = {}, rawComments = {};
 
 function initDashboard(){
+  trackListener(REF.users, 'value', snap => {
+    const users = snap.val() || {};
+    Object.entries(users).forEach(([uid,u]) => { if(rawChannels[uid]) rawChannels[uid].userStatus = u.userStatus || u.accountStatus || rawChannels[uid].userStatus; });
+    renderUsersTable();
+  });
   trackListener(REF.channels, 'value', snap => { rawChannels = snap.val() || {}; recomputeDashboard(); renderChannelsTable(); renderUsersTable(); renderSubsTable(); });
   trackListener(REF.videos, 'value', snap => { rawVideos = snap.val() || {}; recomputeDashboard(); renderVideosTable(); renderScheduled(); });
   trackListener(REF.shorts, 'value', snap => { rawShorts = snap.val() || {}; recomputeDashboard(); renderShortsTable(); renderScheduled(); });
@@ -1433,18 +1439,22 @@ function renderUsersTable(){
     const id = b.dataset.ban;
     confirmAction({title:'Ban User', target: rawChannels[id]?.channelName || id, current:'active', next:'banned', dangerLabel:'Ban User',
       onConfirm: reason => {
-        safeUpdate(REF.channels.child(id), {userStatus:'banned'}, {successMsg:'User banned.'}).then(ok => {
-          if(ok) logAction('Ban User','user',id,'active','banned',reason);
-        });
+        Promise.all([
+          REF.channels.child(id).update({userStatus:'banned'}),
+          REF.users.child(id).update({userStatus:'banned', accountStatus:'banned', bannedAt:firebase.database.ServerValue.TIMESTAMP, banReason:reason || null})
+        ]).then(() => { toast('ok','Updated Successfully','User banned.'); logAction('Ban User','user',id,'active','banned',reason); })
+          .catch(err => toast('err', mapFirebaseError(err), ''));
       }});
   }));
   tbody.querySelectorAll('[data-unban]').forEach(b => b.addEventListener('click', () => {
     const id = b.dataset.unban;
     confirmAction({title:'Unban User', target: rawChannels[id]?.channelName || id, current:'banned', next:'active', dangerLabel:'Unban User', reasonRequired:false,
       onConfirm: reason => {
-        safeUpdate(REF.channels.child(id), {userStatus:'active'}, {successMsg:'User unbanned.'}).then(ok => {
-          if(ok) logAction('Unban User','user',id,'banned','active',reason);
-        });
+        Promise.all([
+          REF.channels.child(id).update({userStatus:'active'}),
+          REF.users.child(id).update({userStatus:'active', accountStatus:'active', bannedAt:null, banReason:null})
+        ]).then(() => { toast('ok','Updated Successfully','User unbanned.'); logAction('Unban User','user',id,'banned','active',reason); })
+          .catch(err => toast('err', mapFirebaseError(err), ''));
       }});
   }));
 }
@@ -1615,7 +1625,7 @@ function wireContentRowActions(tbody, dataMap, ref, titleField, targetType){
           if(!reason){ toast('err','Reason Required',''); return; }
           if(isNaN(next) || next < 0){ toast('err','Invalid Data','Enter a non-negative number.'); return; }
           closeModal();
-          safeUpdate(ref.child(id), {[field]: next}, {successMsg:`${field} set to ${next}.`}).then(ok => { if(ok) logAction(`Set ${field}`, targetType, id, current, next, reason); });
+          safeUpdate(ref.child(id), field === 'subscribers' ? {subscribers: next, subscribersCount: next} : {[field]: next}, {successMsg:`${field} set to ${next}.`}).then(ok => { if(ok) logAction(`Set ${field}`, targetType, id, current, next, reason); });
         });
         return;
       }
@@ -1624,7 +1634,7 @@ function wireContentRowActions(tbody, dataMap, ref, titleField, targetType){
       confirmAction({title:`${label} ${field}`, target:(dataMap[id]||{})[titleField]||id, current, next: Math.max(0,current+delta), dangerLabel:'Confirm', reasonRequired:false,
         onConfirm: reason => {
           safeTransaction(ref.child(id).child(field), curr => Math.max(0,(curr||0)+delta), {successMsg:`${field} ${label.toLowerCase()}d.`})
-            .then(newVal => { if(newVal !== null) logAction(`${label} ${field}`, targetType, id, current, newVal, reason); });
+            .then(newVal => { if(newVal !== null) { if(field === 'subscribers') ref.child(id).update({subscribersCount:newVal}); logAction(`${label} ${field}`, targetType, id, current, newVal, reason); } });
         }});
     });
   });

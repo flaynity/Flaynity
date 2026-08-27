@@ -1,0 +1,2027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Flaynity — Master Control</title>
+
+<!-- Firebase (compat build — simplest for a single vanilla-JS file) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style>
+/* ============================================================
+   FLAYNITY MASTER CONTROL — DESIGN TOKENS
+   Dark SaaS control-room. Everything here maps to a real,
+   existing Flaynity system — see the sidebar / SECTION comments.
+   ============================================================ */
+:root{
+  --bg:            #0A0D13;
+  --bg-soft:       #0E1219;
+  --panel:         rgba(20,25,36,0.72);
+  --panel-solid:   #141924;
+  --panel-border:  rgba(255,255,255,0.07);
+  --panel-hover:   rgba(255,255,255,0.03);
+  --line:          rgba(255,255,255,0.08);
+
+  --text:          #E9ECF3;
+  --text-dim:      #A6ADBB;
+  --text-faint:    #6B7285;
+
+  --accent:        #6C5CE7;
+  --accent-2:      #17D6C4;
+  --accent-grad:   linear-gradient(135deg,#6C5CE7 0%,#17D6C4 100%);
+
+  --ok:            #22C58B;
+  --ok-bg:         rgba(34,197,139,0.12);
+  --warn:          #F5A623;
+  --warn-bg:       rgba(245,166,35,0.12);
+  --danger:        #F0466A;
+  --danger-bg:     rgba(240,70,106,0.12);
+  --info:          #4EA1FF;
+  --info-bg:       rgba(78,161,255,0.12);
+  --neutral-bg:    rgba(166,173,187,0.12);
+
+  --radius-lg:     18px;
+  --radius-md:     12px;
+  --radius-sm:     8px;
+  --shadow-lg:     0 20px 60px rgba(0,0,0,0.45);
+  --shadow-sm:     0 6px 20px rgba(0,0,0,0.3);
+
+  --sidebar-w:     252px;
+  --topbar-h:      64px;
+  --font-display:  'Segoe UI', ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono:     'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{
+  margin:0; padding:0; height:100%;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(108,92,231,0.16), transparent 45%),
+    radial-gradient(circle at 90% 15%, rgba(23,214,196,0.10), transparent 40%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--font-display);
+  -webkit-font-smoothing:antialiased;
+}
+::-webkit-scrollbar{width:8px; height:8px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12); border-radius:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+a{color:inherit; text-decoration:none;}
+button{font-family:inherit;}
+input,select,textarea{font-family:inherit;}
+
+/* ---------- App shell ---------- */
+#app{display:flex; min-height:100vh;}
+
+/* ---------- Sidebar ---------- */
+#sidebar{
+  width:var(--sidebar-w); flex-shrink:0;
+  background:var(--panel-solid);
+  border-right:1px solid var(--line);
+  height:100vh; position:sticky; top:0;
+  overflow-y:auto; padding:18px 12px 90px;
+  transition:transform .25s ease;
+  z-index:40;
+}
+#sidebar .brand{
+  display:flex; align-items:center; gap:10px;
+  padding:6px 10px 20px;
+}
+#sidebar .brand .mark{
+  width:34px; height:34px; border-radius:10px;
+  background:var(--accent-grad);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:15px; color:#fff;
+  box-shadow:0 6px 18px rgba(108,92,231,0.35);
+}
+#sidebar .brand .name{font-weight:700; font-size:15.5px; letter-spacing:.2px;}
+#sidebar .brand .sub{font-size:10.5px; color:var(--text-faint); letter-spacing:.6px; text-transform:uppercase;}
+
+.nav-group{margin-bottom:4px;}
+.nav-group-label{
+  font-size:10.5px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase;
+  color:var(--text-faint); padding:14px 12px 6px;
+}
+.nav-item{
+  display:flex; align-items:center; gap:10px;
+  padding:9px 12px; border-radius:10px; cursor:pointer;
+  font-size:13.5px; color:var(--text-dim); font-weight:500;
+  transition:background .15s, color .15s;
+  margin:1px 0;
+}
+.nav-item:hover{background:var(--panel-hover); color:var(--text);}
+.nav-item.active{background:rgba(108,92,231,0.16); color:#fff;}
+.nav-item.active .dot{background:var(--accent-2); box-shadow:0 0 0 3px rgba(23,214,196,0.18);}
+.nav-item .dot{width:5px; height:5px; border-radius:50%; background:var(--text-faint); flex-shrink:0;}
+.nav-item .ic{width:16px; text-align:center; font-size:14px; flex-shrink:0;}
+
+#sidebar-overlay{
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:39;
+}
+
+/* ---------- Main column ---------- */
+#main{flex:1; min-width:0; display:flex; flex-direction:column;}
+
+/* ---------- Topbar ---------- */
+#topbar{
+  height:var(--topbar-h); position:sticky; top:0; z-index:30;
+  background:rgba(10,13,19,0.85); backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 18px; gap:14px;
+}
+#hamburger{
+  display:none; width:36px; height:36px; border-radius:10px; border:1px solid var(--line);
+  background:var(--panel-hover); color:var(--text); font-size:16px; cursor:pointer;
+}
+#topbar .page-title{font-size:16px; font-weight:700;}
+#topbar .page-desc{font-size:11.5px; color:var(--text-faint); margin-top:1px;}
+#topbar .right{display:flex; align-items:center; gap:12px;}
+
+.status-pill{
+  display:flex; align-items:center; gap:6px;
+  font-size:11.5px; font-weight:600; padding:6px 11px; border-radius:100px;
+  background:var(--ok-bg); color:var(--ok); border:1px solid rgba(34,197,139,0.25);
+}
+.status-pill.off{background:var(--danger-bg); color:var(--danger); border-color:rgba(240,70,106,0.3);}
+.status-pill .blip{width:7px; height:7px; border-radius:50%; background:currentColor; box-shadow:0 0 0 3px currentColor22;}
+.status-pill.pulse .blip{animation:pulse 1.6s infinite;}
+@keyframes pulse{0%{opacity:1;}50%{opacity:.35;}100%{opacity:1;}}
+
+.admin-chip{
+  display:flex; align-items:center; gap:8px; padding:5px 10px 5px 5px;
+  border:1px solid var(--line); border-radius:100px; font-size:12.5px; cursor:pointer;
+  background:var(--panel-hover);
+}
+.admin-chip .av{
+  width:24px; height:24px; border-radius:50%; background:var(--accent-grad);
+  display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff;
+}
+
+/* ---------- Content ---------- */
+#content{padding:20px 22px 90px; max-width:1360px; width:100%; margin:0 auto;}
+.section{display:none;}
+.section.active{display:block; animation:fadein .25s ease;}
+@keyframes fadein{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
+
+/* ---------- Cards / grids ---------- */
+.grid{display:grid; gap:14px;}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+.grid-2{grid-template-columns:repeat(2,1fr);}
+@media(max-width:1100px){.grid-4{grid-template-columns:repeat(2,1fr);} .grid-3{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:640px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr;}}
+
+.card{
+  background:var(--panel); border:1px solid var(--panel-border); border-radius:var(--radius-lg);
+  padding:18px; backdrop-filter:blur(16px); box-shadow:var(--shadow-sm);
+}
+.card.tight{padding:14px 16px;}
+
+.stat-card .label{font-size:11.5px; color:var(--text-faint); font-weight:600; text-transform:uppercase; letter-spacing:.5px;}
+.stat-card .value{font-size:28px; font-weight:800; margin-top:6px; letter-spacing:-.5px;}
+.stat-card .delta{font-size:11.5px; margin-top:6px; color:var(--text-dim);}
+.stat-card .delta.up{color:var(--ok);}
+.stat-card .delta.down{color:var(--danger);}
+
+.section-head{display:flex; align-items:flex-end; justify-content:space-between; margin:26px 0 14px; gap:12px; flex-wrap:wrap;}
+.section-head h2{font-size:16.5px; margin:0 0 3px; font-weight:700;}
+.section-head p{margin:0; font-size:12px; color:var(--text-faint);}
+.section-head:first-child{margin-top:0;}
+
+/* ---------- Buttons ---------- */
+.btn{
+  display:inline-flex; align-items:center; gap:6px; justify-content:center;
+  padding:9px 15px; border-radius:10px; border:1px solid var(--line);
+  background:var(--panel-hover); color:var(--text); font-size:12.5px; font-weight:600;
+  cursor:pointer; transition:transform .1s, background .15s, border-color .15s;
+  white-space:nowrap;
+}
+.btn:hover{background:rgba(255,255,255,0.07);}
+.btn:active{transform:scale(.97);}
+.btn.primary{background:var(--accent-grad); border-color:transparent; color:#fff;}
+.btn.ok{background:var(--ok-bg); color:var(--ok); border-color:rgba(34,197,139,0.3);}
+.btn.warn{background:var(--warn-bg); color:var(--warn); border-color:rgba(245,166,35,0.3);}
+.btn.danger{background:var(--danger-bg); color:var(--danger); border-color:rgba(240,70,106,0.3);}
+.btn.sm{padding:6px 10px; font-size:11.5px; border-radius:8px;}
+.btn.icon-only{padding:7px 9px;}
+.btn[disabled]{opacity:.45; cursor:not-allowed;}
+.btn-row{display:flex; gap:8px; flex-wrap:wrap;}
+
+/* ---------- Inputs ---------- */
+.field{margin-bottom:12px;}
+.field label{display:block; font-size:11.5px; font-weight:600; color:var(--text-dim); margin-bottom:6px;}
+.input, select.input, textarea.input{
+  width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--line);
+  background:rgba(255,255,255,0.03); color:var(--text); font-size:13px; outline:none;
+}
+.input:focus{border-color:var(--accent);}
+textarea.input{resize:vertical; min-height:70px;}
+.search-bar{display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;}
+.search-bar .input{flex:1; min-width:180px;}
+
+.toggle{position:relative; width:42px; height:24px; flex-shrink:0;}
+.toggle input{opacity:0; width:0; height:0;}
+.toggle .slider{
+  position:absolute; inset:0; background:rgba(255,255,255,0.15); border-radius:100px; cursor:pointer; transition:.2s;
+}
+.toggle .slider:before{
+  content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s;
+}
+.toggle input:checked + .slider{background:var(--accent-grad);}
+.toggle input:checked + .slider:before{transform:translateX(18px);}
+.toggle input:disabled + .slider{opacity:.4; cursor:not-allowed;}
+
+/* ---------- Tables ---------- */
+.table-wrap{overflow-x:auto; border-radius:var(--radius-md); border:1px solid var(--panel-border);}
+table{width:100%; border-collapse:collapse; min-width:640px; font-size:12.8px;}
+thead th{
+  text-align:left; padding:11px 14px; font-size:10.8px; text-transform:uppercase; letter-spacing:.5px;
+  color:var(--text-faint); background:rgba(255,255,255,0.03); border-bottom:1px solid var(--line); white-space:nowrap;
+}
+tbody td{padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:var(--panel-hover);}
+.cell-main{font-weight:600;}
+.cell-sub{font-size:11px; color:var(--text-faint); margin-top:2px;}
+.avatar-sm{width:30px; height:30px; border-radius:50%; background:var(--accent-grad); display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; margin-right:9px; vertical-align:middle;}
+.id-mono{font-family:var(--font-mono); font-size:11px; color:var(--text-faint);}
+
+.badge{display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:100px; font-size:10.8px; font-weight:700; text-transform:uppercase; letter-spacing:.3px;}
+.badge.ok{background:var(--ok-bg); color:var(--ok);}
+.badge.warn{background:var(--warn-bg); color:var(--warn);}
+.badge.danger{background:var(--danger-bg); color:var(--danger);}
+.badge.info{background:var(--info-bg); color:var(--info);}
+.badge.neutral{background:var(--neutral-bg); color:var(--text-dim);}
+
+.empty-state{
+  text-align:center; padding:46px 20px; color:var(--text-faint); font-size:13px;
+}
+.empty-state .big{font-size:28px; margin-bottom:8px;}
+
+.pager{display:flex; justify-content:space-between; align-items:center; padding:10px 4px; font-size:11.5px; color:var(--text-faint);}
+
+/* ---------- Tabs (in-section) ---------- */
+.tabs{display:flex; gap:6px; border-bottom:1px solid var(--line); margin-bottom:16px; overflow-x:auto;}
+.tab-btn{padding:9px 4px; margin-right:18px; font-size:12.8px; font-weight:600; color:var(--text-faint); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap;}
+.tab-btn.active{color:#fff; border-color:var(--accent);}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+
+/* ---------- Counter control ---------- */
+.counter-ctrl{display:flex; align-items:center; gap:6px;}
+.counter-ctrl .num{min-width:56px; text-align:center; font-weight:700; font-family:var(--font-mono); font-size:13px;}
+.counter-ctrl .btn{padding:5px 9px;}
+
+/* ---------- Modal ---------- */
+#modal-layer{position:fixed; inset:0; z-index:100; display:none; align-items:flex-end; justify-content:center;}
+#modal-layer.show{display:flex;}
+#modal-backdrop{position:absolute; inset:0; background:rgba(5,7,12,0.65); backdrop-filter:blur(3px);}
+.modal-sheet{
+  position:relative; width:100%; max-width:480px; background:var(--panel-solid); border:1px solid var(--line);
+  border-radius:20px 20px 0 0; padding:22px; max-height:88vh; overflow-y:auto;
+  box-shadow:var(--shadow-lg); animation:sheetup .22s ease;
+}
+@media(min-width:680px){
+  #modal-layer{align-items:center;}
+  .modal-sheet{border-radius:18px; margin-bottom:0;}
+}
+@keyframes sheetup{from{transform:translateY(24px); opacity:0;} to{transform:none; opacity:1;}}
+.modal-sheet .handle{width:36px; height:4px; background:var(--line); border-radius:4px; margin:0 auto 16px;}
+.modal-sheet h3{margin:0 0 4px; font-size:16px;}
+.modal-sheet .modal-sub{font-size:12px; color:var(--text-faint); margin-bottom:16px;}
+.modal-sheet .kv{display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); font-size:12.5px;}
+.modal-sheet .kv:last-child{border-bottom:none;}
+.modal-sheet .kv .k{color:var(--text-faint);}
+.modal-sheet .kv .v{font-weight:600;}
+.modal-actions{display:flex; gap:10px; margin-top:18px;}
+.modal-actions .btn{flex:1;}
+
+/* ---------- Toasts ---------- */
+#toast-wrap{position:fixed; top:16px; right:16px; z-index:200; display:flex; flex-direction:column; gap:8px; max-width:320px;}
+.toast{
+  padding:12px 14px; border-radius:12px; background:var(--panel-solid); border:1px solid var(--line);
+  box-shadow:var(--shadow-lg); font-size:12.5px; display:flex; gap:9px; align-items:flex-start;
+  animation:toastin .2s ease;
+}
+@keyframes toastin{from{opacity:0; transform:translateX(16px);} to{opacity:1; transform:none;}}
+.toast .ic{font-size:15px; margin-top:1px;}
+.toast.ok{border-color:rgba(34,197,139,0.35);}
+.toast.err{border-color:rgba(240,70,106,0.35);}
+.toast .msg strong{display:block; margin-bottom:2px; font-size:12.8px;}
+.toast .msg span{color:var(--text-faint); font-size:11.5px;}
+
+/* ---------- Login screen ---------- */
+#login-screen{
+  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+}
+.login-card{
+  width:100%; max-width:380px; background:var(--panel-solid); border:1px solid var(--line);
+  border-radius:22px; padding:32px 28px; box-shadow:var(--shadow-lg); text-align:center;
+}
+.login-card .mark{
+  width:52px; height:52px; border-radius:16px; background:var(--accent-grad); margin:0 auto 16px;
+  display:flex; align-items:center; justify-content:center; font-weight:800; font-size:20px; color:#fff;
+}
+.login-card h1{font-size:18px; margin:0 0 4px;}
+.login-card p{font-size:12.5px; color:var(--text-faint); margin:0 0 22px;}
+.login-card .btn{width:100%;}
+#login-error{color:var(--danger); font-size:12px; margin-top:10px; min-height:14px;}
+
+/* ---------- Misc ---------- */
+.muted{color:var(--text-faint);}
+.mono{font-family:var(--font-mono);}
+.hairline{height:1px; background:var(--line); margin:16px 0; border:none;}
+.flex-between{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+.settings-row{display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--line); gap:16px;}
+.settings-row:last-child{border-bottom:none;}
+.settings-row .t{font-size:13.5px; font-weight:600;}
+.settings-row .d{font-size:11.5px; color:var(--text-faint); margin-top:2px;}
+.audit-item{padding:12px 0; border-bottom:1px solid var(--line); font-size:12.3px;}
+.audit-item:last-child{border-bottom:none;}
+.audit-item .top{display:flex; justify-content:space-between; gap:10px; margin-bottom:4px;}
+.audit-item .act{font-weight:700;}
+.audit-item .when{color:var(--text-faint); font-size:11px;}
+.audit-item .detail{color:var(--text-dim);}
+
+@media(max-width:900px){
+  #sidebar{position:fixed; left:0; top:0; transform:translateX(-100%);}
+  #sidebar.open{transform:translateX(0);}
+  #sidebar-overlay.show{display:block;}
+  #hamburger{display:inline-flex; align-items:center; justify-content:center;}
+  #content{padding:16px 14px 90px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     LOGIN SCREEN
+     Firebase Authentication + admins/{uid} authorization check
+     ============================================================ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="mark">F</div>
+    <h1>Flaynity Master Control</h1>
+    <p>Sign in with an authorized admin account</p>
+    <div class="field" style="text-align:left;">
+      <label>Email</label>
+      <input id="login-email" class="input" type="email" placeholder="admin@flaynity.com" autocomplete="username">
+    </div>
+    <div class="field" style="text-align:left;">
+      <label>Password</label>
+      <input id="login-pass" class="input" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn primary" id="login-btn" style="height:42px;">Sign In</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP SHELL (hidden until authenticated + authorized)
+     ============================================================ -->
+<div id="app" style="display:none;">
+
+  <div id="sidebar-overlay"></div>
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="mark">F</div>
+      <div>
+        <div class="name">Flaynity</div>
+        <div class="sub">Master Control</div>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-item" data-section="dashboard"><span class="dot"></span><span class="ic">▤</span> Dashboard</div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">People</div>
+      <div class="nav-item" data-section="users"><span class="dot"></span><span class="ic">◍</span> Users</div>
+      <div class="nav-item" data-section="channels"><span class="dot"></span><span class="ic">▣</span> Channels</div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Content</div>
+      <div class="nav-item" data-section="videos"><span class="dot"></span><span class="ic">▶</span> Long Videos</div>
+      <div class="nav-item" data-section="shorts"><span class="dot"></span><span class="ic">◫</span> Shorts</div>
+      <div class="nav-item" data-section="posts"><span class="dot"></span><span class="ic">▧</span> Community Posts</div>
+      <div class="nav-item" data-section="comments"><span class="dot"></span><span class="ic">◔</span> Comments</div>
+      <div class="nav-item" data-section="scheduled"><span class="dot"></span><span class="ic">◷</span> Scheduled Content</div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Engagement</div>
+      <div class="nav-item" data-section="subscribers"><span class="dot"></span><span class="ic">◈</span> Subscribers</div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Upload &amp; Download</div>
+      <div class="nav-item" data-section="upload"><span class="dot"></span><span class="ic">⇧</span> Upload Control</div>
+      <div class="nav-item" data-section="download"><span class="dot"></span><span class="ic">⇩</span> Download Control</div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Monetization</div>
+      <div class="nav-item" data-section="monetization"><span class="dot"></span><span class="ic">$</span> Monetization Status</div>
+      <div class="nav-item" data-section="ads"><span class="dot"></span><span class="ic">▭</span> Ads</div>
+      <div class="nav-item" data-section="memberships"><span class="dot"></span><span class="ic">✦</span> Memberships</div>
+      <div class="nav-item" data-section="supers"><span class="dot"></span><span class="ic">♥</span> Supers</div>
+      <div class="nav-item" data-section="shopping"><span class="dot"></span><span class="ic">▤</span> Shopping</div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Analytics</div>
+      <div class="nav-item" data-section="platform-analytics"><span class="dot"></span><span class="ic">▲</span> Platform Analytics</div>
+      <div class="nav-item" data-section="channel-analytics"><span class="dot"></span><span class="ic">◭</span> Channel Analytics</div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Settings</div>
+      <div class="nav-item" data-section="platform-settings"><span class="dot"></span><span class="ic">⚙</span> Platform Controls</div>
+      <div class="nav-item" data-section="feature-flags"><span class="dot"></span><span class="ic">⚑</span> Feature Controls</div>
+      <div class="nav-item" data-section="theme"><span class="dot"></span><span class="ic">◐</span> Theme Control</div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Security</div>
+      <div class="nav-item" data-section="admin-access"><span class="dot"></span><span class="ic">⛨</span> Admin Access</div>
+      <div class="nav-item" data-section="audit-logs"><span class="dot"></span><span class="ic">▤</span> Audit Logs</div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">System</div>
+      <div class="nav-item" data-section="system"><span class="dot"></span><span class="ic">◉</span> Firebase Status</div>
+      <div class="nav-item" id="logout-btn"><span class="dot"></span><span class="ic">⏻</span> Logout</div>
+    </div>
+  </aside>
+
+  <div id="main">
+    <div id="topbar">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button id="hamburger">☰</button>
+        <div>
+          <div class="page-title" id="page-title">Dashboard</div>
+          <div class="page-desc" id="page-desc">Live overview of the Flaynity platform</div>
+        </div>
+      </div>
+      <div class="right">
+        <div class="status-pill pulse" id="conn-pill"><span class="blip"></span><span id="conn-label">Connecting…</span></div>
+        <div class="admin-chip" id="admin-chip">
+          <div class="av" id="admin-av">A</div>
+          <span id="admin-email-label">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="content">
+
+      <!-- ================= DASHBOARD ================= -->
+      <section class="section" id="section-dashboard">
+        <div class="grid grid-4">
+          <div class="card stat-card"><div class="label">Total Users</div><div class="value" id="stat-users">—</div></div>
+          <div class="card stat-card"><div class="label">Total Channels</div><div class="value" id="stat-channels">—</div></div>
+          <div class="card stat-card"><div class="label">Long Videos</div><div class="value" id="stat-videos">—</div></div>
+          <div class="card stat-card"><div class="label">Shorts</div><div class="value" id="stat-shorts">—</div></div>
+          <div class="card stat-card"><div class="label">Community Posts</div><div class="value" id="stat-posts">—</div></div>
+          <div class="card stat-card"><div class="label">Total Views</div><div class="value" id="stat-views">—</div></div>
+          <div class="card stat-card"><div class="label">Total Likes</div><div class="value" id="stat-likes">—</div></div>
+          <div class="card stat-card"><div class="label">Total Comments</div><div class="value" id="stat-comments">—</div></div>
+          <div class="card stat-card"><div class="label">Total Subscribers</div><div class="value" id="stat-subs">—</div></div>
+          <div class="card stat-card"><div class="label">Published Content</div><div class="value" id="stat-published">—</div></div>
+          <div class="card stat-card"><div class="label">Scheduled Content</div><div class="value" id="stat-scheduled">—</div></div>
+          <div class="card stat-card"><div class="label">Monetized Channels</div><div class="value" id="stat-monetized">—</div></div>
+        </div>
+
+        <div class="section-head">
+          <div>
+            <h2>Growth</h2>
+            <p>Computed from item timestamps already stored by the app — not synthetic data.</p>
+          </div>
+          <div class="btn-row" id="growth-filters">
+            <button class="btn sm range-btn active" data-days="7">7D</button>
+            <button class="btn sm range-btn" data-days="28">28D</button>
+            <button class="btn sm range-btn" data-days="30">30D</button>
+            <button class="btn sm range-btn" data-days="90">90D</button>
+            <button class="btn sm range-btn" data-days="365">365D</button>
+          </div>
+        </div>
+        <div class="card">
+          <div id="growth-empty" class="empty-state" style="display:none;">
+            <div class="big">◌</div>
+            No data available for this range yet.
+          </div>
+          <div id="growth-body" class="grid grid-3">
+            <div class="card tight"><div class="label muted" style="font-size:11px;">New Channels</div><div class="value" style="font-size:20px;" id="growth-channels">0</div></div>
+            <div class="card tight"><div class="label muted" style="font-size:11px;">New Videos</div><div class="value" style="font-size:20px;" id="growth-videos">0</div></div>
+            <div class="card tight"><div class="label muted" style="font-size:11px;">New Shorts</div><div class="value" style="font-size:20px;" id="growth-shorts">0</div></div>
+            <div class="card tight"><div class="label muted" style="font-size:11px;">New Posts</div><div class="value" style="font-size:20px;" id="growth-posts">0</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= USERS ================= -->
+      <section class="section" id="section-users">
+        <div class="search-bar">
+          <input class="input" id="users-search" placeholder="Search by channel name, UID, or email…">
+          <select class="input" id="users-filter" style="max-width:170px;">
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="disabled">Disabled</option>
+            <option value="banned">Banned</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>User</th><th>UID</th><th>Joined</th><th>Subs</th><th>Videos</th><th>Status</th><th></th></tr></thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+        <div id="users-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+      </section>
+
+      <!-- ================= CHANNELS ================= -->
+      <section class="section" id="section-channels">
+        <div class="search-bar">
+          <input class="input" id="channels-search" placeholder="Search channel name or handle…">
+          <select class="input" id="channels-filter" style="max-width:170px;">
+            <option value="all">All visibility</option>
+            <option value="visible">Visible</option>
+            <option value="hidden">Hidden</option>
+            <option value="disabled">Disabled</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Channel</th><th>Handle</th><th>Category</th><th>Subs</th><th>Visibility</th><th></th></tr></thead>
+            <tbody id="channels-tbody"></tbody>
+          </table>
+        </div>
+        <div id="channels-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+      </section>
+
+      <!-- ================= LONG VIDEOS ================= -->
+      <section class="section" id="section-videos">
+        <div class="search-bar">
+          <input class="input" id="videos-search" placeholder="Search by title, video ID, or channel ID…">
+          <select class="input" id="videos-filter" style="max-width:170px;">
+            <option value="all">All statuses</option>
+            <option value="published">Published</option>
+            <option value="hidden">Hidden</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="deleted">Deleted</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Video</th><th>Channel ID</th><th>Views</th><th>Likes</th><th>Comments</th><th>Status</th><th></th></tr></thead>
+            <tbody id="videos-tbody"></tbody>
+          </table>
+        </div>
+        <div id="videos-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+      </section>
+
+      <!-- ================= SHORTS ================= -->
+      <section class="section" id="section-shorts">
+        <div class="search-bar">
+          <input class="input" id="shorts-search" placeholder="Search by caption, short ID, or channel ID…">
+          <select class="input" id="shorts-filter" style="max-width:170px;">
+            <option value="all">All statuses</option>
+            <option value="published">Published</option>
+            <option value="hidden">Hidden</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="deleted">Deleted</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Short</th><th>Channel ID</th><th>Views</th><th>Likes</th><th>Comments</th><th>Status</th><th></th></tr></thead>
+            <tbody id="shorts-tbody"></tbody>
+          </table>
+        </div>
+        <div id="shorts-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+      </section>
+
+      <!-- ================= POSTS ================= -->
+      <section class="section" id="section-posts">
+        <div class="search-bar">
+          <input class="input" id="posts-search" placeholder="Search post content or post ID…">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Post</th><th>Channel ID</th><th>Reactions</th><th>Comments</th><th>Status</th><th></th></tr></thead>
+            <tbody id="posts-tbody"></tbody>
+          </table>
+        </div>
+        <div id="posts-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+      </section>
+
+      <!-- ================= COMMENTS ================= -->
+      <section class="section" id="section-comments">
+        <div class="search-bar">
+          <input class="input" id="comments-search" placeholder="Search comment text, video ID, or author…">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Comment</th><th>Video ID</th><th>Author</th><th>Status</th><th></th></tr></thead>
+            <tbody id="comments-tbody"></tbody>
+          </table>
+        </div>
+        <div id="comments-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+      </section>
+
+      <!-- ================= SCHEDULED CONTENT ================= -->
+      <section class="section" id="section-scheduled">
+        <div class="tabs">
+          <div class="tab-btn active" data-tab="sched-videos">Videos</div>
+          <div class="tab-btn" data-tab="sched-shorts">Shorts</div>
+          <div class="tab-btn" data-tab="sched-posts">Posts</div>
+        </div>
+        <div class="tab-pane active" id="tab-sched-videos">
+          <div class="table-wrap"><table><thead><tr><th>Title</th><th>Channel ID</th><th>Scheduled For</th><th></th></tr></thead><tbody id="sched-videos-tbody"></tbody></table></div>
+          <div id="sched-videos-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+        </div>
+        <div class="tab-pane" id="tab-sched-shorts">
+          <div class="table-wrap"><table><thead><tr><th>Caption</th><th>Channel ID</th><th>Scheduled For</th><th></th></tr></thead><tbody id="sched-shorts-tbody"></tbody></table></div>
+          <div id="sched-shorts-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+        </div>
+        <div class="tab-pane" id="tab-sched-posts">
+          <div class="table-wrap"><table><thead><tr><th>Post</th><th>Channel ID</th><th>Scheduled For</th><th></th></tr></thead><tbody id="sched-posts-tbody"></tbody></table></div>
+          <div id="sched-posts-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+        </div>
+      </section>
+
+      <!-- ================= SUBSCRIBERS ================= -->
+      <section class="section" id="section-subscribers">
+        <div class="card">
+          <p class="muted" style="margin-top:0; font-size:12.5px;">Subscriber counters live on each channel record. Open a channel from <b>Channels</b> to adjust its count, or search here.</p>
+          <div class="search-bar" style="margin-top:14px;">
+            <input class="input" id="subs-search" placeholder="Search channel to adjust subscriber count…">
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Channel</th><th>Current Subscribers</th><th>Adjust</th></tr></thead>
+              <tbody id="subs-tbody"></tbody>
+            </table>
+          </div>
+          <div id="subs-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+        </div>
+      </section>
+
+      <!-- ================= UPLOAD CONTROL ================= -->
+      <section class="section" id="section-upload">
+        <div class="card">
+          <div class="settings-row">
+            <div><div class="t">Long Video Upload</div><div class="d">Enable or disable long-video uploads app-wide</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="uploadVideoEnabled"><span class="slider"></span></label>
+          </div>
+          <div class="settings-row">
+            <div><div class="t">Shorts Upload</div><div class="d">Enable or disable Shorts uploads app-wide</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="uploadShortsEnabled"><span class="slider"></span></label>
+          </div>
+          <div class="settings-row">
+            <div><div class="t">Post Creation</div><div class="d">Enable or disable Community Post creation</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="uploadPostsEnabled"><span class="slider"></span></label>
+          </div>
+          <div class="settings-row">
+            <div><div class="t">Short Camera</div><div class="d">Enable or disable the in-app Shorts camera</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="shortCameraEnabled"><span class="slider"></span></label>
+          </div>
+        </div>
+        <div class="section-head"><div><h2>Upload Manager / Queue</h2><p>Global settings only — Admin never touches a user's local device queue directly.</p></div></div>
+        <div class="card">
+          <div class="settings-row">
+            <div><div class="t">Upload System Enabled</div><div class="d">Master switch for the upload subsystem</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="uploadSystemEnabled"><span class="slider"></span></label>
+          </div>
+          <div class="settings-row">
+            <div><div class="t">Automatic Retry</div><div class="d">Whether the client should auto-retry failed uploads</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="uploadAutoRetry"><span class="slider"></span></label>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="t">Maximum Active Uploads</div>
+              <div class="d">Concurrent upload cap the client should respect — requires the app to read this value</div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input class="input" id="maxActiveUploads" style="width:80px; text-align:center;" type="number" min="1">
+              <button class="btn sm primary" id="saveMaxUploads">Save</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= DOWNLOAD CONTROL ================= -->
+      <section class="section" id="section-download">
+        <div class="card">
+          <div class="settings-row">
+            <div><div class="t">Download System</div><div class="d">Master switch for offline downloads</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="downloadEnabled"><span class="slider"></span></label>
+          </div>
+          <div class="settings-row">
+            <div><div class="t">Video Download</div><div class="d">Allow downloading Long Videos</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="videoDownloadEnabled"><span class="slider"></span></label>
+          </div>
+          <div class="settings-row">
+            <div><div class="t">Shorts Download</div><div class="d">Allow downloading Shorts</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="shortDownloadEnabled"><span class="slider"></span></label>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= MONETIZATION STATUS ================= -->
+      <section class="section" id="section-monetization">
+        <div class="search-bar">
+          <input class="input" id="mon-search" placeholder="Search channel monetization applications…">
+          <select class="input" id="mon-filter" style="max-width:170px;">
+            <option value="all">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="active">Active</option>
+            <option value="rejected">Rejected</option>
+            <option value="suspended">Suspended</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Channel</th><th>Subscribers</th><th>Watch Hours</th><th>Status</th><th></th></tr></thead>
+            <tbody id="mon-tbody"></tbody>
+          </table>
+        </div>
+        <div id="mon-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+
+        <div class="section-head"><div><h2>Monetization Eligibility</h2><p>Requirements the existing app can actually evaluate.</p></div></div>
+        <div class="card">
+          <div class="field"><label>Minimum Subscribers</label><input class="input" id="elig-subs" type="number" min="0"></div>
+          <div class="field"><label>Minimum Public Watch Hours</label><input class="input" id="elig-watchhours" type="number" min="0"></div>
+          <button class="btn primary" id="save-eligibility">Save Eligibility Requirements</button>
+        </div>
+      </section>
+
+      <!-- ================= ADS ================= -->
+      <section class="section" id="section-ads">
+        <div class="card">
+          <div class="settings-row">
+            <div><div class="t">Watch Page Ads</div><div class="d">Ads shown on the Long Video watch page</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="watchPageAdsEnabled"><span class="slider"></span></label>
+          </div>
+          <div class="settings-row">
+            <div><div class="t">Shorts Feed Ads</div><div class="d">Ads shown inside the Shorts feed</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="shortsFeedAdsEnabled"><span class="slider"></span></label>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= MEMBERSHIPS ================= -->
+      <section class="section" id="section-memberships">
+        <div class="card">
+          <div class="settings-row">
+            <div><div class="t">Memberships Feature</div><div class="d">Create exclusive memberships for your biggest supporters</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="membershipsEnabled"><span class="slider"></span></label>
+          </div>
+        </div>
+        <div class="section-head"><div><h2>Existing Membership Data</h2><p>Read-only view of membership records already in Firebase.</p></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Channel</th><th>Tier</th><th>Members</th><th>Status</th></tr></thead><tbody id="memberships-tbody"></tbody></table></div>
+        <div id="memberships-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+      </section>
+
+      <!-- ================= SUPERS ================= -->
+      <section class="section" id="section-supers">
+        <div class="card">
+          <div class="settings-row">
+            <div><div class="t">Supers Feature</div><div class="d">Receive fan support through one-time purchases</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="supersEnabled"><span class="slider"></span></label>
+          </div>
+        </div>
+        <div class="section-head"><div><h2>Existing Supers Data</h2><p>Read-only view of Super transactions already in Firebase.</p></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Channel</th><th>From</th><th>Amount</th><th>Date</th></tr></thead><tbody id="supers-tbody"></tbody></table></div>
+        <div id="supers-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+      </section>
+
+      <!-- ================= SHOPPING ================= -->
+      <section class="section" id="section-shopping">
+        <div class="card">
+          <div class="settings-row">
+            <div><div class="t">Shopping Feature</div><div class="d">Recommend products and earn through shopping</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="shoppingEnabled"><span class="slider"></span></label>
+          </div>
+        </div>
+        <div class="section-head"><div><h2>Existing Product Data</h2><p>Read-only view of product listings already in Firebase, if present.</p></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Product</th><th>Channel</th><th>Price</th><th>Status</th></tr></thead><tbody id="shopping-tbody"></tbody></table></div>
+        <div id="shopping-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+      </section>
+
+      <!-- ================= PLATFORM ANALYTICS ================= -->
+      <section class="section" id="section-platform-analytics">
+        <div class="grid grid-4">
+          <div class="card stat-card"><div class="label">Total Views</div><div class="value" id="pa-views">—</div></div>
+          <div class="card stat-card"><div class="label">Total Watch Time (records)</div><div class="value" id="pa-watchtime">—</div></div>
+          <div class="card stat-card"><div class="label">Total Subscribers</div><div class="value" id="pa-subs">—</div></div>
+          <div class="card stat-card"><div class="label">Est. Revenue Records</div><div class="value" id="pa-revenue">—</div></div>
+        </div>
+        <p class="muted" style="font-size:11.5px; margin-top:14px;">Figures are aggregated live from existing Firebase fields. Fields the app doesn't populate show as 0 / no data, never estimated.</p>
+      </section>
+
+      <!-- ================= CHANNEL ANALYTICS ================= -->
+      <section class="section" id="section-channel-analytics">
+        <div class="search-bar">
+          <input class="input" id="ca-search" placeholder="Search a channel to inspect its analytics…">
+        </div>
+        <div id="ca-empty-hint" class="empty-state"><div class="big">◭</div>Search for a channel above to view its Performance (Last 28 Days) data.</div>
+        <div class="card" id="ca-detail" style="display:none;">
+          <div class="grid grid-4">
+            <div class="card tight stat-card"><div class="label">Views (28d)</div><div class="value" id="ca-views" style="font-size:20px;">—</div></div>
+            <div class="card tight stat-card"><div class="label">Watch Time</div><div class="value" id="ca-watchtime" style="font-size:20px;">—</div></div>
+            <div class="card tight stat-card"><div class="label">Subscribers</div><div class="value" id="ca-subs" style="font-size:20px;">—</div></div>
+            <div class="card tight stat-card"><div class="label">Est. Revenue</div><div class="value" id="ca-revenue" style="font-size:20px;">—</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PLATFORM SETTINGS ================= -->
+      <section class="section" id="section-platform-settings">
+        <div class="card">
+          <div class="settings-row">
+            <div><div class="t">Home Feed</div><div class="d">Master switch for the Home feed</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="homeFeedEnabled"><span class="slider"></span></label>
+          </div>
+          <div class="settings-row">
+            <div><div class="t">Long Videos on Home</div><div class="d">Show Long Videos in the Home feed</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="homeVideosEnabled"><span class="slider"></span></label>
+          </div>
+          <div class="settings-row">
+            <div><div class="t">Shorts on Home</div><div class="d">Show the Shorts section in the Home feed</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="homeShortsEnabled"><span class="slider"></span></label>
+          </div>
+          <div class="settings-row">
+            <div><div class="t">Posts on Home</div><div class="d">Show Community Posts in the Home feed</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="homePostsEnabled"><span class="slider"></span></label>
+          </div>
+          <div class="settings-row">
+            <div><div class="t">Search</div><div class="d">Enable in-app search</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="searchEnabled"><span class="slider"></span></label>
+          </div>
+          <div class="settings-row">
+            <div><div class="t">Discover</div><div class="d">Enable the Discover tab</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="discoverEnabled"><span class="slider"></span></label>
+          </div>
+          <div class="settings-row">
+            <div><div class="t">Maintenance Mode</div><div class="d">Requires the app to listen for this flag — see integration note below</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="maintenanceMode"><span class="slider"></span></label>
+          </div>
+          <div class="settings-row">
+            <div><div class="t">Read-only Mode</div><div class="d">Requires the app to listen for this flag — see integration note below</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="readOnlyMode"><span class="slider"></span></label>
+          </div>
+        </div>
+        <p class="muted" style="font-size:11.5px; margin-top:12px;">
+          These toggles write to <span class="mono">admin_control/features</span> in real time. Each one only changes app behavior once the corresponding screen in the Flaynity codebase attaches a listener to it — see §36 / §47 of the spec for the required integration pattern.
+        </p>
+      </section>
+
+      <!-- ================= FEATURE CONTROLS ================= -->
+      <section class="section" id="section-feature-flags">
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Flag</th><th>Path</th><th>State</th></tr></thead>
+              <tbody id="flags-tbody"></tbody>
+            </table>
+          </div>
+          <p class="muted" style="font-size:11.5px; margin-top:12px;">Consolidated view of every flag under <span class="mono">admin_control/features</span>, live.</p>
+        </div>
+      </section>
+
+      <!-- ================= THEME ================= -->
+      <section class="section" id="section-theme">
+        <div class="card">
+          <div class="field">
+            <label>Default Theme</label>
+            <select class="input" id="theme-default">
+              <option value="system">Follow System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <div><div class="t">Allow User Theme Selection</div><div class="d">Let users override the default in their own Profile settings</div></div>
+            <label class="toggle"><input type="checkbox" id="theme-allow-user"><span class="slider"></span></label>
+          </div>
+          <button class="btn primary" id="save-theme" style="margin-top:14px;">Save Theme Settings</button>
+        </div>
+      </section>
+
+      <!-- ================= ADMIN ACCESS ================= -->
+      <section class="section" id="section-admin-access">
+        <div class="card">
+          <div class="field">
+            <label>Grant Admin Access (UID)</label>
+            <div style="display:flex; gap:8px;">
+              <input class="input" id="new-admin-uid" placeholder="Firebase Auth UID">
+              <button class="btn primary" id="grant-admin-btn">Grant</button>
+            </div>
+          </div>
+        </div>
+        <div class="section-head"><div><h2>Authorized Admins</h2><p>Backed by <span class="mono">admins/{uid}</span> — enforce with matching Database Security Rules.</p></div></div>
+        <div class="table-wrap"><table><thead><tr><th>UID</th><th>Granted</th><th></th></tr></thead><tbody id="admins-tbody"></tbody></table></div>
+        <div id="admins-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+      </section>
+
+      <!-- ================= AUDIT LOGS ================= -->
+      <section class="section" id="section-audit-logs">
+        <div class="search-bar">
+          <input class="input" id="audit-search" placeholder="Search by action, target ID, or admin UID…">
+        </div>
+        <div class="card" id="audit-list"></div>
+        <div id="audit-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+      </section>
+
+      <!-- ================= SYSTEM ================= -->
+      <section class="section" id="section-system">
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="flex-between">
+              <div>
+                <div style="font-weight:700; font-size:14px;">Firebase Connection</div>
+                <div class="muted" style="font-size:11.5px; margin-top:2px;">Live via <span class="mono">.info/connected</span></div>
+              </div>
+              <div class="status-pill pulse" id="sys-conn-pill"><span class="blip"></span><span id="sys-conn-label">Connecting…</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="flex-between">
+              <div>
+                <div style="font-weight:700; font-size:14px;">Realtime Listeners</div>
+                <div class="muted" style="font-size:11.5px; margin-top:2px;">Active <span class="mono">onValue()</span> subscriptions</div>
+              </div>
+              <div class="badge ok" id="sys-listener-count">0 active</div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px;">
+          <div style="font-weight:700; font-size:13.5px; margin-bottom:10px;">Firebase Config In Use</div>
+          <div class="mono" style="font-size:11.5px; color:var(--text-dim); word-break:break-all;" id="sys-config-dump">—</div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<div id="modal-layer">
+  <div id="modal-backdrop"></div>
+  <div class="modal-sheet" id="modal-sheet"></div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* ============================================================
+   FLAYNITY MASTER CONTROL — APPLICATION LOGIC
+   Single file. Vanilla JS. Firebase compat SDK.
+   ============================================================ */
+
+/* ---------------------------------------------------------------
+   0. FIREBASE CONFIG
+   Replace with the SAME Firebase project the Flaynity user app
+   already uses. Do not point this at a different project.
+--------------------------------------------------------------- */
+const firebaseConfig = {
+  apiKey:            "AIzaSyCiUTQp_QDSbBIOGJXKI7jJmzQHPu8L14I",
+  authDomain:         "flaynity-app.firebaseapp.com",
+  databaseURL:        "https://flaynity-app-default-rtdb.firebaseio.com",
+  projectId:          "flaynity-app",
+  storageBucket:      "flaynity-app.firebasestorage.app",
+  messagingSenderId:  "587469287255",
+  appId:              "1:587469287255:web:6ec177b0c1c802efc95812"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.database();
+
+/* Existing Flaynity nodes (per spec §2) — reuse, never replace */
+const REF = {
+  channels:      db.ref('channels'),
+  videos:        db.ref('admin_panel/movies/user_uploads'),
+  shorts:        db.ref('admin_panel/movies/shorts'),
+  posts:         db.ref('admin_panel/posts'),
+  comments:      db.ref('movie_comments'),
+  postReactions: db.ref('post_reactions'),
+  memberships:   db.ref('memberships'),
+  supers:        db.ref('supers'),
+  shopping:      db.ref('shopping_products'),
+  monetization:  db.ref('monetization_applications'),
+  // Admin-only, clearly separated (per spec §2)
+  admins:        db.ref('admins'),
+  features:      db.ref('admin_control/features'),
+  settings:      db.ref('admin_control/settings'),
+  eligibility:   db.ref('admin_control/monetization/eligibility'),
+  auditLog:      db.ref('admin_control/audit_log'),
+  connected:     db.ref('.info/connected')
+};
+
+let activeListenerCount = 0;
+function trackListener(ref, event, cb){
+  ref.on(event, cb);
+  activeListenerCount++;
+  updateListenerBadge();
+}
+function updateListenerBadge(){
+  const el = document.getElementById('sys-listener-count');
+  if(el) el.textContent = activeListenerCount + ' active';
+}
+
+/* ---------------------------------------------------------------
+   1. AUTH GUARD — Firebase Authentication + admins/{uid}
+   Frontend gating only; real enforcement lives in Database Rules.
+--------------------------------------------------------------- */
+let currentUser = null;
+
+document.getElementById('login-btn').addEventListener('click', doLogin);
+document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); });
+
+function doLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if(!email || !pass){ errEl.textContent = 'Enter your email and password.'; return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  auth.signInWithEmailAndPassword(email, pass)
+    .catch(err => {
+      errEl.textContent = friendlyAuthError(err);
+      btn.disabled = false; btn.textContent = 'Sign In';
+    });
+}
+
+function friendlyAuthError(err){
+  switch(err.code){
+    case 'auth/invalid-email': return 'That email address looks invalid.';
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential': return 'Incorrect email or password.';
+    case 'auth/too-many-requests': return 'Too many attempts. Try again shortly.';
+    case 'auth/network-request-failed': return 'Network error — check your connection.';
+    default: return 'Authentication Error — ' + (err.message || 'sign-in failed.');
+  }
+}
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+  auth.signOut();
+});
+
+auth.onAuthStateChanged(async user => {
+  if(!user){
+    currentUser = null;
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-btn').disabled = false;
+    document.getElementById('login-btn').textContent = 'Sign In';
+    return;
+  }
+  // Authorization check against admins/{uid}
+  try{
+    const snap = await REF.admins.child(user.uid).get();
+    if(!snap.exists() || snap.val() !== true && !(snap.val() && snap.val().enabled)){
+      document.getElementById('login-error').textContent = 'This account is not authorized for Master Control.';
+      document.getElementById('login-btn').disabled = false;
+      document.getElementById('login-btn').textContent = 'Sign In';
+      await auth.signOut();
+      return;
+    }
+  }catch(e){
+    document.getElementById('login-error').textContent = 'Permission Denied — could not verify admin access.';
+    await auth.signOut();
+    return;
+  }
+  currentUser = user;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('admin-email-label').textContent = user.email || user.uid.slice(0,10);
+  document.getElementById('admin-av').textContent = (user.email || 'A').charAt(0).toUpperCase();
+  bootApp();
+});
+
+/* ---------------------------------------------------------------
+   2. CONNECTION STATUS (spec §44)
+--------------------------------------------------------------- */
+trackListener(REF.connected, 'value', snap => {
+  const isConn = snap.val() === true;
+  ['conn','sys-conn'].forEach(prefix => {
+    const pill = document.getElementById(prefix+'-pill');
+    const label = document.getElementById(prefix+'-label');
+    if(!pill) return;
+    pill.classList.toggle('off', !isConn);
+    label.textContent = isConn ? 'Firebase Connected' : 'Firebase Disconnected';
+  });
+});
+
+/* ---------------------------------------------------------------
+   3. NAVIGATION
+--------------------------------------------------------------- */
+const pageMeta = {
+  dashboard:            ['Dashboard', 'Live overview of the Flaynity platform'],
+  users:                ['Users', 'Manage existing Flaynity accounts'],
+  channels:              ['Channels', 'Manage existing Flaynity channels'],
+  videos:                ['Long Videos', 'Manage existing long-form video content'],
+  shorts:                ['Shorts', 'Manage existing Shorts content'],
+  posts:                 ['Community Posts', 'Manage existing community posts'],
+  comments:              ['Comments', 'Manage existing comments'],
+  scheduled:             ['Scheduled Content', 'Content awaiting publish'],
+  subscribers:           ['Subscribers', 'Adjust existing subscriber counts'],
+  upload:                ['Upload Control', 'Control existing upload systems'],
+  download:              ['Download Control', 'Control existing download systems'],
+  monetization:          ['Monetization Status', 'Manage existing monetization applications'],
+  ads:                   ['Ads', 'Watch Page Ads & Shorts Feed Ads'],
+  memberships:           ['Memberships', 'Existing membership feature'],
+  supers:                ['Supers', 'Existing fan-support feature'],
+  shopping:              ['Shopping', 'Existing shopping feature'],
+  'platform-analytics':  ['Platform Analytics', 'Aggregated from real Firebase data'],
+  'channel-analytics':   ['Channel Analytics', 'Per-channel performance'],
+  'platform-settings':   ['Platform Controls', 'Feed, search & maintenance switches'],
+  'feature-flags':       ['Feature Controls', 'All admin_control/features flags'],
+  theme:                 ['Theme Control', 'Existing Light / Dark theme system'],
+  'admin-access':        ['Admin Access', 'Who can use Master Control'],
+  'audit-logs':          ['Audit Logs', 'Every sensitive admin action'],
+  system:                ['Firebase Status', 'Connection & listener health']
+};
+
+document.querySelectorAll('.nav-item[data-section]').forEach(item => {
+  item.addEventListener('click', () => goToSection(item.dataset.section));
+});
+function goToSection(id){
+  document.querySelectorAll('.nav-item[data-section]').forEach(i => i.classList.toggle('active', i.dataset.section === id));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById('section-' + id);
+  if(target) target.classList.add('active');
+  const meta = pageMeta[id];
+  if(meta){
+    document.getElementById('page-title').textContent = meta[0];
+    document.getElementById('page-desc').textContent = meta[1];
+  }
+  closeSidebarMobile();
+}
+document.getElementById('hamburger').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('show');
+});
+document.getElementById('sidebar-overlay').addEventListener('click', closeSidebarMobile);
+function closeSidebarMobile(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const group = btn.parentElement;
+    group.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const pane = document.getElementById('tab-' + btn.dataset.tab);
+    pane.parentElement.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    pane.classList.add('active');
+  });
+});
+
+/* ---------------------------------------------------------------
+   4. TOASTS (spec §45)
+--------------------------------------------------------------- */
+function toast(type, title, msg){
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type === 'ok' ? 'ok' : 'err');
+  el.innerHTML = `<div class="ic">${type==='ok' ? '✓' : '✕'}</div><div class="msg"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(msg||'')}</span></div>`;
+  wrap.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform='translateX(16px)'; el.style.transition='all .2s'; setTimeout(()=>el.remove(),200); }, 3600);
+}
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtNum(n){
+  if(n === null || n === undefined || isNaN(n)) return '0';
+  return Number(n).toLocaleString();
+}
+function fmtDate(ts){
+  if(!ts) return '—';
+  try{ return new Date(ts).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}); }catch(e){ return '—'; }
+}
+
+/* ---------------------------------------------------------------
+   5. CONFIRMATION MODAL (spec §46) + generic detail sheet
+--------------------------------------------------------------- */
+const modalLayer = document.getElementById('modal-layer');
+const modalSheet  = document.getElementById('modal-sheet');
+document.getElementById('modal-backdrop').addEventListener('click', closeModal);
+function closeModal(){ modalLayer.classList.remove('show'); modalSheet.innerHTML=''; }
+
+function confirmAction({title, target, current, next, reasonRequired=true, dangerLabel='Confirm', onConfirm}){
+  modalSheet.innerHTML = `
+    <div class="handle"></div>
+    <h3>${escapeHtml(title)}</h3>
+    <div class="modal-sub">This action is logged to the Audit Log.</div>
+    <div class="kv"><span class="k">Target</span><span class="v">${escapeHtml(target)}</span></div>
+    ${current !== undefined ? `<div class="kv"><span class="k">Current Value</span><span class="v">${escapeHtml(current)}</span></div>` : ''}
+    ${next !== undefined ? `<div class="kv"><span class="k">New Value</span><span class="v">${escapeHtml(next)}</span></div>` : ''}
+    <div class="field" style="margin-top:14px;">
+      <label>Reason ${reasonRequired ? '(required)' : '(optional)'}</label>
+      <textarea class="input" id="confirm-reason" placeholder="Why is this change being made?"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="confirm-cancel">Cancel</button>
+      <button class="btn danger" id="confirm-go">${escapeHtml(dangerLabel)}</button>
+    </div>
+  `;
+  modalLayer.classList.add('show');
+  document.getElementById('confirm-cancel').addEventListener('click', closeModal);
+  document.getElementById('confirm-go').addEventListener('click', () => {
+    const reason = document.getElementById('confirm-reason').value.trim();
+    if(reasonRequired && !reason){ toast('err','Reason Required','Please explain this action before confirming.'); return; }
+    closeModal();
+    onConfirm(reason);
+  });
+}
+
+/* ---------------------------------------------------------------
+   6. AUDIT LOG (spec §37)
+--------------------------------------------------------------- */
+function logAction(action, targetType, targetId, oldValue, newValue, reason){
+  const entry = {
+    adminUid: currentUser ? currentUser.uid : 'unknown',
+    adminEmail: currentUser ? (currentUser.email || null) : null,
+    action, targetType, targetId,
+    oldValue: oldValue === undefined ? null : oldValue,
+    newValue: newValue === undefined ? null : newValue,
+    reason: reason || null,
+    timestamp: firebase.database.ServerValue.TIMESTAMP
+  };
+  return REF.auditLog.push(entry).catch(e => console.error('Audit log write failed', e));
+}
+
+/* Generic safe update wrapper — always confirms result before toasting success (spec §45) */
+function safeUpdate(ref, data, {successMsg, errorMsg} = {}){
+  return ref.update(data).then(() => {
+    toast('ok','Updated Successfully', successMsg || '');
+    return true;
+  }).catch(err => {
+    toast('err', mapFirebaseError(err), errorMsg || '');
+    return false;
+  });
+}
+function safeSet(ref, val, opts){
+  return ref.set(val).then(() => { toast('ok','Updated Successfully', opts && opts.successMsg || ''); return true; })
+    .catch(err => { toast('err', mapFirebaseError(err), opts && opts.errorMsg || ''); return false; });
+}
+function safeTransaction(ref, fn, opts){
+  return ref.transaction(fn).then(res => {
+    if(!res.committed){ toast('err','Update Failed', 'Transaction was not committed.'); return null; }
+    toast('ok','Updated Successfully', opts && opts.successMsg || '');
+    return res.snapshot.val();
+  }).catch(err => { toast('err', mapFirebaseError(err), opts && opts.errorMsg || ''); return null; });
+}
+function mapFirebaseError(err){
+  if(!err || !err.code) return 'Update Failed';
+  if(err.code.includes('PERMISSION_DENIED') || err.message?.includes('permission_denied')) return 'Permission Denied';
+  if(err.code === 'auth/network-request-failed') return 'Network Error';
+  return 'Update Failed';
+}
+
+/* ---------------------------------------------------------------
+   7. BOOT — wire up every section once authenticated
+--------------------------------------------------------------- */
+let booted = false;
+function bootApp(){
+  if(booted) return; booted = true;
+  document.getElementById('sys-config-dump').textContent =
+    'projectId: ' + firebaseConfig.projectId + ' · databaseURL: ' + firebaseConfig.databaseURL;
+
+  initDashboard();
+  initUsersAndChannels();
+  initVideos();
+  initShorts();
+  initPosts();
+  initComments();
+  initScheduled();
+  initSubscribers();
+  initFeatureFlags();
+  initMaxUploads();
+  initMonetization();
+  initEligibility();
+  initReadOnlyLists('memberships', REF.memberships, ['name','channelId','tier','members','status'], memRow);
+  initReadOnlyLists('supers', REF.supers, null, null);
+  initReadOnlyLists('shopping', REF.shopping, null, null);
+  initPlatformAnalytics();
+  initChannelAnalytics();
+  initTheme();
+  initAdminAccess();
+  initAuditLogs();
+
+  goToSection('dashboard');
+}
+
+/* =========================================================
+   DASHBOARD  (spec §4)
+   ========================================================= */
+let rawChannels = {}, rawVideos = {}, rawShorts = {}, rawPosts = {}, rawComments = {};
+
+function initDashboard(){
+  trackListener(REF.channels, 'value', snap => { rawChannels = snap.val() || {}; recomputeDashboard(); renderChannelsTable(); renderUsersTable(); renderSubsTable(); });
+  trackListener(REF.videos, 'value', snap => { rawVideos = snap.val() || {}; recomputeDashboard(); renderVideosTable(); renderScheduled(); });
+  trackListener(REF.shorts, 'value', snap => { rawShorts = snap.val() || {}; recomputeDashboard(); renderShortsTable(); renderScheduled(); });
+  trackListener(REF.posts, 'value', snap => { rawPosts = snap.val() || {}; recomputeDashboard(); renderPostsTable(); renderScheduled(); });
+  trackListener(REF.comments, 'value', snap => { rawComments = snap.val() || {}; recomputeDashboard(); renderCommentsTable(); });
+
+  document.querySelectorAll('.range-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      recomputeDashboard();
+    });
+  });
+}
+
+function recomputeDashboard(){
+  const channels = Object.values(rawChannels);
+  const videos   = Object.values(rawVideos);
+  const shorts   = Object.values(rawShorts);
+  const posts    = Object.values(rawPosts);
+  const comments = Object.values(rawComments);
+
+  set('stat-users', channels.length);
+  set('stat-channels', channels.length);
+  set('stat-videos', videos.length);
+  set('stat-shorts', shorts.length);
+  set('stat-posts', posts.length);
+
+  const sum = (arr, field) => arr.reduce((a,v) => a + (Number(v && v[field]) || 0), 0);
+  const totalViews = sum(videos,'views') + sum(shorts,'views');
+  const totalLikes = sum(videos,'likes') + sum(shorts,'likes');
+  set('stat-views', totalViews);
+  set('stat-likes', totalLikes);
+  set('stat-comments', comments.length);
+  set('stat-subs', sum(channels,'subscribers'));
+
+  const isPublished = v => (v.status||v.visibility) === 'published' || (v.status||v.visibility) === 'public';
+  const isScheduled = v => !!v.scheduledPublishTime && v.scheduledPublishTime > Date.now();
+  set('stat-published', videos.filter(isPublished).length + shorts.filter(isPublished).length + posts.filter(isPublished).length);
+  set('stat-scheduled', videos.filter(isScheduled).length + shorts.filter(isScheduled).length + posts.filter(isScheduled).length);
+  set('stat-monetized', channels.filter(c => c.monetizationStatus === 'active').length);
+
+  // growth
+  const days = Number(document.querySelector('.range-btn.active')?.dataset.days || 7);
+  const since = Date.now() - days*24*60*60*1000;
+  const inRange = (v) => (Number(v.createdAt || v.uploadTime || v.timestamp || 0)) >= since;
+  const gC = channels.filter(inRange).length;
+  const gV = videos.filter(inRange).length;
+  const gS = shorts.filter(inRange).length;
+  const gP = posts.filter(inRange).length;
+  set('growth-channels', gC); set('growth-videos', gV); set('growth-shorts', gS); set('growth-posts', gP);
+  const anyGrowth = gC+gV+gS+gP > 0;
+  document.getElementById('growth-empty').style.display = anyGrowth ? 'none' : 'block';
+  document.getElementById('growth-body').style.display = anyGrowth ? 'grid' : 'none';
+}
+function set(id, val){ const el = document.getElementById(id); if(el) el.textContent = fmtNum(val); }
+
+/* =========================================================
+   USERS + CHANNELS  (spec §5, §6)
+   ========================================================= */
+function initUsersAndChannels(){
+  document.getElementById('users-search').addEventListener('input', renderUsersTable);
+  document.getElementById('users-filter').addEventListener('change', renderUsersTable);
+  document.getElementById('channels-search').addEventListener('input', renderChannelsTable);
+  document.getElementById('channels-filter').addEventListener('change', renderChannelsTable);
+}
+
+function renderUsersTable(){
+  const q = (document.getElementById('users-search').value||'').toLowerCase();
+  const filter = document.getElementById('users-filter').value;
+  const rows = Object.entries(rawChannels).filter(([id,c]) => {
+    const status = c.userStatus || c.status || 'active';
+    if(filter !== 'all' && status !== filter) return false;
+    if(!q) return true;
+    return (c.channelName||'').toLowerCase().includes(q) || id.toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q);
+  });
+  const tbody = document.getElementById('users-tbody');
+  tbody.innerHTML = '';
+  document.getElementById('users-empty').style.display = rows.length ? 'none' : 'block';
+  rows.forEach(([id,c]) => {
+    const status = c.userStatus || c.status || 'active';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="avatar-sm">${escapeHtml((c.channelName||'?').charAt(0).toUpperCase())}</span>
+        <span class="cell-main">${escapeHtml(c.channelName||'Unnamed')}</span>
+        <div class="cell-sub">${escapeHtml(c.email||'')}</div></td>
+      <td class="id-mono">${escapeHtml(id)}</td>
+      <td>${fmtDate(c.joinedDate||c.createdAt)}</td>
+      <td>${fmtNum(c.subscribers)}</td>
+      <td>${fmtNum(c.videoCount||0)}</td>
+      <td>${statusBadge(status)}</td>
+      <td class="btn-row">
+        <button class="btn sm" data-view-user="${id}">View</button>
+        ${status==='banned'
+          ? `<button class="btn sm ok" data-unban="${id}">Unban</button>`
+          : `<button class="btn sm danger" data-ban="${id}">Ban</button>`}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-view-user]').forEach(b => b.addEventListener('click', () => openUserDetail(b.dataset.viewUser)));
+  tbody.querySelectorAll('[data-ban]').forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.ban;
+    confirmAction({title:'Ban User', target: rawChannels[id]?.channelName || id, current:'active', next:'banned', dangerLabel:'Ban User',
+      onConfirm: reason => {
+        safeUpdate(REF.channels.child(id), {userStatus:'banned'}, {successMsg:'User banned.'}).then(ok => {
+          if(ok) logAction('Ban User','user',id,'active','banned',reason);
+        });
+      }});
+  }));
+  tbody.querySelectorAll('[data-unban]').forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.unban;
+    confirmAction({title:'Unban User', target: rawChannels[id]?.channelName || id, current:'banned', next:'active', dangerLabel:'Unban User', reasonRequired:false,
+      onConfirm: reason => {
+        safeUpdate(REF.channels.child(id), {userStatus:'active'}, {successMsg:'User unbanned.'}).then(ok => {
+          if(ok) logAction('Unban User','user',id,'banned','active',reason);
+        });
+      }});
+  }));
+}
+
+function statusBadge(status){
+  const map = { active:'ok', banned:'danger', disabled:'warn', published:'ok', hidden:'warn', deleted:'danger', scheduled:'info', pending:'warn', rejected:'danger', suspended:'danger', visible:'ok' };
+  return `<span class="badge ${map[status]||'neutral'}">${escapeHtml(status)}</span>`;
+}
+
+function openUserDetail(id){
+  const c = rawChannels[id] || {};
+  modalSheet.innerHTML = `
+    <div class="handle"></div>
+    <h3>${escapeHtml(c.channelName||'User')}</h3>
+    <div class="modal-sub">${escapeHtml(id)}</div>
+    <div class="kv"><span class="k">Email</span><span class="v">${escapeHtml(c.email||'—')}</span></div>
+    <div class="kv"><span class="k">Joined</span><span class="v">${fmtDate(c.joinedDate||c.createdAt)}</span></div>
+    <div class="kv"><span class="k">Subscribers</span><span class="v">${fmtNum(c.subscribers)}</span></div>
+    <div class="kv"><span class="k">Videos</span><span class="v">${fmtNum(c.videoCount||0)}</span></div>
+    <div class="kv"><span class="k">Status</span><span class="v">${escapeHtml(c.userStatus||c.status||'active')}</span></div>
+    <div class="modal-actions"><button class="btn" id="close-user-detail">Close</button></div>
+  `;
+  modalLayer.classList.add('show');
+  document.getElementById('close-user-detail').addEventListener('click', closeModal);
+}
+
+function renderChannelsTable(){
+  const q = (document.getElementById('channels-search').value||'').toLowerCase();
+  const filter = document.getElementById('channels-filter').value;
+  const rows = Object.entries(rawChannels).filter(([id,c]) => {
+    const vis = c.visibility || 'visible';
+    if(filter !== 'all' && vis !== filter) return false;
+    if(!q) return true;
+    return (c.channelName||'').toLowerCase().includes(q) || (c.handle||'').toLowerCase().includes(q);
+  });
+  const tbody = document.getElementById('channels-tbody');
+  tbody.innerHTML = '';
+  document.getElementById('channels-empty').style.display = rows.length ? 'none' : 'block';
+  rows.forEach(([id,c]) => {
+    const vis = c.visibility || 'visible';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="avatar-sm">${escapeHtml((c.channelName||'?').charAt(0).toUpperCase())}</span><span class="cell-main">${escapeHtml(c.channelName||'Unnamed')}</span></td>
+      <td>${escapeHtml(c.handle||'—')}</td>
+      <td>${escapeHtml(c.category||'—')}</td>
+      <td>${fmtNum(c.subscribers)}</td>
+      <td>${statusBadge(vis)}</td>
+      <td class="btn-row">
+        ${vis==='hidden'
+          ? `<button class="btn sm ok" data-restore-ch="${id}">Restore</button>`
+          : `<button class="btn sm warn" data-hide-ch="${id}">Hide</button>`}
+        ${(c.status==='disabled')
+          ? `<button class="btn sm ok" data-enable-ch="${id}">Enable</button>`
+          : `<button class="btn sm danger" data-disable-ch="${id}">Disable</button>`}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-hide-ch]').forEach(b => b.addEventListener('click', () => channelVisibility(b.dataset.hideCh,'hidden')));
+  tbody.querySelectorAll('[data-restore-ch]').forEach(b => b.addEventListener('click', () => channelVisibility(b.dataset.restoreCh,'visible')));
+  tbody.querySelectorAll('[data-disable-ch]').forEach(b => b.addEventListener('click', () => channelStatus(b.dataset.disableCh,'disabled')));
+  tbody.querySelectorAll('[data-enable-ch]').forEach(b => b.addEventListener('click', () => channelStatus(b.dataset.enableCh,'active')));
+}
+function channelVisibility(id, next){
+  const name = rawChannels[id]?.channelName || id;
+  confirmAction({title: next==='hidden'?'Hide Channel':'Restore Channel', target:name, current: rawChannels[id]?.visibility||'visible', next, dangerLabel:'Confirm', reasonRequired: next==='hidden',
+    onConfirm: reason => safeUpdate(REF.channels.child(id), {visibility:next}).then(ok => { if(ok) logAction('Channel Visibility','channel',id,rawChannels[id]?.visibility||'visible',next,reason); })});
+}
+function channelStatus(id, next){
+  const name = rawChannels[id]?.channelName || id;
+  confirmAction({title: next==='disabled'?'Disable Channel':'Enable Channel', target:name, current: rawChannels[id]?.status||'active', next, dangerLabel:'Confirm', reasonRequired: next==='disabled',
+    onConfirm: reason => safeUpdate(REF.channels.child(id), {status:next}).then(ok => { if(ok) logAction('Channel Status','channel',id,rawChannels[id]?.status||'active',next,reason); })});
+}
+
+/* =========================================================
+   LONG VIDEOS  (spec §7, §8, §9)
+   ========================================================= */
+function initVideos(){
+  document.getElementById('videos-search').addEventListener('input', renderVideosTable);
+  document.getElementById('videos-filter').addEventListener('change', renderVideosTable);
+}
+function renderVideosTable(){
+  renderContentTable({
+    dataMap: rawVideos, ref: REF.videos,
+    searchId:'videos-search', filterId:'videos-filter', tbodyId:'videos-tbody', emptyId:'videos-empty',
+    titleField:'title', targetType:'video'
+  });
+}
+
+/* =========================================================
+   SHORTS  (spec §10, §11)
+   ========================================================= */
+function initShorts(){
+  document.getElementById('shorts-search').addEventListener('input', renderShortsTable);
+  document.getElementById('shorts-filter').addEventListener('change', renderShortsTable);
+}
+function renderShortsTable(){
+  renderContentTable({
+    dataMap: rawShorts, ref: REF.shorts,
+    searchId:'shorts-search', filterId:'shorts-filter', tbodyId:'shorts-tbody', emptyId:'shorts-empty',
+    titleField:'caption', targetType:'short'
+  });
+}
+
+/* Shared renderer for Videos & Shorts — same fields/actions per spec §7-§11 */
+function renderContentTable({dataMap, ref, searchId, filterId, tbodyId, emptyId, titleField, targetType}){
+  const q = (document.getElementById(searchId).value||'').toLowerCase();
+  const filter = document.getElementById(filterId).value;
+  const rows = Object.entries(dataMap||{}).filter(([id,v]) => {
+    const status = v.status || (v.scheduledPublishTime > Date.now() ? 'scheduled' : 'published');
+    if(filter !== 'all' && status !== filter) return false;
+    if(!q) return true;
+    return (v[titleField]||'').toLowerCase().includes(q) || id.toLowerCase().includes(q) || (v.channelId||'').toLowerCase().includes(q);
+  });
+  const tbody = document.getElementById(tbodyId);
+  tbody.innerHTML = '';
+  document.getElementById(emptyId).style.display = rows.length ? 'none' : 'block';
+  rows.forEach(([id,v]) => {
+    const status = v.status || (v.scheduledPublishTime > Date.now() ? 'scheduled' : 'published');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="cell-main">${escapeHtml(v[titleField]||'Untitled')}</span><div class="cell-sub id-mono">${escapeHtml(id)}</div></td>
+      <td class="id-mono">${escapeHtml(v.channelId||'—')}</td>
+      <td>${counterCell(id,'views',v.views||0,ref,targetType)}</td>
+      <td>${counterCell(id,'likes',v.likes||0,ref,targetType)}</td>
+      <td>${fmtNum(v.commentCount||0)}</td>
+      <td>${statusBadge(status)}</td>
+      <td class="btn-row">
+        <button class="btn sm" data-edit="${id}">Edit</button>
+        ${status==='hidden'
+          ? `<button class="btn sm ok" data-pub="${id}">Publish</button>`
+          : `<button class="btn sm warn" data-unpub="${id}">Unpublish</button>`}
+        ${status==='deleted'
+          ? `<button class="btn sm ok" data-restore="${id}">Restore</button>`
+          : `<button class="btn sm danger" data-del="${id}">Delete</button>`}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  wireContentRowActions(tbody, dataMap, ref, titleField, targetType);
+}
+
+function counterCell(id, field, val, ref, targetType){
+  return `<div class="counter-ctrl">
+      <button class="btn sm icon-only" data-counter="dec" data-id="${id}" data-field="${field}">−</button>
+      <span class="num" data-num="${id}-${field}">${fmtNum(val)}</span>
+      <button class="btn sm icon-only" data-counter="inc" data-id="${id}" data-field="${field}">+</button>
+      <button class="btn sm icon-only" data-counter="set" data-id="${id}" data-field="${field}">✎</button>
+    </div>`;
+}
+
+function wireContentRowActions(tbody, dataMap, ref, titleField, targetType){
+  tbody.querySelectorAll('[data-counter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id, field = btn.dataset.field, action = btn.dataset.counter;
+      const current = Number((dataMap[id]||{})[field]) || 0;
+      if(action === 'set'){
+        modalSheet.innerHTML = `
+          <div class="handle"></div>
+          <h3>Set ${escapeHtml(field)}</h3>
+          <div class="modal-sub">${escapeHtml((dataMap[id]||{})[titleField]||id)}</div>
+          <div class="field"><label>New Value</label><input class="input" id="set-val" type="number" min="0" value="${current}"></div>
+          <div class="field"><label>Reason (required)</label><textarea class="input" id="set-reason"></textarea></div>
+          <div class="modal-actions"><button class="btn" id="set-cancel">Cancel</button><button class="btn primary" id="set-go">Save</button></div>`;
+        modalLayer.classList.add('show');
+        document.getElementById('set-cancel').addEventListener('click', closeModal);
+        document.getElementById('set-go').addEventListener('click', () => {
+          const next = Number(document.getElementById('set-val').value);
+          const reason = document.getElementById('set-reason').value.trim();
+          if(!reason){ toast('err','Reason Required',''); return; }
+          if(isNaN(next) || next < 0){ toast('err','Invalid Data','Enter a non-negative number.'); return; }
+          closeModal();
+          safeUpdate(ref.child(id), {[field]: next}, {successMsg:`${field} set to ${next}.`}).then(ok => { if(ok) logAction(`Set ${field}`, targetType, id, current, next, reason); });
+        });
+        return;
+      }
+      const delta = action === 'inc' ? 1 : -1;
+      const label = action === 'inc' ? 'Increase' : 'Decrease';
+      confirmAction({title:`${label} ${field}`, target:(dataMap[id]||{})[titleField]||id, current, next: Math.max(0,current+delta), dangerLabel:'Confirm', reasonRequired:false,
+        onConfirm: reason => {
+          safeTransaction(ref.child(id).child(field), curr => Math.max(0,(curr||0)+delta), {successMsg:`${field} ${label.toLowerCase()}d.`})
+            .then(newVal => { if(newVal !== null) logAction(`${label} ${field}`, targetType, id, current, newVal, reason); });
+        }});
+    });
+  });
+
+  tbody.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEditContent(b.dataset.edit, dataMap, ref, titleField, targetType)));
+  tbody.querySelectorAll('[data-pub]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.pub, dataMap, ref, targetType, 'published')));
+  tbody.querySelectorAll('[data-unpub]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.unpub, dataMap, ref, targetType, 'hidden')));
+  tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.del, dataMap, ref, targetType, 'deleted', true)));
+  tbody.querySelectorAll('[data-restore]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.restore, dataMap, ref, targetType, 'published')));
+}
+
+function setContentStatus(id, dataMap, ref, targetType, next, dangerous){
+  const item = dataMap[id] || {};
+  const current = item.status || 'published';
+  confirmAction({title:`${next.charAt(0).toUpperCase()+next.slice(1)} ${targetType}`, target: item.title||item.caption||item.content||id, current, next, dangerLabel:'Confirm', reasonRequired: !!dangerous,
+    onConfirm: reason => safeUpdate(ref.child(id), {status:next}).then(ok => { if(ok) logAction(`${targetType} status → ${next}`, targetType, id, current, next, reason); })});
+}
+
+function openEditContent(id, dataMap, ref, titleField, targetType){
+  const item = dataMap[id] || {};
+  modalSheet.innerHTML = `
+    <div class="handle"></div>
+    <h3>Edit ${escapeHtml(targetType)}</h3>
+    <div class="modal-sub id-mono">${escapeHtml(id)}</div>
+    <div class="field"><label>${escapeHtml(titleField)}</label><input class="input" id="edit-title" value="${escapeHtml(item[titleField]||'')}"></div>
+    <div class="field"><label>Description</label><textarea class="input" id="edit-desc">${escapeHtml(item.description||'')}</textarea></div>
+    <div class="modal-actions"><button class="btn" id="edit-cancel">Cancel</button><button class="btn primary" id="edit-save">Save</button></div>`;
+  modalLayer.classList.add('show');
+  document.getElementById('edit-cancel').addEventListener('click', closeModal);
+  document.getElementById('edit-save').addEventListener('click', () => {
+    const newTitle = document.getElementById('edit-title').value.trim();
+    const newDesc = document.getElementById('edit-desc').value.trim();
+    if(!newTitle){ toast('err','Missing Data','Title cannot be empty.'); return; }
+    closeModal();
+    safeUpdate(ref.child(id), {[titleField]:newTitle, description:newDesc}, {successMsg:'Metadata updated.'})
+      .then(ok => { if(ok) logAction('Edit Metadata', targetType, id, item[titleField], newTitle, 'Metadata edit via Admin Panel'); });
+  });
+}
+
+/* =========================================================
+   COMMUNITY POSTS  (spec §12, §13)
+   ========================================================= */
+function initPosts(){
+  document.getElementById('posts-search').addEventListener('input', renderPostsTable);
+}
+function renderPostsTable(){
+  const q = (document.getElementById('posts-search').value||'').toLowerCase();
+  const rows = Object.entries(rawPosts).filter(([id,p]) => !q || (p.content||'').toLowerCase().includes(q) || id.toLowerCase().includes(q));
+  const tbody = document.getElementById('posts-tbody');
+  tbody.innerHTML = '';
+  document.getElementById('posts-empty').style.display = rows.length ? 'none' : 'block';
+  rows.forEach(([id,p]) => {
+    const status = p.status || 'published';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="cell-main">${escapeHtml((p.content||'').slice(0,60) || 'Untitled post')}</span><div class="cell-sub id-mono">${escapeHtml(id)}</div></td>
+      <td class="id-mono">${escapeHtml(p.channelId||'—')}</td>
+      <td>${fmtNum(p.reactionCount||0)}</td>
+      <td>${fmtNum(p.commentCount||0)}</td>
+      <td>${statusBadge(status)}</td>
+      <td class="btn-row">
+        ${status==='hidden' ? `<button class="btn sm ok" data-pub="${id}">Publish</button>` : `<button class="btn sm warn" data-hide="${id}">Hide</button>`}
+        ${status==='deleted' ? `<button class="btn sm ok" data-restore="${id}">Restore</button>` : `<button class="btn sm danger" data-del="${id}">Delete</button>`}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-pub]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.pub, rawPosts, REF.posts, 'post', 'published')));
+  tbody.querySelectorAll('[data-hide]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.hide, rawPosts, REF.posts, 'post', 'hidden')));
+  tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.del, rawPosts, REF.posts, 'post', 'deleted', true)));
+  tbody.querySelectorAll('[data-restore]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.restore, rawPosts, REF.posts, 'post', 'published')));
+}
+
+/* =========================================================
+   COMMENTS  (spec §14)
+   ========================================================= */
+function initComments(){
+  document.getElementById('comments-search').addEventListener('input', renderCommentsTable);
+}
+function renderCommentsTable(){
+  const q = (document.getElementById('comments-search').value||'').toLowerCase();
+  const rows = Object.entries(rawComments).filter(([id,c]) => !q || (c.text||'').toLowerCase().includes(q) || (c.videoId||'').toLowerCase().includes(q) || (c.authorName||'').toLowerCase().includes(q));
+  const tbody = document.getElementById('comments-tbody');
+  tbody.innerHTML = '';
+  document.getElementById('comments-empty').style.display = rows.length ? 'none' : 'block';
+  rows.forEach(([id,c]) => {
+    const status = c.status || 'visible';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml((c.text||'').slice(0,80))}</td>
+      <td class="id-mono">${escapeHtml(c.videoId||'—')}</td>
+      <td>${escapeHtml(c.authorName||'—')}</td>
+      <td>${statusBadge(status)}</td>
+      <td class="btn-row">
+        ${status==='hidden' ? `<button class="btn sm ok" data-restore="${id}">Restore</button>` : `<button class="btn sm warn" data-hide="${id}">Hide</button>`}
+        <button class="btn sm danger" data-del="${id}">Delete</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-hide]').forEach(b => b.addEventListener('click', () => commentStatus(b.dataset.hide,'hidden')));
+  tbody.querySelectorAll('[data-restore]').forEach(b => b.addEventListener('click', () => commentStatus(b.dataset.restore,'visible')));
+  tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.del;
+    confirmAction({title:'Delete Comment', target:(rawComments[id]||{}).text||id, current:'visible', next:'deleted', dangerLabel:'Delete',
+      onConfirm: reason => REF.comments.child(id).remove().then(() => { toast('ok','Updated Successfully','Comment deleted.'); logAction('Delete Comment','comment',id,'visible','deleted',reason); }).catch(err => toast('err', mapFirebaseError(err),'')) });
+  }));
+}
+function commentStatus(id, next){
+  const current = (rawComments[id]||{}).status || 'visible';
+  safeUpdate(REF.comments.child(id), {status:next}).then(ok => { if(ok) logAction('Comment status → '+next,'comment',id,current,next,''); });
+}
+
+/* =========================================================
+   SCHEDULED CONTENT  (spec §34)
+   ========================================================= */
+function initScheduled(){ /* rendered reactively from video/short/post listeners */ }
+function renderScheduled(){
+  renderScheduledList(rawVideos, 'sched-videos-tbody', 'sched-videos-empty', 'title', REF.videos, 'video');
+  renderScheduledList(rawShorts, 'sched-shorts-tbody', 'sched-shorts-empty', 'caption', REF.shorts, 'short');
+  renderScheduledList(rawPosts, 'sched-posts-tbody', 'sched-posts-empty', 'content', REF.posts, 'post');
+}
+function renderScheduledList(dataMap, tbodyId, emptyId, titleField, ref, targetType){
+  const rows = Object.entries(dataMap||{}).filter(([,v]) => v.scheduledPublishTime && v.scheduledPublishTime > Date.now());
+  const tbody = document.getElementById(tbodyId);
+  tbody.innerHTML = '';
+  document.getElementById(emptyId).style.display = rows.length ? 'none' : 'block';
+  rows.forEach(([id,v]) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml((v[titleField]||'').slice(0,60)||'Untitled')}</td><td class="id-mono">${escapeHtml(v.channelId||'—')}</td><td>${fmtDate(v.scheduledPublishTime)}</td>
+      <td class="btn-row"><button class="btn sm ok" data-now="${id}">Publish Now</button><button class="btn sm warn" data-cancel="${id}">Cancel Schedule</button></td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-now]').forEach(b => b.addEventListener('click', () => safeUpdate(ref.child(b.dataset.now), {status:'published', scheduledPublishTime:null}).then(ok => ok && logAction('Publish Now',targetType,b.dataset.now,'scheduled','published',''))));
+  tbody.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', () => safeUpdate(ref.child(b.dataset.cancel), {scheduledPublishTime:null}).then(ok => ok && logAction('Cancel Schedule',targetType,b.dataset.cancel,'scheduled','unscheduled',''))));
+}
+
+/* =========================================================
+   SUBSCRIBERS  (spec §15)
+   ========================================================= */
+function initSubscribers(){
+  document.getElementById('subs-search').addEventListener('input', renderSubsTable);
+}
+function renderSubsTable(){
+  const q = (document.getElementById('subs-search').value||'').toLowerCase();
+  const rows = Object.entries(rawChannels).filter(([id,c]) => !q || (c.channelName||'').toLowerCase().includes(q));
+  const tbody = document.getElementById('subs-tbody');
+  tbody.innerHTML = '';
+  document.getElementById('subs-empty').style.display = rows.length ? 'none' : 'block';
+  rows.slice(0,200).forEach(([id,c]) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml(c.channelName||id)}</td><td>${fmtNum(c.subscribers||0)}</td>
+      <td>${counterCell(id,'subscribers',c.subscribers||0,REF.channels,'channel')}</td>`;
+    tbody.appendChild(tr);
+  });
+  wireContentRowActions(tbody, rawChannels, REF.channels, 'channelName', 'channel');
+}
+
+/* =========================================================
+   FEATURE FLAGS — Upload / Download / Feed / Search / Ads /
+   Memberships / Supers / Shopping / Maintenance
+   All live under admin_control/features (spec §16-§29, §36)
+   ========================================================= */
+let currentFeatures = {};
+function initFeatureFlags(){
+  document.querySelectorAll('[data-flag]').forEach(input => {
+    input.addEventListener('change', () => {
+      const flag = input.dataset.flag;
+      const next = input.checked;
+      const current = !!currentFeatures[flag];
+      safeUpdate(REF.features, {[flag]: next}, {successMsg: `${flag} ${next ? 'enabled' : 'disabled'}.`})
+        .then(ok => { if(ok) logAction(`Feature flag: ${flag}`, 'feature', flag, current, next, ''); else input.checked = current; });
+    });
+  });
+  trackListener(REF.features, 'value', snap => {
+    currentFeatures = snap.val() || {};
+    document.querySelectorAll('[data-flag]').forEach(input => { input.checked = !!currentFeatures[input.dataset.flag]; });
+    renderFlagsTable();
+  });
+}
+function renderFlagsTable(){
+  const tbody = document.getElementById('flags-tbody');
+  const entries = Object.entries(currentFeatures);
+  tbody.innerHTML = entries.length ? '' : `<tr><td colspan="3" class="muted">No data available</td></tr>`;
+  entries.forEach(([k,v]) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml(k)}</td><td class="mono id-mono">admin_control/features/${escapeHtml(k)}</td><td>${v ? '<span class="badge ok">On</span>' : '<span class="badge neutral">Off</span>'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+function initMaxUploads(){
+  trackListener(REF.settings.child('maxActiveUploads'), 'value', snap => {
+    const val = snap.val();
+    const el = document.getElementById('maxActiveUploads');
+    if(el && document.activeElement !== el) el.value = val === null ? '' : val;
+  });
+  document.getElementById('saveMaxUploads').addEventListener('click', () => {
+    const val = Number(document.getElementById('maxActiveUploads').value);
+    if(!val || val < 1){ toast('err','Invalid Data','Enter a value of 1 or more.'); return; }
+    safeUpdate(REF.settings, {maxActiveUploads: val}, {successMsg:'Maximum active uploads updated.'})
+      .then(ok => { if(ok) logAction('Set maxActiveUploads','setting','maxActiveUploads', null, val, ''); });
+  });
+}
+
+/* =========================================================
+   MONETIZATION  (spec §21-§24)
+   ========================================================= */
+let rawMonetization = {};
+function initMonetization(){
+  document.getElementById('mon-search').addEventListener('input', renderMonetizationTable);
+  document.getElementById('mon-filter').addEventListener('change', renderMonetizationTable);
+  trackListener(REF.monetization, 'value', snap => { rawMonetization = snap.val() || {}; renderMonetizationTable(); recomputePlatformAnalytics(); });
+}
+function renderMonetizationTable(){
+  const q = (document.getElementById('mon-search').value||'').toLowerCase();
+  const filter = document.getElementById('mon-filter').value;
+  const rows = Object.entries(rawMonetization).filter(([id,m]) => {
+    const status = m.status || 'pending';
+    if(filter !== 'all' && status !== filter) return false;
+    const chName = (rawChannels[m.channelId||id]||{}).channelName || '';
+    return !q || chName.toLowerCase().includes(q) || id.toLowerCase().includes(q);
+  });
+  const tbody = document.getElementById('mon-tbody');
+  tbody.innerHTML = '';
+  document.getElementById('mon-empty').style.display = rows.length ? 'none' : 'block';
+  rows.forEach(([id,m]) => {
+    const status = m.status || 'pending';
+    const chName = (rawChannels[m.channelId||id]||{}).channelName || m.channelId || id;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(chName)}</td>
+      <td>${fmtNum(m.subscribers||0)}</td>
+      <td>${fmtNum(m.watchHours||0)}</td>
+      <td>${statusBadge(status)}</td>
+      <td class="btn-row">
+        ${status!=='active' ? `<button class="btn sm ok" data-approve="${id}">Approve</button>` : ''}
+        ${status!=='rejected' ? `<button class="btn sm danger" data-reject="${id}">Reject</button>` : ''}
+        ${status!=='suspended' ? `<button class="btn sm warn" data-suspend="${id}">Suspend</button>` : `<button class="btn sm ok" data-reactivate="${id}">Reactivate</button>`}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  const setMon = (id,next) => {
+    const current = (rawMonetization[id]||{}).status || 'pending';
+    confirmAction({title:'Update Monetization Status', target: (rawChannels[(rawMonetization[id]||{}).channelId||id]||{}).channelName || id, current, next, dangerLabel:'Confirm',
+      onConfirm: reason => safeUpdate(REF.monetization.child(id), {status:next}).then(ok => { if(ok) logAction('Monetization status → '+next,'monetization',id,current,next,reason); })});
+  };
+  tbody.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', () => setMon(b.dataset.approve,'active')));
+  tbody.querySelectorAll('[data-reject]').forEach(b => b.addEventListener('click', () => setMon(b.dataset.reject,'rejected')));
+  tbody.querySelectorAll('[data-suspend]').forEach(b => b.addEventListener('click', () => setMon(b.dataset.suspend,'suspended')));
+  tbody.querySelectorAll('[data-reactivate]').forEach(b => b.addEventListener('click', () => setMon(b.dataset.reactivate,'active')));
+}
+function initEligibility(){
+  trackListener(REF.eligibility, 'value', snap => {
+    const v = snap.val() || {};
+    if(document.activeElement.id !== 'elig-subs') document.getElementById('elig-subs').value = v.minSubscribers ?? '';
+    if(document.activeElement.id !== 'elig-watchhours') document.getElementById('elig-watchhours').value = v.minWatchHours ?? '';
+  });
+  document.getElementById('save-eligibility').addEventListener('click', () => {
+    const minSubscribers = Number(document.getElementById('elig-subs').value)||0;
+    const minWatchHours = Number(document.getElementById('elig-watchhours').value)||0;
+    safeUpdate(REF.eligibility, {minSubscribers, minWatchHours}, {successMsg:'Eligibility requirements saved.'})
+      .then(ok => { if(ok) logAction('Set monetization eligibility','setting','eligibility',null,{minSubscribers,minWatchHours},''); });
+  });
+}
+
+/* Read-only lists: Memberships / Supers / Shopping — display existing data only, never fabricate rows */
+function initReadOnlyLists(kind, ref, cols, rowFn){
+  trackListener(ref, 'value', snap => {
+    const data = snap.val() || {};
+    const tbody = document.getElementById(kind + '-tbody');
+    const empty = document.getElementById(kind + '-empty');
+    if(!tbody) return;
+    const entries = Object.entries(data);
+    tbody.innerHTML = '';
+    empty.style.display = entries.length ? 'none' : 'block';
+    entries.forEach(([id, v]) => {
+      const tr = document.createElement('tr');
+      if(kind === 'memberships'){
+        tr.innerHTML = `<td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || id)}</td><td>${escapeHtml(v.tier||'—')}</td><td>${fmtNum(v.members||0)}</td><td>${statusBadge(v.status||'active')}</td>`;
+      } else if(kind === 'supers'){
+        tr.innerHTML = `<td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || id)}</td><td>${escapeHtml(v.fromName||v.fromUid||'—')}</td><td>${escapeHtml(v.amount!=null?String(v.amount):'—')}</td><td>${fmtDate(v.timestamp)}</td>`;
+      } else if(kind === 'shopping'){
+        tr.innerHTML = `<td>${escapeHtml(v.name||id)}</td><td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || '—')}</td><td>${escapeHtml(v.price!=null?String(v.price):'—')}</td><td>${statusBadge(v.status||'active')}</td>`;
+      }
+      tbody.appendChild(tr);
+    });
+  });
+}
+function memRow(){ /* handled inline above */ }
+
+/* =========================================================
+   PLATFORM & CHANNEL ANALYTICS  (spec §30)
+   ========================================================= */
+function initPlatformAnalytics(){ recomputePlatformAnalytics(); }
+function recomputePlatformAnalytics(){
+  const videos = Object.values(rawVideos), shorts = Object.values(rawShorts), channels = Object.values(rawChannels);
+  const sum = (arr,f) => arr.reduce((a,v)=>a+(Number(v&&v[f])||0),0);
+  set('pa-views', sum(videos,'views')+sum(shorts,'views'));
+  const watchTimeVideos = videos.filter(v=>v.watchTime!=null).length + shorts.filter(v=>v.watchTime!=null).length;
+  document.getElementById('pa-watchtime').textContent = watchTimeVideos ? fmtNum(sum(videos,'watchTime')+sum(shorts,'watchTime')) : 'No data available';
+  set('pa-subs', sum(channels,'subscribers'));
+  const revRecords = Object.values(rawMonetization).filter(m=>m.estimatedRevenue!=null);
+  document.getElementById('pa-revenue').textContent = revRecords.length ? fmtNum(revRecords.reduce((a,m)=>a+Number(m.estimatedRevenue||0),0)) : 'No data available';
+}
+function initChannelAnalytics(){
+  document.getElementById('ca-search').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    if(!q){ document.getElementById('ca-detail').style.display='none'; document.getElementById('ca-empty-hint').style.display='block'; return; }
+    const match = Object.entries(rawChannels).find(([id,c]) => (c.channelName||'').toLowerCase().includes(q) || id.toLowerCase()===q);
+    if(!match){ document.getElementById('ca-detail').style.display='none'; document.getElementById('ca-empty-hint').style.display='block'; document.getElementById('ca-empty-hint').innerHTML = '<div class="big">◌</div>No data available'; return; }
+    const [id,c] = match;
+    document.getElementById('ca-empty-hint').style.display='none';
+    document.getElementById('ca-detail').style.display='block';
+    const myVideos = Object.values(rawVideos).filter(v => v.channelId === id);
+    const myShorts = Object.values(rawShorts).filter(v => v.channelId === id);
+    document.getElementById('ca-views').textContent = fmtNum(myVideos.reduce((a,v)=>a+Number(v.views||0),0)+myShorts.reduce((a,v)=>a+Number(v.views||0),0));
+    document.getElementById('ca-watchtime').textContent = myVideos.some(v=>v.watchTime!=null) ? fmtNum(myVideos.reduce((a,v)=>a+Number(v.watchTime||0),0)) : 'No data available';
+    document.getElementById('ca-subs').textContent = fmtNum(c.subscribers||0);
+    const mon = Object.values(rawMonetization).find(m => m.channelId === id);
+    document.getElementById('ca-revenue').textContent = mon && mon.estimatedRevenue!=null ? fmtNum(mon.estimatedRevenue) : 'No data available';
+  });
+}
+
+/* =========================================================
+   THEME  (spec §32)
+   ========================================================= */
+function initTheme(){
+  trackListener(REF.settings, 'value', snap => {
+    const s = snap.val() || {};
+    if(document.activeElement.id !== 'theme-default') document.getElementById('theme-default').value = s.defaultTheme || 'system';
+    document.getElementById('theme-allow-user').checked = s.allowUserThemeSelection !== false;
+  });
+  document.getElementById('save-theme').addEventListener('click', () => {
+    const defaultTheme = document.getElementById('theme-default').value;
+    const allowUserThemeSelection = document.getElementById('theme-allow-user').checked;
+    safeUpdate(REF.settings, {defaultTheme, allowUserThemeSelection}, {successMsg:'Theme settings saved.'})
+      .then(ok => { if(ok) logAction('Theme settings updated','setting','theme',null,{defaultTheme,allowUserThemeSelection},''); });
+  });
+}
+
+/* =========================================================
+   ADMIN ACCESS  (spec §38)
+   ========================================================= */
+function initAdminAccess(){
+  trackListener(REF.admins, 'value', snap => {
+    const data = snap.val() || {};
+    const tbody = document.getElementById('admins-tbody');
+    const entries = Object.entries(data);
+    tbody.innerHTML = '';
+    document.getElementById('admins-empty').style.display = entries.length ? 'none' : 'block';
+    entries.forEach(([uid,v]) => {
+      const grantedAt = (v && typeof v === 'object') ? v.grantedAt : null;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="id-mono">${escapeHtml(uid)}</td><td>${fmtDate(grantedAt)}</td>
+        <td>${uid === currentUser.uid ? '<span class="muted">You</span>' : `<button class="btn sm danger" data-revoke="${uid}">Revoke</button>`}</td>`;
+      tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll('[data-revoke]').forEach(b => b.addEventListener('click', () => {
+      const uid = b.dataset.revoke;
+      confirmAction({title:'Revoke Admin Access', target:uid, current:'admin', next:'revoked', dangerLabel:'Revoke',
+        onConfirm: reason => REF.admins.child(uid).remove().then(() => { toast('ok','Updated Successfully','Admin access revoked.'); logAction('Revoke Admin','admin',uid,'admin','revoked',reason); }).catch(err => toast('err', mapFirebaseError(err),'')) });
+    }));
+  });
+  document.getElementById('grant-admin-btn').addEventListener('click', () => {
+    const uid = document.getElementById('new-admin-uid').value.trim();
+    if(!uid){ toast('err','Missing Data','Enter a Firebase Auth UID.'); return; }
+    safeSet(REF.admins.child(uid), {enabled:true, grantedAt: firebase.database.ServerValue.TIMESTAMP, grantedBy: currentUser.uid}, {successMsg:'Admin access granted.'})
+      .then(ok => { if(ok){ logAction('Grant Admin','admin',uid,null,'admin',''); document.getElementById('new-admin-uid').value=''; }});
+  });
+}
+
+/* =========================================================
+   AUDIT LOGS  (spec §37)
+   ========================================================= */
+let rawAudit = {};
+function initAuditLogs(){
+  document.getElementById('audit-search').addEventListener('input', renderAuditLogs);
+  trackListener(REF.auditLog.limitToLast(300), 'value', snap => { rawAudit = snap.val() || {}; renderAuditLogs(); });
+}
+function renderAuditLogs(){
+  const q = (document.getElementById('audit-search').value||'').toLowerCase();
+  const entries = Object.entries(rawAudit).sort((a,b) => (b[1].timestamp||0)-(a[1].timestamp||0)).filter(([id,e]) =>
+    !q || (e.action||'').toLowerCase().includes(q) || (e.targetId||'').toLowerCase().includes(q) || (e.adminUid||'').toLowerCase().includes(q));
+  const list = document.getElementById('audit-list');
+  list.innerHTML = '';
+  document.getElementById('audit-empty').style.display = entries.length ? 'none' : 'block';
+  entries.slice(0,150).forEach(([id,e]) => {
+    const div = document.createElement('div');
+    div.className = 'audit-item';
+    div.innerHTML = `
+      <div class="top"><span class="act">${escapeHtml(e.action||'—')}</span><span class="when">${fmtDate(e.timestamp)}</span></div>
+      <div class="detail">${escapeHtml(e.targetType||'')} · <span class="id-mono">${escapeHtml(e.targetId||'')}</span>
+        ${e.oldValue!=null||e.newValue!=null ? ` · ${escapeHtml(JSON.stringify(e.oldValue))} → ${escapeHtml(JSON.stringify(e.newValue))}` : ''}
+      </div>
+      <div class="detail muted" style="margin-top:3px; font-size:11px;">by ${escapeHtml(e.adminEmail||e.adminUid||'—')}${e.reason ? ' — "'+escapeHtml(e.reason)+'"' : ''}</div>
+    `;
+    list.appendChild(div);
+  });
+}
+</script>
+</body>
+</html>

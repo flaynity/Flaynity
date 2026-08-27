@@ -858,52 +858,170 @@ function cleanupUserSessionData() {
     SyncManager.isRefreshing = false;
 }
 
-auth.onAuthStateChanged((user) => {
+
+// =========================================================
+// ADMIN CONTROL + ACCOUNT BAN ENFORCEMENT
+// =========================================================
+let adminControlFeatures = {};
+let bannedUserIds = new Set();
+let adminControlListener = null;
+let userStatusListener = null;
+let banPopupVisible = false;
+
+function isAdminFeatureEnabled(flag, defaultValue = true) {
+    return Object.prototype.hasOwnProperty.call(adminControlFeatures, flag)
+        ? adminControlFeatures[flag] !== false
+        : defaultValue;
+}
+
+function showAccountBannedPopup(reason) {
+    if (banPopupVisible) return;
+    banPopupVisible = true;
+    const old = document.getElementById('flaynity-ban-popup');
+    if (old) old.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'flaynity-ban-popup';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.78);backdrop-filter:blur(10px);font-family:inherit;';
+    overlay.innerHTML = `
+      <div style="width:min(420px,100%);background:var(--card-bg,#151515);color:var(--text-main,#fff);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:28px 22px;box-shadow:0 25px 80px rgba(0,0,0,.55);text-align:center;">
+        <div style="width:64px;height:64px;margin:0 auto 16px;border-radius:50%;display:grid;place-items:center;background:rgba(220,53,69,.14);color:#ff5364;font-size:28px;">⚠</div>
+        <h2 style="margin:0 0 10px;font-size:22px;">Account Banned</h2>
+        <p style="margin:0 0 10px;opacity:.78;line-height:1.55;">Your Flaynity account has been banned by an administrator. You cannot access the app while this ban is active.</p>
+        ${reason ? `<div style="margin:14px 0;padding:12px;border-radius:14px;background:rgba(255,255,255,.06);font-size:13px;text-align:left;"><b>Reason:</b><br>${escapeHTML(String(reason))}</div>` : ''}
+        <button id="flaynity-ban-close" style="width:100%;border:0;border-radius:14px;padding:13px 16px;background:#ff5364;color:#fff;font-weight:800;font-size:14px;">Sign out</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('flaynity-ban-close').onclick = async () => {
+        banPopupVisible = false;
+        overlay.remove();
+        try { await auth.signOut(); } catch(e) {}
+    };
+}
+
+function clearUserStatusListener() {
+    if (userStatusListener) {
+        try { userStatusListener.off(); } catch(e) {}
+        userStatusListener = null;
+    }
+}
+
+function attachAdminControlListener() {
+    if (adminControlListener) return;
+    adminControlListener = db.ref('admin_control/features');
+    adminControlListener.on('value', snap => {
+        adminControlFeatures = snap.val() || {};
+        applyAdminControls();
+    });
+}
+
+function detachAdminControlListener() {
+    if (adminControlListener) {
+        try { adminControlListener.off(); } catch(e) {}
+        adminControlListener = null;
+    }
+    adminControlFeatures = {};
+}
+
+function applyAdminControls() {
+    const home = document.getElementById('home-feed-container');
+    if (home && !isAdminFeatureEnabled('homeFeedEnabled')) {
+        home.innerHTML = '<div style="padding:48px 20px;text-align:center;opacity:.7;font-weight:700;">Home Feed is currently disabled by the administrator.</div>';
+    } else if (home) {
+        buildHomeFeed();
+    }
+    const uploadTab = document.getElementById('nav-upload');
+    if (uploadTab) uploadTab.style.display = isAdminFeatureEnabled('uploadSystemEnabled') ? '' : 'none';
+    const discoverTab = document.getElementById('nav-discover');
+    if (discoverTab) discoverTab.style.display = isAdminFeatureEnabled('discoverEnabled') ? '' : 'none';
+    const searchButtons = document.querySelectorAll('[onclick*="switchTab(\'search\')"]');
+    searchButtons.forEach(b => b.style.display = isAdminFeatureEnabled('searchEnabled') ? '' : 'none');
+    document.querySelectorAll('.mode-item').forEach(item => {
+        const mode = item.dataset.mode;
+        const enabled = mode === 'video' ? isAdminFeatureEnabled('uploadVideoEnabled') : mode === 'short' ? isAdminFeatureEnabled('uploadShortsEnabled') : mode === 'post' ? isAdminFeatureEnabled('uploadPostsEnabled') : true;
+        item.style.display = enabled ? '' : 'none';
+    });
+    document.querySelectorAll('[onclick*="download"], [data-download]').forEach(b => {
+        b.style.display = isAdminFeatureEnabled('downloadEnabled') ? '' : 'none';
+    });
+}
+
+function enforceContentAdminStatus(items, type) {
+    const allowed = items.filter(item => {
+        const status = String(item?.status || item?.visibility || 'published').toLowerCase();
+        if (status === 'hidden' || status === 'deleted' || status === 'disabled' || status === 'banned') return false;
+        if (item?.userId && bannedUserIds.has(String(item.userId))) return false;
+        if (type === 'video' && !isAdminFeatureEnabled('homeVideosEnabled')) return false;
+        if (type === 'short' && !isAdminFeatureEnabled('homeShortsEnabled')) return false;
+        if (type === 'post' && !isAdminFeatureEnabled('homePostsEnabled')) return false;
+        return true;
+    });
+    return allowed;
+}
+
+auth.onAuthStateChanged(async (user) => {
     try {
-        if (user) {
-            document.body.classList.remove('auth-active');
-            const authScr = document.getElementById('auth-screen');
-            const appScr = document.getElementById('app-screen');
-            if (authScr) authScr.style.display = 'none';
-            if (appScr) appScr.style.display = 'block';
-
-            saveAccountToList(user);
-
-            db.ref(`users/${user.uid}`).on('value', (snapshot) => {
-                try {
-                    const userData = snapshot.val();
-                    const photoURL = userData?.photoURL || user.photoURL || '';
-                    renderUserAvatar(photoURL, user.email);
-                } catch (e) {}
-            });
-
-            _feedListenersAttached = false;
-            startRealtimeFeedsListener();
-            restoreQueueFromLocalStorage();
-
-            const activeNav = document.querySelector('.nav-item.active');
-            if (activeNav) {
-                const activeTabId = activeNav.id.replace('nav-', '');
-                adjustHeaderForActiveTab(activeTabId);
-            }
-        } else {
-            if (!navigator.onLine && window.__flaynityOfflineSessionActive) {
-                document.body.classList.remove('auth-active');
-                const cachedAppScreen = document.getElementById('app-screen');
-                const cachedAuthScreen = document.getElementById('auth-screen');
-                if (cachedAppScreen) cachedAppScreen.style.display = 'block';
-                if (cachedAuthScreen) cachedAuthScreen.style.display = 'none';
-                return;
-            }
+        clearUserStatusListener();
+        detachAdminControlListener();
+        if (!user) {
             cleanupUserSessionData();
             document.body.classList.add('auth-active');
             const appScr = document.getElementById('app-screen');
             const authScr = document.getElementById('auth-screen');
             if (appScr) appScr.style.display = 'none';
             if (authScr) authScr.style.display = 'flex';
+            return;
         }
+
+        // Always verify the account status from Firebase before exposing the app.
+        const userRef = db.ref(`users/${user.uid}`);
+        const firstSnap = await userRef.once('value');
+        const firstData = firstSnap.val() || {};
+        const firstStatus = String(firstData.userStatus || firstData.accountStatus || '').toLowerCase();
+        if (firstStatus === 'banned') {
+            document.body.classList.add('auth-active');
+            const appScr = document.getElementById('app-screen');
+            const authScr = document.getElementById('auth-screen');
+            if (appScr) appScr.style.display = 'none';
+            if (authScr) authScr.style.display = 'none';
+            showAccountBannedPopup(firstData.banReason);
+            try { await auth.signOut(); } catch(e) {}
+            return;
+        }
+
+        document.body.classList.remove('auth-active');
+        const authScr = document.getElementById('auth-screen');
+        const appScr = document.getElementById('app-screen');
+        if (authScr) authScr.style.display = 'none';
+        if (appScr) appScr.style.display = 'block';
+
+        saveAccountToList(user);
+        attachAdminControlListener();
+
+        // Keep the ban state live. If Admin bans this user while the app is open,
+        // the current session is immediately closed and the ban popup is shown.
+        userStatusListener = userRef;
+        userStatusListener.on('value', (snapshot) => {
+            const data = snapshot.val() || {};
+            const status = String(data.userStatus || data.accountStatus || '').toLowerCase();
+            if (status === 'banned') {
+                showAccountBannedPopup(data.banReason);
+                setTimeout(() => auth.signOut().catch(()=>{}), 0);
+                return;
+            }
+            const photoURL = data.photoURL || user.photoURL || '';
+            renderUserAvatar(photoURL, user.email);
+        });
+
+        _feedListenersAttached = false;
+        startRealtimeFeedsListener();
+        restoreQueueFromLocalStorage();
+        applyAdminControls();
+
+        const activeNav = document.querySelector('.nav-item.active');
+        if (activeNav) adjustHeaderForActiveTab(activeNav.id.replace('nav-', ''));
     } catch (e) {
-        console.error("Auth status sync error:", e);
+        console.error('Auth status sync error:', e);
+        try { await auth.signOut(); } catch(err) {}
     }
 });
 
@@ -1281,10 +1399,19 @@ function startRealtimeFeedsListener() {
         _feedListenersAttached = true;
         const now = Date.now();
 
+        db.ref('users').on('value', (snap) => {
+            const users = snap.val() || {};
+            bannedUserIds = new Set(Object.entries(users).filter(([uid,u]) => String(u?.userStatus || u?.accountStatus || '').toLowerCase() === 'banned').map(([uid]) => String(uid)));
+            allLongVideos = enforceContentAdminStatus(allLongVideos, 'video');
+            allShorts = enforceContentAdminStatus(allShorts, 'short');
+            allCommunityPosts = enforceContentAdminStatus(allCommunityPosts, 'post');
+            buildHomeFeed();
+        });
+
         db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
             try {
                 const data = snap.val();
-                allLongVideos = data ? Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
+                allLongVideos = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'video') : [];
                 allLongVideos.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                 
                 allLongVideos.forEach(m => {
@@ -1308,7 +1435,7 @@ function startRealtimeFeedsListener() {
         db.ref('admin_panel/movies/shorts').on('value', (snap) => {
             try {
                 const data = snap.val();
-                allShorts = data ? Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
+                allShorts = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'short') : [];
                 allShorts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                 
                 if(allShorts.length !== previousShortsCount) {
@@ -1339,7 +1466,7 @@ function startRealtimeFeedsListener() {
         db.ref('admin_panel/posts').on('value', (snap) => {
             try {
                 const data = snap.val();
-                allCommunityPosts = data ? Object.values(data).filter(p => !p.scheduledTime || p.scheduledTime <= now) : [];
+                allCommunityPosts = data ? enforceContentAdminStatus(Object.values(data).filter(p => !p.scheduledTime || p.scheduledTime <= now), 'post') : [];
                 allCommunityPosts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                 
                 if (allCommunityPosts.length !== previousPostsCount) {
@@ -1457,9 +1584,11 @@ function buildHomeFeed() {
 
     let html = '';
 
-    let shorts = [...allShorts];
-    let longs = [...allLongVideos];
-    let posts = [...allCommunityPosts];
+    if (!isAdminFeatureEnabled('homeFeedEnabled')) { container.innerHTML = '<div style="padding:48px 20px;text-align:center;opacity:.7;font-weight:700;">Home Feed is currently disabled by the administrator.</div>'; return; }
+
+    let shorts = isAdminFeatureEnabled('homeShortsEnabled') ? [...allShorts] : [];
+    let longs = isAdminFeatureEnabled('homeVideosEnabled') ? [...allLongVideos] : [];
+    let posts = isAdminFeatureEnabled('homePostsEnabled') ? [...allCommunityPosts] : [];
 
     shorts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
     longs.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -2239,6 +2368,10 @@ function openShortComments(shortId) {
 // SECURE DOWNLOAD SYSTEM IMPLEMENTATION
 // =========================================================
 async function triggerFileDownload(url, filename) {
+    if (!isAdminFeatureEnabled('downloadEnabled')) {
+        showNotification('Downloads are currently disabled by the administrator.', 'error');
+        return;
+    }
     if (!url) {
         showNotification("Invalid download link.", "error");
         return;
@@ -4540,6 +4673,9 @@ window.closeAndPausePreview = function() {
 
 // Fixed Centered Mode Slider
 function switchUploadMode(mode) {
+    const flag = mode === 'video' ? 'uploadVideoEnabled' : mode === 'short' ? 'uploadShortsEnabled' : mode === 'post' ? 'uploadPostsEnabled' : null;
+    if (flag && !isAdminFeatureEnabled(flag)) { showNotification('This upload type is currently disabled by the administrator.', 'error'); return; }
+    if (!isAdminFeatureEnabled('uploadSystemEnabled')) { showNotification('Uploading is currently disabled by the administrator.', 'error'); return; }
     currentUploadMode = mode;
     const slider = document.getElementById('mode-slider');
     const items = document.querySelectorAll('.mode-item');

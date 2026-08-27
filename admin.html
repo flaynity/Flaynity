@@ -411,7 +411,6 @@ tbody tr:hover{background:var(--panel-hover);}
       <div class="nav-item" data-section="videos"><span class="dot"></span><span class="ic">▶</span> Long Videos</div>
       <div class="nav-item" data-section="shorts"><span class="dot"></span><span class="ic">◫</span> Shorts</div>
       <div class="nav-item" data-section="posts"><span class="dot"></span><span class="ic">▧</span> Community Posts</div>
-      <div class="nav-item" data-section="comments"><span class="dot"></span><span class="ic">◔</span> Comments</div>
       <div class="nav-item" data-section="scheduled"><span class="dot"></span><span class="ic">◷</span> Scheduled Content</div>
     </div>
 
@@ -431,10 +430,6 @@ tbody tr:hover{background:var(--panel-hover);}
       <div class="nav-item" data-section="monetization"><span class="dot"></span><span class="ic">$</span> Monetization Status</div>
       <div class="nav-item" data-section="monetization-control"><span class="dot"></span><span class="ic">⚙</span> Monetization Control</div>
       <div class="nav-item" data-section="monetization-approvals"><span class="dot"></span><span class="ic">✓</span> Monetization Approvals</div>
-      <div class="nav-item" data-section="ads"><span class="dot"></span><span class="ic">▭</span> Ads</div>
-      <div class="nav-item" data-section="memberships"><span class="dot"></span><span class="ic">✦</span> Memberships</div>
-      <div class="nav-item" data-section="supers"><span class="dot"></span><span class="ic">♥</span> Supers</div>
-      <div class="nav-item" data-section="shopping"><span class="dot"></span><span class="ic">▤</span> Shopping</div>
     </div>
 
     <div class="nav-group">
@@ -623,20 +618,6 @@ tbody tr:hover{background:var(--panel-hover);}
         <div id="posts-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
       </section>
 
-      <!-- ================= COMMENTS ================= -->
-      <section class="section" id="section-comments">
-        <div class="search-bar">
-          <input class="input" id="comments-search" placeholder="Search comment text, video ID, or author…">
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Comment</th><th>Video ID</th><th>Author</th><th>Status</th><th></th></tr></thead>
-            <tbody id="comments-tbody"></tbody>
-          </table>
-        </div>
-        <div id="comments-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
-      </section>
-
       <!-- ================= SCHEDULED CONTENT ================= -->
       <section class="section" id="section-scheduled">
         <div class="tabs">
@@ -755,118 +736,6 @@ tbody tr:hover{background:var(--panel-hover);}
           </table>
         </div>
         <div id="mon-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
-
-        <div class="section-head"><div><h2>Monetization Eligibility</h2><p>Requirements the existing app can actually evaluate.</p></div></div>
-        <div class="card">
-          <div class="field"><label>Minimum Subscribers</label><input class="input" id="elig-subs" type="number" min="0"></div>
-          <div class="field"><label>Minimum Public Watch Hours</label><input class="input" id="elig-watchhours" type="number" min="0"></div>
-          <button class="btn primary" id="save-eligibility">Save Eligibility Requirements</button>
-        </div>
-      </section>
-
-      <!-- ================= MONETIZATION CONTROL ================= -->
-      <section class="section" id="section-monetization-control">
-        <div class="section-head"><div><h2>Monetization Control</h2><p>Admin override and valid public watch-hour eligibility controls.</p></div></div>
-        <div class="card">
-          <div class="field"><label>Minimum Subscribers</label><input class="input" id="control-elig-subs" type="number" min="0"></div>
-          <div class="field"><label>Minimum Valid Public Watch Hours</label><input class="input" id="control-elig-watchhours" type="number" min="0" step="0.1"></div>
-          <div class="field"><label>Minimum Public Views</label><input class="input" id="control-elig-views" type="number" min="0"></div>
-          <button class="btn primary" id="save-control-eligibility">Save Valid Public Watch Hours Control</button>
-        </div>
-        <div class="card" style="margin-top:16px;">
-          <h3 style="margin-top:0">Direct Monetization Activation</h3>
-          <p class="muted">Activate monetization for any existing user without requiring eligibility.</p>
-          <div class="search-bar"><input class="input" id="override-user-search" placeholder="Enter User UID or Channel UID"></div>
-          <button class="btn ok" id="activate-any-user">Activate Monetization Now</button>
-        </div>
-      </section>
-
-      <!-- ================= MONETIZATION APPROVALS ================= -->
-      <section class="section" id="section-monetization-approvals">
-        <div class="search-bar"><input class="input" id="approval-search" placeholder="Search user or channel…"><select class="input" id="approval-filter" style="max-width:170px"><option value="pending">Pending</option><option value="all">All</option></select></div>
-        <div class="table-wrap"><table><thead><tr><th>User</th><th>Subscribers</th><th>Valid Watch Hours</th><th>Public Views</th><th>Status</th><th></th></tr></thead><tbody id="approval-tbody"></tbody></table></div>
-        <div id="approval-empty" class="empty-state" style="display:none"><div class="big">◌</div>No applications available</div>
-      </section>
-
-      <!-- ================= ADS ================= -->
-      <section class="section" id="section-ads">
-        <div class="card">
-          <div class="settings-row">
-            <div><div class="t">Watch Page Ads</div><div class="d">Ads shown on the Long Video watch page</div></div>
-            <label class="toggle"><input type="checkbox" data-flag="watchPageAdsEnabled"><span class="slider"></span></label>
-          </div>
-          <div class="settings-row">
-            <div><div class="t">Shorts Feed Ads</div><div class="d">Ads shown inside the Shorts feed</div></div>
-            <label class="toggle"><input type="checkbox" data-flag="shortsFeedAdsEnabled"><span class="slider"></span></label>
-          </div>
-          <button class="btn sm danger" id="delete-ads-data">Delete Ads Data</button>
-        </div>
-      </section>
-
-      <!-- ================= MEMBERSHIPS ================= -->
-      <section class="section" id="section-memberships">
-        <div class="card">
-          <div class="settings-row">
-            <div><div class="t">Memberships Feature</div><div class="d">Create exclusive memberships for your biggest supporters</div></div>
-            <label class="toggle"><input type="checkbox" data-flag="membershipsEnabled"><span class="slider"></span></label>
-          </div>
-        </div>
-        <div class="section-head"><div><h2>Existing Membership Data</h2><p>Read-only view of membership records already in Firebase.</p></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Channel</th><th>Tier</th><th>Members</th><th>Status</th><th></th></tr></thead><tbody id="memberships-tbody"></tbody></table></div>
-        <div id="memberships-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
-      </section>
-
-      <!-- ================= SUPERS ================= -->
-      <section class="section" id="section-supers">
-        <div class="card">
-          <div class="settings-row">
-            <div><div class="t">Supers Feature</div><div class="d">Receive fan support through one-time purchases</div></div>
-            <label class="toggle"><input type="checkbox" data-flag="supersEnabled"><span class="slider"></span></label>
-          </div>
-        </div>
-        <div class="section-head"><div><h2>Existing Supers Data</h2><p>Read-only view of Super transactions already in Firebase.</p></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Channel</th><th>From</th><th>Amount</th><th>Date</th><th></th></tr></thead><tbody id="supers-tbody"></tbody></table></div>
-        <div id="supers-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
-      </section>
-
-      <!-- ================= SHOPPING ================= -->
-      <section class="section" id="section-shopping">
-        <div class="card">
-          <div class="settings-row">
-            <div><div class="t">Shopping Feature</div><div class="d">Recommend products and earn through shopping</div></div>
-            <label class="toggle"><input type="checkbox" data-flag="shoppingEnabled"><span class="slider"></span></label>
-          </div>
-        </div>
-        <div class="section-head"><div><h2>Existing Product Data</h2><p>Read-only view of product listings already in Firebase, if present.</p></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Product</th><th>Channel</th><th>Price</th><th>Status</th><th></th></tr></thead><tbody id="shopping-tbody"></tbody></table></div>
-        <div id="shopping-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
-      </section>
-
-      <!-- ================= PLATFORM ANALYTICS ================= -->
-      <section class="section" id="section-platform-analytics">
-        <div class="grid grid-4">
-          <div class="card stat-card"><div class="label">Total Views</div><div class="value" id="pa-views">—</div></div>
-          <div class="card stat-card"><div class="label">Total Watch Time (records)</div><div class="value" id="pa-watchtime">—</div></div>
-          <div class="card stat-card"><div class="label">Total Subscribers</div><div class="value" id="pa-subs">—</div></div>
-          <div class="card stat-card"><div class="label">Est. Revenue Records</div><div class="value" id="pa-revenue">—</div></div>
-        </div>
-        <p class="muted" style="font-size:11.5px; margin-top:14px;">Figures are aggregated live from existing Firebase fields. Fields the app doesn't populate show as 0 / no data, never estimated.</p>
-      </section>
-
-      <!-- ================= CHANNEL ANALYTICS ================= -->
-      <section class="section" id="section-channel-analytics">
-        <div class="search-bar">
-          <input class="input" id="ca-search" placeholder="Search a channel to inspect its analytics…">
-        </div>
-        <div id="ca-empty-hint" class="empty-state"><div class="big">◭</div>Search for a channel above to view its Performance (Last 28 Days) data.</div>
-        <div class="card" id="ca-detail" style="display:none;">
-          <div class="grid grid-4">
-            <div class="card tight stat-card"><div class="label">Views (28d)</div><div class="value" id="ca-views" style="font-size:20px;">—</div></div>
-            <div class="card tight stat-card"><div class="label">Watch Time</div><div class="value" id="ca-watchtime" style="font-size:20px;">—</div></div>
-            <div class="card tight stat-card"><div class="label">Subscribers</div><div class="value" id="ca-subs" style="font-size:20px;">—</div></div>
-            <div class="card tight stat-card"><div class="label">Est. Revenue</div><div class="value" id="ca-revenue" style="font-size:20px;">—</div></div>
-          </div>
-        </div>
       </section>
 
       <!-- ================= PLATFORM SETTINGS ================= -->
@@ -1040,10 +909,6 @@ const REF = {
   posts:         db.ref('admin_panel/posts'),
   comments:      db.ref('movie_comments'),
   postReactions: db.ref('post_reactions'),
-  memberships:   db.ref('memberships'),
-  supers:        db.ref('supers'),
-  shopping:      db.ref('shopping_products'),
-  ads:           db.ref('ads'),
   monetization:  db.ref('monetization_applications'),
   // Admin-only, clearly separated (per spec §2)
   admins:        db.ref('admins'),
@@ -1161,7 +1026,6 @@ const pageMeta = {
   videos:                ['Long Videos', 'Manage existing long-form video content'],
   shorts:                ['Shorts', 'Manage existing Shorts content'],
   posts:                 ['Community Posts', 'Manage existing community posts'],
-  comments:              ['Comments', 'Manage existing comments'],
   scheduled:             ['Scheduled Content', 'Content awaiting publish'],
   subscribers:           ['Subscribers', 'Adjust existing subscriber counts'],
   upload:                ['Upload Control', 'Control existing upload systems'],
@@ -1169,10 +1033,6 @@ const pageMeta = {
   monetization:          ['Monetization Status', 'Manage existing monetization applications'],
   'monetization-control': ['Monetization Control', 'Set eligibility and activate monetization for any user'],
   'monetization-approvals': ['Monetization Approvals', 'Review and approve user applications'],
-  ads:                   ['Ads', 'Watch Page Ads & Shorts Feed Ads'],
-  memberships:           ['Memberships', 'Existing membership feature'],
-  supers:                ['Supers', 'Existing fan-support feature'],
-  shopping:              ['Shopping', 'Existing shopping feature'],
   'platform-analytics':  ['Platform Analytics', 'Aggregated from real Firebase data'],
   'channel-analytics':   ['Channel Analytics', 'Per-channel performance'],
   'platform-settings':   ['Platform Controls', 'Feed, search & maintenance switches'],
@@ -1335,19 +1195,13 @@ function bootApp(){
   initVideos();
   initShorts();
   initPosts();
-  initComments();
   initScheduled();
   initSubscribers();
   initFeatureFlags();
   initMaxUploads();
   initMonetization();
-  initEligibility();
   initMonetizationControl();
   initMonetizationApprovals();
-  initReadOnlyLists('memberships', REF.memberships, ['name','channelId','tier','members','status'], memRow);
-  initReadOnlyLists('supers', REF.supers, null, null);
-  initReadOnlyLists('shopping', REF.shopping, null, null);
-  initAdsDelete();
   initPlatformAnalytics();
   initChannelAnalytics();
   initTheme();
@@ -1755,44 +1609,6 @@ function renderPostsTable(){
   tbody.querySelectorAll('[data-restore]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.restore, rawPosts, REF.posts, 'post', 'published')));
 }
 
-/* =========================================================
-   COMMENTS  (spec §14)
-   ========================================================= */
-function initComments(){
-  document.getElementById('comments-search').addEventListener('input', renderCommentsTable);
-}
-function renderCommentsTable(){
-  const q = (document.getElementById('comments-search').value||'').toLowerCase();
-  const rows = Object.entries(rawComments).filter(([id,c]) => !q || (c.text||'').toLowerCase().includes(q) || (c.videoId||'').toLowerCase().includes(q) || (c.authorName||'').toLowerCase().includes(q));
-  const tbody = document.getElementById('comments-tbody');
-  tbody.innerHTML = '';
-  document.getElementById('comments-empty').style.display = rows.length ? 'none' : 'block';
-  rows.forEach(([id,c]) => {
-    const status = c.status || 'visible';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${escapeHtml((c.text||'').slice(0,80))}</td>
-      <td class="id-mono">${escapeHtml(c.videoId||'—')}</td>
-      <td>${escapeHtml(c.authorName||'—')}</td>
-      <td>${statusBadge(status)}</td>
-      <td class="btn-row">
-        ${status==='hidden' ? `<button class="btn sm ok" data-restore="${id}">Restore</button>` : `<button class="btn sm warn" data-hide="${id}">Hide</button>`}
-        <button class="btn sm danger" data-del="${id}">Delete</button>
-      </td>`;
-    tbody.appendChild(tr);
-  });
-  tbody.querySelectorAll('[data-hide]').forEach(b => b.addEventListener('click', () => commentStatus(b.dataset.hide,'hidden')));
-  tbody.querySelectorAll('[data-restore]').forEach(b => b.addEventListener('click', () => commentStatus(b.dataset.restore,'visible')));
-  tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => {
-    const id = b.dataset.del;
-    confirmAction({title:'Delete Comment', target:(rawComments[id]||{}).text||id, current:'visible', next:'deleted', dangerLabel:'Delete',
-      onConfirm: reason => REF.comments.child(id).remove().then(() => { toast('ok','Updated Successfully','Comment deleted.'); logAction('Delete Comment','comment',id,'visible','deleted',reason); }).catch(err => toast('err', mapFirebaseError(err),'')) });
-  }));
-}
-function commentStatus(id, next){
-  const current = (rawComments[id]||{}).status || 'visible';
-  safeUpdate(REF.comments.child(id), {status:next}).then(ok => { if(ok) logAction('Comment status → '+next,'comment',id,current,next,''); });
-}
 
 /* =========================================================
    SCHEDULED CONTENT  (spec §34)
@@ -1953,24 +1769,6 @@ function renderMonetizationTable(){
   tbody.querySelectorAll('[data-suspend]').forEach(b => b.addEventListener('click', () => setMon(b.dataset.suspend,'suspended')));
   tbody.querySelectorAll('[data-reactivate]').forEach(b => b.addEventListener('click', () => setMon(b.dataset.reactivate,'active')));
 }
-function initEligibility(){
-  trackListener(REF.eligibility, 'value', snap => {
-    const v = snap.val() || {};
-    if(document.activeElement.id !== 'elig-subs') document.getElementById('elig-subs').value = v.minSubscribers ?? '';
-    if(document.activeElement.id !== 'elig-watchhours') document.getElementById('elig-watchhours').value = v.minWatchHours ?? '';
-  });
-  document.getElementById('save-eligibility').addEventListener('click', () => {
-    const minSubscribers = Number(document.getElementById('elig-subs').value)||0;
-    const minWatchHours = Number(document.getElementById('elig-watchhours').value)||0;
-    safeUpdate(REF.eligibility, {minSubscribers, minWatchHours, validPublicWatchHours: minWatchHours, minPublicViews: Number(document.getElementById('elig-watchhours').dataset.minViews || 0)}, {successMsg:'Eligibility requirements saved.'})
-      .then(ok => { if(ok) logAction('Set monetization eligibility','setting','eligibility',null,{minSubscribers,minWatchHours},''); });
-  });
-}
-
-function initAdsDelete(){
-  const b=document.getElementById('delete-ads-data'); if(!b)return;
-  b.addEventListener('click',()=>confirmAction({title:'Delete Ads Data',target:'ads',current:'existing',next:'deleted',dangerLabel:'Delete',onConfirm:reason=>REF.ads.remove().then(()=>{toast('ok','Deleted','Ads data deleted.');logAction('Delete Ads Data','ads','ads','existing','deleted',reason);return true;}).catch(err=>{toast('err',mapFirebaseError(err),'');return false;})}));
-}
 function initMonetizationControl(){
   const load=()=>trackListener(REF.eligibility,'value',snap=>{const v=snap.val()||{}; const a=document.getElementById('control-elig-subs'),b=document.getElementById('control-elig-watchhours'),c=document.getElementById('control-elig-views'); if(a&&document.activeElement!==a)a.value=v.minSubscribers??''; if(b&&document.activeElement!==b)b.value=v.validPublicWatchHours??v.minWatchHours??''; if(c&&document.activeElement!==c)c.value=v.minPublicViews??'';});
   load();
@@ -1983,50 +1781,6 @@ function initMonetizationApprovals(){
 }
 function renderApprovalTable(){const q=(document.getElementById('approval-search').value||'').toLowerCase();const f=document.getElementById('approval-filter').value;const rows=Object.entries(rawMonetization).filter(([id,m])=>{const st=m.status||'pending';const uid=(m.userId||m.channelId||id).toLowerCase();return (f==='all'||st==='pending')&&(!q||uid.includes(q)||(rawChannels[m.channelId||id]?.channelName||'').toLowerCase().includes(q));});const tb=document.getElementById('approval-tbody');tb.innerHTML='';document.getElementById('approval-empty').style.display=rows.length?'none':'block';rows.forEach(([id,m])=>{const uid=m.userId||m.channelId||id;const tr=document.createElement('tr');tr.innerHTML=`<td>${escapeHtml((rawChannels[m.channelId||id]||{}).channelName||uid)}</td><td>${fmtNum(m.subscribers||0)}</td><td>${fmtNum(m.watchHours||m.validPublicWatchHours||0)}</td><td>${fmtNum(m.publicViews||0)}</td><td>${statusBadge(m.status||'pending')}</td><td>${m.status==='pending'?`<button class="btn sm ok" data-approval="${id}">Approve</button>`:''}</td>`;tb.appendChild(tr);});tb.querySelectorAll('[data-approval]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.approval;const m=rawMonetization[id]||{};const uid=m.userId||m.channelId||id;const updates={};updates[`monetization_applications/${id}/status`]='active';updates[`monetization_applications/${id}/adminOverride`]=true;updates[`monetization_applications/${id}/reviewedAt`]=firebase.database.ServerValue.TIMESTAMP;updates[`monetization_applications/${id}/reviewedBy`]=currentUser.uid;updates[`channels/${uid}/monetizationStatus`]='active';updates[`channels/${uid}/monetizationAdminOverride`]=true;db.ref().update(updates).then(()=>toast('ok','Approved','User monetization is now active.')).catch(err=>toast('err',mapFirebaseError(err),''));}));}
 
-/* Read-only lists: Memberships / Supers / Shopping — display existing data only, never fabricate rows */
-function initReadOnlyLists(kind, ref, cols, rowFn){
-  trackListener(ref, 'value', snap => {
-    const data = snap.val() || {};
-    const tbody = document.getElementById(kind + '-tbody');
-    const empty = document.getElementById(kind + '-empty');
-    if(!tbody) return;
-    const entries = Object.entries(data);
-    tbody.innerHTML = '';
-    empty.style.display = entries.length ? 'none' : 'block';
-    entries.forEach(([id, v]) => {
-      const tr = document.createElement('tr');
-      if(kind === 'memberships'){
-        tr.innerHTML = `<td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || id)}</td><td>${escapeHtml(v.tier||'—')}</td><td>${fmtNum(v.members||0)}</td><td>${statusBadge(v.status||'active')}</td><td><button class="btn sm danger" data-delete-record="${id}">Delete</button></td>`;
-      } else if(kind === 'supers'){
-        tr.innerHTML = `<td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || id)}</td><td>${escapeHtml(v.fromName||v.fromUid||'—')}</td><td>${escapeHtml(v.amount!=null?String(v.amount):'—')}</td><td>${fmtDate(v.timestamp)}</td><td><button class="btn sm danger" data-delete-record="${id}">Delete</button></td>`;
-      } else if(kind === 'shopping'){
-        tr.innerHTML = `<td>${escapeHtml(v.name||id)}</td><td>${escapeHtml((rawChannels[v.channelId]||{}).channelName || v.channelId || '—')}</td><td>${escapeHtml(v.price!=null?String(v.price):'—')}</td><td>${statusBadge(v.status||'active')}</td><td><button class="btn sm danger" data-delete-record="${id}">Delete</button></td>`;
-      }
-      tbody.appendChild(tr);
-    });
-    tbody.querySelectorAll('[data-delete-record]').forEach(b => b.addEventListener('click', () => {
-      const id = b.dataset.deleteRecord;
-      confirmAction({title:'Delete '+kind.slice(0,-1), target:id, current:'active', next:'deleted', dangerLabel:'Delete', reasonRequired:true,
-        onConfirm: reason => ref.child(id).remove().then(()=>logAction('Delete '+kind.slice(0,-1),'record',id,'active','deleted',reason)).catch(err=>toast('err',mapFirebaseError(err),''))});
-    }));
-  });
-}
-function memRow(){ /* handled inline above */ }
-
-/* =========================================================
-   PLATFORM & CHANNEL ANALYTICS  (spec §30)
-   ========================================================= */
-function initPlatformAnalytics(){ recomputePlatformAnalytics(); }
-function recomputePlatformAnalytics(){
-  const videos = Object.values(rawVideos), shorts = Object.values(rawShorts), channels = Object.values(rawChannels);
-  const sum = (arr,f) => arr.reduce((a,v)=>a+(Number(v&&v[f])||0),0);
-  set('pa-views', sum(videos,'views')+sum(shorts,'views'));
-  const watchTimeVideos = videos.filter(v=>v.watchTime!=null).length + shorts.filter(v=>v.watchTime!=null).length;
-  document.getElementById('pa-watchtime').textContent = watchTimeVideos ? fmtNum(sum(videos,'watchTime')+sum(shorts,'watchTime')) : 'No data available';
-  set('pa-subs', sum(channels,'subscribers'));
-  const revRecords = Object.values(rawMonetization).filter(m=>m.estimatedRevenue!=null);
-  document.getElementById('pa-revenue').textContent = revRecords.length ? fmtNum(revRecords.reduce((a,m)=>a+Number(m.estimatedRevenue||0),0)) : 'No data available';
-}
 function initChannelAnalytics(){
   document.getElementById('ca-search').addEventListener('input', e => {
     const q = e.target.value.trim().toLowerCase();

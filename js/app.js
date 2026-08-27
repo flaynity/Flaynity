@@ -694,6 +694,186 @@ try {
 const auth = firebase.auth();
 const db = firebase.database();
 
+
+// =========================================================
+// ADMIN CONTROL BRIDGE — ZERO-REFRESH LIVE CONTROL
+// Reads the same admin_control nodes written by admin.html.
+// Firebase Realtime Database listeners push changes directly into
+// the currently running WebView — no manual refresh/restart.
+// =========================================================
+const ADMIN_CONTROL = {
+    features: {},
+    settings: {},
+    eligibility: {},
+    channels: {},
+    ready: false,
+    listenersStarted: false
+};
+
+function adminFeature(name, fallback = true) {
+    return Object.prototype.hasOwnProperty.call(ADMIN_CONTROL.features, name)
+        ? ADMIN_CONTROL.features[name] === true
+        : fallback;
+}
+
+function adminAllowedContent(item) {
+    if (!item) return false;
+    const status = String(item.status || '').toLowerCase();
+    const visibility = String(item.visibility || '').toLowerCase();
+    if (['deleted', 'hidden', 'banned', 'disabled'].includes(status)) return false;
+    if (['deleted', 'hidden', 'private'].includes(visibility)) return false;
+    const uid = item.userId || item.channelId;
+    const ch = uid ? ADMIN_CONTROL.channels[uid] : null;
+    if (ch) {
+        if (ch.disabled === true || String(ch.status || '').toLowerCase() === 'disabled') return false;
+        if (String(ch.visibility || '').toLowerCase() === 'hidden') return false;
+    }
+    return true;
+}
+
+function applyAdminControlUI() {
+    const f = ADMIN_CONTROL.features;
+    const s = ADMIN_CONTROL.settings;
+    const hide = (selector, hidden) => document.querySelectorAll(selector).forEach(el => {
+        el.style.display = hidden ? 'none' : '';
+        el.setAttribute('aria-hidden', hidden ? 'true' : 'false');
+    });
+
+    // Platform/feed controls
+    hide('#home-tab', f.homeFeedEnabled === false);
+    hide('#shorts-tab', f.shortsFeedAdsEnabled === false && false); // Shorts tab itself is controlled below.
+    hide('#nav-shorts', f.uploadShortsEnabled === false && false);
+    hide('#nav-search', f.searchEnabled === false);
+    hide('#search-tab', f.searchEnabled === false || f.discoverEnabled === false);
+
+    // Home sections are tagged at runtime so existing UI/design is preserved.
+    document.querySelectorAll('[data-admin-home-section="videos"]').forEach(el => el.style.display = f.homeVideosEnabled === false ? 'none' : '');
+    document.querySelectorAll('[data-admin-home-section="shorts"]').forEach(el => el.style.display = f.homeShortsEnabled === false ? 'none' : '');
+    document.querySelectorAll('[data-admin-home-section="posts"]').forEach(el => el.style.display = f.homePostsEnabled === false ? 'none' : '');
+
+    // Upload controls. Do not alter the page design; only disable entry points.
+    const uploadDisabled = f.uploadSystemEnabled === false;
+    const longDisabled = uploadDisabled || f.uploadVideoEnabled === false;
+    const shortDisabled = uploadDisabled || f.uploadShortsEnabled === false;
+    const postDisabled = uploadDisabled || f.uploadPostsEnabled === false;
+    ['video-file-input'].forEach(id => { const e=document.getElementById(id); if(e) e.disabled=longDisabled; });
+    ['short-file-input'].forEach(id => { const e=document.getElementById(id); if(e) e.disabled=shortDisabled; });
+    ['post-image-input'].forEach(id => { const e=document.getElementById(id); if(e) e.disabled=postDisabled; });
+    document.querySelectorAll('[data-admin-upload="video"]').forEach(e=>e.style.pointerEvents=longDisabled?'none':'');
+    document.querySelectorAll('[data-admin-upload="short"]').forEach(e=>e.style.pointerEvents=shortDisabled?'none':'');
+    document.querySelectorAll('[data-admin-upload="post"]').forEach(e=>e.style.pointerEvents=postDisabled?'none':'');
+
+    // Download controls
+    const dl = f.downloadEnabled === false;
+    document.querySelectorAll('.btn-watch-download, [onclick*="requestDownloadWithAd"], [onclick*="triggerShortDownload"]').forEach(e => {
+        const isShort = (e.getAttribute('onclick') || '').includes('triggerShortDownload');
+        const disabled = dl || (isShort ? f.shortDownloadEnabled === false : f.videoDownloadEnabled === false);
+        e.style.pointerEvents = disabled ? 'none' : '';
+        e.style.opacity = disabled ? '.45' : '';
+        e.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    });
+
+    // Ads feature switches are exposed globally for existing ad functions.
+    window.FL_AdminAdsEnabled = {
+        watchPage: f.watchPageAdsEnabled !== false,
+        shortsFeed: f.shortsFeedAdsEnabled !== false
+    };
+
+    // Monetization feature visibility.
+    const featureMap = {
+        membershipsEnabled: '[data-admin-feature="memberships"]',
+        supersEnabled: '[data-admin-feature="supers"]',
+        shoppingEnabled: '[data-admin-feature="shopping"]'
+    };
+    Object.entries(featureMap).forEach(([flag, selector]) => {
+        document.querySelectorAll(selector).forEach(el => el.style.display = f[flag] === false ? 'none' : '');
+    });
+
+    // Theme settings are applied immediately.
+    applyAdminTheme(s);
+
+    // Global lock states.
+    applyAdminGlobalModes(f);
+}
+
+function applyAdminTheme(settings) {
+    const theme = settings.defaultTheme || 'system';
+    const allowUser = settings.allowUserThemeSelection !== false;
+    document.documentElement.dataset.adminDefaultTheme = theme;
+    document.documentElement.dataset.adminAllowUserTheme = allowUser ? 'true' : 'false';
+    if (!allowUser || theme !== 'system') {
+        document.documentElement.classList.toggle('admin-force-light', theme === 'light');
+        document.documentElement.classList.toggle('admin-force-dark', theme === 'dark');
+        document.documentElement.dataset.theme = theme;
+    }
+}
+
+function applyAdminGlobalModes(features) {
+    const existing = document.getElementById('flaynity-admin-control-layer');
+    if (existing) existing.remove();
+    if (features.maintenanceMode !== true && features.readOnlyMode !== true) return;
+
+    const layer = document.createElement('div');
+    layer.id = 'flaynity-admin-control-layer';
+    layer.style.cssText = 'position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.78);backdrop-filter:blur(10px);color:#fff;text-align:center;';
+    const title = features.maintenanceMode === true ? 'Flaynity is under maintenance' : 'Read-only mode is active';
+    const desc = features.maintenanceMode === true ? 'Please try again shortly.' : 'You can browse existing content, but changes are temporarily disabled.';
+    layer.innerHTML = `<div style="max-width:360px"><div style="font-size:48px;margin-bottom:14px">${features.maintenanceMode === true ? '⚙' : '◉'}</div><h2 style="margin:0 0 8px;font-size:22px">${title}</h2><p style="margin:0;opacity:.75;line-height:1.5">${desc}</p></div>`;
+    document.body.appendChild(layer);
+    if (features.maintenanceMode !== true) {
+        layer.remove();
+        document.querySelectorAll('button,input,textarea,select').forEach(el => {
+            if (el.closest('#auth-screen')) return;
+            if (el.dataset.adminReadonlyOriginalDisabled === undefined) el.dataset.adminReadonlyOriginalDisabled = el.disabled ? '1' : '0';
+            if (!['nav-shorts','nav-search'].includes(el.id)) el.disabled = true;
+        });
+    }
+}
+
+function startAdminControlBridge() {
+    if (ADMIN_CONTROL.listenersStarted) return;
+    ADMIN_CONTROL.listenersStarted = true;
+
+    db.ref('admin_control/features').on('value', snap => {
+        ADMIN_CONTROL.features = snap.val() || {};
+        ADMIN_CONTROL.ready = true;
+        applyAdminControlUI();
+        if (typeof buildHomeFeed === 'function') buildHomeFeed();
+        if (typeof buildShortsPage === 'function') buildShortsPage();
+    });
+
+    db.ref('admin_control/settings').on('value', snap => {
+        ADMIN_CONTROL.settings = snap.val() || {};
+        applyAdminControlUI();
+        if (typeof applyUploadManagerAdminSettings === 'function') applyUploadManagerAdminSettings();
+    });
+
+    db.ref('admin_control/monetization/eligibility').on('value', snap => {
+        ADMIN_CONTROL.eligibility = snap.val() || {};
+        window.FL_AdminEligibility = ADMIN_CONTROL.eligibility;
+    });
+
+    // Channel visibility/disabled state is watched globally so admin moderation
+    // is reflected in Home/Shorts/Channel views without reopening the app.
+    db.ref('channels').on('value', snap => {
+        ADMIN_CONTROL.channels = snap.val() || {};
+        applyAdminControlUI();
+        if (typeof startRealtimeFeedsListener === 'function') {
+            if (typeof buildHomeFeed === 'function') buildHomeFeed();
+            if (typeof buildShortsPage === 'function') buildShortsPage();
+        }
+    });
+
+    window.addEventListener('online', applyAdminControlUI);
+}
+
+function adminCanWrite() {
+    return ADMIN_CONTROL.features.readOnlyMode !== true && ADMIN_CONTROL.features.maintenanceMode !== true;
+}
+
+// Start immediately; the listener remains active for the entire WebView session.
+try { startAdminControlBridge(); } catch (e) { console.warn('Admin control bridge startup:', e); }
+
 const API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb'; 
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_URL = 'https://image.tmdb.org/t/p/w500';
@@ -868,6 +1048,7 @@ auth.onAuthStateChanged((user) => {
             if (appScr) appScr.style.display = 'block';
 
             saveAccountToList(user);
+            try { startAdminControlBridge(); } catch(e) {}
 
             db.ref(`users/${user.uid}`).on('value', (snapshot) => {
                 try {
@@ -991,10 +1172,21 @@ let uploadQueue = [];
 let activeUploadsCount = 0;
 const MAX_CONCURRENT_UPLOADS = 3;
 
+function getMaxConcurrentUploads() {
+    const configured = Number(ADMIN_CONTROL.settings.maxActiveUploads);
+    return Number.isFinite(configured) && configured >= 1 ? Math.min(20, Math.floor(configured)) : MAX_CONCURRENT_UPLOADS;
+}
+
+function applyUploadManagerAdminSettings() {
+    const limit = getMaxConcurrentUploads();
+    document.querySelectorAll("#upload-manager-screen [data-admin-upload-limit]").forEach(el => { el.textContent = limit; });
+    triggerNextActiveUpload();
+}
+
 setInterval(() => {
     if (!navigator.onLine) return;
     const hasWaiting = uploadQueue.some(item => item.status === 'waiting');
-    if (hasWaiting && activeUploadsCount < MAX_CONCURRENT_UPLOADS) {
+    if (hasWaiting && adminFeature("uploadSystemEnabled", true) && activeUploadsCount < getMaxConcurrentUploads()) {
         console.log("[Watchdog] Triggering queued uploads...");
         triggerNextActiveUpload();
     }
@@ -1004,7 +1196,7 @@ async function triggerNextActiveUpload() {
     if (!navigator.onLine) return;
 
     for (let i = 0; i < uploadQueue.length; i++) {
-        if (activeUploadsCount >= MAX_CONCURRENT_UPLOADS) break;
+        if (!adminFeature("uploadSystemEnabled", true) || activeUploadsCount >= getMaxConcurrentUploads()) break;
         
         const item = uploadQueue[i];
         if (item.status === 'waiting') {
@@ -1074,7 +1266,7 @@ async function startS3DirectUpload(item) {
             console.error("Upload error: ", err);
             item.retryCount = (item.retryCount || 0) + 1;
             
-            if (item.retryCount <= 5) {
+            if (adminFeature("uploadAutoRetry", true) && item.retryCount <= 5) {
                 item.status = "waiting";
                 updateManagerUI();
                 showNotification(`Network hiccup. Retrying (${item.retryCount}/5)...`, "error");
@@ -1457,9 +1649,9 @@ function buildHomeFeed() {
 
     let html = '';
 
-    let shorts = [...allShorts];
-    let longs = [...allLongVideos];
-    let posts = [...allCommunityPosts];
+    let shorts = [...allShorts].filter(adminAllowedContent);
+    let longs = [...allLongVideos].filter(adminAllowedContent);
+    let posts = [...allCommunityPosts].filter(adminAllowedContent);
 
     shorts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
     longs.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -1473,7 +1665,7 @@ function buildHomeFeed() {
             return;
         }
         html += `
-            <div class="shorts-section-container" style="margin-top: 10px;">
+            <div class="shorts-section-container" data-admin-home-section="shorts" style="margin-top: 10px;">
                 <div class="shorts-home-grid-2col">
         `;
         shorts.forEach(s => {
@@ -1566,7 +1758,7 @@ function renderShortsSegmentUI(segmentShorts) {
     const limitedShorts = segmentShorts.slice(0, 6);
     
     let html = `
-        <div class="shorts-section-container" style="margin-bottom: 24px;">
+        <div class="shorts-section-container" data-admin-home-section="shorts" style="margin-bottom: 24px;">
             <div class="section-title">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:var(--primary);">
                     <path d="M17.77 10.32c-.77-.32-1.2-.5-1.2-.5L18 8.64a2.53 2.53 0 0 0-1.12-3.37 2.45 2.45 0 0 0-3.3.12L7 10.14a2.53 2.53 0 0 0-.27 3.54s1.2.5 1.2.5l-1.43 1.18a2.53 2.53 0 0 0 1.12 3.37 2.45 2.45 0 0 0 3.3-.12l6.57-4.75a2.53 2.53 0 0 0 .28-3.54z" fill="currentColor"/>
@@ -1842,7 +2034,7 @@ function buildShortsPage() {
         return;
     }
 
-    let activeShortsList = allShorts;
+    let activeShortsList = allShorts.filter(adminAllowedContent);
 
     if (activeShortsList.length === 0) {
         container.innerHTML = getShortsSkeletonHTML();
@@ -2281,6 +2473,7 @@ async function triggerFileDownload(url, filename) {
 }
 
 function triggerShortDownload(shortId) {
+    if (!adminFeature('downloadEnabled', true) || !adminFeature('shortDownloadEnabled', true)) { showNotification('Shorts downloads are currently disabled by Admin.', 'error'); return; }
     playUI('click');
     const s = allShorts.find(item => item.id === shortId);
     if (!s) {
@@ -3557,7 +3750,7 @@ function renderChannelVideos(userId) {
             return;
         }
 
-        const list = Object.values(data).filter(m => m.userId === userId && !m.isShort);
+        const list = Object.values(data).filter(m => m.userId === userId && !m.isShort && adminAllowedContent(m));
         const vidCount = document.getElementById('view-vid-count');
         if (vidCount) vidCount.innerText = list.length + " Video" + (list.length === 1 ? "" : "s");
 
@@ -3601,7 +3794,7 @@ function renderChannelShorts(userId) {
             return;
         }
 
-        const list = Object.values(data).filter(m => m.userId === userId);
+        const list = Object.values(data).filter(m => m.userId === userId && adminAllowedContent(m));
         if (list.length === 0) {
             grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No shorts uploaded yet.</p>`;
             return;
@@ -4424,6 +4617,7 @@ function loadReactedPeopleData() {
 // DOWNLOAD POP-UP CONTROLLERS
 // =========================================
 function requestDownloadWithAd() {
+    if (!adminFeature('downloadEnabled', true) || !adminFeature('videoDownloadEnabled', true)) { showNotification('Video downloads are currently disabled by Admin.', 'error'); return; }
     playUI('click');
     if (!currentActiveMovie) return;
     openDownloadModal();
@@ -5041,6 +5235,11 @@ function triggerShortDownloadLocal() {
 // VALIDATION & CORE PROCESSING (Auto Short Rule)
 // ---------------------------------------------------------
 async function handlePremiumFileSelected(e, type) {
+    const requiredFlag = type === 'video-long' ? 'uploadVideoEnabled' : 'uploadShortsEnabled';
+    if (!adminCanWrite() || !adminFeature('uploadSystemEnabled', true) || !adminFeature(requiredFlag, true)) {
+        showNotification('This upload type is currently disabled by Admin.', 'error');
+        return;
+    }
     const file = e.target && e.target.files ? e.target.files[0] : (e.files ? e.files[0] : null);
     if (!file) return;
 
@@ -5135,6 +5334,10 @@ async function handlePremiumFileSelected(e, type) {
 }
 
 function handlePremiumImagesSelected(e) {
+    if (!adminCanWrite() || !adminFeature('uploadSystemEnabled', true) || !adminFeature('uploadPostsEnabled', true)) {
+        showNotification('Community Post creation is currently disabled by Admin.', 'error');
+        return;
+    }
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
     currentUploadFile = files[0];
@@ -5369,6 +5572,11 @@ function formatDuration(seconds) {
 // FAST PUBLISH LOGIC (R2 -> RTDB -> Feed Sync)
 // ---------------------------------------------------------
 async function publishPremiumVideoOrShort(modeType) {
+    const flag = modeType === 'video-short' ? 'uploadShortsEnabled' : 'uploadVideoEnabled';
+    if (!adminCanWrite() || !adminFeature('uploadSystemEnabled', true) || !adminFeature(flag, true)) {
+        showNotification('Publishing is currently disabled by Admin.', 'error');
+        return;
+    }
     playUI('click');
     const isShort = modeType === 'video-short';
     const prefix = isShort ? 'sd' : 'vd';
@@ -5429,6 +5637,10 @@ async function publishPremiumVideoOrShort(modeType) {
 }
 
 async function publishPremiumPostAction() {
+    if (!adminCanWrite() || !adminFeature('uploadSystemEnabled', true) || !adminFeature('uploadPostsEnabled', true)) {
+        showNotification('Community Post publishing is currently disabled by Admin.', 'error');
+        return;
+    }
     playUI('click');
     const titleEl = document.getElementById('pd-title');
     const title = titleEl ? titleEl.value.trim() : "";

@@ -3077,15 +3077,12 @@ function escapeHTML(str) {
 
 // =========================================================
 // HOME SCROLL UI CONTROLLER
-// Keeps the page itself as the only scrolling surface. Header and
-// bottom navigation move smoothly from scroll direction; no jumpy
-// display:none changes and no layout stretching/zooming.
+// Top bar follows the Home feed continuously. There is NO threshold
+// hide/show jump: its position is derived from the real page scrollY.
 // =========================================================
 (function initHomeScrollController() {
-    let lastY = 0;
     let ticking = false;
     let initialized = false;
-    let hidden = false;
 
     function getHomeActive() {
         const home = document.getElementById('home-tab');
@@ -3093,50 +3090,58 @@ function escapeHTML(str) {
         return !!(home && home.classList.contains('active') && nav && nav.classList.contains('active'));
     }
 
-    function setHidden(next) {
-        if (!getHomeActive() || hidden === next) return;
-        hidden = next;
-        const header = document.querySelector('header');
-        const chips = document.getElementById('global-category-chips');
-        const bottom = document.querySelector('.bottom-nav');
-        [header, chips, bottom].forEach(el => {
-            if (!el) return;
-            el.classList.toggle('home-scroll-ui', true);
-            el.classList.toggle('is-hidden', next);
-        });
-    }
+    function applyHomeScrollPosition() {
+        ticking = false;
+        if (!getHomeActive()) return;
 
-    function resetAtTop() {
-        if (window.scrollY <= 2) setHidden(false);
+        const y = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
+        const header = document.querySelector('body > header');
+        const chips = document.getElementById('global-category-chips');
+
+        // Header (82px) + category bar (44px) = 126px.
+        // Move both by the exact scroll distance, capped at their full height.
+        // This makes them follow the feed 1:1 instead of disappearing after a
+        // tiny scroll caused by a delta threshold.
+        const headerOffset = Math.min(y, 82);
+        const chipsOffset = Math.min(Math.max(y - 82, 0), 44);
+
+        if (header) {
+            header.classList.add('home-scroll-ui');
+            header.classList.remove('is-hidden');
+            header.style.transform = `translate3d(0, -${headerOffset}px, 0)`;
+        }
+        if (chips) {
+            chips.classList.add('home-scroll-ui');
+            chips.classList.remove('is-hidden');
+            chips.style.transform = `translate3d(0, -${chipsOffset}px, 0)`;
+        }
     }
 
     function onScroll() {
+        if (!getHomeActive() || ticking) return;
+        ticking = true;
+        requestAnimationFrame(applyHomeScrollPosition);
+    }
+
+    function reset() {
         if (!getHomeActive()) return;
-        if (!ticking) {
-            ticking = true;
-            requestAnimationFrame(() => {
-                const y = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
-                const delta = y - lastY;
-                if (y <= 2) setHidden(false);
-                else if (delta > 3) setHidden(true);
-                else if (delta < -3) setHidden(false);
-                lastY = y;
-                ticking = false;
-            });
-        }
+        if (!ticking) applyHomeScrollPosition();
     }
 
     function init() {
         if (initialized) return;
         initialized = true;
-        lastY = window.scrollY || 0;
         window.addEventListener('scroll', onScroll, { passive: true });
-        window.addEventListener('resize', resetAtTop, { passive: true });
-        document.addEventListener('visibilitychange', () => { if (!document.hidden) resetAtTop(); });
+        window.addEventListener('resize', reset, { passive: true });
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) reset();
+        });
+        // Initial position after the Home DOM is ready.
+        requestAnimationFrame(reset);
     }
     init();
 
-    // Prevent browser/WebView pinch zoom and horizontal gesture drift on Home.
+    // Prevent browser/WebView pinch zoom and multi-touch UI stretching on Home.
     document.addEventListener('touchmove', (e) => {
         if (!getHomeActive()) return;
         if (e.touches && e.touches.length > 1) e.preventDefault();

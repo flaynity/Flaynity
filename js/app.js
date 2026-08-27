@@ -252,81 +252,6 @@ function renderAllSkeletons() {
 }
 
 // =========================================
-// HOME FEED SCROLL UI ENGINE
-// =========================================
-(function initHomeScrollEngine() {
-    let lastY = window.scrollY || document.documentElement.scrollTop || 0;
-    let ticking = false;
-    let hidden = false;
-    const HIDE_DISTANCE = 126;
-    const SHOW_THRESHOLD = 6;
-
-    function isHomeActive() {
-        const home = document.getElementById('home-tab');
-        return !!home && home.classList.contains('active');
-    }
-
-    function applyState(nextHidden) {
-        if (!isHomeActive() || hidden === nextHidden) return;
-        hidden = nextHidden;
-        const header = document.querySelector('header');
-        const chips = document.getElementById('global-category-chips');
-        const nav = document.querySelector('.bottom-nav');
-        if (header) header.classList.toggle('home-scroll-hidden', hidden);
-        if (chips) chips.classList.toggle('home-scroll-hidden', hidden);
-        if (nav) nav.classList.toggle('home-scroll-hidden', hidden);
-    }
-
-    function onScroll() {
-        if (ticking) return;
-        ticking = true;
-        requestAnimationFrame(() => {
-            ticking = false;
-            const y = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
-            const delta = y - lastY;
-
-            // At the top everything is always visible.
-            if (y <= 4) {
-                applyState(false);
-            } else if (delta > SHOW_THRESHOLD) {
-                // Downward feed scroll: bars smoothly leave with the content.
-                applyState(true);
-            } else if (delta < -SHOW_THRESHOLD) {
-                // Upward feed scroll: bars smoothly return.
-                applyState(false);
-            }
-            lastY = y;
-        });
-    }
-
-    function reset() {
-        hidden = false;
-        lastY = window.scrollY || document.documentElement.scrollTop || 0;
-        const header = document.querySelector('header');
-        const chips = document.getElementById('global-category-chips');
-        const nav = document.querySelector('.bottom-nav');
-        if (header) header.classList.remove('home-scroll-hidden');
-        if (chips) chips.classList.remove('home-scroll-hidden');
-        if (nav) nav.classList.remove('home-scroll-hidden');
-    }
-
-    function blockHomeZoom(e) {
-        if (!isHomeActive()) return;
-        if (e.touches && e.touches.length > 1) e.preventDefault();
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    document.addEventListener('touchmove', blockHomeZoom, { passive: false });
-    document.addEventListener('gesturestart', e => { if (isHomeActive()) e.preventDefault(); }, { passive: false });
-    document.addEventListener('gesturechange', e => { if (isHomeActive()) e.preventDefault(); }, { passive: false });
-    document.addEventListener('gestureend', e => { if (isHomeActive()) e.preventDefault(); }, { passive: false });
-    document.addEventListener('wheel', e => { if (isHomeActive() && (e.ctrlKey || e.metaKey)) e.preventDefault(); }, { passive: false });
-    window.addEventListener('flaynity-dom-ready', reset, { once: false });
-    window.addEventListener('flaynity-tab-changed', reset);
-    window.addEventListener('resize', reset);
-})();
-
-// =========================================
 // AUTOMATIC & MANUAL THEME ENGINE
 // =========================================
 function applyTheme() {
@@ -1688,7 +1613,7 @@ function renderLongVideosSegmentUI(segmentLongs) {
         const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
 
         html += `
-            <div class="long-video-feed-card home-edge-long-video" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer;">
+            <div class="long-video-feed-card home-edge-video" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); overflow: hidden; border-top: 0; border-bottom: 0; box-shadow: none;">
                 <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #000; overflow: hidden;">
                     <img src="${v.poster}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
                     <span class="long-video-duration" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">${v.duration || '10:00'}</span>
@@ -1768,13 +1693,14 @@ function renderSinglePostSegmentUI(post) {
     let imagesHtml = '';
     if (post.images && post.images.length > 0) {
         imagesHtml = `
-            <div class="home-post-title-above-media" id="title-container-${post.id}" onclick="event.stopPropagation(); togglePostTitleExpand('${post.id}')" style="cursor: pointer; font-size: 0.95rem; font-weight: 800; line-height: 1.4; font-family: 'Plus Jakarta Sans', sans-serif;">
+            <div class="home-post-title" id="title-container-${post.id}" onclick="event.stopPropagation(); togglePostTitleExpand('${post.id}')" style="cursor: pointer; font-size: 0.95rem; font-weight: 800; line-height: 1.4; font-family: 'Plus Jakarta Sans', sans-serif;">
                 ${titleHtml}
             </div>
-            <div class="home-edge-post-media" onclick="openFullScreenImagePreview('${post.images[0]}')" style="position: relative; background: #000; overflow: hidden;">
-                <img src="${post.images[0]}" style="cursor: pointer; display: block;" loading="lazy">
+            <div class="home-post-image" style="margin-top: 0; margin-bottom: 12px; width: calc(100% + 32px); aspect-ratio: 3/4; position: relative; background: #000; overflow: hidden; border-radius: 0 !important;">
+                <img src="${post.images[0]}" onclick="openFullScreenImagePreview('${post.images[0]}')" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; display: block; border-radius: 0 !important;" loading="lazy">
+
                 ${post.images.length > 1 ? `
-                    <div style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; z-index: 2;">
+                    <div style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; z-index: 12;">
                         +${post.images.length - 1} More
                     </div>
                 ` : ''}
@@ -1782,8 +1708,10 @@ function renderSinglePostSegmentUI(post) {
         `;
     } else {
         imagesHtml = `
-            <div class="home-post-title-above-media" id="title-container-${post.id}" onclick="togglePostTitleExpand('${post.id}')" style="cursor: pointer; font-size: 0.95rem; font-weight: 800; line-height: 1.4; font-family: 'Plus Jakarta Sans', sans-serif;">
-                ${titleHtml}
+            <div style="margin-bottom: 12px; padding: 0 4px;">
+                 <div id="title-container-${post.id}" onclick="togglePostTitleExpand('${post.id}')" style="cursor: pointer; font-size: 0.95rem; font-weight: 800; line-height: 1.4; color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif;">
+                     ${titleHtml}
+                 </div>
             </div>
         `;
     }
@@ -1794,7 +1722,7 @@ function renderSinglePostSegmentUI(post) {
     const loveBtnId = `post-love-btn-${post.id}`;
 
     return `
-        <div class="post-card" id="post-card-${post.id}" style="margin-bottom: 24px; background: transparent; border: none; border-radius: 0; padding: 12px 0; box-shadow: none; overflow: hidden; border-bottom: 1px solid var(--border-color);">
+        <div class="post-card home-edge-post" id="post-card-${post.id}" style="margin-bottom: 24px; background: transparent; border: none; border-radius: 0; padding: 12px 0; box-shadow: none; overflow: hidden; border-bottom: 1px solid var(--border-color);">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 4px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     ${avatarHtml}
@@ -3107,7 +3035,7 @@ function renderMovieWatchRecommendedFeed() {
         const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
 
         html += `
-            <div class="long-video-feed-card home-edge-long-video" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer;">
+            <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
                 <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #000; overflow: hidden;">
                     <img src="${v.poster}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
                     <span class="long-video-duration" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">${v.duration || '10:00'}</span>
@@ -3147,6 +3075,77 @@ function escapeHTML(str) {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
+// =========================================================
+// HOME SCROLL UI CONTROLLER
+// Keeps the page itself as the only scrolling surface. Header and
+// bottom navigation move smoothly from scroll direction; no jumpy
+// display:none changes and no layout stretching/zooming.
+// =========================================================
+(function initHomeScrollController() {
+    let lastY = 0;
+    let ticking = false;
+    let initialized = false;
+    let hidden = false;
+
+    function getHomeActive() {
+        const home = document.getElementById('home-tab');
+        const nav = document.getElementById('nav-home');
+        return !!(home && home.classList.contains('active') && nav && nav.classList.contains('active'));
+    }
+
+    function setHidden(next) {
+        if (!getHomeActive() || hidden === next) return;
+        hidden = next;
+        const header = document.querySelector('header');
+        const chips = document.getElementById('global-category-chips');
+        const bottom = document.querySelector('.bottom-nav');
+        [header, chips, bottom].forEach(el => {
+            if (!el) return;
+            el.classList.toggle('home-scroll-ui', true);
+            el.classList.toggle('is-hidden', next);
+        });
+    }
+
+    function resetAtTop() {
+        if (window.scrollY <= 2) setHidden(false);
+    }
+
+    function onScroll() {
+        if (!getHomeActive()) return;
+        if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(() => {
+                const y = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
+                const delta = y - lastY;
+                if (y <= 2) setHidden(false);
+                else if (delta > 3) setHidden(true);
+                else if (delta < -3) setHidden(false);
+                lastY = y;
+                ticking = false;
+            });
+        }
+    }
+
+    function init() {
+        if (initialized) return;
+        initialized = true;
+        lastY = window.scrollY || 0;
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', resetAtTop, { passive: true });
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) resetAtTop(); });
+    }
+    init();
+
+    // Prevent browser/WebView pinch zoom and horizontal gesture drift on Home.
+    document.addEventListener('touchmove', (e) => {
+        if (!getHomeActive()) return;
+        if (e.touches && e.touches.length > 1) e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('gesturestart', e => { if (getHomeActive()) e.preventDefault(); }, { passive: false });
+    document.addEventListener('gesturechange', e => { if (getHomeActive()) e.preventDefault(); }, { passive: false });
+    document.addEventListener('gestureend', e => { if (getHomeActive()) e.preventDefault(); }, { passive: false });
+})();
+
 // =========================================
 // NAVIGATION & DISCOVER TAB
 // =========================================
@@ -3163,6 +3162,11 @@ function adjustHeaderForActiveTab(tabId) {
     const brand = header.querySelector('.brand');
     const actions = header.querySelector('.header-actions');
     const chips = document.getElementById('global-category-chips');
+
+    header.classList.remove('is-hidden', 'home-scroll-ui');
+    if (chips) chips.classList.remove('is-hidden', 'home-scroll-ui');
+    const bottomNav = document.querySelector('.bottom-nav');
+    if (bottomNav) bottomNav.classList.remove('is-hidden', 'home-scroll-ui');
 
     if (tabId === 'shorts') {
         header.style.display = 'none';

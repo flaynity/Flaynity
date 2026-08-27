@@ -883,11 +883,25 @@ function adminIsContentVisible(item) {
 }
 function getAdminCount(item, stats, field) {
     const overrideKey = field === 'views' ? 'adminViews' : field === 'likes' ? 'adminLikes' : null;
-    const override = overrideKey && stats ? Number(stats[overrideKey]) : NaN;
-    if (Number.isFinite(override) && override >= 0) return override;
-    if (Number.isFinite(Number(item?.[field])) && Number(item[field]) >= 0) return Number(item[field]);
-    const obj = stats?.[field] || {};
+    const candidates = [];
+    if (overrideKey && stats) candidates.push(stats[overrideKey]);
+    if (overrideKey && item) candidates.push(item[overrideKey]);
+    if (stats) candidates.push(stats[field + 'Count']);
+    if (item) candidates.push(item[field + 'Count']);
+    if (item) candidates.push(item[field]);
+    for (const value of candidates) {
+        const n = Number(value);
+        if (Number.isFinite(n) && n >= 0) return n;
+    }
+    const obj = stats?.[field];
     return obj && typeof obj === 'object' ? Object.keys(obj).length : 0;
+}
+function getAdminCountFromItem(item, field) {
+    return getAdminCount(item, item?.__stats || {}, field);
+}
+function applyLiveStatToElement(id, value, suffix='') {
+    const el = document.getElementById(id);
+    if (el) el.innerText = formatCount(value) + suffix;
 }
 function showAccountBannedPopup(reason) {
     if (document.getElementById('flaynity-ban-popup')) return;
@@ -1418,6 +1432,18 @@ function startRealtimeFeedsListener() {
                 const data = snap.val();
                 allLongVideos = data ? Object.values(data).filter(m => (!m.scheduledTime || m.scheduledTime <= Date.now()) && adminIsContentVisible(m)) : [];
                 allLongVideos.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                allLongVideos.forEach(m => {
+                    if (m && m.id) {
+                        db.ref(`movie_stats/${m.id}`).on('value', statSnap => {
+                            const stats = statSnap.val() || {};
+                            const views = getAdminCount(m, stats, 'views');
+                            const likes = getAdminCount(m, stats, 'likes');
+                            m.__stats = stats; m.__adminViews = views; m.__adminLikes = likes;
+                            document.querySelectorAll(`[data-flaynity-stat-id=\"${m.id}-views\"]`).forEach(e=>e.innerText=formatCount(views));
+                            document.querySelectorAll(`[data-flaynity-stat-id=\"${m.id}-likes\"]`).forEach(e=>e.innerText=formatCount(likes));
+                        });
+                    }
+                });
                 
                 allLongVideos.forEach(m => {
                     if (m && m.id && !allAdminMovies.find(x => x.id === m.id)) {
@@ -1442,6 +1468,16 @@ function startRealtimeFeedsListener() {
                 const data = snap.val();
                 allShorts = data ? Object.values(data).filter(m => (!m.scheduledTime || m.scheduledTime <= Date.now()) && adminIsContentVisible(m)) : [];
                 allShorts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                allShorts.forEach(m => {
+                    if (m && m.id) {
+                        db.ref(`movie_stats/${m.id}`).on('value', statSnap => {
+                            const stats=statSnap.val()||{};
+                            m.__stats=stats; m.__adminViews=getAdminCount(m,stats,'views'); m.__adminLikes=getAdminCount(m,stats,'likes');
+                            document.querySelectorAll(`[data-flaynity-stat-id=\"${m.id}-views\"]`).forEach(e=>e.innerText=formatCount(m.__adminViews));
+                            document.querySelectorAll(`[data-flaynity-stat-id=\"${m.id}-likes\"]`).forEach(e=>e.innerText=formatCount(m.__adminLikes));
+                        });
+                    }
+                });
                 
                 if(allShorts.length !== previousShortsCount) {
                     previousShortsCount = allShorts.length;
@@ -1615,14 +1651,14 @@ function buildHomeFeed() {
                     <img src="${s.poster}" loading="lazy">
                     <div class="short-home-meta">
                         <h4 style="font-size: 0.85rem; font-weight: 800; margin: 0 0 2px 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(s.title)}</h4>
-                        <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}">0</span></p>
+                        <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}" data-flaynity-stat-id="${s.id}-views">0</span></p>
                     </div>
                 </div>
             `;
             
             db.ref(`movie_stats/${s.id}/views`).once('value', (vSnap) => {
                 const viewsObj = vSnap.val() || {};
-                const count = Object.keys(viewsObj).length;
+                const count = getAdminCount(s, {views: viewsObj}, 'views');
                 const label = document.getElementById(`home-short-views-${s.id}`);
                 if (label) label.innerText = formatCount(count);
             });
@@ -1714,7 +1750,7 @@ function renderShortsSegmentUI(segmentShorts) {
                 <img src="${s.poster}" loading="lazy">
                 <div class="short-home-meta">
                     <h4 style="font-size: 0.85rem; font-weight: 800; margin: 0 0 2px 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(s.title)}</h4>
-                    <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}">0</span></p>
+                    <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}" data-flaynity-stat-id="${s.id}-views">0</span></p>
                 </div>
             </div>
         `;
@@ -1757,7 +1793,7 @@ function renderLongVideosSegmentUI(segmentLongs) {
                         <div class="long-video-subtitle" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;">
                             <span class="live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
                             <span>•</span>
-                            <span id="${viewsId}">0 Views</span>
+                            <span id="${viewsId}" data-flaynity-stat-id="${v.id}-views">0 Views</span>
                             <span>•</span>
                             <span>${relTime}</span>
                         </div>
@@ -1768,7 +1804,7 @@ function renderLongVideosSegmentUI(segmentLongs) {
 
         db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
             const viewsObj = vSnap.val() || {};
-            const count = Object.keys(viewsObj).length;
+            const count = getAdminCount(s, {views: viewsObj}, 'views');
             const label = document.getElementById(viewsId);
             if (label) label.innerText = formatCount(count) + " Views";
         });
@@ -2057,7 +2093,7 @@ function buildShortsPage() {
             const stats = snapshot.val() || {};
             const viewsObj = stats.views || {};
             const likesObj = stats.likes || {};
-            const likesCount = Object.keys(likesObj).length;
+            const likesCount = getAdminCount(s, {likes: likesObj}, 'likes');
 
             try {
                 let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
@@ -3113,8 +3149,8 @@ function openMoreDescriptionSheet() {
         const movieId = currentActiveMovie.id;
         db.ref(`movie_stats/${movieId}`).once('value', (snap) => {
             const stats = snap.val() || {};
-            const likesCount = Object.keys(stats.likes || {}).length;
-            const viewsCount = Object.keys(stats.views || {}).length;
+            const likesCount = getAdminCount(currentDetailItem || currentActiveMovie, stats, 'likes');
+            const viewsCount = getAdminCount(currentDetailItem || currentActiveMovie, stats, 'views');
             
             const likesVal = document.getElementById('more-sheet-likes-val');
             const viewsVal = document.getElementById('more-sheet-views-val');
@@ -3183,7 +3219,7 @@ function renderMovieWatchRecommendedFeed() {
                         <div class="long-video-subtitle" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;">
                             <span class="live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
                             <span>•</span>
-                            <span id="${viewsId}">0 Views</span>
+                            <span id="${viewsId}" data-flaynity-stat-id="${v.id}-views">0 Views</span>
                             <span>•</span>
                             <span>${relTime}</span>
                         </div>
@@ -3712,7 +3748,7 @@ function renderChannelVideos(userId) {
             list.forEach(m => {
                 db.ref(`movie_stats/${m.id}/views`).once('value', (vSnap) => {
                     const viewsObj = vSnap.val() || {};
-                    const count = Object.keys(viewsObj).length;
+                    const count = getAdminCount(s, {views: viewsObj}, 'views');
                     const label = document.getElementById(`chan-vid-views-${m.id}`);
                     if (label) label.innerText = formatCount(count) + " Views";
                 });
@@ -3750,7 +3786,7 @@ function renderChannelShorts(userId) {
             list.forEach(m => {
                 db.ref(`movie_stats/${m.id}/views`).once('value', (vSnap) => {
                     const viewsObj = vSnap.val() || {};
-                    const count = Object.keys(viewsObj).length;
+                    const count = getAdminCount(s, {views: viewsObj}, 'views');
                     const label = document.getElementById(`chan-short-views-${m.id}`);
                     if (label) label.innerText = formatCount(count);
                 });
@@ -3966,10 +4002,10 @@ async function calculateChannelAnalytics() {
             for (let m of vData) {
                 const statSnap = await db.ref(`movie_stats/${m.id}`).once('value');
                 const stat = statSnap.val() || {};
-                const viewsCount = Object.keys(stat.views || {}).length;
+                const viewsCount = getAdminCount(m, stat, 'views');
                 tViews += viewsCount;
                 longViews += viewsCount;
-                tLikes += Object.keys(stat.likes || {}).length;
+                tLikes += getAdminCount(m, stat, 'likes');
 
                 const commSnap = await db.ref(`movie_comments/${m.id}`).once('value');
                 tComments += commSnap.exists() ? Object.keys(commSnap.val()).length : 0;
@@ -3983,10 +4019,10 @@ async function calculateChannelAnalytics() {
             for (let m of sData) {
                 const statSnap = await db.ref(`movie_stats/${m.id}`).once('value');
                 const stat = statSnap.val() || {};
-                const viewsCount = Object.keys(stat.views || {}).length;
+                const viewsCount = getAdminCount(m, stat, 'views');
                 tViews += viewsCount;
                 shortsViews += viewsCount;
-                tLikes += Object.keys(stat.likes || {}).length;
+                tLikes += getAdminCount(m, stat, 'likes');
 
                 const commSnap = await db.ref(`movie_comments/${m.id}`).once('value');
                 tComments += commSnap.exists() ? Object.keys(commSnap.val()).length : 0;
@@ -4005,7 +4041,8 @@ async function calculateChannelAnalytics() {
         estRevenueElement.innerText = '$' + calculatedRevenue.toFixed(2) + ' USDT';
     }
 
-    const watchHours = parseFloat(((longViews * 3.5) / 60).toFixed(1)) || 0;
+    const calculatedWatchHours = parseFloat(((longViews * 3.5) / 60).toFixed(1)) || 0;
+    const watchHours = Number(currentChannelData?.validPublicWatchHours ?? currentChannelData?.publicWatchHours ?? calculatedWatchHours) || 0;
     const totalViews = longViews + shortsViews;
     window.__flaynityPublicWatchHours = watchHours;
     window.__flaynityTotalPublicViews = totalViews;
@@ -4091,7 +4128,8 @@ function updateMonetizationEligibility(subs, hours, views) {
     const applyBtn = document.getElementById('btn-monetization-apply');
     if (!applyBtn) return;
     const status = adminMonetizationStatus?.status || currentChannelData?.monetizationStatus;
-    if (status === 'active') {
+    const adminForcedActive = !!(adminMonetizationStatus?.adminOverride || currentChannelData?.monetizationAdminOverride);
+    if (status === 'active' || adminForcedActive) {
         applyBtn.disabled = true;
         applyBtn.innerText = 'Monetization Active';
         applyBtn.style.background = 'var(--success, #16a34a)';
@@ -4119,7 +4157,8 @@ async function handleMonetizationApply() {
     const subs = Number(currentChannelData?.subscribersCount || currentChannelData?.subscribers || 0);
     const hours = Number(window.__flaynityPublicWatchHours || 0);
     const views = Number(window.__flaynityTotalPublicViews || 0);
-    const eligible = subs >= Number(adminEligibility.minSubscribers) && hours >= Number(adminEligibility.minWatchHours) && views >= Number(adminEligibility.minPublicViews);
+    const forced = !!(adminMonetizationStatus?.adminOverride || currentChannelData?.monetizationAdminOverride);
+    const eligible = forced || (subs >= Number(adminEligibility.minSubscribers) && hours >= Number(adminEligibility.minWatchHours) && views >= Number(adminEligibility.minPublicViews));
     if (!eligible) { showNotification('You have not met the current eligibility requirements.', 'error'); return; }
     try {
         await db.ref(`monetization_applications/${user.uid}`).set({

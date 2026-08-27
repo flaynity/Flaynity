@@ -16,37 +16,52 @@
    Dark SaaS control-room. Everything here maps to a real,
    existing Flaynity system — see the sidebar / SECTION comments.
    ============================================================ */
- :root{
-  --bg:#FFFFFF;
-  --bg-soft:#F7F7F7;
-  --panel:#FFFFFF;
-  --panel-solid:#FFFFFF;
-  --panel-border:#E8E8E8;
-  --panel-hover:#F2F2F2;
-  --line:#E3E3E3;
-  --text:#111111;
-  --text-dim:#333333;
-  --text-faint:#666666;
-  --accent:#222222;
-  --accent-2:#444444;
-  --accent-grad:linear-gradient(135deg,#111111 0%,#333333 100%);
-  --ok:#146B43; --ok-bg:#EAF7F0;
-  --warn:#7A4A00; --warn-bg:#FFF4DE;
-  --danger:#8A1734; --danger-bg:#FDECEF;
-  --info:#174A7A; --info-bg:#EAF3FB;
-  --neutral-bg:#EEEEEE;
-  --radius-lg:18px; --radius-md:12px; --radius-sm:8px;
-  --shadow-lg:0 20px 60px rgba(0,0,0,.12);
-  --shadow-sm:0 6px 20px rgba(0,0,0,.08);
-  --sidebar-w:252px; --topbar-h:64px;
-  --font-display:'Segoe UI',ui-sans-serif,-apple-system,BlinkMacSystemFont,sans-serif;
-  --font-mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+:root{
+  --bg:            #0A0D13;
+  --bg-soft:       #0E1219;
+  --panel:         rgba(20,25,36,0.72);
+  --panel-solid:   #141924;
+  --panel-border:  rgba(255,255,255,0.07);
+  --panel-hover:   rgba(255,255,255,0.03);
+  --line:          rgba(255,255,255,0.08);
+
+  --text:          #E9ECF3;
+  --text-dim:      #A6ADBB;
+  --text-faint:    #6B7285;
+
+  --accent:        #6C5CE7;
+  --accent-2:      #17D6C4;
+  --accent-grad:   linear-gradient(135deg,#6C5CE7 0%,#17D6C4 100%);
+
+  --ok:            #22C58B;
+  --ok-bg:         rgba(34,197,139,0.12);
+  --warn:          #F5A623;
+  --warn-bg:       rgba(245,166,35,0.12);
+  --danger:        #F0466A;
+  --danger-bg:     rgba(240,70,106,0.12);
+  --info:          #4EA1FF;
+  --info-bg:       rgba(78,161,255,0.12);
+  --neutral-bg:    rgba(166,173,187,0.12);
+
+  --radius-lg:     18px;
+  --radius-md:     12px;
+  --radius-sm:     8px;
+  --shadow-lg:     0 20px 60px rgba(0,0,0,0.45);
+  --shadow-sm:     0 6px 20px rgba(0,0,0,0.3);
+
+  --sidebar-w:     252px;
+  --topbar-h:      64px;
+  --font-display:  'Segoe UI', ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono:     'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 }
 
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
 html,body{
   margin:0; padding:0; height:100%;
-  background:#FFFFFF;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(108,92,231,0.16), transparent 45%),
+    radial-gradient(circle at 90% 15%, rgba(23,214,196,0.10), transparent 40%),
+    var(--bg);
   color:var(--text);
   font-family:var(--font-display);
   -webkit-font-smoothing:antialiased;
@@ -339,34 +354,6 @@ tbody tr:hover{background:var(--panel-hover);}
   #sidebar-overlay.show{display:block;}
   #hamburger{display:inline-flex; align-items:center; justify-content:center;}
   #content{padding:16px 14px 90px;}
-}
-
-/* Deep Light + Mobile Admin Panel */
-body{background:#FFFFFF!important;color:#111111!important;}
-#sidebar{background:#FFFFFF!important;border-right:1px solid #DDDDDD!important;}
-#topbar{background:#FFFFFF!important;border-bottom:1px solid #DDDDDD!important;}
-.card,.panel,.table-wrap,.modal-card,.stat-card{background:#FFFFFF!important;border-color:#DDDDDD!important;}
-.btn,.input,select,textarea{background:#F4F4F4!important;color:#111111!important;border-color:#D8D8D8!important;}
-.btn.primary{background:#111111!important;color:#FFFFFF!important;}
-.nav-item{color:#333333!important;}
-.nav-item:hover,.nav-item.active{background:#EEEEEE!important;color:#111111!important;}
-@media(max-width:900px){
-  #sidebar{width:min(86vw,320px);box-shadow:12px 0 40px rgba(0,0,0,.16);z-index:100;}
-  #sidebar-overlay{background:rgba(0,0,0,.35)!important;z-index:99;}
-  #main{width:100%;min-width:0;}
-  #topbar{position:sticky;top:0;z-index:90;padding-left:12px;padding-right:12px;}
-  .content{padding:14px!important;}
-  .section-header{gap:10px;flex-wrap:wrap;}
-  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  table{min-width:620px;}
-  .grid-4,.grid-3{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
-}
-@media(max-width:560px){
-  .grid-4,.grid-3,.grid-2{grid-template-columns:1fr!important;}
-  .content{padding:10px!important;}
-  .btn{min-height:42px;}
-  .input,select,textarea{min-height:42px;}
-  .modal{padding:10px!important;}
 }
 </style>
 </head>
@@ -1019,6 +1006,7 @@ const db   = firebase.database();
 
 /* Existing Flaynity nodes (per spec §2) — reuse, never replace */
 const REF = {
+  users:         db.ref('users'),
   channels:      db.ref('channels'),
   videos:        db.ref('admin_panel/movies/user_uploads'),
   shorts:        db.ref('admin_panel/movies/shorts'),
@@ -1342,6 +1330,11 @@ function bootApp(){
 let rawChannels = {}, rawVideos = {}, rawShorts = {}, rawPosts = {}, rawComments = {};
 
 function initDashboard(){
+  trackListener(REF.users, 'value', snap => {
+    const users = snap.val() || {};
+    Object.entries(users).forEach(([uid,u]) => { if(rawChannels[uid]) rawChannels[uid].userStatus = u.userStatus || u.accountStatus || rawChannels[uid].userStatus; });
+    renderUsersTable();
+  });
   trackListener(REF.channels, 'value', snap => { rawChannels = snap.val() || {}; recomputeDashboard(); renderChannelsTable(); renderUsersTable(); renderSubsTable(); });
   trackListener(REF.videos, 'value', snap => { rawVideos = snap.val() || {}; recomputeDashboard(); renderVideosTable(); renderScheduled(); });
   trackListener(REF.shorts, 'value', snap => { rawShorts = snap.val() || {}; recomputeDashboard(); renderShortsTable(); renderScheduled(); });
@@ -1446,18 +1439,22 @@ function renderUsersTable(){
     const id = b.dataset.ban;
     confirmAction({title:'Ban User', target: rawChannels[id]?.channelName || id, current:'active', next:'banned', dangerLabel:'Ban User',
       onConfirm: reason => {
-        safeUpdate(REF.channels.child(id), {userStatus:'banned'}, {successMsg:'User banned.'}).then(ok => {
-          if(ok) logAction('Ban User','user',id,'active','banned',reason);
-        });
+        Promise.all([
+          REF.channels.child(id).update({userStatus:'banned'}),
+          REF.users.child(id).update({userStatus:'banned', accountStatus:'banned', bannedAt:firebase.database.ServerValue.TIMESTAMP, banReason:reason || null})
+        ]).then(() => { toast('ok','Updated Successfully','User banned.'); logAction('Ban User','user',id,'active','banned',reason); })
+          .catch(err => toast('err', mapFirebaseError(err), ''));
       }});
   }));
   tbody.querySelectorAll('[data-unban]').forEach(b => b.addEventListener('click', () => {
     const id = b.dataset.unban;
     confirmAction({title:'Unban User', target: rawChannels[id]?.channelName || id, current:'banned', next:'active', dangerLabel:'Unban User', reasonRequired:false,
       onConfirm: reason => {
-        safeUpdate(REF.channels.child(id), {userStatus:'active'}, {successMsg:'User unbanned.'}).then(ok => {
-          if(ok) logAction('Unban User','user',id,'banned','active',reason);
-        });
+        Promise.all([
+          REF.channels.child(id).update({userStatus:'active'}),
+          REF.users.child(id).update({userStatus:'active', accountStatus:'active', bannedAt:null, banReason:null})
+        ]).then(() => { toast('ok','Updated Successfully','User unbanned.'); logAction('Unban User','user',id,'banned','active',reason); })
+          .catch(err => toast('err', mapFirebaseError(err), ''));
       }});
   }));
 }
@@ -1628,7 +1625,7 @@ function wireContentRowActions(tbody, dataMap, ref, titleField, targetType){
           if(!reason){ toast('err','Reason Required',''); return; }
           if(isNaN(next) || next < 0){ toast('err','Invalid Data','Enter a non-negative number.'); return; }
           closeModal();
-          safeUpdate(ref.child(id), {[field]: next}, {successMsg:`${field} set to ${next}.`}).then(ok => { if(ok) logAction(`Set ${field}`, targetType, id, current, next, reason); });
+          safeUpdate(ref.child(id), field === 'subscribers' ? {subscribers: next, subscribersCount: next} : {[field]: next}, {successMsg:`${field} set to ${next}.`}).then(ok => { if(ok) logAction(`Set ${field}`, targetType, id, current, next, reason); });
         });
         return;
       }
@@ -1637,7 +1634,7 @@ function wireContentRowActions(tbody, dataMap, ref, titleField, targetType){
       confirmAction({title:`${label} ${field}`, target:(dataMap[id]||{})[titleField]||id, current, next: Math.max(0,current+delta), dangerLabel:'Confirm', reasonRequired:false,
         onConfirm: reason => {
           safeTransaction(ref.child(id).child(field), curr => Math.max(0,(curr||0)+delta), {successMsg:`${field} ${label.toLowerCase()}d.`})
-            .then(newVal => { if(newVal !== null) logAction(`${label} ${field}`, targetType, id, current, newVal, reason); });
+            .then(newVal => { if(newVal !== null) { if(field === 'subscribers') ref.child(id).update({subscribersCount:newVal}); logAction(`${label} ${field}`, targetType, id, current, newVal, reason); } });
         }});
     });
   });
@@ -1965,7 +1962,7 @@ function initChannelAnalytics(){
 function initTheme(){
   trackListener(REF.settings, 'value', snap => {
     const s = snap.val() || {};
-    if(document.activeElement.id !== 'theme-default') document.getElementById('theme-default').value = s.defaultTheme || 'light';
+    if(document.activeElement.id !== 'theme-default') document.getElementById('theme-default').value = s.defaultTheme || 'system';
     document.getElementById('theme-allow-user').checked = s.allowUserThemeSelection !== false;
   });
   document.getElementById('save-theme').addEventListener('click', () => {

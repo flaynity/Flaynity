@@ -1613,7 +1613,7 @@ function renderLongVideosSegmentUI(segmentLongs) {
         const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
 
         html += `
-            <div class="long-video-feed-card home-edge-video" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); overflow: hidden; border-top: 0; border-bottom: 0; box-shadow: none;">
+            <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
                 <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #000; overflow: hidden;">
                     <img src="${v.poster}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
                     <span class="long-video-duration" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">${v.duration || '10:00'}</span>
@@ -1693,11 +1693,14 @@ function renderSinglePostSegmentUI(post) {
     let imagesHtml = '';
     if (post.images && post.images.length > 0) {
         imagesHtml = `
-            <div class="home-post-title" id="title-container-${post.id}" onclick="event.stopPropagation(); togglePostTitleExpand('${post.id}')" style="cursor: pointer; font-size: 0.95rem; font-weight: 800; line-height: 1.4; font-family: 'Plus Jakarta Sans', sans-serif;">
-                ${titleHtml}
-            </div>
-            <div class="home-post-image" style="margin-top: 0; margin-bottom: 12px; width: calc(100% + 32px); aspect-ratio: 3/4; position: relative; background: #000; overflow: hidden; border-radius: 0 !important;">
+            <div style="margin-left: -16px; margin-right: -16px; margin-top: 12px; margin-bottom: 12px; width: calc(100% + 32px); aspect-ratio: 3/4; position: relative; background: #000; overflow: hidden; border-radius: 0 !important;">
                 <img src="${post.images[0]}" onclick="openFullScreenImagePreview('${post.images[0]}')" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; display: block; border-radius: 0 !important;" loading="lazy">
+                
+                <div style="position: absolute; top: 0; left: 0; right: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%); padding: 16px 20px; color: #FFFFFF; z-index: 10;">
+                     <div id="title-container-${post.id}" onclick="event.stopPropagation(); togglePostTitleExpand('${post.id}')" style="cursor: pointer; font-size: 0.95rem; font-weight: 800; line-height: 1.4; text-shadow: 0 2px 8px rgba(0,0,0,0.95); font-family: 'Plus Jakarta Sans', sans-serif;">
+                         ${titleHtml}
+                     </div>
+                </div>
 
                 ${post.images.length > 1 ? `
                     <div style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; z-index: 12;">
@@ -1722,7 +1725,7 @@ function renderSinglePostSegmentUI(post) {
     const loveBtnId = `post-love-btn-${post.id}`;
 
     return `
-        <div class="post-card home-edge-post" id="post-card-${post.id}" style="margin-bottom: 24px; background: transparent; border: none; border-radius: 0; padding: 12px 0; box-shadow: none; overflow: hidden; border-bottom: 1px solid var(--border-color);">
+        <div class="post-card" id="post-card-${post.id}" style="margin-bottom: 24px; background: transparent; border: none; border-radius: 0; padding: 12px 0; box-shadow: none; overflow: hidden; border-bottom: 1px solid var(--border-color);">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 4px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     ${avatarHtml}
@@ -3075,82 +3078,6 @@ function escapeHTML(str) {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-// =========================================================
-// HOME SCROLL UI CONTROLLER
-// Top bar follows the Home feed continuously. There is NO threshold
-// hide/show jump: its position is derived from the real page scrollY.
-// =========================================================
-(function initHomeScrollController() {
-    let ticking = false;
-    let initialized = false;
-
-    function getHomeActive() {
-        const home = document.getElementById('home-tab');
-        const nav = document.getElementById('nav-home');
-        return !!(home && home.classList.contains('active') && nav && nav.classList.contains('active'));
-    }
-
-    function applyHomeScrollPosition() {
-        ticking = false;
-        if (!getHomeActive()) return;
-
-        const y = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
-        const header = document.querySelector('body > header');
-        const chips = document.getElementById('global-category-chips');
-
-        // Header (82px) + category bar (44px) = 126px.
-        // Move both by the exact scroll distance, capped at their full height.
-        // This makes them follow the feed 1:1 instead of disappearing after a
-        // tiny scroll caused by a delta threshold.
-        const headerOffset = Math.min(y, 82);
-        const chipsOffset = Math.min(Math.max(y - 82, 0), 44);
-
-        if (header) {
-            header.classList.add('home-scroll-ui');
-            header.classList.remove('is-hidden');
-            header.style.transform = `translate3d(0, -${headerOffset}px, 0)`;
-        }
-        if (chips) {
-            chips.classList.add('home-scroll-ui');
-            chips.classList.remove('is-hidden');
-            chips.style.transform = `translate3d(0, -${chipsOffset}px, 0)`;
-        }
-    }
-
-    function onScroll() {
-        if (!getHomeActive() || ticking) return;
-        ticking = true;
-        requestAnimationFrame(applyHomeScrollPosition);
-    }
-
-    function reset() {
-        if (!getHomeActive()) return;
-        if (!ticking) applyHomeScrollPosition();
-    }
-
-    function init() {
-        if (initialized) return;
-        initialized = true;
-        window.addEventListener('scroll', onScroll, { passive: true });
-        window.addEventListener('resize', reset, { passive: true });
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) reset();
-        });
-        // Initial position after the Home DOM is ready.
-        requestAnimationFrame(reset);
-    }
-    init();
-
-    // Prevent browser/WebView pinch zoom and multi-touch UI stretching on Home.
-    document.addEventListener('touchmove', (e) => {
-        if (!getHomeActive()) return;
-        if (e.touches && e.touches.length > 1) e.preventDefault();
-    }, { passive: false });
-    document.addEventListener('gesturestart', e => { if (getHomeActive()) e.preventDefault(); }, { passive: false });
-    document.addEventListener('gesturechange', e => { if (getHomeActive()) e.preventDefault(); }, { passive: false });
-    document.addEventListener('gestureend', e => { if (getHomeActive()) e.preventDefault(); }, { passive: false });
-})();
-
 // =========================================
 // NAVIGATION & DISCOVER TAB
 // =========================================
@@ -3167,11 +3094,6 @@ function adjustHeaderForActiveTab(tabId) {
     const brand = header.querySelector('.brand');
     const actions = header.querySelector('.header-actions');
     const chips = document.getElementById('global-category-chips');
-
-    header.classList.remove('is-hidden', 'home-scroll-ui');
-    if (chips) chips.classList.remove('is-hidden', 'home-scroll-ui');
-    const bottomNav = document.querySelector('.bottom-nav');
-    if (bottomNav) bottomNav.classList.remove('is-hidden', 'home-scroll-ui');
 
     if (tabId === 'shorts') {
         header.style.display = 'none';

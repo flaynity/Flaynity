@@ -809,6 +809,71 @@ body{font-weight:600;}
         <div id="mon-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
       </section>
 
+      <!-- ================= MONETIZATION CONTROL ================= -->
+      <section class="section" id="section-monetization-control">
+        <div class="section-head"><div><h2>Monetization Control</h2><p>Configure platform eligibility rules and manually activate monetization.</p></div></div>
+        <div class="settings-row">
+          <div><div class="t">Minimum Subscribers</div><div class="d">Required subscribers for monetization eligibility.</div></div>
+          <input class="input" id="control-elig-subs" type="number" min="0" placeholder="1000" style="max-width:160px;">
+        </div>
+        <div class="settings-row">
+          <div><div class="t">Valid Public Watch Hours</div><div class="d">Required valid public watch hours.</div></div>
+          <input class="input" id="control-elig-watchhours" type="number" min="0" placeholder="4000" style="max-width:160px;">
+        </div>
+        <div class="settings-row">
+          <div><div class="t">Minimum Public Views</div><div class="d">Optional public-view threshold for eligibility.</div></div>
+          <input class="input" id="control-elig-views" type="number" min="0" placeholder="0" style="max-width:160px;">
+        </div>
+        <div class="btn-row" style="margin-top:16px;"><button class="btn primary" id="save-control-eligibility">Save Eligibility Rules</button></div>
+        <div class="section-head" style="margin-top:28px;"><div><h2>Admin Override</h2><p>Activate monetization for a specific Firebase Auth UID.</p></div></div>
+        <div class="search-bar"><input class="input" id="override-user-search" placeholder="Enter Firebase Auth UID…"><button class="btn ok" id="activate-any-user">Activate Monetization</button></div>
+      </section>
+
+      <!-- ================= MONETIZATION APPROVALS ================= -->
+      <section class="section" id="section-monetization-approvals">
+        <div class="section-head"><div><h2>Monetization Approvals</h2><p>Review pending monetization applications from Firebase.</p></div></div>
+        <div class="search-bar">
+          <input class="input" id="approval-search" placeholder="Search by channel or user UID…">
+          <select class="input" id="approval-filter" style="max-width:170px;">
+            <option value="all">Pending</option>
+            <option value="pending">Pending</option>
+          </select>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Channel</th><th>Subscribers</th><th>Watch Hours</th><th>Public Views</th><th>Status</th><th></th></tr></thead><tbody id="approval-tbody"></tbody></table></div>
+        <div id="approval-empty" class="empty-state"><div class="big">◌</div>No pending applications</div>
+      </section>
+
+      <!-- ================= PLATFORM ANALYTICS ================= -->
+      <section class="section" id="section-platform-analytics">
+        <div class="section-head"><div><h2>Platform Analytics</h2><p>Live aggregated metrics from Firebase content and channels.</p></div></div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="label">Users / Channels</div><div class="value" id="pa-users">0</div></div>
+          <div class="stat-card"><div class="label">Long Videos</div><div class="value" id="pa-videos">0</div></div>
+          <div class="stat-card"><div class="label">Shorts</div><div class="value" id="pa-shorts">0</div></div>
+          <div class="stat-card"><div class="label">Posts</div><div class="value" id="pa-posts">0</div></div>
+          <div class="stat-card"><div class="label">Total Views</div><div class="value" id="pa-views">0</div></div>
+          <div class="stat-card"><div class="label">Total Likes</div><div class="value" id="pa-likes">0</div></div>
+          <div class="stat-card"><div class="label">Subscribers</div><div class="value" id="pa-subs">0</div></div>
+          <div class="stat-card"><div class="label">Monetized Channels</div><div class="value" id="pa-monetized">0</div></div>
+        </div>
+        <div class="table-wrap" style="margin-top:18px;"><table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody id="pa-summary-tbody"></tbody></table></div>
+      </section>
+
+      <!-- ================= CHANNEL ANALYTICS ================= -->
+      <section class="section" id="section-channel-analytics">
+        <div class="section-head"><div><h2>Channel Analytics</h2><p>Search a channel to view its performance.</p></div></div>
+        <div class="search-bar"><input class="input" id="ca-search" placeholder="Search channel name or channel ID…"></div>
+        <div id="ca-empty-hint" class="empty-state"><div class="big">◌</div>Search for a channel to view analytics</div>
+        <div id="ca-detail" style="display:none;">
+          <div class="stats-grid">
+            <div class="stat-card"><div class="label">Views</div><div class="value" id="ca-views">0</div></div>
+            <div class="stat-card"><div class="label">Watch Time</div><div class="value" id="ca-watchtime">0</div></div>
+            <div class="stat-card"><div class="label">Subscribers</div><div class="value" id="ca-subs">0</div></div>
+            <div class="stat-card"><div class="label">Estimated Revenue</div><div class="value" id="ca-revenue">0</div></div>
+          </div>
+        </div>
+      </section>
+
       <!-- ================= PLATFORM SETTINGS ================= -->
       <section class="section" id="section-platform-settings">
         <div class="card">
@@ -1847,6 +1912,30 @@ function initMonetizationApprovals(){
   trackListener(REF.monetization,'value',snap=>{rawMonetization=snap.val()||{};renderApprovalTable();});
 }
 function renderApprovalTable(){const q=(document.getElementById('approval-search').value||'').toLowerCase();const f=document.getElementById('approval-filter').value;const rows=Object.entries(rawMonetization).filter(([id,m])=>{const st=m.status||'pending';const uid=(m.userId||m.channelId||id).toLowerCase();return (f==='all'||st==='pending')&&(!q||uid.includes(q)||(rawChannels[m.channelId||id]?.channelName||'').toLowerCase().includes(q));});const tb=document.getElementById('approval-tbody');tb.innerHTML='';document.getElementById('approval-empty').style.display=rows.length?'none':'block';rows.forEach(([id,m])=>{const uid=m.userId||m.channelId||id;const tr=document.createElement('tr');tr.innerHTML=`<td>${escapeHtml((rawChannels[m.channelId||id]||{}).channelName||uid)}</td><td>${fmtNum(m.subscribers||0)}</td><td>${fmtNum(m.watchHours||m.validPublicWatchHours||0)}</td><td>${fmtNum(m.publicViews||0)}</td><td>${statusBadge(m.status||'pending')}</td><td>${m.status==='pending'?`<button class="btn sm ok" data-approval="${id}">Approve</button>`:''}</td>`;tb.appendChild(tr);});tb.querySelectorAll('[data-approval]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.approval;const m=rawMonetization[id]||{};const uid=m.userId||m.channelId||id;const updates={};updates[`monetization_applications/${id}/status`]='active';updates[`monetization_applications/${id}/adminOverride`]=true;updates[`monetization_applications/${id}/reviewedAt`]=firebase.database.ServerValue.TIMESTAMP;updates[`monetization_applications/${id}/reviewedBy`]=currentUser.uid;updates[`channels/${uid}/monetizationStatus`]='active';updates[`channels/${uid}/monetizationAdminOverride`]=true;db.ref().update(updates).then(()=>toast('ok','Approved','User monetization is now active.')).catch(err=>toast('err',mapFirebaseError(err),''));}));}
+
+function initPlatformAnalytics(){
+  const render=()=>{
+    const users=Object.keys(rawUsers).length;
+    const channels=Object.values(rawChannels);
+    const videos=Object.values(rawVideos), shorts=Object.values(rawShorts), posts=Object.values(rawPosts);
+    const sum=(arr,k)=>arr.reduce((a,v)=>a+Number(v?.[k]||0),0);
+    const vals={
+      'pa-users': users || channels.length,
+      'pa-videos': videos.length,
+      'pa-shorts': shorts.length,
+      'pa-posts': posts.length,
+      'pa-views': sum(videos,'views')+sum(shorts,'views'),
+      'pa-likes': sum(videos,'likes')+sum(shorts,'likes'),
+      'pa-subs': sum(channels,'subscribersCount') || sum(channels,'subscribers'),
+      'pa-monetized': channels.filter(c=>c.monetizationStatus==='active').length
+    };
+    Object.entries(vals).forEach(([id,v])=>set(id,v));
+    const tb=document.getElementById('pa-summary-tbody'); if(!tb) return;
+    tb.innerHTML=Object.entries(vals).map(([id,v])=>`<tr><td>${id.replace('pa-','').replace(/-/g,' ')}</td><td>${fmtNum(v)}</td></tr>`).join('');
+  };
+  render();
+  ['users','channels','videos','shorts','posts'].forEach(k=>{ const r=REF[k]; if(r) trackListener(r,'value',render); });
+}
 
 function initChannelAnalytics(){
   document.getElementById('ca-search').addEventListener('input', e => {

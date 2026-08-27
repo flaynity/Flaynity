@@ -3590,7 +3590,7 @@ function openViewChannelPage() {
     const viewDesc = document.getElementById('view-channel-desc');
     const viewSub = document.getElementById('view-sub-count');
 
-    if (viewTitle) viewTitle.innerText = data.channelName;
+    if (viewTitle) viewTitle.innerText = "Your Channel";
     if (viewBanner) viewBanner.src = data.bannerUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop";
     if (viewAvatar) viewAvatar.src = data.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop";
     if (viewName) viewName.innerText = data.channelName;

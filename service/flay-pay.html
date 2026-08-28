@@ -10,20 +10,42 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 <script src="../js/firebase-config.js"></script>
+<script>
+    // Apply Theme Immediately to prevent flash
+    document.documentElement.dataset.theme = localStorage.getItem('flaynity-theme-pref') || 'light';
+</script>
 <style>
+/* Light Mode Variables (Default) */
 :root {
-    --bg-main: #0F1013;
-    --card-primary: #181A1F;
-    --card-secondary: #1D1F25;
+    --bg-main: #FFFFFF;
+    --card-primary: #FFFFFF;
+    --card-secondary: #F4F5F7;
     --pink-primary: #FF4F91;
     --pink-bright: #FF5A9D;
     --pink-soft: rgba(255, 79, 145, 0.08);
+    --text-primary: #0F1013;
+    --text-secondary: #6B7280;
+    --border-color: #E5E7EB;
+    --success: #10B981;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --overlay-bg: rgba(255, 255, 255, 0.95);
+    --sticky-bg: rgba(255, 255, 255, 0.90);
+}
+
+/* Dark Mode Variables */
+[data-theme="dark"] {
+    --bg-main: #0F1013;
+    --card-primary: #181A1F;
+    --card-secondary: #1D1F25;
     --text-primary: #FFFFFF;
     --text-secondary: #9EA3B3;
     --border-color: #292C34;
     --success: #35D07F;
     --warning: #FFB84D;
     --danger: #FF3B3B;
+    --overlay-bg: rgba(15, 16, 19, 0.95);
+    --sticky-bg: rgba(15, 16, 19, 0.90);
 }
 
 * {
@@ -39,6 +61,7 @@ body {
     font-family: 'Plus Jakarta Sans', sans-serif;
     line-height: 1.5;
     padding-bottom: env(safe-area-inset-bottom, 20px);
+    transition: background-color 0.3s, color 0.3s;
 }
 
 .app {
@@ -47,7 +70,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    padding-bottom: 100px; /* Space for sticky bar */
+    padding-bottom: 100px; 
     animation: fadeIn 0.4s ease-out;
 }
 
@@ -58,7 +81,7 @@ body {
     position: sticky;
     top: 0;
     z-index: 50;
-    background: rgba(15, 16, 19, 0.85);
+    background: var(--sticky-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     display: flex;
@@ -112,6 +135,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.02);
 }
 .summary-left p { color: var(--text-secondary); font-size: 13px; font-weight: 600; margin-bottom: 4px; }
 .summary-left h2 { font-size: 18px; font-weight: 800; }
@@ -142,12 +166,12 @@ body {
     margin-bottom: 16px;
     overflow: hidden;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.02);
 }
 
 .payment-card.active {
     border-color: var(--pink-primary);
     background: var(--pink-soft);
-    box-shadow: 0 8px 32px rgba(255, 79, 145, 0.05);
 }
 
 .card-header {
@@ -173,7 +197,6 @@ body {
 .payment-card.active .card-icon {
     color: var(--pink-primary);
     background: rgba(255, 79, 145, 0.15);
-    box-shadow: 0 0 15px rgba(255, 79, 145, 0.2);
 }
 
 .card-info { flex: 1; }
@@ -226,7 +249,7 @@ body {
     border-color: var(--pink-primary);
     background: rgba(255, 79, 145, 0.08);
 }
-.sub-method-icon { font-size: 20px; color: #fff; }
+.sub-method-icon { font-size: 20px; color: var(--text-primary); }
 .sub-method-name { font-size: 14px; font-weight: 700; }
 .sub-method-action { font-size: 11px; color: var(--text-secondary); font-weight: 600; display: flex; align-items: center; gap: 4px; }
 .sub-method.selected .sub-method-action { color: var(--pink-primary); }
@@ -265,6 +288,7 @@ body {
     border-radius: 16px;
     padding: 16px;
     margin-top: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.02);
 }
 .security-header { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; margin-bottom: 6px; }
 .security-header i { color: var(--success); }
@@ -279,7 +303,7 @@ body {
     bottom: 0;
     left: 0;
     width: 100%;
-    background: rgba(15, 16, 19, 0.95);
+    background: var(--sticky-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border-top: 1px solid var(--border-color);
@@ -323,7 +347,7 @@ body {
 .overlay {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: var(--bg-main);
+    background: var(--overlay-bg);
     z-index: 999;
     display: flex;
     flex-direction: column;
@@ -351,7 +375,7 @@ body {
 .spinner { animation: spin 1s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
-.overlay h2 { font-size: 24px; font-weight: 900; margin-bottom: 8px; }
+.overlay h2 { font-size: 24px; font-weight: 900; margin-bottom: 8px; color: var(--text-primary); }
 .overlay p { color: var(--text-secondary); font-size: 14px; margin-bottom: 32px; max-width: 280px; }
 
 .overlay-details {
@@ -367,7 +391,7 @@ body {
 .overlay-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px; }
 .overlay-row:last-child { margin-bottom: 0; }
 .overlay-row span { color: var(--text-secondary); }
-.overlay-row strong { font-weight: 700; }
+.overlay-row strong { font-weight: 700; color: var(--text-primary); }
 
 .btn-secondary {
     background: transparent;
@@ -401,7 +425,8 @@ body {
 
 <main class="app">
     <header class="top-bar">
-        <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
+        <!-- type="button" added to stop any unintended refreshes -->
+        <button class="back-btn" type="button" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
         <div class="header-title"><i class="fas fa-shield-halved"></i> Flay Pay</div>
     </header>
 
@@ -419,7 +444,7 @@ body {
             <div class="summary-right">
                 <span>Order ID</span>
                 <div class="order-id-box">
-                    <span id="displayOrderId" style="color:#fff;">FLY-XXXXXXXX</span>
+                    <span id="displayOrderId" style="color: var(--text-primary);">FLY-XXXXXXXX</span>
                     <i class="fas fa-copy copy-btn" onclick="copyText('displayOrderId')"></i>
                 </div>
             </div>
@@ -520,7 +545,7 @@ body {
                         </div>
                     </div>
                     <div class="input-group" id="local-details">
-                        <p style="font-size: 12px; color:var(--text-secondary); margin-bottom:12px;">Send money to: <strong style="color:#fff;" id="local-number">01XXXXXXXXX</strong> <i class="fas fa-copy copy-btn" onclick="copyText('local-number')"></i></p>
+                        <p style="font-size: 12px; color:var(--text-secondary); margin-bottom:12px;">Send money to: <strong style="color: var(--text-primary);" id="local-number">01XXXXXXXXX</strong> <i class="fas fa-copy copy-btn" onclick="copyText('local-number')"></i></p>
                         <label class="input-label">Transaction ID</label>
                         <input type="text" class="flay-input" id="local-txid" placeholder="Enter Transaction ID">
                     </div>
@@ -566,7 +591,7 @@ body {
         <span>Total Amount</span>
         <strong id="displayTotal">৳0</strong>
     </div>
-    <button class="btn-primary" id="mainCta" onclick="processPayment()" disabled>
+    <button class="btn-primary" id="mainCta" type="button" onclick="processPayment()" disabled>
         Select Method <i class="fas fa-arrow-right"></i>
     </button>
 </div>
@@ -594,8 +619,9 @@ body {
         <div class="overlay-row"><span>Order ID</span><strong class="display-order-id-overlay">FLY-XXXXXXXX</strong></div>
         <div class="overlay-row"><span>Status</span><strong style="color:var(--success)">Waiting for Approval</strong></div>
     </div>
-    <button class="btn-primary btn-full" onclick="goBack()">View Payment Status</button>
-    <button class="btn-secondary" onclick="goHome()">Back to Flaynity</button>
+    <!-- Added type="button" to stop App refresh -->
+    <button class="btn-primary btn-full" type="button" onclick="goBack()">View Payment Status</button>
+    <button class="btn-secondary" type="button" onclick="goHome()">Back to Flaynity</button>
 </div>
 
 <!-- Failed Overlay -->
@@ -606,8 +632,9 @@ body {
     <div class="overlay-details">
         <div class="overlay-row"><span>Order ID</span><strong class="display-order-id-overlay">FLY-XXXXXXXX</strong></div>
     </div>
-    <button class="btn-primary btn-full" onclick="closeOverlays()">Try Again</button>
-    <button class="btn-secondary" onclick="closeOverlays()">Change Payment Method</button>
+    <!-- Added type="button" to stop App refresh -->
+    <button class="btn-primary btn-full" type="button" onclick="closeOverlays()">Try Again</button>
+    <button class="btn-secondary" type="button" onclick="closeOverlays()">Change Payment Method</button>
 </div>
 
 <script>
@@ -646,14 +673,14 @@ if (typeof auth !== 'undefined') {
     auth.onAuthStateChanged(user => {
         currentUser = user;
         if (!user) {
-            // Unauthenticated state
             document.getElementById('mainCta').textContent = "Sign In Required";
         }
     });
 }
 
+// Fixed goBack to properly go to the previous page
 function goBack() {
-    if (window.history.length > 1) {
+    if (document.referrer || window.history.length > 1) {
         window.history.back();
     } else {
         window.location.href = '../index.html';
@@ -678,7 +705,6 @@ function toggleCard(category) {
         const card = document.getElementById('card-' + cat);
         if (cat === category) {
             if (activeCategory === category) {
-                // Collapse if clicking same
                 card.classList.remove('active');
                 activeCategory = null;
                 resetSelection();
@@ -710,7 +736,6 @@ function selectSubMethod(category, method) {
     selectedCategoryName = category;
     selectedMethodName = method;
 
-    // Reset UI selections within category
     const card = document.getElementById('card-' + category);
     card.querySelectorAll('.sub-method').forEach(el => {
         if (el.innerText.includes(method) || (method === 'BTC' && el.innerText.includes('Bitcoin')) || (method === 'ETH' && el.innerText.includes('Ethereum'))) {
@@ -720,7 +745,6 @@ function selectSubMethod(category, method) {
         }
     });
 
-    // Show input fields dynamically
     if (category === 'crypto') {
         const details = document.getElementById('crypto-details');
         details.classList.add('visible');
@@ -761,7 +785,6 @@ function updateCta() {
 async function processPayment() {
     if (!selectedMethodName || !currentUser) return;
 
-    // Validation
     let txid = '';
     if (selectedCategoryName === 'crypto') {
         txid = document.getElementById('crypto-txid').value.trim();
@@ -771,12 +794,10 @@ async function processPayment() {
         if(!txid) { alert('Please enter your Transaction ID'); return; }
     }
 
-    // Show Pending Overlay
     document.getElementById('overlay-pending-method').textContent = selectedMethodName;
     document.getElementById('overlay-pending').classList.add('active');
 
     try {
-        // Firebase Submission (Simulating production behavior based on earlier files)
         if (typeof db !== 'undefined') {
             const ref = db.ref('paymentRequests/' + currentUser.uid).push();
             await ref.set({
@@ -793,18 +814,15 @@ async function processPayment() {
                 createdAt: firebase.database.ServerValue.TIMESTAMP
             });
         } else {
-            // Fake delay if Firebase is missing
             await new Promise(r => setTimeout(r, 2000));
         }
 
-        // Hide Pending, Show Success
         setTimeout(() => {
             document.getElementById('overlay-pending').classList.remove('active');
             document.getElementById('overlay-success').classList.add('active');
         }, 1500);
 
     } catch (e) {
-        // Hide Pending, Show Fail
         document.getElementById('overlay-pending').classList.remove('active');
         document.getElementById('overlay-failed').classList.add('active');
         document.getElementById('fail-reason').textContent = e.message || "We couldn't verify this payment.";

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Flay Pay • Flaynity</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+<style>
+:root{--bg:#fff;--surface:#fff;--text:#000;--muted:#666;--border:#e9e9e9;--accent:#ff2e55;--soft:rgba(255,46,85,.10);--shadow:0 14px 40px rgba(0,0,0,.07)}
+[data-theme=dark]{--bg:#000;--surface:#0a0a0a;--text:#fff;--muted:#aaa;--border:#222;--soft:rgba(255,46,85,.14);--shadow:0 14px 40px rgba(0,0,0,.35)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body{margin:0;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif}.app{max-width:680px;margin:auto;min-height:100vh}.bar{height:64px;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:5}.back{width:40px;height:40px;border:0;background:transparent;color:var(--text);font-size:20px;border-radius:50%}.title{font-size:18px;font-weight:900;flex:1}.content{padding:22px 16px}.hero{padding:22px;border:1px solid var(--border);background:var(--surface);border-radius:26px;box-shadow:var(--shadow)}.pay-icon{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;background:var(--soft);color:var(--accent);font-size:25px}.hero h1{font-size:26px;margin:16px 0 8px;font-weight:900}.hero p{margin:0;color:var(--muted);font-size:14px;line-height:1.55}.card{margin-top:15px;padding:18px;border:1px solid var(--border);border-radius:20px;background:var(--surface)}.label{display:block;font-size:12px;font-weight:800;margin:0 0 7px}.input,.select{width:100%;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--bg);color:var(--text);outline:0}.input:focus,.select:focus{border-color:var(--accent)}.primary{width:100%;border:0;border-radius:17px;padding:15px;background:var(--accent);color:#fff;font-weight:900;margin-top:14px}.primary:disabled{opacity:.45}.status{margin-top:14px;padding:12px 14px;border-radius:14px;background:var(--soft);font-size:12px;font-weight:800;line-height:1.4}.order{margin-top:14px;padding:14px;border:1px solid var(--border);border-radius:16px}.row{display:flex;justify-content:space-between;gap:12px;margin:7px 0;font-size:12px}.muted{color:var(--muted)}.pending{color:#d98200}.paid{color:#00a844}.failed{color:#d7193f}.small{font-size:11px;color:var(--muted);text-align:center;line-height:1.45;margin-top:12px}.badge{display:inline-flex;gap:6px;align-items:center;background:var(--soft);color:var(--accent);padding:6px 9px;border-radius:999px;font-size:9px;font-weight:900}
+.premium-service-page .bar{top:0;} .premium-service-page{padding-top:env(safe-area-inset-top,0px);box-sizing:border-box;} </style>
+</head>
+<body>
+<main class="app">
+<header class="bar"><button class="back" onclick="executeBackAction()" aria-label="Back"><i class="fas fa-arrow-left"></i></button><div class="title">Flay Pay</div><span class="badge"><i class="fas fa-shield-halved"></i> PAYMENT</span></header>
+<section class="content">
+<div class="hero">
+<div class="pay-icon"><i class="fas fa-credit-card"></i></div>
+<h1>Flay Pay</h1>
+<p>This is the separate payment system for Upgrade Pro, Flay Verified Badge, Flay Ads and Boost Content. It is not part of the main Flaynity app navigation.</p>
+<div id="authStatus" class="status">Connecting to your Flaynity account…</div>
+<div class="card">
+<label class="label" for="service">Service</label>
+<select class="select" id="service">
+<option value="upgradePro">Upgrade Pro</option>
+<option value="flayVerifiedBadge">Flay Verified Badge</option>
+<option value="flayAds">Flay Ads</option>
+<option value="boostContent">Boost Content</option>
+</select>
+<label class="label" for="amount" style="margin-top:14px">Amount (BDT)</label>
+<input class="input" id="amount" type="number" min="1" step="1" placeholder="Enter amount">
+<button class="primary" id="payBtn" onclick="createPaymentRequest()" disabled>Create Payment Request</button>
+<div id="paymentStatus" class="status" style="display:none"></div>
+<div id="latestOrder"></div>
+<div class="small">This page creates a pending payment request only. It does not claim a payment is successful. A trusted payment backend/admin process must update the Firebase status.</div>
+</div>
+</div>
+</section>
+</main>
+<script>(()=>{
+const firebaseConfig={apiKey:"AIzaSyCiUTpQ_QDSbBIOGJXKI7jJmzQHPu8L14I",authDomain:"flaynity-app.firebaseapp.com",databaseURL:"https://flaynity-app-default-rtdb.firebaseio.com",projectId:"flaynity-app",storageBucket:"flaynity-app.firebasestorage.app",messagingSenderId:"587469287255",appId:"1:587469287255:web:6ec177b0c1c802efc95812",measurementId:"G-HPMF5TPJB2"};
+if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth(),db=firebase.database();
+let currentUser=null,ordersRef=null;
+document.documentElement.dataset.theme=localStorage.getItem('flaynity-theme-pref')||'light';
+const params=new URLSearchParams(location.search),requestedService=window.__flaynityPremiumPayService||params.get('service');
+const serviceEl=document.getElementById('service');
+if(['upgradePro','flayVerifiedBadge','flayAds','boostContent'].includes(requestedService))serviceEl.value=requestedService;
+const labels={upgradePro:'Upgrade Pro',flayVerifiedBadge:'Flay Verified Badge',flayAds:'Flay Ads',boostContent:'Boost Content'};
+auth.onAuthStateChanged(function(u){
+ currentUser=u;const a=document.getElementById('authStatus'),b=document.getElementById('payBtn');
+ if(!u){a.textContent='Sign in to use Flay Pay.';b.disabled=true;return}
+ a.textContent='Signed in as '+(u.email||u.displayName||'Flaynity user');b.disabled=false;listenOrders(u.uid);
+});
+function listenOrders(uid){
+ if(ordersRef)ordersRef.off();ordersRef=db.ref('paymentRequests/'+uid).limitToLast(1);
+ ordersRef.on('value',function(snap){let last=null;snap.forEach(function(c){last=c.val();last.id=c.key});if(!last)return;renderOrder(last);});
+}
+function renderOrder(o){
+ const box=document.getElementById('latestOrder');const status=(o.status||'pending').toLowerCase();
+ const cls=status==='paid'||status==='success'?'paid':(status==='failed'||status==='cancelled'?'failed':'pending');
+ box.innerHTML='<div class="order"><div class="row"><strong>Latest request</strong><span class="'+cls+'">'+escapeHtml(status.toUpperCase())+'</span></div><div class="row"><span class="muted">Service</span><strong>'+escapeHtml(labels[o.service]||o.service||'—')+'</strong></div><div class="row"><span class="muted">Amount</span><strong>৳ '+escapeHtml(String(o.amount||0))+'</strong></div><div class="row"><span class="muted">Request ID</span><span>'+escapeHtml(o.id||'—')+'</span></div></div>';
+}
+async function createPaymentRequest(){
+ if(!currentUser)return;
+ const amount=Number(document.getElementById('amount').value),service=serviceEl.value;
+ if(!Number.isFinite(amount)||amount<=0){showStatus('Enter a valid amount first.','error');return}
+ const btn=document.getElementById('payBtn');btn.disabled=true;
+ try{
+  const ref=db.ref('paymentRequests/'+currentUser.uid).push();
+  await ref.set({service:service,amount:amount,currency:'BDT',status:'pending',uid:currentUser.uid,email:currentUser.email||'',createdAt:firebase.database.ServerValue.TIMESTAMP});
+  showStatus('Payment request created. Complete payment through the configured Flay Pay backend.','success');
+ }catch(e){showStatus('Unable to create payment request: '+e.message,'error')}
+ finally{btn.disabled=false}
+}
+function showStatus(text,type){const el=document.getElementById('paymentStatus');el.style.display='block';el.textContent=text;el.style.color=type==='success'?'#00a844':type==='error'?'#d7193f':'var(--text)'}
+function escapeHtml(v){return String(v).replace(/[&<>'"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]})}
+})();</script>
+</body>
+</html>

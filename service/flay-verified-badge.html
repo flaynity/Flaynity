@@ -5,13 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Flay Verified Badge • Flaynity</title>
     
-    <!-- Theme Initialization Script (Prevents flash of wrong theme) -->
+    <!-- Theme Initialization Script -->
     <script>
         (function() {
             const savedTheme = localStorage.getItem('flaynity-theme-pref') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
         })();
     </script>
+
+    <!-- Firebase SDK (Required for Realtime Database Fetching) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+    <!-- Your existing Firebase Config file -->
+    <script src="../js/firebase-config.js"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -88,18 +95,14 @@
             animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
         }
 
-        /* Top Bar */
+        /* Top Bar - No longer sticky, scrollable with page */
         .top-bar {
-            position: sticky;
-            top: 0;
-            z-index: 50;
+            position: relative; /* Changed from sticky to scroll with page */
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 16px 20px;
             background: var(--app-bar-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border-color);
         }
 
@@ -112,14 +115,20 @@
             height: 40px;
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             border-radius: 50%;
             cursor: pointer;
+            z-index: 2; /* Ensure clickable */
         }
 
         .page-title {
             font-size: 16px;
             font-weight: 700;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            z-index: 1;
         }
 
         .premium-badge-small {
@@ -133,6 +142,7 @@
             align-items: center;
             gap: 4px;
             border: 1px solid rgba(var(--flay-pink-rgb), 0.2);
+            z-index: 2;
         }
 
         /* Sections */
@@ -207,7 +217,7 @@
         .hero-icon-container {
             width: 80px;
             height: 80px;
-            background: rgba(51, 144, 236, 0.1); /* Telegram Blue tint */
+            background: rgba(51, 144, 236, 0.1);
             border-radius: 24px;
             display: flex;
             align-items: center;
@@ -252,9 +262,12 @@
             width: 56px;
             height: 56px;
             border-radius: 50%;
-            background: url('https://i.pravatar.cc/150?u=saim934') center/cover;
+            background-color: var(--border-color); /* Skeleton loader background */
+            background-position: center;
+            background-size: cover;
             border: 2px solid var(--card-bg);
             box-shadow: 0 0 0 2px var(--telegram-blue);
+            transition: background-image 0.3s ease;
         }
 
         .profile-info h3 {
@@ -284,6 +297,18 @@
         .preview-text i {
             color: var(--flay-pink);
             margin-top: 3px;
+        }
+
+        /* Loading Animation state */
+        .skeleton-text {
+            opacity: 0.5;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 0.7; }
+            100% { opacity: 0.4; }
         }
 
         /* Benefits Grid */
@@ -551,13 +576,11 @@
 </head>
 <body>
 
-    <!-- TELEGRAM OFFICIAL VERIFIED BADGE SVG DEFINITION -->
+    <!-- TELEGRAM OFFICIAL VERIFIED BADGE SVG -->
     <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <g id="icon-verified-telegram">
-                <!-- Telegram Blue Outer Star -->
                 <path d="M12.0001 2.37877L14.1539 3.58552L16.634 3.44754L18.0699 5.56844L20.4705 6.30722L20.6724 8.78318L22.4516 10.4287L21.5794 12.7562L22.4516 15.0837L20.6724 16.7292L20.4705 19.2052L18.0699 19.9439L16.634 22.0648L14.1539 21.9269L12.0001 23.1336L9.84628 21.9269L7.36616 22.0648L5.93026 19.9439L3.52968 19.2052L3.32777 16.7292L1.54858 15.0837L2.42079 12.7562L1.54858 10.4287L3.32777 8.78318L3.52968 6.30722L5.93026 5.56844L7.36616 3.44754L9.84628 3.58552L12.0001 2.37877Z" fill="var(--telegram-blue)"/>
-                <!-- White Checkmark -->
                 <path d="M10.8335 15.6881L7.14515 12.0858L8.35483 10.9044L10.8335 13.3253L15.6453 8.625L16.855 9.8064L10.8335 15.6881Z" fill="#FFFFFF"/>
             </g>
         </defs>
@@ -565,7 +588,7 @@
 
     <div class="app-container">
         
-        <!-- Top App Bar (Back Button Fix Applied) -->
+        <!-- Top App Bar (Centered Title & Scrolls with page) -->
         <header class="top-bar">
             <button class="back-btn" onclick="handleBack(event)" aria-label="Back">
                 <i class="fas fa-arrow-left"></i>
@@ -587,7 +610,6 @@
                     <p class="hero-desc">Build trust, stand out in Flaynity, and show your audience that your profile is verified.</p>
                 </div>
                 <div class="hero-icon-container">
-                    <!-- Using Telegram Verified SVG -->
                     <svg viewBox="0 0 24 24" class="verified-svg">
                         <use href="#icon-verified-telegram"></use>
                     </svg>
@@ -595,19 +617,19 @@
             </div>
         </section>
 
-        <!-- Profile Preview Section -->
+        <!-- Profile Preview Section (Dynamic Firebase Data) -->
         <section class="section animate-fade-up" style="animation-delay: 0.2s;">
             <div class="preview-card">
                 <div class="profile-mock">
-                    <div class="avatar"></div>
+                    <div class="avatar" id="db-channel-avatar"></div>
                     <div class="profile-info">
-                        <h3>Saim Islam 
-                            <!-- Telegram SVG inside Title -->
-                            <svg viewBox="0 0 24 24" class="verified-svg" style="width: 18px; height: 18px;">
+                        <h3 id="db-channel-name" class="skeleton-text">
+                            Loading...
+                            <svg viewBox="0 0 24 24" class="verified-svg" style="width: 18px; height: 18px; opacity: 0;" id="db-channel-badge">
                                 <use href="#icon-verified-telegram"></use>
                             </svg>
                         </h3>
-                        <p>@saim.934</p>
+                        <p id="db-channel-handle" class="skeleton-text">...</p>
                     </div>
                 </div>
                 <div class="preview-text">
@@ -731,7 +753,6 @@
 
         <!-- Sticky Bottom CTA -->
         <div class="bottom-cta animate-fade-up" style="animation-delay: 0.7s;">
-            <!-- Continue Button Fix Applied -->
             <button class="btn-primary" onclick="proceedToPay(event)">
                 Continue to Flay Pay <i class="fa-solid fa-arrow-right"></i>
             </button>
@@ -742,21 +763,72 @@
 
     </div>
 
-    <!-- Interactive Scripts -->
+    <!-- Scripts -->
     <script>
         const SERVICE_ID = 'flayVerifiedBadge';
 
-        // Back Button Logic (Prevent App Refresh)
-        function handleBack(event) {
-            if (event) event.preventDefault(); // Stop default button action
+        // Firebase Integration Logic (No Demo Data)
+        if (typeof auth !== 'undefined' && typeof db !== 'undefined') {
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    fetchChannelData(user.uid);
+                } else {
+                    // Not logged in UI state
+                    document.getElementById('db-channel-name').innerHTML = `Guest User`;
+                    document.getElementById('db-channel-name').classList.remove('skeleton-text');
+                    document.getElementById('db-channel-handle').textContent = `@guest`;
+                    document.getElementById('db-channel-handle').classList.remove('skeleton-text');
+                }
+            });
+        } else {
+            console.warn("Firebase Auth or DB is not initialized properly in firebase-config.js");
+        }
 
-            // Calls your App's built-in executeBackAction if it exists
+        function fetchChannelData(uid) {
+            // Listen to User Profile Data
+            db.ref('users/' + uid).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const nameEl = document.getElementById('db-channel-name');
+                    const handleEl = document.getElementById('db-channel-handle');
+                    const avatarEl = document.getElementById('db-channel-avatar');
+
+                    // Data mappings (Adjust according to your exact Firebase structure)
+                    const channelName = data.channelName || data.name || data.displayName || "Flaynity User";
+                    const channelHandle = data.channelHandle || data.username || uid.substring(0, 8);
+                    const channelImage = data.channelImage || data.photoURL || data.profile_picture || "";
+
+                    // Update UI and remove skeleton loaders
+                    nameEl.classList.remove('skeleton-text');
+                    handleEl.classList.remove('skeleton-text');
+
+                    // Set Name & Badge
+                    nameEl.innerHTML = `${channelName} <svg viewBox="0 0 24 24" class="verified-svg" style="width: 18px; height: 18px;"><use href="#icon-verified-telegram"></use></svg>`;
+                    
+                    // Set Handle
+                    handleEl.textContent = channelHandle.startsWith('@') ? channelHandle : `@${channelHandle}`;
+
+                    // Set Avatar
+                    if (channelImage) {
+                        avatarEl.style.backgroundImage = `url('${channelImage}')`;
+                    } else {
+                        // Fallback Color if no image
+                        avatarEl.style.backgroundColor = 'var(--border-color)';
+                        avatarEl.style.backgroundImage = 'none';
+                    }
+                }
+            });
+        }
+
+        // Back Button Logic
+        function handleBack(event) {
+            if (event) event.preventDefault(); 
             if (typeof executeBackAction === 'function') {
                 executeBackAction();
             } else if (typeof AppNavigation !== 'undefined' && AppNavigation.pop) {
                 AppNavigation.pop();
             } else {
-                window.history.back(); // Fallback for normal browser
+                window.history.back();
             }
         }
 
@@ -772,16 +844,13 @@
             }
         }
 
-        // Continue to Pay Logic (Prevent App Refresh)
+        // Continue to Pay Logic
         function proceedToPay(event) {
-            if (event) event.preventDefault(); // Stop default refresh action
-
-            // Check if AppNavigation from your original app.js exists
+            if (event) event.preventDefault(); 
             if (typeof AppNavigation !== 'undefined' && AppNavigation.pushPremiumService) {
                 AppNavigation.pushPremiumService('flay-pay', SERVICE_ID);
             } else {
-                // Warning if AppNavigation isn't found in current test window
-                console.warn('AppNavigation router not found. Please ensure app.js is linked.');
+                console.warn('AppNavigation router not found.');
             }
         }
     </script>

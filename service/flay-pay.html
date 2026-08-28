@@ -125,36 +125,6 @@ body {
 .page-header h1 { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
 .page-header p { color: var(--text-secondary); font-size: 14px; font-weight: 500; }
 
-/* Summary Card */
-.summary-card {
-    background: var(--card-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    padding: 16px 20px;
-    margin-bottom: 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.02);
-}
-.summary-left p { color: var(--text-secondary); font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-.summary-left h2 { font-size: 18px; font-weight: 800; }
-.summary-right { text-align: right; }
-.summary-right span { display: block; font-size: 11px; color: var(--text-secondary); font-weight: 600; }
-.order-id-box {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--card-secondary);
-    padding: 6px 10px;
-    border-radius: 8px;
-    margin-top: 6px;
-    font-size: 12px;
-    font-family: monospace;
-    font-weight: 700;
-}
-.copy-btn { color: var(--pink-primary); cursor: pointer; }
-
 /* Payment Methods */
 .section-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;}
 .section-subtitle { color: var(--text-secondary); font-size: 13px; font-weight: 500; display: block; margin-top: -12px; margin-bottom: 16px;}
@@ -425,7 +395,7 @@ body {
 
 <main class="app">
     <header class="top-bar">
-        <!-- type="button" added to stop any unintended refreshes -->
+        <!-- Go back safely without refresh -->
         <button class="back-btn" type="button" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
         <div class="header-title"><i class="fas fa-shield-halved"></i> Flay Pay</div>
     </header>
@@ -434,20 +404,6 @@ body {
         <div class="page-header">
             <h1>Flay Pay</h1>
             <p>Choose your preferred payment method</p>
-        </div>
-
-        <div class="summary-card">
-            <div class="summary-left">
-                <p>Service</p>
-                <h2 id="displayService">Flay Premium Service</h2>
-            </div>
-            <div class="summary-right">
-                <span>Order ID</span>
-                <div class="order-id-box">
-                    <span id="displayOrderId" style="color: var(--text-primary);">FLY-XXXXXXXX</span>
-                    <i class="fas fa-copy copy-btn" onclick="copyText('displayOrderId')"></i>
-                </div>
-            </div>
         </div>
 
         <h3 class="section-title">Payment Method</h3>
@@ -619,9 +575,9 @@ body {
         <div class="overlay-row"><span>Order ID</span><strong class="display-order-id-overlay">FLY-XXXXXXXX</strong></div>
         <div class="overlay-row"><span>Status</span><strong style="color:var(--success)">Waiting for Approval</strong></div>
     </div>
-    <!-- Added type="button" to stop App refresh -->
-    <button class="btn-primary btn-full" type="button" onclick="goBack()">View Payment Status</button>
-    <button class="btn-secondary" type="button" onclick="goHome()">Back to Flaynity</button>
+    <!-- No app refresh, just updates UI or securely goes back -->
+    <button class="btn-primary btn-full" type="button" onclick="viewStatus()">View Payment Status</button>
+    <button class="btn-secondary" type="button" onclick="goBack()">Back to Flaynity</button>
 </div>
 
 <!-- Failed Overlay -->
@@ -632,7 +588,7 @@ body {
     <div class="overlay-details">
         <div class="overlay-row"><span>Order ID</span><strong class="display-order-id-overlay">FLY-XXXXXXXX</strong></div>
     </div>
-    <!-- Added type="button" to stop App refresh -->
+    <!-- No app refresh -->
     <button class="btn-primary btn-full" type="button" onclick="closeOverlays()">Try Again</button>
     <button class="btn-secondary" type="button" onclick="closeOverlays()">Change Payment Method</button>
 </div>
@@ -660,8 +616,6 @@ const serviceLabels = {
 const serviceName = serviceLabels[requestedService] || 'Premium Service';
 
 // Init UI
-document.getElementById('displayService').textContent = serviceName;
-document.getElementById('displayOrderId').textContent = orderId;
 document.getElementById('displayTotal').textContent = '৳' + requestedAmount;
 
 document.querySelectorAll('.display-service-overlay').forEach(el => el.textContent = serviceName);
@@ -678,17 +632,9 @@ if (typeof auth !== 'undefined') {
     });
 }
 
-// Fixed goBack to properly go to the previous page
+// Ensure back button only goes back and doesn't hard reload
 function goBack() {
-    if (document.referrer || window.history.length > 1) {
-        window.history.back();
-    } else {
-        window.location.href = '../index.html';
-    }
-}
-
-function goHome() {
-    window.location.href = '../index.html';
+    window.history.back();
 }
 
 function copyText(elementId) {
@@ -831,6 +777,15 @@ async function processPayment() {
 
 function closeOverlays() {
     document.querySelectorAll('.overlay').forEach(el => el.classList.remove('active'));
+}
+
+// Allows user to stay on page without refresh and see "locked" status
+function viewStatus() {
+    closeOverlays();
+    const cta = document.getElementById('mainCta');
+    cta.disabled = true;
+    cta.innerHTML = 'Payment Submitted <i class="fas fa-check"></i>';
+    document.querySelectorAll('.payment-card').forEach(card => card.style.pointerEvents = 'none');
 }
 
 </script>

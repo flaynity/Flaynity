@@ -1,1 +1,786 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Flay Verified Badge • Flaynity</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet"><script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script><script src="../js/firebase-config.js"></script><style>:root{--bg:#fff;--surface:#fff;--text:#000;--muted:#666;--border:#e9e9e9;--accent:#ff2e55;--soft:rgba(255,46,85,.10);--shadow:0 14px 40px rgba(0,0,0,.07)}[data-theme=dark]{--bg:#000;--surface:#0a0a0a;--text:#fff;--muted:#aaa;--border:#222;--soft:rgba(255,46,85,.14);--shadow:0 14px 40px rgba(0,0,0,.35)}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body{margin:0;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif}.app{max-width:680px;margin:auto;min-height:100vh}.bar{height:64px;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:5}.back{width:40px;height:40px;border:0;background:transparent;color:var(--text);font-size:20px;border-radius:50%}.title{font-size:18px;font-weight:900;flex:1}.content{padding:22px 16px}.hero{padding:22px;border:1px solid var(--border);background:var(--surface);border-radius:26px;box-shadow:var(--shadow)}.icon{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;background:var(--soft);color:var(--accent);font-size:25px}.hero h1{font-size:26px;line-height:1.15;margin:16px 0 9px;font-weight:900}.hero p{margin:0;color:var(--muted);line-height:1.55;font-size:14px}.status{margin-top:16px;padding:12px 14px;border-radius:14px;background:var(--soft);font-size:12px;font-weight:800}.card{margin-top:14px;padding:18px;border:1px solid var(--border);border-radius:20px;background:var(--surface)}.muted{color:var(--muted);font-size:12px}.features{display:grid;gap:0;margin-top:14px}.feature{display:flex;gap:11px;padding:13px 0;border-bottom:1px solid var(--border)}.feature:last-child{border-bottom:0}.feature i{color:var(--accent);margin-top:3px}.feature strong{font-size:13px}.primary{width:100%;border:0;border-radius:17px;padding:15px;background:var(--accent);color:#fff;font-weight:900;margin-top:16px}.primary:disabled{opacity:.45}.small{font-size:11px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.45}.badge{display:inline-flex;align-items:center;gap:6px;background:var(--soft);color:var(--accent);padding:6px 9px;border-radius:999px;font-size:9px;font-weight:900}.premium-service-page .bar{top:0;} .premium-service-page{padding-top:env(safe-area-inset-top,0px);box-sizing:border-box;} </style></head><body><main class="app"><header class="bar"><button class="back" onclick="executeBackAction()" aria-label="Back"><i class="fas fa-arrow-left"></i></button><div class="title">Flay Verified Badge</div><span class="badge"><i class="fas fa-crown"></i> PREMIUM</span></header><section class="content"><div class="hero"><div class="icon"><i class="fas fa-circle-check"></i></div><h1>Flay Verified Badge</h1><p>Apply for the Flay Verified Badge with an account-based premium verification flow.</p><div id="status" class="status">Connecting to your Flaynity account…</div><div class="card"><div class="muted">Verification application</div><div class="features"><div class="feature"><i class="fas fa-check"></i><div><strong>Verification application</strong><div class="muted">A dedicated verification application entry point.</div></div></div><div class="feature"><i class="fas fa-check"></i><div><strong>Realtime badge status</strong><div class="muted">Verification status can update through Firebase in realtime.</div></div></div><div class="feature"><i class="fas fa-check"></i><div><strong>Original Flaynity badge</strong><div class="muted">Uses an original Flaynity visual treatment.</div></div></div></div><button class="primary" id="continueBtn" onclick="continueToPay()" disabled>Continue to Flay Pay</button><div class="small">Payment success is never faked here. Final status must come from the payment system/Firebase.</div></div></div></section></main><script>(()=>{const SERVICE='flayVerifiedBadge';let currentUser=null,premiumRef=null;document.documentElement.dataset.theme=localStorage.getItem('flaynity-theme-pref')||'light';auth.onAuthStateChanged(function(u){currentUser=u;const s=document.getElementById('status'),b=document.getElementById('continueBtn');if(!u){s.textContent='Sign in to continue with this premium service.';b.disabled=true;return}s.textContent='Signed in as '+(u.email||u.displayName||'Flaynity user');b.disabled=false;listen(u.uid)});function listen(uid){if(premiumRef)premiumRef.off();premiumRef=db.ref('users/'+uid+'/premium');premiumRef.on('value',function(snap){const d=snap.val()||{};if(d[SERVICE]===true||d.active===true)document.getElementById('status').innerHTML='<span style="color:#00a844">✓ This service is active on your account.</span>'})}function continueToPay(){if(currentUser)AppNavigation.pushPremiumService('flay-pay', SERVICE)}})();</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flay Verified Badge • Flaynity</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Color Palette */
+            --bg-dark: #101114;
+            --card-dark: #191B20;
+            --flay-pink: #FF4F91;
+            --flay-pink-rgb: 255, 79, 145;
+            --text-primary: #FFFFFF;
+            --text-secondary: #9BA1B0;
+            --border-color: #2A2D35;
+            
+            /* UI Elements */
+            --radius-large: 28px;
+            --radius-md: 18px;
+            --radius-sm: 12px;
+            --glow: 0 8px 32px rgba(var(--flay-pink-rgb), 0.15);
+            --glow-strong: 0 8px 32px rgba(var(--flay-pink-rgb), 0.3);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-container {
+            max-width: 680px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+            padding-bottom: 120px; /* Space for sticky bottom bar */
+        }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(var(--flay-pink-rgb), 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(var(--flay-pink-rgb), 0); }
+            100% { box-shadow: 0 0 0 0 rgba(var(--flay-pink-rgb), 0); }
+        }
+
+        .animate-fade-up {
+            animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: rgba(16, 17, 20, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 20px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .page-title {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .premium-badge-small {
+            background: rgba(var(--flay-pink-rgb), 0.1);
+            color: var(--flay-pink);
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            border: 1px solid rgba(var(--flay-pink-rgb), 0.2);
+        }
+
+        /* Sections */
+        .section {
+            padding: 0 20px;
+            margin-top: 24px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .section-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        /* Cards Component */
+        .card {
+            background: var(--card-dark);
+            border-radius: var(--radius-large);
+            padding: 24px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Hero Card */
+        .hero-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--glow);
+        }
+
+        .hero-content {
+            flex: 1;
+            z-index: 2;
+        }
+
+        .hero-badge-text {
+            color: var(--flay-pink);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hero-title {
+            font-size: 24px;
+            font-weight: 900;
+            line-height: 1.2;
+            margin-bottom: 12px;
+        }
+
+        .hero-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .hero-icon-container {
+            width: 80px;
+            height: 80px;
+            background: rgba(var(--flay-pink-rgb), 0.1);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+            border: 1px solid rgba(var(--flay-pink-rgb), 0.2);
+        }
+
+        .hero-icon-container::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: var(--flay-pink);
+            filter: blur(35px);
+            opacity: 0.2;
+            z-index: -1;
+        }
+
+        /* SVG Badge Icon */
+        .verified-svg {
+            width: 1.2em;
+            height: 1.2em;
+            fill: var(--flay-pink);
+            flex-shrink: 0;
+        }
+
+        .hero-icon-container .verified-svg {
+            width: 45px;
+            height: 45px;
+        }
+
+        /* Profile Preview Card */
+        .preview-card {
+            border: 1px solid rgba(var(--flay-pink-rgb), 0.3);
+            background: linear-gradient(180deg, rgba(25, 27, 32, 1) 0%, rgba(25, 27, 32, 0.6) 100%);
+            box-shadow: 0 4px 24px rgba(var(--flay-pink-rgb), 0.08);
+            border-radius: var(--radius-large);
+            padding: 20px;
+        }
+
+        .profile-mock {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: url('https://i.pravatar.cc/150?u=saim934') center/cover;
+            border: 2px solid var(--card-dark);
+            box-shadow: 0 0 0 2px var(--flay-pink);
+        }
+
+        .profile-info h3 {
+            font-size: 18px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+
+        .profile-info p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .preview-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .preview-text i {
+            color: var(--flay-pink);
+            margin-top: 3px;
+        }
+
+        /* Benefits Grid */
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .benefit-item {
+            background: var(--card-dark);
+            border: 1px solid var(--border-color);
+            padding: 16px;
+            border-radius: var(--radius-md);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .benefit-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(var(--flay-pink-rgb), 0.1);
+            color: var(--flay-pink);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .benefit-item h4 {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .benefit-item p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* Plans */
+        .plans-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        @media (min-width: 480px) {
+            .plans-container {
+                flex-direction: row;
+            }
+        }
+
+        .plan-card {
+            flex: 1;
+            background: var(--card-dark);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .plan-card.active {
+            border-color: var(--flay-pink);
+            background: rgba(var(--flay-pink-rgb), 0.05);
+            box-shadow: 0 4px 20px rgba(var(--flay-pink-rgb), 0.1);
+        }
+
+        .plan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .plan-name {
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .radio-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .plan-card.active .radio-circle {
+            border-color: var(--flay-pink);
+        }
+
+        .radio-inner {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--flay-pink);
+            opacity: 0;
+            transform: scale(0.5);
+            transition: var(--transition);
+        }
+
+        .plan-card.active .radio-inner {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .plan-price {
+            font-size: 28px;
+            font-weight: 900;
+            margin-bottom: 4px;
+        }
+
+        .plan-billing {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .plan-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .save-badge {
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            background: var(--flay-pink);
+            color: white;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(var(--flay-pink-rgb), 0.3);
+        }
+
+        /* What You Get Checklist */
+        .features-list {
+            background: var(--card-dark);
+            border-radius: var(--radius-large);
+            padding: 24px;
+            border: 1px solid var(--border-color);
+        }
+
+        .feature-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .feature-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .feature-row:first-child {
+            padding-top: 0;
+        }
+
+        .feature-row i {
+            color: var(--flay-pink);
+            font-size: 16px;
+        }
+
+        .feature-row span {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            padding: 16px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .info-box i {
+            color: var(--text-secondary);
+            font-size: 18px;
+            margin-top: 2px;
+        }
+
+        .info-text p {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .info-text span {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Sticky Bottom CTA */
+        .bottom-cta {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, rgba(16, 17, 20, 0) 0%, rgba(16, 17, 20, 0.95) 30%, rgba(16, 17, 20, 1) 100%);
+            padding: 24px 20px 24px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: max(24px, env(safe-area-inset-bottom));
+        }
+
+        .btn-primary {
+            width: 100%;
+            max-width: 640px;
+            background: var(--flay-pink);
+            color: #FFF;
+            border: none;
+            height: 56px;
+            border-radius: var(--radius-md);
+            font-size: 16px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            box-shadow: var(--glow-strong);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        /* Ripple Effect */
+        .btn-primary::after {
+            content: "";
+            background: rgba(255, 255, 255, 0.3);
+            display: block;
+            position: absolute;
+            border-radius: 50%;
+            padding-top: 240%;
+            padding-left: 240%;
+            margin-top: -120%;
+            margin-left: -120%;
+            opacity: 0;
+            transition: all 1s;
+        }
+        
+        .btn-primary:active::after {
+            padding-top: 0;
+            padding-left: 0;
+            margin-top: 0;
+            margin-left: 0;
+            opacity: 1;
+            transition: 0s;
+        }
+
+        .secure-text {
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .secure-text i {
+            font-size: 10px;
+        }
+
+        /* Verified SVG Component */
+        svg.verified-icon {
+            width: 1em;
+            height: 1em;
+            vertical-align: -0.125em;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Verified Badge SVG Definition -->
+    <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <defs>
+            <g id="icon-verified">
+                <path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10-4.48,10-10S17.52,2,12,2z M10.45,16.53L6.08,12.16l1.41-1.41 l2.96,2.96l6.8-6.8l1.41,1.41L10.45,16.53z" fill="var(--flay-pink)"></path>
+                <path d="M11.99 1.51c-1.35 0-2.61.56-3.5 1.54L6.96 1.77 5.37 3.36l1.28 1.53c-1.01.88-1.63 2.16-1.63 3.59 0 1.34.56 2.6 1.53 3.49l-1.28 1.53 1.59 1.59 1.53-1.28c.89.97 2.15 1.53 3.49 1.53 1.43 0 2.71-.62 3.59-1.63l1.53 1.28 1.59-1.59-1.28-1.53c.97-.89 1.53-2.15 1.53-3.49 0-1.43-.62-2.71-1.63-3.59l1.28-1.53-1.59-1.59-1.53 1.28c-.89-.98-2.15-1.54-3.5-1.54zm-2.15 12.35L6.16 10.2l1.37-1.37 2.31 2.31 5.92-5.92 1.37 1.37-7.29 7.27z" fill="var(--flay-pink)"/>
+            </g>
+        </defs>
+    </svg>
+
+    <div class="app-container">
+        
+        <!-- Top App Bar -->
+        <header class="top-bar">
+            <button class="back-btn" onclick="history.back()">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h1 class="page-title">Flay Verified Badge</h1>
+            <div class="premium-badge-small">
+                <i class="fas fa-crown"></i> PREMIUM
+            </div>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="section animate-fade-up" style="animation-delay: 0.1s;">
+            <div class="card hero-card">
+                <div class="hero-content">
+                    <div class="hero-badge-text">
+                        <i class="fa-solid fa-shield-halved"></i> Flay Verified
+                    </div>
+                    <h2 class="hero-title">Stand Out With<br>Flay Verified</h2>
+                    <p class="hero-desc">Build trust, stand out in Flaynity, and show your audience that your profile is verified.</p>
+                </div>
+                <div class="hero-icon-container">
+                    <svg viewBox="0 0 24 24" class="verified-svg">
+                        <use xlink:href="#icon-verified"></use>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- Profile Preview Section -->
+        <section class="section animate-fade-up" style="animation-delay: 0.2s;">
+            <div class="preview-card">
+                <div class="profile-mock">
+                    <div class="avatar"></div>
+                    <div class="profile-info">
+                        <h3>Saim Islam 
+                            <svg viewBox="0 0 24 24" class="verified-svg" style="width: 18px; height: 18px;">
+                                <use xlink:href="#icon-verified"></use>
+                            </svg>
+                        </h3>
+                        <p>@saim.934</p>
+                    </div>
+                </div>
+                <div class="preview-text">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Verified profiles stand out across feeds, comments, search and messages.</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Benefits Section -->
+        <section class="section animate-fade-up" style="animation-delay: 0.3s;">
+            <h2 class="section-title">Why Get Verified?</h2>
+            <div class="benefits-grid mt-3">
+                <div class="benefit-item">
+                    <div class="benefit-icon"><i class="fa-solid fa-id-badge"></i></div>
+                    <h4>Verified Identity</h4>
+                    <p>Show a trusted verified identity.</p>
+                </div>
+                <div class="benefit-item">
+                    <div class="benefit-icon"><i class="fa-solid fa-star"></i></div>
+                    <h4>Stand Out</h4>
+                    <p>Make your profile more recognizable.</p>
+                </div>
+                <div class="benefit-item">
+                    <div class="benefit-icon"><i class="fa-solid fa-eye"></i></div>
+                    <h4>Profile Visibility</h4>
+                    <p>Get noticed across Flaynity.</p>
+                </div>
+                <div class="benefit-item">
+                    <div class="benefit-icon"><i class="fa-solid fa-certificate"></i></div>
+                    <h4>Premium Badge</h4>
+                    <p>Display the Flay badge beside your name.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Plan Selection Section -->
+        <section class="section animate-fade-up" style="animation-delay: 0.4s;">
+            <h2 class="section-title">Choose Your Badge Plan</h2>
+            <p class="section-subtitle">Select the plan that works best for you.</p>
+            
+            <div class="plans-container">
+                <!-- Monthly Plan (Selected by Default) -->
+                <div class="plan-card active" onclick="selectPlan(this)">
+                    <div class="plan-header">
+                        <span class="plan-name">Monthly</span>
+                        <div class="radio-circle">
+                            <div class="radio-inner"></div>
+                        </div>
+                    </div>
+                    <div class="plan-price">৳200</div>
+                    <div class="plan-billing">billed every month</div>
+                    <div class="plan-desc">Flexible starter plan</div>
+                </div>
+
+                <!-- Yearly Plan -->
+                <div class="plan-card" onclick="selectPlan(this)">
+                    <div class="save-badge">Save 17%</div>
+                    <div class="plan-header">
+                        <span class="plan-name">Yearly</span>
+                        <div class="radio-circle">
+                            <div class="radio-inner"></div>
+                        </div>
+                    </div>
+                    <div class="plan-price">৳2,000</div>
+                    <div class="plan-billing">billed every year</div>
+                    <div class="plan-desc">Best value for long-term creators</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- What You Get Section -->
+        <section class="section animate-fade-up" style="animation-delay: 0.5s;">
+            <h2 class="section-title">Your Verified Badge Includes</h2>
+            <div class="features-list">
+                <div class="feature-row">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Verified badge beside your profile name</span>
+                </div>
+                <div class="feature-row">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Badge visible in posts</span>
+                </div>
+                <div class="feature-row">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Badge visible in videos</span>
+                </div>
+                <div class="feature-row">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Badge visible in Shorts</span>
+                </div>
+                <div class="feature-row">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Badge visible in comments</span>
+                </div>
+                <div class="feature-row">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Badge visible in search results</span>
+                </div>
+                <div class="feature-row">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Badge visible in messages</span>
+                </div>
+                <div class="feature-row">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Premium verified profile appearance</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Important Info Section -->
+        <section class="section animate-fade-up" style="animation-delay: 0.6s;">
+            <div class="info-box">
+                <i class="fa-solid fa-circle-info"></i>
+                <div class="info-text">
+                    <p>Verification is activated after successful payment and admin approval.</p>
+                    <span>Your selected plan and expiry date will be shown after activation.</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sticky Bottom CTA -->
+        <div class="bottom-cta animate-fade-up" style="animation-delay: 0.7s;">
+            <button class="btn-primary" onclick="continueToPay()">
+                Continue to Flay Pay <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            <div class="secure-text">
+                <i class="fa-solid fa-lock"></i> Secure payment • Flay Pay
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Interactive Scripts -->
+    <script>
+        // Toggle Plan Selection
+        function selectPlan(element) {
+            // Remove active class from all plan cards
+            document.querySelectorAll('.plan-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            // Add active class to the clicked card
+            element.classList.add('active');
+            
+            // Optional: Provide haptic feedback if running inside a mobile app wrapper
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }
+
+        // Navigate to Flay Pay
+        function continueToPay() {
+            // Check which plan is selected
+            const activePlan = document.querySelector('.plan-card.active .plan-name').innerText;
+            const price = document.querySelector('.plan-card.active .plan-price').innerText;
+            
+            // Redirect to Flay Pay page (Placeholder logic for your routing)
+            console.log(`Proceeding to Flay Pay with ${activePlan} plan (${price})`);
+            
+            // Example of how it fits into your service structure:
+            window.location.href = 'flay-pay.html?service=verified-badge&plan=' + activePlan.toLowerCase();
+        }
+    </script>
+</body>
+</html>

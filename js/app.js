@@ -107,7 +107,7 @@ function __flaynityReady(fn) {
                 let email = document.getElementById('you-email-txt');
                 let avatarLarge = document.getElementById('you-avatar-large');
                 let avatarNav = document.getElementById('nav-avatar-img');
-                if (fullname) { fullname.setAttribute('data-verified-user-id', data.userId || data.uid || ''); fullname.innerText = data.channelName || data.gmailName || "Flaynity User"; }
+                if (fullname) fullname.innerText = data.channelName || data.gmailName || "Flaynity User";
                 if (email) email.innerText = "@" + (data.handle || "handle");
                 if (avatarLarge) {
                     if (data.avatarUrl) avatarLarge.innerHTML = `<img src="${data.avatarUrl}" style="width:100%; height:100%; object-fit:cover;">`;
@@ -1311,62 +1311,6 @@ function restoreQueueFromLocalStorage() {
 }
 
 // =========================================================
-// FLAY VERIFIED BADGE — GLOBAL REALTIME USER STATUS
-// Admin approval writes users/{uid}/verifiedBadge/status = approved.
-// This shared listener keeps the badge synchronized across the app.
-// =========================================================
-const FlayVerifiedBadge = (function(){
-    const approved = new Set();
-    let usersListenerStarted = false;
-
-    function badgeHTML(){
-        return '<span class="flay-verified-badge" title="Flay Verified" aria-label="Flay Verified"><i class="fas fa-circle-check"></i></span>';
-    }
-
-    function isApproved(user){
-        if(!user || typeof user !== 'object') return false;
-        const vb = user.verifiedBadge;
-        return user.verified === true || user.isVerified === true ||
-            vb === true || vb?.status === 'approved' || vb?.approved === true;
-    }
-
-    function apply(root=document){
-        root.querySelectorAll?.('[data-verified-user-id]').forEach(el => {
-            const uid = String(el.getAttribute('data-verified-user-id') || '');
-            if(!uid) return;
-            const old = el.querySelector('.flay-verified-badge');
-            if(approved.has(uid)) {
-                if(!old) el.insertAdjacentHTML('beforeend', badgeHTML());
-            } else if(old) old.remove();
-        });
-    }
-
-    function update(users){
-        approved.clear();
-        Object.entries(users || {}).forEach(([uid, data]) => { if(isApproved(data)) approved.add(String(uid)); });
-        apply(document);
-    }
-
-    function start(){
-        if(usersListenerStarted || typeof db === 'undefined') return;
-        usersListenerStarted = true;
-        db.ref('users').on('value', snap => update(snap.val() || {}));
-        if(!document.getElementById('flay-verified-badge-style')) {
-            const style=document.createElement('style');
-            style.id='flay-verified-badge-style';
-            style.textContent='.flay-verified-badge{display:inline-flex;align-items:center;justify-content:center;margin-left:4px;width:1em;height:1em;line-height:1;font-size:.9em;color:#1877f2;vertical-align:-.08em;flex:0 0 auto}.flay-verified-badge i{font-size:1em}.flay-verified-badge[title]{cursor:default}';
-            document.head.appendChild(style);
-        }
-        const observer=new MutationObserver(() => apply(document));
-        if(document.body) observer.observe(document.body,{childList:true,subtree:true});
-    }
-
-    return { start, apply, isApproved };
-})();
-
-__flaynityReady(() => FlayVerifiedBadge.start());
-
-// =========================================================
 // REALTIME LISTENERS FOR ZERO-REFRESH FEED PROPAGATION
 // =========================================================
 let previousShortsCount = -1;
@@ -1511,14 +1455,11 @@ function updateChannelDOM(userId, data) {
     const avatar = data.avatarUrl || "";
 
     document.querySelectorAll(`.live-username-${userId}`).forEach(el => {
-        el.setAttribute('data-verified-user-id', userId);
         el.innerText = name;
     });
     document.querySelectorAll(`.live-handle-${userId}`).forEach(el => {
-        el.setAttribute('data-verified-user-id', userId);
         el.innerText = "@" + handle;
     });
-    if (typeof FlayVerifiedBadge !== 'undefined') FlayVerifiedBadge.apply(document);
     document.querySelectorAll(`.live-avatar-${userId}`).forEach(el => {
         if (avatar) {
             el.innerHTML = `<img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
@@ -1742,7 +1683,7 @@ function renderLongVideosSegmentUI(segmentLongs) {
                     <div class="long-video-meta-text" style="flex-grow: 1; min-width: 0;">
                         <h4 class="long-video-title" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(v.title)}</h4>
                         <div class="long-video-subtitle" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;">
-                            <span class="live-username-${v.userId}" data-verified-user-id="${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
+                            <span class="live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
                             <span>•</span>
                             <span id="${viewsId}">0 Views</span>
                             <span>•</span>
@@ -1849,7 +1790,7 @@ function renderSinglePostSegmentUI(post) {
                 <div style="display: flex; align-items: center; gap: 10px;">
                     ${avatarHtml}
                     <div>
-                        <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0;" class="live-username-${post.userId}" data-verified-user-id="${post.userId}">@${escapeHTML(post.username)}</h4>
+                        <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0;" class="live-username-${post.userId}">@${escapeHTML(post.username)}</h4>
                         <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${getRelativeTime(post.createdAt)}</span>
                     </div>
                 </div>
@@ -2027,7 +1968,7 @@ function buildShortsPage() {
                 <div class="short-bottom-info">
                     <div class="short-channel-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
                         <div class="live-avatar-${s.userId}" style="width:32px; height:32px; border-radius:50%; border:2px solid #fff; overflow:hidden;"></div>
-                        <span data-verified-user-id="${s.userId}" class="short-channel-handle live-handle-${s.userId}" style="font-size:0.9rem; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8);">@${s.username || 'flaynity'}</span>
+                        <span class="short-channel-handle live-handle-${s.userId}" style="font-size:0.9rem; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8);">@${s.username || 'flaynity'}</span>
                         <button class="short-subscribe-btn" id="short-sub-btn-${s.id}" onclick="toggleShortSubscribe('${s.userId}', this)">Subscribe</button>
                     </div>
                     
@@ -2844,7 +2785,7 @@ async function openMoviePage(id, isTMDB = false) {
 
     if (bannerImg) bannerImg.src = currentActiveMovie.banner;
     if (titleEl) titleEl.innerText = currentActiveMovie.title;
-    if (handleEl) { handleEl.setAttribute('data-verified-user-id', currentActiveMovie.userId || currentActiveMovie.channelId || ''); handleEl.innerText = currentActiveMovie.username ? "@" + currentActiveMovie.username : "@flaynity"; }
+    if (handleEl) handleEl.innerText = currentActiveMovie.username ? "@" + currentActiveMovie.username : "@flaynity";
 
     startVideoPlayer();
     registerViewAndListen(currentActiveMovie.id);
@@ -3155,7 +3096,7 @@ function renderCommentList(commentsObj) {
                 ${avatarHTML}
                 <div style="flex:1;">
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <span data-verified-user-id="${c.uid || ''}" style="font-size:0.85rem; font-weight:700; color:var(--text-main);">@${c.username}</span>
+                        <span style="font-size:0.85rem; font-weight:700; color:var(--text-main);">@${c.username}</span>
                         <span style="font-size:0.75rem; color:var(--text-muted);">${getRelativeTime(c.timestamp)}</span>
                     </div>
                     <p style="font-size:0.9rem; color:var(--text-main); margin:4px 0 0 0; line-height:1.4;">${escapeHTML(c.text)}</p>
@@ -3272,7 +3213,7 @@ function renderMovieWatchRecommendedFeed() {
                     <div class="long-video-meta-text" style="flex-grow: 1; min-width: 0;">
                         <h4 class="long-video-title" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(v.title)}</h4>
                         <div class="long-video-subtitle" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;">
-                            <span class="live-username-${v.userId}" data-verified-user-id="${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
+                            <span class="live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
                             <span>•</span>
                             <span id="${viewsId}">0 Views</span>
                             <span>•</span>
@@ -3412,7 +3353,7 @@ function renderYouTabWithData(data, user, wrap) {
         const channelHandle = "@" + data.handle;
         const channelAvatar = data.avatarUrl || user.photoURL || '';
 
-        if (youFullNameTxt) { youFullNameTxt.setAttribute('data-verified-user-id', user.uid); youFullNameTxt.innerText = channelName; }
+        if (youFullNameTxt) youFullNameTxt.innerText = channelName;
         if (youEmailTxt) {
             youEmailTxt.innerText = channelHandle;
             youEmailTxt.style.color = "var(--primary)";
@@ -3435,7 +3376,7 @@ function renderYouTabWithData(data, user, wrap) {
         `;
     } else {
         const displayName = user.displayName || user.email.split('@')[0];
-        if (youFullNameTxt) { youFullNameTxt.setAttribute('data-verified-user-id', user.uid); youFullNameTxt.innerText = displayName; }
+        if (youFullNameTxt) youFullNameTxt.innerText = displayName;
         if (youEmailTxt) {
             youEmailTxt.innerText = user.email;
             youEmailTxt.style.color = "var(--text-muted)";
@@ -3684,7 +3625,7 @@ function openViewChannelPage() {
     if (viewTitle) viewTitle.innerText = data.channelName;
     if (viewBanner) viewBanner.src = data.bannerUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop";
     if (viewAvatar) viewAvatar.src = data.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop";
-    if (viewName) { viewName.setAttribute('data-verified-user-id', data.userId || data.uid || auth.currentUser?.uid || ''); viewName.innerText = data.channelName; }
+    if (viewName) viewName.innerText = data.channelName;
     if (viewHandle) viewHandle.innerText = "@" + data.handle;
     if (viewDesc) viewDesc.innerText = data.description || "No description provided yet.";
     if (viewSub) viewSub.innerText = formatCount(data.subscribersCount) + " Subscriber" + (data.subscribersCount === 1 ? "" : "s");
@@ -3753,7 +3694,7 @@ function buildChannelPostCard(p, username) {
     return `
         <div class="post-card" style="margin-bottom:12px;">
             <div class="post-header">
-                <div class="post-author-name" data-verified-user-id="${p.userId || ''}">@${username}</div>
+                <div class="post-author-name">@${username}</div>
                 <div class="post-time">${getRelativeTime(p.createdAt)}</div>
             </div>
             <div class="post-caption" style="margin-top: 8px;">${escapeHTML(p.caption)}</div>
@@ -4119,7 +4060,7 @@ async function calculateChannelAnalytics() {
     const infoEl = document.getElementById('analytics-channel-subscribers');
 
     if (avatarEl) avatarEl.src = currentChannelData ? (currentChannelData.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop") : "";
-    if (nameEl) { nameEl.setAttribute('data-verified-user-id', currentChannelData?.userId || currentChannelData?.uid || auth.currentUser?.uid || ''); nameEl.innerText = currentChannelData ? currentChannelData.channelName : "Channel"; }
+    if (nameEl) nameEl.innerText = currentChannelData ? currentChannelData.channelName : "Channel";
     if (infoEl) infoEl.innerText = formatCount(subsCount) + " Subscribers";
 
     updateMonetizationEligibility(subsCount, watchHours, totalViews);
@@ -4632,7 +4573,7 @@ function loadReactedPeopleData() {
                         <div style="display: flex; align-items: center; gap: 12px;">
                             ${avatarHtml}
                             <div>
-                                <h4 data-verified-user-id="${u.uid || u.userId || ''}" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0;">@${escapeHTML(u.username)}</h4>
+                                <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0;">@${escapeHTML(u.username)}</h4>
                                 <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;">Reacted ${getRelativeTime(u.timestamp)}</span>
                             </div>
                         </div>

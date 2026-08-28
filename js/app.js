@@ -3401,6 +3401,41 @@ function renderYouTabWithData(data, user, wrap) {
     updateBottomNavAvatar();
 }
 
+function handleFlayVerifiedBadgeFromYou() {
+    playUI('click');
+
+    // Never create, cache, or inject channel/demo data here.
+    // Only use the existing Firebase channel record for the signed-in user.
+    const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
+
+    if (!user) {
+        // Keep the existing app flow: open Create Channel first. The channel
+        // creation form itself will require an authenticated account when saved.
+        openCreateChannelPage();
+        return;
+    }
+
+    if (currentChannelData) {
+        AppNavigation.pushPremiumService('flay-verified-badge');
+        return;
+    }
+
+    db.ref(`channels/${user.uid}`).once('value').then((snapshot) => {
+        const channel = snapshot.val();
+        if (channel) {
+            currentChannelData = channel;
+            AppNavigation.pushPremiumService('flay-verified-badge');
+        } else {
+            // Remember only this navigation intent; no Firebase/local channel data is created.
+            window.__flaynityOpenVerifiedAfterChannelCreate = true;
+            openCreateChannelPage();
+        }
+    }).catch((error) => {
+        console.error('Failed to check channel before Flay Verified Badge:', error);
+        showNotification('Unable to check your Channel. Please try again.', 'error');
+    });
+}
+
 function handleViewChannelMenu() {
     playUI('click');
     if (currentChannelData) {
@@ -3596,9 +3631,14 @@ async function submitCreateChannel() {
 
         currentChannelData = channelData;
         showNotification("Channel created successfully!", "success");
-        
-        AppNavigation.pop(); 
-        openViewChannelPage();
+
+        AppNavigation.pop();
+        if (window.__flaynityOpenVerifiedAfterChannelCreate === true) {
+            window.__flaynityOpenVerifiedAfterChannelCreate = false;
+            AppNavigation.pushPremiumService('flay-verified-badge');
+        } else {
+            openViewChannelPage();
+        }
     } catch(err) {
         showNotification("Error creating channel: " + err.message, "error");
     } finally {

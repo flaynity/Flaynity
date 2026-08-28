@@ -6,94 +6,92 @@
 <title>Flay Pay • Flaynity</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
-<script src="../js/firebase-config.js"></script>
 <script>
-    // Original theme loader to ensure perfect background sync
-    document.documentElement.dataset.theme = localStorage.getItem('flaynity-theme-pref') || 'light';
+    // Safe check theme execution
+    (function() {
+        const savedTheme = localStorage.getItem('flaynity-theme-pref') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
 </script>
 <style>
-/* Using Original Flaynity Theme Variables */
-:root {
-    --bg: #fff;
-    --surface: #fff;
-    --surface-alt: #f4f5f7;
-    --text: #000;
-    --muted: #666;
-    --border: #e9e9e9;
-    --accent: #ff2e55;
-    --soft: rgba(255,46,85,.10);
-    --shadow: 0 14px 40px rgba(0,0,0,.07);
-    --success: #00a844;
-    --warning: #d98200;
-    --danger: #d7193f;
-    --overlay-bg: rgba(255, 255, 255, 0.95);
+/* SCOPED CSS: শুধুমাত্র Flay Pay wrapper এর ভিতরে কাজ করবে, বাহিরের কোনো অ্যাপ ডিজাইন নষ্ট করবে না */
+.flay-pay-wrapper {
+    /* Light Theme (Default) */
+    --fp-bg: #fff;
+    --fp-surface: #fff;
+    --fp-surface-alt: #f4f5f7;
+    --fp-text: #000;
+    --fp-muted: #666;
+    --fp-border: #e9e9e9;
+    --fp-accent: #ff2e55;
+    --fp-soft: rgba(255,46,85,.10);
+    --fp-shadow: 0 14px 40px rgba(0,0,0,.07);
+    --fp-success: #00a844;
+    --fp-warning: #d98200;
+    --fp-danger: #d7193f;
+    --fp-overlay-bg: rgba(255, 255, 255, 0.95);
+
+    background: var(--fp-bg);
+    color: var(--fp-text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    line-height: 1.5;
+    width: 100%;
+    min-height: 100vh;
+    padding-bottom: env(safe-area-inset-bottom, 20px);
 }
 
-[data-theme="dark"] {
-    --bg: #000;
-    --surface: #0a0a0a;
-    --surface-alt: #1a1a1a;
-    --text: #fff;
-    --muted: #aaa;
-    --border: #222;
-    --soft: rgba(255,46,85,.14);
-    --shadow: 0 14px 40px rgba(0,0,0,.35);
-    --overlay-bg: rgba(0, 0, 0, 0.95);
+/* SCOPED Dark Theme (শুধু Flay Pay এর জন্য) */
+[data-theme="dark"] .flay-pay-wrapper {
+    --fp-bg: #000;
+    --fp-surface: #0a0a0a;
+    --fp-surface-alt: #1a1a1a;
+    --fp-text: #fff;
+    --fp-muted: #aaa;
+    --fp-border: #222;
+    --fp-soft: rgba(255,46,85,.14);
+    --fp-shadow: 0 14px 40px rgba(0,0,0,.35);
+    --fp-overlay-bg: rgba(0, 0, 0, 0.95);
 }
 
-* {
+.flay-pay-wrapper * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
     margin: 0;
     padding: 0;
 }
 
-body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    line-height: 1.5;
-    padding-bottom: env(safe-area-inset-bottom, 20px);
-}
-
-.app {
+.flay-pay-wrapper .app {
     max-width: 600px;
     margin: 0 auto;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    padding-bottom: 100px; 
-    animation: fadeIn 0.4s ease-out;
+    padding-bottom: 120px; 
+    animation: fadeInFP 0.4s ease-out;
 }
 
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInFP { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Header */
-.top-bar {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    background: var(--bg);
+.flay-pay-wrapper .top-bar {
+    position: relative;
+    background: var(--fp-bg);
     display: flex;
     align-items: center;
     justify-content: center;
     height: 64px;
     padding: 0 16px;
-    border-bottom: 1px solid var(--border);
-    padding-top: env(safe-area-inset-top, 0px);
+    border-bottom: 1px solid var(--fp-border);
 }
 
-.back-btn {
+.flay-pay-wrapper .back-btn {
     position: absolute;
     left: 16px;
     width: 40px;
     height: 40px;
     border: none;
     background: transparent;
-    color: var(--text);
+    color: var(--fp-text);
     font-size: 20px;
     display: grid;
     place-items: center;
@@ -101,7 +99,7 @@ body {
     cursor: pointer;
 }
 
-.header-title {
+.flay-pay-wrapper .header-title {
     font-size: 18px;
     font-weight: 800;
     display: flex;
@@ -109,35 +107,35 @@ body {
     gap: 8px;
 }
 
-.header-title i { color: var(--accent); }
+.flay-pay-wrapper .header-title i { color: var(--fp-accent); }
 
-.content { padding: 24px 16px; }
+.flay-pay-wrapper .content { padding: 24px 16px; }
 
 /* Sub Header */
-.page-header { text-align: center; margin-bottom: 32px; }
-.page-header h1 { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
-.page-header p { color: var(--muted); font-size: 14px; font-weight: 500; }
+.flay-pay-wrapper .page-header { text-align: center; margin-bottom: 32px; }
+.flay-pay-wrapper .page-header h1 { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+.flay-pay-wrapper .page-header p { color: var(--fp-muted); font-size: 14px; font-weight: 500; }
 
 /* Payment Methods */
-.section-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;}
-.section-subtitle { color: var(--muted); font-size: 13px; font-weight: 500; display: block; margin-top: -12px; margin-bottom: 16px;}
+.flay-pay-wrapper .section-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;}
+.flay-pay-wrapper .section-subtitle { color: var(--fp-muted); font-size: 13px; font-weight: 500; display: block; margin-top: -12px; margin-bottom: 16px;}
 
-.payment-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
+.flay-pay-wrapper .payment-card {
+    background: var(--fp-surface);
+    border: 1px solid var(--fp-border);
     border-radius: 20px;
     margin-bottom: 16px;
     overflow: hidden;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: var(--shadow);
+    box-shadow: var(--fp-shadow);
 }
 
-.payment-card.active {
-    border-color: var(--accent);
-    background: var(--soft);
+.flay-pay-wrapper .payment-card.active {
+    border-color: var(--fp-accent);
+    background: var(--fp-soft);
 }
 
-.card-header {
+.flay-pay-wrapper .card-header {
     padding: 20px;
     display: flex;
     align-items: center;
@@ -145,60 +143,60 @@ body {
     cursor: pointer;
 }
 
-.card-icon {
+.flay-pay-wrapper .card-icon {
     width: 48px;
     height: 48px;
     border-radius: 14px;
-    background: var(--surface-alt);
+    background: var(--fp-surface-alt);
     display: grid;
     place-items: center;
     font-size: 20px;
-    color: var(--muted);
+    color: var(--fp-muted);
     transition: all 0.3s;
 }
 
-.payment-card.active .card-icon {
-    color: var(--accent);
+.flay-pay-wrapper .payment-card.active .card-icon {
+    color: var(--fp-accent);
     background: rgba(255, 46, 85, 0.15);
 }
 
-.card-info { flex: 1; }
-.card-info h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-.card-info p { font-size: 12px; color: var(--muted); font-weight: 500; }
+.flay-pay-wrapper .card-info { flex: 1; }
+.flay-pay-wrapper .card-info h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.flay-pay-wrapper .card-info p { font-size: 12px; color: var(--fp-muted); font-weight: 500; }
 
-.card-indicator { color: var(--muted); transition: 0.3s; font-size: 18px; }
-.payment-card.active .card-indicator { color: var(--accent); transform: rotate(90deg); }
+.flay-pay-wrapper .card-indicator { color: var(--fp-muted); transition: 0.3s; font-size: 18px; }
+.flay-pay-wrapper .payment-card.active .card-indicator { color: var(--fp-accent); transform: rotate(90deg); }
 
 /* Expandable Content */
-.card-body {
+.flay-pay-wrapper .card-body {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    background: var(--surface);
+    background: var(--fp-surface);
 }
-.payment-card.active .card-body { max-height: 500px; }
+.flay-pay-wrapper .payment-card.active .card-body { max-height: 500px; }
 
-.body-content { padding: 0 20px 20px 20px; }
+.flay-pay-wrapper .body-content { padding: 0 20px 20px 20px; }
 
-.info-msg {
+.flay-pay-wrapper .info-msg {
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    background: var(--surface-alt);
+    background: var(--fp-surface-alt);
     padding: 12px;
     border-radius: 12px;
     font-size: 12px;
-    color: var(--muted);
+    color: var(--fp-muted);
     margin-bottom: 16px;
     line-height: 1.5;
 }
-.info-msg i { color: var(--accent); font-size: 14px; margin-top: 2px;}
+.flay-pay-wrapper .info-msg i { color: var(--fp-accent); font-size: 14px; margin-top: 2px;}
 
 /* Sub Methods Grid */
-.method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-.sub-method {
-    background: var(--surface-alt);
-    border: 1px solid var(--border);
+.flay-pay-wrapper .method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.flay-pay-wrapper .sub-method {
+    background: var(--fp-surface-alt);
+    border: 1px solid var(--fp-border);
     border-radius: 14px;
     padding: 14px;
     display: flex;
@@ -208,25 +206,25 @@ body {
     cursor: pointer;
     transition: 0.2s;
 }
-.sub-method.selected {
-    border-color: var(--accent);
-    background: var(--soft);
+.flay-pay-wrapper .sub-method.selected {
+    border-color: var(--fp-accent);
+    background: var(--fp-soft);
 }
-.sub-method-icon { font-size: 20px; color: var(--text); }
-.sub-method-name { font-size: 14px; font-weight: 700; }
-.sub-method-action { font-size: 11px; color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 4px; }
-.sub-method.selected .sub-method-action { color: var(--accent); }
-.sub-method.selected .sub-method-action::before { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; }
+.flay-pay-wrapper .sub-method-icon { font-size: 20px; color: var(--fp-text); }
+.flay-pay-wrapper .sub-method-name { font-size: 14px; font-weight: 700; }
+.flay-pay-wrapper .sub-method-action { font-size: 11px; color: var(--fp-muted); font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.flay-pay-wrapper .sub-method.selected .sub-method-action { color: var(--fp-accent); }
+.flay-pay-wrapper .sub-method.selected .sub-method-action::before { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; }
 
 /* Inputs */
-.input-group { margin-top: 16px; display: none; animation: fadeIn 0.3s ease; }
-.input-group.visible { display: block; }
-.input-label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
-.flay-input {
+.flay-pay-wrapper .input-group { margin-top: 16px; display: none; animation: fadeInFP 0.3s ease; }
+.flay-pay-wrapper .input-group.visible { display: block; }
+.flay-pay-wrapper .input-label { display: block; font-size: 12px; font-weight: 700; color: var(--fp-muted); margin-bottom: 8px; }
+.flay-pay-wrapper .flay-input {
     width: 100%;
-    background: var(--surface-alt);
-    border: 1px solid var(--border);
-    color: var(--text);
+    background: var(--fp-surface-alt);
+    border: 1px solid var(--fp-border);
+    color: var(--fp-text);
     padding: 14px 16px;
     border-radius: 14px;
     font-family: inherit;
@@ -234,52 +232,52 @@ body {
     outline: none;
     transition: 0.2s;
 }
-.flay-input:focus { border-color: var(--accent); }
+.flay-pay-wrapper .flay-input:focus { border-color: var(--fp-accent); }
 
 /* Crypto Details */
-.crypto-details { background: var(--surface-alt); padding: 14px; border-radius: 14px; margin-top: 16px; display: none; }
-.crypto-details.visible { display: block; animation: fadeIn 0.3s; }
-.crypto-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; }
-.crypto-row:last-child { margin-bottom: 0; }
-.crypto-row span { color: var(--muted); }
-.crypto-row strong { font-weight: 700; text-align: right; max-width: 60%; word-break: break-all; }
+.flay-pay-wrapper .crypto-details { background: var(--fp-surface-alt); padding: 14px; border-radius: 14px; margin-top: 16px; display: none; }
+.flay-pay-wrapper .crypto-details.visible { display: block; animation: fadeInFP 0.3s; }
+.flay-pay-wrapper .crypto-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; }
+.flay-pay-wrapper .crypto-row:last-child { margin-bottom: 0; }
+.flay-pay-wrapper .crypto-row span { color: var(--fp-muted); }
+.flay-pay-wrapper .crypto-row strong { font-weight: 700; text-align: right; max-width: 60%; word-break: break-all; }
 
 /* Security Card */
-.security-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
+.flay-pay-wrapper .security-card {
+    background: var(--fp-surface);
+    border: 1px solid var(--fp-border);
     border-radius: 16px;
     padding: 16px;
     margin-top: 24px;
-    box-shadow: var(--shadow);
+    box-shadow: var(--fp-shadow);
 }
-.security-header { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; margin-bottom: 6px; }
-.security-header i { color: var(--success); }
-.security-card p { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
-.security-badges { display: flex; gap: 12px; font-size: 11px; color: var(--muted); font-weight: 600; }
-.security-badges span { display: flex; align-items: center; gap: 4px; }
-.security-badges i { color: var(--success); font-size: 10px; }
+.flay-pay-wrapper .security-header { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; margin-bottom: 6px; }
+.flay-pay-wrapper .security-header i { color: var(--fp-success); }
+.flay-pay-wrapper .security-card p { font-size: 12px; color: var(--fp-muted); margin-bottom: 12px; }
+.flay-pay-wrapper .security-badges { display: flex; gap: 12px; font-size: 11px; color: var(--fp-muted); font-weight: 600; }
+.flay-pay-wrapper .security-badges span { display: flex; align-items: center; gap: 4px; }
+.flay-pay-wrapper .security-badges i { color: var(--fp-success); font-size: 10px; }
 
 /* Sticky Footer */
-.sticky-footer {
+.flay-pay-wrapper .sticky-footer {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    background: var(--bg);
-    border-top: 1px solid var(--border);
+    background: var(--fp-bg);
+    border-top: 1px solid var(--fp-border);
     padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px));
     display: flex;
     align-items: center;
     justify-content: space-between;
     z-index: 100;
 }
-.footer-left { display: flex; flex-direction: column; }
-.footer-left span { font-size: 12px; color: var(--muted); font-weight: 600; }
-.footer-left strong { font-size: 20px; font-weight: 900; color: var(--text); }
+.flay-pay-wrapper .footer-left { display: flex; flex-direction: column; }
+.flay-pay-wrapper .footer-left span { font-size: 12px; color: var(--fp-muted); font-weight: 600; }
+.flay-pay-wrapper .footer-left strong { font-size: 20px; font-weight: 900; color: var(--fp-text); }
 
-.btn-primary {
-    background: var(--accent);
+.flay-pay-wrapper .btn-primary {
+    background: var(--fp-accent);
     color: #fff;
     border: none;
     border-radius: 16px;
@@ -294,20 +292,20 @@ body {
     gap: 8px;
     transition: all 0.2s;
 }
-.btn-primary:active { transform: scale(0.96); }
-.btn-primary:disabled {
-    background: var(--surface-alt);
-    color: var(--muted);
+.flay-pay-wrapper .btn-primary:active { transform: scale(0.96); }
+.flay-pay-wrapper .btn-primary:disabled {
+    background: var(--fp-surface-alt);
+    color: var(--fp-muted);
     cursor: not-allowed;
     transform: none;
-    border: 1px solid var(--border);
+    border: 1px solid var(--fp-border);
 }
 
 /* Status Overlays */
-.overlay {
+.flay-pay-wrapper .overlay {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: var(--overlay-bg);
+    background: var(--fp-overlay-bg);
     z-index: 999;
     display: flex;
     flex-direction: column;
@@ -319,28 +317,28 @@ body {
     pointer-events: none;
     transition: 0.3s ease;
 }
-.overlay.active { opacity: 1; pointer-events: all; }
+.flay-pay-wrapper .overlay.active { opacity: 1; pointer-events: all; }
 
-.status-icon {
+.flay-pay-wrapper .status-icon {
     width: 80px; height: 80px;
     border-radius: 50%;
     display: grid; place-items: center;
     font-size: 32px;
     margin-bottom: 24px;
 }
-.status-icon.processing { background: var(--soft); color: var(--accent); }
-.status-icon.success { background: rgba(0, 168, 68, 0.1); color: var(--success); }
-.status-icon.failed { background: rgba(215, 25, 63, 0.1); color: var(--danger); }
+.flay-pay-wrapper .status-icon.processing { background: var(--fp-soft); color: var(--fp-accent); }
+.flay-pay-wrapper .status-icon.success { background: rgba(0, 168, 68, 0.1); color: var(--fp-success); }
+.flay-pay-wrapper .status-icon.failed { background: rgba(215, 25, 63, 0.1); color: var(--fp-danger); }
 
-.spinner { animation: spin 1s linear infinite; }
-@keyframes spin { 100% { transform: rotate(360deg); } }
+.flay-pay-wrapper .spinner { animation: spinFP 1s linear infinite; }
+@keyframes spinFP { 100% { transform: rotate(360deg); } }
 
-.overlay h2 { font-size: 24px; font-weight: 900; margin-bottom: 8px; color: var(--text); }
-.overlay p { color: var(--muted); font-size: 14px; margin-bottom: 32px; max-width: 280px; }
+.flay-pay-wrapper .overlay h2 { font-size: 24px; font-weight: 900; margin-bottom: 8px; color: var(--fp-text); }
+.flay-pay-wrapper .overlay p { color: var(--fp-muted); font-size: 14px; margin-bottom: 32px; max-width: 280px; }
 
-.overlay-details {
-    background: var(--surface);
-    border: 1px solid var(--border);
+.flay-pay-wrapper .overlay-details {
+    background: var(--fp-surface);
+    border: 1px solid var(--fp-border);
     border-radius: 16px;
     padding: 16px;
     width: 100%;
@@ -348,15 +346,15 @@ body {
     text-align: left;
     margin-bottom: 32px;
 }
-.overlay-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px; }
-.overlay-row:last-child { margin-bottom: 0; }
-.overlay-row span { color: var(--muted); }
-.overlay-row strong { font-weight: 700; color: var(--text); }
+.flay-pay-wrapper .overlay-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px; }
+.flay-pay-wrapper .overlay-row:last-child { margin-bottom: 0; }
+.flay-pay-wrapper .overlay-row span { color: var(--fp-muted); }
+.flay-pay-wrapper .overlay-row strong { font-weight: 700; color: var(--fp-text); }
 
-.btn-secondary {
+.flay-pay-wrapper .btn-secondary {
     background: transparent;
-    color: var(--text);
-    border: 1px solid var(--border);
+    color: var(--fp-text);
+    border: 1px solid var(--fp-border);
     border-radius: 16px;
     height: 54px;
     width: 100%;
@@ -366,417 +364,431 @@ body {
     cursor: pointer;
     margin-top: 12px;
 }
-.btn-full { width: 100%; max-width: 340px; justify-content: center; }
+.flay-pay-wrapper .btn-full { width: 100%; max-width: 340px; justify-content: center; }
 
 @media (min-width: 600px) {
-    .sticky-footer {
+    .flay-pay-wrapper .sticky-footer {
         left: 50%;
         transform: translateX(-50%);
         max-width: 600px;
         border-radius: 24px 24px 0 0;
-        border-left: 1px solid var(--border);
-        border-right: 1px solid var(--border);
+        border-left: 1px solid var(--fp-border);
+        border-right: 1px solid var(--fp-border);
     }
 }
 </style>
 </head>
 <body>
 
-<main class="app">
-    <header class="top-bar">
-        <!-- Go back safely without refresh -->
-        <button class="back-btn" type="button" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
-        <div class="header-title"><i class="fas fa-shield-halved"></i> Flay Pay</div>
-    </header>
+<!-- SCOPED WRAPPER TO PROTECT PARENT UI FROM CSS POLLUTION -->
+<div class="flay-pay-wrapper">
 
-    <div class="content">
-        <div class="page-header">
-            <h1>Flay Pay</h1>
-            <p>Choose your preferred payment method</p>
+    <main class="app">
+        <header class="top-bar">
+            <!-- Go back safely without refresh via safe custom app bridge -->
+            <button class="back-btn" type="button" onclick="goBackToSafety(event)"><i class="fas fa-arrow-left"></i></button>
+            <div class="header-title"><i class="fas fa-shield-halved"></i> Flay Pay</div>
+        </header>
+
+        <div class="content">
+            <div class="page-header">
+                <h1>Flay Pay</h1>
+                <p>Choose your preferred payment method</p>
+            </div>
+
+            <h3 class="section-title">Payment Method</h3>
+            <span class="section-subtitle">Select how you want to pay</span>
+
+            <!-- Crypto Payment -->
+            <div class="payment-card" id="card-crypto">
+                <div class="card-header" onclick="toggleCard('crypto')">
+                    <div class="card-icon"><i class="fab fa-bitcoin"></i></div>
+                    <div class="card-info">
+                        <h3>Crypto Payment</h3>
+                        <p>Pay securely using supported cryptocurrencies</p>
+                    </div>
+                    <i class="fas fa-chevron-right card-indicator"></i>
+                </div>
+                <div class="card-body">
+                    <div class="body-content">
+                        <div class="info-msg">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Crypto payments are processed securely. Network fees may apply.</span>
+                        </div>
+                        <div class="method-grid">
+                            <div class="sub-method" onclick="selectSubMethod('crypto', 'USDT')">
+                                <div class="sub-method-icon"><img src="https://cryptologos.cc/logos/tether-usdt-logo.svg?v=025" width="24" alt="USDT"></div>
+                                <div class="sub-method-name">USDT (TRC20)</div>
+                                <div class="sub-method-action">Select <i class="fas fa-arrow-right"></i></div>
+                            </div>
+                            <div class="sub-method" onclick="selectSubMethod('crypto', 'USDC')">
+                                <div class="sub-method-icon"><img src="https://cryptologos.cc/logos/usd-coin-usdc-logo.svg?v=025" width="24" alt="USDC"></div>
+                                <div class="sub-method-name">USDC (ERC20)</div>
+                                <div class="sub-method-action">Select <i class="fas fa-arrow-right"></i></div>
+                            </div>
+                            <div class="sub-method" onclick="selectSubMethod('crypto', 'BTC')">
+                                <div class="sub-method-icon"><i class="fab fa-bitcoin" style="color:#F7931A"></i></div>
+                                <div class="sub-method-name">Bitcoin</div>
+                                <div class="sub-method-action">Select <i class="fas fa-arrow-right"></i></div>
+                            </div>
+                            <div class="sub-method" onclick="selectSubMethod('crypto', 'ETH')">
+                                <div class="sub-method-icon"><i class="fab fa-ethereum" style="color:#627EEA"></i></div>
+                                <div class="sub-method-name">Ethereum</div>
+                                <div class="sub-method-action">Select <i class="fas fa-arrow-right"></i></div>
+                            </div>
+                        </div>
+                        <div class="crypto-details" id="crypto-details">
+                            <div class="crypto-row">
+                                <span>Network</span>
+                                <strong id="crypto-network">Tron (TRC20)</strong>
+                            </div>
+                            <div class="crypto-row">
+                                <span>Wallet Address</span>
+                                <strong style="color:var(--fp-accent); cursor:pointer;" onclick="copyText('crypto-wallet')">
+                                    <span id="crypto-wallet">TXXXXXXXXXXXXX...</span> <i class="fas fa-copy"></i>
+                                </strong>
+                            </div>
+                            <div class="input-group visible" style="margin-top:12px;">
+                                <label class="input-label">Transaction Hash / TxID</label>
+                                <input type="text" class="flay-input" id="crypto-txid" placeholder="Enter TxID after sending">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Local Payment -->
+            <div class="payment-card" id="card-local">
+                <div class="card-header" onclick="toggleCard('local')">
+                    <div class="card-icon"><i class="fas fa-mobile-screen"></i></div>
+                    <div class="card-info">
+                        <h3>Local Payment</h3>
+                        <p>Pay using supported local payment methods</p>
+                    </div>
+                    <i class="fas fa-chevron-right card-indicator"></i>
+                </div>
+                <div class="card-body">
+                    <div class="body-content">
+                        <div class="info-msg">
+                            <i class="fas fa-shield-check"></i>
+                            <span>Your payment will be verified before the service is activated.</span>
+                        </div>
+                        <div class="method-grid">
+                            <div class="sub-method" onclick="selectSubMethod('local', 'bKash')">
+                                <div class="sub-method-icon" style="color:#E2136E"><i class="fas fa-wallet"></i></div>
+                                <div class="sub-method-name">bKash</div>
+                                <div class="sub-method-action">Select <i class="fas fa-arrow-right"></i></div>
+                            </div>
+                            <div class="sub-method" onclick="selectSubMethod('local', 'Nagad')">
+                                <div class="sub-method-icon" style="color:#ED1C24"><i class="fas fa-wallet"></i></div>
+                                <div class="sub-method-name">Nagad</div>
+                                <div class="sub-method-action">Select <i class="fas fa-arrow-right"></i></div>
+                            </div>
+                            <div class="sub-method" onclick="selectSubMethod('local', 'Rocket')">
+                                <div class="sub-method-icon" style="color:#8C368C"><i class="fas fa-wallet"></i></div>
+                                <div class="sub-method-name">Rocket</div>
+                                <div class="sub-method-action">Select <i class="fas fa-arrow-right"></i></div>
+                            </div>
+                        </div>
+                        <div class="input-group" id="local-details">
+                            <p style="font-size: 12px; color:var(--fp-muted); margin-bottom:12px;">Send money to: <strong style="color: var(--fp-text);" id="local-number">01XXXXXXXXX</strong> <i class="fas fa-copy" style="color:var(--fp-accent); cursor:pointer;" onclick="copyText('local-number')"></i></p>
+                            <label class="input-label">Transaction ID</label>
+                            <input type="text" class="flay-input" id="local-txid" placeholder="Enter Transaction ID">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Google Play -->
+            <div class="payment-card" id="card-google">
+                <div class="card-header" onclick="toggleCard('google')">
+                    <div class="card-icon"><i class="fab fa-google-play"></i></div>
+                    <div class="card-info">
+                        <h3>Buy Google Play</h3>
+                        <p>Purchase using Google Play</p>
+                    </div>
+                    <i class="fas fa-chevron-right card-indicator"></i>
+                </div>
+                <div class="card-body">
+                    <div class="body-content">
+                        <div class="info-msg" style="margin-bottom:0;">
+                            <i class="fab fa-google-play"></i>
+                            <span>Use your Google Play balance or supported Google Play payment method. Google Play Billing will open in the next step.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Badge -->
+            <div class="security-card">
+                <div class="security-header"><i class="fas fa-lock"></i> Secure Payment</div>
+                <p>Your payment information is handled through the selected payment provider securely.</p>
+                <div class="security-badges">
+                    <span><i class="fas fa-check-circle"></i> Secure Processing</span>
+                    <span><i class="fas fa-check-circle"></i> Verification</span>
+                </div>
+            </div>
         </div>
+    </main>
 
-        <h3 class="section-title">Payment Method</h3>
-        <span class="section-subtitle">Select how you want to pay</span>
-
-        <!-- Crypto Payment -->
-        <div class="payment-card" id="card-crypto">
-            <div class="card-header" onclick="toggleCard('crypto')">
-                <div class="card-icon"><i class="fab fa-bitcoin"></i></div>
-                <div class="card-info">
-                    <h3>Crypto Payment</h3>
-                    <p>Pay securely using supported cryptocurrencies</p>
-                </div>
-                <i class="fas fa-chevron-right card-indicator"></i>
-            </div>
-            <div class="card-body">
-                <div class="body-content">
-                    <div class="info-msg">
-                        <i class="fas fa-info-circle"></i>
-                        <span>Crypto payments are processed securely. Network fees may apply.</span>
-                    </div>
-                    <div class="method-grid">
-                        <div class="sub-method" onclick="selectSubMethod('crypto', 'USDT')">
-                            <div class="sub-method-icon"><img src="https://cryptologos.cc/logos/tether-usdt-logo.svg?v=025" width="24" alt="USDT"></div>
-                            <div class="sub-method-name">USDT (TRC20)</div>
-                            <div class="sub-method-action">Select <i class="fas fa-arrow-right"></i></div>
-                        </div>
-                        <div class="sub-method" onclick="selectSubMethod('crypto', 'USDC')">
-                            <div class="sub-method-icon"><img src="https://cryptologos.cc/logos/usd-coin-usdc-logo.svg?v=025" width="24" alt="USDC"></div>
-                            <div class="sub-method-name">USDC (ERC20)</div>
-                            <div class="sub-method-action">Select <i class="fas fa-arrow-right"></i></div>
-                        </div>
-                        <div class="sub-method" onclick="selectSubMethod('crypto', 'BTC')">
-                            <div class="sub-method-icon"><i class="fab fa-bitcoin" style="color:#F7931A"></i></div>
-                            <div class="sub-method-name">Bitcoin</div>
-                            <div class="sub-method-action">Select <i class="fas fa-arrow-right"></i></div>
-                        </div>
-                        <div class="sub-method" onclick="selectSubMethod('crypto', 'ETH')">
-                            <div class="sub-method-icon"><i class="fab fa-ethereum" style="color:#627EEA"></i></div>
-                            <div class="sub-method-name">Ethereum</div>
-                            <div class="sub-method-action">Select <i class="fas fa-arrow-right"></i></div>
-                        </div>
-                    </div>
-                    <div class="crypto-details" id="crypto-details">
-                        <div class="crypto-row">
-                            <span>Network</span>
-                            <strong id="crypto-network">Tron (TRC20)</strong>
-                        </div>
-                        <div class="crypto-row">
-                            <span>Wallet Address</span>
-                            <strong style="color:var(--accent); cursor:pointer;" onclick="copyText('crypto-wallet')">
-                                <span id="crypto-wallet">TXXXXXXXXXXXXX...</span> <i class="fas fa-copy"></i>
-                            </strong>
-                        </div>
-                        <div class="input-group visible" style="margin-top:12px;">
-                            <label class="input-label">Transaction Hash / TxID</label>
-                            <input type="text" class="flay-input" id="crypto-txid" placeholder="Enter TxID after sending">
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Sticky Footer -->
+    <div class="sticky-footer">
+        <div class="footer-left">
+            <span>Total Amount</span>
+            <strong id="displayTotal">৳0</strong>
         </div>
+        <button class="btn-primary" id="mainCta" type="button" onclick="processPayment()" disabled>
+            Select Method <i class="fas fa-arrow-right"></i>
+        </button>
+    </div>
 
-        <!-- Local Payment -->
-        <div class="payment-card" id="card-local">
-            <div class="card-header" onclick="toggleCard('local')">
-                <div class="card-icon"><i class="fas fa-mobile-screen"></i></div>
-                <div class="card-info">
-                    <h3>Local Payment</h3>
-                    <p>Pay using supported local payment methods</p>
-                </div>
-                <i class="fas fa-chevron-right card-indicator"></i>
-            </div>
-            <div class="card-body">
-                <div class="body-content">
-                    <div class="info-msg">
-                        <i class="fas fa-shield-check"></i>
-                        <span>Your payment will be verified before the service is activated.</span>
-                    </div>
-                    <div class="method-grid">
-                        <div class="sub-method" onclick="selectSubMethod('local', 'bKash')">
-                            <div class="sub-method-icon" style="color:#E2136E"><i class="fas fa-wallet"></i></div>
-                            <div class="sub-method-name">bKash</div>
-                            <div class="sub-method-action">Select <i class="fas fa-arrow-right"></i></div>
-                        </div>
-                        <div class="sub-method" onclick="selectSubMethod('local', 'Nagad')">
-                            <div class="sub-method-icon" style="color:#ED1C24"><i class="fas fa-wallet"></i></div>
-                            <div class="sub-method-name">Nagad</div>
-                            <div class="sub-method-action">Select <i class="fas fa-arrow-right"></i></div>
-                        </div>
-                        <div class="sub-method" onclick="selectSubMethod('local', 'Rocket')">
-                            <div class="sub-method-icon" style="color:#8C368C"><i class="fas fa-wallet"></i></div>
-                            <div class="sub-method-name">Rocket</div>
-                            <div class="sub-method-action">Select <i class="fas fa-arrow-right"></i></div>
-                        </div>
-                    </div>
-                    <div class="input-group" id="local-details">
-                        <p style="font-size: 12px; color:var(--muted); margin-bottom:12px;">Send money to: <strong style="color: var(--text);" id="local-number">01XXXXXXXXX</strong> <i class="fas fa-copy" style="color:var(--accent); cursor:pointer;" onclick="copyText('local-number')"></i></p>
-                        <label class="input-label">Transaction ID</label>
-                        <input type="text" class="flay-input" id="local-txid" placeholder="Enter Transaction ID">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Google Play -->
-        <div class="payment-card" id="card-google">
-            <div class="card-header" onclick="toggleCard('google')">
-                <div class="card-icon"><i class="fab fa-google-play"></i></div>
-                <div class="card-info">
-                    <h3>Buy Google Play</h3>
-                    <p>Purchase using Google Play</p>
-                </div>
-                <i class="fas fa-chevron-right card-indicator"></i>
-            </div>
-            <div class="card-body">
-                <div class="body-content">
-                    <div class="info-msg" style="margin-bottom:0;">
-                        <i class="fab fa-google-play"></i>
-                        <span>Use your Google Play balance or supported Google Play payment method. Google Play Billing will open in the next step.</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Security Badge -->
-        <div class="security-card">
-            <div class="security-header"><i class="fas fa-lock"></i> Secure Payment</div>
-            <p>Your payment information is handled through the selected payment provider securely.</p>
-            <div class="security-badges">
-                <span><i class="fas fa-check-circle"></i> Secure Processing</span>
-                <span><i class="fas fa-check-circle"></i> Verification</span>
-            </div>
+    <!-- Pending Overlay -->
+    <div class="overlay" id="overlay-pending">
+        <div class="status-icon processing"><i class="fas fa-circle-notch spinner"></i></div>
+        <h2>Payment Processing</h2>
+        <p>We are verifying your payment. Please wait.</p>
+        <div class="overlay-details">
+            <div class="overlay-row"><span>Order ID</span><strong class="display-order-id-overlay">FLY-XXXXXXXX</strong></div>
+            <div class="overlay-row"><span>Method</span><strong id="overlay-pending-method">-</strong></div>
+            <div class="overlay-row"><span>Status</span><strong style="color:var(--fp-warning)">Verifying...</strong></div>
         </div>
     </div>
-</main>
 
-<!-- Sticky Footer -->
-<div class="sticky-footer">
-    <div class="footer-left">
-        <span>Total Amount</span>
-        <strong id="displayTotal">৳0</strong>
+    <!-- Success Overlay -->
+    <div class="overlay" id="overlay-success">
+        <div class="status-icon success"><i class="fas fa-check"></i></div>
+        <h2>Payment Successful</h2>
+        <p>Your Flay service payment has been received.</p>
+        <div class="overlay-details">
+            <div class="overlay-row"><span>Service</span><strong class="display-service-overlay">Flay Premium</strong></div>
+            <div class="overlay-row"><span>Amount</span><strong class="display-amount-overlay">৳0</strong></div>
+            <div class="overlay-row"><span>Order ID</span><strong class="display-order-id-overlay">FLY-XXXXXXXX</strong></div>
+            <div class="overlay-row"><span>Status</span><strong style="color:var(--fp-success)">Waiting for Approval</strong></div>
+        </div>
+        <!-- No app refresh, just updates UI or securely goes back -->
+        <button class="btn-primary btn-full" type="button" onclick="viewStatus()">View Payment Status</button>
+        <button class="btn-secondary" type="button" onclick="goBackToSafety(event)">Back to Flaynity</button>
     </div>
-    <button class="btn-primary" id="mainCta" type="button" onclick="processPayment()" disabled>
-        Select Method <i class="fas fa-arrow-right"></i>
-    </button>
-</div>
 
-<!-- Pending Overlay -->
-<div class="overlay" id="overlay-pending">
-    <div class="status-icon processing"><i class="fas fa-circle-notch spinner"></i></div>
-    <h2>Payment Processing</h2>
-    <p>We are verifying your payment. Please wait.</p>
-    <div class="overlay-details">
-        <div class="overlay-row"><span>Order ID</span><strong class="display-order-id-overlay">FLY-XXXXXXXX</strong></div>
-        <div class="overlay-row"><span>Method</span><strong id="overlay-pending-method">-</strong></div>
-        <div class="overlay-row"><span>Status</span><strong style="color:var(--warning)">Verifying...</strong></div>
+    <!-- Failed Overlay -->
+    <div class="overlay" id="overlay-failed">
+        <div class="status-icon failed"><i class="fas fa-times"></i></div>
+        <h2>Payment Failed</h2>
+        <p id="fail-reason">We couldn't verify this payment.</p>
+        <div class="overlay-details">
+            <div class="overlay-row"><span>Order ID</span><strong class="display-order-id-overlay">FLY-XXXXXXXX</strong></div>
+        </div>
+        <!-- No app refresh -->
+        <button class="btn-primary btn-full" type="button" onclick="closeOverlays()">Try Again</button>
+        <button class="btn-secondary" type="button" onclick="closeOverlays()">Change Payment Method</button>
     </div>
-</div>
-
-<!-- Success Overlay -->
-<div class="overlay" id="overlay-success">
-    <div class="status-icon success"><i class="fas fa-check"></i></div>
-    <h2>Payment Successful</h2>
-    <p>Your Flay service payment has been received.</p>
-    <div class="overlay-details">
-        <div class="overlay-row"><span>Service</span><strong class="display-service-overlay">Flay Premium</strong></div>
-        <div class="overlay-row"><span>Amount</span><strong class="display-amount-overlay">৳0</strong></div>
-        <div class="overlay-row"><span>Order ID</span><strong class="display-order-id-overlay">FLY-XXXXXXXX</strong></div>
-        <div class="overlay-row"><span>Status</span><strong style="color:var(--success)">Waiting for Approval</strong></div>
-    </div>
-    <!-- No app refresh, just updates UI or securely goes back -->
-    <button class="btn-primary btn-full" type="button" onclick="viewStatus()">View Payment Status</button>
-    <button class="btn-secondary" type="button" onclick="goBack()">Back to Flaynity</button>
-</div>
-
-<!-- Failed Overlay -->
-<div class="overlay" id="overlay-failed">
-    <div class="status-icon failed"><i class="fas fa-times"></i></div>
-    <h2>Payment Failed</h2>
-    <p id="fail-reason">We couldn't verify this payment.</p>
-    <div class="overlay-details">
-        <div class="overlay-row"><span>Order ID</span><strong class="display-order-id-overlay">FLY-XXXXXXXX</strong></div>
-    </div>
-    <!-- No app refresh -->
-    <button class="btn-primary btn-full" type="button" onclick="closeOverlays()">Try Again</button>
-    <button class="btn-secondary" type="button" onclick="closeOverlays()">Change Payment Method</button>
 </div>
 
 <script>
-// Logic & State
-let currentUser = null;
-let orderId = 'FLY-' + Math.random().toString(36).substring(2, 10).toUpperCase();
-let activeCategory = null;
-let selectedMethodName = null;
-let selectedCategoryName = null;
+// Logic & State Isolated execution preventing full refresh clashes
+(function(){
+    let currentUser = null;
+    let orderId = 'FLY-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+    let activeCategory = null;
+    let selectedMethodName = null;
+    let selectedCategoryName = null;
 
-// URL Parameters for dynamic data
-const params = new URLSearchParams(location.search);
-const requestedService = window.__flaynityPremiumPayService || params.get('service') || 'upgradePro';
-const requestedAmount = params.get('amount') || '500';
-
-const serviceLabels = {
-    upgradePro: 'Upgrade Pro',
-    flayVerifiedBadge: 'Flay Verified Badge',
-    flayAds: 'Flay Ads',
-    boostContent: 'Boost Content'
-};
-
-const serviceName = serviceLabels[requestedService] || 'Premium Service';
-
-// Init UI
-document.getElementById('displayTotal').textContent = '৳' + requestedAmount;
-
-document.querySelectorAll('.display-service-overlay').forEach(el => el.textContent = serviceName);
-document.querySelectorAll('.display-order-id-overlay').forEach(el => el.textContent = orderId);
-document.querySelectorAll('.display-amount-overlay').forEach(el => el.textContent = '৳' + requestedAmount);
-
-// Firebase Auth check
-if (typeof auth !== 'undefined') {
-    auth.onAuthStateChanged(user => {
-        currentUser = user;
-        if (!user) {
-            document.getElementById('mainCta').textContent = "Sign In Required";
+    // Fixed AppNavigation SPA Go back
+    window.goBackToSafety = function(e) {
+        if (e) e.preventDefault();
+        if (typeof executeBackAction === 'function') {
+            executeBackAction();
+        } else if (typeof AppNavigation !== 'undefined' && AppNavigation.pop) {
+            AppNavigation.pop();
+        } else {
+            window.history.back();
         }
-    });
-}
+    }
 
-// Fixed Back Navigation - Only goes back to previous screen
-function goBack() {
-    window.history.back();
-}
+    // URL Parameters for dynamic data
+    const params = new URLSearchParams(location.search);
+    const requestedService = window.__flaynityPremiumPayService || params.get('service') || 'upgradePro';
+    const requestedAmount = params.get('amount') || '500';
 
-function copyText(elementId) {
-    const text = document.getElementById(elementId).textContent;
-    navigator.clipboard.writeText(text).then(() => {
-        alert("Copied to clipboard!");
-    });
-}
+    const serviceLabels = {
+        upgradePro: 'Upgrade Pro',
+        flayVerifiedBadge: 'Flay Verified Badge',
+        flayAds: 'Flay Ads',
+        boostContent: 'Boost Content'
+    };
 
-function toggleCard(category) {
-    const categories = ['crypto', 'local', 'google'];
-    
-    categories.forEach(cat => {
-        const card = document.getElementById('card-' + cat);
-        if (cat === category) {
-            if (activeCategory === category) {
-                card.classList.remove('active');
-                activeCategory = null;
-                resetSelection();
+    const serviceName = serviceLabels[requestedService] || 'Premium Service';
+
+    // Init UI Elements globally safe scoped mapping
+    document.getElementById('displayTotal').textContent = '৳' + requestedAmount;
+
+    document.querySelectorAll('.display-service-overlay').forEach(el => el.textContent = serviceName);
+    document.querySelectorAll('.display-order-id-overlay').forEach(el => el.textContent = orderId);
+    document.querySelectorAll('.display-amount-overlay').forEach(el => el.textContent = '৳' + requestedAmount);
+
+    // Firebase Auth check mapping scope
+    if (typeof auth !== 'undefined') {
+        if(auth.currentUser){ currentUser = auth.currentUser; }
+        auth.onAuthStateChanged(user => {
+            currentUser = user;
+            if (!user) {
+                document.getElementById('mainCta').textContent = "Sign In Required";
             } else {
-                card.classList.add('active');
-                activeCategory = category;
-                if(category === 'google') {
-                    selectSubMethod('google', 'Google Play');
-                } else {
-                    resetSelection();
-                }
+                updateCta(); // re-eval condition natively without freeze 
             }
-        } else {
-            card.classList.remove('active');
-        }
-    });
-}
+        });
+    }
 
-function resetSelection() {
-    selectedMethodName = null;
-    selectedCategoryName = null;
-    document.querySelectorAll('.sub-method').forEach(el => el.classList.remove('selected'));
-    document.getElementById('crypto-details').classList.remove('visible');
-    document.getElementById('local-details').classList.remove('visible');
-    updateCta();
-}
+    window.copyText = function(elementId) {
+        const text = document.getElementById(elementId).textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Copied to clipboard!");
+        });
+    }
 
-function selectSubMethod(category, method) {
-    selectedCategoryName = category;
-    selectedMethodName = method;
-
-    const card = document.getElementById('card-' + category);
-    card.querySelectorAll('.sub-method').forEach(el => {
-        if (el.innerText.includes(method) || (method === 'BTC' && el.innerText.includes('Bitcoin')) || (method === 'ETH' && el.innerText.includes('Ethereum'))) {
-            el.classList.add('selected');
-        } else {
-            el.classList.remove('selected');
-        }
-    });
-
-    if (category === 'crypto') {
-        const details = document.getElementById('crypto-details');
-        details.classList.add('visible');
-        let network = 'Tron (TRC20)';
-        let wallet = 'TXXXXXXXXXXXXXXXXXXXXXX';
-        if(method === 'USDC' || method === 'ETH') { network = 'Ethereum (ERC20)'; wallet = '0xXXXXXXXXXXXXXXXXXXXXX'; }
-        if(method === 'BTC') { network = 'Bitcoin'; wallet = 'bc1XXXXXXXXXXXXXXXXXXXX'; }
+    window.toggleCard = function(category) {
+        const categories = ['crypto', 'local', 'google'];
         
-        document.getElementById('crypto-network').textContent = network;
-        document.getElementById('crypto-wallet').textContent = wallet;
-    } 
-    else if (category === 'local') {
-        const details = document.getElementById('local-details');
-        details.classList.add('visible');
-        document.getElementById('local-number').textContent = '018XXXXXXXX (Merchant)';
+        categories.forEach(cat => {
+            const card = document.getElementById('card-' + cat);
+            if (cat === category) {
+                if (activeCategory === category) {
+                    card.classList.remove('active');
+                    activeCategory = null;
+                    resetSelection();
+                } else {
+                    card.classList.add('active');
+                    activeCategory = category;
+                    if(category === 'google') {
+                        selectSubMethod('google', 'Google Play');
+                    } else {
+                        resetSelection();
+                    }
+                }
+            } else {
+                card.classList.remove('active');
+            }
+        });
     }
 
-    updateCta();
-}
-
-function updateCta() {
-    const cta = document.getElementById('mainCta');
-    if (!currentUser && typeof auth !== 'undefined') {
-        cta.disabled = true;
-        cta.innerHTML = 'Sign In Required <i class="fas fa-lock"></i>';
-        return;
+    window.resetSelection = function() {
+        selectedMethodName = null;
+        selectedCategoryName = null;
+        document.querySelectorAll('.sub-method').forEach(el => el.classList.remove('selected'));
+        document.getElementById('crypto-details').classList.remove('visible');
+        document.getElementById('local-details').classList.remove('visible');
+        updateCta();
     }
 
-    if (selectedMethodName) {
-        cta.disabled = false;
-        cta.innerHTML = `Continue with ${selectedMethodName} <i class="fas fa-arrow-right"></i>`;
-    } else {
-        cta.disabled = true;
-        cta.innerHTML = 'Select Method <i class="fas fa-arrow-right"></i>';
-    }
-}
+    window.selectSubMethod = function(category, method) {
+        selectedCategoryName = category;
+        selectedMethodName = method;
 
-async function processPayment() {
-    if (!selectedMethodName || !currentUser) return;
+        const card = document.getElementById('card-' + category);
+        card.querySelectorAll('.sub-method').forEach(el => {
+            if (el.innerText.includes(method) || (method === 'BTC' && el.innerText.includes('Bitcoin')) || (method === 'ETH' && el.innerText.includes('Ethereum'))) {
+                el.classList.add('selected');
+            } else {
+                el.classList.remove('selected');
+            }
+        });
 
-    let txid = '';
-    if (selectedCategoryName === 'crypto') {
-        txid = document.getElementById('crypto-txid').value.trim();
-        if(!txid) { alert('Please enter your Transaction Hash / TxID'); return; }
-    } else if (selectedCategoryName === 'local') {
-        txid = document.getElementById('local-txid').value.trim();
-        if(!txid) { alert('Please enter your Transaction ID'); return; }
-    }
-
-    document.getElementById('overlay-pending-method').textContent = selectedMethodName;
-    document.getElementById('overlay-pending').classList.add('active');
-
-    try {
-        if (typeof db !== 'undefined') {
-            const ref = db.ref('paymentRequests/' + currentUser.uid).push();
-            await ref.set({
-                id: orderId,
-                service: requestedService,
-                amount: Number(requestedAmount),
-                currency: 'BDT',
-                paymentMethod: selectedMethodName,
-                paymentCategory: selectedCategoryName,
-                transactionId: txid,
-                status: 'pending',
-                uid: currentUser.uid,
-                email: currentUser.email || '',
-                createdAt: firebase.database.ServerValue.TIMESTAMP
-            });
-        } else {
-            await new Promise(r => setTimeout(r, 2000));
+        if (category === 'crypto') {
+            const details = document.getElementById('crypto-details');
+            details.classList.add('visible');
+            let network = 'Tron (TRC20)';
+            let wallet = 'TXXXXXXXXXXXXXXXXXXXXXX';
+            if(method === 'USDC' || method === 'ETH') { network = 'Ethereum (ERC20)'; wallet = '0xXXXXXXXXXXXXXXXXXXXXX'; }
+            if(method === 'BTC') { network = 'Bitcoin'; wallet = 'bc1XXXXXXXXXXXXXXXXXXXX'; }
+            
+            document.getElementById('crypto-network').textContent = network;
+            document.getElementById('crypto-wallet').textContent = wallet;
+        } 
+        else if (category === 'local') {
+            const details = document.getElementById('local-details');
+            details.classList.add('visible');
+            document.getElementById('local-number').textContent = '018XXXXXXXX (Merchant)';
         }
 
-        setTimeout(() => {
-            document.getElementById('overlay-pending').classList.remove('active');
-            document.getElementById('overlay-success').classList.add('active');
-        }, 1500);
-
-    } catch (e) {
-        document.getElementById('overlay-pending').classList.remove('active');
-        document.getElementById('overlay-failed').classList.add('active');
-        document.getElementById('fail-reason').textContent = e.message || "We couldn't verify this payment.";
+        updateCta();
     }
-}
 
-function closeOverlays() {
-    document.querySelectorAll('.overlay').forEach(el => el.classList.remove('active'));
-}
+    window.updateCta = function() {
+        const cta = document.getElementById('mainCta');
+        if (!currentUser && typeof auth !== 'undefined') {
+            cta.disabled = true;
+            cta.innerHTML = 'Sign In Required <i class="fas fa-lock"></i>';
+            return;
+        }
 
-// User can view status without reloading app
-function viewStatus() {
-    closeOverlays();
-    const cta = document.getElementById('mainCta');
-    cta.disabled = true;
-    cta.innerHTML = 'Payment Submitted <i class="fas fa-check"></i>';
-    document.querySelectorAll('.payment-card').forEach(card => card.style.pointerEvents = 'none');
-}
+        if (selectedMethodName) {
+            cta.disabled = false;
+            cta.innerHTML = `Continue with ${selectedMethodName} <i class="fas fa-arrow-right"></i>`;
+        } else {
+            cta.disabled = true;
+            cta.innerHTML = 'Select Method <i class="fas fa-arrow-right"></i>';
+        }
+    }
 
+    window.processPayment = async function() {
+        if (!selectedMethodName || !currentUser) return;
+
+        let txid = '';
+        if (selectedCategoryName === 'crypto') {
+            txid = document.getElementById('crypto-txid').value.trim();
+            if(!txid) { alert('Please enter your Transaction Hash / TxID'); return; }
+        } else if (selectedCategoryName === 'local') {
+            txid = document.getElementById('local-txid').value.trim();
+            if(!txid) { alert('Please enter your Transaction ID'); return; }
+        }
+
+        document.getElementById('overlay-pending-method').textContent = selectedMethodName;
+        document.getElementById('overlay-pending').classList.add('active');
+
+        try {
+            if (typeof db !== 'undefined') {
+                const ref = db.ref('paymentRequests/' + currentUser.uid).push();
+                await ref.set({
+                    id: orderId,
+                    service: requestedService,
+                    amount: Number(requestedAmount),
+                    currency: 'BDT',
+                    paymentMethod: selectedMethodName,
+                    paymentCategory: selectedCategoryName,
+                    transactionId: txid,
+                    status: 'pending',
+                    uid: currentUser.uid,
+                    email: currentUser.email || '',
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                });
+            } else {
+                await new Promise(r => setTimeout(r, 2000));
+            }
+
+            setTimeout(() => {
+                document.getElementById('overlay-pending').classList.remove('active');
+                document.getElementById('overlay-success').classList.add('active');
+            }, 1500);
+
+        } catch (e) {
+            document.getElementById('overlay-pending').classList.remove('active');
+            document.getElementById('overlay-failed').classList.add('active');
+            document.getElementById('fail-reason').textContent = e.message || "We couldn't verify this payment.";
+        }
+    }
+
+    window.closeOverlays = function() {
+        document.querySelectorAll('.overlay').forEach(el => el.classList.remove('active'));
+    }
+
+    window.viewStatus = function() {
+        closeOverlays();
+        const cta = document.getElementById('mainCta');
+        cta.disabled = true;
+        cta.innerHTML = 'Payment Submitted <i class="fas fa-check"></i>';
+        document.querySelectorAll('.payment-card').forEach(card => card.style.pointerEvents = 'none');
+    }
+})();
 </script>
 </body>
 </html>

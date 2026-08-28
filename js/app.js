@@ -671,28 +671,8 @@ function showNotification(message, type = 'error', duration = 2000) {
 // =========================================
 // FIREBASE SETUP
 // =========================================
-const firebaseConfig = {
-    apiKey: "AIzaSyCiUTQp_QDSbBIOGJXKI7jJmzQHPu8L14I",
-    authDomain: "flaynity-app.firebaseapp.com",
-    databaseURL: "https://flaynity-app-default-rtdb.firebaseio.com",
-    projectId: "flaynity-app",
-    storageBucket: "flaynity-app.firebasestorage.app",
-    messagingSenderId: "587469287255",
-    appId: "1:587469287255:web:6ec177b0c1c802efc95812",
-    measurementId: "G-HPMF5TPJB2"
-};
-
-try {
-    firebase.initializeApp(firebaseConfig);
-    firebase.database().enablePersistence().catch(err => {
-        console.warn("Offline persistence activation bypassed: ", err.code);
-    });
-} catch (e) {
-    console.error("Firebase config crash prevented:", e);
-}
-
-const auth = firebase.auth();
-const db = firebase.database();
+// Firebase initialization is provided by js/firebase-config.js.
+// Shared globals: firebase, auth, db
 
 const API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb'; 
 const BASE_URL = 'https://api.themoviedb.org/3';
@@ -717,59 +697,10 @@ let watchRecommendedLimit = 10;
 let postRenderLimit = 30;
 
 // =========================================================
-// CLOUDFLARE R2 S3 SDK CONFIGURATIONS
+// CLOUDFLARE R2 OBJECT STORAGE
 // =========================================================
-const R2_CONFIG = {
-    accessKeyId: "c4d26ef58f7d0818695c8710af083fb6",
-    secretAccessKey: "97bc62a7b0c961001611489e28f9dbd41d2b30cda3e8348bb32d12a7c1d319a8",
-    endpoint: "https://b3741135bd1f3e96b6744f11e6a06600.r2.cloudflarestorage.com",
-    s3ForcePathStyle: true,
-    signatureVersion: 'v4',
-    region: 'auto',
-    maxRetries: 5,
-    httpOptions: {
-        timeout: 300000, 
-        connectTimeout: 30000
-    }
-};
-
-AWS.config.update(R2_CONFIG);
-const s3 = new AWS.S3({ params: { Bucket: 'flaynity-storage' } });
-const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev";
-
-// =========================================================
-// S3 R2 OBJECT STORAGE MEDIA UPLOAD MODULE
-// =========================================================
-async function uploadImageToR2(file, folder = "images", retries = 3) {
-    if (!s3) throw new Error("R2 Client storage unit is not configured.");
-    const uniqueId = "img_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-    const fileKey = `uploads/${folder}/${uniqueId}_${file.name.replace(/\s+/g, '_')}`;
-    const params = {
-        Key: fileKey,
-        Body: file,
-        ContentType: file.type || "image/jpeg"
-    };
-
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-            await s3.putObject(params).promise();
-            return `${PUBLIC_R2_DOMAIN_PREFIX}/${fileKey}`;
-        } catch (err) {
-            console.warn(`R2 Image Upload attempt ${attempt} failed:`, err);
-            if (attempt === retries) throw err;
-            await new Promise(res => setTimeout(res, 1000 * Math.pow(2, attempt)));
-        }
-    }
-}
-
-function dataURLtoBlob(dataurl) {
-    var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-        bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-    while(n--){
-        u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new Blob([u8arr], {type:mime});
-}
+// R2 configuration/client/helpers are provided by js/cloudflare-r2.js.
+// Shared globals: R2_CONFIG, s3, PUBLIC_R2_DOMAIN_PREFIX, uploadImageToR2, dataURLtoBlob
 
 // =========================================
 // AUTHENTICATION & SESSION MANAGEMENT
@@ -2566,8 +2497,6 @@ function initShortsObserver() {
 // INTERNAL PREMIUM SERVICE NAVIGATION (SPA + OFFLINE CACHE)
 // =========================================================
 const PREMIUM_SERVICE_FILES = {
-    // Premium service routes are kept inside the same SPA navigation stack.
-    // Do not use location.href for these pages: it causes a full app reload.
     'upgrade-pro': 'service/upgrade-pro.html',
     'flay-verified-badge': 'service/flay-verified-badge.html',
     'flay-ads': 'service/flay-ads.html',
@@ -2800,10 +2729,7 @@ const AppNavigation = {
 };
 
 function executeBackAction() {
-    // Always return to the previous in-app route instead of reloading the document.
-    // Premium service pages are part of AppNavigation just like bottom-navigation tabs.
-    const previous = AppNavigation.pop();
-    if (!previous) AppNavigation.updateBridge();
+    AppNavigation.pop();
 }
 
 // =========================================================

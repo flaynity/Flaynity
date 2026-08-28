@@ -2563,6 +2563,90 @@ function initShortsObserver() {
 }
 
 // =========================================================
+// INTERNAL PREMIUM SERVICE NAVIGATION (SPA + OFFLINE CACHE)
+// =========================================================
+const PREMIUM_SERVICE_FILES = {
+    'upgrade-pro': 'service/upgrade-pro.html',
+    'flay-verified-badge': 'service/flay-verified-badge.html',
+    'flay-ads': 'service/flay-ads.html',
+    'boost-content': 'service/boost-content.html',
+    'flay-pay': 'service/flay-pay.html'
+};
+const PREMIUM_SERVICE_CACHE_PREFIX = 'flaynity-premium-service-cache-v1:';
+const premiumServiceLoads = {};
+
+async function __flaynityLoadPremiumService(serviceId) {
+    const url = PREMIUM_SERVICE_FILES[serviceId];
+    if (!url) throw new Error('Unknown premium service: ' + serviceId);
+    const pageId = serviceId + '-page';
+    if (document.getElementById(pageId)) return document.getElementById(pageId);
+    if (premiumServiceLoads[serviceId]) return premiumServiceLoads[serviceId];
+
+    premiumServiceLoads[serviceId] = (async () => {
+        let html = null;
+        try {
+            const response = await fetch(url, { cache: 'no-store' });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            html = await response.text();
+            try { localStorage.setItem(PREMIUM_SERVICE_CACHE_PREFIX + serviceId, html); } catch (e) {}
+        } catch (e) {
+            try { html = localStorage.getItem(PREMIUM_SERVICE_CACHE_PREFIX + serviceId); } catch (err) {}
+            if (!html) throw e;
+        }
+
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        doc.querySelectorAll('style').forEach((style, index) => {
+            const styleId = 'flaynity-premium-style-' + serviceId + '-' + index;
+            if (!document.getElementById(styleId)) {
+                const css = document.createElement('style');
+                css.id = styleId;
+                css.textContent = style.textContent || '';
+                document.head.appendChild(css);
+            }
+        });
+
+        const page = document.createElement('div');
+        page.id = pageId;
+        page.className = 'fullscreen-page premium-service-page';
+        page.setAttribute('data-premium-service', serviceId);
+        page.style.display = 'none';
+        page.style.paddingTop = 'env(safe-area-inset-top, 0px)';
+        page.style.boxSizing = 'border-box';
+        page.style.overflowY = 'auto';
+        page.style.webkitOverflowScrolling = 'touch';
+
+        Array.from(doc.body.children).forEach(node => {
+            if (node.tagName && node.tagName.toLowerCase() !== 'script') page.appendChild(node.cloneNode(true));
+        });
+        document.getElementById('app-screen')?.appendChild(page);
+
+        // Firebase/font libraries are already loaded by index.html; only execute the page's own inline logic.
+        if (serviceId !== 'flay-pay') window.__flaynityPremiumPayService = null;
+        doc.querySelectorAll('script').forEach(sourceScript => {
+            if (sourceScript.src) return;
+            const script = document.createElement('script');
+            script.textContent = sourceScript.textContent || '';
+            page.appendChild(script);
+        });
+        return page;
+    })();
+
+    try { return await premiumServiceLoads[serviceId]; }
+    finally { delete premiumServiceLoads[serviceId]; }
+}
+
+function __flaynityOpenPremiumService(serviceId) {
+    return __flaynityLoadPremiumService(serviceId).then(() => {
+        AppNavigation.syncUI();
+        return document.getElementById(serviceId + '-page');
+    }).catch(error => {
+        console.error('Premium service load failed:', serviceId, error);
+        showNotification('This page is unavailable offline. Open it once while online to save it for offline use.', 'error', 3000);
+        return null;
+    });
+}
+
+// =========================================================
 // HIGH PERFORMANCE UNIVERSAL BACK NAVIGATION ENGINE
 // =========================================================
 const AppNavigation = {
@@ -2586,6 +2670,19 @@ const AppNavigation = {
         this.stack.push({ type: 'page', id: pageId });
         this.syncUI();
         this.updateBridge();
+    },
+
+    pushPremiumService: function(serviceId, paymentService) {
+        const current = this.current();
+        if (current && current.type === 'page' && current.id === serviceId + '-page') {
+            this.syncUI();
+            return Promise.resolve(document.getElementById(serviceId + '-page'));
+        }
+        this.stack.push({ type: 'page', id: serviceId + '-page', premiumService: serviceId, paymentService: paymentService || null });
+        if (serviceId === 'flay-pay') window.__flaynityPremiumPayService = paymentService || null;
+        this.syncUI();
+        this.updateBridge();
+        return __flaynityOpenPremiumService(serviceId);
     },
 
     pushModal: function(modalId) {
@@ -2664,6 +2761,10 @@ const AppNavigation = {
                 const targetId = activePage.endsWith('-page') ? activePage : (activePage + '-page');
                 const pageEl = document.getElementById(targetId);
                 if (pageEl) pageEl.style.display = 'flex';
+                else {
+                    const premiumId = Object.keys(PREMIUM_SERVICE_FILES).find(id => id + '-page' === targetId);
+                    if (premiumId) __flaynityOpenPremiumService(premiumId);
+                }
             }
         } else {
             document.body.style.overflow = 'auto';

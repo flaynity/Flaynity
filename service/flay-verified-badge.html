@@ -13,25 +13,18 @@
         })();
     </script>
 
-    <!-- Firebase SDK (Required for Realtime Database Fetching) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
-    <!-- Your existing Firebase Config file -->
-    <script src="../js/firebase-config.js"></script>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            /* Light Theme (Default) */
+            /* Light Theme */
             --bg-color: #ffffff;
             --card-bg: #ffffff;
             --text-primary: #000000;
             --text-secondary: #666666;
             --border-color: #e9e9e9;
-            --app-bar-bg: rgba(255, 255, 255, 0.85);
+            --app-bar-bg: transparent;
             --card-shadow: 0 4px 20px rgba(0,0,0,0.06);
             --bottom-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 30%, rgba(255, 255, 255, 1) 100%);
             --mock-bg: linear-gradient(180deg, #f8f9fa 0%, rgba(248, 249, 250, 0.6) 100%);
@@ -41,7 +34,7 @@
             --flay-pink-rgb: 255, 79, 145;
             --telegram-blue: #3390EC;
             
-            /* UI Elements */
+            /* Elements */
             --radius-large: 28px;
             --radius-md: 18px;
             --radius-sm: 12px;
@@ -55,7 +48,7 @@
             --text-primary: #ffffff;
             --text-secondary: #9BA1B0;
             --border-color: #222222;
-            --app-bar-bg: rgba(0, 0, 0, 0.85);
+            --app-bar-bg: transparent;
             --card-shadow: 0 4px 24px rgba(0,0,0,0.3);
             --bottom-gradient: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.95) 30%, rgba(0, 0, 0, 1) 100%);
             --mock-bg: linear-gradient(180deg, rgba(25, 27, 32, 1) 0%, rgba(25, 27, 32, 0.6) 100%);
@@ -85,86 +78,80 @@
             padding-bottom: 120px;
         }
 
-        /* Animations */
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .animate-fade-up {
-            animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
-        }
-
-        /* Top Bar - No longer sticky, scrollable with page */
+        /* Top Bar Layout Setup */
         .top-bar {
-            position: relative; /* Changed from sticky to scroll with page */
+            position: relative; /* Now Scrolls normally, NO Sticky Behavior */
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 16px 20px;
+            justify-content: center; /* Allows Page Title absolute centering */
+            padding: 0;
+            height: 72px; /* Set fixed header bounds */
             background: var(--app-bar-bg);
             border-bottom: 1px solid var(--border-color);
         }
 
         .back-btn {
+            position: absolute;
+            left: 20px; /* Aligned smoothly */
             background: none;
             border: none;
             color: var(--text-primary);
             font-size: 20px;
-            width: 40px;
-            height: 40px;
+            width: 42px;
+            height: 42px;
             display: flex;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
             border-radius: 50%;
             cursor: pointer;
-            z-index: 2; /* Ensure clickable */
+            z-index: 5; 
         }
 
         .page-title {
             font-size: 16px;
             font-weight: 700;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            white-space: nowrap;
+            text-align: center;
+            margin: 0;
             z-index: 1;
         }
 
-        .premium-badge-small {
-            background: rgba(var(--flay-pink-rgb), 0.1);
-            color: var(--flay-pink);
-            padding: 6px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            border: 1px solid rgba(var(--flay-pink-rgb), 0.2);
-            z-index: 2;
+        /* Animation System */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-up {
+            animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
         }
 
-        /* Sections */
+        @keyframes pulseSkeleton {
+            0% { opacity: 0.2; }
+            50% { opacity: 0.6; }
+            100% { opacity: 0.2; }
+        }
+        .skeleton-block {
+            background: var(--border-color);
+            border-radius: 6px;
+            animation: pulseSkeleton 1.5s infinite;
+            display: inline-block;
+        }
+
+        /* General Section Blocks */
         .section {
             padding: 0 20px;
             margin-top: 24px;
         }
-
         .section-title {
             font-size: 20px;
             font-weight: 800;
             margin-bottom: 8px;
         }
-
         .section-subtitle {
             font-size: 14px;
             color: var(--text-secondary);
             margin-bottom: 16px;
             line-height: 1.5;
         }
-
-        /* Cards Component */
         .card {
             background: var(--card-bg);
             border-radius: var(--radius-large);
@@ -173,7 +160,7 @@
             box-shadow: var(--card-shadow);
         }
 
-        /* Hero Card */
+        /* Hero Element Card */
         .hero-card {
             display: flex;
             align-items: center;
@@ -183,12 +170,7 @@
             overflow: hidden;
             box-shadow: 0 8px 32px rgba(var(--flay-pink-rgb), 0.15);
         }
-
-        .hero-content {
-            flex: 1;
-            z-index: 2;
-        }
-
+        .hero-content { flex: 1; z-index: 2; }
         .hero-badge-text {
             color: var(--flay-pink);
             font-size: 12px;
@@ -200,47 +182,24 @@
             align-items: center;
             gap: 6px;
         }
-
         .hero-title {
             font-size: 24px;
             font-weight: 900;
             line-height: 1.2;
             margin-bottom: 12px;
         }
-
-        .hero-desc {
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.5;
-        }
-
+        .hero-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
         .hero-icon-container {
-            width: 80px;
-            height: 80px;
+            width: 80px; height: 80px;
             background: rgba(51, 144, 236, 0.1);
             border-radius: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            z-index: 2;
-            border: 1px solid rgba(51, 144, 236, 0.2);
+            display: flex; align-items: center; justify-content: center;
+            position: relative; z-index: 2; border: 1px solid rgba(51, 144, 236, 0.2);
         }
+        .verified-svg { width: 1.2em; height: 1.2em; flex-shrink: 0; display: inline-block; }
+        .hero-icon-container .verified-svg { width: 45px; height: 45px; }
 
-        /* SVG Telegram Badge Icon */
-        .verified-svg {
-            width: 1.2em;
-            height: 1.2em;
-            flex-shrink: 0;
-            display: inline-block;
-        }
-
-        .hero-icon-container .verified-svg {
-            width: 45px;
-            height: 45px;
-        }
-
-        /* Profile Preview Card */
+        /* Dynamic Channel Preview Block */
         .preview-card {
             border: 1px solid rgba(var(--flay-pink-rgb), 0.3);
             background: var(--mock-bg);
@@ -248,335 +207,99 @@
             border-radius: var(--radius-large);
             padding: 20px;
         }
-
         .profile-mock {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 16px;
-            padding-bottom: 16px;
+            display: flex; align-items: center; gap: 16px;
+            margin-bottom: 16px; padding-bottom: 16px;
             border-bottom: 1px solid var(--border-color);
         }
-
         .avatar {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background-color: var(--border-color); /* Skeleton loader background */
-            background-position: center;
-            background-size: cover;
+            width: 56px; height: 56px; border-radius: 50%;
+            background-color: var(--border-color); /* Acts as initial loading placeholder */
+            background-position: center; background-size: cover;
             border: 2px solid var(--card-bg);
             box-shadow: 0 0 0 2px var(--telegram-blue);
-            transition: background-image 0.3s ease;
+            transition: background-image 0.4s ease;
         }
-
+        .profile-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
         .profile-info h3 {
-            font-size: 18px;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 4px;
+            font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 6px; margin: 0; min-height: 22px;
         }
-
-        .profile-info p {
-            color: var(--text-secondary);
-            font-size: 14px;
-            font-weight: 500;
-        }
-
+        .profile-info p { color: var(--text-secondary); font-size: 14px; font-weight: 500; min-height: 18px; margin: 0;}
         .preview-text {
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
+            font-size: 13px; color: var(--text-secondary); line-height: 1.5; display: flex; align-items: flex-start; gap: 10px;
         }
+        .preview-text i { color: var(--flay-pink); margin-top: 3px; }
 
-        .preview-text i {
-            color: var(--flay-pink);
-            margin-top: 3px;
-        }
-
-        /* Loading Animation state */
-        .skeleton-text {
-            opacity: 0.5;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 0.4; }
-            50% { opacity: 0.7; }
-            100% { opacity: 0.4; }
-        }
-
-        /* Benefits Grid */
-        .benefits-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-        }
-
+        /* Feature Check & Benefits Grids */
+        .benefits-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
         .benefit-item {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            padding: 16px;
-            border-radius: var(--radius-md);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            box-shadow: var(--card-shadow);
+            background: var(--card-bg); border: 1px solid var(--border-color); padding: 16px;
+            border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 10px; box-shadow: var(--card-shadow);
         }
-
         .benefit-icon {
-            width: 32px;
-            height: 32px;
-            background: rgba(var(--flay-pink-rgb), 0.1);
-            color: var(--flay-pink);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
+            width: 32px; height: 32px; background: rgba(var(--flay-pink-rgb), 0.1); color: var(--flay-pink);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px;
         }
+        .benefit-item h4 { font-size: 14px; font-weight: 700; margin: 0;}
+        .benefit-item p { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin: 0; }
 
-        .benefit-item h4 {
-            font-size: 14px;
-            font-weight: 700;
-        }
-
-        .benefit-item p {
-            font-size: 12px;
-            color: var(--text-secondary);
-            line-height: 1.4;
-        }
-
-        /* Plans */
-        .plans-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        @media (min-width: 480px) {
-            .plans-container {
-                flex-direction: row;
-            }
-        }
-
+        /* Subscription Cards Options */
+        .plans-container { display: flex; flex-direction: column; gap: 12px; }
+        @media (min-width: 480px) { .plans-container { flex-direction: row; } }
         .plan-card {
-            flex: 1;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 20px;
-            position: relative;
-            cursor: pointer;
-            transition: var(--transition);
-            box-shadow: var(--card-shadow);
+            flex: 1; background: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: var(--radius-md); padding: 20px; position: relative;
+            cursor: pointer; transition: var(--transition); box-shadow: var(--card-shadow);
         }
-
-        .plan-card.active {
-            border-color: var(--flay-pink);
-            background: rgba(var(--flay-pink-rgb), 0.03);
-            box-shadow: 0 4px 20px rgba(var(--flay-pink-rgb), 0.1);
-        }
-
-        .plan-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .plan-name {
-            font-size: 16px;
-            font-weight: 800;
-        }
-
-        .radio-circle {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: 2px solid var(--text-secondary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: var(--transition);
-        }
-
-        .plan-card.active .radio-circle {
-            border-color: var(--flay-pink);
-        }
-
-        .radio-inner {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: var(--flay-pink);
-            opacity: 0;
-            transform: scale(0.5);
-            transition: var(--transition);
-        }
-
-        .plan-card.active .radio-inner {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        .plan-price {
-            font-size: 28px;
-            font-weight: 900;
-            margin-bottom: 4px;
-        }
-
-        .plan-billing {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-        }
-
-        .plan-desc {
-            font-size: 13px;
-            color: var(--text-secondary);
-        }
-
+        .plan-card.active { border-color: var(--flay-pink); background: rgba(var(--flay-pink-rgb), 0.03); box-shadow: 0 4px 20px rgba(var(--flay-pink-rgb), 0.1); }
+        .plan-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .plan-name { font-size: 16px; font-weight: 800; }
+        .radio-circle { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--text-secondary); display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+        .plan-card.active .radio-circle { border-color: var(--flay-pink); }
+        .radio-inner { width: 10px; height: 10px; border-radius: 50%; background: var(--flay-pink); opacity: 0; transform: scale(0.5); transition: var(--transition); }
+        .plan-card.active .radio-inner { opacity: 1; transform: scale(1); }
+        .plan-price { font-size: 28px; font-weight: 900; margin-bottom: 4px; }
+        .plan-billing { font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
+        .plan-desc { font-size: 13px; color: var(--text-secondary); }
         .save-badge {
-            position: absolute;
-            top: -10px;
-            right: 20px;
-            background: var(--flay-pink);
-            color: white;
-            font-size: 10px;
-            font-weight: 800;
-            padding: 4px 10px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(var(--flay-pink-rgb), 0.3);
+            position: absolute; top: -10px; right: 20px; background: var(--flay-pink); color: white;
+            font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 12px; box-shadow: 0 4px 10px rgba(var(--flay-pink-rgb), 0.3);
         }
 
-        /* What You Get Checklist */
-        .features-list {
-            background: var(--card-bg);
-            border-radius: var(--radius-large);
-            padding: 24px;
-            border: 1px solid var(--border-color);
-            box-shadow: var(--card-shadow);
-        }
+        .features-list { background: var(--card-bg); border-radius: var(--radius-large); padding: 24px; border: 1px solid var(--border-color); box-shadow: var(--card-shadow); }
+        .feature-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
+        .feature-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .feature-row:first-child { padding-top: 0; }
+        .feature-row i { color: var(--flay-pink); font-size: 16px; }
+        .feature-row span { font-size: 14px; font-weight: 500; }
 
-        .feature-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
+        .info-box { background: rgba(128, 128, 128, 0.05); border: 1px solid var(--border-color); padding: 16px; border-radius: var(--radius-sm); display: flex; gap: 12px; margin-bottom: 20px; }
+        .info-box i { color: var(--text-secondary); font-size: 18px; margin-top: 2px; }
+        .info-text p { font-size: 13px; font-weight: 600; margin: 0 0 4px 0; }
+        .info-text span { font-size: 12px; color: var(--text-secondary); display: block; }
 
-        .feature-row:last-child {
-            border-bottom: none;
-            padding-bottom: 0;
-        }
-
-        .feature-row:first-child {
-            padding-top: 0;
-        }
-
-        .feature-row i {
-            color: var(--flay-pink);
-            font-size: 16px;
-        }
-
-        .feature-row span {
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        /* Info Box */
-        .info-box {
-            background: rgba(128, 128, 128, 0.05);
-            border: 1px solid var(--border-color);
-            padding: 16px;
-            border-radius: var(--radius-sm);
-            display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .info-box i {
-            color: var(--text-secondary);
-            font-size: 18px;
-            margin-top: 2px;
-        }
-
-        .info-text p {
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .info-text span {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        /* Sticky Bottom CTA */
+        /* Floating Gradient Call To Action Area */
         .bottom-cta {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--bottom-gradient);
-            padding: 24px 20px 24px;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-bottom: max(24px, env(safe-area-inset-bottom));
+            position: fixed; bottom: 0; left: 0; right: 0; background: var(--bottom-gradient);
+            padding: 24px 20px; z-index: 100; display: flex; flex-direction: column;
+            align-items: center; padding-bottom: max(24px, env(safe-area-inset-bottom));
+            pointer-events: none; /* Make overlay wrapper passthrough for native scrolls if unutilized */
         }
-
+        .bottom-cta-interactive-content { pointer-events: auto; width: 100%; display: flex; flex-direction: column; align-items: center;}
+        
         .btn-primary {
-            width: 100%;
-            max-width: 640px;
-            background: var(--flay-pink);
-            color: #FFF;
-            border: none;
-            height: 56px;
-            border-radius: var(--radius-md);
-            font-size: 16px;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            cursor: pointer;
-            box-shadow: 0 8px 32px rgba(var(--flay-pink-rgb), 0.3);
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
+            width: 100%; max-width: 640px; background: var(--flay-pink); color: #FFF;
+            border: none; height: 56px; border-radius: var(--radius-md); font-size: 16px; font-weight: 800;
+            display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;
+            box-shadow: 0 8px 32px rgba(var(--flay-pink-rgb), 0.3); transition: var(--transition); overflow: hidden;
         }
-
-        .btn-primary:active {
-            transform: scale(0.98);
-        }
-
-        .secure-text {
-            margin-top: 12px;
-            font-size: 12px;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .secure-text i {
-            font-size: 10px;
-        }
-
+        .btn-primary:active { transform: scale(0.98); }
+        .secure-text { margin-top: 12px; font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
     </style>
 </head>
 <body>
 
-    <!-- TELEGRAM OFFICIAL VERIFIED BADGE SVG -->
+    <!-- ONLY REQUIRED BRANDING TELEGRAM STYLE ICON SET -->
     <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <g id="icon-verified-telegram">
@@ -588,18 +311,16 @@
 
     <div class="app-container">
         
-        <!-- Top App Bar (Centered Title & Scrolls with page) -->
+        <!-- Modified Premium-free header (Absolute Layout centering applies precisely regardless of what exists around it) -->
         <header class="top-bar">
-            <button class="back-btn" onclick="handleBack(event)" aria-label="Back">
+            <!-- Bound internally inside Javascript directly to prevent refreshing completely -->
+            <button class="back-btn" id="verified-back-btn" aria-label="Back">
                 <i class="fas fa-arrow-left"></i>
             </button>
             <h1 class="page-title">Flay Verified Badge</h1>
-            <div class="premium-badge-small">
-                <i class="fas fa-crown"></i> PREMIUM
-            </div>
         </header>
 
-        <!-- Hero Section -->
+        <!-- Main Action Hero Container -->
         <section class="section animate-fade-up" style="animation-delay: 0.1s;">
             <div class="card hero-card">
                 <div class="hero-content">
@@ -610,26 +331,23 @@
                     <p class="hero-desc">Build trust, stand out in Flaynity, and show your audience that your profile is verified.</p>
                 </div>
                 <div class="hero-icon-container">
-                    <svg viewBox="0 0 24 24" class="verified-svg">
-                        <use href="#icon-verified-telegram"></use>
-                    </svg>
+                    <svg viewBox="0 0 24 24" class="verified-svg"><use href="#icon-verified-telegram"></use></svg>
                 </div>
             </div>
         </section>
 
-        <!-- Profile Preview Section (Dynamic Firebase Data) -->
+        <!-- Safe Data Channel Preview Element Frame  -->
         <section class="section animate-fade-up" style="animation-delay: 0.2s;">
             <div class="preview-card">
                 <div class="profile-mock">
-                    <div class="avatar" id="db-channel-avatar"></div>
+                    <div class="avatar" id="fv-channel-avatar"></div>
                     <div class="profile-info">
-                        <h3 id="db-channel-name" class="skeleton-text">
-                            Loading...
-                            <svg viewBox="0 0 24 24" class="verified-svg" style="width: 18px; height: 18px; opacity: 0;" id="db-channel-badge">
-                                <use href="#icon-verified-telegram"></use>
-                            </svg>
+                        <h3 id="fv-channel-name">
+                            <span class="skeleton-block" style="width:130px; height: 18px; margin-top:2px;"></span>
                         </h3>
-                        <p id="db-channel-handle" class="skeleton-text">...</p>
+                        <p id="fv-channel-handle">
+                            <span class="skeleton-block" style="width:85px; height: 14px;"></span>
+                        </p>
                     </div>
                 </div>
                 <div class="preview-text">
@@ -639,60 +357,35 @@
             </div>
         </section>
 
-        <!-- Benefits Section -->
         <section class="section animate-fade-up" style="animation-delay: 0.3s;">
             <h2 class="section-title">Why Get Verified?</h2>
             <div class="benefits-grid mt-3">
-                <div class="benefit-item">
-                    <div class="benefit-icon"><i class="fa-solid fa-id-badge"></i></div>
-                    <h4>Verified Identity</h4>
-                    <p>Show a trusted verified identity.</p>
-                </div>
-                <div class="benefit-item">
-                    <div class="benefit-icon"><i class="fa-solid fa-star"></i></div>
-                    <h4>Stand Out</h4>
-                    <p>Make your profile more recognizable.</p>
-                </div>
-                <div class="benefit-item">
-                    <div class="benefit-icon"><i class="fa-solid fa-eye"></i></div>
-                    <h4>Profile Visibility</h4>
-                    <p>Get noticed across Flaynity.</p>
-                </div>
-                <div class="benefit-item">
-                    <div class="benefit-icon"><i class="fa-solid fa-certificate"></i></div>
-                    <h4>Premium Badge</h4>
-                    <p>Display the Flay badge beside your name.</p>
-                </div>
+                <div class="benefit-item"><div class="benefit-icon"><i class="fa-solid fa-id-badge"></i></div><h4>Verified Identity</h4><p>Show a trusted verified identity.</p></div>
+                <div class="benefit-item"><div class="benefit-icon"><i class="fa-solid fa-star"></i></div><h4>Stand Out</h4><p>Make your profile more recognizable.</p></div>
+                <div class="benefit-item"><div class="benefit-icon"><i class="fa-solid fa-eye"></i></div><h4>Profile Visibility</h4><p>Get noticed across Flaynity.</p></div>
+                <div class="benefit-item"><div class="benefit-icon"><i class="fa-solid fa-certificate"></i></div><h4>Premium Badge</h4><p>Display the Flay badge beside your name.</p></div>
             </div>
         </section>
 
-        <!-- Plan Selection Section -->
         <section class="section animate-fade-up" style="animation-delay: 0.4s;">
             <h2 class="section-title">Choose Your Badge Plan</h2>
             <p class="section-subtitle">Select the plan that works best for you.</p>
-            
             <div class="plans-container">
-                <!-- Monthly Plan -->
-                <div class="plan-card active" onclick="selectPlan(this)">
+                <div class="plan-card active badge-plan-toggle">
                     <div class="plan-header">
                         <span class="plan-name">Monthly</span>
-                        <div class="radio-circle">
-                            <div class="radio-inner"></div>
-                        </div>
+                        <div class="radio-circle"><div class="radio-inner"></div></div>
                     </div>
                     <div class="plan-price">৳200</div>
                     <div class="plan-billing">billed every month</div>
                     <div class="plan-desc">Flexible starter plan</div>
                 </div>
 
-                <!-- Yearly Plan -->
-                <div class="plan-card" onclick="selectPlan(this)">
+                <div class="plan-card badge-plan-toggle">
                     <div class="save-badge">Save 17%</div>
                     <div class="plan-header">
                         <span class="plan-name">Yearly</span>
-                        <div class="radio-circle">
-                            <div class="radio-inner"></div>
-                        </div>
+                        <div class="radio-circle"><div class="radio-inner"></div></div>
                     </div>
                     <div class="plan-price">৳2,000</div>
                     <div class="plan-billing">billed every year</div>
@@ -701,46 +394,19 @@
             </div>
         </section>
 
-        <!-- What You Get Section -->
         <section class="section animate-fade-up" style="animation-delay: 0.5s;">
             <h2 class="section-title">Your Verified Badge Includes</h2>
             <div class="features-list">
-                <div class="feature-row">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>Verified badge beside your profile name</span>
-                </div>
-                <div class="feature-row">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>Badge visible in posts</span>
-                </div>
-                <div class="feature-row">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>Badge visible in videos</span>
-                </div>
-                <div class="feature-row">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>Badge visible in Shorts</span>
-                </div>
-                <div class="feature-row">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>Badge visible in comments</span>
-                </div>
-                <div class="feature-row">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>Badge visible in search results</span>
-                </div>
-                <div class="feature-row">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>Badge visible in messages</span>
-                </div>
-                <div class="feature-row">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>Premium verified profile appearance</span>
-                </div>
+                <div class="feature-row"><i class="fa-solid fa-circle-check"></i><span>Verified badge beside your profile name</span></div>
+                <div class="feature-row"><i class="fa-solid fa-circle-check"></i><span>Badge visible in posts</span></div>
+                <div class="feature-row"><i class="fa-solid fa-circle-check"></i><span>Badge visible in videos</span></div>
+                <div class="feature-row"><i class="fa-solid fa-circle-check"></i><span>Badge visible in Shorts</span></div>
+                <div class="feature-row"><i class="fa-solid fa-circle-check"></i><span>Badge visible in comments</span></div>
+                <div class="feature-row"><i class="fa-solid fa-circle-check"></i><span>Badge visible in search results</span></div>
+                <div class="feature-row"><i class="fa-solid fa-circle-check"></i><span>Premium verified profile appearance</span></div>
             </div>
         </section>
 
-        <!-- Important Info Section -->
         <section class="section animate-fade-up" style="animation-delay: 0.6s;">
             <div class="info-box">
                 <i class="fa-solid fa-circle-info"></i>
@@ -751,108 +417,137 @@
             </div>
         </section>
 
-        <!-- Sticky Bottom CTA -->
         <div class="bottom-cta animate-fade-up" style="animation-delay: 0.7s;">
-            <button class="btn-primary" onclick="proceedToPay(event)">
-                Continue to Flay Pay <i class="fa-solid fa-arrow-right"></i>
-            </button>
-            <div class="secure-text">
-                <i class="fa-solid fa-lock"></i> Secure payment • Flay Pay
+            <div class="bottom-cta-interactive-content">
+                <button class="btn-primary" id="verified-checkout-btn">
+                    Continue to Flay Pay <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <div class="secure-text"><i class="fa-solid fa-lock"></i> Secure payment • Flay Pay</div>
             </div>
         </div>
 
     </div>
 
-    <!-- Scripts -->
+    <!-- Enclosed Script Space executing purely SPA behavior accurately. (Avoids double load collisions entirely!) -->
     <script>
-        const SERVICE_ID = 'flayVerifiedBadge';
-
-        // Firebase Integration Logic (No Demo Data)
-        if (typeof auth !== 'undefined' && typeof db !== 'undefined') {
-            auth.onAuthStateChanged((user) => {
-                if (user) {
-                    fetchChannelData(user.uid);
+        (function() {
+            // Register Back Navigation Event Handlers Native without DOM reload
+            document.getElementById('verified-back-btn').addEventListener('click', function(e) {
+                e.preventDefault(); 
+                if (typeof executeBackAction === 'function') {
+                    executeBackAction();
+                } else if (typeof AppNavigation !== 'undefined' && AppNavigation.pop) {
+                    AppNavigation.pop();
                 } else {
-                    // Not logged in UI state
-                    document.getElementById('db-channel-name').innerHTML = `Guest User`;
-                    document.getElementById('db-channel-name').classList.remove('skeleton-text');
-                    document.getElementById('db-channel-handle').textContent = `@guest`;
-                    document.getElementById('db-channel-handle').classList.remove('skeleton-text');
+                    window.history.back();
                 }
             });
-        } else {
-            console.warn("Firebase Auth or DB is not initialized properly in firebase-config.js");
-        }
 
-        function fetchChannelData(uid) {
-            // Listen to User Profile Data
-            db.ref('users/' + uid).on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    const nameEl = document.getElementById('db-channel-name');
-                    const handleEl = document.getElementById('db-channel-handle');
-                    const avatarEl = document.getElementById('db-channel-avatar');
+            // Register Proceed/Checkout Handler 
+            document.getElementById('verified-checkout-btn').addEventListener('click', function(e) {
+                e.preventDefault(); 
+                if (typeof AppNavigation !== 'undefined' && typeof AppNavigation.pushPremiumService === 'function') {
+                    AppNavigation.pushPremiumService('flay-pay', 'flayVerifiedBadge');
+                }
+            });
 
-                    // Data mappings (Adjust according to your exact Firebase structure)
-                    const channelName = data.channelName || data.name || data.displayName || "Flaynity User";
-                    const channelHandle = data.channelHandle || data.username || uid.substring(0, 8);
-                    const channelImage = data.channelImage || data.photoURL || data.profile_picture || "";
+            // Toggle Interactive Options Locally  
+            document.querySelectorAll('.badge-plan-toggle').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    document.querySelectorAll('.badge-plan-toggle').forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                    if (navigator.vibrate) navigator.vibrate(30); 
+                });
+            });
 
-                    // Update UI and remove skeleton loaders
-                    nameEl.classList.remove('skeleton-text');
-                    handleEl.classList.remove('skeleton-text');
+            /* -------- DYNAMIC FIREBASE REALTIME FETCHER -------- */
+            let profileListenRef = null;
 
-                    // Set Name & Badge
-                    nameEl.innerHTML = `${channelName} <svg viewBox="0 0 24 24" class="verified-svg" style="width: 18px; height: 18px;"><use href="#icon-verified-telegram"></use></svg>`;
-                    
-                    // Set Handle
-                    handleEl.textContent = channelHandle.startsWith('@') ? channelHandle : `@${channelHandle}`;
+            // XSS Prevention Safety Logic Builder.
+            function renderSanitizedContent(containerName, nameStr, handleStr, pictureStr) {
+                const titleNode = document.getElementById('fv-channel-name');
+                const handleNode = document.getElementById('fv-channel-handle');
+                const avaNode = document.getElementById('fv-channel-avatar');
+                
+                const processSafeHTML = (content) => content ? String(content).replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
 
-                    // Set Avatar
-                    if (channelImage) {
-                        avatarEl.style.backgroundImage = `url('${channelImage}')`;
+                let exactName = processSafeHTML(nameStr) || "Flaynity User";
+                let exactHandle = processSafeHTML(handleStr);
+                
+                if (exactHandle && !exactHandle.startsWith('@')) exactHandle = '@' + exactHandle;
+                else if (!exactHandle) exactHandle = '@username';
+                
+                if (titleNode) {
+                    // Update successfully and integrate verification icon identically configured via embedded icon list inside this code 
+                    titleNode.innerHTML = `${exactName} <svg viewBox="0 0 24 24" class="verified-svg" style="width: 18px; height: 18px; position:relative; top:2px; left: 1px;"><use href="#icon-verified-telegram"></use></svg>`;
+                }
+                
+                if (handleNode) {
+                    handleNode.innerText = exactHandle;
+                }
+                
+                if (avaNode) {
+                    if(pictureStr) {
+                         avaNode.style.backgroundImage = `url("${processSafeHTML(pictureStr)}")`;
+                         avaNode.style.backgroundColor = 'transparent';
                     } else {
-                        // Fallback Color if no image
-                        avatarEl.style.backgroundColor = 'var(--border-color)';
-                        avatarEl.style.backgroundImage = 'none';
+                         avaNode.style.backgroundImage = 'none';
+                         avaNode.style.backgroundColor = 'var(--border-color)';
                     }
                 }
-            });
-        }
-
-        // Back Button Logic
-        function handleBack(event) {
-            if (event) event.preventDefault(); 
-            if (typeof executeBackAction === 'function') {
-                executeBackAction();
-            } else if (typeof AppNavigation !== 'undefined' && AppNavigation.pop) {
-                AppNavigation.pop();
-            } else {
-                window.history.back();
             }
-        }
-
-        // Toggle Plan Selection
-        function selectPlan(element) {
-            document.querySelectorAll('.plan-card').forEach(card => {
-                card.classList.remove('active');
-            });
-            element.classList.add('active');
             
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-        }
+            // Connect with Flaynity core app schema channels path priority 1. User properties Priority 2 fallback
+            function setupRealtimeBinding(uid) {
+                if(!uid || typeof db === 'undefined') return;
 
-        // Continue to Pay Logic
-        function proceedToPay(event) {
-            if (event) event.preventDefault(); 
-            if (typeof AppNavigation !== 'undefined' && AppNavigation.pushPremiumService) {
-                AppNavigation.pushPremiumService('flay-pay', SERVICE_ID);
-            } else {
-                console.warn('AppNavigation router not found.');
+                if (profileListenRef) profileListenRef.off();
+                
+                profileListenRef = db.ref('channels/' + uid);
+                profileListenRef.on('value', function(snapshot) {
+                     const channelNodeVal = snapshot.val();
+                     if (channelNodeVal) {
+                          // Flaynity User found using Official Creation flow 
+                          renderSanitizedContent(
+                              channelNodeVal.channelName, 
+                              channelNodeVal.handle, 
+                              channelNodeVal.avatarUrl || "" 
+                          );
+                     } else {
+                          // Try general global auth profile configurations dynamically
+                          db.ref('users/' + uid).once('value', function(standardSnapshot) {
+                              const standardValues = standardSnapshot.val() || {};
+                              
+                              let authHandle = "";
+                              let authAvatarUrl = "";
+                              
+                              if (typeof auth !== 'undefined' && auth.currentUser) {
+                                  authAvatarUrl = auth.currentUser.photoURL || "";
+                              }
+                              
+                              renderSanitizedContent(
+                                  standardValues.channelName || standardValues.username || standardValues.displayName || "Unknown User",
+                                  standardValues.handle || standardValues.username || uid.substring(0,8),
+                                  standardValues.photoURL || standardValues.channelImage || authAvatarUrl 
+                              );
+                          });
+                     }
+                });
             }
-        }
+
+            // Await execution safely inside Firebase State loop listener architecture safely ensuring app script binds
+            if (typeof auth !== 'undefined') {
+                 // Immediate execution loop possibility if load hits 
+                 if (auth.currentUser) setupRealtimeBinding(auth.currentUser.uid);
+                 
+                 // Standard connection safety binding flow 
+                 auth.onAuthStateChanged(userObj => {
+                     if (userObj) { setupRealtimeBinding(userObj.uid); }
+                 });
+            } else {
+                 console.warn("Flay Verified service executed prior to DB availability or script collision");
+            }
+        })();
     </script>
 </body>
 </html>

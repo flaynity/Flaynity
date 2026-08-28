@@ -4,26 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Flay Verified Badge • Flaynity</title>
+    
+    <!-- Theme Initialization Script (Prevents flash of wrong theme) -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('flaynity-theme-pref') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            /* Color Palette */
-            --bg-dark: #101114;
-            --card-dark: #191B20;
+            /* Light Theme (Default) */
+            --bg-color: #ffffff;
+            --card-bg: #ffffff;
+            --text-primary: #000000;
+            --text-secondary: #666666;
+            --border-color: #e9e9e9;
+            --app-bar-bg: rgba(255, 255, 255, 0.85);
+            --card-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            --bottom-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 30%, rgba(255, 255, 255, 1) 100%);
+            --mock-bg: linear-gradient(180deg, #f8f9fa 0%, rgba(248, 249, 250, 0.6) 100%);
+            
+            /* Brand Colors */
             --flay-pink: #FF4F91;
             --flay-pink-rgb: 255, 79, 145;
-            --text-primary: #FFFFFF;
-            --text-secondary: #9BA1B0;
-            --border-color: #2A2D35;
+            --telegram-blue: #3390EC;
             
             /* UI Elements */
             --radius-large: 28px;
             --radius-md: 18px;
             --radius-sm: 12px;
-            --glow: 0 8px 32px rgba(var(--flay-pink-rgb), 0.15);
-            --glow-strong: 0 8px 32px rgba(var(--flay-pink-rgb), 0.3);
             --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        [data-theme="dark"] {
+            /* Dark Theme */
+            --bg-color: #000000;
+            --card-bg: #121212;
+            --text-primary: #ffffff;
+            --text-secondary: #9BA1B0;
+            --border-color: #222222;
+            --app-bar-bg: rgba(0, 0, 0, 0.85);
+            --card-shadow: 0 4px 24px rgba(0,0,0,0.3);
+            --bottom-gradient: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.95) 30%, rgba(0, 0, 0, 1) 100%);
+            --mock-bg: linear-gradient(180deg, rgba(25, 27, 32, 1) 0%, rgba(25, 27, 32, 0.6) 100%);
         }
 
         * {
@@ -35,10 +63,11 @@
         }
 
         body {
-            background-color: var(--bg-dark);
+            background-color: var(--bg-color);
             color: var(--text-primary);
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .app-container {
@@ -46,19 +75,13 @@
             margin: 0 auto;
             min-height: 100vh;
             position: relative;
-            padding-bottom: 120px; /* Space for sticky bottom bar */
+            padding-bottom: 120px;
         }
 
         /* Animations */
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes pulseGlow {
-            0% { box-shadow: 0 0 0 0 rgba(var(--flay-pink-rgb), 0.4); }
-            70% { box-shadow: 0 0 0 15px rgba(var(--flay-pink-rgb), 0); }
-            100% { box-shadow: 0 0 0 0 rgba(var(--flay-pink-rgb), 0); }
         }
 
         .animate-fade-up {
@@ -74,7 +97,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 16px 20px;
-            background: rgba(16, 17, 20, 0.85);
+            background: var(--app-bar-bg);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border-color);
@@ -133,10 +156,11 @@
 
         /* Cards Component */
         .card {
-            background: var(--card-dark);
+            background: var(--card-bg);
             border-radius: var(--radius-large);
             padding: 24px;
             border: 1px solid var(--border-color);
+            box-shadow: var(--card-shadow);
         }
 
         /* Hero Card */
@@ -147,7 +171,7 @@
             gap: 16px;
             position: relative;
             overflow: hidden;
-            box-shadow: var(--glow);
+            box-shadow: 0 8px 32px rgba(var(--flay-pink-rgb), 0.15);
         }
 
         .hero-content {
@@ -183,33 +207,22 @@
         .hero-icon-container {
             width: 80px;
             height: 80px;
-            background: rgba(var(--flay-pink-rgb), 0.1);
+            background: rgba(51, 144, 236, 0.1); /* Telegram Blue tint */
             border-radius: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
             z-index: 2;
-            border: 1px solid rgba(var(--flay-pink-rgb), 0.2);
+            border: 1px solid rgba(51, 144, 236, 0.2);
         }
 
-        .hero-icon-container::after {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: var(--flay-pink);
-            filter: blur(35px);
-            opacity: 0.2;
-            z-index: -1;
-        }
-
-        /* SVG Badge Icon */
+        /* SVG Telegram Badge Icon */
         .verified-svg {
             width: 1.2em;
             height: 1.2em;
-            fill: var(--flay-pink);
             flex-shrink: 0;
+            display: inline-block;
         }
 
         .hero-icon-container .verified-svg {
@@ -220,7 +233,7 @@
         /* Profile Preview Card */
         .preview-card {
             border: 1px solid rgba(var(--flay-pink-rgb), 0.3);
-            background: linear-gradient(180deg, rgba(25, 27, 32, 1) 0%, rgba(25, 27, 32, 0.6) 100%);
+            background: var(--mock-bg);
             box-shadow: 0 4px 24px rgba(var(--flay-pink-rgb), 0.08);
             border-radius: var(--radius-large);
             padding: 20px;
@@ -240,8 +253,8 @@
             height: 56px;
             border-radius: 50%;
             background: url('https://i.pravatar.cc/150?u=saim934') center/cover;
-            border: 2px solid var(--card-dark);
-            box-shadow: 0 0 0 2px var(--flay-pink);
+            border: 2px solid var(--card-bg);
+            box-shadow: 0 0 0 2px var(--telegram-blue);
         }
 
         .profile-info h3 {
@@ -281,13 +294,14 @@
         }
 
         .benefit-item {
-            background: var(--card-dark);
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
             padding: 16px;
             border-radius: var(--radius-md);
             display: flex;
             flex-direction: column;
             gap: 10px;
+            box-shadow: var(--card-shadow);
         }
 
         .benefit-icon {
@@ -328,18 +342,19 @@
 
         .plan-card {
             flex: 1;
-            background: var(--card-dark);
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: var(--radius-md);
             padding: 20px;
             position: relative;
             cursor: pointer;
             transition: var(--transition);
+            box-shadow: var(--card-shadow);
         }
 
         .plan-card.active {
             border-color: var(--flay-pink);
-            background: rgba(var(--flay-pink-rgb), 0.05);
+            background: rgba(var(--flay-pink-rgb), 0.03);
             box-shadow: 0 4px 20px rgba(var(--flay-pink-rgb), 0.1);
         }
 
@@ -417,10 +432,11 @@
 
         /* What You Get Checklist */
         .features-list {
-            background: var(--card-dark);
+            background: var(--card-bg);
             border-radius: var(--radius-large);
             padding: 24px;
             border: 1px solid var(--border-color);
+            box-shadow: var(--card-shadow);
         }
 
         .feature-row {
@@ -452,7 +468,7 @@
 
         /* Info Box */
         .info-box {
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(128, 128, 128, 0.05);
             border: 1px solid var(--border-color);
             padding: 16px;
             border-radius: var(--radius-sm);
@@ -484,7 +500,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(180deg, rgba(16, 17, 20, 0) 0%, rgba(16, 17, 20, 0.95) 30%, rgba(16, 17, 20, 1) 100%);
+            background: var(--bottom-gradient);
             padding: 24px 20px 24px;
             z-index: 100;
             display: flex;
@@ -508,7 +524,7 @@
             justify-content: center;
             gap: 10px;
             cursor: pointer;
-            box-shadow: var(--glow-strong);
+            box-shadow: 0 8px 32px rgba(var(--flay-pink-rgb), 0.3);
             transition: var(--transition);
             position: relative;
             overflow: hidden;
@@ -516,30 +532,6 @@
 
         .btn-primary:active {
             transform: scale(0.98);
-        }
-
-        /* Ripple Effect */
-        .btn-primary::after {
-            content: "";
-            background: rgba(255, 255, 255, 0.3);
-            display: block;
-            position: absolute;
-            border-radius: 50%;
-            padding-top: 240%;
-            padding-left: 240%;
-            margin-top: -120%;
-            margin-left: -120%;
-            opacity: 0;
-            transition: all 1s;
-        }
-        
-        .btn-primary:active::after {
-            padding-top: 0;
-            padding-left: 0;
-            margin-top: 0;
-            margin-left: 0;
-            opacity: 1;
-            transition: 0s;
         }
 
         .secure-text {
@@ -555,31 +547,27 @@
             font-size: 10px;
         }
 
-        /* Verified SVG Component */
-        svg.verified-icon {
-            width: 1em;
-            height: 1em;
-            vertical-align: -0.125em;
-        }
     </style>
 </head>
 <body>
 
-    <!-- Verified Badge SVG Definition -->
-    <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- TELEGRAM OFFICIAL VERIFIED BADGE SVG DEFINITION -->
+    <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
         <defs>
-            <g id="icon-verified">
-                <path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10-4.48,10-10S17.52,2,12,2z M10.45,16.53L6.08,12.16l1.41-1.41 l2.96,2.96l6.8-6.8l1.41,1.41L10.45,16.53z" fill="var(--flay-pink)"></path>
-                <path d="M11.99 1.51c-1.35 0-2.61.56-3.5 1.54L6.96 1.77 5.37 3.36l1.28 1.53c-1.01.88-1.63 2.16-1.63 3.59 0 1.34.56 2.6 1.53 3.49l-1.28 1.53 1.59 1.59 1.53-1.28c.89.97 2.15 1.53 3.49 1.53 1.43 0 2.71-.62 3.59-1.63l1.53 1.28 1.59-1.59-1.28-1.53c.97-.89 1.53-2.15 1.53-3.49 0-1.43-.62-2.71-1.63-3.59l1.28-1.53-1.59-1.59-1.53 1.28c-.89-.98-2.15-1.54-3.5-1.54zm-2.15 12.35L6.16 10.2l1.37-1.37 2.31 2.31 5.92-5.92 1.37 1.37-7.29 7.27z" fill="var(--flay-pink)"/>
+            <g id="icon-verified-telegram">
+                <!-- Telegram Blue Outer Star -->
+                <path d="M12.0001 2.37877L14.1539 3.58552L16.634 3.44754L18.0699 5.56844L20.4705 6.30722L20.6724 8.78318L22.4516 10.4287L21.5794 12.7562L22.4516 15.0837L20.6724 16.7292L20.4705 19.2052L18.0699 19.9439L16.634 22.0648L14.1539 21.9269L12.0001 23.1336L9.84628 21.9269L7.36616 22.0648L5.93026 19.9439L3.52968 19.2052L3.32777 16.7292L1.54858 15.0837L2.42079 12.7562L1.54858 10.4287L3.32777 8.78318L3.52968 6.30722L5.93026 5.56844L7.36616 3.44754L9.84628 3.58552L12.0001 2.37877Z" fill="var(--telegram-blue)"/>
+                <!-- White Checkmark -->
+                <path d="M10.8335 15.6881L7.14515 12.0858L8.35483 10.9044L10.8335 13.3253L15.6453 8.625L16.855 9.8064L10.8335 15.6881Z" fill="#FFFFFF"/>
             </g>
         </defs>
     </svg>
 
     <div class="app-container">
         
-        <!-- Top App Bar -->
+        <!-- Top App Bar (Back Button Fix Applied) -->
         <header class="top-bar">
-            <button class="back-btn" onclick="history.back()">
+            <button class="back-btn" onclick="handleBack(event)" aria-label="Back">
                 <i class="fas fa-arrow-left"></i>
             </button>
             <h1 class="page-title">Flay Verified Badge</h1>
@@ -599,8 +587,9 @@
                     <p class="hero-desc">Build trust, stand out in Flaynity, and show your audience that your profile is verified.</p>
                 </div>
                 <div class="hero-icon-container">
+                    <!-- Using Telegram Verified SVG -->
                     <svg viewBox="0 0 24 24" class="verified-svg">
-                        <use xlink:href="#icon-verified"></use>
+                        <use href="#icon-verified-telegram"></use>
                     </svg>
                 </div>
             </div>
@@ -613,8 +602,9 @@
                     <div class="avatar"></div>
                     <div class="profile-info">
                         <h3>Saim Islam 
+                            <!-- Telegram SVG inside Title -->
                             <svg viewBox="0 0 24 24" class="verified-svg" style="width: 18px; height: 18px;">
-                                <use xlink:href="#icon-verified"></use>
+                                <use href="#icon-verified-telegram"></use>
                             </svg>
                         </h3>
                         <p>@saim.934</p>
@@ -660,7 +650,7 @@
             <p class="section-subtitle">Select the plan that works best for you.</p>
             
             <div class="plans-container">
-                <!-- Monthly Plan (Selected by Default) -->
+                <!-- Monthly Plan -->
                 <div class="plan-card active" onclick="selectPlan(this)">
                     <div class="plan-header">
                         <span class="plan-name">Monthly</span>
@@ -741,7 +731,8 @@
 
         <!-- Sticky Bottom CTA -->
         <div class="bottom-cta animate-fade-up" style="animation-delay: 0.7s;">
-            <button class="btn-primary" onclick="continueToPay()">
+            <!-- Continue Button Fix Applied -->
+            <button class="btn-primary" onclick="proceedToPay(event)">
                 Continue to Flay Pay <i class="fa-solid fa-arrow-right"></i>
             </button>
             <div class="secure-text">
@@ -753,33 +744,45 @@
 
     <!-- Interactive Scripts -->
     <script>
+        const SERVICE_ID = 'flayVerifiedBadge';
+
+        // Back Button Logic (Prevent App Refresh)
+        function handleBack(event) {
+            if (event) event.preventDefault(); // Stop default button action
+
+            // Calls your App's built-in executeBackAction if it exists
+            if (typeof executeBackAction === 'function') {
+                executeBackAction();
+            } else if (typeof AppNavigation !== 'undefined' && AppNavigation.pop) {
+                AppNavigation.pop();
+            } else {
+                window.history.back(); // Fallback for normal browser
+            }
+        }
+
         // Toggle Plan Selection
         function selectPlan(element) {
-            // Remove active class from all plan cards
             document.querySelectorAll('.plan-card').forEach(card => {
                 card.classList.remove('active');
             });
-            
-            // Add active class to the clicked card
             element.classList.add('active');
             
-            // Optional: Provide haptic feedback if running inside a mobile app wrapper
             if (navigator.vibrate) {
                 navigator.vibrate(50);
             }
         }
 
-        // Navigate to Flay Pay
-        function continueToPay() {
-            // Check which plan is selected
-            const activePlan = document.querySelector('.plan-card.active .plan-name').innerText;
-            const price = document.querySelector('.plan-card.active .plan-price').innerText;
-            
-            // Redirect to Flay Pay page (Placeholder logic for your routing)
-            console.log(`Proceeding to Flay Pay with ${activePlan} plan (${price})`);
-            
-            // Example of how it fits into your service structure:
-            window.location.href = 'flay-pay.html?service=verified-badge&plan=' + activePlan.toLowerCase();
+        // Continue to Pay Logic (Prevent App Refresh)
+        function proceedToPay(event) {
+            if (event) event.preventDefault(); // Stop default refresh action
+
+            // Check if AppNavigation from your original app.js exists
+            if (typeof AppNavigation !== 'undefined' && AppNavigation.pushPremiumService) {
+                AppNavigation.pushPremiumService('flay-pay', SERVICE_ID);
+            } else {
+                // Warning if AppNavigation isn't found in current test window
+                console.warn('AppNavigation router not found. Please ensure app.js is linked.');
+            }
         }
     </script>
 </body>

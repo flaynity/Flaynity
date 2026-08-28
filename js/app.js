@@ -2566,6 +2566,8 @@ function initShortsObserver() {
 // INTERNAL PREMIUM SERVICE NAVIGATION (SPA + OFFLINE CACHE)
 // =========================================================
 const PREMIUM_SERVICE_FILES = {
+    // Premium service routes are kept inside the same SPA navigation stack.
+    // Do not use location.href for these pages: it causes a full app reload.
     'upgrade-pro': 'service/upgrade-pro.html',
     'flay-verified-badge': 'service/flay-verified-badge.html',
     'flay-ads': 'service/flay-ads.html',
@@ -2798,7 +2800,10 @@ const AppNavigation = {
 };
 
 function executeBackAction() {
-    AppNavigation.pop();
+    // Always return to the previous in-app route instead of reloading the document.
+    // Premium service pages are part of AppNavigation just like bottom-navigation tabs.
+    const previous = AppNavigation.pop();
+    if (!previous) AppNavigation.updateBridge();
 }
 
 // =========================================================

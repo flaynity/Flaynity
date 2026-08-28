@@ -131,20 +131,6 @@
             z-index: 1;
         }
 
-        .premium-badge-small {
-            background: rgba(var(--flay-pink-rgb), 0.1);
-            color: var(--flay-pink);
-            padding: 6px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            border: 1px solid rgba(var(--flay-pink-rgb), 0.2);
-            z-index: 2;
-        }
-
         /* Sections */
         .section {
             padding: 0 20px;
@@ -594,9 +580,6 @@
                 <i class="fas fa-arrow-left"></i>
             </button>
             <h1 class="page-title">Flay Verified Badge</h1>
-            <div class="premium-badge-small">
-                <i class="fas fa-crown"></i> PREMIUM
-            </div>
         </header>
 
         <!-- Hero Section -->
@@ -767,57 +750,102 @@
     <script>
         const SERVICE_ID = 'flayVerifiedBadge';
 
-        // Firebase Integration Logic (No Demo Data)
+        // Firebase Integration Logic (Channel Data Only — No Demo/Fallback Data)
         if (typeof auth !== 'undefined' && typeof db !== 'undefined') {
             auth.onAuthStateChanged((user) => {
                 if (user) {
                     fetchChannelData(user.uid);
                 } else {
-                    // Not logged in UI state
-                    document.getElementById('db-channel-name').innerHTML = `Guest User`;
-                    document.getElementById('db-channel-name').classList.remove('skeleton-text');
-                    document.getElementById('db-channel-handle').textContent = `@guest`;
-                    document.getElementById('db-channel-handle').classList.remove('skeleton-text');
+                    clearChannelPreview();
                 }
             });
         } else {
             console.warn("Firebase Auth or DB is not initialized properly in firebase-config.js");
         }
 
+        function clearChannelPreview() {
+            const nameEl = document.getElementById('db-channel-name');
+            const handleEl = document.getElementById('db-channel-handle');
+            const avatarEl = document.getElementById('db-channel-avatar');
+            const badgeEl = document.getElementById('db-channel-badge');
+
+            if (nameEl) {
+                if (nameEl.firstChild && nameEl.firstChild.nodeType === Node.TEXT_NODE) {
+                    nameEl.firstChild.nodeValue = '';
+                } else {
+                    nameEl.insertBefore(document.createTextNode(''), nameEl.firstChild || null);
+                }
+                nameEl.classList.remove('skeleton-text');
+            }
+            if (handleEl) {
+                handleEl.textContent = '';
+                handleEl.classList.remove('skeleton-text');
+            }
+            if (avatarEl) {
+                avatarEl.style.backgroundImage = 'none';
+                avatarEl.style.backgroundColor = 'var(--border-color)';
+            }
+            if (badgeEl) badgeEl.style.opacity = '0';
+        }
+
         function fetchChannelData(uid) {
-            // Listen to User Profile Data
-            db.ref('users/' + uid).on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
+            if (!uid) {
+                clearChannelPreview();
+                return;
+            }
+
+            // The channel profile is stored at channels/{uid}.
+            // Read only the existing channel record; never create or inject demo data.
+            db.ref('channels/' + uid).once('value')
+                .then((snapshot) => {
+                    const data = snapshot.val();
                     const nameEl = document.getElementById('db-channel-name');
                     const handleEl = document.getElementById('db-channel-handle');
                     const avatarEl = document.getElementById('db-channel-avatar');
+                    const badgeEl = document.getElementById('db-channel-badge');
 
-                    // Data mappings (Adjust according to your exact Firebase structure)
-                    const channelName = data.channelName || data.name || data.displayName || "Flaynity User";
-                    const channelHandle = data.channelHandle || data.username || uid.substring(0, 8);
-                    const channelImage = data.channelImage || data.photoURL || data.profile_picture || "";
-
-                    // Update UI and remove skeleton loaders
-                    nameEl.classList.remove('skeleton-text');
-                    handleEl.classList.remove('skeleton-text');
-
-                    // Set Name & Badge
-                    nameEl.innerHTML = `${channelName} <svg viewBox="0 0 24 24" class="verified-svg" style="width: 18px; height: 18px;"><use href="#icon-verified-telegram"></use></svg>`;
-                    
-                    // Set Handle
-                    handleEl.textContent = channelHandle.startsWith('@') ? channelHandle : `@${channelHandle}`;
-
-                    // Set Avatar
-                    if (channelImage) {
-                        avatarEl.style.backgroundImage = `url('${channelImage}')`;
-                    } else {
-                        // Fallback Color if no image
-                        avatarEl.style.backgroundColor = 'var(--border-color)';
-                        avatarEl.style.backgroundImage = 'none';
+                    if (!data) {
+                        clearChannelPreview();
+                        return;
                     }
-                }
-            });
+
+                    // Use the channel's own fields only. No hard-coded/demo values and
+                    // no fallback to Firebase Auth/user profile data.
+                    const channelName = typeof data.channelName === 'string' ? data.channelName.trim() : '';
+                    const channelHandle = typeof data.handle === 'string' ? data.handle.trim() : '';
+                    const channelImage = typeof data.avatarUrl === 'string' ? data.avatarUrl.trim() : '';
+
+                    if (nameEl) {
+                        if (nameEl.firstChild && nameEl.firstChild.nodeType === Node.TEXT_NODE) {
+                            nameEl.firstChild.nodeValue = channelName;
+                        } else {
+                            nameEl.insertBefore(document.createTextNode(channelName), nameEl.firstChild || null);
+                        }
+                        nameEl.classList.remove('skeleton-text');
+                        if (badgeEl && badgeEl.parentNode !== nameEl) nameEl.appendChild(badgeEl);
+                    }
+
+                    if (handleEl) {
+                        handleEl.textContent = channelHandle ? (channelHandle.startsWith('@') ? channelHandle : '@' + channelHandle) : '';
+                        handleEl.classList.remove('skeleton-text');
+                    }
+
+                    if (avatarEl) {
+                        if (channelImage) {
+                            avatarEl.style.backgroundImage = `url("${channelImage.replace(/"/g, '%22')}")`;
+                            avatarEl.style.backgroundColor = 'transparent';
+                        } else {
+                            avatarEl.style.backgroundImage = 'none';
+                            avatarEl.style.backgroundColor = 'var(--border-color)';
+                        }
+                    }
+
+                    if (badgeEl) badgeEl.style.opacity = '1';
+                })
+                .catch((error) => {
+                    console.error('Failed to load channel profile:', error);
+                    clearChannelPreview();
+                });
         }
 
         // Back Button Logic

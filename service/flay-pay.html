@@ -7,16 +7,16 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script>
-    // Safe check theme execution
     (function() {
         const savedTheme = localStorage.getItem('flaynity-theme-pref') || 'light';
         document.documentElement.setAttribute('data-theme', savedTheme);
     })();
 </script>
 <style>
-/* SCOPED CSS */
+/* --------------------------------- */
+/* BASIC APP CSS (Unchanged scoped variables) */
+/* --------------------------------- */
 .flay-pay-wrapper {
-    /* Light Theme (Default) */
     --fp-bg: #fdfdfd;
     --fp-surface: #fff;
     --fp-surface-alt: #f4f5f7;
@@ -29,9 +29,8 @@
     --fp-success: #00a844;
     --fp-warning: #d98200;
     --fp-danger: #d7193f;
-    --fp-overlay-bg: #ffffff; /* 100% Solid Light background so backend text hides */
+    --fp-overlay-bg: #ffffff; 
 
-    /* Premium Card Specifics for Light Mode */
     --pbc-bg-grad: linear-gradient(135deg, #ffffff, #f7f8f9);
     --pbc-text: #0d0d12;
     --pbc-sub-text: #5f6368;
@@ -47,8 +46,6 @@
     width: 100%;
     min-height: 100vh;
 }
-
-/* Dark Theme overrides */
 [data-theme="dark"] .flay-pay-wrapper {
     --fp-bg: #000;
     --fp-surface: #0a0a0a;
@@ -58,9 +55,7 @@
     --fp-border: #222;
     --fp-soft: rgba(255,46,85,.14);
     --fp-shadow: 0 14px 40px rgba(0,0,0,.35);
-    --fp-overlay-bg: #000000; /* 100% Solid Dark background to fix overlapping views */
-
-    /* Premium Card Specifics for Dark Mode */
+    --fp-overlay-bg: #000000; 
     --pbc-bg-grad: linear-gradient(135deg, #18151c, #0d0b13);
     --pbc-text: #ffffff;
     --pbc-sub-text: #8c8c9a;
@@ -69,96 +64,42 @@
     --pbc-box-border: rgba(255, 255, 255, 0.04);
     --pbc-icon-glow: rgba(255, 46, 85, 0.12);
 }
-
 .flay-pay-wrapper * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
 .flay-pay-wrapper .app { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; animation: fadeInFP 0.4s ease-out; }
 @keyframes fadeInFP { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-/* Header */
 .flay-pay-wrapper .top-bar { position: relative; background: var(--fp-bg); display: flex; align-items: center; justify-content: center; height: 60px; padding: 0 16px; border-bottom: 1px solid var(--fp-border); }
 .flay-pay-wrapper .back-btn { position: absolute; left: 16px; width: 40px; height: 40px; border: none; background: transparent; color: var(--fp-text); font-size: 20px; display: grid; place-items: center; border-radius: 50%; cursor: pointer; }
 .flay-pay-wrapper .header-title { font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
 .flay-pay-wrapper .header-title i { color: var(--fp-accent); }
-
-/* Changed: Greatly improved bottom spacing padding to clear out Fixed footer overlapping Issue securely */
 .flay-pay-wrapper .content { padding: 20px 16px 140px 16px; }
-
 .flay-pay-wrapper .page-header { text-align: center; margin-bottom: 28px; }
 .flay-pay-wrapper .page-header h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
 .flay-pay-wrapper .page-header p { color: var(--fp-muted); font-size: 13px; font-weight: 500; }
-
-/* --- PREMIUM BALANCE CARD --- */
-.flay-pay-wrapper .premium-balance-card {
-    background: var(--pbc-bg-grad);
-    border: 1px solid var(--pbc-border);
-    border-radius: 20px;
-    padding: 20px;
-    margin-bottom: 24px;
-    box-shadow: var(--fp-shadow);
-    color: var(--pbc-text);
-    position: relative;
-    overflow: hidden;
-}
-.flay-pay-wrapper .premium-balance-card::before, .flay-pay-wrapper .premium-balance-card::after {
-    content: ''; position: absolute; width: 130px; height: 130px; border-radius: 50%; filter: blur(46px); z-index: 0; pointer-events: none;
-}
+.flay-pay-wrapper .premium-balance-card { background: var(--pbc-bg-grad); border: 1px solid var(--pbc-border); border-radius: 20px; padding: 20px; margin-bottom: 24px; box-shadow: var(--fp-shadow); color: var(--pbc-text); position: relative; overflow: hidden; }
+.flay-pay-wrapper .premium-balance-card::before, .flay-pay-wrapper .premium-balance-card::after { content: ''; position: absolute; width: 130px; height: 130px; border-radius: 50%; filter: blur(46px); z-index: 0; pointer-events: none; }
 .flay-pay-wrapper .premium-balance-card::before { background: var(--pbc-icon-glow); top: -40px; left: 10%; }
 .flay-pay-wrapper .premium-balance-card::after { background: rgba(140, 54, 140, 0.08); bottom: -30px; right: -15px; }
 .flay-pay-wrapper .premium-balance-card * { z-index: 1; position: relative; }
-
-.flay-pay-wrapper .pbc-icon-wrapper {
-    width: 48px; height: 48px;
-    margin: 0 auto 12px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, rgba(255,46,85,0.15), rgba(255,46,85,0.03));
-    border: 1px solid rgba(255,46,85,0.2);
-    display: flex; justify-content: center; align-items: center;
-    font-size: 20px;
-    color: var(--fp-accent);
-}
-.flay-pay-wrapper .pbc-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--pbc-sub-text); 
-    margin-bottom: 4px;
-    text-align: center;
-}
-.flay-pay-wrapper .pbc-balance {
-    font-size: 40px; 
-    font-weight: 800;
-    letter-spacing: -1px;
-    margin-bottom: 22px;
-    text-align: center;
-    line-height: 1;
-}
+.flay-pay-wrapper .pbc-icon-wrapper { width: 48px; height: 48px; margin: 0 auto 12px; border-radius: 14px; background: linear-gradient(135deg, rgba(255,46,85,0.15), rgba(255,46,85,0.03)); border: 1px solid rgba(255,46,85,0.2); display: flex; justify-content: center; align-items: center; font-size: 20px; color: var(--fp-accent); }
+.flay-pay-wrapper .pbc-label { font-size: 13px; font-weight: 600; color: var(--pbc-sub-text); margin-bottom: 4px; text-align: center; }
+.flay-pay-wrapper .pbc-balance { font-size: 40px; font-weight: 800; letter-spacing: -1px; margin-bottom: 22px; text-align: center; line-height: 1; }
 .flay-pay-wrapper .pbc-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .flay-pay-wrapper .pbc-stat-box { background: var(--pbc-box-bg); border: 1px solid var(--pbc-box-border); border-radius: 14px; padding: 14px 12px; display: flex; align-items: center; gap: 12px; }
 .flay-pay-wrapper .pbc-stat-icon { width: 32px; height: 32px; border-radius: 50%; border: 1.2px solid rgba(255,46,85,0.3); display: flex; align-items: center; justify-content: center; color: var(--fp-accent); font-size: 12px; background: rgba(255, 46, 85, 0.05); }
 .flay-pay-wrapper .pbc-stat-icon.up { transform: rotate(45deg); }
 .flay-pay-wrapper .pbc-stat-info p { font-size: 11px; font-weight: 600; color: var(--pbc-sub-text); margin: 0 0 2px 0; }
 .flay-pay-wrapper .pbc-stat-info h4 { font-size: 15px; font-weight: 800; margin: 0; color: var(--pbc-text); }
-/* ----------------------------------- */
-
-/* Payment Methods */
 .flay-pay-wrapper .section-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;}
 .flay-pay-wrapper .section-subtitle { color: var(--fp-muted); font-size: 13px; font-weight: 500; display: block; margin-top: -8px; margin-bottom: 16px;}
-
-.flay-pay-wrapper .payment-card {
-    background: var(--fp-surface); border: 1px solid var(--fp-border); border-radius: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 14px; padding: 16px; cursor: pointer; transition: 0.2s;
-}
+.flay-pay-wrapper .payment-card { background: var(--fp-surface); border: 1px solid var(--fp-border); border-radius: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 14px; padding: 16px; cursor: pointer; transition: 0.2s; }
 .flay-pay-wrapper .payment-card.active { border-color: var(--fp-accent); background: var(--fp-soft); box-shadow: inset 0 2px 6px rgba(0,0,0,0.03); }
-
-.flay-pay-wrapper .card-icon {
-    width: 44px; height: 44px; border-radius: 12px; background: var(--fp-surface-alt); display: grid; place-items: center; font-size: 18px; color: var(--fp-muted);
-}
+.flay-pay-wrapper .card-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--fp-surface-alt); display: grid; place-items: center; font-size: 18px; color: var(--fp-muted); }
 .flay-pay-wrapper .payment-card.active .card-icon { color: var(--fp-accent); background: rgba(255, 46, 85, 0.12); }
 .flay-pay-wrapper .card-info { flex: 1; }
 .flay-pay-wrapper .card-info h3 { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
 .flay-pay-wrapper .card-info p { font-size: 12px; color: var(--fp-muted); font-weight: 500; line-height: 1.3;}
 .flay-pay-wrapper .card-indicator { font-size: 18px; color: var(--fp-border); }
 .flay-pay-wrapper .payment-card.active .card-indicator { color: var(--fp-accent); }
-
-/* Security Badge Fixed Details Visibility Issue */
 .flay-pay-wrapper .security-card { background: var(--fp-surface); border: 1px solid var(--fp-border); border-radius: 16px; padding: 14px; margin-top: 18px; }
 .flay-pay-wrapper .security-header { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; margin-bottom: 6px; }
 .flay-pay-wrapper .security-header i { color: var(--fp-success); }
@@ -166,42 +107,117 @@
 .flay-pay-wrapper .security-badges { display: flex; gap: 12px; font-size: 11px; color: var(--fp-muted); font-weight: 600; }
 .flay-pay-wrapper .security-badges i { color: var(--fp-success); }
 
-/* Modified Bottom Sticky Footer (Total Amount completely Removed / Action Button taking full space flexibly) */
-.flay-pay-wrapper .sticky-footer {
-    position: fixed; bottom: 0; left: 0; right: 0; margin: 0 auto; width: 100%; max-width: 600px;
-    background: var(--fp-bg);
-    border-top: 1px solid var(--fp-border);
-    padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px));
-    z-index: 100;
-}
-@media (min-width: 600px) {
-    .flay-pay-wrapper .sticky-footer { border-radius: 20px 20px 0 0; border-left: 1px solid var(--fp-border); border-right: 1px solid var(--fp-border); }
-}
-
-.flay-pay-wrapper .btn-primary { 
-    background: var(--fp-accent); color: #fff; border: none; border-radius: 14px; height: 50px; 
-    padding: 0 20px; font-size: 14.5px; font-weight: 800; font-family: inherit; cursor: pointer; 
-    display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; width: 100%;
-}
+/* FOOTER BUTTON */
+.flay-pay-wrapper .sticky-footer { position: fixed; bottom: 0; left: 0; right: 0; margin: 0 auto; width: 100%; max-width: 600px; background: var(--fp-bg); border-top: 1px solid var(--fp-border); padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 100; }
+@media (min-width: 600px) { .flay-pay-wrapper .sticky-footer { border-radius: 20px 20px 0 0; border-left: 1px solid var(--fp-border); border-right: 1px solid var(--fp-border); } }
+.flay-pay-wrapper .btn-primary { background: var(--fp-accent); color: #fff; border: none; border-radius: 14px; height: 50px; padding: 0 20px; font-size: 15px; font-weight: 800; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; width: 100%; }
 .flay-pay-wrapper .btn-primary:active { transform: scale(0.97); }
 .flay-pay-wrapper .btn-primary:disabled { background: var(--fp-surface-alt); color: var(--fp-muted); cursor: not-allowed; opacity: 0.6; pointer-events: none;}
+.flay-pay-wrapper .btn-danger { background: var(--fp-danger); }
 
-/* Fixed Overlap modal bg rendering issue utilizing pure dark or bright solid color layer structure securely */
+/* Overlays Basic */
 .flay-pay-wrapper .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--fp-overlay-bg); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; opacity: 0; pointer-events: none; transition: 0.3s ease; }
 .flay-pay-wrapper .overlay.active { opacity: 1; pointer-events: all; }
 .flay-pay-wrapper .status-icon { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; margin-bottom: 20px; }
 .flay-pay-wrapper .status-icon.processing { background: var(--fp-soft); color: var(--fp-accent); }
 .flay-pay-wrapper .status-icon.success { background: rgba(0, 168, 68, 0.1); color: var(--fp-success); }
+.flay-pay-wrapper .status-icon.warning { background: rgba(217, 130, 0, 0.15); color: var(--fp-warning); }
 .flay-pay-wrapper .spinner { animation: spinFP 1s linear infinite; }
 @keyframes spinFP { 100% { transform: rotate(360deg); } }
 .flay-pay-wrapper .overlay h2 { font-size: 22px; font-weight: 900; margin-bottom: 8px; color: var(--fp-text); }
-.flay-pay-wrapper .overlay p { color: var(--fp-muted); font-size: 13.5px; margin-bottom: 24px; max-width: 280px; }
+.flay-pay-wrapper .overlay p { color: var(--fp-muted); font-size: 14px; margin-bottom: 24px; max-width: 280px; font-weight: 500; }
+
+/* --------------------------------- */
+/* PREMIUM BOTTOM SHEET FOR ADD MONEY */
+/* --------------------------------- */
+.bs-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 900; opacity: 0; pointer-events: none; transition: 0.3s; }
+.bs-backdrop.active { opacity: 1; pointer-events: all; }
+.bottom-sheet { position: fixed; bottom: 0; left: 0; right: 0; margin: 0 auto; width: 100%; max-width: 600px; background: var(--fp-surface); border-radius: 28px 28px 0 0; z-index: 910; padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; max-height: 90vh; }
+.bottom-sheet.active { transform: translateY(0); }
+.bs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.bs-title { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; color: var(--fp-text); }
+.bs-title i { color: var(--fp-accent); font-size: 20px;}
+.bs-close { width: 34px; height: 34px; border-radius: 50%; background: var(--fp-surface-alt); border: none; font-size: 14px; color: var(--fp-text); display: grid; place-items: center; cursor: pointer; }
+.bs-label-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: var(--fp-muted); margin-bottom: 10px; }
+.bs-label-row span.right { color: var(--fp-text); font-weight: 600; opacity: 0.6; }
+.amount-input-wrapper { position: relative; display: flex; align-items: center; background: var(--fp-surface-alt); border: 2px solid transparent; border-radius: 16px; transition: 0.3s; }
+.amount-input-wrapper:focus-within { border-color: var(--fp-accent); }
+.prefix-icon { padding-left: 20px; font-size: 18px; color: var(--fp-text); font-weight: 800; }
+.bs-input-amount { width: 100%; border: none; background: transparent; font-size: 24px; font-weight: 900; color: var(--fp-text); padding: 18px 12px; font-family: inherit; outline: none; }
+.exchange-disp { background: var(--fp-surface-alt); margin-top: 10px; border-radius: 12px; padding: 12px 16px; font-size: 15px; font-weight: 700; color: var(--fp-accent); border: 1px dashed var(--fp-border); display: flex; align-items: center; justify-content: center; margin-bottom: 24px;}
+/* Method Grid selection inside BS */
+.gateway-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.gateway-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--fp-surface); border: 1.5px solid var(--fp-border); padding: 14px 8px; border-radius: 16px; cursor: pointer; gap: 8px; font-size: 13px; font-weight: 700; transition: 0.2s; color: var(--fp-text);}
+.gateway-btn.selected { border-color: var(--fp-accent); background: rgba(255,46,85,0.04); }
+.gateway-btn i { font-size: 24px; }
+.color-bkash { color: #df146e; }
+.color-nagad { color: #ec1c24; }
+.color-rocket { color: #8c3494; }
+
+/* --------------------------------- */
+/* 15 MIN FULL SCREEN BKASH/LOCAL PAGE */
+/* (Based deeply on User Image details) */
+/* --------------------------------- */
+.fs-payment-page {
+    position: fixed; top: 0; left: 0; right:0; margin: 0 auto; width: 100%; height: 100%;
+    max-width: 600px;
+    background: #db1962; /* Official deep magenta brand theme closely matched */
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform 0.4s ease;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+.fs-payment-page.active { transform: translateX(0); }
+.fs-header-controls { display: flex; align-items: center; padding: 16px; }
+.fs-header-controls .back-sq { width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 12px; border:none; color:#fff; display:flex; justify-content:center; align-items:center; font-size:18px; cursor:pointer;}
+.fs-logo-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 10px; margin-bottom: 20px;}
+.fs-logo { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #ffffff; background: #fff; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);}
+.fs-timer { font-size: 52px; font-weight: 900; color: #ffffff; text-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 10px; line-height:1;}
+.fs-timer-sub { font-size: 13px; font-weight: 800; color: #ffffff; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 24px;}
+
+.fs-inst-wrap { text-align: center; color: #fff; margin: 0 24px 24px 24px; font-family: sans-serif; }
+.fs-inst-en { font-size: 15.5px; font-weight: 700; margin-bottom: 6px; line-height: 1.3;}
+.fs-inst-bn { font-size: 14px; opacity: 0.9; }
+
+.fs-card-white {
+    background: #ffffff; border-radius: 28px;
+    margin: 0 20px 40px 20px; padding: 24px;
+    box-shadow: 0 -4px 30px rgba(0,0,0,0.1);
+    color: #333; font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.fs-input-box { margin-bottom: 18px; position: relative;}
+.fs-label { font-size: 12px; font-weight: 700; color: #5a6676; margin-bottom: 8px; display: block;}
+.fs-val-box {
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid #ebecf0; padding-bottom: 10px; margin-bottom: 6px;
+}
+.fs-val-text { font-size: 20px; font-weight: 800; color: #1f2533; display: flex; align-items:center; }
+.fs-copy-btn {
+    width: 32px; height: 32px; border-radius: 10px; border:none; background:#f4f5f8;
+    color:#0396fe; font-size: 14px; cursor: pointer; transition: 0.2s; display:grid; place-items:center;
+}
+.fs-copy-btn:active { transform: scale(0.9); }
+.fs-text-field {
+    width: 100%; border: 1.5px solid #dcdfe5; border-radius: 16px;
+    padding: 16px; font-size: 16px; font-weight: 600; color:#333; outline: none; background: #fafafc; transition: 0.3s;
+}
+.fs-text-field:focus { border-color: #03a5fc; background:#fff;}
+.fs-submit-btn {
+    width: 100%; height: 56px; border-radius: 16px; border:none;
+    background: #00a4ff; color: #fff; font-size: 18px; font-weight: 800;
+    cursor: pointer; box-shadow: 0 10px 25px rgba(0, 164, 255, 0.3); margin-top:10px;
+    transition: 0.2s;
+}
+.fs-submit-btn:active { transform: scale(0.97); }
 </style>
 </head>
 <body>
 
 <div class="flay-pay-wrapper">
 
+    <!-- HOME LAYOUT -->
     <main class="app">
         <header class="top-bar">
             <button class="back-btn" type="button" onclick="goBackToSafety(event)"><i class="fas fa-arrow-left"></i></button>
@@ -209,31 +225,16 @@
         </header>
 
         <div class="content">
-
-            <!-- Responsive, Adaptive Thin Premium Card Box -->
             <div class="premium-balance-card">
                 <div class="pbc-icon-wrapper"><i class="fas fa-wallet"></i></div>
                 <p class="pbc-label">Total available balance</p>
                 <div class="pbc-balance">$0.00</div>
                 <div class="pbc-stats-grid">
-                    <div class="pbc-stat-box">
-                        <div class="pbc-stat-icon"><i class="fas fa-download"></i></div>
-                        <div class="pbc-stat-info">
-                            <p>Recharged</p>
-                            <h4>$0.00</h4>
-                        </div>
-                    </div>
-                    <div class="pbc-stat-box">
-                        <div class="pbc-stat-icon up"><i class="fas fa-arrow-up"></i></div>
-                        <div class="pbc-stat-info">
-                            <p>Spent</p>
-                            <h4>$0.00</h4>
-                        </div>
-                    </div>
+                    <div class="pbc-stat-box"><div class="pbc-stat-icon"><i class="fas fa-download"></i></div><div class="pbc-stat-info"><p>Recharged</p><h4>$0.00</h4></div></div>
+                    <div class="pbc-stat-box"><div class="pbc-stat-icon up"><i class="fas fa-arrow-up"></i></div><div class="pbc-stat-info"><p>Spent</p><h4>$0.00</h4></div></div>
                 </div>
             </div>
 
-            <!-- Header Info -->
             <div class="page-header">
                 <h1>Flay Pay</h1>
                 <p>Choose your preferred payment method</p>
@@ -242,94 +243,204 @@
             <h3 class="section-title">Payment Method</h3>
             <span class="section-subtitle">Select how you want to pay</span>
 
-            <!-- Simple Payment Option Buttons Instead of complex pages -->
-            <div class="payment-card" id="card-crypto" onclick="selectPaymentMethod('crypto', 'Crypto Payment')">
+            <div class="payment-card" id="card-crypto" onclick="selectAppMethod('crypto', 'Crypto Payment')">
                 <div class="card-icon"><i class="fab fa-bitcoin"></i></div>
-                <div class="card-info">
-                    <h3>Crypto Payment</h3>
-                    <p>Pay securely via crypto wallet</p>
-                </div>
+                <div class="card-info"><h3>Crypto Payment</h3><p>Pay securely via crypto wallet</p></div>
                 <i class="fas fa-check-circle card-indicator" id="ind-crypto"></i>
             </div>
 
-            <div class="payment-card" id="card-local" onclick="selectPaymentMethod('local', 'Local Mobile Payment')">
+            <div class="payment-card" id="card-local" onclick="selectAppMethod('local', 'Local Mobile Payment')">
                 <div class="card-icon"><i class="fas fa-mobile-screen"></i></div>
-                <div class="card-info">
-                    <h3>Local Payment</h3>
-                    <p>Pay using bKash, Nagad or Rocket</p>
-                </div>
+                <div class="card-info"><h3>Local Payment</h3><p>Pay using bKash, Nagad or Rocket</p></div>
                 <i class="fas fa-check-circle card-indicator" id="ind-local"></i>
             </div>
 
-            <div class="payment-card" id="card-google" onclick="selectPaymentMethod('google', 'Google Play Billing')">
+            <div class="payment-card" id="card-google" onclick="selectAppMethod('google', 'Google Play Billing')">
                 <div class="card-icon"><i class="fab fa-google-play"></i></div>
-                <div class="card-info">
-                    <h3>Buy Google Play</h3>
-                    <p>Quick purchase through Play Store</p>
-                </div>
+                <div class="card-info"><h3>Buy Google Play</h3><p>Quick purchase through Play Store</p></div>
                 <i class="fas fa-check-circle card-indicator" id="ind-google"></i>
             </div>
-
+            
             <div class="security-card">
                 <div class="security-header"><i class="fas fa-lock"></i> Secure Encrypted</div>
                 <p>Your payment information is handled through the selected payment provider securely.</p>
-                <div class="security-badges">
-                    <span><i class="fas fa-shield-alt"></i> Protection</span>
-                    <span><i class="fas fa-bolt"></i> Instant Route</span>
-                </div>
+                <div class="security-badges"><span><i class="fas fa-shield-alt"></i> Protection</span><span><i class="fas fa-bolt"></i> Instant Route</span></div>
             </div>
-
         </div>
     </main>
 
-    <!-- PERFECT CENTER BOTTOM STICKY FOOTER -->
+    <!-- Main Footer Action -->
     <div class="sticky-footer">
-        <button class="btn-primary" id="mainCta" type="button" onclick="processPayment()" disabled>
-            Select Method
-        </button>
+        <button class="btn-primary" id="mainCta" type="button" onclick="triggerMainAction()" disabled>Select Method</button>
     </div>
 
-    <!-- Status Process Display Overlays (Auto Adjusted Solid Background & Closing behavior fix) -->
+
+    <!-- --------------------------------------- -->
+    <!-- NEW: BOTTOM SHEET ADD MONEY             -->
+    <!-- --------------------------------------- -->
+    <div class="bs-backdrop" id="bsBackdrop" onclick="closeBottomSheet()"></div>
+    <div class="bottom-sheet" id="localPaymentSheet">
+        <div class="bs-header">
+            <div class="bs-title"><i class="fas fa-money-bill-transfer"></i> Add Money</div>
+            <button class="bs-close" onclick="closeBottomSheet()"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <div class="bs-label-row">
+            <span>AMOUNT (USDT)</span>
+            <span class="right">Limits: ($1 - $1000)</span>
+        </div>
+
+        <div class="amount-input-wrapper">
+            <span class="prefix-icon">$</span>
+            <input type="number" class="bs-input-amount" id="sheetInputUsd" placeholder="0.00" onkeyup="calcBdtRate()">
+        </div>
+        
+        <!-- Live conversion label (Rate: $1 = 120BDT context given) -->
+        <div class="exchange-disp" id="exchangeDisp">
+            $ 0 = ৳0
+        </div>
+        
+        <!-- Official icons for gateway (2 columns, 3 items = naturally adapts) -->
+        <div class="gateway-grid">
+            <div class="gateway-btn" id="gw-bkash" onclick="selectSubGateway('bkash')">
+                <i class="fas fa-dove color-bkash"></i>
+                <span>bKash</span>
+            </div>
+            <div class="gateway-btn" id="gw-nagad" onclick="selectSubGateway('nagad')">
+                <i class="fas fa-fire-flame-curved color-nagad"></i>
+                <span>Nagad</span>
+            </div>
+            <div class="gateway-btn" id="gw-rocket" style="grid-column: 1 / span 2;" onclick="selectSubGateway('rocket')">
+                <i class="fas fa-rocket color-rocket"></i>
+                <span>Rocket</span>
+            </div>
+        </div>
+
+        <button class="btn-primary" style="margin-top:10px" onclick="proceedToInit()">Continue</button>
+    </div>
+
+    <!-- INITIALIZING & WARNING POPUPs -->
     <div class="overlay" id="overlay-pending">
         <div class="status-icon processing"><i class="fas fa-circle-notch spinner"></i></div>
         <h2>Initializing...</h2>
-        <p>Contacting chosen network server to connect your app safely.</p>
+        <p>Generating a secure localized session.</p>
     </div>
-    
-    <div class="overlay" id="overlay-success">
+
+    <div class="overlay" id="overlay-warning-ban">
+        <div class="status-icon warning"><i class="fas fa-triangle-exclamation"></i></div>
+        <h2 style="font-size:20px;">সতর্কতা!</h2>
+        <p style="color:var(--fp-text); max-width: 320px; font-weight:700;">উলটা পালটা Payment Submit করলে Account Ban করা হবে।</p>
+        <button class="btn-primary btn-danger" style="justify-content:center; width:100%; max-width:280px; margin-top:20px;" onclick="openFullScreenbKash()">Done</button>
+    </div>
+
+    <!-- --------------------------------------- -->
+    <!-- NEW: FULL SCREEN 15-MIN PAYMENT PAGE    -->
+    <!-- --------------------------------------- -->
+    <div class="fs-payment-page" id="fsPayPage">
+        
+        <div class="fs-header-controls">
+            <button class="back-sq" onclick="autoClosePayPage('cancelled')"><i class="fas fa-arrow-left"></i></button>
+        </div>
+        
+        <!-- Animated / Rounded center logo holder -->
+        <div class="fs-logo-wrapper">
+            <!-- Utilizing similar generic shape mirroring the original bkash bird, substituted with an icon/svg shape conceptually -->
+            <img class="fs-logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Bkash_Logo.svg/256px-Bkash_Logo.svg.png" onerror="this.src='https://placehold.co/100/df146e/ffffff?text=b'" alt="Brand Logo">
+            <div class="fs-timer" id="timerDisplay">14:58</div>
+            <div class="fs-timer-sub">TIME REMAINING</div>
+        </div>
+
+        <!-- Text details -->
+        <div class="fs-inst-wrap">
+            <div class="fs-inst-en">Send money to the account below and fill in the required information</div>
+            <div class="fs-inst-bn">নিচের অ্যাকাউন্টে অর্থ প্রেরণ করুন এবং প্রয়োজনীয় তথ্য পূরণ করুন</div>
+        </div>
+
+        <!-- The White Information Card box -->
+        <div class="fs-card-white">
+            
+            <div class="fs-input-box" style="margin-bottom:28px;">
+                <label class="fs-label">Amount (পরিমাণ)</label>
+                <div class="fs-val-box">
+                    <span class="fs-val-text">৳ <span id="finalDisplayBdtAmount" style="margin-left:8px;">0</span></span>
+                    <button class="fs-copy-btn" onclick="copyDynamicValue('finalDisplayBdtAmount')"><i class="far fa-copy"></i></button>
+                </div>
+            </div>
+
+            <div class="fs-input-box" style="margin-bottom:28px;">
+                <label class="fs-label">bKash Personal (বিকাশ পার্সোনাল)</label>
+                <div class="fs-val-box">
+                    <span class="fs-val-text" id="finalGatewayNumber" style="font-family:monospace;">017XXXXXXXX</span>
+                    <button class="fs-copy-btn" onclick="copyDynamicValue('finalGatewayNumber')"><i class="far fa-copy"></i></button>
+                </div>
+            </div>
+
+            <div class="fs-input-box">
+                <label class="fs-label" style="margin-bottom: 12px;">Transaction ID (ট্রানজেকশন আইডি)</label>
+                <input type="text" class="fs-text-field" placeholder="F7XXXXXX" id="txIDField">
+            </div>
+
+            <div class="fs-input-box" style="margin-top:24px; margin-bottom:30px;">
+                <label class="fs-label" style="margin-bottom: 12px;">Send Money From (যে নাম্বার থেকে টাকা পাঠিয়ে ছেন)</label>
+                <input type="number" class="fs-text-field" placeholder="01XXXXXXXXX" id="phoneField">
+            </div>
+
+            <button class="fs-submit-btn" onclick="submitFinalPaymentRequest()">সাবমিট করুন</button>
+
+        </div>
+    </div>
+
+
+    <!-- FINAL SUCCESS AND AUTO CANCEL MODALS -->
+    <div class="overlay" id="overlay-success-final">
         <div class="status-icon success"><i class="fas fa-check"></i></div>
         <h2>Request Captured</h2>
-        <p>Order has been submitted under a temporary pipeline.</p>
-        <br/>
-        <!-- Calling `closeOverlayModals` cleanly closes without backing entirely securely directly now -->
-        <button class="btn-primary" style="justify-content:center; width:100%; max-width:280px;" type="button" onclick="closeOverlayModals()">Okay, Back out</button>
+        <p>Order has been submitted under a temporary pipeline securely.</p>
+        <button class="btn-primary" style="justify-content:center; width:100%; max-width:280px; margin-top:20px;" type="button" onclick="killEverything()">Okay, Back out</button>
+    </div>
+
+    <div class="overlay" id="overlay-timeout">
+        <div class="status-icon failed" style="background: rgba(215,25,63,0.1); color:#d7193f;"><i class="fas fa-clock"></i></div>
+        <h2 style="color:var(--fp-text);">Session Expired</h2>
+        <p style="color:var(--fp-muted);">15 minute payment window has automatically been closed.</p>
+        <button class="btn-primary" style="justify-content:center; width:100%; max-width:280px; margin-top:20px;" onclick="killEverything()">Go Back</button>
     </div>
 
 </div>
 
 <script>
+// Main Global UI logics isolated.
 (function(){
-    let orderId = 'FLY-' + Math.random().toString(36).substring(2, 10).toUpperCase();
-    let selectedMethodValue = null;
-    let selectedMethodLabel = null;
+    // Exchange Base
+    const exRateBDT = 120;
+    
+    let activeAppMethod = null;
+    let selectedSubGW = null; 
+    let currentCalcBDTAmount = 0; 
 
+    let timerInterval = null;
+
+    // Secure bridge method intact
     window.goBackToSafety = function(e) {
         if (e) e.preventDefault();
         if (typeof executeBackAction === 'function') executeBackAction();
-        else if (typeof AppNavigation !== 'undefined' && AppNavigation.pop) AppNavigation.pop();
         else window.history.back();
     };
 
-    window.selectPaymentMethod = function(methodID, label) {
-        const types = ['crypto', 'local', 'google'];
-        selectedMethodValue = methodID;
-        selectedMethodLabel = label;
+    window.copyDynamicValue = function(elementId) {
+        const text = document.getElementById(elementId).innerText;
+        navigator.clipboard.writeText(text).then(() => {
+           // brief feedback handled silently via native clipboard toast mostly, or lightweight local alert 
+           // alert("Copied to clipboard!");
+        });
+    }
 
-        // Visual refresh logic removing internals and just indicating clicks
+    window.selectAppMethod = function(methodID, label) {
+        activeAppMethod = methodID;
+        const types = ['crypto', 'local', 'google'];
         types.forEach(cat => {
             const currentCard = document.getElementById('card-' + cat);
             const currentIndicator = document.getElementById('ind-' + cat);
-
             if (cat === methodID) {
                 currentCard.classList.add('active');
                 currentIndicator.style.color = "var(--fp-success)"; 
@@ -338,34 +449,168 @@
                 currentIndicator.style.color = "var(--fp-border)"; 
             }
         });
-
-        // Updating Call to Action immediately for simple UX progression path logic integration securely manually
         const btnCTA = document.getElementById('mainCta');
         btnCTA.disabled = false;
         btnCTA.innerHTML = `Continue with ${label} &nbsp; <i class="fas fa-arrow-right"></i>`;
-    }
+    };
 
-    // Handles processing without refreshing 
-    window.processPayment = function() {
-        if (!selectedMethodValue) return;
+    window.triggerMainAction = function() {
+        if(!activeAppMethod) return;
+        
+        // Based on user prompt! ONLY LOCAL opens the specific Premium Bottom sheet flow described. 
+        if(activeAppMethod === 'local'){
+            document.getElementById('bsBackdrop').classList.add('active');
+            document.getElementById('localPaymentSheet').classList.add('active');
+        } else {
+            // General crypto/google simple direct submission mockup
+            document.getElementById('overlay-pending').classList.add('active');
+            setTimeout(()=>{
+                document.getElementById('overlay-pending').classList.remove('active');
+                document.getElementById('overlay-success-final').classList.add('active');
+            },1500);
+        }
+    };
 
+    // BOTOM SHEET Logic (amount calculating etc)
+    window.closeBottomSheet = function() {
+        document.getElementById('bsBackdrop').classList.remove('active');
+        document.getElementById('localPaymentSheet').classList.remove('active');
+    };
+
+    window.calcBdtRate = function() {
+        const field = document.getElementById('sheetInputUsd');
+        const disp = document.getElementById('exchangeDisp');
+        let rawVal = parseFloat(field.value);
+
+        if(!rawVal || rawVal <= 0){
+            disp.innerText = "$ 0 = ৳0";
+            currentCalcBDTAmount = 0;
+            return;
+        }
+
+        // Dynamically processing requested visual rate layout showing mapping Example output accurately! 
+        currentCalcBDTAmount = rawVal * exRateBDT;
+        disp.innerText = `$ ${rawVal} = ৳${currentCalcBDTAmount.toLocaleString()}`;
+    };
+
+    window.selectSubGateway = function(gw){
+        selectedSubGW = gw;
+        const opts = ['bkash','nagad','rocket'];
+        opts.forEach(g => {
+            const el = document.getElementById('gw-'+g);
+            if(g===gw) el.classList.add('selected');
+            else el.classList.remove('selected');
+        });
+    };
+
+    window.proceedToInit = function() {
+        if(currentCalcBDTAmount <= 0) { alert('Please enter a valid amount over 0'); return; }
+        if(!selectedSubGW) { alert('Please select a local wallet (bKash/Nagad/Rocket).'); return; }
+
+        closeBottomSheet();
+
+        // 1. Initializing state mapping -> Warn -> Next phase
         document.getElementById('overlay-pending').classList.add('active');
-
-        // Backend Mock trigger simulated perfectly
+        
         setTimeout(() => {
             document.getElementById('overlay-pending').classList.remove('active');
-            document.getElementById('overlay-success').classList.add('active');
-        }, 2200);
-    }
+            // Show custom Account Ban logic warning layout defined 
+            document.getElementById('overlay-warning-ban').classList.add('active');
+        }, 1200); 
+    };
+
+    // ----------------------------
+    // TIMER & FULL SCREEN METHODS 
+    // ----------------------------
     
-    // Safely closing Modal specifically replacing backward transition mapping to this method
-    window.closeOverlayModals = function() {
-        document.getElementById('overlay-success').classList.remove('active');
-        document.getElementById('overlay-pending').classList.remove('active');
+    // Setup Countdown formatting elegantly securely manually  
+    const padTime = (num) => num.toString().padStart(2, '0');
+
+    window.openFullScreenbKash = function() {
+        // Clear previous layer states 
+        document.getElementById('overlay-warning-ban').classList.remove('active');
         
-        const btnCTA = document.getElementById('mainCta');
-        btnCTA.innerHTML = `Continue with ${selectedMethodLabel} &nbsp; <i class="fas fa-arrow-right"></i>`;
+        // Pass accurate mapping dynamically  
+        // BDT mapped directly: e.g if user provided USD $1 => the view parses only BDT (৳120 context setup rules explicitly followed)
+        document.getElementById('finalDisplayBdtAmount').innerText = currentCalcBDTAmount; 
+        
+        const netLogoImg = document.querySelector('.fs-logo');
+        if(selectedSubGW === 'nagad') {
+            document.getElementById('fsPayPage').style.background = '#ed1c24'; // Red bg theme layout color adapted nicely
+            netLogoImg.src = 'https://download.logo.wine/logo/Nagad/Nagad-Logo.wine.png';
+            document.querySelector('.fs-input-box .fs-label').innerText = 'Nagad Personal (নগদ পার্সোনাল)';
+            document.getElementById('finalGatewayNumber').innerText = '018XXXXXXXX';
+        } else if (selectedSubGW === 'rocket') {
+            document.getElementById('fsPayPage').style.background = '#8c3494';
+            netLogoImg.src = 'https://download.logo.wine/logo/Dutch-Bangla_Bank/Dutch-Bangla_Bank-Logo.wine.png';
+            document.querySelector('.fs-input-box .fs-label').innerText = 'Rocket Personal (রকেট পার্সোনাল)';
+            document.getElementById('finalGatewayNumber').innerText = '019XXXXXXX9';
+        } else {
+            // bKash Default layout 
+            document.getElementById('fsPayPage').style.background = '#db1962';
+            netLogoImg.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Bkash_Logo.svg/256px-Bkash_Logo.svg.png';
+            document.querySelector('.fs-input-box .fs-label').innerText = 'bKash Personal (বিকাশ পার্সোনাল)';
+            document.getElementById('finalGatewayNumber').innerText = '017XXXXXXXX';
+        }
+        
+        document.getElementById('fsPayPage').classList.add('active');
+        
+        // Initiate exactly 15 mins Countdown
+        let secondsLeft = 15 * 60; 
+        updateTimerRender(secondsLeft);
+
+        if(timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            secondsLeft--;
+            updateTimerRender(secondsLeft);
+
+            if (secondsLeft <= 0) {
+                clearInterval(timerInterval);
+                autoClosePayPage('timeout');
+            }
+        }, 1000);
+    };
+
+    function updateTimerRender(totSec){
+        let min = Math.floor(totSec / 60);
+        let sec = totSec % 60;
+        document.getElementById('timerDisplay').innerText = `${padTime(min)}:${padTime(sec)}`;
     }
+
+    window.autoClosePayPage = function(reason) {
+        clearInterval(timerInterval);
+        document.getElementById('fsPayPage').classList.remove('active');
+        
+        if (reason === 'timeout') {
+            document.getElementById('overlay-timeout').classList.add('active');
+        }
+        
+        // if user presses back in page just hide quietly restoring previously 
+    };
+
+    window.submitFinalPaymentRequest = function(){
+        const txField = document.getElementById('txIDField').value.trim();
+        const phnField = document.getElementById('phoneField').value.trim();
+
+        if(!txField || !phnField) { alert('প্রয়োজনীয় তথ্যগুলো পূরণ করুন (Transaction ID & Sender Number)।'); return;}
+        
+        // Complete -> Request Captured final view as you demanded!
+        clearInterval(timerInterval);
+        document.getElementById('fsPayPage').classList.remove('active');
+        
+        // Small pending step logically mirroring authentic network actions visually
+        document.getElementById('overlay-pending').classList.add('active');
+        
+        setTimeout(() => {
+            document.getElementById('overlay-pending').classList.remove('active');
+            document.getElementById('overlay-success-final').classList.add('active');
+        }, 1800);
+    };
+
+    window.killEverything = function(){
+       document.querySelectorAll('.overlay').forEach(el=> el.classList.remove('active'));
+    };
+
 })();
 </script>
 

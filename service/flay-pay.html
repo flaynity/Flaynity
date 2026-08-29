@@ -14,7 +14,7 @@
 </script>
 <style>
 /* --------------------------------- */
-/* BASIC APP CSS (Unchanged scoped variables) */
+/* BASIC APP CSS */
 /* --------------------------------- */
 .flay-pay-wrapper {
     --fp-bg: #fdfdfd;
@@ -147,21 +147,19 @@
 .exchange-disp { background: var(--fp-surface-alt); margin-top: 10px; border-radius: 12px; padding: 12px 16px; font-size: 15px; font-weight: 700; color: var(--fp-accent); border: 1px dashed var(--fp-border); display: flex; align-items: center; justify-content: center; margin-bottom: 24px;}
 /* Method Grid selection inside BS */
 .gateway-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-.gateway-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--fp-surface); border: 1.5px solid var(--fp-border); padding: 14px 8px; border-radius: 16px; cursor: pointer; gap: 8px; font-size: 13px; font-weight: 700; transition: 0.2s; color: var(--fp-text);}
+.gateway-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--fp-surface); border: 1.5px solid var(--fp-border); padding: 14px 8px; border-radius: 16px; cursor: pointer; gap: 8px; font-size: 13.5px; font-weight: 800; transition: 0.2s; color: var(--fp-text);}
 .gateway-btn.selected { border-color: var(--fp-accent); background: rgba(255,46,85,0.04); }
-.gateway-btn i { font-size: 24px; }
-.color-bkash { color: #df146e; }
-.color-nagad { color: #ec1c24; }
-.color-rocket { color: #8c3494; }
+
+/* Updated Icon Classes (Official Images mapping styling layout perfectly scaled!) */
+.gateway-icon { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); }
 
 /* --------------------------------- */
 /* 15 MIN FULL SCREEN BKASH/LOCAL PAGE */
-/* (Based deeply on User Image details) */
 /* --------------------------------- */
 .fs-payment-page {
     position: fixed; top: 0; left: 0; right:0; margin: 0 auto; width: 100%; height: 100%;
     max-width: 600px;
-    background: #db1962; /* Official deep magenta brand theme closely matched */
+    background: #db1962; 
     z-index: 1000;
     transform: translateX(100%);
     transition: transform 0.4s ease;
@@ -173,10 +171,12 @@
 .fs-header-controls { display: flex; align-items: center; padding: 16px; }
 .fs-header-controls .back-sq { width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 12px; border:none; color:#fff; display:flex; justify-content:center; align-items:center; font-size:18px; cursor:pointer;}
 .fs-logo-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 10px; margin-bottom: 20px;}
-.fs-logo { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #ffffff; background: #fff; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);}
+
+/* Using Image Fit scale ensuring full size match for URL input */
+.fs-logo { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #ffffff; background: #fff; padding: 2px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); object-fit: cover;}
+
 .fs-timer { font-size: 52px; font-weight: 900; color: #ffffff; text-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 10px; line-height:1;}
 .fs-timer-sub { font-size: 13px; font-weight: 800; color: #ffffff; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 24px;}
-
 .fs-inst-wrap { text-align: center; color: #fff; margin: 0 24px 24px 24px; font-family: sans-serif; }
 .fs-inst-en { font-size: 15.5px; font-weight: 700; margin-bottom: 6px; line-height: 1.3;}
 .fs-inst-bn { font-size: 14px; opacity: 0.9; }
@@ -194,22 +194,14 @@
     border-bottom: 1px solid #ebecf0; padding-bottom: 10px; margin-bottom: 6px;
 }
 .fs-val-text { font-size: 20px; font-weight: 800; color: #1f2533; display: flex; align-items:center; }
-.fs-copy-btn {
-    width: 32px; height: 32px; border-radius: 10px; border:none; background:#f4f5f8;
-    color:#0396fe; font-size: 14px; cursor: pointer; transition: 0.2s; display:grid; place-items:center;
-}
+.fs-copy-btn { width: 32px; height: 32px; border-radius: 10px; border:none; background:#f4f5f8; color:#0396fe; font-size: 14px; cursor: pointer; transition: 0.2s; display:grid; place-items:center; }
 .fs-copy-btn:active { transform: scale(0.9); }
 .fs-text-field {
     width: 100%; border: 1.5px solid #dcdfe5; border-radius: 16px;
     padding: 16px; font-size: 16px; font-weight: 600; color:#333; outline: none; background: #fafafc; transition: 0.3s;
 }
 .fs-text-field:focus { border-color: #03a5fc; background:#fff;}
-.fs-submit-btn {
-    width: 100%; height: 56px; border-radius: 16px; border:none;
-    background: #00a4ff; color: #fff; font-size: 18px; font-weight: 800;
-    cursor: pointer; box-shadow: 0 10px 25px rgba(0, 164, 255, 0.3); margin-top:10px;
-    transition: 0.2s;
-}
+.fs-submit-btn { width: 100%; height: 56px; border-radius: 16px; border:none; background: #00a4ff; color: #fff; font-size: 18px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 25px rgba(0, 164, 255, 0.3); margin-top:10px; transition: 0.2s; }
 .fs-submit-btn:active { transform: scale(0.97); }
 </style>
 </head>
@@ -295,23 +287,22 @@
             <input type="number" class="bs-input-amount" id="sheetInputUsd" placeholder="0.00" onkeyup="calcBdtRate()">
         </div>
         
-        <!-- Live conversion label (Rate: $1 = 120BDT context given) -->
         <div class="exchange-disp" id="exchangeDisp">
             $ 0 = ৳0
         </div>
         
-        <!-- Official icons for gateway (2 columns, 3 items = naturally adapts) -->
+        <!-- Updated Official images for gateways seamlessly fitting previous logic structures flawlessly -->
         <div class="gateway-grid">
             <div class="gateway-btn" id="gw-bkash" onclick="selectSubGateway('bkash')">
-                <i class="fas fa-dove color-bkash"></i>
+                <img src="https://www.image2url.com/r2/default/images/1788007876265-5d6da5f7-5ec6-4cdd-ad68-b90b87ebcb6e.jpg" alt="bKash Logo" class="gateway-icon">
                 <span>bKash</span>
             </div>
             <div class="gateway-btn" id="gw-nagad" onclick="selectSubGateway('nagad')">
-                <i class="fas fa-fire-flame-curved color-nagad"></i>
+                <img src="https://www.image2url.com/r2/default/images/1788008020392-ac61a553-48a8-4ed3-a1da-5ad149aae2e7.jpg" alt="Nagad Logo" class="gateway-icon">
                 <span>Nagad</span>
             </div>
             <div class="gateway-btn" id="gw-rocket" style="grid-column: 1 / span 2;" onclick="selectSubGateway('rocket')">
-                <i class="fas fa-rocket color-rocket"></i>
+                <img src="https://www.image2url.com/r2/default/images/1788008076520-1f2a46ad-aa02-4da8-8958-25e0bb83a603.jpg" alt="Rocket Logo" class="gateway-icon">
                 <span>Rocket</span>
             </div>
         </div>
@@ -342,23 +333,18 @@
             <button class="back-sq" onclick="autoClosePayPage('cancelled')"><i class="fas fa-arrow-left"></i></button>
         </div>
         
-        <!-- Animated / Rounded center logo holder -->
         <div class="fs-logo-wrapper">
-            <!-- Utilizing similar generic shape mirroring the original bkash bird, substituted with an icon/svg shape conceptually -->
-            <img class="fs-logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Bkash_Logo.svg/256px-Bkash_Logo.svg.png" onerror="this.src='https://placehold.co/100/df146e/ffffff?text=b'" alt="Brand Logo">
+            <img class="fs-logo" id="fullScreenPayLogo" src="https://www.image2url.com/r2/default/images/1788007876265-5d6da5f7-5ec6-4cdd-ad68-b90b87ebcb6e.jpg" alt="Brand Logo">
             <div class="fs-timer" id="timerDisplay">14:58</div>
             <div class="fs-timer-sub">TIME REMAINING</div>
         </div>
 
-        <!-- Text details -->
         <div class="fs-inst-wrap">
             <div class="fs-inst-en">Send money to the account below and fill in the required information</div>
             <div class="fs-inst-bn">নিচের অ্যাকাউন্টে অর্থ প্রেরণ করুন এবং প্রয়োজনীয় তথ্য পূরণ করুন</div>
         </div>
 
-        <!-- The White Information Card box -->
         <div class="fs-card-white">
-            
             <div class="fs-input-box" style="margin-bottom:28px;">
                 <label class="fs-label">Amount (পরিমাণ)</label>
                 <div class="fs-val-box">
@@ -368,7 +354,7 @@
             </div>
 
             <div class="fs-input-box" style="margin-bottom:28px;">
-                <label class="fs-label">bKash Personal (বিকাশ পার্সোনাল)</label>
+                <label class="fs-label" id="providerNameBangla">bKash Personal (বিকাশ পার্সোনাল)</label>
                 <div class="fs-val-box">
                     <span class="fs-val-text" id="finalGatewayNumber" style="font-family:monospace;">017XXXXXXXX</span>
                     <button class="fs-copy-btn" onclick="copyDynamicValue('finalGatewayNumber')"><i class="far fa-copy"></i></button>
@@ -386,7 +372,6 @@
             </div>
 
             <button class="fs-submit-btn" onclick="submitFinalPaymentRequest()">সাবমিট করুন</button>
-
         </div>
     </div>
 
@@ -409,7 +394,6 @@
 </div>
 
 <script>
-// Main Global UI logics isolated.
 (function(){
     // Exchange Base
     const exRateBDT = 120;
@@ -430,8 +414,6 @@
     window.copyDynamicValue = function(elementId) {
         const text = document.getElementById(elementId).innerText;
         navigator.clipboard.writeText(text).then(() => {
-           // brief feedback handled silently via native clipboard toast mostly, or lightweight local alert 
-           // alert("Copied to clipboard!");
         });
     }
 
@@ -457,12 +439,10 @@
     window.triggerMainAction = function() {
         if(!activeAppMethod) return;
         
-        // Based on user prompt! ONLY LOCAL opens the specific Premium Bottom sheet flow described. 
         if(activeAppMethod === 'local'){
             document.getElementById('bsBackdrop').classList.add('active');
             document.getElementById('localPaymentSheet').classList.add('active');
         } else {
-            // General crypto/google simple direct submission mockup
             document.getElementById('overlay-pending').classList.add('active');
             setTimeout(()=>{
                 document.getElementById('overlay-pending').classList.remove('active');
@@ -471,7 +451,6 @@
         }
     };
 
-    // BOTOM SHEET Logic (amount calculating etc)
     window.closeBottomSheet = function() {
         document.getElementById('bsBackdrop').classList.remove('active');
         document.getElementById('localPaymentSheet').classList.remove('active');
@@ -488,7 +467,6 @@
             return;
         }
 
-        // Dynamically processing requested visual rate layout showing mapping Example output accurately! 
         currentCalcBDTAmount = rawVal * exRateBDT;
         disp.innerText = `$ ${rawVal} = ৳${currentCalcBDTAmount.toLocaleString()}`;
     };
@@ -509,12 +487,9 @@
 
         closeBottomSheet();
 
-        // 1. Initializing state mapping -> Warn -> Next phase
         document.getElementById('overlay-pending').classList.add('active');
-        
         setTimeout(() => {
             document.getElementById('overlay-pending').classList.remove('active');
-            // Show custom Account Ban logic warning layout defined 
             document.getElementById('overlay-warning-ban').classList.add('active');
         }, 1200); 
     };
@@ -523,39 +498,37 @@
     // TIMER & FULL SCREEN METHODS 
     // ----------------------------
     
-    // Setup Countdown formatting elegantly securely manually  
     const padTime = (num) => num.toString().padStart(2, '0');
 
+    // JS Image assignments substituting explicitly the official Images passed for Full Page view mapping perfectly!
     window.openFullScreenbKash = function() {
-        // Clear previous layer states 
         document.getElementById('overlay-warning-ban').classList.remove('active');
         
-        // Pass accurate mapping dynamically  
-        // BDT mapped directly: e.g if user provided USD $1 => the view parses only BDT (৳120 context setup rules explicitly followed)
         document.getElementById('finalDisplayBdtAmount').innerText = currentCalcBDTAmount; 
         
-        const netLogoImg = document.querySelector('.fs-logo');
+        const netLogoImg = document.getElementById('fullScreenPayLogo');
+        const proNameDisplay = document.getElementById('providerNameBangla');
+
         if(selectedSubGW === 'nagad') {
-            document.getElementById('fsPayPage').style.background = '#ed1c24'; // Red bg theme layout color adapted nicely
-            netLogoImg.src = 'https://download.logo.wine/logo/Nagad/Nagad-Logo.wine.png';
-            document.querySelector('.fs-input-box .fs-label').innerText = 'Nagad Personal (নগদ পার্সোনাল)';
+            document.getElementById('fsPayPage').style.background = '#ed1c24'; 
+            netLogoImg.src = 'https://www.image2url.com/r2/default/images/1788008020392-ac61a553-48a8-4ed3-a1da-5ad149aae2e7.jpg';
+            proNameDisplay.innerText = 'Nagad Personal (নগদ পার্সোনাল)';
             document.getElementById('finalGatewayNumber').innerText = '018XXXXXXXX';
         } else if (selectedSubGW === 'rocket') {
             document.getElementById('fsPayPage').style.background = '#8c3494';
-            netLogoImg.src = 'https://download.logo.wine/logo/Dutch-Bangla_Bank/Dutch-Bangla_Bank-Logo.wine.png';
-            document.querySelector('.fs-input-box .fs-label').innerText = 'Rocket Personal (রকেট পার্সোনাল)';
+            netLogoImg.src = 'https://www.image2url.com/r2/default/images/1788008076520-1f2a46ad-aa02-4da8-8958-25e0bb83a603.jpg';
+            proNameDisplay.innerText = 'Rocket Personal (রকেট পার্সোনাল)';
             document.getElementById('finalGatewayNumber').innerText = '019XXXXXXX9';
         } else {
-            // bKash Default layout 
+            // bKash Default layout mapping with Custom original URI securely 
             document.getElementById('fsPayPage').style.background = '#db1962';
-            netLogoImg.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Bkash_Logo.svg/256px-Bkash_Logo.svg.png';
-            document.querySelector('.fs-input-box .fs-label').innerText = 'bKash Personal (বিকাশ পার্সোনাল)';
+            netLogoImg.src = 'https://www.image2url.com/r2/default/images/1788007876265-5d6da5f7-5ec6-4cdd-ad68-b90b87ebcb6e.jpg';
+            proNameDisplay.innerText = 'bKash Personal (বিকাশ পার্সোনাল)';
             document.getElementById('finalGatewayNumber').innerText = '017XXXXXXXX';
         }
         
         document.getElementById('fsPayPage').classList.add('active');
         
-        // Initiate exactly 15 mins Countdown
         let secondsLeft = 15 * 60; 
         updateTimerRender(secondsLeft);
 
@@ -580,25 +553,16 @@
     window.autoClosePayPage = function(reason) {
         clearInterval(timerInterval);
         document.getElementById('fsPayPage').classList.remove('active');
-        
-        if (reason === 'timeout') {
-            document.getElementById('overlay-timeout').classList.add('active');
-        }
-        
-        // if user presses back in page just hide quietly restoring previously 
+        if (reason === 'timeout') document.getElementById('overlay-timeout').classList.add('active');
     };
 
     window.submitFinalPaymentRequest = function(){
         const txField = document.getElementById('txIDField').value.trim();
         const phnField = document.getElementById('phoneField').value.trim();
-
         if(!txField || !phnField) { alert('প্রয়োজনীয় তথ্যগুলো পূরণ করুন (Transaction ID & Sender Number)।'); return;}
         
-        // Complete -> Request Captured final view as you demanded!
         clearInterval(timerInterval);
         document.getElementById('fsPayPage').classList.remove('active');
-        
-        // Small pending step logically mirroring authentic network actions visually
         document.getElementById('overlay-pending').classList.add('active');
         
         setTimeout(() => {

@@ -29,7 +29,7 @@
     --fp-success: #00a844;
     --fp-warning: #d98200;
     --fp-danger: #d7193f;
-    --fp-overlay-bg: rgba(255, 255, 255, 0.95);
+    --fp-overlay-bg: #ffffff; /* 100% Solid Light background so backend text hides */
 
     /* Premium Card Specifics for Light Mode */
     --pbc-bg-grad: linear-gradient(135deg, #ffffff, #f7f8f9);
@@ -46,7 +46,6 @@
     line-height: 1.5;
     width: 100%;
     min-height: 100vh;
-    padding-bottom: calc(100px + env(safe-area-inset-bottom, 20px));
 }
 
 /* Dark Theme overrides */
@@ -59,7 +58,7 @@
     --fp-border: #222;
     --fp-soft: rgba(255,46,85,.14);
     --fp-shadow: 0 14px 40px rgba(0,0,0,.35);
-    --fp-overlay-bg: rgba(0, 0, 0, 0.95);
+    --fp-overlay-bg: #000000; /* 100% Solid Dark background to fix overlapping views */
 
     /* Premium Card Specifics for Dark Mode */
     --pbc-bg-grad: linear-gradient(135deg, #18151c, #0d0b13);
@@ -80,24 +79,26 @@
 .flay-pay-wrapper .back-btn { position: absolute; left: 16px; width: 40px; height: 40px; border: none; background: transparent; color: var(--fp-text); font-size: 20px; display: grid; place-items: center; border-radius: 50%; cursor: pointer; }
 .flay-pay-wrapper .header-title { font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
 .flay-pay-wrapper .header-title i { color: var(--fp-accent); }
-.flay-pay-wrapper .content { padding: 20px 16px; }
+
+/* Changed: Greatly improved bottom spacing padding to clear out Fixed footer overlapping Issue securely */
+.flay-pay-wrapper .content { padding: 20px 16px 140px 16px; }
+
 .flay-pay-wrapper .page-header { text-align: center; margin-bottom: 28px; }
 .flay-pay-wrapper .page-header h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
 .flay-pay-wrapper .page-header p { color: var(--fp-muted); font-size: 13px; font-weight: 500; }
 
-/* --- PREMIUM BALANCE CARD (Adaptive, Thinner Profile) --- */
+/* --- PREMIUM BALANCE CARD --- */
 .flay-pay-wrapper .premium-balance-card {
     background: var(--pbc-bg-grad);
     border: 1px solid var(--pbc-border);
     border-radius: 20px;
-    padding: 20px; /* Reduced to make the box slimmer */
+    padding: 20px;
     margin-bottom: 24px;
     box-shadow: var(--fp-shadow);
     color: var(--pbc-text);
     position: relative;
     overflow: hidden;
 }
-/* Magic blur drops behind contents dynamically matching modes smoothly */
 .flay-pay-wrapper .premium-balance-card::before, .flay-pay-wrapper .premium-balance-card::after {
     content: ''; position: absolute; width: 130px; height: 130px; border-radius: 50%; filter: blur(46px); z-index: 0; pointer-events: none;
 }
@@ -123,65 +124,32 @@
     text-align: center;
 }
 .flay-pay-wrapper .pbc-balance {
-    font-size: 40px; /* Text Size Adjusted carefully to save height space */
+    font-size: 40px; 
     font-weight: 800;
     letter-spacing: -1px;
     margin-bottom: 22px;
     text-align: center;
     line-height: 1;
 }
-.flay-pay-wrapper .pbc-stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-}
-.flay-pay-wrapper .pbc-stat-box {
-    background: var(--pbc-box-bg);
-    border: 1px solid var(--pbc-box-border);
-    border-radius: 14px;
-    padding: 14px 12px; /* Small adjustments */
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-.flay-pay-wrapper .pbc-stat-icon {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    border: 1.2px solid rgba(255,46,85,0.3);
-    display: flex; align-items: center; justify-content: center;
-    color: var(--fp-accent);
-    font-size: 12px;
-    background: rgba(255, 46, 85, 0.05);
-}
+.flay-pay-wrapper .pbc-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.flay-pay-wrapper .pbc-stat-box { background: var(--pbc-box-bg); border: 1px solid var(--pbc-box-border); border-radius: 14px; padding: 14px 12px; display: flex; align-items: center; gap: 12px; }
+.flay-pay-wrapper .pbc-stat-icon { width: 32px; height: 32px; border-radius: 50%; border: 1.2px solid rgba(255,46,85,0.3); display: flex; align-items: center; justify-content: center; color: var(--fp-accent); font-size: 12px; background: rgba(255, 46, 85, 0.05); }
 .flay-pay-wrapper .pbc-stat-icon.up { transform: rotate(45deg); }
-.flay-pay-wrapper .pbc-stat-info p {
-    font-size: 11px; font-weight: 600; color: var(--pbc-sub-text); margin: 0 0 2px 0;
-}
-.flay-pay-wrapper .pbc-stat-info h4 {
-    font-size: 15px; font-weight: 800; margin: 0; color: var(--pbc-text);
-}
+.flay-pay-wrapper .pbc-stat-info p { font-size: 11px; font-weight: 600; color: var(--pbc-sub-text); margin: 0 0 2px 0; }
+.flay-pay-wrapper .pbc-stat-info h4 { font-size: 15px; font-weight: 800; margin: 0; color: var(--pbc-text); }
 /* ----------------------------------- */
 
-/* Payment Methods (Stripped as clean simple buttons) */
+/* Payment Methods */
 .flay-pay-wrapper .section-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;}
 .flay-pay-wrapper .section-subtitle { color: var(--fp-muted); font-size: 13px; font-weight: 500; display: block; margin-top: -8px; margin-bottom: 16px;}
 
 .flay-pay-wrapper .payment-card {
-    background: var(--fp-surface);
-    border: 1px solid var(--fp-border);
-    border-radius: 16px;
-    margin-bottom: 12px;
-    display: flex; align-items: center; gap: 14px;
-    padding: 16px; cursor: pointer; transition: 0.2s;
+    background: var(--fp-surface); border: 1px solid var(--fp-border); border-radius: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 14px; padding: 16px; cursor: pointer; transition: 0.2s;
 }
 .flay-pay-wrapper .payment-card.active { border-color: var(--fp-accent); background: var(--fp-soft); box-shadow: inset 0 2px 6px rgba(0,0,0,0.03); }
 
 .flay-pay-wrapper .card-icon {
-    width: 44px; height: 44px;
-    border-radius: 12px;
-    background: var(--fp-surface-alt);
-    display: grid; place-items: center;
-    font-size: 18px; color: var(--fp-muted);
+    width: 44px; height: 44px; border-radius: 12px; background: var(--fp-surface-alt); display: grid; place-items: center; font-size: 18px; color: var(--fp-muted);
 }
 .flay-pay-wrapper .payment-card.active .card-icon { color: var(--fp-accent); background: rgba(255, 46, 85, 0.12); }
 .flay-pay-wrapper .card-info { flex: 1; }
@@ -190,7 +158,7 @@
 .flay-pay-wrapper .card-indicator { font-size: 18px; color: var(--fp-border); }
 .flay-pay-wrapper .payment-card.active .card-indicator { color: var(--fp-accent); }
 
-/* Security Badge */
+/* Security Badge Fixed Details Visibility Issue */
 .flay-pay-wrapper .security-card { background: var(--fp-surface); border: 1px solid var(--fp-border); border-radius: 16px; padding: 14px; margin-top: 18px; }
 .flay-pay-wrapper .security-header { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; margin-bottom: 6px; }
 .flay-pay-wrapper .security-header i { color: var(--fp-success); }
@@ -198,35 +166,27 @@
 .flay-pay-wrapper .security-badges { display: flex; gap: 12px; font-size: 11px; color: var(--fp-muted); font-weight: 600; }
 .flay-pay-wrapper .security-badges i { color: var(--fp-success); }
 
-/* Sticky Footer Correct Center Alignment (Flawlessly fixed) */
+/* Modified Bottom Sticky Footer (Total Amount completely Removed / Action Button taking full space flexibly) */
 .flay-pay-wrapper .sticky-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    margin: 0 auto;
-    width: 100%;
-    max-width: 600px; /* Prevents overflow into PC limits if displayed largely */
+    position: fixed; bottom: 0; left: 0; right: 0; margin: 0 auto; width: 100%; max-width: 600px;
     background: var(--fp-bg);
     border-top: 1px solid var(--fp-border);
     padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px));
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     z-index: 100;
 }
 @media (min-width: 600px) {
     .flay-pay-wrapper .sticky-footer { border-radius: 20px 20px 0 0; border-left: 1px solid var(--fp-border); border-right: 1px solid var(--fp-border); }
 }
 
-.flay-pay-wrapper .footer-left { display: flex; flex-direction: column; }
-.flay-pay-wrapper .footer-left span { font-size: 12px; color: var(--fp-muted); font-weight: 600; }
-.flay-pay-wrapper .footer-left strong { font-size: 20px; font-weight: 900; color: var(--fp-text); }
-.flay-pay-wrapper .btn-primary { background: var(--fp-accent); color: #fff; border: none; border-radius: 14px; height: 50px; padding: 0 20px; font-size: 14.5px; font-weight: 800; font-family: inherit; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
-.flay-pay-wrapper .btn-primary:active { transform: scale(0.95); }
+.flay-pay-wrapper .btn-primary { 
+    background: var(--fp-accent); color: #fff; border: none; border-radius: 14px; height: 50px; 
+    padding: 0 20px; font-size: 14.5px; font-weight: 800; font-family: inherit; cursor: pointer; 
+    display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; width: 100%;
+}
+.flay-pay-wrapper .btn-primary:active { transform: scale(0.97); }
 .flay-pay-wrapper .btn-primary:disabled { background: var(--fp-surface-alt); color: var(--fp-muted); cursor: not-allowed; opacity: 0.6; pointer-events: none;}
 
-/* Modals */
+/* Fixed Overlap modal bg rendering issue utilizing pure dark or bright solid color layer structure securely */
 .flay-pay-wrapper .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--fp-overlay-bg); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; opacity: 0; pointer-events: none; transition: 0.3s ease; }
 .flay-pay-wrapper .overlay.active { opacity: 1; pointer-events: all; }
 .flay-pay-wrapper .status-icon { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; margin-bottom: 20px; }
@@ -312,7 +272,7 @@
 
             <div class="security-card">
                 <div class="security-header"><i class="fas fa-lock"></i> Secure Encrypted</div>
-                <p>Payments process through reliable 256-bit encrypted gateways securely and directly.</p>
+                <p>Your payment information is handled through the selected payment provider securely.</p>
                 <div class="security-badges">
                     <span><i class="fas fa-shield-alt"></i> Protection</span>
                     <span><i class="fas fa-bolt"></i> Instant Route</span>
@@ -324,16 +284,12 @@
 
     <!-- PERFECT CENTER BOTTOM STICKY FOOTER -->
     <div class="sticky-footer">
-        <div class="footer-left">
-            <span>Total Amount</span>
-            <strong id="displayTotal">৳0</strong>
-        </div>
         <button class="btn-primary" id="mainCta" type="button" onclick="processPayment()" disabled>
             Select Method
         </button>
     </div>
 
-    <!-- Status Process Display Overlays (Auto Adjusted Height) -->
+    <!-- Status Process Display Overlays (Auto Adjusted Solid Background & Closing behavior fix) -->
     <div class="overlay" id="overlay-pending">
         <div class="status-icon processing"><i class="fas fa-circle-notch spinner"></i></div>
         <h2>Initializing...</h2>
@@ -345,26 +301,18 @@
         <h2>Request Captured</h2>
         <p>Order has been submitted under a temporary pipeline.</p>
         <br/>
-        <button class="btn-primary" style="justify-content:center; width:100%; max-width:280px;" type="button" onclick="goBackToSafety(event)">Okay, Back out</button>
+        <!-- Calling `closeOverlayModals` cleanly closes without backing entirely securely directly now -->
+        <button class="btn-primary" style="justify-content:center; width:100%; max-width:280px;" type="button" onclick="closeOverlayModals()">Okay, Back out</button>
     </div>
 
 </div>
 
 <script>
-// JS Scoped logically matching direct buttons action design!
 (function(){
     let orderId = 'FLY-' + Math.random().toString(36).substring(2, 10).toUpperCase();
     let selectedMethodValue = null;
     let selectedMethodLabel = null;
-    let paymentBypassedAmount = '500';
 
-    const params = new URLSearchParams(location.search);
-    const amountQ = params.get('amount');
-    if (amountQ) paymentBypassedAmount = amountQ;
-
-    document.getElementById('displayTotal').textContent = '৳' + paymentBypassedAmount;
-
-    // Secure custom SPA go-back implementation handling
     window.goBackToSafety = function(e) {
         if (e) e.preventDefault();
         if (typeof executeBackAction === 'function') executeBackAction();
@@ -384,34 +332,39 @@
 
             if (cat === methodID) {
                 currentCard.classList.add('active');
-                currentIndicator.style.color = "var(--fp-success)"; // active green indicator marking visually 
+                currentIndicator.style.color = "var(--fp-success)"; 
             } else {
                 currentCard.classList.remove('active');
                 currentIndicator.style.color = "var(--fp-border)"; 
             }
         });
 
-        // Updating Call to Action immediately 
+        // Updating Call to Action immediately for simple UX progression path logic integration securely manually
         const btnCTA = document.getElementById('mainCta');
         btnCTA.disabled = false;
-        btnCTA.innerHTML = `Continue &nbsp; <i class="fas fa-arrow-right"></i>`;
+        btnCTA.innerHTML = `Continue with ${label} &nbsp; <i class="fas fa-arrow-right"></i>`;
     }
 
-    // Since input pages are removed! Direct interaction triggered flawlessly over the method
+    // Handles processing without refreshing 
     window.processPayment = function() {
         if (!selectedMethodValue) return;
 
         document.getElementById('overlay-pending').classList.add('active');
 
-        // Bypassing directly after a simulated pipeline timer instead of field evaluations (2.2 seconds display wait!)
+        // Backend Mock trigger simulated perfectly
         setTimeout(() => {
             document.getElementById('overlay-pending').classList.remove('active');
             document.getElementById('overlay-success').classList.add('active');
-            
-            // You can also place actual Backend connection triggers/functions right inside here silently:
-            // if(window.androidAppBridge) androidAppBridge.startFlow(selectedMethodValue, amountQ);
-            
         }, 2200);
+    }
+    
+    // Safely closing Modal specifically replacing backward transition mapping to this method
+    window.closeOverlayModals = function() {
+        document.getElementById('overlay-success').classList.remove('active');
+        document.getElementById('overlay-pending').classList.remove('active');
+        
+        const btnCTA = document.getElementById('mainCta');
+        btnCTA.innerHTML = `Continue with ${selectedMethodLabel} &nbsp; <i class="fas fa-arrow-right"></i>`;
     }
 })();
 </script>

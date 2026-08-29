@@ -150,7 +150,7 @@
 .gateway-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--fp-surface); border: 1.5px solid var(--fp-border); padding: 14px 8px; border-radius: 16px; cursor: pointer; gap: 8px; font-size: 13.5px; font-weight: 800; transition: 0.2s; color: var(--fp-text);}
 .gateway-btn.selected { border-color: var(--fp-accent); background: rgba(255,46,85,0.04); }
 
-/* Updated Icon Classes (Official Images mapping styling layout perfectly scaled!) */
+/* Updated Icon Classes (Official Images) */
 .gateway-icon { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); }
 
 /* --------------------------------- */
@@ -172,7 +172,6 @@
 .fs-header-controls .back-sq { width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 12px; border:none; color:#fff; display:flex; justify-content:center; align-items:center; font-size:18px; cursor:pointer;}
 .fs-logo-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 10px; margin-bottom: 20px;}
 
-/* Using Image Fit scale ensuring full size match for URL input */
 .fs-logo { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #ffffff; background: #fff; padding: 2px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); object-fit: cover;}
 
 .fs-timer { font-size: 52px; font-weight: 900; color: #ffffff; text-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 10px; line-height:1;}
@@ -220,10 +219,10 @@
             <div class="premium-balance-card">
                 <div class="pbc-icon-wrapper"><i class="fas fa-wallet"></i></div>
                 <p class="pbc-label">Total available balance</p>
-                <div class="pbc-balance">$0.00</div>
+                <div class="pbc-balance" id="fp-avail-balance">$0.00</div>
                 <div class="pbc-stats-grid">
-                    <div class="pbc-stat-box"><div class="pbc-stat-icon"><i class="fas fa-download"></i></div><div class="pbc-stat-info"><p>Recharged</p><h4>$0.00</h4></div></div>
-                    <div class="pbc-stat-box"><div class="pbc-stat-icon up"><i class="fas fa-arrow-up"></i></div><div class="pbc-stat-info"><p>Spent</p><h4>$0.00</h4></div></div>
+                    <div class="pbc-stat-box"><div class="pbc-stat-icon"><i class="fas fa-download"></i></div><div class="pbc-stat-info"><p>Recharged</p><h4 id="fp-recharged-balance">$0.00</h4></div></div>
+                    <div class="pbc-stat-box"><div class="pbc-stat-icon up"><i class="fas fa-arrow-up"></i></div><div class="pbc-stat-info"><p>Spent</p><h4 id="fp-spent-balance">$0.00</h4></div></div>
                 </div>
             </div>
 
@@ -279,7 +278,7 @@
         
         <div class="bs-label-row">
             <span>AMOUNT (USDT)</span>
-            <span class="right">Limits: ($1 - $1000)</span>
+            <span class="right" id="fp-limits-text">Limits: ($1 - $1000)</span>
         </div>
 
         <div class="amount-input-wrapper">
@@ -291,7 +290,6 @@
             $ 0 = ৳0
         </div>
         
-        <!-- Updated Official images for gateways seamlessly fitting previous logic structures flawlessly -->
         <div class="gateway-grid">
             <div class="gateway-btn" id="gw-bkash" onclick="selectSubGateway('bkash')">
                 <img src="https://www.image2url.com/r2/default/images/1788007876265-5d6da5f7-5ec6-4cdd-ad68-b90b87ebcb6e.jpg" alt="bKash Logo" class="gateway-icon">
@@ -313,7 +311,7 @@
     <!-- INITIALIZING & WARNING POPUPs -->
     <div class="overlay" id="overlay-pending">
         <div class="status-icon processing"><i class="fas fa-circle-notch spinner"></i></div>
-        <h2>Initializing...</h2>
+        <h2>Processing...</h2>
         <p>Generating a secure localized session.</p>
     </div>
 
@@ -379,9 +377,9 @@
     <!-- FINAL SUCCESS AND AUTO CANCEL MODALS -->
     <div class="overlay" id="overlay-success-final">
         <div class="status-icon success"><i class="fas fa-check"></i></div>
-        <h2>Request Captured</h2>
-        <p>Order has been submitted under a temporary pipeline securely.</p>
-        <button class="btn-primary" style="justify-content:center; width:100%; max-width:280px; margin-top:20px;" type="button" onclick="killEverything()">Okay, Back out</button>
+        <h2>Request Submitted</h2>
+        <p>Admin will verify and approve your request shortly. Balance will be updated automatically.</p>
+        <button class="btn-primary" style="justify-content:center; width:100%; max-width:280px; margin-top:20px;" type="button" onclick="killEverything()">Done</button>
     </div>
 
     <div class="overlay" id="overlay-timeout">
@@ -395,14 +393,59 @@
 
 <script>
 (function(){
-    // Exchange Base
-    const exRateBDT = 120;
-    
+    // Live Firebase Data Store
+    let fpSettings = { rate: 120, minUsd: 1, maxUsd: 1000, bkash: "017XXXXXXXX", nagad: "018XXXXXXXX", rocket: "019XXXXXXXX" };
+    let fpUserStats = { balance: 0, recharged: 0, spent: 0 };
+    let fpListenersActive = false;
+
     let activeAppMethod = null;
     let selectedSubGW = null; 
     let currentCalcBDTAmount = 0; 
-
     let timerInterval = null;
+
+    // Firebase Init Listener for real-time synchronization
+    function initFirebaseListeners() {
+        if(fpListenersActive) return;
+        if(typeof firebase === 'undefined' || !firebase.auth().currentUser) return;
+        
+        const db = firebase.database();
+        const user = firebase.auth().currentUser;
+        fpListenersActive = true;
+
+        // Sync Admin Settings instantly
+        db.ref('admin_control/flay_pay_settings').on('value', snap => {
+            const s = snap.val() || {};
+            fpSettings.rate = Number(s.rate) || 120;
+            fpSettings.minUsd = Number(s.minUsd) || 1;
+            fpSettings.maxUsd = Number(s.maxUsd) || 1000;
+            fpSettings.bkash = s.bkash || "017XXXXXXXX";
+            fpSettings.nagad = s.nagad || "018XXXXXXXX";
+            fpSettings.rocket = s.rocket || "019XXXXXXXX";
+
+            document.getElementById('fp-limits-text').innerText = `Limits: ($${fpSettings.minUsd} - $${fpSettings.maxUsd})`;
+            if (typeof window.calcBdtRate === 'function') window.calcBdtRate();
+        });
+
+        // Sync User Balance instantly
+        db.ref(`users/${user.uid}`).on('value', snap => {
+            const u = snap.val() || {};
+            fpUserStats.balance = Number(u.flayPayBalance) || 0;
+            fpUserStats.recharged = Number(u.flayPayRecharged) || 0;
+            fpUserStats.spent = Number(u.flayPaySpent) || 0;
+
+            document.getElementById('fp-avail-balance').innerText = `$${fpUserStats.balance.toFixed(2)}`;
+            document.getElementById('fp-recharged-balance').innerText = `$${fpUserStats.recharged.toFixed(2)}`;
+            document.getElementById('fp-spent-balance').innerText = `$${fpUserStats.spent.toFixed(2)}`;
+        });
+    }
+
+    // Checking globally injected firebase app
+    let checkFbInterval = setInterval(() => {
+        if(typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+            initFirebaseListeners();
+            clearInterval(checkFbInterval);
+        }
+    }, 300);
 
     // Secure bridge method intact
     window.goBackToSafety = function(e) {
@@ -467,7 +510,7 @@
             return;
         }
 
-        currentCalcBDTAmount = rawVal * exRateBDT;
+        currentCalcBDTAmount = rawVal * fpSettings.rate;
         disp.innerText = `$ ${rawVal} = ৳${currentCalcBDTAmount.toLocaleString()}`;
     };
 
@@ -482,7 +525,11 @@
     };
 
     window.proceedToInit = function() {
-        if(currentCalcBDTAmount <= 0) { alert('Please enter a valid amount over 0'); return; }
+        let rawVal = parseFloat(document.getElementById('sheetInputUsd').value);
+        if(isNaN(rawVal) || rawVal < fpSettings.minUsd || rawVal > fpSettings.maxUsd) { 
+            alert(`Please enter a valid amount between $${fpSettings.minUsd} and $${fpSettings.maxUsd}`); 
+            return; 
+        }
         if(!selectedSubGW) { alert('Please select a local wallet (bKash/Nagad/Rocket).'); return; }
 
         closeBottomSheet();
@@ -500,7 +547,6 @@
     
     const padTime = (num) => num.toString().padStart(2, '0');
 
-    // JS Image assignments substituting explicitly the official Images passed for Full Page view mapping perfectly!
     window.openFullScreenbKash = function() {
         document.getElementById('overlay-warning-ban').classList.remove('active');
         
@@ -513,18 +559,18 @@
             document.getElementById('fsPayPage').style.background = '#ed1c24'; 
             netLogoImg.src = 'https://www.image2url.com/r2/default/images/1788008020392-ac61a553-48a8-4ed3-a1da-5ad149aae2e7.jpg';
             proNameDisplay.innerText = 'Nagad Personal (নগদ পার্সোনাল)';
-            document.getElementById('finalGatewayNumber').innerText = '018XXXXXXXX';
+            document.getElementById('finalGatewayNumber').innerText = fpSettings.nagad;
         } else if (selectedSubGW === 'rocket') {
             document.getElementById('fsPayPage').style.background = '#8c3494';
             netLogoImg.src = 'https://www.image2url.com/r2/default/images/1788008076520-1f2a46ad-aa02-4da8-8958-25e0bb83a603.jpg';
             proNameDisplay.innerText = 'Rocket Personal (রকেট পার্সোনাল)';
-            document.getElementById('finalGatewayNumber').innerText = '019XXXXXXX9';
+            document.getElementById('finalGatewayNumber').innerText = fpSettings.rocket;
         } else {
-            // bKash Default layout mapping with Custom original URI securely 
+            // bKash
             document.getElementById('fsPayPage').style.background = '#db1962';
             netLogoImg.src = 'https://www.image2url.com/r2/default/images/1788007876265-5d6da5f7-5ec6-4cdd-ad68-b90b87ebcb6e.jpg';
             proNameDisplay.innerText = 'bKash Personal (বিকাশ পার্সোনাল)';
-            document.getElementById('finalGatewayNumber').innerText = '017XXXXXXXX';
+            document.getElementById('finalGatewayNumber').innerText = fpSettings.bkash;
         }
         
         document.getElementById('fsPayPage').classList.add('active');
@@ -556,19 +602,42 @@
         if (reason === 'timeout') document.getElementById('overlay-timeout').classList.add('active');
     };
 
+    // Firebase Submission Method 
     window.submitFinalPaymentRequest = function(){
         const txField = document.getElementById('txIDField').value.trim();
         const phnField = document.getElementById('phoneField').value.trim();
         if(!txField || !phnField) { alert('প্রয়োজনীয় তথ্যগুলো পূরণ করুন (Transaction ID & Sender Number)।'); return;}
         
+        const user = typeof firebase !== 'undefined' ? firebase.auth().currentUser : null;
+        if(!user) { alert("You must be logged in to submit a request!"); return; }
+
         clearInterval(timerInterval);
         document.getElementById('fsPayPage').classList.remove('active');
         document.getElementById('overlay-pending').classList.add('active');
         
-        setTimeout(() => {
+        const reqRef = firebase.database().ref('flay_pay_requests').push();
+        reqRef.set({
+            userId: user.uid,
+            amountUsd: parseFloat(document.getElementById('sheetInputUsd').value),
+            amountBdt: currentCalcBDTAmount,
+            method: selectedSubGW,
+            txId: txField,
+            senderPhone: phnField,
+            status: 'pending',
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
             document.getElementById('overlay-pending').classList.remove('active');
             document.getElementById('overlay-success-final').classList.add('active');
-        }, 1800);
+            
+            document.getElementById('txIDField').value = '';
+            document.getElementById('phoneField').value = '';
+            document.getElementById('sheetInputUsd').value = '';
+            window.calcBdtRate();
+            
+        }).catch(err => {
+            alert("Submission failed: " + err.message);
+            document.getElementById('overlay-pending').classList.remove('active');
+        });
     };
 
     window.killEverything = function(){

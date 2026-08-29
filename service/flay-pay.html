@@ -116,6 +116,113 @@
 .flay-pay-wrapper .page-header h1 { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
 .flay-pay-wrapper .page-header p { color: var(--fp-muted); font-size: 14px; font-weight: 500; }
 
+/* ---------------- PREMIUM BALANCE CARD SCOPE ---------------- */
+.flay-pay-wrapper .premium-balance-card {
+    background: #111116; 
+    background: linear-gradient(135deg, #1a171d, #0b0a11);
+    border: 1px solid rgba(255, 46, 85, 0.08); 
+    border-radius: 20px;
+    padding: 28px 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.05);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Background floating magical light glow effect */
+.flay-pay-wrapper .premium-balance-card::before, 
+.flay-pay-wrapper .premium-balance-card::after {
+    content: '';
+    position: absolute;
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    background: rgba(255, 46, 85, 0.15);
+    filter: blur(50px);
+    z-index: 0;
+    pointer-events: none;
+}
+.flay-pay-wrapper .premium-balance-card::before {
+    top: -40px;
+    left: 15%;
+}
+.flay-pay-wrapper .premium-balance-card::after {
+    bottom: -30px;
+    right: -20px;
+    background: rgba(140, 54, 140, 0.12);
+}
+
+.flay-pay-wrapper .premium-balance-card * { z-index: 1; position: relative; }
+
+.flay-pay-wrapper .pbc-icon-wrapper {
+    width: 60px; height: 60px;
+    margin: 0 auto 16px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(255,46,85,0.18), rgba(255,46,85,0.02));
+    border: 1px solid rgba(255,46,85,0.25);
+    box-shadow: inset 0 2px 4px rgba(255,255,255,0.06);
+    display: flex; justify-content: center; align-items: center;
+    font-size: 26px;
+    color: #ff2e55;
+}
+.flay-pay-wrapper .pbc-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #8c8c9a; 
+    margin-bottom: 6px;
+    text-align: center;
+}
+.flay-pay-wrapper .pbc-balance {
+    font-size: 46px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 28px;
+    text-align: center;
+    line-height: 1;
+}
+.flay-pay-wrapper .pbc-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.flay-pay-wrapper .pbc-stat-box {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 16px;
+    padding: 16px 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: 0.3s ease;
+}
+.flay-pay-wrapper .pbc-stat-box:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+.flay-pay-wrapper .pbc-stat-icon {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,46,85,0.4);
+    display: flex; align-items: center; justify-content: center;
+    color: #ff2e55;
+    font-size: 14px;
+    background: rgba(255, 46, 85, 0.05);
+}
+.flay-pay-wrapper .pbc-stat-icon.up { transform: rotate(45deg); }
+
+.flay-pay-wrapper .pbc-stat-info p {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #8c8c9a;
+    margin: 0 0 4px 0;
+}
+.flay-pay-wrapper .pbc-stat-info h4 {
+    font-size: 16px;
+    font-weight: 800;
+    margin: 0;
+    color: #ffffff;
+}
+/* ----------------------------------------------------------- */
+
 /* Payment Methods */
 .flay-pay-wrapper .section-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;}
 .flay-pay-wrapper .section-subtitle { color: var(--fp-muted); font-size: 13px; font-weight: 500; display: block; margin-top: -12px; margin-bottom: 16px;}
@@ -391,6 +498,38 @@
         </header>
 
         <div class="content">
+
+            <!-- Premium Balance Card (Your requested card from Image) -->
+            <div class="premium-balance-card">
+                <div class="pbc-icon-wrapper">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <p class="pbc-label">Total available balance</p>
+                <div class="pbc-balance">$0.00</div>
+                
+                <div class="pbc-stats-grid">
+                    <div class="pbc-stat-box">
+                        <div class="pbc-stat-icon">
+                            <i class="fas fa-download"></i>
+                        </div>
+                        <div class="pbc-stat-info">
+                            <p>Recharged</p>
+                            <h4>$0.00</h4>
+                        </div>
+                    </div>
+                    <div class="pbc-stat-box">
+                        <div class="pbc-stat-icon up">
+                            <i class="fas fa-arrow-up"></i>
+                        </div>
+                        <div class="pbc-stat-info">
+                            <p>Spent</p>
+                            <h4>$0.00</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page header -->
             <div class="page-header">
                 <h1>Flay Pay</h1>
                 <p>Choose your preferred payment method</p>

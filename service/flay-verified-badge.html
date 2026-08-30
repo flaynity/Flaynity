@@ -13,11 +13,10 @@
         })();
     </script>
 
-    <!-- Firebase SDK (Required for Realtime Database Fetching) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
-    <!-- Your existing Firebase Config file -->
     <script src="../js/firebase-config.js"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -78,12 +77,14 @@
         .hero-title { font-size: 24px; font-weight: 900; line-height: 1.2; margin-bottom: 12px; }
         .hero-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
         .hero-icon-container { width: 80px; height: 80px; background: rgba(51, 144, 236, 0.1); border-radius: 24px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; border: 1px solid rgba(51, 144, 236, 0.2); }
+        
         .verified-svg { width: 1.2em; height: 1.2em; flex-shrink: 0; display: inline-block; }
         .hero-icon-container .verified-svg { width: 45px; height: 45px; }
 
         .preview-card { border: 1px solid rgba(var(--flay-pink-rgb), 0.3); background: var(--mock-bg); box-shadow: 0 4px 24px rgba(var(--flay-pink-rgb), 0.08); border-radius: var(--radius-large); padding: 20px; }
         .profile-mock { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); }
         .avatar { width: 56px; height: 56px; border-radius: 50%; background-color: var(--border-color); background-position: center; background-size: cover; border: 2px solid var(--card-bg); box-shadow: 0 0 0 2px var(--telegram-blue); transition: background-image 0.3s ease; }
+        
         .profile-info h3 { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
         .profile-info p { color: var(--text-secondary); font-size: 14px; font-weight: 500; }
         .preview-text { font-size: 13px; color: var(--text-secondary); line-height: 1.5; display: flex; align-items: flex-start; gap: 10px; }
@@ -130,6 +131,20 @@
         .btn-primary:active { transform: scale(0.98); }
         .secure-text { margin-top: 12px; font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
         .secure-text i { font-size: 10px; }
+        
+        /* PREMIUM ALERT MODAL CSS */
+        .premium-alert-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 99999; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; padding: 20px; }
+        .premium-alert-overlay.active { opacity: 1; pointer-events: all; }
+        .premium-alert-card { background: var(--card-bg); border-radius: 24px; padding: 30px 24px; width: 100%; max-width: 320px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--border-color); transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .premium-alert-overlay.active .premium-alert-card { transform: scale(1); }
+        .premium-alert-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 16px; }
+        .premium-alert-icon.error { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .premium-alert-icon.success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+        .premium-alert-icon.warning { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+        .premium-alert-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; color: var(--text-primary); }
+        .premium-alert-msg { font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 24px; }
+        .premium-alert-btn { background: var(--text-primary); color: var(--card-bg); border: none; padding: 14px; width: 100%; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
+        .premium-alert-btn:active { transform: scale(0.96); }
 
     </style>
 </head>
@@ -144,6 +159,16 @@
             </g>
         </defs>
     </svg>
+
+    <!-- Premium Custom Alert -->
+    <div class="premium-alert-overlay" id="fv-premium-alert">
+        <div class="premium-alert-card">
+            <div class="premium-alert-icon" id="fv-alert-icon"></div>
+            <h3 class="premium-alert-title" id="fv-alert-title">Title</h3>
+            <p class="premium-alert-msg" id="fv-alert-msg">Message goes here</p>
+            <button class="premium-alert-btn" onclick="closePremiumAlert()">OK</button>
+        </div>
+    </div>
 
     <div class="app-container">
         
@@ -177,9 +202,9 @@
                 <div class="profile-mock">
                     <div class="avatar" id="db-channel-avatar"></div>
                     <div class="profile-info">
-                        <h3 id="db-channel-name" class="skeleton-text">
-                            Loading...
-                            <svg viewBox="0 0 24 24" class="verified-svg" style="width: 18px; height: 18px; opacity: 0;" id="db-channel-badge">
+                        <h3 class="skeleton-text" id="db-channel-name-container">
+                            <span id="db-channel-name">Loading...</span>
+                            <svg viewBox="0 0 24 24" class="verified-svg" style="width: 18px; height: 18px; display: none;" id="db-channel-badge">
                                 <use href="#icon-verified-telegram"></use>
                             </svg>
                         </h3>
@@ -193,7 +218,7 @@
             </div>
         </section>
 
-        <!-- Active Plan Status Section (Hidden by Default) -->
+        <!-- Active Plan Status Section -->
         <section class="section animate-fade-up" id="active-plan-section" style="display: none; animation-delay: 0.2s;">
             <div class="card" style="border-color: var(--flay-pink); background: rgba(var(--flay-pink-rgb), 0.03);">
                 <h3 style="color: var(--flay-pink); font-size: 18px; margin-bottom: 8px;"><i class="fa-solid fa-circle-check"></i> Verified Badge Active</h3>
@@ -282,7 +307,7 @@
             </div>
         </section>
 
-        <div class="bottom-cta animate-fade-up" style="animation-delay: 0.7s;">
+        <div class="bottom-cta animate-fade-up" style="animation-delay: 0.7s;" id="bottom-cta-section">
             <button class="btn-primary" onclick="proceedToPay(event)">
                 Continue to Flay Pay <i class="fa-solid fa-arrow-right"></i>
             </button>
@@ -301,6 +326,28 @@
         let selectedPlanAmount = 3;
         let selectedPlanType = 'monthly';
 
+        // Custom Premium Alert Function
+        function showPremiumAlert(title, msg, type = 'error') {
+            const overlay = document.getElementById('fv-premium-alert');
+            const iconEl = document.getElementById('fv-alert-icon');
+            const titleEl = document.getElementById('fv-alert-title');
+            const msgEl = document.getElementById('fv-alert-msg');
+            
+            titleEl.innerText = title;
+            msgEl.innerHTML = msg.replace(/\n/g, '<br>');
+            
+            iconEl.className = 'premium-alert-icon ' + type;
+            if (type === 'success') iconEl.innerHTML = '<i class="fas fa-check"></i>';
+            else if (type === 'warning') iconEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+            else iconEl.innerHTML = '<i class="fas fa-times"></i>';
+            
+            overlay.classList.add('active');
+        }
+
+        function closePremiumAlert() {
+            document.getElementById('fv-premium-alert').classList.remove('active');
+        }
+
         if (typeof auth !== 'undefined' && typeof db !== 'undefined') {
             auth.onAuthStateChanged((user) => {
                 if (user) {
@@ -312,15 +359,15 @@
         }
 
         function clearChannelPreview() {
+            const nameContainer = document.getElementById('db-channel-name-container');
             const nameEl = document.getElementById('db-channel-name');
             const handleEl = document.getElementById('db-channel-handle');
             const avatarEl = document.getElementById('db-channel-avatar');
             const badgeEl = document.getElementById('db-channel-badge');
 
-            if (nameEl) {
-                if (nameEl.firstChild && nameEl.firstChild.nodeType === Node.TEXT_NODE) nameEl.firstChild.nodeValue = '';
-                nameEl.classList.remove('skeleton-text');
-            }
+            if (nameEl) nameEl.innerText = '';
+            if (nameContainer) nameContainer.classList.remove('skeleton-text');
+            
             if (handleEl) {
                 handleEl.textContent = '';
                 handleEl.classList.remove('skeleton-text');
@@ -329,7 +376,7 @@
                 avatarEl.style.backgroundImage = 'none';
                 avatarEl.style.backgroundColor = 'var(--border-color)';
             }
-            if (badgeEl) badgeEl.style.opacity = '0';
+            if (badgeEl) badgeEl.style.display = 'none';
         }
 
         function fetchChannelData(uid) {
@@ -342,21 +389,18 @@
                 const data = snapshot.val();
                 if (!data) { clearChannelPreview(); return; }
 
+                const nameContainer = document.getElementById('db-channel-name-container');
                 const nameEl = document.getElementById('db-channel-name');
                 const handleEl = document.getElementById('db-channel-handle');
                 const avatarEl = document.getElementById('db-channel-avatar');
                 const badgeEl = document.getElementById('db-channel-badge');
 
-                const channelName = typeof data.channelName === 'string' ? data.channelName.trim() : '';
+                const channelName = typeof data.channelName === 'string' ? data.channelName.trim() : 'Unnamed';
                 const channelHandle = typeof data.handle === 'string' ? data.handle.trim() : '';
                 const channelImage = typeof data.avatarUrl === 'string' ? data.avatarUrl.trim() : '';
 
-                if (nameEl) {
-                    if (nameEl.firstChild && nameEl.firstChild.nodeType === Node.TEXT_NODE) nameEl.firstChild.nodeValue = channelName;
-                    else nameEl.insertBefore(document.createTextNode(channelName), nameEl.firstChild || null);
-                    nameEl.classList.remove('skeleton-text');
-                    if (badgeEl && badgeEl.parentNode !== nameEl) nameEl.appendChild(badgeEl);
-                }
+                if (nameEl) nameEl.innerText = channelName;
+                if (nameContainer) nameContainer.classList.remove('skeleton-text');
 
                 if (handleEl) {
                     handleEl.textContent = channelHandle ? (channelHandle.startsWith('@') ? channelHandle : '@' + channelHandle) : '';
@@ -375,18 +419,18 @@
 
                 // Check Subscription Activity
                 if (data.verifiedUntil && data.verifiedUntil > Date.now()) {
-                    if (badgeEl) badgeEl.style.opacity = '1';
+                    if (badgeEl) badgeEl.style.display = 'inline-block';
                     
                     document.getElementById('plans-section').style.display = 'none';
-                    document.querySelector('.bottom-cta').style.display = 'none';
+                    document.getElementById('bottom-cta-section').style.display = 'none';
                     document.getElementById('active-plan-section').style.display = 'block';
                     
                     startCountdown(data.verifiedUntil);
                 } else {
-                    if (badgeEl) badgeEl.style.opacity = '0';
+                    if (badgeEl) badgeEl.style.display = 'none';
                     
                     document.getElementById('plans-section').style.display = 'block';
-                    document.querySelector('.bottom-cta').style.display = 'flex';
+                    document.getElementById('bottom-cta-section').style.display = 'flex';
                     document.getElementById('active-plan-section').style.display = 'none';
                 }
             });

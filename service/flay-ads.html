@@ -467,6 +467,16 @@
 
     document.documentElement.setAttribute('data-theme', localStorage.getItem('flaynity-theme-pref') || 'light');
 
+    // FIX: ADDED MISSING ESCAPEHTML FUNCTION SO UI CAN RENDER PROPERLY
+    function escapeHtml(unsafe) {
+        return (unsafe || '').toString()
+             .replace(/&/g, "&amp;")
+             .replace(/</g, "&lt;")
+             .replace(/>/g, "&gt;")
+             .replace(/"/g, "&quot;")
+             .replace(/'/g, "&#039;");
+    }
+
     auth.onAuthStateChanged(function(u) {
         currentUser = u;
         if (!u) {
@@ -515,7 +525,7 @@
             currentStep = 1;
             campaignData = { placement: '', placementName: '', creative: {}, targeting: {}, budget: {} };
             document.querySelectorAll('.placement-card').forEach(el => el.classList.remove('active'));
-            document.getElementById('btn-next').disabled = false; // Fix: Enable "Continue" for next ad
+            document.getElementById('btn-next').disabled = false; // FIX: Ensure button isn't stuck disabled
             updateStepUI();
         } else { 
             loadDashboardData(); 

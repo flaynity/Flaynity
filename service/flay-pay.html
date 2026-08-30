@@ -47,12 +47,17 @@
 .flay-pay-wrapper .page-header p { color: var(--fp-muted); font-size: 13px; font-weight: 500; }
 
 .flay-pay-wrapper .premium-balance-card { background: var(--pbc-bg-grad); border: 1px solid var(--pbc-border); border-radius: 20px; padding: 20px; margin-bottom: 24px; box-shadow: var(--fp-shadow); color: var(--pbc-text); position: relative; overflow: hidden; }
+.flay-pay-wrapper .premium-balance-card::before, .flay-pay-wrapper .premium-balance-card::after { content: ''; position: absolute; width: 130px; height: 130px; border-radius: 50%; filter: blur(46px); z-index: 0; pointer-events: none; }
+.flay-pay-wrapper .premium-balance-card::before { background: var(--pbc-icon-glow); top: -40px; left: 10%; }
+.flay-pay-wrapper .premium-balance-card::after { background: rgba(140, 54, 140, 0.08); bottom: -30px; right: -15px; }
+.flay-pay-wrapper .premium-balance-card * { z-index: 1; position: relative; }
 .flay-pay-wrapper .pbc-icon-wrapper { width: 48px; height: 48px; margin: 0 auto 12px; border-radius: 14px; background: linear-gradient(135deg, rgba(255,46,85,0.15), rgba(255,46,85,0.03)); border: 1px solid rgba(255,46,85,0.2); display: flex; justify-content: center; align-items: center; font-size: 20px; color: var(--fp-accent); z-index:1; position:relative; }
 .flay-pay-wrapper .pbc-label { font-size: 13px; font-weight: 600; color: var(--pbc-sub-text); margin-bottom: 4px; text-align: center; z-index:1; position:relative; }
 .flay-pay-wrapper .pbc-balance { font-size: 40px; font-weight: 800; letter-spacing: -1px; margin-bottom: 22px; text-align: center; line-height: 1; z-index:1; position:relative; }
 .flay-pay-wrapper .pbc-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; z-index:1; position:relative;}
 .flay-pay-wrapper .pbc-stat-box { background: var(--pbc-box-bg); border: 1px solid var(--pbc-box-border); border-radius: 14px; padding: 14px 12px; display: flex; align-items: center; gap: 12px; }
 .flay-pay-wrapper .pbc-stat-icon { width: 32px; height: 32px; border-radius: 50%; border: 1.2px solid rgba(255,46,85,0.3); display: flex; align-items: center; justify-content: center; color: var(--fp-accent); font-size: 12px; background: rgba(255, 46, 85, 0.05); }
+.flay-pay-wrapper .pbc-stat-icon.up { transform: rotate(45deg); }
 .flay-pay-wrapper .pbc-stat-info p { font-size: 11px; font-weight: 600; color: var(--pbc-sub-text); margin: 0 0 2px 0; }
 .flay-pay-wrapper .pbc-stat-info h4 { font-size: 15px; font-weight: 800; margin: 0; color: var(--pbc-text); }
 
@@ -126,7 +131,7 @@
 .flay-pay-wrapper .btn-success-done { background: var(--fp-text); color: var(--fp-surface); border: none; padding: 14px; width: 100%; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
 .flay-pay-wrapper .btn-success-done:active { transform: scale(0.96); }
 
-/* STATUS ICONS (Processing etc) */
+/* STATUS ICONS */
 .flay-pay-wrapper .status-icon { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; margin-bottom: 20px; }
 .flay-pay-wrapper .status-icon.processing { background: var(--fp-soft); color: var(--fp-accent); }
 .flay-pay-wrapper .spinner { animation: spinFP 1s linear infinite; }
@@ -277,7 +282,7 @@
 
         <div class="amount-input-wrapper">
             <span class="prefix-icon">$</span>
-            <input type="number" class="bs-input-amount" id="sheetInputUsd" placeholder="0.00" onkeyup="calcBdtRate()">
+            <input type="number" class="bs-input-amount" id="sheetInputUsd" placeholder="0.00" oninput="calcBdtRate()" onkeyup="calcBdtRate()">
         </div>
         
         <div class="exchange-disp" id="exchangeDisp">
@@ -302,7 +307,7 @@
         <button class="btn-primary" style="margin-top:10px" onclick="proceedToInit()">Continue</button>
     </div>
 
-    <!-- INITIALIZING & WARNING POPUPs -->
+    <!-- INITIALIZING OVERLAY -->
     <div class="overlay" id="overlay-pending">
         <div class="status-icon processing"><i class="fas fa-circle-notch spinner"></i></div>
         <h2>Processing...</h2>
@@ -418,12 +423,13 @@
     let pendingOrder = null;
     let pendingOrderLoopInterval = null;
 
-    // Premium Custom Alert Function
-    window.showPremiumAlert = function(title, msg, type = 'error') {
+    // Premium Custom Alert Function with Callbacks (Bugs Fixed)
+    window.showPremiumAlert = function(title, msg, type = 'error', callback = null) {
         const overlay = document.getElementById('fp-premium-alert');
         const iconEl = document.getElementById('fp-alert-icon');
         const titleEl = document.getElementById('fp-alert-title');
         const msgEl = document.getElementById('fp-alert-msg');
+        const btnEl = overlay.querySelector('.premium-alert-btn');
         
         titleEl.innerText = title;
         msgEl.innerHTML = msg.replace(/\n/g, '<br>');
@@ -432,6 +438,14 @@
         if (type === 'success') iconEl.innerHTML = '<i class="fas fa-check"></i>';
         else if (type === 'warning') iconEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
         else iconEl.innerHTML = '<i class="fas fa-times"></i>';
+        
+        // Proper callback attachment without ghost events
+        btnEl.onclick = function() {
+            closePremiumAlert();
+            if(callback && typeof callback === 'function') {
+                setTimeout(() => callback(), 150); // Small delay for smooth closing transition
+            }
+        };
         
         overlay.classList.add('active');
     };
@@ -474,7 +488,7 @@
         });
     }
 
-    // Checking for Pending Orders continuously (Fix for returning after cancel)
+    // Checking for Pending Orders (Fix for SPA cache when closed & reopened)
     function checkPendingOrderLoop() {
         const orderDataStr = sessionStorage.getItem('flay_pending_checkout');
         const overlay = document.getElementById('checkout-popup-overlay');
@@ -515,7 +529,11 @@
         if(!user) return;
         
         if(fpUserStats.balance < pendingOrder.amount) {
-            showPremiumAlert("Insufficient Balance", `You need $${pendingOrder.amount} USDT, but you have $${fpUserStats.balance.toFixed(2)} USDT.\n\nPlease recharge your Flay Pay account to proceed.`, "error");
+            showPremiumAlert(
+                "Insufficient Balance", 
+                `You need $${pendingOrder.amount} USDT, but you have $${fpUserStats.balance.toFixed(2)} USDT.\n\nPlease recharge your Flay Pay account to proceed.`, 
+                "error"
+            );
             cancelCheckout();
             return;
         }
@@ -574,7 +592,9 @@
 
     window.copyDynamicValue = function(elementId) {
         const text = document.getElementById(elementId).innerText;
-        navigator.clipboard.writeText(text).then(() => {});
+        navigator.clipboard.writeText(text).then(() => {
+            showPremiumAlert("Copied!", "Text successfully copied to clipboard.", "success");
+        });
     }
 
     window.selectAppMethod = function(methodID, label) {
@@ -640,6 +660,7 @@
         });
     };
 
+    // Bug Fixed Here: Callback integrated to safely open the full-screen view
     window.proceedToInit = function() {
         let rawVal = parseFloat(document.getElementById('sheetInputUsd').value);
         if(isNaN(rawVal) || rawVal < fpSettings.minUsd || rawVal > fpSettings.maxUsd) { 
@@ -651,6 +672,8 @@
             return; 
         }
 
+        currentCalcBDTAmount = rawVal * fpSettings.rate; // explicitly set
+
         closeBottomSheet();
 
         document.getElementById('overlay-pending').classList.add('active');
@@ -660,15 +683,11 @@
             showPremiumAlert(
                 "সতর্কতা!",
                 "উলটা পালটা Payment Submit করলে Account Ban করা হবে।",
-                "warning"
+                "warning",
+                function() {
+                    openFullScreenbKash(); // Executed seamlessly after 'OK' click
+                }
             );
-            
-            // Override OK button logic for this specific alert to jump to Full Screen
-            document.querySelector('.premium-alert-btn').onclick = function() {
-                closePremiumAlert();
-                document.querySelector('.premium-alert-btn').onclick = closePremiumAlert; // Reset
-                openFullScreenbKash();
-            };
 
         }, 1200); 
     };

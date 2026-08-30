@@ -514,10 +514,12 @@
         }
     }
 
+    // Cancel Button logic — now redirects back directly
     window.fpCancelCheckout = function() {
         sessionStorage.removeItem('flay_pending_checkout');
         document.getElementById('fp-checkout-popup-overlay').classList.remove('active');
         pendingOrder = null;
+        fpGoBackToSafety(); // ADDED: Directly bring back to app state / Flay Ads 
     };
 
     window.fpConfirmCheckout = function() {
@@ -529,9 +531,11 @@
             showFlayPayAlert(
                 "Insufficient Balance", 
                 `You need $${pendingOrder.amount} USDT, but you have $${fpUserStats.balance.toFixed(2)} USDT.\n\nPlease recharge your Flay Pay account to proceed.`, 
-                "error"
+                "error",
+                function() {
+                    fpCancelCheckout(); // ADDED: Directs back after pressing OK
+                }
             );
-            fpCancelCheckout();
             return;
         }
         
@@ -543,7 +547,7 @@
         updates[`users/${user.uid}/flayPayBalance`] = newBalance;
         updates[`users/${user.uid}/flayPaySpent`] = newSpent;
 
-        // ** ADDED: FLAY ADS PAYMENT INTEGRATION **
+        // ** FLAY ADS PAYMENT LOGIC **
         if (pendingOrder.type === 'flayAds') {
             updates[`flayAds/campaigns/${pendingOrder.campaignId}/paymentStatus`] = 'successful';
             updates[`flayAds/campaigns/${pendingOrder.campaignId}/campaignStatus`] = 'Under Review';
@@ -554,13 +558,15 @@
                 document.getElementById('fp-checkout-popup-overlay').classList.remove('active');
                 pendingOrder = null;
                 
-                document.getElementById('ps-desc-dynamic').innerText = "Your campaign payment was successful and is now under review.";
-                document.getElementById('fp-plan-success-modal').classList.add('active');
+                // NO SUCCESS MODAL FOR FLAY ADS — DIRECT RETURN
+                fpGoBackToSafety(); 
+                
             }).catch(err => {
                 showFlayPayAlert("Error", err.message, "error");
             });
-        } else {
-            // ** ORIGINAL VERIFIED BADGE PAYMENT LOGIC **
+        } 
+        else {
+            // ** ORIGINAL VERIFIED BADGE LOGIC **
             let addMs = 0;
             if (pendingOrder.planType === 'monthly') addMs = 30 * 24 * 60 * 60 * 1000;
             else if (pendingOrder.planType === 'yearly') addMs = 365 * 24 * 60 * 60 * 1000;

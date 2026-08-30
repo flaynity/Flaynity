@@ -13,55 +13,25 @@
     })();
 </script>
 <style>
-/* --------------------------------- */
 /* BASIC APP CSS */
-/* --------------------------------- */
 .flay-pay-wrapper {
-    --fp-bg: #fdfdfd;
-    --fp-surface: #fff;
-    --fp-surface-alt: #f4f5f7;
-    --fp-text: #000;
-    --fp-muted: #666;
-    --fp-border: #e5e5e5;
-    --fp-accent: #ff2e55;
-    --fp-soft: rgba(255,46,85,.10);
-    --fp-shadow: 0 12px 32px rgba(0,0,0,.06);
-    --fp-success: #00a844;
-    --fp-warning: #d98200;
-    --fp-danger: #d7193f;
-    --fp-overlay-bg: rgba(255, 255, 255, 0.95); 
-
-    --pbc-bg-grad: linear-gradient(135deg, #ffffff, #f7f8f9);
-    --pbc-text: #0d0d12;
-    --pbc-sub-text: #5f6368;
-    --pbc-border: #efefef;
-    --pbc-box-bg: rgba(0,0,0,0.03);
-    --pbc-box-border: rgba(0,0,0,0.04);
-    --pbc-icon-glow: rgba(255, 46, 85, 0.1);
-    
-    background: var(--fp-bg);
-    color: var(--fp-text);
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    line-height: 1.5;
-    width: 100%;
-    min-height: 100vh;
+    --fp-bg: #fdfdfd; --fp-surface: #fff; --fp-surface-alt: #f4f5f7; --fp-text: #000;
+    --fp-muted: #666; --fp-border: #e5e5e5; --fp-accent: #ff2e55; --fp-soft: rgba(255,46,85,.10);
+    --fp-shadow: 0 12px 32px rgba(0,0,0,.06); --fp-success: #00a844; --fp-warning: #d98200;
+    --fp-danger: #d7193f; --fp-overlay-bg: rgba(255, 255, 255, 0.95); 
+    --pbc-bg-grad: linear-gradient(135deg, #ffffff, #f7f8f9); --pbc-text: #0d0d12;
+    --pbc-sub-text: #5f6368; --pbc-border: #efefef; --pbc-box-bg: rgba(0,0,0,0.03);
+    --pbc-box-border: rgba(0,0,0,0.04); --pbc-icon-glow: rgba(255, 46, 85, 0.1);
+    background: var(--fp-bg); color: var(--fp-text); font-family: 'Plus Jakarta Sans', sans-serif;
+    line-height: 1.5; width: 100%; min-height: 100vh;
 }
 [data-theme="dark"] .flay-pay-wrapper {
-    --fp-bg: #000;
-    --fp-surface: #0a0a0a;
-    --fp-surface-alt: #1a1a1a;
-    --fp-text: #fff;
-    --fp-muted: #999;
-    --fp-border: #222;
-    --fp-soft: rgba(255,46,85,.14);
-    --fp-shadow: 0 14px 40px rgba(0,0,0,.35);
-    --fp-overlay-bg: rgba(0, 0, 0, 0.95); 
-    --pbc-bg-grad: linear-gradient(135deg, #18151c, #0d0b13);
-    --pbc-text: #ffffff;
-    --pbc-sub-text: #8c8c9a;
-    --pbc-border: rgba(255, 46, 85, 0.08);
-    --pbc-box-bg: rgba(255, 255, 255, 0.03);
-    --pbc-box-border: rgba(255, 255, 255, 0.04);
+    --fp-bg: #000; --fp-surface: #121212; --fp-surface-alt: #1a1a1a; --fp-text: #fff;
+    --fp-muted: #9BA1B0; --fp-border: #222; --fp-soft: rgba(255,46,85,.14);
+    --fp-shadow: 0 14px 40px rgba(0,0,0,.35); --fp-overlay-bg: rgba(0, 0, 0, 0.95); 
+    --pbc-bg-grad: linear-gradient(135deg, #18151c, #0d0b13); --pbc-text: #ffffff;
+    --pbc-sub-text: #8c8c9a; --pbc-border: rgba(255, 46, 85, 0.08);
+    --pbc-box-bg: rgba(255, 255, 255, 0.03); --pbc-box-border: rgba(255, 255, 255, 0.04);
     --pbc-icon-glow: rgba(255, 46, 85, 0.12);
 }
 .flay-pay-wrapper * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
@@ -77,17 +47,12 @@
 .flay-pay-wrapper .page-header p { color: var(--fp-muted); font-size: 13px; font-weight: 500; }
 
 .flay-pay-wrapper .premium-balance-card { background: var(--pbc-bg-grad); border: 1px solid var(--pbc-border); border-radius: 20px; padding: 20px; margin-bottom: 24px; box-shadow: var(--fp-shadow); color: var(--pbc-text); position: relative; overflow: hidden; }
-.flay-pay-wrapper .premium-balance-card::before, .flay-pay-wrapper .premium-balance-card::after { content: ''; position: absolute; width: 130px; height: 130px; border-radius: 50%; filter: blur(46px); z-index: 0; pointer-events: none; }
-.flay-pay-wrapper .premium-balance-card::before { background: var(--pbc-icon-glow); top: -40px; left: 10%; }
-.flay-pay-wrapper .premium-balance-card::after { background: rgba(140, 54, 140, 0.08); bottom: -30px; right: -15px; }
-.flay-pay-wrapper .premium-balance-card * { z-index: 1; position: relative; }
-.flay-pay-wrapper .pbc-icon-wrapper { width: 48px; height: 48px; margin: 0 auto 12px; border-radius: 14px; background: linear-gradient(135deg, rgba(255,46,85,0.15), rgba(255,46,85,0.03)); border: 1px solid rgba(255,46,85,0.2); display: flex; justify-content: center; align-items: center; font-size: 20px; color: var(--fp-accent); }
-.flay-pay-wrapper .pbc-label { font-size: 13px; font-weight: 600; color: var(--pbc-sub-text); margin-bottom: 4px; text-align: center; }
-.flay-pay-wrapper .pbc-balance { font-size: 40px; font-weight: 800; letter-spacing: -1px; margin-bottom: 22px; text-align: center; line-height: 1; }
-.flay-pay-wrapper .pbc-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.flay-pay-wrapper .pbc-icon-wrapper { width: 48px; height: 48px; margin: 0 auto 12px; border-radius: 14px; background: linear-gradient(135deg, rgba(255,46,85,0.15), rgba(255,46,85,0.03)); border: 1px solid rgba(255,46,85,0.2); display: flex; justify-content: center; align-items: center; font-size: 20px; color: var(--fp-accent); z-index:1; position:relative; }
+.flay-pay-wrapper .pbc-label { font-size: 13px; font-weight: 600; color: var(--pbc-sub-text); margin-bottom: 4px; text-align: center; z-index:1; position:relative; }
+.flay-pay-wrapper .pbc-balance { font-size: 40px; font-weight: 800; letter-spacing: -1px; margin-bottom: 22px; text-align: center; line-height: 1; z-index:1; position:relative; }
+.flay-pay-wrapper .pbc-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; z-index:1; position:relative;}
 .flay-pay-wrapper .pbc-stat-box { background: var(--pbc-box-bg); border: 1px solid var(--pbc-box-border); border-radius: 14px; padding: 14px 12px; display: flex; align-items: center; gap: 12px; }
 .flay-pay-wrapper .pbc-stat-icon { width: 32px; height: 32px; border-radius: 50%; border: 1.2px solid rgba(255,46,85,0.3); display: flex; align-items: center; justify-content: center; color: var(--fp-accent); font-size: 12px; background: rgba(255, 46, 85, 0.05); }
-.flay-pay-wrapper .pbc-stat-icon.up { transform: rotate(45deg); }
 .flay-pay-wrapper .pbc-stat-info p { font-size: 11px; font-weight: 600; color: var(--pbc-sub-text); margin: 0 0 2px 0; }
 .flay-pay-wrapper .pbc-stat-info h4 { font-size: 15px; font-weight: 800; margin: 0; color: var(--pbc-text); }
 
@@ -107,44 +72,65 @@
 .flay-pay-wrapper .security-header { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; margin-bottom: 6px; }
 .flay-pay-wrapper .security-header i { color: var(--fp-success); }
 .flay-pay-wrapper .security-card p { font-size: 11.5px; color: var(--fp-muted); margin-bottom: 10px; line-height:1.4;}
-.flay-pay-wrapper .security-badges { display: flex; gap: 12px; font-size: 11px; color: var(--fp-muted); font-weight: 600; }
-.flay-pay-wrapper .security-badges i { color: var(--fp-success); }
 
 /* FOOTER BUTTON */
 .flay-pay-wrapper .sticky-footer { position: fixed; bottom: 0; left: 0; right: 0; margin: 0 auto; width: 100%; max-width: 600px; background: var(--fp-bg); border-top: 1px solid var(--fp-border); padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 100; }
-@media (min-width: 600px) { .flay-pay-wrapper .sticky-footer { border-radius: 20px 20px 0 0; border-left: 1px solid var(--fp-border); border-right: 1px solid var(--fp-border); } }
 .flay-pay-wrapper .btn-primary { background: var(--fp-accent); color: #fff; border: none; border-radius: 14px; height: 50px; padding: 0 20px; font-size: 15px; font-weight: 800; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; width: 100%; }
 .flay-pay-wrapper .btn-primary:active { transform: scale(0.97); }
 .flay-pay-wrapper .btn-primary:disabled { background: var(--fp-surface-alt); color: var(--fp-muted); cursor: not-allowed; opacity: 0.6; pointer-events: none;}
-.flay-pay-wrapper .btn-danger { background: var(--fp-danger); }
 
-/* Overlays Basic */
+/* OVERLAYS & MODALS */
 .flay-pay-wrapper .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--fp-overlay-bg); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; opacity: 0; pointer-events: none; transition: 0.3s ease; }
 .flay-pay-wrapper .overlay.active { opacity: 1; pointer-events: all; }
+
+/* PREMIUM CUSTOM ALERT */
+.flay-pay-wrapper .premium-alert-card { background: var(--fp-surface); border-radius: 24px; padding: 30px 24px; width: 100%; max-width: 320px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--fp-border); transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.flay-pay-wrapper .overlay.active .premium-alert-card { transform: scale(1); }
+.flay-pay-wrapper .premium-alert-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 16px; }
+.flay-pay-wrapper .premium-alert-icon.error { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.flay-pay-wrapper .premium-alert-icon.success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.flay-pay-wrapper .premium-alert-icon.warning { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+.flay-pay-wrapper .premium-alert-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; color: var(--fp-text); }
+.flay-pay-wrapper .premium-alert-msg { font-size: 14px; color: var(--fp-muted); line-height: 1.5; margin-bottom: 24px; }
+.flay-pay-wrapper .premium-alert-btn { background: var(--fp-text); color: var(--fp-surface); border: none; padding: 14px; width: 100%; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
+.flay-pay-wrapper .premium-alert-btn:active { transform: scale(0.96); }
+
+/* PREMIUM CHECKOUT MODAL */
+.flay-pay-wrapper .premium-checkout-card { background: var(--fp-surface); border-radius: 24px; padding: 24px; width: 100%; max-width: 340px; text-align: left; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--fp-border); transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.flay-pay-wrapper .overlay.active .premium-checkout-card { transform: scale(1); }
+.flay-pay-wrapper .chk-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid var(--fp-border); padding-bottom: 16px; }
+.flay-pay-wrapper .chk-icon { width: 40px; height: 40px; border-radius: 12px; background: rgba(51, 144, 236, 0.1); color: #3390EC; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.flay-pay-wrapper .chk-header h3 { font-size: 18px; font-weight: 800; color: var(--fp-text); margin: 0; }
+.flay-pay-wrapper .chk-user-box { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; background: var(--fp-surface-alt); padding: 12px; border-radius: 16px; border: 1px solid var(--fp-border); }
+.flay-pay-wrapper .chk-user-box img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: var(--fp-border); }
+.flay-pay-wrapper .chk-user-info { flex: 1; }
+.flay-pay-wrapper .chk-name-row { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: var(--fp-text); margin-bottom: 2px; }
+.flay-pay-wrapper .chk-handle { font-size: 13px; color: var(--fp-muted); font-weight: 500; }
+.flay-pay-wrapper .verified-svg { width: 1.1em; height: 1.1em; flex-shrink: 0; display: inline-block; }
+.flay-pay-wrapper .chk-plan-box { margin-bottom: 24px; }
+.flay-pay-wrapper .chk-plan-label { font-size: 12px; font-weight: 700; color: var(--fp-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+.flay-pay-wrapper .chk-plan-val { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 16px; color: var(--fp-text); }
+.flay-pay-wrapper .chk-plan-val .price-tag { color: var(--fp-accent); font-size: 18px; background: var(--fp-soft); padding: 4px 10px; border-radius: 10px; }
+.flay-pay-wrapper .chk-actions { display: flex; gap: 12px; }
+.flay-pay-wrapper .btn-cancel { flex: 1; padding: 14px; border-radius: 14px; font-weight: 800; font-size: 15px; cursor: pointer; border: none; background: var(--fp-surface-alt); color: var(--fp-text); transition: 0.2s; }
+.flay-pay-wrapper .btn-cancel:active { transform: scale(0.96); }
+.flay-pay-wrapper .btn-confirm { flex: 1; padding: 14px; border-radius: 14px; font-weight: 800; font-size: 15px; cursor: pointer; border: none; background: var(--fp-text); color: var(--fp-surface); transition: 0.2s; }
+.flay-pay-wrapper .btn-confirm:active { transform: scale(0.96); }
+
+/* SUCCESS MODAL FOR PLAN ACTIVATION */
+.flay-pay-wrapper .premium-success-card { background: var(--fp-surface); border-radius: 24px; padding: 32px 24px; width: 100%; max-width: 320px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--fp-border); transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.flay-pay-wrapper .overlay.active .premium-success-card { transform: scale(1); }
+.flay-pay-wrapper .ps-icon-wrap { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 20px; box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3); }
+.flay-pay-wrapper .ps-title { font-size: 20px; font-weight: 900; color: var(--fp-text); margin-bottom: 8px; }
+.flay-pay-wrapper .ps-desc { font-size: 14px; color: var(--fp-muted); line-height: 1.5; margin-bottom: 24px; }
+.flay-pay-wrapper .btn-success-done { background: var(--fp-text); color: var(--fp-surface); border: none; padding: 14px; width: 100%; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
+.flay-pay-wrapper .btn-success-done:active { transform: scale(0.96); }
+
+/* STATUS ICONS (Processing etc) */
 .flay-pay-wrapper .status-icon { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; margin-bottom: 20px; }
 .flay-pay-wrapper .status-icon.processing { background: var(--fp-soft); color: var(--fp-accent); }
-.flay-pay-wrapper .status-icon.success { background: rgba(0, 168, 68, 0.1); color: var(--fp-success); }
-.flay-pay-wrapper .status-icon.warning { background: rgba(217, 130, 0, 0.15); color: var(--fp-warning); }
 .flay-pay-wrapper .spinner { animation: spinFP 1s linear infinite; }
 @keyframes spinFP { 100% { transform: rotate(360deg); } }
-.flay-pay-wrapper .overlay h2 { font-size: 22px; font-weight: 900; margin-bottom: 8px; color: var(--fp-text); }
-.flay-pay-wrapper .overlay p { color: var(--fp-muted); font-size: 14px; margin-bottom: 24px; max-width: 280px; font-weight: 500; }
-
-/* --------------------------------- */
-/* PREMIUM CHECKOUT MODAL            */
-/* --------------------------------- */
-.flay-pay-wrapper .checkout-card { background: var(--fp-surface); border-radius: 24px; padding: 24px; width: 100%; max-width: 340px; text-align: left; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--fp-border); }
-.flay-pay-wrapper .checkout-card h3 { font-size: 18px; font-weight: 800; margin-bottom: 16px; border-bottom: 1px solid var(--fp-border); padding-bottom: 12px; color: var(--fp-text); }
-.flay-pay-wrapper .checkout-user-info { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-.flay-pay-wrapper .checkout-user-info img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: var(--fp-surface-alt); }
-.flay-pay-wrapper .checkout-user-info span { font-size: 16px; font-weight: 800; color: var(--fp-text); }
-.flay-pay-wrapper .checkout-user-info div { font-size: 13px; color: var(--fp-muted); }
-.flay-pay-wrapper .chk-plan-details { background: var(--fp-surface-alt); padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; font-weight: 700; }
-.flay-pay-wrapper .chk-plan-details span:first-child { color: var(--fp-text); font-size: 14px; }
-.flay-pay-wrapper .chk-plan-details span:last-child { color: var(--fp-accent); font-size: 16px; }
-.flay-pay-wrapper .chk-actions { display: flex; gap: 12px; }
-.flay-pay-wrapper .chk-actions button { flex: 1; padding: 14px; border-radius: 14px; font-weight: 800; font-size: 15px; cursor: pointer; border: none; }
-.flay-pay-wrapper .chk-actions button:first-child { background: var(--fp-surface-alt); color: var(--fp-text); }
 
 /* BOTTOM SHEET ADD MONEY */
 .bs-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 900; opacity: 0; pointer-events: none; transition: 0.3s; }
@@ -170,14 +156,8 @@
 /* FULL SCREEN 15-MIN PAYMENT PAGE */
 .fs-payment-page {
     position: fixed; top: 0; left: 0; right:0; margin: 0 auto; width: 100%; height: 100%;
-    max-width: 600px;
-    background: #db1962; 
-    z-index: 1000;
-    transform: translateX(100%);
-    transition: transform 0.4s ease;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
+    max-width: 600px; background: #db1962; z-index: 1000; transform: translateX(100%);
+    transition: transform 0.4s ease; overflow-y: auto; display: flex; flex-direction: column;
 }
 .fs-payment-page.active { transform: translateX(0); }
 .fs-header-controls { display: flex; align-items: center; padding: 16px; }
@@ -204,7 +184,27 @@
 </head>
 <body>
 
+    <!-- TELEGRAM OFFICIAL VERIFIED BADGE SVG -->
+    <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <g id="icon-verified-telegram">
+                <path d="M12.0001 2.37877L14.1539 3.58552L16.634 3.44754L18.0699 5.56844L20.4705 6.30722L20.6724 8.78318L22.4516 10.4287L21.5794 12.7562L22.4516 15.0837L20.6724 16.7292L20.4705 19.2052L18.0699 19.9439L16.634 22.0648L14.1539 21.9269L12.0001 23.1336L9.84628 21.9269L7.36616 22.0648L5.93026 19.9439L3.52968 19.2052L3.32777 16.7292L1.54858 15.0837L2.42079 12.7562L1.54858 10.4287L3.32777 8.78318L3.52968 6.30722L5.93026 5.56844L7.36616 3.44754L9.84628 3.58552L12.0001 2.37877Z" fill="var(--telegram-blue)"/>
+                <path d="M10.8335 15.6881L7.14515 12.0858L8.35483 10.9044L10.8335 13.3253L15.6453 8.625L16.855 9.8064L10.8335 15.6881Z" fill="#FFFFFF"/>
+            </g>
+        </defs>
+    </svg>
+
 <div class="flay-pay-wrapper">
+
+    <!-- Premium Custom Alert -->
+    <div class="overlay" id="fp-premium-alert">
+        <div class="premium-alert-card">
+            <div class="premium-alert-icon" id="fp-alert-icon"></div>
+            <h3 class="premium-alert-title" id="fp-alert-title">Title</h3>
+            <p class="premium-alert-msg" id="fp-alert-msg">Message goes here</p>
+            <button class="premium-alert-btn" onclick="closePremiumAlert()">OK</button>
+        </div>
+    </div>
 
     <!-- HOME LAYOUT -->
     <main class="app">
@@ -253,7 +253,6 @@
             <div class="security-card">
                 <div class="security-header"><i class="fas fa-lock"></i> Secure Encrypted</div>
                 <p>Your payment information is handled through the selected payment provider securely.</p>
-                <div class="security-badges"><span><i class="fas fa-shield-alt"></i> Protection</span><span><i class="fas fa-bolt"></i> Instant Route</span></div>
             </div>
         </div>
     </main>
@@ -310,13 +309,6 @@
         <p>Generating a secure localized session.</p>
     </div>
 
-    <div class="overlay" id="overlay-warning-ban">
-        <div class="status-icon warning"><i class="fas fa-triangle-exclamation"></i></div>
-        <h2 style="font-size:20px;">সতর্কতা!</h2>
-        <p style="color:var(--fp-text); max-width: 320px; font-weight:700;">উলটা পালটা Payment Submit করলে Account Ban করা হবে।</p>
-        <button class="btn-primary btn-danger" style="justify-content:center; width:100%; max-width:280px; margin-top:20px;" onclick="openFullScreenbKash()">Done</button>
-    </div>
-
     <!-- FULL SCREEN 15-MIN PAYMENT PAGE -->
     <div class="fs-payment-page" id="fsPayPage">
         <div class="fs-header-controls">
@@ -367,49 +359,54 @@
 
     <!-- PREMIUM CHECKOUT MODAL -->
     <div class="overlay" id="checkout-popup-overlay">
-        <div class="checkout-card">
-            <h3>Order Confirmation</h3>
-            <div class="checkout-user-info">
+        <div class="premium-checkout-card">
+            <div class="chk-header">
+                <div class="chk-icon"><i class="fas fa-shopping-cart"></i></div>
+                <h3>Order Confirmation</h3>
+            </div>
+            
+            <div class="chk-user-box">
                 <img id="chk-avatar" src="" />
-                <div>
-                    <span id="chk-name">Name</span> 
-                    <i class="fa-solid fa-circle-check" style="color: #3390EC; font-size: 14px; margin-left: 2px;"></i>
-                    <div id="chk-handle">@handle</div>
+                <div class="chk-user-info">
+                    <div class="chk-name-row">
+                        <span id="chk-name">Name</span> 
+                        <svg viewBox="0 0 24 24" class="verified-svg">
+                            <use href="#icon-verified-telegram"></use>
+                        </svg>
+                    </div>
+                    <div id="chk-handle" class="chk-handle">@handle</div>
                 </div>
             </div>
             
-            <div class="chk-plan-details">
-                <span id="chk-plan-name">Flay Verified Badge</span>
-                <span id="chk-plan-price">$0 USDT</span>
+            <div class="chk-plan-box">
+                <div class="chk-plan-label">Selected Plan</div>
+                <div class="chk-plan-val">
+                    <span id="chk-plan-name">Flay Verified Badge</span>
+                    <span id="chk-plan-price" class="price-tag">$0 USDT</span>
+                </div>
             </div>
             
             <div class="chk-actions">
-                <button onclick="cancelCheckout()">Cancel</button>
-                <button class="btn-primary" onclick="confirmCheckout()">Confirm</button>
+                <button class="btn-cancel" onclick="cancelCheckout()">Cancel</button>
+                <button class="btn-confirm" onclick="confirmCheckout()">Confirm Payment</button>
             </div>
         </div>
     </div>
 
-    <!-- FINAL SUCCESS AND AUTO CANCEL MODALS -->
-    <div class="overlay" id="overlay-success-final">
-        <div class="status-icon success"><i class="fas fa-check"></i></div>
-        <h2>Request Submitted</h2>
-        <p>Admin will verify and approve your request shortly. Balance will be updated automatically.</p>
-        <button class="btn-primary" style="justify-content:center; width:100%; max-width:280px; margin-top:20px;" type="button" onclick="killEverything()">Done</button>
-    </div>
-
-    <div class="overlay" id="overlay-timeout">
-        <div class="status-icon failed" style="background: rgba(215,25,63,0.1); color:#d7193f;"><i class="fas fa-clock"></i></div>
-        <h2 style="color:var(--fp-text);">Session Expired</h2>
-        <p style="color:var(--fp-muted);">15 minute payment window has automatically been closed.</p>
-        <button class="btn-primary" style="justify-content:center; width:100%; max-width:280px; margin-top:20px;" onclick="killEverything()">Go Back</button>
+    <!-- SUCCESS MODAL FOR PLAN ACTIVATION -->
+    <div class="overlay" id="plan-success-modal">
+        <div class="premium-success-card">
+            <div class="ps-icon-wrap"><i class="fas fa-check"></i></div>
+            <h3 class="ps-title">Payment Successful!</h3>
+            <p class="ps-desc">Your plan has been activated successfully. Enjoy the premium benefits across Flaynity.</p>
+            <button class="btn-success-done" onclick="finishPlanSuccess()">Done</button>
+        </div>
     </div>
 
 </div>
 
 <script>
 (function(){
-    // Live Firebase Data Store
     let fpSettings = { rate: 120, minUsd: 1, maxUsd: 1000, bkash: "017XXXXXXXX", nagad: "018XXXXXXXX", rocket: "019XXXXXXXX" };
     let fpUserStats = { balance: 0, recharged: 0, spent: 0 };
     let fpListenersActive = false;
@@ -419,6 +416,29 @@
     let currentCalcBDTAmount = 0; 
     let timerInterval = null;
     let pendingOrder = null;
+    let pendingOrderLoopInterval = null;
+
+    // Premium Custom Alert Function
+    window.showPremiumAlert = function(title, msg, type = 'error') {
+        const overlay = document.getElementById('fp-premium-alert');
+        const iconEl = document.getElementById('fp-alert-icon');
+        const titleEl = document.getElementById('fp-alert-title');
+        const msgEl = document.getElementById('fp-alert-msg');
+        
+        titleEl.innerText = title;
+        msgEl.innerHTML = msg.replace(/\n/g, '<br>');
+        
+        iconEl.className = 'premium-alert-icon ' + type;
+        if (type === 'success') iconEl.innerHTML = '<i class="fas fa-check"></i>';
+        else if (type === 'warning') iconEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+        else iconEl.innerHTML = '<i class="fas fa-times"></i>';
+        
+        overlay.classList.add('active');
+    };
+
+    window.closePremiumAlert = function() {
+        document.getElementById('fp-premium-alert').classList.remove('active');
+    };
 
     // Firebase Init Listener
     function initFirebaseListeners() {
@@ -454,33 +474,32 @@
         });
     }
 
-    // Checkout Modal Logic
-    function checkPendingOrder() {
+    // Checking for Pending Orders continuously (Fix for returning after cancel)
+    function checkPendingOrderLoop() {
         const orderDataStr = sessionStorage.getItem('flay_pending_checkout');
-        if (orderDataStr) {
+        const overlay = document.getElementById('checkout-popup-overlay');
+        
+        if (orderDataStr && !pendingOrder && !overlay.classList.contains('active')) {
             pendingOrder = JSON.parse(orderDataStr);
+            const user = typeof firebase !== 'undefined' ? firebase.auth().currentUser : null;
             
-            let waitUser = setInterval(() => {
-                const user = typeof firebase !== 'undefined' ? firebase.auth().currentUser : null;
-                if (user) {
-                    clearInterval(waitUser);
-                    firebase.database().ref(`channels/${user.uid}`).once('value').then(snap => {
-                        const data = snap.val() || {};
-                        const avatar = data.avatarUrl || "https://ui-avatars.com/api/?name=" + (data.channelName || 'U');
-                        const name = data.channelName || "Flaynity User";
-                        const handle = data.handle || user.uid.substring(0, 8);
-                        
-                        document.getElementById('chk-avatar').src = avatar;
-                        document.getElementById('chk-name').innerText = name;
-                        document.getElementById('chk-handle').innerText = "@" + handle;
-                        
-                        document.getElementById('chk-plan-name').innerText = pendingOrder.title;
-                        document.getElementById('chk-plan-price').innerText = `$${pendingOrder.amount} USDT`;
-                        
-                        document.getElementById('checkout-popup-overlay').classList.add('active');
-                    });
-                }
-            }, 300);
+            if (user) {
+                firebase.database().ref(`channels/${user.uid}`).once('value').then(snap => {
+                    const data = snap.val() || {};
+                    const avatar = data.avatarUrl || "https://ui-avatars.com/api/?name=" + (data.channelName || 'U');
+                    const name = data.channelName || "Flaynity User";
+                    const handle = data.handle || user.uid.substring(0, 8);
+                    
+                    document.getElementById('chk-avatar').src = avatar;
+                    document.getElementById('chk-name').innerText = name;
+                    document.getElementById('chk-handle').innerText = "@" + handle;
+                    
+                    document.getElementById('chk-plan-name').innerText = pendingOrder.title;
+                    document.getElementById('chk-plan-price').innerText = `$${pendingOrder.amount} USDT`;
+                    
+                    overlay.classList.add('active');
+                });
+            }
         }
     }
 
@@ -496,7 +515,7 @@
         if(!user) return;
         
         if(fpUserStats.balance < pendingOrder.amount) {
-            alert(`Insufficient balance! You need $${pendingOrder.amount} USDT, but you have $${fpUserStats.balance.toFixed(2)} USDT.\n\nPlease recharge your Flay Pay account to proceed.`);
+            showPremiumAlert("Insufficient Balance", `You need $${pendingOrder.amount} USDT, but you have $${fpUserStats.balance.toFixed(2)} USDT.\n\nPlease recharge your Flay Pay account to proceed.`, "error");
             cancelCheckout();
             return;
         }
@@ -526,17 +545,23 @@
                 document.getElementById('checkout-popup-overlay').classList.remove('active');
                 pendingOrder = null;
                 
-                alert("Payment Successful! Plan activated.");
-                goBackToSafety();
+                document.getElementById('plan-success-modal').classList.add('active');
             });
         });
+    };
+
+    window.finishPlanSuccess = function() {
+        document.getElementById('plan-success-modal').classList.remove('active');
+        goBackToSafety();
     };
 
     // Firebase injection monitoring
     let checkFbInterval = setInterval(() => {
         if(typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
             initFirebaseListeners();
-            checkPendingOrder();
+            if(!pendingOrderLoopInterval) {
+                pendingOrderLoopInterval = setInterval(checkPendingOrderLoop, 1000);
+            }
             clearInterval(checkFbInterval);
         }
     }, 300);
@@ -581,7 +606,7 @@
             document.getElementById('overlay-pending').classList.add('active');
             setTimeout(()=>{
                 document.getElementById('overlay-pending').classList.remove('active');
-                document.getElementById('overlay-success-final').classList.add('active');
+                showPremiumAlert("Request Processed", "Your request is currently under testing/demo routing.", "success");
             },1500);
         }
     };
@@ -618,24 +643,39 @@
     window.proceedToInit = function() {
         let rawVal = parseFloat(document.getElementById('sheetInputUsd').value);
         if(isNaN(rawVal) || rawVal < fpSettings.minUsd || rawVal > fpSettings.maxUsd) { 
-            alert(`Please enter a valid amount between $${fpSettings.minUsd} and $${fpSettings.maxUsd}`); 
+            showPremiumAlert("Invalid Amount", `Please enter a valid amount between $${fpSettings.minUsd} and $${fpSettings.maxUsd}`, "warning"); 
             return; 
         }
-        if(!selectedSubGW) { alert('Please select a local wallet (bKash/Nagad/Rocket).'); return; }
+        if(!selectedSubGW) { 
+            showPremiumAlert("Select Wallet", "Please select a local wallet (bKash/Nagad/Rocket) first.", "warning"); 
+            return; 
+        }
 
         closeBottomSheet();
 
         document.getElementById('overlay-pending').classList.add('active');
         setTimeout(() => {
             document.getElementById('overlay-pending').classList.remove('active');
-            document.getElementById('overlay-warning-ban').classList.add('active');
+            
+            showPremiumAlert(
+                "সতর্কতা!",
+                "উলটা পালটা Payment Submit করলে Account Ban করা হবে।",
+                "warning"
+            );
+            
+            // Override OK button logic for this specific alert to jump to Full Screen
+            document.querySelector('.premium-alert-btn').onclick = function() {
+                closePremiumAlert();
+                document.querySelector('.premium-alert-btn').onclick = closePremiumAlert; // Reset
+                openFullScreenbKash();
+            };
+
         }, 1200); 
     };
     
     const padTime = (num) => num.toString().padStart(2, '0');
 
     window.openFullScreenbKash = function() {
-        document.getElementById('overlay-warning-ban').classList.remove('active');
         document.getElementById('finalDisplayBdtAmount').innerText = currentCalcBDTAmount; 
         
         const netLogoImg = document.getElementById('fullScreenPayLogo');
@@ -684,16 +724,24 @@
     window.autoClosePayPage = function(reason) {
         clearInterval(timerInterval);
         document.getElementById('fsPayPage').classList.remove('active');
-        if (reason === 'timeout') document.getElementById('overlay-timeout').classList.add('active');
+        if (reason === 'timeout') {
+            showPremiumAlert("Session Expired", "15 minute payment window has automatically been closed.", "error");
+        }
     };
 
     window.submitFinalPaymentRequest = function(){
         const txField = document.getElementById('txIDField').value.trim();
         const phnField = document.getElementById('phoneField').value.trim();
-        if(!txField || !phnField) { alert('প্রয়োজনীয় তথ্যগুলো পূরণ করুন (Transaction ID & Sender Number)।'); return;}
+        if(!txField || !phnField) { 
+            showPremiumAlert("Missing Information", "প্রয়োজনীয় তথ্যগুলো পূরণ করুন (Transaction ID & Sender Number)।", "warning"); 
+            return;
+        }
         
         const user = typeof firebase !== 'undefined' ? firebase.auth().currentUser : null;
-        if(!user) { alert("You must be logged in to submit a request!"); return; }
+        if(!user) { 
+            showPremiumAlert("Error", "You must be logged in to submit a request!", "error"); 
+            return; 
+        }
 
         clearInterval(timerInterval);
         document.getElementById('fsPayPage').classList.remove('active');
@@ -711,7 +759,12 @@
             timestamp: firebase.database.ServerValue.TIMESTAMP
         }).then(() => {
             document.getElementById('overlay-pending').classList.remove('active');
-            document.getElementById('overlay-success-final').classList.add('active');
+            
+            showPremiumAlert(
+                "Request Submitted", 
+                "Admin will verify and approve your request shortly. Balance will be updated automatically.", 
+                "success"
+            );
             
             document.getElementById('txIDField').value = '';
             document.getElementById('phoneField').value = '';
@@ -719,8 +772,8 @@
             window.calcBdtRate();
             
         }).catch(err => {
-            alert("Submission failed: " + err.message);
             document.getElementById('overlay-pending').classList.remove('active');
+            showPremiumAlert("Submission Failed", err.message, "error");
         });
     };
 

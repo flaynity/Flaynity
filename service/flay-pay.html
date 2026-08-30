@@ -16,10 +16,10 @@
 /* BASIC APP CSS SCOPED */
 .flay-pay-wrapper {
     --fp-bg: #fdfdfd; --fp-surface: #fff; --fp-surface-alt: #f4f5f7; --fp-text: #000;
-    --fp-muted: #666; --fp-border: #e5e5e5; --fp-accent: #ff2e55; --fp-soft: rgba(255,46,85,.10);
+    --fp-muted: #666; --fp-border: #e5e5e5; --fp-accent: #FF2E55; --fp-soft: rgba(255,46,85,.10);
     --fp-shadow: 0 12px 32px rgba(0,0,0,.06); --fp-success: #00a844; --fp-warning: #d98200;
     --fp-danger: #d7193f; --fp-overlay-bg: rgba(255, 255, 255, 0.95); 
-    --pbc-bg-grad: linear-gradient(135deg, #ffffff, #f7f8f9); --pbc-text: #0d0d12;
+    --pbc-bg-grad: linear-gradient(135deg, #ECECEC, #ECECEC); --pbc-text: #0d0d12;
     --pbc-sub-text: #5f6368; --pbc-border: #efefef; --pbc-box-bg: rgba(0,0,0,0.03);
     --pbc-box-border: rgba(0,0,0,0.04); --pbc-icon-glow: rgba(255, 46, 85, 0.1);
     background: var(--fp-bg); color: var(--fp-text); font-family: 'Plus Jakarta Sans', sans-serif;
@@ -183,7 +183,7 @@
 .flay-pay-wrapper .fs-copy-btn:active { transform: scale(0.9); }
 .flay-pay-wrapper .fs-text-field { width: 100%; border: 1.5px solid #dcdfe5; border-radius: 16px; padding: 16px; font-size: 16px; font-weight: 600; color:#333; outline: none; background: #fafafc; transition: 0.3s; }
 .flay-pay-wrapper .fs-text-field:focus { border-color: #03a5fc; background:#fff;}
-.flay-pay-wrapper .fs-submit-btn { width: 100%; height: 56px; border-radius: 16px; border:none; background: #00a4ff; color: #fff; font-size: 18px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 25px rgba(0, 164, 255, 0.3); margin-top:10px; transition: 0.2s; }
+.flay-pay-wrapper .fs-submit-btn { width: 100%; height: 56px; border-radius: 16px; border:none; background: #FF2E55; color: #fff; font-size: 18px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 25px rgba(0, 164, 255, 0.3); margin-top:10px; transition: 0.2s; }
 .flay-pay-wrapper .fs-submit-btn:active { transform: scale(0.97); }
 </style>
 </head>
@@ -358,7 +358,7 @@
                 <input type="number" class="fs-text-field" placeholder="01XXXXXXXXX" id="phoneField">
             </div>
 
-            <button class="fs-submit-btn" onclick="fpSubmitFinalPaymentRequest()">সাবমিট করুন</button>
+            <button class="fs-submit-btn" onclick="fpSubmitFinalPaymentRequest()">Submit</button>
         </div>
     </div>
 

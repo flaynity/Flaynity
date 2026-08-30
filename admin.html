@@ -498,6 +498,7 @@ body{font-weight:600;}
     <div class="nav-group">
       <div class="nav-group-label">Finances & Payments</div>
       <div class="nav-item" data-section="flay-pay"><span class="dot"></span><span class="ic">💳</span> Flay Pay Control</div>
+      <div class="nav-item" data-section="flay-ads"><span class="dot"></span><span class="ic">📢</span> Flay Ads Control</div>
       <div class="nav-item" data-section="monetization"><span class="dot"></span><span class="ic">$</span> Monetization Status</div>
       <div class="nav-item" data-section="monetization-control"><span class="dot"></span><span class="ic">⚙</span> Monetization Control</div>
       <div class="nav-item" data-section="monetization-approvals"><span class="dot"></span><span class="ic">✓</span> Monetization Approvals</div>
@@ -856,6 +857,44 @@ body{font-weight:600;}
         <div id="fp-requests-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No requests found</div>
       </section>
 
+      <!-- ================= FLAY ADS CONTROL ================= -->
+      <section class="section" id="section-flay-ads">
+        <div class="section-head">
+          <div>
+            <h2>Flay Ads Campaigns</h2>
+            <p>Review, approve, and manage user advertising campaigns.</p>
+          </div>
+        </div>
+        <div class="search-bar">
+          <input class="input" id="flayads-search" placeholder="Search by campaign name or advertiser UID...">
+          <select class="input" id="flayads-filter" style="max-width:170px;">
+            <option value="all">All Statuses</option>
+            <option value="Under Review">Under Review</option>
+            <option value="Running">Running</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Completed">Completed</option>
+            <option value="Draft">Draft</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Campaign</th>
+                <th>Advertiser</th>
+                <th>Placement</th>
+                <th>Budget</th>
+                <th>Payment</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="flayads-tbody"></tbody>
+          </table>
+        </div>
+        <div id="flayads-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No campaigns found</div>
+      </section>
+
       <!-- ================= MONETIZATION STATUS ================= -->
       <section class="section" id="section-monetization">
         <div class="search-bar">
@@ -1114,7 +1153,8 @@ const REF = {
   auditLog:        db.ref('admin_control/audit_log'),
   connected:       db.ref('.info/connected'),
   flayPaySettings: db.ref('admin_control/flay_pay_settings'),
-  flayPayRequests: db.ref('flay_pay_requests')
+  flayPayRequests: db.ref('flay_pay_requests'),
+  flayAds:         db.ref('flayAds/campaigns')
 };
 
 let activeListenerCount = 0;
@@ -1227,6 +1267,7 @@ const pageMeta = {
   upload:                ['Upload Control', 'Control existing upload systems'],
   download:              ['Download Control', 'Control existing download systems'],
   'flay-pay':            ['Flay Pay Control', 'Manage Flay Pay settings and approvals'],
+  'flay-ads':            ['Flay Ads Control', 'Review, approve and manage ad campaigns'],
   monetization:          ['Monetization Status', 'Manage existing monetization applications'],
   'monetization-control': ['Monetization Control', 'Set eligibility and activate monetization for any user'],
   'monetization-approvals': ['Monetization Approvals', 'Review and approve user applications'],
@@ -1391,6 +1432,7 @@ function bootApp(){
   initFeatureFlags();
   initMaxUploads();
   initFlayPayControl();
+  initFlayAdsControl();
   initMonetization();
   initMonetizationControl();
   initMonetizationApprovals();
@@ -1544,7 +1586,7 @@ function renderUsersTable(){
 }
 
 function statusBadge(status){
-  const map = { active:'ok', banned:'danger', disabled:'warn', published:'ok', hidden:'warn', deleted:'danger', scheduled:'info', pending:'warn', rejected:'danger', suspended:'danger', visible:'ok', approved:'ok' };
+  const map = { active:'ok', banned:'danger', disabled:'warn', published:'ok', hidden:'warn', deleted:'danger', scheduled:'info', pending:'warn', rejected:'danger', suspended:'danger', visible:'ok', approved:'ok', Running:'ok', 'Under Review':'info', Completed:'neutral', Draft:'neutral' };
   return `<span class="badge ${map[status]||'neutral'}">${escapeHtml(status)}</span>`;
 }
 
@@ -1979,6 +2021,112 @@ function renderFpRequests() {
       }
     });
   }));
+}
+
+/* =========================================================
+   FLAY ADS CONTROL
+   ========================================================= */
+let rawFlayAds = {};
+
+function initFlayAdsControl() {
+  document.getElementById('flayads-search').addEventListener('input', renderFlayAdsTable);
+  document.getElementById('flayads-filter').addEventListener('change', renderFlayAdsTable);
+  trackListener(REF.flayAds, 'value', snap => { rawFlayAds = snap.val() || {}; renderFlayAdsTable(); });
+}
+
+function renderFlayAdsTable() {
+  const q = (document.getElementById('flayads-search').value || '').toLowerCase();
+  const filter = document.getElementById('flayads-filter').value;
+  const rows = Object.entries(rawFlayAds).filter(([id, ad]) => {
+    const status = ad.campaignStatus || 'Draft';
+    if (filter !== 'all' && status !== filter) return false;
+    if (!q) return true;
+    return (ad.campaignName || '').toLowerCase().includes(q) || (ad.advertiserId || '').toLowerCase().includes(q);
+  }).sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
+
+  const tbody = document.getElementById('flayads-tbody');
+  tbody.innerHTML = '';
+  document.getElementById('flayads-empty').style.display = rows.length ? 'none' : 'block';
+
+  rows.forEach(([id, ad]) => {
+    const tr = document.createElement('tr');
+    const u = rawUsers[ad.advertiserId] || {};
+    const c = rawChannels[ad.advertiserId] || {};
+    const advertiserName = c.channelName || u.displayName || ad.advertiserId.substring(0,8);
+    const payStatusTxt = ad.paymentStatus === 'successful' ? '<span class="muted" style="color:var(--ok)"><i class="fas fa-check-circle" style="margin-right:3px;"></i>Paid</span>' : (ad.paymentStatus === 'pending' ? '<span class="muted" style="color:var(--warn)">Pending</span>' : '<span class="muted" style="color:var(--danger)">Failed</span>');
+    
+    tr.innerHTML = `
+      <td><span class="cell-main">${escapeHtml(ad.campaignName || 'Untitled')}</span><div class="cell-sub id-mono">${escapeHtml(id)}</div></td>
+      <td><span class="cell-main">${escapeHtml(advertiserName)}</span><div class="cell-sub id-mono">${escapeHtml(ad.advertiserId)}</div></td>
+      <td>${escapeHtml(ad.placement)}</td>
+      <td><span class="cell-main">$${ad.budget?.total || '0'}</span> <div class="cell-sub">$${ad.budget?.daily || '0'}/day (${ad.budget?.billingModel || 'CPM'})</div></td>
+      <td>${payStatusTxt}</td>
+      <td>${statusBadge(ad.campaignStatus || 'Draft')}</td>
+      <td class="btn-row">
+        <button class="btn sm" data-ad-view="${id}">View</button>
+        ${ad.campaignStatus === 'Under Review' ? `<button class="btn sm ok" data-ad-approve="${id}">Approve</button><button class="btn sm danger" data-ad-reject="${id}">Reject</button>` : ''}
+        ${ad.campaignStatus === 'Running' ? `<button class="btn sm warn" data-ad-stop="${id}">Stop</button>` : ''}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('[data-ad-view]').forEach(b => b.addEventListener('click', () => openFlayAdDetail(b.dataset.adView)));
+  tbody.querySelectorAll('[data-ad-approve]').forEach(b => b.addEventListener('click', () => setFlayAdStatus(b.dataset.adApprove, 'Running', false)));
+  tbody.querySelectorAll('[data-ad-reject]').forEach(b => b.addEventListener('click', () => setFlayAdStatus(b.dataset.adReject, 'Rejected', true)));
+  tbody.querySelectorAll('[data-ad-stop]').forEach(b => b.addEventListener('click', () => setFlayAdStatus(b.dataset.adStop, 'Completed', false)));
+}
+
+function setFlayAdStatus(id, next, requiresReason) {
+  const ad = rawFlayAds[id];
+  confirmAction({
+    title: `${next === 'Running' ? 'Approve' : (next === 'Rejected' ? 'Reject' : 'Stop')} Campaign`,
+    target: ad.campaignName || id,
+    current: ad.campaignStatus,
+    next: next,
+    dangerLabel: 'Confirm',
+    reasonRequired: requiresReason,
+    onConfirm: reason => {
+      const updates = { campaignStatus: next };
+      if (reason) updates.rejectReason = reason;
+      safeUpdate(REF.flayAds.child(id), updates, { successMsg: `Campaign status updated to ${next}.` })
+        .then(ok => { if (ok) logAction(`FlayAd Status -> ${next}`, 'flay_ad', id, ad.campaignStatus, next, reason); });
+    }
+  });
+}
+
+function openFlayAdDetail(id) {
+  const ad = rawFlayAds[id] || {};
+  modalSheet.innerHTML = `
+    <div class="handle"></div>
+    <h3>Campaign Details</h3>
+    <div class="modal-sub id-mono">${escapeHtml(id)}</div>
+    <div class="kv"><span class="k">Name</span><span class="v">${escapeHtml(ad.campaignName || '—')}</span></div>
+    <div class="kv"><span class="k">Advertiser ID</span><span class="v id-mono">${escapeHtml(ad.advertiserId || '—')}</span></div>
+    <div class="kv"><span class="k">Placement</span><span class="v">${escapeHtml(ad.placement || '—')}</span></div>
+    <div class="kv"><span class="k">Payment Status</span><span class="v">${escapeHtml(ad.paymentStatus || '—')}</span></div>
+    <div class="kv"><span class="k">Campaign Status</span><span class="v">${escapeHtml(ad.campaignStatus || '—')}</span></div>
+    
+    <h4 style="margin: 18px 0 8px; font-size: 13.5px; border-bottom: 1px solid var(--line); padding-bottom: 4px;">Budget & Targeting</h4>
+    <div class="kv"><span class="k">Budget</span><span class="v">Total: $${ad.budget?.total || 0} | Daily: $${ad.budget?.daily || 0} | ${ad.budget?.billingModel || '—'}</span></div>
+    <div class="kv"><span class="k">Targeting</span><span class="v">Device: ${ad.targeting?.device || '—'} | Age: ${ad.targeting?.age || '—'} | Gender: ${ad.targeting?.gender || '—'} | Category: ${ad.targeting?.category || '—'}</span></div>
+    
+    <h4 style="margin: 18px 0 8px; font-size: 13.5px; border-bottom: 1px solid var(--line); padding-bottom: 4px;">Creative</h4>
+    <div class="kv"><span class="k">Title</span><span class="v">${escapeHtml(ad.creative?.title || '—')}</span></div>
+    <div class="kv"><span class="k">Description</span><span class="v" style="max-width: 60%;">${escapeHtml(ad.creative?.description || '—')}</span></div>
+    <div class="kv"><span class="k">CTA & URL</span><span class="v">${escapeHtml(ad.creative?.cta || '—')} → <a href="${escapeHtml(ad.creative?.destinationUrl || '#')}" target="_blank" style="color:var(--info); text-decoration:underline;">Link</a></span></div>
+    ${ad.creative?.videoUrl ? `<div class="kv"><span class="k">Video</span><span class="v"><a href="${escapeHtml(ad.creative.videoUrl)}" target="_blank" style="color:var(--info); text-decoration:underline;">View Video</a></span></div>` : ''}
+    ${ad.creative?.imageUrl ? `<div class="kv"><span class="k">Image</span><span class="v"><a href="${escapeHtml(ad.creative.imageUrl)}" target="_blank" style="color:var(--info); text-decoration:underline;">View Image</a></span></div>` : ''}
+    ${ad.creative?.thumbnailUrl ? `<div class="kv"><span class="k">Thumbnail</span><span class="v"><a href="${escapeHtml(ad.creative.thumbnailUrl)}" target="_blank" style="color:var(--info); text-decoration:underline;">View Thumbnail</a></span></div>` : ''}
+    
+    <h4 style="margin: 18px 0 8px; font-size: 13.5px; border-bottom: 1px solid var(--line); padding-bottom: 4px;">Performance</h4>
+    <div class="kv"><span class="k">Impressions</span><span class="v">${fmtNum(ad.stats?.impressions || 0)}</span></div>
+    <div class="kv"><span class="k">Clicks</span><span class="v">${fmtNum(ad.stats?.clicks || 0)}</span></div>
+
+    <div class="modal-actions"><button class="btn" id="close-ad-detail">Close</button></div>
+  `;
+  modalLayer.classList.add('show');
+  document.getElementById('close-ad-detail').addEventListener('click', closeModal);
 }
 
 /* =========================================================

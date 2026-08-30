@@ -13,7 +13,7 @@
     })();
 </script>
 <style>
-/* BASIC APP CSS */
+/* BASIC APP CSS SCOPED */
 .flay-pay-wrapper {
     --fp-bg: #fdfdfd; --fp-surface: #fff; --fp-surface-alt: #f4f5f7; --fp-text: #000;
     --fp-muted: #666; --fp-border: #e5e5e5; --fp-accent: #ff2e55; --fp-soft: rgba(255,46,85,.10);
@@ -23,7 +23,7 @@
     --pbc-sub-text: #5f6368; --pbc-border: #efefef; --pbc-box-bg: rgba(0,0,0,0.03);
     --pbc-box-border: rgba(0,0,0,0.04); --pbc-icon-glow: rgba(255, 46, 85, 0.1);
     background: var(--fp-bg); color: var(--fp-text); font-family: 'Plus Jakarta Sans', sans-serif;
-    line-height: 1.5; width: 100%; min-height: 100vh;
+    line-height: 1.5; width: 100%; min-height: 100vh; position: relative;
 }
 [data-theme="dark"] .flay-pay-wrapper {
     --fp-bg: #000; --fp-surface: #121212; --fp-surface-alt: #1a1a1a; --fp-text: #fff;
@@ -85,10 +85,10 @@
 .flay-pay-wrapper .btn-primary:disabled { background: var(--fp-surface-alt); color: var(--fp-muted); cursor: not-allowed; opacity: 0.6; pointer-events: none;}
 
 /* OVERLAYS & MODALS */
-.flay-pay-wrapper .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--fp-overlay-bg); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; opacity: 0; pointer-events: none; transition: 0.3s ease; }
+.flay-pay-wrapper .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--fp-overlay-bg); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; opacity: 0; pointer-events: none; transition: 0.3s ease; }
 .flay-pay-wrapper .overlay.active { opacity: 1; pointer-events: all; }
 
-/* PREMIUM CUSTOM ALERT */
+/* FP PREMIUM CUSTOM ALERT */
 .flay-pay-wrapper .premium-alert-card { background: var(--fp-surface); border-radius: 24px; padding: 30px 24px; width: 100%; max-width: 320px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--fp-border); transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 .flay-pay-wrapper .overlay.active .premium-alert-card { transform: scale(1); }
 .flay-pay-wrapper .premium-alert-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 16px; }
@@ -138,56 +138,58 @@
 @keyframes spinFP { 100% { transform: rotate(360deg); } }
 
 /* BOTTOM SHEET ADD MONEY */
-.bs-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 900; opacity: 0; pointer-events: none; transition: 0.3s; }
-.bs-backdrop.active { opacity: 1; pointer-events: all; }
-.bottom-sheet { position: fixed; bottom: 0; left: 0; right: 0; margin: 0 auto; width: 100%; max-width: 600px; background: var(--fp-surface); border-radius: 28px 28px 0 0; z-index: 910; padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; max-height: 90vh; }
-.bottom-sheet.active { transform: translateY(0); }
-.bs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.bs-title { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; color: var(--fp-text); }
-.bs-title i { color: var(--fp-accent); font-size: 20px;}
-.bs-close { width: 34px; height: 34px; border-radius: 50%; background: var(--fp-surface-alt); border: none; font-size: 14px; color: var(--fp-text); display: grid; place-items: center; cursor: pointer; }
-.bs-label-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: var(--fp-muted); margin-bottom: 10px; }
-.bs-label-row span.right { color: var(--fp-text); font-weight: 600; opacity: 0.6; }
-.amount-input-wrapper { position: relative; display: flex; align-items: center; background: var(--fp-surface-alt); border: 2px solid transparent; border-radius: 16px; transition: 0.3s; }
-.amount-input-wrapper:focus-within { border-color: var(--fp-accent); }
-.prefix-icon { padding-left: 20px; font-size: 18px; color: var(--fp-text); font-weight: 800; }
-.bs-input-amount { width: 100%; border: none; background: transparent; font-size: 24px; font-weight: 900; color: var(--fp-text); padding: 18px 12px; font-family: inherit; outline: none; }
-.exchange-disp { background: var(--fp-surface-alt); margin-top: 10px; border-radius: 12px; padding: 12px 16px; font-size: 15px; font-weight: 700; color: var(--fp-accent); border: 1px dashed var(--fp-border); display: flex; align-items: center; justify-content: center; margin-bottom: 24px;}
-.gateway-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-.gateway-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--fp-surface); border: 1.5px solid var(--fp-border); padding: 14px 8px; border-radius: 16px; cursor: pointer; gap: 8px; font-size: 13.5px; font-weight: 800; transition: 0.2s; color: var(--fp-text);}
-.gateway-btn.selected { border-color: var(--fp-accent); background: rgba(255,46,85,0.04); }
-.gateway-icon { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); }
+.flay-pay-wrapper .bs-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; opacity: 0; pointer-events: none; transition: 0.3s; }
+.flay-pay-wrapper .bs-backdrop.active { opacity: 1; pointer-events: all; }
+.flay-pay-wrapper .bottom-sheet { position: fixed; bottom: 0; left: 0; right: 0; margin: 0 auto; width: 100%; max-width: 600px; background: var(--fp-surface); border-radius: 28px 28px 0 0; z-index: 9100; padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; max-height: 90vh; }
+.flay-pay-wrapper .bottom-sheet.active { transform: translateY(0); }
+.flay-pay-wrapper .bs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.flay-pay-wrapper .bs-title { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; color: var(--fp-text); }
+.flay-pay-wrapper .bs-title i { color: var(--fp-accent); font-size: 20px;}
+.flay-pay-wrapper .bs-close { width: 34px; height: 34px; border-radius: 50%; background: var(--fp-surface-alt); border: none; font-size: 14px; color: var(--fp-text); display: grid; place-items: center; cursor: pointer; }
+.flay-pay-wrapper .bs-label-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: var(--fp-muted); margin-bottom: 10px; }
+.flay-pay-wrapper .bs-label-row span.right { color: var(--fp-text); font-weight: 600; opacity: 0.6; }
+.flay-pay-wrapper .amount-input-wrapper { position: relative; display: flex; align-items: center; background: var(--fp-surface-alt); border: 2px solid transparent; border-radius: 16px; transition: 0.3s; }
+.flay-pay-wrapper .amount-input-wrapper:focus-within { border-color: var(--fp-accent); }
+.flay-pay-wrapper .prefix-icon { padding-left: 20px; font-size: 18px; color: var(--fp-text); font-weight: 800; }
+.flay-pay-wrapper .bs-input-amount { width: 100%; border: none; background: transparent; font-size: 24px; font-weight: 900; color: var(--fp-text); padding: 18px 12px; font-family: inherit; outline: none; }
+.flay-pay-wrapper .exchange-disp { background: var(--fp-surface-alt); margin-top: 10px; border-radius: 12px; padding: 12px 16px; font-size: 15px; font-weight: 700; color: var(--fp-accent); border: 1px dashed var(--fp-border); display: flex; align-items: center; justify-content: center; margin-bottom: 24px;}
+.flay-pay-wrapper .gateway-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.flay-pay-wrapper .gateway-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--fp-surface); border: 1.5px solid var(--fp-border); padding: 14px 8px; border-radius: 16px; cursor: pointer; gap: 8px; font-size: 13.5px; font-weight: 800; transition: 0.2s; color: var(--fp-text);}
+.flay-pay-wrapper .gateway-btn.selected { border-color: var(--fp-accent); background: rgba(255,46,85,0.04); }
+.flay-pay-wrapper .gateway-icon { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); }
 
 /* FULL SCREEN 15-MIN PAYMENT PAGE */
-.fs-payment-page {
+.flay-pay-wrapper .fs-payment-page {
     position: fixed; top: 0; left: 0; right:0; margin: 0 auto; width: 100%; height: 100%;
-    max-width: 600px; background: #db1962; z-index: 1000; transform: translateX(100%);
+    max-width: 600px; background: #db1962; z-index: 10000; transform: translateX(100%);
     transition: transform 0.4s ease; overflow-y: auto; display: flex; flex-direction: column;
 }
-.fs-payment-page.active { transform: translateX(0); }
-.fs-header-controls { display: flex; align-items: center; padding: 16px; }
-.fs-header-controls .back-sq { width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 12px; border:none; color:#fff; display:flex; justify-content:center; align-items:center; font-size:18px; cursor:pointer;}
-.fs-logo-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 10px; margin-bottom: 20px;}
-.fs-logo { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #ffffff; background: #fff; padding: 2px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); object-fit: cover;}
-.fs-timer { font-size: 52px; font-weight: 900; color: #ffffff; text-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 10px; line-height:1;}
-.fs-timer-sub { font-size: 13px; font-weight: 800; color: #ffffff; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 24px;}
-.fs-inst-wrap { text-align: center; color: #fff; margin: 0 24px 24px 24px; font-family: sans-serif; }
-.fs-inst-en { font-size: 15.5px; font-weight: 700; margin-bottom: 6px; line-height: 1.3;}
-.fs-inst-bn { font-size: 14px; opacity: 0.9; }
-.fs-card-white { background: #ffffff; border-radius: 28px; margin: 0 20px 40px 20px; padding: 24px; box-shadow: 0 -4px 30px rgba(0,0,0,0.1); color: #333; font-family: 'Plus Jakarta Sans', sans-serif; }
-.fs-input-box { margin-bottom: 18px; position: relative;}
-.fs-label { font-size: 12px; font-weight: 700; color: #5a6676; margin-bottom: 8px; display: block;}
-.fs-val-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ebecf0; padding-bottom: 10px; margin-bottom: 6px; }
-.fs-val-text { font-size: 20px; font-weight: 800; color: #1f2533; display: flex; align-items:center; }
-.fs-copy-btn { width: 32px; height: 32px; border-radius: 10px; border:none; background:#f4f5f8; color:#0396fe; font-size: 14px; cursor: pointer; transition: 0.2s; display:grid; place-items:center; }
-.fs-copy-btn:active { transform: scale(0.9); }
-.fs-text-field { width: 100%; border: 1.5px solid #dcdfe5; border-radius: 16px; padding: 16px; font-size: 16px; font-weight: 600; color:#333; outline: none; background: #fafafc; transition: 0.3s; }
-.fs-text-field:focus { border-color: #03a5fc; background:#fff;}
-.fs-submit-btn { width: 100%; height: 56px; border-radius: 16px; border:none; background: #00a4ff; color: #fff; font-size: 18px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 25px rgba(0, 164, 255, 0.3); margin-top:10px; transition: 0.2s; }
-.fs-submit-btn:active { transform: scale(0.97); }
+.flay-pay-wrapper .fs-payment-page.active { transform: translateX(0); }
+.flay-pay-wrapper .fs-header-controls { display: flex; align-items: center; padding: 16px; }
+.flay-pay-wrapper .fs-header-controls .back-sq { width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 12px; border:none; color:#fff; display:flex; justify-content:center; align-items:center; font-size:18px; cursor:pointer;}
+.flay-pay-wrapper .fs-logo-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 10px; margin-bottom: 20px;}
+.flay-pay-wrapper .fs-logo { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #ffffff; background: #fff; padding: 2px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); object-fit: cover;}
+.flay-pay-wrapper .fs-timer { font-size: 52px; font-weight: 900; color: #ffffff; text-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 10px; line-height:1;}
+.flay-pay-wrapper .fs-timer-sub { font-size: 13px; font-weight: 800; color: #ffffff; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 24px;}
+.flay-pay-wrapper .fs-inst-wrap { text-align: center; color: #fff; margin: 0 24px 24px 24px; font-family: sans-serif; }
+.flay-pay-wrapper .fs-inst-en { font-size: 15.5px; font-weight: 700; margin-bottom: 6px; line-height: 1.3;}
+.flay-pay-wrapper .fs-inst-bn { font-size: 14px; opacity: 0.9; }
+.flay-pay-wrapper .fs-card-white { background: #ffffff; border-radius: 28px; margin: 0 20px 40px 20px; padding: 24px; box-shadow: 0 -4px 30px rgba(0,0,0,0.1); color: #333; font-family: 'Plus Jakarta Sans', sans-serif; }
+.flay-pay-wrapper .fs-input-box { margin-bottom: 18px; position: relative;}
+.flay-pay-wrapper .fs-label { font-size: 12px; font-weight: 700; color: #5a6676; margin-bottom: 8px; display: block;}
+.flay-pay-wrapper .fs-val-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ebecf0; padding-bottom: 10px; margin-bottom: 6px; }
+.flay-pay-wrapper .fs-val-text { font-size: 20px; font-weight: 800; color: #1f2533; display: flex; align-items:center; }
+.flay-pay-wrapper .fs-copy-btn { width: 32px; height: 32px; border-radius: 10px; border:none; background:#f4f5f8; color:#0396fe; font-size: 14px; cursor: pointer; transition: 0.2s; display:grid; place-items:center; }
+.flay-pay-wrapper .fs-copy-btn:active { transform: scale(0.9); }
+.flay-pay-wrapper .fs-text-field { width: 100%; border: 1.5px solid #dcdfe5; border-radius: 16px; padding: 16px; font-size: 16px; font-weight: 600; color:#333; outline: none; background: #fafafc; transition: 0.3s; }
+.flay-pay-wrapper .fs-text-field:focus { border-color: #03a5fc; background:#fff;}
+.flay-pay-wrapper .fs-submit-btn { width: 100%; height: 56px; border-radius: 16px; border:none; background: #00a4ff; color: #fff; font-size: 18px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 25px rgba(0, 164, 255, 0.3); margin-top:10px; transition: 0.2s; }
+.flay-pay-wrapper .fs-submit-btn:active { transform: scale(0.97); }
 </style>
 </head>
 <body>
+
+<div class="flay-pay-wrapper">
 
     <!-- TELEGRAM OFFICIAL VERIFIED BADGE SVG -->
     <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
@@ -199,22 +201,20 @@
         </defs>
     </svg>
 
-<div class="flay-pay-wrapper">
-
     <!-- Premium Custom Alert -->
     <div class="overlay" id="fp-premium-alert">
         <div class="premium-alert-card">
             <div class="premium-alert-icon" id="fp-alert-icon"></div>
             <h3 class="premium-alert-title" id="fp-alert-title">Title</h3>
             <p class="premium-alert-msg" id="fp-alert-msg">Message goes here</p>
-            <button class="premium-alert-btn" onclick="closePremiumAlert()">OK</button>
+            <button class="premium-alert-btn" id="fp-alert-btn">OK</button>
         </div>
     </div>
 
     <!-- HOME LAYOUT -->
     <main class="app">
         <header class="top-bar">
-            <button class="back-btn" type="button" onclick="goBackToSafety(event)"><i class="fas fa-arrow-left"></i></button>
+            <button class="back-btn" type="button" onclick="fpGoBackToSafety(event)"><i class="fas fa-arrow-left"></i></button>
             <div class="header-title"><i class="fas fa-shield-halved"></i> Flay Pay</div>
         </header>
 
@@ -237,19 +237,19 @@
             <h3 class="section-title">Payment Method</h3>
             <span class="section-subtitle">Select how you want to pay</span>
 
-            <div class="payment-card" id="card-crypto" onclick="selectAppMethod('crypto', 'Crypto Payment')">
+            <div class="payment-card" id="card-crypto" onclick="fpSelectAppMethod('crypto', 'Crypto Payment')">
                 <div class="card-icon"><i class="fab fa-bitcoin"></i></div>
                 <div class="card-info"><h3>Crypto Payment</h3><p>Pay securely via crypto wallet</p></div>
                 <i class="fas fa-check-circle card-indicator" id="ind-crypto"></i>
             </div>
 
-            <div class="payment-card" id="card-local" onclick="selectAppMethod('local', 'Local Mobile Payment')">
+            <div class="payment-card" id="card-local" onclick="fpSelectAppMethod('local', 'Local Mobile Payment')">
                 <div class="card-icon"><i class="fas fa-mobile-screen"></i></div>
                 <div class="card-info"><h3>Local Payment</h3><p>Pay using bKash, Nagad or Rocket</p></div>
                 <i class="fas fa-check-circle card-indicator" id="ind-local"></i>
             </div>
 
-            <div class="payment-card" id="card-google" onclick="selectAppMethod('google', 'Google Play Billing')">
+            <div class="payment-card" id="card-google" onclick="fpSelectAppMethod('google', 'Google Play Billing')">
                 <div class="card-icon"><i class="fab fa-google-play"></i></div>
                 <div class="card-info"><h3>Buy Google Play</h3><p>Quick purchase through Play Store</p></div>
                 <i class="fas fa-check-circle card-indicator" id="ind-google"></i>
@@ -264,15 +264,15 @@
 
     <!-- Main Footer Action -->
     <div class="sticky-footer">
-        <button class="btn-primary" id="mainCta" type="button" onclick="triggerMainAction()" disabled>Select Method</button>
+        <button class="btn-primary" id="mainCta" type="button" onclick="fpTriggerMainAction()" disabled>Select Method</button>
     </div>
 
     <!-- BOTTOM SHEET ADD MONEY -->
-    <div class="bs-backdrop" id="bsBackdrop" onclick="closeBottomSheet()"></div>
-    <div class="bottom-sheet" id="localPaymentSheet">
+    <div class="bs-backdrop" id="fp-bsBackdrop" onclick="fpCloseBottomSheet()"></div>
+    <div class="bottom-sheet" id="fp-localPaymentSheet">
         <div class="bs-header">
             <div class="bs-title"><i class="fas fa-money-bill-transfer"></i> Add Money</div>
-            <button class="bs-close" onclick="closeBottomSheet()"><i class="fas fa-times"></i></button>
+            <button class="bs-close" onclick="fpCloseBottomSheet()"><i class="fas fa-times"></i></button>
         </div>
         
         <div class="bs-label-row">
@@ -282,7 +282,7 @@
 
         <div class="amount-input-wrapper">
             <span class="prefix-icon">$</span>
-            <input type="number" class="bs-input-amount" id="sheetInputUsd" placeholder="0.00" oninput="calcBdtRate()" onkeyup="calcBdtRate()">
+            <input type="number" class="bs-input-amount" id="sheetInputUsd" placeholder="0.00" oninput="fpCalcBdtRate()" onkeyup="fpCalcBdtRate()">
         </div>
         
         <div class="exchange-disp" id="exchangeDisp">
@@ -290,34 +290,34 @@
         </div>
         
         <div class="gateway-grid">
-            <div class="gateway-btn" id="gw-bkash" onclick="selectSubGateway('bkash')">
+            <div class="gateway-btn" id="gw-bkash" onclick="fpSelectSubGateway('bkash')">
                 <img src="https://www.image2url.com/r2/default/images/1788007876265-5d6da5f7-5ec6-4cdd-ad68-b90b87ebcb6e.jpg" alt="bKash Logo" class="gateway-icon">
                 <span>bKash</span>
             </div>
-            <div class="gateway-btn" id="gw-nagad" onclick="selectSubGateway('nagad')">
+            <div class="gateway-btn" id="gw-nagad" onclick="fpSelectSubGateway('nagad')">
                 <img src="https://www.image2url.com/r2/default/images/1788008020392-ac61a553-48a8-4ed3-a1da-5ad149aae2e7.jpg" alt="Nagad Logo" class="gateway-icon">
                 <span>Nagad</span>
             </div>
-            <div class="gateway-btn" id="gw-rocket" style="grid-column: 1 / span 2;" onclick="selectSubGateway('rocket')">
+            <div class="gateway-btn" id="gw-rocket" style="grid-column: 1 / span 2;" onclick="fpSelectSubGateway('rocket')">
                 <img src="https://www.image2url.com/r2/default/images/1788008076520-1f2a46ad-aa02-4da8-8958-25e0bb83a603.jpg" alt="Rocket Logo" class="gateway-icon">
                 <span>Rocket</span>
             </div>
         </div>
 
-        <button class="btn-primary" style="margin-top:10px" onclick="proceedToInit()">Continue</button>
+        <button class="btn-primary" style="margin-top:10px" onclick="fpProceedToInit()">Continue</button>
     </div>
 
     <!-- INITIALIZING OVERLAY -->
-    <div class="overlay" id="overlay-pending">
+    <div class="overlay" id="fp-overlay-pending">
         <div class="status-icon processing"><i class="fas fa-circle-notch spinner"></i></div>
         <h2>Processing...</h2>
         <p>Generating a secure localized session.</p>
     </div>
 
     <!-- FULL SCREEN 15-MIN PAYMENT PAGE -->
-    <div class="fs-payment-page" id="fsPayPage">
+    <div class="fs-payment-page" id="fp-fsPayPage">
         <div class="fs-header-controls">
-            <button class="back-sq" onclick="autoClosePayPage('cancelled')"><i class="fas fa-arrow-left"></i></button>
+            <button class="back-sq" onclick="fpAutoClosePayPage('cancelled')"><i class="fas fa-arrow-left"></i></button>
         </div>
         
         <div class="fs-logo-wrapper">
@@ -336,7 +336,7 @@
                 <label class="fs-label">Amount (পরিমাণ)</label>
                 <div class="fs-val-box">
                     <span class="fs-val-text">৳ <span id="finalDisplayBdtAmount" style="margin-left:8px;">0</span></span>
-                    <button class="fs-copy-btn" onclick="copyDynamicValue('finalDisplayBdtAmount')"><i class="far fa-copy"></i></button>
+                    <button class="fs-copy-btn" onclick="fpCopyDynamicValue('finalDisplayBdtAmount')"><i class="far fa-copy"></i></button>
                 </div>
             </div>
 
@@ -344,7 +344,7 @@
                 <label class="fs-label" id="providerNameBangla">bKash Personal (বিকাশ পার্সোনাল)</label>
                 <div class="fs-val-box">
                     <span class="fs-val-text" id="finalGatewayNumber" style="font-family:monospace;">017XXXXXXXX</span>
-                    <button class="fs-copy-btn" onclick="copyDynamicValue('finalGatewayNumber')"><i class="far fa-copy"></i></button>
+                    <button class="fs-copy-btn" onclick="fpCopyDynamicValue('finalGatewayNumber')"><i class="far fa-copy"></i></button>
                 </div>
             </div>
 
@@ -358,12 +358,12 @@
                 <input type="number" class="fs-text-field" placeholder="01XXXXXXXXX" id="phoneField">
             </div>
 
-            <button class="fs-submit-btn" onclick="submitFinalPaymentRequest()">সাবমিট করুন</button>
+            <button class="fs-submit-btn" onclick="fpSubmitFinalPaymentRequest()">সাবমিট করুন</button>
         </div>
     </div>
 
     <!-- PREMIUM CHECKOUT MODAL -->
-    <div class="overlay" id="checkout-popup-overlay">
+    <div class="overlay" id="fp-checkout-popup-overlay">
         <div class="premium-checkout-card">
             <div class="chk-header">
                 <div class="chk-icon"><i class="fas fa-shopping-cart"></i></div>
@@ -392,19 +392,19 @@
             </div>
             
             <div class="chk-actions">
-                <button class="btn-cancel" onclick="cancelCheckout()">Cancel</button>
-                <button class="btn-confirm" onclick="confirmCheckout()">Confirm Payment</button>
+                <button class="btn-cancel" onclick="fpCancelCheckout()">Cancel</button>
+                <button class="btn-confirm" onclick="fpConfirmCheckout()">Confirm Payment</button>
             </div>
         </div>
     </div>
 
     <!-- SUCCESS MODAL FOR PLAN ACTIVATION -->
-    <div class="overlay" id="plan-success-modal">
+    <div class="overlay" id="fp-plan-success-modal">
         <div class="premium-success-card">
             <div class="ps-icon-wrap"><i class="fas fa-check"></i></div>
             <h3 class="ps-title">Payment Successful!</h3>
             <p class="ps-desc">Your plan has been activated successfully. Enjoy the premium benefits across Flaynity.</p>
-            <button class="btn-success-done" onclick="finishPlanSuccess()">Done</button>
+            <button class="btn-success-done" onclick="fpFinishPlanSuccess()">Done</button>
         </div>
     </div>
 
@@ -423,13 +423,13 @@
     let pendingOrder = null;
     let pendingOrderLoopInterval = null;
 
-    // Premium Custom Alert Function with Callbacks (Bugs Fixed)
-    window.showPremiumAlert = function(title, msg, type = 'error', callback = null) {
+    // Isolated Premium Custom Alert Function for Flay Pay
+    window.showFlayPayAlert = function(title, msg, type = 'error', callback = null) {
         const overlay = document.getElementById('fp-premium-alert');
         const iconEl = document.getElementById('fp-alert-icon');
         const titleEl = document.getElementById('fp-alert-title');
         const msgEl = document.getElementById('fp-alert-msg');
-        const btnEl = overlay.querySelector('.premium-alert-btn');
+        const btnEl = document.getElementById('fp-alert-btn');
         
         titleEl.innerText = title;
         msgEl.innerHTML = msg.replace(/\n/g, '<br>');
@@ -439,23 +439,21 @@
         else if (type === 'warning') iconEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
         else iconEl.innerHTML = '<i class="fas fa-times"></i>';
         
-        // Proper callback attachment without ghost events
         btnEl.onclick = function() {
-            closePremiumAlert();
+            closeFlayPayAlert();
             if(callback && typeof callback === 'function') {
-                setTimeout(() => callback(), 150); // Small delay for smooth closing transition
+                setTimeout(() => callback(), 150);
             }
         };
         
         overlay.classList.add('active');
     };
 
-    window.closePremiumAlert = function() {
+    window.closeFlayPayAlert = function() {
         document.getElementById('fp-premium-alert').classList.remove('active');
     };
 
-    // Firebase Init Listener
-    function initFirebaseListeners() {
+    function fpInitFirebaseListeners() {
         if(fpListenersActive) return;
         if(typeof firebase === 'undefined' || !firebase.auth().currentUser) return;
         
@@ -473,7 +471,7 @@
             fpSettings.rocket = s.rocket || "019XXXXXXXX";
 
             document.getElementById('fp-limits-text').innerText = `Limits: ($${fpSettings.minUsd} - $${fpSettings.maxUsd})`;
-            if (typeof window.calcBdtRate === 'function') window.calcBdtRate();
+            if (typeof window.fpCalcBdtRate === 'function') window.fpCalcBdtRate();
         });
 
         db.ref(`users/${user.uid}`).on('value', snap => {
@@ -488,10 +486,9 @@
         });
     }
 
-    // Checking for Pending Orders (Fix for SPA cache when closed & reopened)
-    function checkPendingOrderLoop() {
+    function fpCheckPendingOrderLoop() {
         const orderDataStr = sessionStorage.getItem('flay_pending_checkout');
-        const overlay = document.getElementById('checkout-popup-overlay');
+        const overlay = document.getElementById('fp-checkout-popup-overlay');
         
         if (orderDataStr && !pendingOrder && !overlay.classList.contains('active')) {
             pendingOrder = JSON.parse(orderDataStr);
@@ -517,24 +514,24 @@
         }
     }
 
-    window.cancelCheckout = function() {
+    window.fpCancelCheckout = function() {
         sessionStorage.removeItem('flay_pending_checkout');
-        document.getElementById('checkout-popup-overlay').classList.remove('active');
+        document.getElementById('fp-checkout-popup-overlay').classList.remove('active');
         pendingOrder = null;
     };
 
-    window.confirmCheckout = function() {
+    window.fpConfirmCheckout = function() {
         if(!pendingOrder) return;
         const user = firebase.auth().currentUser;
         if(!user) return;
         
         if(fpUserStats.balance < pendingOrder.amount) {
-            showPremiumAlert(
+            showFlayPayAlert(
                 "Insufficient Balance", 
                 `You need $${pendingOrder.amount} USDT, but you have $${fpUserStats.balance.toFixed(2)} USDT.\n\nPlease recharge your Flay Pay account to proceed.`, 
                 "error"
             );
-            cancelCheckout();
+            fpCancelCheckout();
             return;
         }
         
@@ -560,44 +557,43 @@
             
             db.ref().update(updates).then(() => {
                 sessionStorage.removeItem('flay_pending_checkout');
-                document.getElementById('checkout-popup-overlay').classList.remove('active');
+                document.getElementById('fp-checkout-popup-overlay').classList.remove('active');
                 pendingOrder = null;
                 
-                document.getElementById('plan-success-modal').classList.add('active');
+                document.getElementById('fp-plan-success-modal').classList.add('active');
             });
         });
     };
 
-    window.finishPlanSuccess = function() {
-        document.getElementById('plan-success-modal').classList.remove('active');
-        goBackToSafety();
+    window.fpFinishPlanSuccess = function() {
+        document.getElementById('fp-plan-success-modal').classList.remove('active');
+        fpGoBackToSafety();
     };
 
-    // Firebase injection monitoring
     let checkFbInterval = setInterval(() => {
         if(typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
-            initFirebaseListeners();
+            fpInitFirebaseListeners();
             if(!pendingOrderLoopInterval) {
-                pendingOrderLoopInterval = setInterval(checkPendingOrderLoop, 1000);
+                pendingOrderLoopInterval = setInterval(fpCheckPendingOrderLoop, 1000);
             }
             clearInterval(checkFbInterval);
         }
     }, 300);
 
-    window.goBackToSafety = function(e) {
+    window.fpGoBackToSafety = function(e) {
         if (e) e.preventDefault();
         if (typeof executeBackAction === 'function') executeBackAction();
         else window.history.back();
     };
 
-    window.copyDynamicValue = function(elementId) {
+    window.fpCopyDynamicValue = function(elementId) {
         const text = document.getElementById(elementId).innerText;
         navigator.clipboard.writeText(text).then(() => {
-            showPremiumAlert("Copied!", "Text successfully copied to clipboard.", "success");
+            showFlayPayAlert("Copied!", "Text successfully copied to clipboard.", "success");
         });
     }
 
-    window.selectAppMethod = function(methodID, label) {
+    window.fpSelectAppMethod = function(methodID, label) {
         activeAppMethod = methodID;
         const types = ['crypto', 'local', 'google'];
         types.forEach(cat => {
@@ -616,27 +612,27 @@
         btnCTA.innerHTML = `Continue with ${label} &nbsp; <i class="fas fa-arrow-right"></i>`;
     };
 
-    window.triggerMainAction = function() {
+    window.fpTriggerMainAction = function() {
         if(!activeAppMethod) return;
         
         if(activeAppMethod === 'local'){
-            document.getElementById('bsBackdrop').classList.add('active');
-            document.getElementById('localPaymentSheet').classList.add('active');
+            document.getElementById('fp-bsBackdrop').classList.add('active');
+            document.getElementById('fp-localPaymentSheet').classList.add('active');
         } else {
-            document.getElementById('overlay-pending').classList.add('active');
+            document.getElementById('fp-overlay-pending').classList.add('active');
             setTimeout(()=>{
-                document.getElementById('overlay-pending').classList.remove('active');
-                showPremiumAlert("Request Processed", "Your request is currently under testing/demo routing.", "success");
+                document.getElementById('fp-overlay-pending').classList.remove('active');
+                showFlayPayAlert("Request Processed", "Your request is currently under testing/demo routing.", "success");
             },1500);
         }
     };
 
-    window.closeBottomSheet = function() {
-        document.getElementById('bsBackdrop').classList.remove('active');
-        document.getElementById('localPaymentSheet').classList.remove('active');
+    window.fpCloseBottomSheet = function() {
+        document.getElementById('fp-bsBackdrop').classList.remove('active');
+        document.getElementById('fp-localPaymentSheet').classList.remove('active');
     };
 
-    window.calcBdtRate = function() {
+    window.fpCalcBdtRate = function() {
         const field = document.getElementById('sheetInputUsd');
         const disp = document.getElementById('exchangeDisp');
         let rawVal = parseFloat(field.value);
@@ -650,7 +646,7 @@
         disp.innerText = `$ ${rawVal} = ৳${currentCalcBDTAmount.toLocaleString()}`;
     };
 
-    window.selectSubGateway = function(gw){
+    window.fpSelectSubGateway = function(gw){
         selectedSubGW = gw;
         const opts = ['bkash','nagad','rocket'];
         opts.forEach(g => {
@@ -660,32 +656,30 @@
         });
     };
 
-    // Bug Fixed Here: Callback integrated to safely open the full-screen view
-    window.proceedToInit = function() {
+    window.fpProceedToInit = function() {
         let rawVal = parseFloat(document.getElementById('sheetInputUsd').value);
         if(isNaN(rawVal) || rawVal < fpSettings.minUsd || rawVal > fpSettings.maxUsd) { 
-            showPremiumAlert("Invalid Amount", `Please enter a valid amount between $${fpSettings.minUsd} and $${fpSettings.maxUsd}`, "warning"); 
+            showFlayPayAlert("Invalid Amount", `Please enter a valid amount between $${fpSettings.minUsd} and $${fpSettings.maxUsd}`, "warning"); 
             return; 
         }
         if(!selectedSubGW) { 
-            showPremiumAlert("Select Wallet", "Please select a local wallet (bKash/Nagad/Rocket) first.", "warning"); 
+            showFlayPayAlert("Select Wallet", "Please select a local wallet (bKash/Nagad/Rocket) first.", "warning"); 
             return; 
         }
 
-        currentCalcBDTAmount = rawVal * fpSettings.rate; // explicitly set
+        currentCalcBDTAmount = rawVal * fpSettings.rate; 
+        fpCloseBottomSheet();
 
-        closeBottomSheet();
-
-        document.getElementById('overlay-pending').classList.add('active');
+        document.getElementById('fp-overlay-pending').classList.add('active');
         setTimeout(() => {
-            document.getElementById('overlay-pending').classList.remove('active');
+            document.getElementById('fp-overlay-pending').classList.remove('active');
             
-            showPremiumAlert(
+            showFlayPayAlert(
                 "সতর্কতা!",
                 "উলটা পালটা Payment Submit করলে Account Ban করা হবে।",
                 "warning",
                 function() {
-                    openFullScreenbKash(); // Executed seamlessly after 'OK' click
+                    fpOpenFullScreenbKash(); 
                 }
             );
 
@@ -694,77 +688,77 @@
     
     const padTime = (num) => num.toString().padStart(2, '0');
 
-    window.openFullScreenbKash = function() {
+    window.fpOpenFullScreenbKash = function() {
         document.getElementById('finalDisplayBdtAmount').innerText = currentCalcBDTAmount; 
         
         const netLogoImg = document.getElementById('fullScreenPayLogo');
         const proNameDisplay = document.getElementById('providerNameBangla');
 
         if(selectedSubGW === 'nagad') {
-            document.getElementById('fsPayPage').style.background = '#ed1c24'; 
+            document.getElementById('fp-fsPayPage').style.background = '#ed1c24'; 
             netLogoImg.src = 'https://www.image2url.com/r2/default/images/1788008020392-ac61a553-48a8-4ed3-a1da-5ad149aae2e7.jpg';
             proNameDisplay.innerText = 'Nagad Personal (নগদ পার্সোনাল)';
             document.getElementById('finalGatewayNumber').innerText = fpSettings.nagad;
         } else if (selectedSubGW === 'rocket') {
-            document.getElementById('fsPayPage').style.background = '#8c3494';
+            document.getElementById('fp-fsPayPage').style.background = '#8c3494';
             netLogoImg.src = 'https://www.image2url.com/r2/default/images/1788008076520-1f2a46ad-aa02-4da8-8958-25e0bb83a603.jpg';
             proNameDisplay.innerText = 'Rocket Personal (রকেট পার্সোনাল)';
             document.getElementById('finalGatewayNumber').innerText = fpSettings.rocket;
         } else {
-            document.getElementById('fsPayPage').style.background = '#db1962';
+            document.getElementById('fp-fsPayPage').style.background = '#db1962';
             netLogoImg.src = 'https://www.image2url.com/r2/default/images/1788007876265-5d6da5f7-5ec6-4cdd-ad68-b90b87ebcb6e.jpg';
             proNameDisplay.innerText = 'bKash Personal (বিকাশ পার্সোনাল)';
             document.getElementById('finalGatewayNumber').innerText = fpSettings.bkash;
         }
         
-        document.getElementById('fsPayPage').classList.add('active');
+        document.getElementById('fp-fsPayPage').classList.add('active');
         
         let secondsLeft = 15 * 60; 
-        updateTimerRender(secondsLeft);
+        fpUpdateTimerRender(secondsLeft);
 
         if(timerInterval) clearInterval(timerInterval);
         timerInterval = setInterval(() => {
             secondsLeft--;
-            updateTimerRender(secondsLeft);
+            fpUpdateTimerRender(secondsLeft);
 
             if (secondsLeft <= 0) {
                 clearInterval(timerInterval);
-                autoClosePayPage('timeout');
+                fpAutoClosePayPage('timeout');
             }
         }, 1000);
     };
 
-    function updateTimerRender(totSec){
+    function fpUpdateTimerRender(totSec){
         let min = Math.floor(totSec / 60);
         let sec = totSec % 60;
         document.getElementById('timerDisplay').innerText = `${padTime(min)}:${padTime(sec)}`;
     }
 
-    window.autoClosePayPage = function(reason) {
+    window.fpAutoClosePayPage = function(reason) {
         clearInterval(timerInterval);
-        document.getElementById('fsPayPage').classList.remove('active');
+        document.getElementById('fp-fsPayPage').classList.remove('active');
         if (reason === 'timeout') {
-            showPremiumAlert("Session Expired", "15 minute payment window has automatically been closed.", "error");
+            showFlayPayAlert("Session Expired", "15 minute payment window has automatically been closed.", "error");
         }
     };
 
-    window.submitFinalPaymentRequest = function(){
+    window.fpSubmitFinalPaymentRequest = function(){
         const txField = document.getElementById('txIDField').value.trim();
         const phnField = document.getElementById('phoneField').value.trim();
         if(!txField || !phnField) { 
-            showPremiumAlert("Missing Information", "প্রয়োজনীয় তথ্যগুলো পূরণ করুন (Transaction ID & Sender Number)।", "warning"); 
+            showFlayPayAlert("Missing Information", "প্রয়োজনীয় তথ্যগুলো পূরণ করুন (Transaction ID & Sender Number)।", "warning"); 
             return;
         }
         
         const user = typeof firebase !== 'undefined' ? firebase.auth().currentUser : null;
         if(!user) { 
-            showPremiumAlert("Error", "You must be logged in to submit a request!", "error"); 
+            showFlayPayAlert("Error", "You must be logged in to submit a request!", "error"); 
             return; 
         }
 
         clearInterval(timerInterval);
-        document.getElementById('fsPayPage').classList.remove('active');
-        document.getElementById('overlay-pending').classList.add('active');
+        document.getElementById('fp-fsPayPage').classList.remove('active');
+        document.getElementById('fp-overlay-pending').classList.add('active');
         
         const reqRef = firebase.database().ref('flay_pay_requests').push();
         reqRef.set({
@@ -777,9 +771,9 @@
             status: 'pending',
             timestamp: firebase.database.ServerValue.TIMESTAMP
         }).then(() => {
-            document.getElementById('overlay-pending').classList.remove('active');
+            document.getElementById('fp-overlay-pending').classList.remove('active');
             
-            showPremiumAlert(
+            showFlayPayAlert(
                 "Request Submitted", 
                 "Admin will verify and approve your request shortly. Balance will be updated automatically.", 
                 "success"
@@ -788,16 +782,12 @@
             document.getElementById('txIDField').value = '';
             document.getElementById('phoneField').value = '';
             document.getElementById('sheetInputUsd').value = '';
-            window.calcBdtRate();
+            window.fpCalcBdtRate();
             
         }).catch(err => {
-            document.getElementById('overlay-pending').classList.remove('active');
-            showPremiumAlert("Submission Failed", err.message, "error");
+            document.getElementById('fp-overlay-pending').classList.remove('active');
+            showFlayPayAlert("Submission Failed", err.message, "error");
         });
-    };
-
-    window.killEverything = function(){
-       document.querySelectorAll('.overlay').forEach(el=> el.classList.remove('active'));
     };
 
 })();

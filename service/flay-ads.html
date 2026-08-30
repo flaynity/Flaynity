@@ -13,21 +13,21 @@
     <script src="../js/firebase-config.js"></script>
     
     <style>
-        /* ORIGINAL FLAYNITY COLORS */
+        /* SYNCED WITH FLAY PAY COLORS */
         :root {
-            --bg: #fff;
+            --bg: #fdfdfd;
             --surface: #fff;
-            --input-bg: #f7f7f7;
+            --input-bg: #f4f5f7;
             --text: #000;
             --muted: #666;
-            --border: #e9e9e9;
-            --accent: #ff2e55;
+            --border: #e5e5e5;
+            --accent: #FF2E55;
             --soft: rgba(255,46,85,.10);
-            --shadow: 0 14px 40px rgba(0,0,0,.07);
+            --shadow: 0 12px 32px rgba(0,0,0,.06);
             
             --success: #00a844;
             --warning: #ffb020;
-            --danger: #ff2e55;
+            --danger: #d7193f;
             --info: #007aff;
             
             --bar-bg: rgba(255,255,255,0.85);
@@ -36,10 +36,10 @@
 
         [data-theme=dark] {
             --bg: #000;
-            --surface: #0a0a0a;
-            --input-bg: #141414;
+            --surface: #121212;
+            --input-bg: #1a1a1a;
             --text: #fff;
-            --muted: #aaa;
+            --muted: #9BA1B0;
             --border: #222;
             --soft: rgba(255,46,85,.14);
             --shadow: 0 14px 40px rgba(0,0,0,.35);
@@ -59,9 +59,9 @@
             background: var(--bg);
         }
 
-        /* MASTER CONTAINER - Fixes width & centering issues securely */
+        /* MASTER CONTAINER */
         .app-container {
-            width: 100%; /* Fixed the narrow width issue */
+            width: 100%;
             max-width: 680px;
             margin: 0 auto;
             min-height: 100vh;
@@ -91,7 +91,7 @@
             border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
-            background: var(--bar-bg); /* Fixed Top Bar Dark Mode Issue */
+            background: var(--bar-bg);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             z-index: 50;
@@ -169,7 +169,7 @@
         .empty-state i { font-size: 40px; color: var(--muted); margin-bottom: 16px; opacity: 0.5; }
         .empty-state p { margin: 0; font-weight: 600; color: var(--muted); }
 
-        /* FLOATING ACTION BUTTON - Fully Fixed */
+        /* FLOATING ACTION BUTTON */
         .fab {
             background: var(--accent);
             color: #fff;
@@ -259,7 +259,7 @@
         
         .custom-select:active { background: var(--border); }
 
-        /* PREMIUM POP-UP BOTTOM SHEET (For Selects) */
+        /* PREMIUM POP-UP BOTTOM SHEET */
         .sheet-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: var(--overlay-bg); z-index: 100000;
@@ -267,39 +267,25 @@
             backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
             display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
         }
-
         .sheet-overlay.active { opacity: 1; pointer-events: auto; }
-
         .sheet-modal {
-            background: var(--surface);
-            width: 100%; max-width: 680px;
+            background: var(--surface); width: 100%; max-width: 680px;
             border-top-left-radius: 28px; border-top-right-radius: 28px;
-            transform: translateY(100%);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             padding: 24px; padding-bottom: max(32px, env(safe-area-inset-bottom));
             display: flex; flex-direction: column; max-height: 85vh;
         }
-
         .sheet-overlay.active .sheet-modal { transform: translateY(0); }
-
-        .sheet-header {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
-        }
-        
+        .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .sheet-title { font-size: 18px; font-weight: 900; margin: 0; }
         .sheet-close { width: 36px; height: 36px; border-radius: 50%; background: var(--input-bg); border: none; color: var(--text); font-size: 16px; cursor: pointer; display: grid; place-items: center; }
-        
-        .sheet-options {
-            overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
-        }
-        
+        .sheet-options { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
         .sheet-option {
             padding: 18px; font-size: 16px; font-weight: 700; border-radius: 16px;
             cursor: pointer; transition: background 0.2s;
             display: flex; justify-content: space-between; align-items: center;
             border: 2px solid transparent;
         }
-        
         .sheet-option:active { background: var(--input-bg); transform: scale(0.98); }
         .sheet-option.selected { color: var(--accent); background: var(--soft); border-color: var(--accent); }
 
@@ -342,7 +328,6 @@
 </head>
 <body>
 
-<!-- APP CONTAINER for perfect centering -->
 <main class="app-container">
     <header class="bar">
         <button class="back" onclick="handleBack()" aria-label="Back">
@@ -352,7 +337,6 @@
         <span class="badge"><i class="fas fa-crown"></i> PREMIUM</span>
     </header>
 
-    <!-- DASHBOARD VIEW -->
     <section class="content" id="view-dashboard">
         <div class="dashboard-header">
             <h1>Campaign Manager</h1>
@@ -388,7 +372,6 @@
             </div>
         </div>
 
-        <!-- Fixed Broken FAB Button -->
         <button class="fab" id="fab-create" onclick="startCreateFlow()">
             <i class="fas fa-plus"></i> Create New Ad
         </button>
@@ -407,7 +390,7 @@
             </div>
         </div>
 
-        <!-- Step 1: Select Placement -->
+        <!-- Step 1 -->
         <div class="create-step active" id="step-1">
             <h2 class="step-title">Ad Placement</h2>
             <p class="step-subtitle">Where do you want your audience to see this ad?</p>
@@ -451,7 +434,7 @@
             </div>
         </div>
 
-        <!-- Step 2: Ad Creative -->
+        <!-- Step 2 -->
         <div class="create-step" id="step-2">
             <h2 class="step-title">Ad Creative</h2>
             <p class="step-subtitle">Provide the visuals and copy for your advertisement.</p>
@@ -473,7 +456,6 @@
                 <textarea class="form-control" id="c-desc" placeholder="Tell people what your ad is about..."></textarea>
             </div>
 
-            <!-- PREMIUM CUSTOM SELECT (CTA) -->
             <div class="form-group">
                 <label class="form-label">Call to Action (CTA)</label>
                 <div class="form-control custom-select" id="c-cta-display" onclick="openCustomSelect('cta')">Learn More</div>
@@ -486,12 +468,11 @@
             </div>
         </div>
 
-        <!-- Step 3: Targeting -->
+        <!-- Step 3 -->
         <div class="create-step" id="step-3">
             <h2 class="step-title">Audience Targeting</h2>
             <p class="step-subtitle">Define exactly who should see this campaign.</p>
 
-            <!-- PREMIUM CUSTOM SELECTS -->
             <div class="form-group">
                 <label class="form-label">Target Devices</label>
                 <div class="form-control custom-select" id="t-device-display" onclick="openCustomSelect('device')">All Devices (Recommended)</div>
@@ -517,7 +498,7 @@
             </div>
         </div>
 
-        <!-- Step 4: Budget -->
+        <!-- Step 4 -->
         <div class="create-step" id="step-4">
             <h2 class="step-title">Campaign Budget</h2>
             <p class="step-subtitle">Control your ad spend securely with Flay Pay.</p>
@@ -544,7 +525,7 @@
             </div>
         </div>
 
-        <!-- Step 5: Review -->
+        <!-- Step 5 -->
         <div class="create-step" id="step-5">
             <h2 class="step-title">Review & Submit</h2>
             <p class="step-subtitle">Final review before submitting your campaign for approval.</p>
@@ -580,7 +561,7 @@
 
     </section>
 
-    <!-- Bottom Actions Layer (Fixed inside App Container) -->
+    <!-- Bottom Actions -->
     <div class="bottom-actions" id="bottom-actions-bar" style="display: none;">
         <div class="bottom-actions-inner">
             <button class="btn btn-outline" id="btn-back" onclick="prevStep()">Back</button>
@@ -595,40 +576,27 @@
                 <h3 class="sheet-title" id="sheet-title">Select Option</h3>
                 <button class="sheet-close" onclick="closeCustomSelect(event, true)"><i class="fas fa-times"></i></button>
             </div>
-            <div class="sheet-options" id="sheet-options-container">
-                <!-- Options will be injected here via JS -->
-            </div>
+            <div class="sheet-options" id="sheet-options-container"></div>
         </div>
     </div>
 
-    <!-- PREMIUM TOP TOAST NOTIFICATION -->
+    <!-- TOAST NOTIFICATION -->
     <div id="premium-toast" class="premium-toast">
         <div class="toast-icon"><i class="fas fa-info-circle"></i></div>
-        <div class="toast-msg">Notification Message</div>
+        <div class="toast-msg">Message</div>
     </div>
-
 </main>
 
 <script>
     const SERVICE = 'flayAds';
     let currentUser = null;
-    
     let currentView = 'dashboard';
     let currentStep = 1;
     let maxStep = 5;
     let toastTimeout = null;
+    let campaignData = { placement: '', placementName: '', creative: {}, targeting: {}, budget: {} };
 
-    const stepTitles = [
-        "Select Placement",
-        "Ad Creative",
-        "Targeting",
-        "Set Budget",
-        "Review & Submit"
-    ];
-
-    let campaignData = {
-        placement: '', placementName: '', creative: {}, targeting: {}, budget: {}
-    };
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('flaynity-theme-pref') || 'light');
 
     auth.onAuthStateChanged(function(u) {
         currentUser = u;
@@ -643,19 +611,15 @@
         loadDashboardData();
     });
 
-    // Premium Toast Logic
     function showToast(message, type = 'error') {
         const toast = document.getElementById('premium-toast');
         const icon = toast.querySelector('i');
         const msgDiv = toast.querySelector('.toast-msg');
-        
         toast.className = 'premium-toast ' + type;
         msgDiv.innerText = message;
-
-        if (type === 'error') { icon.className = 'fas fa-circle-exclamation'; } 
-        else if (type === 'success') { icon.className = 'fas fa-check-circle'; } 
-        else { icon.className = 'fas fa-info-circle'; }
-
+        if (type === 'error') icon.className = 'fas fa-circle-exclamation';
+        else if (type === 'success') icon.className = 'fas fa-check-circle';
+        else icon.className = 'fas fa-info-circle';
         toast.classList.add('show');
         if (toastTimeout) clearTimeout(toastTimeout);
         toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 3000);
@@ -663,11 +627,11 @@
 
     function handleBack() {
         if (currentView === 'create') {
-            if (currentStep > 1) { prevStep(); } 
-            else { switchView('dashboard'); }
+            if (currentStep > 1) prevStep(); 
+            else switchView('dashboard');
         } else {
-            if (typeof executeBackAction === 'function') { executeBackAction(); } 
-            else { window.history.back(); }
+            if (typeof executeBackAction === 'function') executeBackAction(); 
+            else window.history.back();
         }
     }
 
@@ -683,27 +647,20 @@
             campaignData = { placement: '', placementName: '', creative: {}, targeting: {}, budget: {} };
             document.querySelectorAll('.placement-card').forEach(el => el.classList.remove('active'));
             updateStepUI();
-        } else {
-            loadDashboardData(); 
-        }
+        } else { loadDashboardData(); }
     }
 
     function startCreateFlow() { switchView('create'); }
 
-    // Dashboard Data
     function loadDashboardData() {
         if (!currentUser) return;
-        const campaignsRef = db.ref('flayAds/campaigns');
-        campaignsRef.orderByChild('advertiserId').equalTo(currentUser.uid)
-            .on('value', snap => {
-                renderCampaignsList(snap.val() || {});
-            });
+        db.ref('flayAds/campaigns').orderByChild('advertiserId').equalTo(currentUser.uid)
+            .on('value', snap => { renderCampaignsList(snap.val() || {}); });
     }
 
     function renderCampaignsList(data) {
         const container = document.getElementById('campaign-list-container');
         const campaigns = Object.entries(data).map(([id, val]) => ({ id, ...val }));
-        
         let total = campaigns.length;
         let running = 0; let pending = 0;
 
@@ -722,7 +679,7 @@
                 else if (camp.campaignStatus === 'Under Review') statusBadge = `<div class="camp-status status-review">In Review</div>`;
                 else statusBadge = `<div class="camp-status status-pending">${camp.campaignStatus || 'Draft'}</div>`;
 
-                const payStatusTxt = camp.paymentStatus === 'successful' ? '<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Paid</span>' : (camp.paymentStatus === 'pending' ? '<span style="color:var(--warning)"><i class="fas fa-clock"></i> Pending Payment</span>' : 'Failed/Refunded');
+                const payStatusTxt = camp.paymentStatus === 'successful' ? '<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Paid</span>' : (camp.paymentStatus === 'pending' ? '<span style="color:var(--warning)"><i class="fas fa-clock"></i> Pending</span>' : 'Failed/Refunded');
 
                 html += `
                     <div class="campaign-card">
@@ -742,7 +699,6 @@
             });
             container.innerHTML = html;
         }
-
         document.getElementById('stat-total').innerText = total;
         document.getElementById('stat-running').innerText = running;
         document.getElementById('stat-pending').innerText = pending;
@@ -753,104 +709,41 @@
         return names[p] || p;
     }
 
-    // Custom Bottom Sheet Select Options Structure
     const selectOptions = {
-        'cta': {
-            title: "Select Call to Action",
-            items: [
-                { label: 'Learn More', value: 'Learn More' },
-                { label: 'Download', value: 'Download' },
-                { label: 'Shop Now', value: 'Shop Now' },
-                { label: 'Sign Up', value: 'Sign Up' },
-                { label: 'Install', value: 'Install' }
-            ]
-        },
-        'device': {
-            title: "Select Target Devices",
-            items: [
-                { label: 'All Devices (Recommended)', value: 'all' },
-                { label: 'Android Only', value: 'android' },
-                { label: 'iOS Only', value: 'ios' },
-                { label: 'Desktop Only', value: 'desktop' }
-            ]
-        },
-        'age': {
-            title: "Select Age Group",
-            items: [
-                { label: 'Broad (13+)', value: 'all' },
-                { label: '18 - 24 Years', value: '18-24' },
-                { label: '25 - 34 Years', value: '25-34' },
-                { label: '35 - 44 Years', value: '35-44' },
-                { label: '45+ Years', value: '45+' }
-            ]
-        },
-        'gender': {
-            title: "Select Gender",
-            items: [
-                { label: 'All Genders', value: 'all' },
-                { label: 'Male', value: 'male' },
-                { label: 'Female', value: 'female' }
-            ]
-        },
-        'category': {
-            title: "Select Interest Category",
-            items: [
-                { label: 'General Audience', value: 'all' },
-                { label: 'Technology & Gadgets', value: 'Technology' },
-                { label: 'Gaming', value: 'Gaming' },
-                { label: 'Education & Learning', value: 'Education' },
-                { label: 'Entertainment', value: 'Entertainment' },
-                { label: 'Shopping & Fashion', value: 'Shopping' },
-                { label: 'Business & Finance', value: 'Business' }
-            ]
-        },
-        'model': {
-            title: "Select Billing Model",
-            items: [
-                { label: 'CPM (Pay per 1,000 Impressions)', value: 'CPM' },
-                { label: 'CPC (Pay per Link Click)', value: 'CPC' },
-                { label: 'CPV (Pay per Video View)', value: 'CPV' }
-            ]
-        }
+        'cta': { title: "Call to Action", items: [ {label: 'Learn More', value: 'Learn More'}, {label: 'Download', value: 'Download'}, {label: 'Shop Now', value: 'Shop Now'}, {label: 'Sign Up', value: 'Sign Up'}, {label: 'Install', value: 'Install'} ] },
+        'device': { title: "Target Devices", items: [ {label: 'All Devices (Recommended)', value: 'all'}, {label: 'Android Only', value: 'android'}, {label: 'iOS Only', value: 'ios'}, {label: 'Desktop Only', value: 'desktop'} ] },
+        'age': { title: "Age Group", items: [ {label: 'Broad (13+)', value: 'all'}, {label: '18 - 24 Years', value: '18-24'}, {label: '25 - 34 Years', value: '25-34'}, {label: '35 - 44 Years', value: '35-44'}, {label: '45+ Years', value: '45+'} ] },
+        'gender': { title: "Gender", items: [ {label: 'All Genders', value: 'all'}, {label: 'Male', value: 'male'}, {label: 'Female', value: 'female'} ] },
+        'category': { title: "Interest Category", items: [ {label: 'General Audience', value: 'all'}, {label: 'Technology & Gadgets', value: 'Technology'}, {label: 'Gaming', value: 'Gaming'}, {label: 'Education', value: 'Education'}, {label: 'Entertainment', value: 'Entertainment'}, {label: 'Shopping', value: 'Shopping'}, {label: 'Business', value: 'Business'} ] },
+        'model': { title: "Billing Model", items: [ {label: 'CPM (Pay per 1,000 Imp.)', value: 'CPM'}, {label: 'CPC (Pay per Click)', value: 'CPC'}, {label: 'CPV (Pay per View)', value: 'CPV'} ] }
     };
 
-    let activeSelectId = null;
-
     function openCustomSelect(type) {
-        activeSelectId = type;
         const config = selectOptions[type];
         const currentVal = document.getElementById(`c-${type}`)?.value || document.getElementById(`t-${type}`)?.value || document.getElementById(`b-${type}`)?.value;
-        
         document.getElementById('sheet-title').innerText = config.title;
         const container = document.getElementById('sheet-options-container');
         container.innerHTML = '';
-
         config.items.forEach(item => {
             const isSelected = item.value === currentVal;
             const div = document.createElement('div');
             div.className = 'sheet-option' + (isSelected ? ' selected' : '');
             div.innerHTML = `<span>${item.label}</span> ${isSelected ? '<i class="fas fa-check-circle"></i>' : ''}`;
-            
             div.onclick = () => {
-                // Update hidden input & display text
                 const prefix = type === 'cta' ? 'c' : (type === 'model' ? 'b' : 't');
                 document.getElementById(`${prefix}-${type}`).value = item.value;
                 document.getElementById(`${prefix}-${type}-display`).innerText = item.label;
-                document.getElementById('sheet-overlay').classList.remove('active');
+                closeCustomSelect(null, true);
             };
             container.appendChild(div);
         });
-
         document.getElementById('sheet-overlay').classList.add('active');
     }
 
     function closeCustomSelect(e, force = false) {
-        if (force || e.target.id === 'sheet-overlay') {
-            document.getElementById('sheet-overlay').classList.remove('active');
-        }
+        if (force || e.target.id === 'sheet-overlay') document.getElementById('sheet-overlay').classList.remove('active');
     }
 
-    // Step Logic
     function selectPlacement(type) {
         campaignData.placement = type;
         const names = { 'vast_video': 'VAST Video Ads', 'shorts_vast': 'Shorts VAST Ads', 'shorts_post': 'Shorts Post Ads', 'post_ad': 'Standard Post Ads' };
@@ -862,94 +755,49 @@
 
     function buildDynamicMediaFields(type) {
         const container = document.getElementById('dynamic-media-fields');
-        let html = '';
         if (type === 'vast_video' || type === 'shorts_vast') {
-            html = `
-                <div class="form-group">
-                    <label class="form-label">Video Source URL (MP4)</label>
-                    <input type="url" class="form-control" id="c-video" placeholder="https://.../video.mp4">
-                    <div style="font-size: 12px; color: var(--muted); margin-top: 8px; font-weight: 600;"><i class="fas fa-info-circle"></i> Recommended: ${type === 'shorts_vast' ? '9:16 Vertical Format' : '16:9 Landscape Format'}</div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Thumbnail Image URL</label>
-                    <input type="url" class="form-control" id="c-thumb" placeholder="https://.../thumb.jpg">
-                </div>
-            `;
-            document.getElementById('c-desc-group').style.display = 'block';
+            container.innerHTML = `
+                <div class="form-group"><label class="form-label">Video Source URL (MP4)</label><input type="url" class="form-control" id="c-video" placeholder="https://.../video.mp4"><div style="font-size: 12px; color: var(--muted); margin-top: 8px; font-weight: 600;"><i class="fas fa-info-circle"></i> Recommended: ${type === 'shorts_vast' ? '9:16 Vertical Format' : '16:9 Landscape Format'}</div></div>
+                <div class="form-group"><label class="form-label">Thumbnail Image URL</label><input type="url" class="form-control" id="c-thumb" placeholder="https://.../thumb.jpg"></div>`;
         } else {
-            html = `
-                <div class="form-group">
-                    <label class="form-label">Banner / Image URL</label>
-                    <input type="url" class="form-control" id="c-image" placeholder="https://.../image.jpg">
-                </div>
-            `;
-            document.getElementById('c-desc-group').style.display = 'block';
+            container.innerHTML = `<div class="form-group"><label class="form-label">Banner / Image URL</label><input type="url" class="form-control" id="c-image" placeholder="https://.../image.jpg"></div>`;
         }
-        container.innerHTML = html;
     }
 
     function validateStep(step) {
-        if (step === 1) {
-            if (!campaignData.placement) { showToast("Please select an ad placement.", "error"); return false; }
-        }
-        else if (step === 2) {
+        if (step === 1 && !campaignData.placement) return showToast("Please select an ad placement.", "error"), false;
+        if (step === 2) {
             const name = document.getElementById('c-name').value.trim();
             const title = document.getElementById('c-title').value.trim();
             const url = document.getElementById('c-url').value.trim();
-            
-            if (!name || !title || !url) { showToast("Please fill out all required fields.", "error"); return false; }
+            if (!name || !title || !url) return showToast("Please fill out all required fields.", "error"), false;
             
             campaignData.campaignName = name;
-            campaignData.creative = {
-                title: title,
-                description: document.getElementById('c-desc').value.trim(),
-                cta: document.getElementById('c-cta').value, // Used hidden input
-                destinationUrl: url
-            };
+            campaignData.creative = { title: title, description: document.getElementById('c-desc').value.trim(), cta: document.getElementById('c-cta').value, destinationUrl: url };
             
             if (campaignData.placement === 'vast_video' || campaignData.placement === 'shorts_vast') {
-                const vid = document.getElementById('c-video').value.trim();
-                const thumb = document.getElementById('c-thumb').value.trim();
-                if(!vid || !thumb) { showToast("Video and Thumbnail URLs are required.", "error"); return false; }
-                campaignData.creative.videoUrl = vid;
-                campaignData.creative.thumbnailUrl = thumb;
+                const vid = document.getElementById('c-video').value.trim(), thumb = document.getElementById('c-thumb').value.trim();
+                if(!vid || !thumb) return showToast("Video and Thumbnail URLs are required.", "error"), false;
+                campaignData.creative.videoUrl = vid; campaignData.creative.thumbnailUrl = thumb;
             } else {
                 const img = document.getElementById('c-image').value.trim();
-                if(!img) { showToast("Image URL is required.", "error"); return false; }
+                if(!img) return showToast("Image URL is required.", "error"), false;
                 campaignData.creative.imageUrl = img;
             }
         }
-        else if (step === 3) {
-            // Using hidden inputs
-            campaignData.targeting = {
-                device: document.getElementById('t-device').value,
-                age: document.getElementById('t-age').value,
-                gender: document.getElementById('t-gender').value,
-                category: document.getElementById('t-category').value
-            };
+        if (step === 3) {
+            campaignData.targeting = { device: document.getElementById('t-device').value, age: document.getElementById('t-age').value, gender: document.getElementById('t-gender').value, category: document.getElementById('t-category').value };
         }
-        else if (step === 4) {
-            const daily = parseFloat(document.getElementById('b-daily').value);
-            const total = parseFloat(document.getElementById('b-total').value);
-            const model = document.getElementById('b-model').value; // Used hidden input
-            
-            if (!daily || !total || daily < 1 || total < 5) {
-                showToast("Minimum total budget is $5.00", "error"); return false;
-            }
-            if (daily > total) {
-                showToast("Daily budget cannot exceed total budget.", "error"); return false;
-            }
+        if (step === 4) {
+            const daily = parseFloat(document.getElementById('b-daily').value), total = parseFloat(document.getElementById('b-total').value), model = document.getElementById('b-model').value;
+            if (!daily || !total || daily < 1 || total < 5) return showToast("Minimum total budget is $5.00", "error"), false;
+            if (daily > total) return showToast("Daily budget cannot exceed total budget.", "error"), false;
             
             campaignData.budget = { daily: daily, total: total, billingModel: model };
-            
-            // Render Review Screen
             document.getElementById('r-name').innerText = campaignData.campaignName;
             document.getElementById('r-placement').innerText = campaignData.placementName;
-            
-            // Format Category Name properly for UI
             const catOption = selectOptions['category'].items.find(i => i.value === campaignData.targeting.category);
             document.getElementById('r-category').innerText = catOption ? catOption.label : 'General';
-            
             document.getElementById('r-daily').innerText = "$" + campaignData.budget.daily.toFixed(2) + " / day";
             document.getElementById('r-total').innerText = "$" + campaignData.budget.total.toFixed(2);
         }
@@ -959,15 +807,14 @@
     function updateStepUI() {
         document.querySelectorAll('.create-step').forEach(el => el.classList.remove('active'));
         document.getElementById(`step-${currentStep}`).classList.add('active');
+        document.getElementById('progress-bar').style.width = `${(currentStep / maxStep) * 100}%`;
         
-        const progressPercentage = (currentStep / maxStep) * 100;
-        document.getElementById('progress-bar').style.width = `${progressPercentage}%`;
+        const stepTitles = ["Select Placement", "Ad Creative", "Targeting", "Set Budget", "Review & Submit"];
         document.getElementById('step-name-display').innerText = stepTitles[currentStep - 1];
         document.getElementById('step-count-display').innerText = `Step ${currentStep} of ${maxStep}`;
 
         const btnBack = document.getElementById('btn-back');
         const btnNext = document.getElementById('btn-next');
-        
         btnBack.style.display = currentStep === 1 ? 'none' : 'block';
 
         if (currentStep === maxStep) {
@@ -979,26 +826,11 @@
         }
     }
 
-    function nextStep() {
-        if (validateStep(currentStep)) {
-            if (currentStep < maxStep) {
-                currentStep++;
-                updateStepUI();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        }
-    }
-
-    function prevStep() {
-        if (currentStep > 1) {
-            currentStep--;
-            updateStepUI();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    }
+    function nextStep() { if (validateStep(currentStep) && currentStep < maxStep) { currentStep++; updateStepUI(); window.scrollTo(0,0); } }
+    function prevStep() { if (currentStep > 1) { currentStep--; updateStepUI(); window.scrollTo(0,0); } }
 
     function submitToFlayPay() {
-        if (!currentUser) { showToast("You need to sign in first.", "error"); return; }
+        if (!currentUser) return showToast("You need to sign in first.", "error");
         
         const btnNext = document.getElementById('btn-next');
         btnNext.disabled = true;
@@ -1008,40 +840,32 @@
         const campId = newCampRef.key;
 
         const payload = {
-            advertiserId: currentUser.uid,
-            campaignName: campaignData.campaignName,
-            placement: campaignData.placement,
-            creative: campaignData.creative,
-            targeting: campaignData.targeting,
-            budget: campaignData.budget,
-            paymentStatus: 'pending', 
-            campaignStatus: 'Draft',
-            createdAt: firebase.database.ServerValue.TIMESTAMP,
-            updatedAt: firebase.database.ServerValue.TIMESTAMP
+            advertiserId: currentUser.uid, campaignName: campaignData.campaignName, placement: campaignData.placement,
+            creative: campaignData.creative, targeting: campaignData.targeting, budget: campaignData.budget,
+            paymentStatus: 'pending', campaignStatus: 'Draft',
+            createdAt: firebase.database.ServerValue.TIMESTAMP, updatedAt: firebase.database.ServerValue.TIMESTAMP
         };
 
         newCampRef.set(payload).then(() => {
-            const paymentIntent = {
-                service: 'flayAds',
-                intentId: campId,
-                amount: campaignData.budget.total,
-                description: `Flay Ads Campaign: ${campaignData.campaignName}`
+            // INTEGRATION WITH FLAY PAY PREMIUM CHECKOUT MODAL
+            const pendingOrder = {
+                type: 'flayAds',
+                campaignId: campId,
+                title: `Campaign: ${campaignData.campaignName}`,
+                amount: campaignData.budget.total
             };
-            
-            localStorage.setItem('flaypay_intent', JSON.stringify(paymentIntent));
-            showToast("Redirecting to Flay Pay...", "success");
+            sessionStorage.setItem('flay_pending_checkout', JSON.stringify(pendingOrder));
+            showToast("Redirecting to Checkout...", "success");
 
             setTimeout(() => {
                 if (typeof AppNavigation !== 'undefined' && AppNavigation.pushPremiumService) {
                     AppNavigation.pushPremiumService('flay-pay', SERVICE);
                 } else {
-                    window.location.href = 'flay-pay.html?service=flayAds';
+                    window.location.href = 'flay-pay.html';
                 }
             }, 1000);
-            
         }).catch((err) => {
-            console.error("Error creating draft", err);
-            showToast("Failed to initiate payment. Try again.", "error");
+            showToast("Failed to initiate payment.", "error");
             btnNext.disabled = false;
             btnNext.innerHTML = 'Pay & Submit <i class="fas fa-lock"></i>';
         });

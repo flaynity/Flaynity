@@ -4,711 +4,1161 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
     <title>Flay Ads • Flaynity</title>
-    
-    <script>
-        (function() {
-            const savedTheme = localStorage.getItem('flaynity-theme-pref') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-        })();
-    </script>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     <script src="../js/firebase-config.js"></script>
-
+    
     <style>
         :root {
-            --bg: #f8f9fa; --surface: #ffffff; --text: #0f1419; --text-muted: #536471;
-            --border: #eff3f4; --accent: #ff2e55; --accent-hover: #e02446;
-            --primary: #3390EC; --soft-primary: rgba(51, 144, 236, 0.1);
-            --success: #00ba7c; --warning: #ffd400; --danger: #f4212e;
-            --card-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            --radius-lg: 24px; --radius-md: 16px; --radius-sm: 12px;
+            --bg: #fff;
+            --surface: #fff;
+            --surface-hover: #f9f9f9;
+            --text: #000;
+            --muted: #666;
+            --border: #e9e9e9;
+            --accent: #ff2e55;
+            --soft: rgba(255, 46, 85, .10);
+            --shadow: 0 14px 40px rgba(0, 0, 0, .07);
+            --success: #00a844;
+            --warning: #ffb020;
+            --danger: #ff2e55;
+            --info: #007aff;
         }
 
-        [data-theme="dark"] {
-            --bg: #000000; --surface: #121212; --text: #f7f9f9; --text-muted: #8b98a5;
-            --border: #2f3336; --accent: #ff2e55; --accent-hover: #e02446;
-            --primary: #1d9bf0; --soft-primary: rgba(29, 155, 240, 0.1);
-            --card-shadow: 0 4px 24px rgba(0,0,0,0.2);
+        [data-theme=dark] {
+            --bg: #000;
+            --surface: #0a0a0a;
+            --surface-hover: #141414;
+            --text: #fff;
+            --muted: #aaa;
+            --border: #222;
+            --soft: rgba(255, 46, 85, .14);
+            --shadow: 0 14px 40px rgba(0, 0, 0, .35);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-        .app-container { max-width: 680px; margin: 0 auto; position: relative; padding-bottom: 90px; }
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
 
-        /* App Bar */
-        .app-bar { position: sticky; top: 0; background: rgba(var(--bg), 0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 100; display: flex; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); }
-        .back-btn { background: transparent; border: none; color: var(--text); font-size: 20px; width: 40px; height: 40px; display: flex; align-items: center; cursor: pointer; }
-        .page-title { flex: 1; font-size: 18px; font-weight: 800; }
+        .app {
+            max-width: 680px;
+            margin: auto;
+            min-height: 100vh;
+            position: relative;
+        }
 
-        /* Tabs */
-        .ads-tabs { display: flex; background: var(--surface); padding: 0 10px; border-bottom: 1px solid var(--border); }
-        .ads-tab { flex: 1; text-align: center; padding: 16px 0; font-size: 14px; font-weight: 700; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; }
-        .ads-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .bar {
+            height: 64px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 16px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            z-index: 50;
+        }
 
-        .content-section { display: none; padding: 20px; animation: fadeUp 0.4s ease forwards; }
-        .content-section.active { display: block; }
+        .back {
+            width: 40px;
+            height: 40px;
+            border: 0;
+            background: transparent;
+            color: var(--text);
+            font-size: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
 
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .title {
+            font-size: 18px;
+            font-weight: 900;
+            flex: 1;
+        }
 
-        /* Dashboard Stats */
-        .section-header { font-size: 18px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; }
-        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--card-shadow); }
-        .stat-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-bottom: 12px; }
-        .stat-icon.primary { background: var(--soft-primary); color: var(--primary); }
-        .stat-icon.success { background: rgba(0,186,124,0.1); color: var(--success); }
-        .stat-icon.warning { background: rgba(255,212,0,0.1); color: var(--warning); }
-        .stat-title { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; }
-        .stat-value { font-size: 20px; font-weight: 800; color: var(--text); }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--soft);
+            color: var(--accent);
+            padding: 6px 9px;
+            border-radius: 999px;
+            font-size: 9px;
+            font-weight: 900;
+        }
 
-        /* Campaign List */
-        .campaign-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--card-shadow); margin-bottom: 16px; }
-        .camp-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-        .camp-title { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
-        .camp-type { font-size: 12px; color: var(--text-muted); font-weight: 600; }
-        .camp-status { font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 12px; text-transform: uppercase; }
-        .status-review { background: rgba(255,212,0,0.1); color: var(--warning); }
-        .status-running { background: rgba(0,186,124,0.1); color: var(--success); }
-        .status-rejected { background: rgba(244,33,46,0.1); color: var(--danger); }
-        .camp-details { display: flex; gap: 16px; margin-bottom: 16px; padding: 12px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-        .cd-item { display: flex; flex-direction: column; }
-        .cd-item span:first-child { font-size: 11px; color: var(--text-muted); font-weight: 600; }
-        .cd-item span:last-child { font-size: 14px; font-weight: 800; color: var(--text); }
-        .camp-btn { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; }
+        .content {
+            padding: 22px 16px;
+            padding-bottom: 100px;
+        }
 
-        /* Floating Action Button */
-        .fab-create { position: fixed; bottom: 24px; right: 24px; background: var(--primary); color: #fff; width: 60px; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 10px 25px rgba(29, 155, 240, 0.4); border: none; cursor: pointer; z-index: 90; transition: transform 0.2s; }
-        .fab-create:active { transform: scale(0.95); }
+        /* Dashboard specific */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
 
-        /* CREATE AD WIZARD OVERLAY */
-        .wizard-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--surface); z-index: 1000; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
-        .wizard-overlay.active { transform: translateY(0); }
-        .wizard-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
-        .wizard-close { background: none; border: none; font-size: 20px; color: var(--text); cursor: pointer; }
-        .wizard-title { font-size: 16px; font-weight: 800; }
-        .wizard-progress { display: flex; padding: 16px 20px; gap: 8px; background: var(--bg); }
-        .progress-dot { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: 0.3s; }
-        .progress-dot.active { background: var(--primary); }
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 16px;
+            border-radius: 16px;
+        }
+
+        .stat-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .stat-val {
+            font-size: 24px;
+            font-weight: 900;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .section-header {
+            font-size: 18px;
+            font-weight: 900;
+            margin: 24px 0 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .campaign-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .campaign-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .camp-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .camp-name {
+            font-size: 15px;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .camp-type {
+            font-size: 12px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .camp-status {
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: var(--border);
+        }
         
-        .wizard-body { flex: 1; overflow-y: auto; padding: 20px; }
-        .wizard-step { display: none; animation: fadeUp 0.3s; }
-        .wizard-step.active { display: block; }
+        .status-running { background: rgba(0,168,68,0.1); color: var(--success); }
+        .status-pending { background: rgba(255,176,32,0.1); color: var(--warning); }
+        .status-review { background: rgba(0,122,255,0.1); color: var(--info); }
+        .status-rejected { background: rgba(255,46,85,0.1); color: var(--danger); }
+
+        .camp-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            padding-top: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
         
-        .step-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
-        .step-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.4; }
+        .camp-pay-status { color: var(--muted); }
 
-        /* Placement Selection */
-        .placement-grid { display: grid; gap: 12px; }
-        .placement-card { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-md); padding: 16px; display: flex; gap: 16px; cursor: pointer; transition: 0.2s; }
-        .placement-card.selected { border-color: var(--primary); background: var(--soft-primary); }
-        .placement-icon { width: 40px; height: 40px; border-radius: 12px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text); }
-        .placement-card.selected .placement-icon { color: var(--primary); }
-        .placement-info h4 { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
-        .placement-info p { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--muted);
+            border: 1px dashed var(--border);
+            border-radius: 16px;
+        }
 
-        /* Form Elements */
-        .input-group { margin-bottom: 20px; }
-        .input-label { display: block; font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
-        .form-input, .form-select, .form-textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 14px 16px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; outline: none; transition: 0.2s; }
-        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary); }
-        .form-textarea { resize: vertical; min-height: 100px; }
+        .empty-state i {
+            font-size: 32px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
 
-        /* Review List */
-        .review-list { background: var(--bg); border-radius: var(--radius-md); padding: 16px; border: 1px solid var(--border); }
-        .review-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
-        .review-item:last-child { border-bottom: none; }
-        .review-item span:first-child { color: var(--text-muted); font-weight: 600; }
-        .review-item span:last-child { font-weight: 800; color: var(--text); text-align: right; max-width: 60%; }
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 99px;
+            font-size: 15px;
+            font-weight: 900;
+            box-shadow: 0 8px 24px var(--soft);
+            cursor: pointer;
+            z-index: 40;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: calc(100% - 32px);
+            max-width: 360px;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
 
-        .wizard-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 12px; background: var(--surface); padding-bottom: max(16px, env(safe-area-inset-bottom)); }
-        .btn-prev { flex: 1; padding: 14px; border-radius: var(--radius-sm); font-weight: 800; background: var(--bg); color: var(--text); border: 1px solid var(--border); cursor: pointer; }
-        .btn-next { flex: 2; padding: 14px; border-radius: var(--radius-sm); font-weight: 800; background: var(--primary); color: #fff; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
-        .btn-next:disabled { opacity: 0.6; cursor: not-allowed; }
+        .fab:active {
+            transform: translateX(-50%) scale(0.96);
+        }
 
-        /* PREMIUM ALERT */
-        .premium-alert-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 999999; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s ease; padding: 20px; }
-        .premium-alert-overlay.active { opacity: 1; pointer-events: all; }
-        .premium-alert-card { background: var(--surface); border-radius: 24px; padding: 30px 24px; width: 100%; max-width: 320px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--border); transform: scale(0.9); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .premium-alert-overlay.active .premium-alert-card { transform: scale(1); }
-        .premium-alert-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 16px; }
-        .premium-alert-icon.error { background: rgba(244,33,46,0.1); color: var(--danger); }
-        .premium-alert-icon.success { background: rgba(0,186,124,0.1); color: var(--success); }
-        .premium-alert-icon.warning { background: rgba(255,212,0,0.1); color: var(--warning); }
-        .premium-alert-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; color: var(--text); }
-        .premium-alert-msg { font-size: 14px; color: var(--text-muted); line-height: 1.5; margin-bottom: 24px; }
-        .premium-alert-btn { background: var(--text); color: var(--surface); border: none; padding: 14px; width: 100%; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; transition: 0.2s; }
-        .premium-alert-btn:active { transform: scale(0.96); }
+        /* Create Flow Specific */
+        #view-create {
+            display: none;
+        }
 
-        .empty-state { text-align: center; padding: 60px 20px; }
-        .empty-state i { font-size: 48px; color: var(--border); margin-bottom: 16px; }
-        .empty-state h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
-        .empty-state p { font-size: 13px; color: var(--text-muted); }
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding: 0 12px;
+        }
+
+        .step-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--muted);
+            z-index: 2;
+        }
+
+        .step-dot.active {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .step-line {
+            flex: 1;
+            height: 2px;
+            background: var(--border);
+            margin: 0 -8px;
+            z-index: 1;
+        }
+
+        .step-line.active { background: var(--accent); }
+
+        .create-step {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .create-step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-title {
+            font-size: 22px;
+            font-weight: 900;
+            margin: 0 0 8px 0;
+        }
+        
+        .step-subtitle {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 24px;
+        }
+
+        .placement-card {
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            background: var(--surface);
+            transition: all 0.2s;
+        }
+
+        .placement-card:hover {
+            border-color: #ccc;
+        }
+
+        .placement-card.active {
+            border-color: var(--accent);
+            background: var(--soft);
+        }
+
+        .p-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: var(--text);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .placement-card.active .p-icon {
+            color: var(--accent);
+        }
+
+        .p-info h3 { margin: 0 0 4px; font-size: 15px; font-weight: 800; }
+        .p-info p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 1.5px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            transition: border 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .bottom-actions {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+            z-index: 40;
+            box-sizing: border-box;
+            justify-content: center;
+        }
+        
+        .bottom-actions-inner {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            max-width: 648px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 900;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn-outline {
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .review-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .review-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        .review-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .review-item:first-child {
+            padding-top: 0;
+        }
+
+        .review-label {
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .review-val {
+            font-weight: 800;
+            text-align: right;
+            max-width: 60%;
+            word-break: break-all;
+        }
+
+        .disclaimer {
+            font-size: 11px;
+            color: var(--muted);
+            text-align: center;
+            margin-top: 16px;
+            line-height: 1.5;
+            padding-bottom: 20px;
+        }
+        
+        .disclaimer i {
+            color: var(--accent);
+        }
+
+        .premium-service-page .bar {
+            top: 0;
+        }
+        .premium-service-page {
+            padding-top: env(safe-area-inset-top, 0px);
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
 
-    <!-- Premium Custom Alert -->
-    <div class="premium-alert-overlay" id="ads-premium-alert">
-        <div class="premium-alert-card">
-            <div class="premium-alert-icon" id="ads-alert-icon"></div>
-            <h3 class="premium-alert-title" id="ads-alert-title">Title</h3>
-            <p class="premium-alert-msg" id="ads-alert-msg">Message</p>
-            <button class="premium-alert-btn" id="ads-alert-btn">OK</button>
-        </div>
-    </div>
+<main class="app">
+    <header class="bar">
+        <button class="back" onclick="handleBack()" aria-label="Back">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <div class="title">Flay Ads</div>
+        <span class="badge"><i class="fas fa-crown"></i> PREMIUM</span>
+    </header>
 
-    <div class="app-container">
-        <div class="app-bar">
-            <button class="back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
-            <div class="page-title">Flay Ads</div>
-        </div>
-
-        <div class="ads-tabs">
-            <div class="ads-tab active" onclick="switchAdsTab('dashboard')">Dashboard</div>
-            <div class="ads-tab" onclick="switchAdsTab('campaigns')">My Campaigns</div>
-        </div>
-
-        <!-- Dashboard View -->
-        <div id="tab-dashboard" class="content-section active">
-            <div class="section-header"><i class="fas fa-chart-pie"></i> Campaign Overview</div>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon primary"><i class="fas fa-bullhorn"></i></div>
-                    <div class="stat-title">Total Campaigns</div>
-                    <div class="stat-value" id="st-total">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon success"><i class="fas fa-play-circle"></i></div>
-                    <div class="stat-title">Running</div>
-                    <div class="stat-value" id="st-running">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon warning"><i class="fas fa-clock"></i></div>
-                    <div class="stat-title">Pending</div>
-                    <div class="stat-value" id="st-pending">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon error" style="background: rgba(244,33,46,0.1); color: var(--danger);"><i class="fas fa-times-circle"></i></div>
-                    <div class="stat-title">Rejected</div>
-                    <div class="stat-value" id="st-rejected">0</div>
-                </div>
+    <!-- DASHBOARD VIEW -->
+    <section class="content" id="view-dashboard">
+        <div class="stats-grid">
+            <div class="stat-card full-width">
+                <div class="stat-val" id="stat-total">0</div>
+                <div class="stat-label">Total Campaigns</div>
             </div>
-
-            <div class="section-header" style="margin-top: 32px;"><i class="fas fa-bolt"></i> Performance</div>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-title">Impressions</div>
-                    <div class="stat-value">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-title">Clicks</div>
-                    <div class="stat-value">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-title">Video Views</div>
-                    <div class="stat-value">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-title">Avg. CTR</div>
-                    <div class="stat-value">0.00%</div>
-                </div>
+            <div class="stat-card">
+                <div class="stat-val" id="stat-running" style="color: var(--success);">0</div>
+                <div class="stat-label">Running</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" id="stat-pending" style="color: var(--info);">0</div>
+                <div class="stat-label">Under Review</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" id="stat-impressions">0</div>
+                <div class="stat-label">Total Impressions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" id="stat-clicks">0</div>
+                <div class="stat-label">Total Clicks</div>
             </div>
         </div>
 
-        <!-- My Campaigns View -->
-        <div id="tab-campaigns" class="content-section">
-            <div id="campaign-list-container">
+        <div class="section-header">
+            <span>My Campaigns</span>
+        </div>
+
+        <div class="campaign-list" id="campaign-list-container">
+            <div class="empty-state">
+                <i class="fas fa-circle-notch fa-spin"></i>
+                <p>Loading campaigns...</p>
+            </div>
+        </div>
+
+        <button class="fab" onclick="startCreateFlow()">
+            <i class="fas fa-plus"></i> Create Ad
+        </button>
+    </section>
+
+    <!-- CREATE AD FLOW VIEW -->
+    <section class="content" id="view-create">
+        <div class="step-indicator">
+            <div class="step-dot active" id="dot-1">1</div>
+            <div class="step-line" id="line-1"></div>
+            <div class="step-dot" id="dot-2">2</div>
+            <div class="step-line" id="line-2"></div>
+            <div class="step-dot" id="dot-3">3</div>
+            <div class="step-line" id="line-3"></div>
+            <div class="step-dot" id="dot-4">4</div>
+            <div class="step-line" id="line-4"></div>
+            <div class="step-dot" id="dot-5">5</div>
+        </div>
+
+        <!-- Step 1: Select Placement -->
+        <div class="create-step active" id="step-1">
+            <h2 class="step-title">Select Ad Placement</h2>
+            <p class="step-subtitle">Where do you want your ad to appear?</p>
+
+            <div class="placement-card" onclick="selectPlacement('vast_video')" id="place-vast_video">
+                <div class="p-icon"><i class="fas fa-play"></i></div>
+                <div class="p-info">
+                    <h3>VAST Video Ads</h3>
+                    <p>In-stream video advertisement for long-form content.</p>
+                </div>
+            </div>
+
+            <div class="placement-card" onclick="selectPlacement('shorts_vast')" id="place-shorts_vast">
+                <div class="p-icon"><i class="fas fa-mobile-screen"></i></div>
+                <div class="p-info">
+                    <h3>Shorts VAST Video Ads</h3>
+                    <p>Vertical video advertisement inside the Shorts feed.</p>
+                </div>
+            </div>
+
+            <div class="placement-card" onclick="selectPlacement('shorts_post')" id="place-shorts_post">
+                <div class="p-icon"><i class="fas fa-image"></i></div>
+                <div class="p-info">
+                    <h3>Shorts Post Ads</h3>
+                    <p>Sponsored post image in the Shorts swipe feed.</p>
+                </div>
+            </div>
+
+            <div class="placement-card" onclick="selectPlacement('post_ad')" id="place-post_ad">
+                <div class="p-icon"><i class="fas fa-pager"></i></div>
+                <div class="p-info">
+                    <h3>Post Ads</h3>
+                    <p>Standard sponsored post in the normal Flaynity feed.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Ad Creative -->
+        <div class="create-step" id="step-2">
+            <h2 class="step-title">Ad Creative</h2>
+            <p class="step-subtitle">Set up the media and copy for your ad.</p>
+
+            <div class="form-group">
+                <label class="form-label">Campaign Name</label>
+                <input type="text" class="form-control" id="c-name" placeholder="e.g., Summer App Promotion">
+            </div>
+
+            <div id="dynamic-media-fields">
+                <!-- Dynamically injected based on placement -->
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Ad Title / Headline</label>
+                <input type="text" class="form-control" id="c-title" placeholder="Catchy title for the ad">
+            </div>
+
+            <div class="form-group" id="c-desc-group">
+                <label class="form-label">Description / Post Text</label>
+                <textarea class="form-control" id="c-desc" placeholder="Brief description of your product..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Call to Action (CTA)</label>
+                <select class="form-control" id="c-cta">
+                    <option value="Learn More">Learn More</option>
+                    <option value="Download">Download</option>
+                    <option value="Shop Now">Shop Now</option>
+                    <option value="Sign Up">Sign Up</option>
+                    <option value="Install">Install</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Destination URL</label>
+                <input type="url" class="form-control" id="c-url" placeholder="https://yourwebsite.com">
+            </div>
+        </div>
+
+        <!-- Step 3: Targeting -->
+        <div class="create-step" id="step-3">
+            <h2 class="step-title">Targeting</h2>
+            <p class="step-subtitle">Who should see this ad?</p>
+
+            <div class="form-group">
+                <label class="form-label">Device</label>
+                <select class="form-control" id="t-device">
+                    <option value="all">All Devices</option>
+                    <option value="android">Android Only</option>
+                    <option value="ios">iOS Only</option>
+                    <option value="desktop">Desktop Only</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Audience Age</label>
+                <select class="form-control" id="t-age">
+                    <option value="all">All Ages (13+)</option>
+                    <option value="18-24">18 - 24</option>
+                    <option value="25-34">25 - 34</option>
+                    <option value="35-44">35 - 44</option>
+                    <option value="45+">45+</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Audience Gender</label>
+                <select class="form-control" id="t-gender">
+                    <option value="all">All</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Interest Category</label>
+                <select class="form-control" id="t-category">
+                    <option value="all">Broad (All Categories)</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Gaming">Gaming</option>
+                    <option value="Education">Education</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Business">Business</option>
+                    <option value="Apps">Apps & Software</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Step 4: Budget -->
+        <div class="create-step" id="step-4">
+            <h2 class="step-title">Campaign Budget</h2>
+            <p class="step-subtitle">Set your spending limits. Payments are processed securely via Flay Pay.</p>
+
+            <div class="form-group">
+                <label class="form-label">Billing Model</label>
+                <select class="form-control" id="b-model">
+                    <option value="CPM">CPM (Cost per 1,000 Impressions)</option>
+                    <option value="CPC">CPC (Cost per Click)</option>
+                    <option value="CPV">CPV (Cost per View)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Daily Budget (USD)</label>
+                <input type="number" class="form-control" id="b-daily" placeholder="e.g., 5.00" min="1" step="0.5">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Total Campaign Budget (USD)</label>
+                <input type="number" class="form-control" id="b-total" placeholder="e.g., 50.00" min="5" step="1">
+            </div>
+            
+            <div style="background: var(--soft); padding: 12px; border-radius: 12px; font-size: 12px; font-weight: 600; color: var(--accent); display: flex; gap: 8px; align-items: flex-start;">
+                <i class="fas fa-circle-info" style="margin-top: 2px;"></i>
+                <span>Your total budget will be deducted automatically from your Flay Pay balance in the next step.</span>
+            </div>
+        </div>
+
+        <!-- Step 5: Review -->
+        <div class="create-step" id="step-5">
+            <h2 class="step-title">Review & Pay</h2>
+            <p class="step-subtitle">Review your campaign before proceeding to payment.</p>
+
+            <div class="review-card">
+                <div class="review-item">
+                    <div class="review-label">Campaign Name</div>
+                    <div class="review-val" id="r-name">-</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">Placement</div>
+                    <div class="review-val" id="r-placement">-</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">Category</div>
+                    <div class="review-val" id="r-category">-</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">Billing Model</div>
+                    <div class="review-val" id="r-model">-</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">Daily Budget</div>
+                    <div class="review-val" id="r-daily">-</div>
+                </div>
+                <div class="review-item" style="border-top: 2px dashed var(--border);">
+                    <div class="review-label" style="color: var(--text);">Total Deduction</div>
+                    <div class="review-val" id="r-total" style="color: var(--accent); font-size: 18px;">-</div>
+                </div>
+            </div>
+
+            <div class="disclaimer">
+                <i class="fas fa-shield-halved"></i> Payment is processed securely via Flay Pay.<br>
+                Successful payment is required to submit the campaign for Admin Review.
+            </div>
+        </div>
+
+        <div class="bottom-actions">
+            <div class="bottom-actions-inner">
+                <button class="btn btn-outline" id="btn-back" onclick="prevStep()">Back</button>
+                <button class="btn btn-primary" id="btn-next" onclick="nextStep()">Continue</button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+    const SERVICE = 'flayAds';
+    let currentUser = null;
+    
+    // View state
+    let currentView = 'dashboard';
+    let currentStep = 1;
+    let maxStep = 5;
+
+    // Campaign drafting state
+    let campaignData = {
+        placement: '',
+        placementName: '',
+        creative: {},
+        targeting: {},
+        budget: {}
+    };
+
+    document.documentElement.dataset.theme = localStorage.getItem('flaynity-theme-pref') || 'light';
+
+    auth.onAuthStateChanged(function(u) {
+        currentUser = u;
+        if (!u) {
+            document.getElementById('campaign-list-container').innerHTML = `
                 <div class="empty-state">
-                    <i class="fas fa-folder-open"></i>
-                    <h3>No Campaigns Yet</h3>
-                    <p>Create your first advertising campaign to reach more audience on Flaynity.</p>
-                </div>
-            </div>
-        </div>
+                    <i class="fas fa-lock"></i>
+                    <p>Sign in to manage your Flay Ads.</p>
+                </div>`;
+            return;
+        }
+        loadDashboardData();
+    });
 
-        <button class="fab-create" onclick="openCreateAdWizard()"><i class="fas fa-plus"></i></button>
+    function handleBack() {
+        if (currentView === 'create') {
+            if (currentStep > 1) {
+                prevStep();
+            } else {
+                switchView('dashboard');
+            }
+        } else {
+            if (typeof executeBackAction === 'function') {
+                executeBackAction();
+            } else {
+                window.history.back();
+            }
+        }
+    }
 
-        <!-- CREATE AD WIZARD OVERLAY -->
-        <div class="wizard-overlay" id="create-wizard">
-            <div class="wizard-header">
-                <button class="wizard-close" onclick="closeCreateAdWizard()"><i class="fas fa-times"></i></button>
-                <div class="wizard-title">Create Campaign</div>
-                <div style="width: 20px;"></div>
-            </div>
-            
-            <div class="wizard-progress" id="wizard-progress">
-                <div class="progress-dot active"></div>
-                <div class="progress-dot"></div>
-                <div class="progress-dot"></div>
-                <div class="progress-dot"></div>
-                <div class="progress-dot"></div>
-            </div>
-
-            <div class="wizard-body">
-                <!-- STEP 1: PLACEMENT -->
-                <div class="wizard-step active" id="step-1">
-                    <h2 class="step-title">Select Ad Placement</h2>
-                    <p class="step-subtitle">Where do you want your advertisement to appear?</p>
-                    
-                    <div class="placement-grid">
-                        <div class="placement-card selected" onclick="selectPlacement('vast', this)">
-                            <div class="placement-icon"><i class="fas fa-video"></i></div>
-                            <div class="placement-info">
-                                <h4>VAST Video Ads</h4>
-                                <p>Standard video advertisement played within long-form videos.</p>
-                            </div>
-                        </div>
-                        <div class="placement-card" onclick="selectPlacement('shorts_vast', this)">
-                            <div class="placement-icon"><i class="fas fa-mobile-screen"></i></div>
-                            <div class="placement-info">
-                                <h4>Shorts VAST Ads</h4>
-                                <p>Vertical video ad appearing natively in the Shorts feed.</p>
-                            </div>
-                        </div>
-                        <div class="placement-card" onclick="selectPlacement('shorts_post', this)">
-                            <div class="placement-icon"><i class="fas fa-image"></i></div>
-                            <div class="placement-info">
-                                <h4>Shorts Post Ads</h4>
-                                <p>Sponsored static post appearing within the Shorts feed.</p>
-                            </div>
-                        </div>
-                        <div class="placement-card" onclick="selectPlacement('post', this)">
-                            <div class="placement-icon"><i class="fas fa-newspaper"></i></div>
-                            <div class="placement-info">
-                                <h4>Feed Post Ads</h4>
-                                <p>Sponsored post embedded seamlessly in the standard home feed.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- STEP 2: CREATIVE -->
-                <div class="wizard-step" id="step-2">
-                    <h2 class="step-title">Ad Creative</h2>
-                    <p class="step-subtitle">Provide the content and assets for your campaign.</p>
-
-                    <div class="input-group">
-                        <label class="input-label">Campaign Name</label>
-                        <input type="text" id="ad-campaign-name" class="form-input" placeholder="e.g. Summer App Promo">
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Ad Title</label>
-                        <input type="text" id="ad-title" class="form-input" placeholder="Catchy headline">
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Media URL (Video/Image Link)</label>
-                        <input type="url" id="ad-media-url" class="form-input" placeholder="https://...">
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Call to Action (CTA)</label>
-                        <select id="ad-cta" class="form-select">
-                            <option value="Learn More">Learn More</option>
-                            <option value="Install Now">Install Now</option>
-                            <option value="Shop Now">Shop Now</option>
-                            <option value="Sign Up">Sign Up</option>
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Destination URL</label>
-                        <input type="url" id="ad-dest-url" class="form-input" placeholder="Where should users go?">
-                    </div>
-                </div>
-
-                <!-- STEP 3: TARGETING -->
-                <div class="wizard-step" id="step-3">
-                    <h2 class="step-title">Audience Targeting</h2>
-                    <p class="step-subtitle">Define who should see your advertisement.</p>
-
-                    <div class="input-group">
-                        <label class="input-label">Device Targeting</label>
-                        <select id="tgt-device" class="form-select">
-                            <option value="All Devices">All Devices</option>
-                            <option value="Android Only">Android Only</option>
-                            <option value="iOS Only">iOS Only</option>
-                            <option value="Desktop Only">Desktop Only</option>
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Content Category</label>
-                        <select id="tgt-category" class="form-select">
-                            <option value="Technology">Technology</option>
-                            <option value="Gaming">Gaming</option>
-                            <option value="Entertainment">Entertainment</option>
-                            <option value="Education">Education</option>
-                            <option value="Shopping">Shopping</option>
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Age Group</label>
-                        <select id="tgt-age" class="form-select">
-                            <option value="All Ages">All Ages</option>
-                            <option value="18-24">18-24</option>
-                            <option value="25-34">25-34</option>
-                            <option value="35+">35+</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- STEP 4: BUDGET -->
-                <div class="wizard-step" id="step-4">
-                    <h2 class="step-title">Campaign Budget</h2>
-                    <p class="step-subtitle">Set your spending limits. Funds will be securely deducted via Flay Pay.</p>
-
-                    <div class="input-group">
-                        <label class="input-label">Total Campaign Budget (USDT)</label>
-                        <input type="number" id="ad-total-budget" class="form-input" placeholder="Min $5.00" min="5">
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Daily Limit (Optional)</label>
-                        <input type="number" id="ad-daily-budget" class="form-input" placeholder="e.g. $2.00">
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Billing Model</label>
-                        <select id="ad-billing-model" class="form-select">
-                            <option value="CPM">CPM (Cost Per Mille / 1000 Impressions)</option>
-                            <option value="CPC">CPC (Cost Per Click)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- STEP 5: REVIEW -->
-                <div class="wizard-step" id="step-5">
-                    <h2 class="step-title">Review & Submit</h2>
-                    <p class="step-subtitle">Verify your campaign details before proceeding to payment.</p>
-
-                    <div class="review-list" id="review-summary">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
-            </div>
-
-            <div class="wizard-footer">
-                <button class="btn-prev" id="wiz-btn-prev" onclick="changeStep(-1)" style="display:none;">Back</button>
-                <button class="btn-next" id="wiz-btn-next" onclick="changeStep(1)">Continue</button>
-            </div>
-        </div>
-
-    </div>
-
-    <script>
-        const SERVICE = 'flayAds';
-        let currentUser = null;
-        let campaignsRef = null;
+    function switchView(view) {
+        currentView = view;
+        document.getElementById('view-dashboard').style.display = view === 'dashboard' ? 'block' : 'none';
+        document.getElementById('view-create').style.display = view === 'create' ? 'block' : 'none';
         
-        let currentStep = 1;
-        const totalSteps = 5;
-
-        // Draft Object
-        let draftCampaign = {
-            placement: 'VAST Video Ads',
-            placementCode: 'vast',
-            name: '',
-            title: '',
-            mediaUrl: '',
-            cta: '',
-            destUrl: '',
-            device: '',
-            category: '',
-            age: '',
-            budget: 0,
-            dailyBudget: 0,
-            billingModel: ''
-        };
-
-        // Custom Premium Alert
-        window.showAdsAlert = function(title, msg, type = 'error', callback = null) {
-            const overlay = document.getElementById('ads-premium-alert');
-            const iconEl = document.getElementById('ads-alert-icon');
-            const titleEl = document.getElementById('ads-alert-title');
-            const msgEl = document.getElementById('ads-alert-msg');
-            const btnEl = document.getElementById('ads-alert-btn');
-            
-            titleEl.innerText = title;
-            msgEl.innerHTML = msg.replace(/\n/g, '<br>');
-            
-            iconEl.className = 'premium-alert-icon ' + type;
-            if (type === 'success') iconEl.innerHTML = '<i class="fas fa-check"></i>';
-            else if (type === 'warning') iconEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
-            else iconEl.innerHTML = '<i class="fas fa-times"></i>';
-            
-            btnEl.onclick = function() {
-                overlay.classList.remove('active');
-                if(callback && typeof callback === 'function') {
-                    setTimeout(() => callback(), 150);
-                }
-            };
-            
-            overlay.classList.add('active');
-        };
-
-        // Navigation
-        window.executeBackAction = function() {
-            window.history.back();
-        };
-
-        function switchAdsTab(tabId) {
-            document.querySelectorAll('.ads-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.content-section').forEach(c => c.classList.remove('active'));
-            
-            event.target.classList.add('active');
-            document.getElementById('tab-' + tabId).classList.add('active');
-        }
-
-        // Firebase Integration
-        if (typeof auth !== 'undefined' && typeof db !== 'undefined') {
-            auth.onAuthStateChanged(user => {
-                currentUser = user;
-                if (user) {
-                    loadCampaigns(user.uid);
-                    checkPaymentSuccessCallback(user.uid);
-                }
-            });
-        }
-
-        function loadCampaigns(uid) {
-            if(campaignsRef) campaignsRef.off();
-            campaignsRef = db.ref(`flayAds/campaigns/${uid}`);
-            
-            campaignsRef.on('value', snap => {
-                const data = snap.val() || {};
-                const list = Object.values(data).sort((a,b) => b.createdAt - a.createdAt);
-                
-                let total = list.length;
-                let running = 0, pending = 0, rejected = 0;
-
-                const container = document.getElementById('campaign-list-container');
-                
-                if (total === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-folder-open"></i>
-                            <h3>No Campaigns Yet</h3>
-                            <p>Create your first advertising campaign to reach more audience on Flaynity.</p>
-                        </div>
-                    `;
-                } else {
-                    let html = '';
-                    list.forEach(c => {
-                        const st = c.campaignStatus || 'Under Review';
-                        if (st === 'Running') running++;
-                        else if (st === 'Under Review') pending++;
-                        else if (st === 'Rejected') rejected++;
-
-                        let stClass = 'status-review';
-                        if (st === 'Running') stClass = 'status-running';
-                        if (st === 'Rejected') stClass = 'status-rejected';
-
-                        html += `
-                            <div class="campaign-card">
-                                <div class="camp-header">
-                                    <div>
-                                        <div class="camp-title">${escapeHTML(c.campaignName)}</div>
-                                        <div class="camp-type">${escapeHTML(c.placement)}</div>
-                                    </div>
-                                    <div class="camp-status ${stClass}">${st}</div>
-                                </div>
-                                <div class="camp-details">
-                                    <div class="cd-item"><span>Budget</span><span>$${c.budget.toFixed(2)}</span></div>
-                                    <div class="cd-item"><span>Model</span><span>${c.billing}</span></div>
-                                </div>
-                                <button class="camp-btn">View Details</button>
-                            </div>
-                        `;
-                    });
-                    container.innerHTML = html;
-                }
-
-                document.getElementById('st-total').innerText = total;
-                document.getElementById('st-running').innerText = running;
-                document.getElementById('st-pending').innerText = pending;
-                document.getElementById('st-rejected').innerText = rejected;
-            });
-        }
-
-        // Wizard Logic
-        function openCreateAdWizard() {
-            document.getElementById('create-wizard').classList.add('active');
+        // Reset steps if entering create flow
+        if (view === 'create') {
             currentStep = 1;
-            updateWizardUI();
+            campaignData = { placement: '', placementName: '', creative: {}, targeting: {}, budget: {} };
+            document.querySelectorAll('.placement-card').forEach(el => el.classList.remove('active'));
+            updateStepUI();
+        } else {
+            loadDashboardData(); // Refresh list on return
         }
+    }
 
-        function closeCreateAdWizard() {
-            document.getElementById('create-wizard').classList.remove('active');
-        }
+    function startCreateFlow() {
+        switchView('create');
+    }
 
-        function selectPlacement(code, element) {
-            document.querySelectorAll('.placement-card').forEach(c => c.classList.remove('selected'));
-            element.classList.add('selected');
-            draftCampaign.placementCode = code;
-            draftCampaign.placement = element.querySelector('h4').innerText;
-        }
+    // --- DASHBOARD LOGIC ---
+    function loadDashboardData() {
+        if (!currentUser) return;
+        
+        const campaignsRef = db.ref('flayAds/campaigns');
+        campaignsRef.orderByChild('advertiserId').equalTo(currentUser.uid)
+            .on('value', snap => {
+                const data = snap.val() || {};
+                renderCampaignsList(data);
+            });
+    }
 
-        function changeStep(dir) {
-            if (dir === 1) {
-                if (!validateStep(currentStep)) return;
-                saveStepData(currentStep);
-            }
+    function renderCampaignsList(data) {
+        const container = document.getElementById('campaign-list-container');
+        const campaigns = Object.entries(data).map(([id, val]) => ({ id, ...val }));
+        
+        let total = campaigns.length;
+        let running = 0;
+        let pending = 0;
+        let impressions = 0;
+        let clicks = 0;
+
+        if (total === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-box-open"></i>
+                    <p>You haven't created any campaigns yet.</p>
+                </div>`;
+        } else {
+            // Sort by latest
+            campaigns.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
             
-            currentStep += dir;
-            if (currentStep > totalSteps) {
-                submitToFlayPay();
-                return;
-            }
-            updateWizardUI();
+            let html = '';
+            campaigns.forEach(camp => {
+                // Calculate stats
+                if (camp.campaignStatus === 'Running') running++;
+                if (camp.campaignStatus === 'Under Review' || camp.paymentStatus === 'pending') pending++;
+                
+                impressions += (camp.stats?.impressions || 0);
+                clicks += (camp.stats?.clicks || 0);
+
+                let statusBadge = '';
+                if (camp.campaignStatus === 'Running') statusBadge = `<span class="camp-status status-running">Running</span>`;
+                else if (camp.campaignStatus === 'Rejected') statusBadge = `<span class="camp-status status-rejected">Rejected</span>`;
+                else if (camp.campaignStatus === 'Under Review') statusBadge = `<span class="camp-status status-review">Under Review</span>`;
+                else statusBadge = `<span class="camp-status status-pending">${camp.campaignStatus || 'Draft'}</span>`;
+
+                const payStatusTxt = camp.paymentStatus === 'successful' ? '<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Paid</span>' 
+                                   : (camp.paymentStatus === 'pending' ? '<span style="color:var(--warning)"><i class="fas fa-clock"></i> Pending Payment</span>' 
+                                   : 'Failed/Refunded');
+
+                html += `
+                    <div class="campaign-card">
+                        <div class="camp-header">
+                            <div>
+                                <div class="camp-name">${camp.campaignName || 'Untitled'}</div>
+                                <div class="camp-type">
+                                    <i class="fas fa-bullseye"></i> ${formatPlacementName(camp.placement)}
+                                </div>
+                            </div>
+                            ${statusBadge}
+                        </div>
+                        <div class="camp-footer">
+                            <div class="camp-pay-status">Budget: $${camp.budget?.total || '0.00'} • ${payStatusTxt}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
         }
 
-        function validateStep(step) {
-            if (step === 2) {
-                const name = document.getElementById('ad-campaign-name').value.trim();
-                const title = document.getElementById('ad-title').value.trim();
-                const url = document.getElementById('ad-media-url').value.trim();
-                if(!name || !title || !url) {
-                    showAdsAlert("Missing Fields", "Please fill in Campaign Name, Title, and Media URL.", "warning");
-                    return false;
-                }
-            } else if (step === 4) {
-                const budget = parseFloat(document.getElementById('ad-total-budget').value);
-                if (isNaN(budget) || budget < 5) {
-                    showAdsAlert("Invalid Budget", "Total campaign budget must be at least $5.00 USDT.", "warning");
-                    return false;
-                }
-            }
-            return true;
-        }
+        document.getElementById('stat-total').innerText = total;
+        document.getElementById('stat-running').innerText = running;
+        document.getElementById('stat-pending').innerText = pending;
+        document.getElementById('stat-impressions').innerText = impressions.toLocaleString();
+        document.getElementById('stat-clicks').innerText = clicks.toLocaleString();
+    }
 
-        function saveStepData(step) {
-            if (step === 2) {
-                draftCampaign.name = document.getElementById('ad-campaign-name').value.trim();
-                draftCampaign.title = document.getElementById('ad-title').value.trim();
-                draftCampaign.mediaUrl = document.getElementById('ad-media-url').value.trim();
-                draftCampaign.cta = document.getElementById('ad-cta').value;
-                draftCampaign.destUrl = document.getElementById('ad-dest-url').value.trim();
-            } else if (step === 3) {
-                draftCampaign.device = document.getElementById('tgt-device').value;
-                draftCampaign.category = document.getElementById('tgt-category').value;
-                draftCampaign.age = document.getElementById('tgt-age').value;
-            } else if (step === 4) {
-                draftCampaign.budget = parseFloat(document.getElementById('ad-total-budget').value);
-                draftCampaign.dailyBudget = parseFloat(document.getElementById('ad-daily-budget').value) || 0;
-                draftCampaign.billingModel = document.getElementById('ad-billing-model').value;
-                buildReviewSummary();
-            }
-        }
+    function formatPlacementName(p) {
+        const names = {
+            'vast_video': 'VAST Video',
+            'shorts_vast': 'Shorts Video',
+            'shorts_post': 'Shorts Post',
+            'post_ad': 'Feed Post'
+        };
+        return names[p] || p;
+    }
 
-        function buildReviewSummary() {
-            const sum = document.getElementById('review-summary');
-            sum.innerHTML = `
-                <div class="review-item"><span>Campaign Name</span><span>${escapeHTML(draftCampaign.name)}</span></div>
-                <div class="review-item"><span>Placement</span><span>${draftCampaign.placement}</span></div>
-                <div class="review-item"><span>Targeting</span><span>${draftCampaign.device} • ${draftCampaign.category}</span></div>
-                <div class="review-item"><span>Billing Model</span><span>${draftCampaign.billingModel}</span></div>
-                <div class="review-item" style="border-top: 2px solid var(--border); margin-top: 10px; padding-top: 15px;">
-                    <span>Total Cost</span><span style="color: var(--primary); font-size: 16px;">$${draftCampaign.budget.toFixed(2)} USDT</span>
+    // --- CREATE AD FLOW LOGIC ---
+    function selectPlacement(type) {
+        campaignData.placement = type;
+        
+        const names = {
+            'vast_video': 'VAST Video Ads',
+            'shorts_vast': 'Shorts VAST Video Ads',
+            'shorts_post': 'Shorts Post Ads',
+            'post_ad': 'Post Ads'
+        };
+        campaignData.placementName = names[type];
+
+        document.querySelectorAll('.placement-card').forEach(el => el.classList.remove('active'));
+        document.getElementById('place-' + type).classList.add('active');
+        
+        buildDynamicMediaFields(type);
+    }
+
+    function buildDynamicMediaFields(type) {
+        const container = document.getElementById('dynamic-media-fields');
+        let html = '';
+        
+        if (type === 'vast_video' || type === 'shorts_vast') {
+            html = `
+                <div class="form-group">
+                    <label class="form-label">Video URL (MP4)</label>
+                    <input type="url" class="form-control" id="c-video" placeholder="https://.../video.mp4" required>
+                    <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">Recommended: ${type === 'shorts_vast' ? '9:16 Vertical' : '16:9 HD'}</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Video Thumbnail URL</label>
+                    <input type="url" class="form-control" id="c-thumb" placeholder="https://.../thumb.jpg" required>
                 </div>
             `;
+            document.getElementById('c-desc-group').style.display = 'block';
+        } else {
+            html = `
+                <div class="form-group">
+                    <label class="form-label">Image URL</label>
+                    <input type="url" class="form-control" id="c-image" placeholder="https://.../image.jpg" required>
+                </div>
+            `;
+            document.getElementById('c-desc-group').style.display = 'block';
         }
+        
+        container.innerHTML = html;
+    }
 
-        function updateWizardUI() {
-            document.querySelectorAll('.wizard-step').forEach((el, index) => {
-                if (index + 1 === currentStep) el.classList.add('active');
-                else el.classList.remove('active');
-            });
-
-            document.querySelectorAll('.progress-dot').forEach((el, index) => {
-                if (index < currentStep) el.classList.add('active');
-                else el.classList.remove('active');
-            });
-
-            document.getElementById('wiz-btn-prev').style.display = currentStep === 1 ? 'none' : 'block';
+    function validateStep(step) {
+        if (step === 1) {
+            if (!campaignData.placement) {
+                alert("Please select an ad placement.");
+                return false;
+            }
+        }
+        else if (step === 2) {
+            const name = document.getElementById('c-name').value.trim();
+            const title = document.getElementById('c-title').value.trim();
+            const url = document.getElementById('c-url').value.trim();
             
-            const nextBtn = document.getElementById('wiz-btn-next');
-            if (currentStep === totalSteps) {
-                nextBtn.innerHTML = `Continue to Flay Pay <i class="fas fa-arrow-right"></i>`;
-                nextBtn.style.background = 'var(--text)';
+            if (!name || !title || !url) {
+                alert("Please fill out all required fields.");
+                return false;
+            }
+            
+            campaignData.campaignName = name;
+            campaignData.creative = {
+                title: title,
+                description: document.getElementById('c-desc').value.trim(),
+                cta: document.getElementById('c-cta').value,
+                destinationUrl: url
+            };
+            
+            if (campaignData.placement === 'vast_video' || campaignData.placement === 'shorts_vast') {
+                const vid = document.getElementById('c-video').value.trim();
+                const thumb = document.getElementById('c-thumb').value.trim();
+                if(!vid || !thumb) { alert("Video and Thumbnail URLs are required."); return false; }
+                campaignData.creative.videoUrl = vid;
+                campaignData.creative.thumbnailUrl = thumb;
             } else {
-                nextBtn.innerHTML = `Continue`;
-                nextBtn.style.background = 'var(--primary)';
+                const img = document.getElementById('c-image').value.trim();
+                if(!img) { alert("Image URL is required."); return false; }
+                campaignData.creative.imageUrl = img;
+            }
+        }
+        else if (step === 3) {
+            campaignData.targeting = {
+                device: document.getElementById('t-device').value,
+                age: document.getElementById('t-age').value,
+                gender: document.getElementById('t-gender').value,
+                category: document.getElementById('t-category').value
+            };
+        }
+        else if (step === 4) {
+            const daily = parseFloat(document.getElementById('b-daily').value);
+            const total = parseFloat(document.getElementById('b-total').value);
+            const model = document.getElementById('b-model').value;
+            
+            if (!daily || !total || daily < 1 || total < 5) {
+                alert("Please enter valid budget amounts (Min total $5.00).");
+                return false;
+            }
+            if (daily > total) {
+                alert("Daily budget cannot exceed total budget.");
+                return false;
+            }
+            
+            campaignData.budget = {
+                daily: daily,
+                total: total,
+                billingModel: model
+            };
+            
+            // Populate review step
+            document.getElementById('r-name').innerText = campaignData.campaignName;
+            document.getElementById('r-placement').innerText = campaignData.placementName;
+            document.getElementById('r-category').innerText = campaignData.targeting.category;
+            document.getElementById('r-model').innerText = campaignData.budget.billingModel;
+            document.getElementById('r-daily').innerText = "$" + campaignData.budget.daily.toFixed(2) + " / day";
+            document.getElementById('r-total').innerText = "$" + campaignData.budget.total.toFixed(2);
+        }
+        return true;
+    }
+
+    function updateStepUI() {
+        document.querySelectorAll('.create-step').forEach(el => el.classList.remove('active'));
+        document.getElementById(`step-${currentStep}`).classList.add('active');
+        
+        for (let i = 1; i <= maxStep; i++) {
+            const dot = document.getElementById(`dot-${i}`);
+            const line = document.getElementById(`line-${i-1}`);
+            
+            if (i <= currentStep) {
+                dot.classList.add('active');
+                if (line) line.classList.add('active');
+            } else {
+                dot.classList.remove('active');
+                if (line) line.classList.remove('active');
             }
         }
 
-        // Bridge to Flay Pay (NO Wallet here, entirely delegated to Flay Pay)
-        function submitToFlayPay() {
-            const orderData = {
+        const btnBack = document.getElementById('btn-back');
+        const btnNext = document.getElementById('btn-next');
+        
+        if (currentStep === 1) {
+            btnBack.style.display = 'none';
+        } else {
+            btnBack.style.display = 'block';
+        }
+
+        if (currentStep === maxStep) {
+            btnNext.innerText = 'Continue to Flay Pay';
+            btnNext.onclick = submitToFlayPay;
+        } else {
+            btnNext.innerText = 'Continue';
+            btnNext.onclick = nextStep;
+        }
+    }
+
+    function nextStep() {
+        if (validateStep(currentStep)) {
+            if (currentStep < maxStep) {
+                currentStep++;
+                updateStepUI();
+                window.scrollTo(0,0);
+            }
+        }
+    }
+
+    function prevStep() {
+        if (currentStep > 1) {
+            currentStep--;
+            updateStepUI();
+            window.scrollTo(0,0);
+        }
+    }
+
+    function submitToFlayPay() {
+        if (!currentUser) return;
+        
+        const btnNext = document.getElementById('btn-next');
+        btnNext.disabled = true;
+        btnNext.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+        // Create pending campaign record securely
+        const newCampRef = db.ref('flayAds/campaigns').push();
+        const campId = newCampRef.key;
+
+        const payload = {
+            advertiserId: currentUser.uid,
+            campaignName: campaignData.campaignName,
+            placement: campaignData.placement,
+            creative: campaignData.creative,
+            targeting: campaignData.targeting,
+            budget: campaignData.budget,
+            paymentStatus: 'pending', // IMPORTANT: Initial state is strictly pending
+            campaignStatus: 'Draft',
+            createdAt: firebase.database.ServerValue.TIMESTAMP,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
+        };
+
+        newCampRef.set(payload).then(() => {
+            // Store payment intent for existing Flay Pay system
+            const paymentIntent = {
                 service: 'flayAds',
-                title: `Flay Ads: ${draftCampaign.name}`,
-                amount: draftCampaign.budget,
-                planType: 'ad_campaign',
-                draftData: draftCampaign
+                intentId: campId,
+                amount: campaignData.budget.total,
+                description: `Flay Ads Campaign: ${campaignData.campaignName}`
             };
             
-            sessionStorage.setItem('flay_pending_checkout', JSON.stringify(orderData));
-
+            localStorage.setItem('flaypay_intent', JSON.stringify(paymentIntent));
+            
+            // Redirect using existing app logic to Flay Pay
             if (typeof AppNavigation !== 'undefined' && AppNavigation.pushPremiumService) {
                 AppNavigation.pushPremiumService('flay-pay', SERVICE);
             } else {
-                window.location.href = 'flay-pay.html';
+                window.location.href = 'flay-pay.html?service=flayAds';
             }
-        }
+        }).catch((err) => {
+            console.error("Error creating campaign draft", err);
+            alert("Failed to initiate payment flow. Please try again.");
+            btnNext.disabled = false;
+            btnNext.innerText = 'Continue to Flay Pay';
+        });
+    }
 
-        // Catch Return from Flay Pay Success
-        function checkPaymentSuccessCallback(uid) {
-            const flag = sessionStorage.getItem('flay_ads_payment_success');
-            const savedDraftStr = sessionStorage.getItem('flay_ads_draft_payload');
-            
-            if (flag === 'true' && savedDraftStr) {
-                sessionStorage.removeItem('flay_ads_payment_success');
-                sessionStorage.removeItem('flay_ads_draft_payload');
-                
-                const draft = JSON.parse(savedDraftStr);
-                createCampaignInFirebase(uid, draft);
-            }
-        }
-
-        function createCampaignInFirebase(uid, draft) {
-            const campId = 'camp_' + Date.now();
-            const payload = {
-                advertiserId: uid,
-                campaignName: draft.name,
-                placement: draft.placement,
-                creative: {
-                    title: draft.title,
-                    mediaUrl: draft.mediaUrl,
-                    cta: draft.cta,
-                    destUrl: draft.destUrl
-                },
-                targeting: {
-                    device: draft.device,
-                    category: draft.category,
-                    age: draft.age
-                },
-                budget: draft.budget,
-                dailyBudget: draft.dailyBudget,
-                billing: draft.billingModel,
-                paymentStatus: 'Successful',
-                campaignStatus: 'Under Review',
-                createdAt: firebase.database.ServerValue.TIMESTAMP
-            };
-
-            db.ref(`flayAds/campaigns/${uid}/${campId}`).set(payload).then(() => {
-                showAdsAlert("Payment Successful", "Your campaign has been created and is Under Review by Admin.", "success");
-                switchAdsTab('campaigns');
-            }).catch(err => {
-                showAdsAlert("Database Error", "Payment was successful but campaign saving failed: " + err.message, "error");
-            });
-        }
-
-        function escapeHTML(str) {
-            if(!str) return '';
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        }
-
-    </script>
+</script>
 </body>
 </html>

@@ -48,96 +48,35 @@
             --overlay-bg: rgba(0,0,0,0.7);
         }
 
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        body {
-            margin: 0;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: var(--bg);
-        }
+        body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); }
 
-        /* MASTER CONTAINER */
         .app-container {
-            width: 100%;
-            max-width: 680px;
-            margin: 0 auto;
-            min-height: 100vh;
-            background: var(--bg);
-            color: var(--text);
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid var(--border);
-            border-right: 1px solid var(--border);
+            width: 100%; max-width: 680px; margin: 0 auto; min-height: 100vh;
+            background: var(--bg); color: var(--text); position: relative;
+            display: flex; flex-direction: column; border-left: 1px solid var(--border); border-right: 1px solid var(--border);
         }
 
-        @media (max-width: 680px) {
-            .app-container {
-                border-left: none;
-                border-right: none;
-            }
-        }
+        @media (max-width: 680px) { .app-container { border-left: none; border-right: none; } }
 
-        /* HEADER */
         .bar {
-            height: 64px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 0 16px;
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            background: var(--bar-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            z-index: 50;
+            height: 64px; display: flex; align-items: center; gap: 12px; padding: 0 16px;
+            border-bottom: 1px solid var(--border); position: sticky; top: 0;
+            background: var(--bar-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 50;
         }
 
         .back {
-            width: 40px;
-            height: 40px;
-            border: 0;
-            background: transparent;
-            color: var(--text);
-            font-size: 20px;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: background 0.2s;
-            display: grid;
-            place-items: center;
+            width: 40px; height: 40px; border: 0; background: transparent; color: var(--text);
+            font-size: 20px; border-radius: 50%; cursor: pointer; transition: background 0.2s; display: grid; place-items: center;
         }
-        
         .back:active { background: var(--input-bg); }
 
-        .title {
-            font-size: 18px;
-            font-weight: 900;
-            flex: 1;
-        }
+        .title { font-size: 18px; font-weight: 900; flex: 1; }
+        .badge { display: inline-flex; align-items: center; gap: 6px; background: var(--soft); color: var(--accent); padding: 6px 12px; border-radius: 999px; font-size: 10px; font-weight: 900; letter-spacing: 0.5px; }
 
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: var(--soft);
-            color: var(--accent);
-            padding: 6px 12px;
-            border-radius: 999px;
-            font-size: 10px;
-            font-weight: 900;
-            letter-spacing: 0.5px;
-        }
+        .content { padding: 24px 20px 120px; flex: 1; }
 
-        .content {
-            padding: 24px 20px 120px;
-            flex: 1;
-        }
-
-        /* DASHBOARD STATS */
         .dashboard-header { margin-bottom: 24px; }
         .dashboard-header h1 { font-size: 24px; font-weight: 900; margin: 0 0 4px 0; }
         .dashboard-header p { margin: 0; color: var(--muted); font-size: 14px; font-weight: 500; }
@@ -148,7 +87,6 @@
         .stat-val { font-size: 24px; font-weight: 900; line-height: 1; }
         .stat-label { font-size: 13px; color: var(--muted); font-weight: 700; }
 
-        /* CAMPAIGN LIST */
         .section-title { font-size: 18px; font-weight: 900; margin: 0 0 16px 0; display: flex; justify-content: space-between; align-items: center; }
         .campaign-list { display: flex; flex-direction: column; gap: 16px; }
         .campaign-card { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 20px; display: flex; flex-direction: column; gap: 16px; transition: transform 0.2s; box-shadow: var(--shadow); }
@@ -157,11 +95,12 @@
         .camp-top { display: flex; justify-content: space-between; align-items: flex-start; }
         .camp-info h3 { font-size: 16px; font-weight: 800; margin: 0 0 6px 0; }
         .camp-info p { font-size: 13px; color: var(--muted); margin: 0; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        
         .camp-status { font-size: 11px; font-weight: 800; padding: 6px 12px; border-radius: 999px; background: var(--input-bg); text-transform: uppercase; letter-spacing: 0.5px; }
         .status-running { color: var(--success); background: rgba(0,168,68,0.1); }
-        .status-pending { color: var(--warning); background: rgba(255,176,32,0.1); }
         .status-review { color: var(--info); background: rgba(0,122,255,0.1); }
         .status-rejected { color: var(--danger); background: rgba(255,46,85,0.1); }
+        .status-neutral { color: var(--muted); background: var(--input-bg); border: 1px solid var(--border); }
         
         .camp-bottom { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 16px; font-size: 13px; font-weight: 700; }
 
@@ -169,35 +108,14 @@
         .empty-state i { font-size: 40px; color: var(--muted); margin-bottom: 16px; opacity: 0.5; }
         .empty-state p { margin: 0; font-weight: 600; color: var(--muted); }
 
-        /* FLOATING ACTION BUTTON */
         .fab {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 16px 32px;
-            border-radius: 999px;
-            font-size: 16px;
-            font-weight: 900;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 8px 24px var(--soft);
-            
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 40px);
-            max-width: 380px;
-            z-index: 40;
-            transition: transform 0.2s, background 0.2s;
+            background: var(--accent); color: #fff; border: none; padding: 16px 32px; border-radius: 999px;
+            font-size: 16px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+            box-shadow: 0 8px 24px var(--soft); position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            width: calc(100% - 40px); max-width: 380px; z-index: 40; transition: transform 0.2s, background 0.2s;
         }
-
         .fab:active { transform: translateX(-50%) scale(0.95); }
 
-        /* CREATION FLOW */
         #view-create { display: none; }
         .modern-progress-wrapper { margin-bottom: 32px; }
         .progress-text { font-size: 13px; font-weight: 800; color: var(--muted); margin-bottom: 12px; display: flex; justify-content: space-between; }
@@ -206,11 +124,7 @@
 
         .create-step { display: none; animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .create-step.active { display: block; }
-
-        @keyframes slideUpFade {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
         .step-title { font-size: 24px; font-weight: 900; margin: 0 0 8px 0; line-height: 1.2; }
         .step-subtitle { font-size: 14px; color: var(--muted); margin: 0 0 32px 0; font-weight: 500; line-height: 1.5; }
@@ -227,69 +141,29 @@
         .check-circle { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border); display: grid; place-items: center; color: transparent; font-size: 12px; transition: all 0.2s; }
         .placement-card.active .check-circle { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-        /* Forms */
         .form-group { margin-bottom: 24px; }
         .form-label { display: block; font-size: 14px; font-weight: 800; margin-bottom: 10px; color: var(--text); }
-        
-        .form-control {
-            width: 100%; padding: 16px 20px; border-radius: 16px; border: 1.5px solid transparent;
-            background: var(--input-bg); color: var(--text); font-family: inherit; font-size: 15px; font-weight: 600;
-            transition: all 0.2s;
-        }
+        .form-control { width: 100%; padding: 16px 20px; border-radius: 16px; border: 1.5px solid transparent; background: var(--input-bg); color: var(--text); font-family: inherit; font-size: 15px; font-weight: 600; transition: all 0.2s; }
         .form-control:focus { background: var(--surface); border-color: var(--accent); outline: none; box-shadow: 0 0 0 4px var(--soft); }
         .form-control::placeholder { color: var(--muted); opacity: 0.7; }
         textarea.form-control { resize: vertical; min-height: 120px; line-height: 1.5; }
 
-        /* PREMIUM CUSTOM SELECT UI */
-        .custom-select {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-        }
-        
-        .custom-select::after {
-            content: '\f078';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            color: var(--muted);
-            font-size: 14px;
-            transition: transform 0.2s;
-        }
-        
+        .custom-select { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .custom-select::after { content: '\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900; color: var(--muted); font-size: 14px; transition: transform 0.2s; }
         .custom-select:active { background: var(--border); }
 
-        /* PREMIUM POP-UP BOTTOM SHEET */
-        .sheet-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: var(--overlay-bg); z-index: 100000;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s;
-            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-            display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
-        }
+        .sheet-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--overlay-bg); z-index: 100000; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
         .sheet-overlay.active { opacity: 1; pointer-events: auto; }
-        .sheet-modal {
-            background: var(--surface); width: 100%; max-width: 680px;
-            border-top-left-radius: 28px; border-top-right-radius: 28px;
-            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            padding: 24px; padding-bottom: max(32px, env(safe-area-inset-bottom));
-            display: flex; flex-direction: column; max-height: 85vh;
-        }
+        .sheet-modal { background: var(--surface); width: 100%; max-width: 680px; border-top-left-radius: 28px; border-top-right-radius: 28px; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); padding: 24px; padding-bottom: max(32px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; max-height: 85vh; }
         .sheet-overlay.active .sheet-modal { transform: translateY(0); }
         .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .sheet-title { font-size: 18px; font-weight: 900; margin: 0; }
         .sheet-close { width: 36px; height: 36px; border-radius: 50%; background: var(--input-bg); border: none; color: var(--text); font-size: 16px; cursor: pointer; display: grid; place-items: center; }
         .sheet-options { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-        .sheet-option {
-            padding: 18px; font-size: 16px; font-weight: 700; border-radius: 16px;
-            cursor: pointer; transition: background 0.2s;
-            display: flex; justify-content: space-between; align-items: center;
-            border: 2px solid transparent;
-        }
+        .sheet-option { padding: 18px; font-size: 16px; font-weight: 700; border-radius: 16px; cursor: pointer; transition: background 0.2s; display: flex; justify-content: space-between; align-items: center; border: 2px solid transparent; }
         .sheet-option:active { background: var(--input-bg); transform: scale(0.98); }
         .sheet-option.selected { color: var(--accent); background: var(--soft); border-color: var(--accent); }
 
-        /* Review Receipt */
         .receipt-card { background: var(--input-bg); border-radius: 24px; padding: 24px; margin-bottom: 24px; border: 1px solid var(--border); }
         .receipt-row { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px dashed var(--border); font-size: 14px; }
         .receipt-row:last-child { border-bottom: none; padding-bottom: 0; }
@@ -300,19 +174,14 @@
         .receipt-total .r-label { font-size: 16px; color: var(--text); font-weight: 900; }
         .receipt-total .r-value { font-size: 24px; color: var(--accent); font-weight: 900; }
 
-        /* Bottom Fixed Actions */
-        .bottom-actions {
-            position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 1px solid var(--border); padding: 16px 20px; padding-bottom: max(16px, env(safe-area-inset-bottom)); display: flex; justify-content: center; z-index: 40;
-        }
+        .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 1px solid var(--border); padding: 16px 20px; padding-bottom: max(16px, env(safe-area-inset-bottom)); display: flex; justify-content: center; z-index: 40; }
         .bottom-actions-inner { display: flex; gap: 12px; width: 100%; max-width: 680px; }
-        
         .btn { flex: 1; padding: 18px; border-radius: 16px; font-size: 16px; font-weight: 800; border: none; cursor: pointer; text-align: center; transition: all 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
         .btn:active { transform: scale(0.96); }
         .btn-outline { background: var(--input-bg); color: var(--text); }
         .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 8px 24px var(--soft); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
-        /* PREMIUM TOAST NOTIFICATION */
         .premium-toast { position: fixed; top: 24px; left: 50%; transform: translate(-50%, -100px); background: var(--text); color: var(--bg); padding: 14px 24px; border-radius: 999px; box-shadow: 0 12px 32px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 12px; z-index: 99999; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0; pointer-events: none; width: max-content; max-width: 90vw; }
         [data-theme=dark] .premium-toast { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
         .premium-toast.show { transform: translate(-50%, 0); opacity: 1; }
@@ -646,8 +515,11 @@
             currentStep = 1;
             campaignData = { placement: '', placementName: '', creative: {}, targeting: {}, budget: {} };
             document.querySelectorAll('.placement-card').forEach(el => el.classList.remove('active'));
+            document.getElementById('btn-next').disabled = false; // Fix: Enable "Continue" for next ad
             updateStepUI();
-        } else { loadDashboardData(); }
+        } else { 
+            loadDashboardData(); 
+        }
     }
 
     function startCreateFlow() { switchView('create'); }
@@ -671,28 +543,38 @@
             let html = '';
             campaigns.forEach(camp => {
                 if (camp.campaignStatus === 'Running') running++;
-                if (camp.campaignStatus === 'Under Review' || camp.paymentStatus === 'pending') pending++;
+                if (camp.campaignStatus === 'Under Review') pending++;
                 
+                const campStatus = (camp.campaignStatus || 'Draft').toUpperCase();
                 let statusBadge = '';
-                if (camp.campaignStatus === 'Running') statusBadge = `<div class="camp-status status-running">Running</div>`;
-                else if (camp.campaignStatus === 'Rejected') statusBadge = `<div class="camp-status status-rejected">Rejected</div>`;
-                else if (camp.campaignStatus === 'Under Review') statusBadge = `<div class="camp-status status-review">In Review</div>`;
-                else statusBadge = `<div class="camp-status status-pending">${camp.campaignStatus || 'Draft'}</div>`;
+                if (campStatus === 'RUNNING') statusBadge = `<div class="camp-status status-running">RUNNING</div>`;
+                else if (campStatus === 'REJECTED') statusBadge = `<div class="camp-status status-rejected">REJECTED</div>`;
+                else if (campStatus === 'UNDER REVIEW') statusBadge = `<div class="camp-status status-review">IN REVIEW</div>`;
+                else if (campStatus === 'COMPLETED') statusBadge = `<div class="camp-status status-neutral">COMPLETED</div>`;
+                else statusBadge = `<div class="camp-status status-neutral">DRAFT</div>`;
 
-                const payStatusTxt = camp.paymentStatus === 'successful' ? '<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Paid</span>' : (camp.paymentStatus === 'pending' ? '<span style="color:var(--warning)"><i class="fas fa-clock"></i> Pending</span>' : 'Failed/Refunded');
+                const isPaid = camp.paymentStatus === 'successful';
+                let payStatusTxt = '';
+                let actionBtn = '';
+                
+                if (isPaid) {
+                    payStatusTxt = '<span class="muted" style="color:var(--success); font-weight:800;"><i class="fas fa-check-circle" style="margin-right:3px;"></i>Paid</span>';
+                } else {
+                    actionBtn = `<button class="btn btn-primary" style="padding: 8px 16px; font-size: 13px; border-radius: 12px; height: auto;" onclick="payDraftCampaign('${id}', '${escapeHtml(camp.campaignName||'Untitled')}', ${camp.budget?.total||0})">Pay & Submit</button>`;
+                }
 
                 html += `
                     <div class="campaign-card">
                         <div class="camp-top">
                             <div class="camp-info">
-                                <h3>${camp.campaignName || 'Untitled'}</h3>
+                                <h3>${escapeHtml(camp.campaignName || 'Untitled')}</h3>
                                 <p><i class="fas fa-layer-group"></i> ${formatPlacementName(camp.placement)}</p>
                             </div>
                             ${statusBadge}
                         </div>
                         <div class="camp-bottom">
                             <div>Budget: $${camp.budget?.total || '0.00'}</div>
-                            <div>${payStatusTxt}</div>
+                            <div style="display:flex; align-items:center; gap:8px;">${payStatusTxt} ${actionBtn}</div>
                         </div>
                     </div>
                 `;
@@ -708,6 +590,17 @@
         const names = { 'vast_video': 'VAST Video', 'shorts_vast': 'Shorts Video', 'shorts_post': 'Shorts Post', 'post_ad': 'Feed Post' };
         return names[p] || p;
     }
+
+    // Logic to handle "Pay & Submit" from Dashboard
+    window.payDraftCampaign = function(id, name, amount) {
+        const pendingOrder = { type: 'flayAds', campaignId: id, title: `Campaign: ${name}`, amount: amount };
+        sessionStorage.setItem('flay_pending_checkout', JSON.stringify(pendingOrder));
+        if (typeof AppNavigation !== 'undefined' && AppNavigation.pushPremiumService) {
+            AppNavigation.pushPremiumService('flay-pay', SERVICE);
+        } else {
+            window.location.href = 'flay-pay.html';
+        }
+    };
 
     const selectOptions = {
         'cta': { title: "Call to Action", items: [ {label: 'Learn More', value: 'Learn More'}, {label: 'Download', value: 'Download'}, {label: 'Shop Now', value: 'Shop Now'}, {label: 'Sign Up', value: 'Sign Up'}, {label: 'Install', value: 'Install'} ] },
@@ -824,6 +717,7 @@
             btnNext.innerHTML = 'Continue';
             btnNext.onclick = nextStep;
         }
+        btnNext.disabled = false;
     }
 
     function nextStep() { if (validateStep(currentStep) && currentStep < maxStep) { currentStep++; updateStepUI(); window.scrollTo(0,0); } }
@@ -833,8 +727,7 @@
         if (!currentUser) return showToast("You need to sign in first.", "error");
         
         const btnNext = document.getElementById('btn-next');
-        btnNext.disabled = true;
-        btnNext.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btnNext.disabled = true; // Prevent double click, NO processing text
 
         const newCampRef = db.ref('flayAds/campaigns').push();
         const campId = newCampRef.key;
@@ -847,7 +740,6 @@
         };
 
         newCampRef.set(payload).then(() => {
-            // INTEGRATION WITH FLAY PAY PREMIUM CHECKOUT MODAL
             const pendingOrder = {
                 type: 'flayAds',
                 campaignId: campId,
@@ -855,19 +747,18 @@
                 amount: campaignData.budget.total
             };
             sessionStorage.setItem('flay_pending_checkout', JSON.stringify(pendingOrder));
-            showToast("Redirecting to Checkout...", "success");
+            
+            // Switch to dashboard immediately so back behavior is flawless
+            switchView('dashboard'); 
 
-            setTimeout(() => {
-                if (typeof AppNavigation !== 'undefined' && AppNavigation.pushPremiumService) {
-                    AppNavigation.pushPremiumService('flay-pay', SERVICE);
-                } else {
-                    window.location.href = 'flay-pay.html';
-                }
-            }, 1000);
+            if (typeof AppNavigation !== 'undefined' && AppNavigation.pushPremiumService) {
+                AppNavigation.pushPremiumService('flay-pay', SERVICE);
+            } else {
+                window.location.href = 'flay-pay.html';
+            }
         }).catch((err) => {
             showToast("Failed to initiate payment.", "error");
             btnNext.disabled = false;
-            btnNext.innerHTML = 'Pay & Submit <i class="fas fa-lock"></i>';
         });
     }
 

@@ -403,7 +403,7 @@
         <div class="premium-success-card">
             <div class="ps-icon-wrap"><i class="fas fa-check"></i></div>
             <h3 class="ps-title">Payment Successful!</h3>
-            <p class="ps-desc">Your plan has been activated successfully. Enjoy the premium benefits across Flaynity.</p>
+            <p class="ps-desc" id="ps-desc-dynamic">Your plan has been activated successfully. Enjoy the premium benefits across Flaynity.</p>
             <button class="btn-success-done" onclick="fpFinishPlanSuccess()">Done</button>
         </div>
     </div>
@@ -542,27 +542,47 @@
         let updates = {};
         updates[`users/${user.uid}/flayPayBalance`] = newBalance;
         updates[`users/${user.uid}/flayPaySpent`] = newSpent;
-        
-        let addMs = 0;
-        if (pendingOrder.planType === 'monthly') addMs = 30 * 24 * 60 * 60 * 1000;
-        else if (pendingOrder.planType === 'yearly') addMs = 365 * 24 * 60 * 60 * 1000;
-        
-        db.ref(`channels/${user.uid}/verifiedUntil`).once('value').then(snap => {
-            let currentExpiry = snap.val() || 0;
-            const now = Date.now();
-            if (currentExpiry < now) currentExpiry = now;
-            
-            const newExpiry = currentExpiry + addMs;
-            updates[`channels/${user.uid}/verifiedUntil`] = newExpiry;
+
+        // ** ADDED: FLAY ADS PAYMENT INTEGRATION **
+        if (pendingOrder.type === 'flayAds') {
+            updates[`flayAds/campaigns/${pendingOrder.campaignId}/paymentStatus`] = 'successful';
+            updates[`flayAds/campaigns/${pendingOrder.campaignId}/campaignStatus`] = 'Under Review';
+            updates[`flayAds/campaigns/${pendingOrder.campaignId}/updatedAt`] = firebase.database.ServerValue.TIMESTAMP;
             
             db.ref().update(updates).then(() => {
                 sessionStorage.removeItem('flay_pending_checkout');
                 document.getElementById('fp-checkout-popup-overlay').classList.remove('active');
                 pendingOrder = null;
                 
+                document.getElementById('ps-desc-dynamic').innerText = "Your campaign payment was successful and is now under review.";
                 document.getElementById('fp-plan-success-modal').classList.add('active');
+            }).catch(err => {
+                showFlayPayAlert("Error", err.message, "error");
             });
-        });
+        } else {
+            // ** ORIGINAL VERIFIED BADGE PAYMENT LOGIC **
+            let addMs = 0;
+            if (pendingOrder.planType === 'monthly') addMs = 30 * 24 * 60 * 60 * 1000;
+            else if (pendingOrder.planType === 'yearly') addMs = 365 * 24 * 60 * 60 * 1000;
+            
+            db.ref(`channels/${user.uid}/verifiedUntil`).once('value').then(snap => {
+                let currentExpiry = snap.val() || 0;
+                const now = Date.now();
+                if (currentExpiry < now) currentExpiry = now;
+                
+                const newExpiry = currentExpiry + addMs;
+                updates[`channels/${user.uid}/verifiedUntil`] = newExpiry;
+                
+                db.ref().update(updates).then(() => {
+                    sessionStorage.removeItem('flay_pending_checkout');
+                    document.getElementById('fp-checkout-popup-overlay').classList.remove('active');
+                    pendingOrder = null;
+                    
+                    document.getElementById('ps-desc-dynamic').innerText = "Your plan has been activated successfully. Enjoy the premium benefits across Flaynity.";
+                    document.getElementById('fp-plan-success-modal').classList.add('active');
+                });
+            });
+        }
     };
 
     window.fpFinishPlanSuccess = function() {

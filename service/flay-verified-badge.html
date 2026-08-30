@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Flay Verified Badge • Flaynity</title>
     
-    <!-- Theme Initialization Script -->
     <script>
         (function() {
             const savedTheme = localStorage.getItem('flaynity-theme-pref') || 'light';
@@ -13,7 +12,6 @@
         })();
     </script>
 
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
@@ -23,133 +21,120 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            --bg-color: #ffffff;
-            --card-bg: #ffffff;
-            --text-primary: #000000;
-            --text-secondary: #666666;
-            --border-color: #e9e9e9;
-            --app-bar-bg: rgba(255, 255, 255, 0.85);
-            --card-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        .fvb-wrapper {
+            --bg-color: #ffffff; --card-bg: #ffffff; --text-primary: #000000; --text-secondary: #666666;
+            --border-color: #e9e9e9; --app-bar-bg: rgba(255, 255, 255, 0.85); --card-shadow: 0 4px 20px rgba(0,0,0,0.06);
             --bottom-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 30%, rgba(255, 255, 255, 1) 100%);
             --mock-bg: linear-gradient(180deg, #f8f9fa 0%, rgba(248, 249, 250, 0.6) 100%);
-            --flay-pink: #FF4F91;
-            --flay-pink-rgb: 255, 79, 145;
-            --telegram-blue: #3390EC;
-            --radius-large: 28px;
-            --radius-md: 18px;
-            --radius-sm: 12px;
-            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --flay-pink: #FF4F91; --flay-pink-rgb: 255, 79, 145; --telegram-blue: #3390EC;
+            --radius-large: 28px; --radius-md: 18px; --radius-sm: 12px; --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            background-color: var(--bg-color); color: var(--text-primary); font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh; position: relative; padding-bottom: 120px;
         }
 
-        [data-theme="dark"] {
-            --bg-color: #000000;
-            --card-bg: #121212;
-            --text-primary: #ffffff;
-            --text-secondary: #9BA1B0;
-            --border-color: #222222;
-            --app-bar-bg: rgba(0, 0, 0, 0.85);
-            --card-shadow: 0 4px 24px rgba(0,0,0,0.3);
+        [data-theme="dark"] .fvb-wrapper {
+            --bg-color: #000000; --card-bg: #121212; --text-primary: #ffffff; --text-secondary: #9BA1B0;
+            --border-color: #222222; --app-bar-bg: rgba(0, 0, 0, 0.85); --card-shadow: 0 4px 24px rgba(0,0,0,0.3);
             --bottom-gradient: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.95) 30%, rgba(0, 0, 0, 1) 100%);
             --mock-bg: linear-gradient(180deg, rgba(25, 27, 32, 1) 0%, rgba(25, 27, 32, 0.6) 100%);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-primary); overflow-x: hidden; -webkit-font-smoothing: antialiased; transition: background-color 0.3s ease, color 0.3s ease; }
-        .app-container { max-width: 680px; margin: 0 auto; min-height: 100vh; position: relative; padding-bottom: 120px; }
+        .fvb-wrapper * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        .fvb-container { max-width: 680px; margin: 0 auto; }
 
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-up { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+        @keyframes fadeUpFvb { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .fvb-animate-fade-up { animation: fadeUpFvb 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
 
-        .top-bar { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: var(--app-bar-bg); border-bottom: 1px solid var(--border-color); }
-        .back-btn { background: none; border: none; color: var(--text-primary); font-size: 20px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: flex-start; border-radius: 50%; cursor: pointer; z-index: 2; }
-        .page-title { font-size: 16px; font-weight: 700; position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; z-index: 1; }
+        .fvb-wrapper .top-bar { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: var(--app-bar-bg); border-bottom: 1px solid var(--border-color); }
+        .fvb-wrapper .back-btn { background: none; border: none; color: var(--text-primary); font-size: 20px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: flex-start; border-radius: 50%; cursor: pointer; z-index: 2; }
+        .fvb-wrapper .page-title { font-size: 16px; font-weight: 700; position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; z-index: 1; margin:0;}
 
-        .section { padding: 0 20px; margin-top: 24px; }
-        .section-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
-        .section-subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5; }
+        .fvb-wrapper .section { padding: 0 20px; margin-top: 24px; }
+        .fvb-wrapper .section-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+        .fvb-wrapper .section-subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5; }
 
-        .card { background: var(--card-bg); border-radius: var(--radius-large); padding: 24px; border: 1px solid var(--border-color); box-shadow: var(--card-shadow); }
+        .fvb-wrapper .card { background: var(--card-bg); border-radius: var(--radius-large); padding: 24px; border: 1px solid var(--border-color); box-shadow: var(--card-shadow); }
 
-        .hero-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; position: relative; overflow: hidden; box-shadow: 0 8px 32px rgba(var(--flay-pink-rgb), 0.15); }
-        .hero-content { flex: 1; z-index: 2; }
-        .hero-badge-text { color: var(--flay-pink); font-size: 12px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-        .hero-title { font-size: 24px; font-weight: 900; line-height: 1.2; margin-bottom: 12px; }
-        .hero-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
-        .hero-icon-container { width: 80px; height: 80px; background: rgba(51, 144, 236, 0.1); border-radius: 24px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; border: 1px solid rgba(51, 144, 236, 0.2); }
+        .fvb-wrapper .hero-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; position: relative; overflow: hidden; box-shadow: 0 8px 32px rgba(var(--flay-pink-rgb), 0.15); }
+        .fvb-wrapper .hero-content { flex: 1; z-index: 2; }
+        .fvb-wrapper .hero-badge-text { color: var(--flay-pink); font-size: 12px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .fvb-wrapper .hero-title { font-size: 24px; font-weight: 900; line-height: 1.2; margin-bottom: 12px; }
+        .fvb-wrapper .hero-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+        .fvb-wrapper .hero-icon-container { width: 80px; height: 80px; background: rgba(51, 144, 236, 0.1); border-radius: 24px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; border: 1px solid rgba(51, 144, 236, 0.2); }
         
-        .verified-svg { width: 1.2em; height: 1.2em; flex-shrink: 0; display: inline-block; }
-        .hero-icon-container .verified-svg { width: 45px; height: 45px; }
+        .fvb-wrapper .verified-svg { width: 1.2em; height: 1.2em; flex-shrink: 0; display: inline-block; }
+        .fvb-wrapper .hero-icon-container .verified-svg { width: 45px; height: 45px; }
 
-        .preview-card { border: 1px solid rgba(var(--flay-pink-rgb), 0.3); background: var(--mock-bg); box-shadow: 0 4px 24px rgba(var(--flay-pink-rgb), 0.08); border-radius: var(--radius-large); padding: 20px; }
-        .profile-mock { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); }
-        .avatar { width: 56px; height: 56px; border-radius: 50%; background-color: var(--border-color); background-position: center; background-size: cover; border: 2px solid var(--card-bg); box-shadow: 0 0 0 2px var(--telegram-blue); transition: background-image 0.3s ease; }
+        .fvb-wrapper .preview-card { border: 1px solid rgba(var(--flay-pink-rgb), 0.3); background: var(--mock-bg); box-shadow: 0 4px 24px rgba(var(--flay-pink-rgb), 0.08); border-radius: var(--radius-large); padding: 20px; }
+        .fvb-wrapper .profile-mock { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); }
+        .fvb-wrapper .avatar { width: 56px; height: 56px; border-radius: 50%; background-color: var(--border-color); background-position: center; background-size: cover; border: 2px solid var(--card-bg); box-shadow: 0 0 0 2px var(--telegram-blue); transition: background-image 0.3s ease; }
         
-        .profile-info h3 { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-        .profile-info p { color: var(--text-secondary); font-size: 14px; font-weight: 500; }
-        .preview-text { font-size: 13px; color: var(--text-secondary); line-height: 1.5; display: flex; align-items: flex-start; gap: 10px; }
-        .preview-text i { color: var(--flay-pink); margin-top: 3px; }
+        .fvb-wrapper .profile-info h3 { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+        .fvb-wrapper .profile-info p { color: var(--text-secondary); font-size: 14px; font-weight: 500; margin:0;}
+        .fvb-wrapper .preview-text { font-size: 13px; color: var(--text-secondary); line-height: 1.5; display: flex; align-items: flex-start; gap: 10px; }
+        .fvb-wrapper .preview-text i { color: var(--flay-pink); margin-top: 3px; }
 
-        .skeleton-text { opacity: 0.5; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 0.7; } 100% { opacity: 0.4; } }
+        .fvb-wrapper .skeleton-text { opacity: 0.5; animation: pulseFvb 1.5s infinite; }
+        @keyframes pulseFvb { 0% { opacity: 0.4; } 50% { opacity: 0.7; } 100% { opacity: 0.4; } }
 
-        .benefits-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .benefit-item { background: var(--card-bg); border: 1px solid var(--border-color); padding: 16px; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 10px; box-shadow: var(--card-shadow); }
-        .benefit-icon { width: 32px; height: 32px; background: rgba(var(--flay-pink-rgb), 0.1); color: var(--flay-pink); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
-        .benefit-item h4 { font-size: 14px; font-weight: 700; }
-        .benefit-item p { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+        .fvb-wrapper .benefits-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .fvb-wrapper .benefit-item { background: var(--card-bg); border: 1px solid var(--border-color); padding: 16px; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 10px; box-shadow: var(--card-shadow); }
+        .fvb-wrapper .benefit-icon { width: 32px; height: 32px; background: rgba(var(--flay-pink-rgb), 0.1); color: var(--flay-pink); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .fvb-wrapper .benefit-item h4 { font-size: 14px; font-weight: 700; margin:0;}
+        .fvb-wrapper .benefit-item p { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin:0;}
 
-        .plans-container { display: flex; flex-direction: column; gap: 12px; }
-        @media (min-width: 480px) { .plans-container { flex-direction: row; } }
-        .plan-card { flex: 1; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; position: relative; cursor: pointer; transition: var(--transition); box-shadow: var(--card-shadow); }
-        .plan-card.active { border-color: var(--flay-pink); background: rgba(var(--flay-pink-rgb), 0.03); box-shadow: 0 4px 20px rgba(var(--flay-pink-rgb), 0.1); }
-        .plan-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .plan-name { font-size: 16px; font-weight: 800; }
-        .radio-circle { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--text-secondary); display: flex; align-items: center; justify-content: center; transition: var(--transition); }
-        .plan-card.active .radio-circle { border-color: var(--flay-pink); }
-        .radio-inner { width: 10px; height: 10px; border-radius: 50%; background: var(--flay-pink); opacity: 0; transform: scale(0.5); transition: var(--transition); }
-        .plan-card.active .radio-inner { opacity: 1; transform: scale(1); }
-        .plan-price { font-size: 28px; font-weight: 900; margin-bottom: 4px; }
-        .plan-billing { font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
-        .plan-desc { font-size: 13px; color: var(--text-secondary); }
-        .save-badge { position: absolute; top: -10px; right: 20px; background: var(--flay-pink); color: white; font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 12px; box-shadow: 0 4px 10px rgba(var(--flay-pink-rgb), 0.3); }
+        .fvb-wrapper .plans-container { display: flex; flex-direction: column; gap: 12px; }
+        @media (min-width: 480px) { .fvb-wrapper .plans-container { flex-direction: row; } }
+        .fvb-wrapper .plan-card { flex: 1; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; position: relative; cursor: pointer; transition: var(--transition); box-shadow: var(--card-shadow); }
+        .fvb-wrapper .plan-card.active { border-color: var(--flay-pink); background: rgba(var(--flay-pink-rgb), 0.03); box-shadow: 0 4px 20px rgba(var(--flay-pink-rgb), 0.1); }
+        .fvb-wrapper .plan-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .fvb-wrapper .plan-name { font-size: 16px; font-weight: 800; }
+        .fvb-wrapper .radio-circle { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--text-secondary); display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+        .fvb-wrapper .plan-card.active .radio-circle { border-color: var(--flay-pink); }
+        .fvb-wrapper .radio-inner { width: 10px; height: 10px; border-radius: 50%; background: var(--flay-pink); opacity: 0; transform: scale(0.5); transition: var(--transition); }
+        .fvb-wrapper .plan-card.active .radio-inner { opacity: 1; transform: scale(1); }
+        .fvb-wrapper .plan-price { font-size: 28px; font-weight: 900; margin-bottom: 4px; }
+        .fvb-wrapper .plan-billing { font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
+        .fvb-wrapper .plan-desc { font-size: 13px; color: var(--text-secondary); }
+        .fvb-wrapper .save-badge { position: absolute; top: -10px; right: 20px; background: var(--flay-pink); color: white; font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 12px; box-shadow: 0 4px 10px rgba(var(--flay-pink-rgb), 0.3); }
 
-        .features-list { background: var(--card-bg); border-radius: var(--radius-large); padding: 24px; border: 1px solid var(--border-color); box-shadow: var(--card-shadow); }
-        .feature-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
-        .feature-row:last-child { border-bottom: none; padding-bottom: 0; }
-        .feature-row:first-child { padding-top: 0; }
-        .feature-row i { color: var(--flay-pink); font-size: 16px; }
-        .feature-row span { font-size: 14px; font-weight: 500; }
+        .fvb-wrapper .features-list { background: var(--card-bg); border-radius: var(--radius-large); padding: 24px; border: 1px solid var(--border-color); box-shadow: var(--card-shadow); }
+        .fvb-wrapper .feature-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
+        .fvb-wrapper .feature-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .fvb-wrapper .feature-row:first-child { padding-top: 0; }
+        .fvb-wrapper .feature-row i { color: var(--flay-pink); font-size: 16px; }
+        .fvb-wrapper .feature-row span { font-size: 14px; font-weight: 500; }
 
-        .info-box { background: rgba(128, 128, 128, 0.05); border: 1px solid var(--border-color); padding: 16px; border-radius: var(--radius-sm); display: flex; gap: 12px; margin-bottom: 20px; }
-        .info-box i { color: var(--text-secondary); font-size: 18px; margin-top: 2px; }
-        .info-text p { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-        .info-text span { font-size: 12px; color: var(--text-secondary); }
+        .fvb-wrapper .info-box { background: rgba(128, 128, 128, 0.05); border: 1px solid var(--border-color); padding: 16px; border-radius: var(--radius-sm); display: flex; gap: 12px; margin-bottom: 20px; }
+        .fvb-wrapper .info-box i { color: var(--text-secondary); font-size: 18px; margin-top: 2px; }
+        .fvb-wrapper .info-text p { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+        .fvb-wrapper .info-text span { font-size: 12px; color: var(--text-secondary); }
 
-        .bottom-cta { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bottom-gradient); padding: 24px 20px 24px; z-index: 100; display: flex; flex-direction: column; align-items: center; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
-        .btn-primary { width: 100%; max-width: 640px; background: var(--flay-pink); color: #FFF; border: none; height: 56px; border-radius: var(--radius-md); font-size: 16px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; box-shadow: 0 8px 32px rgba(var(--flay-pink-rgb), 0.3); transition: var(--transition); position: relative; overflow: hidden; }
-        .btn-primary:active { transform: scale(0.98); }
-        .secure-text { margin-top: 12px; font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
-        .secure-text i { font-size: 10px; }
-        
-        /* PREMIUM ALERT MODAL CSS */
-        .premium-alert-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 99999; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; padding: 20px; }
-        .premium-alert-overlay.active { opacity: 1; pointer-events: all; }
-        .premium-alert-card { background: var(--card-bg); border-radius: 24px; padding: 30px 24px; width: 100%; max-width: 320px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--border-color); transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .premium-alert-overlay.active .premium-alert-card { transform: scale(1); }
-        .premium-alert-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 16px; }
-        .premium-alert-icon.error { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-        .premium-alert-icon.success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-        .premium-alert-icon.warning { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-        .premium-alert-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; color: var(--text-primary); }
-        .premium-alert-msg { font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 24px; }
-        .premium-alert-btn { background: var(--text-primary); color: var(--card-bg); border: none; padding: 14px; width: 100%; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
-        .premium-alert-btn:active { transform: scale(0.96); }
+        .fvb-wrapper .bottom-cta { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bottom-gradient); padding: 24px 20px 24px; z-index: 100; display: flex; flex-direction: column; align-items: center; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+        .fvb-wrapper .btn-primary { width: 100%; max-width: 640px; background: var(--flay-pink); color: #FFF; border: none; height: 56px; border-radius: var(--radius-md); font-size: 16px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; box-shadow: 0 8px 32px rgba(var(--flay-pink-rgb), 0.3); transition: var(--transition); position: relative; overflow: hidden; }
+        .fvb-wrapper .btn-primary:active { transform: scale(0.98); }
+        .fvb-wrapper .secure-text { margin-top: 12px; font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+        .fvb-wrapper .secure-text i { font-size: 10px; }
+
+        /* FVB PREMIUM ALERT MODAL CSS */
+        .fvb-wrapper .premium-alert-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 999999; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; padding: 20px; }
+        .fvb-wrapper .premium-alert-overlay.active { opacity: 1; pointer-events: all; }
+        .fvb-wrapper .premium-alert-card { background: var(--card-bg); border-radius: 24px; padding: 30px 24px; width: 100%; max-width: 320px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--border-color); transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .fvb-wrapper .premium-alert-overlay.active .premium-alert-card { transform: scale(1); }
+        .fvb-wrapper .premium-alert-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 16px; }
+        .fvb-wrapper .premium-alert-icon.error { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .fvb-wrapper .premium-alert-icon.success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+        .fvb-wrapper .premium-alert-icon.warning { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+        .fvb-wrapper .premium-alert-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; color: var(--text-primary); }
+        .fvb-wrapper .premium-alert-msg { font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 24px; }
+        .fvb-wrapper .premium-alert-btn { background: var(--text-primary); color: var(--card-bg); border: none; padding: 14px; width: 100%; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
+        .fvb-wrapper .premium-alert-btn:active { transform: scale(0.96); }
 
     </style>
 </head>
 <body>
 
+<div class="fvb-wrapper">
     <!-- TELEGRAM OFFICIAL VERIFIED BADGE SVG -->
     <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -160,26 +145,25 @@
         </defs>
     </svg>
 
-    <!-- Premium Custom Alert -->
-    <div class="premium-alert-overlay" id="fv-premium-alert">
+    <!-- FVB Premium Custom Alert -->
+    <div class="premium-alert-overlay" id="fvb-premium-alert">
         <div class="premium-alert-card">
-            <div class="premium-alert-icon" id="fv-alert-icon"></div>
-            <h3 class="premium-alert-title" id="fv-alert-title">Title</h3>
-            <p class="premium-alert-msg" id="fv-alert-msg">Message goes here</p>
-            <button class="premium-alert-btn" onclick="closePremiumAlert()">OK</button>
+            <div class="premium-alert-icon" id="fvb-alert-icon"></div>
+            <h3 class="premium-alert-title" id="fvb-alert-title">Title</h3>
+            <p class="premium-alert-msg" id="fvb-alert-msg">Message goes here</p>
+            <button class="premium-alert-btn" id="fvb-alert-btn">OK</button>
         </div>
     </div>
 
-    <div class="app-container">
-        
+    <div class="fvb-container">
         <header class="top-bar">
-            <button class="back-btn" onclick="handleBack(event)" aria-label="Back">
+            <button class="back-btn" onclick="fvbHandleBack(event)" aria-label="Back">
                 <i class="fas fa-arrow-left"></i>
             </button>
             <h1 class="page-title">Flay Verified Badge</h1>
         </header>
 
-        <section class="section animate-fade-up" style="animation-delay: 0.1s;">
+        <section class="section fvb-animate-fade-up" style="animation-delay: 0.1s;">
             <div class="card hero-card">
                 <div class="hero-content">
                     <div class="hero-badge-text">
@@ -197,18 +181,18 @@
         </section>
 
         <!-- Dynamic Profile Preview -->
-        <section class="section animate-fade-up" style="animation-delay: 0.2s;">
+        <section class="section fvb-animate-fade-up" style="animation-delay: 0.2s;">
             <div class="preview-card">
                 <div class="profile-mock">
-                    <div class="avatar" id="db-channel-avatar"></div>
+                    <div class="avatar" id="fvb-db-channel-avatar"></div>
                     <div class="profile-info">
-                        <h3 class="skeleton-text" id="db-channel-name-container">
-                            <span id="db-channel-name">Loading...</span>
-                            <svg viewBox="0 0 24 24" class="verified-svg" style="width: 18px; height: 18px; display: none;" id="db-channel-badge">
+                        <h3 class="skeleton-text" id="fvb-db-channel-name-container">
+                            <span id="fvb-db-channel-name">Loading...</span>
+                            <svg viewBox="0 0 24 24" class="verified-svg" style="width: 18px; height: 18px; display: none;" id="fvb-db-channel-badge">
                                 <use href="#icon-verified-telegram"></use>
                             </svg>
                         </h3>
-                        <p id="db-channel-handle" class="skeleton-text">...</p>
+                        <p id="fvb-db-channel-handle" class="skeleton-text">...</p>
                     </div>
                 </div>
                 <div class="preview-text">
@@ -219,18 +203,18 @@
         </section>
 
         <!-- Active Plan Status Section -->
-        <section class="section animate-fade-up" id="active-plan-section" style="display: none; animation-delay: 0.2s;">
+        <section class="section fvb-animate-fade-up" id="fvb-active-plan-section" style="display: none; animation-delay: 0.2s;">
             <div class="card" style="border-color: var(--flay-pink); background: rgba(var(--flay-pink-rgb), 0.03);">
                 <h3 style="color: var(--flay-pink); font-size: 18px; margin-bottom: 8px;"><i class="fa-solid fa-circle-check"></i> Verified Badge Active</h3>
                 <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">Your profile is currently verified and enjoys all premium benefits across Flaynity.</p>
                 <div style="background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
                     <span style="font-weight: 700; font-size: 14px;">Expires in:</span>
-                    <span id="expiry-countdown" style="font-weight: 800; font-size: 15px; color: var(--flay-pink); font-variant-numeric: tabular-nums;">...</span>
+                    <span id="fvb-expiry-countdown" style="font-weight: 800; font-size: 15px; color: var(--flay-pink); font-variant-numeric: tabular-nums;">...</span>
                 </div>
             </div>
         </section>
 
-        <section class="section animate-fade-up" style="animation-delay: 0.3s;">
+        <section class="section fvb-animate-fade-up" style="animation-delay: 0.3s;">
             <h2 class="section-title">Why Get Verified?</h2>
             <div class="benefits-grid mt-3">
                 <div class="benefit-item">
@@ -257,12 +241,12 @@
         </section>
 
         <!-- Plans Section -->
-        <section class="section animate-fade-up" id="plans-section" style="animation-delay: 0.4s;">
+        <section class="section fvb-animate-fade-up" id="fvb-plans-section" style="animation-delay: 0.4s;">
             <h2 class="section-title">Choose Your Badge Plan</h2>
             <p class="section-subtitle">Select the plan that works best for you.</p>
             
             <div class="plans-container">
-                <div class="plan-card active" onclick="selectPlan(this, 3, 'monthly')">
+                <div class="plan-card active" onclick="fvbSelectPlan(this, 3, 'monthly')">
                     <div class="plan-header">
                         <span class="plan-name">Monthly</span>
                         <div class="radio-circle"><div class="radio-inner"></div></div>
@@ -272,7 +256,7 @@
                     <div class="plan-desc">Flexible starter plan</div>
                 </div>
 
-                <div class="plan-card" onclick="selectPlan(this, 33, 'yearly')">
+                <div class="plan-card" onclick="fvbSelectPlan(this, 33, 'yearly')">
                     <div class="save-badge">Save 17%</div>
                     <div class="plan-header">
                         <span class="plan-name">Yearly</span>
@@ -285,7 +269,7 @@
             </div>
         </section>
 
-        <section class="section animate-fade-up" style="animation-delay: 0.5s;">
+        <section class="section fvb-animate-fade-up" style="animation-delay: 0.5s;">
             <h2 class="section-title">Your Verified Badge Includes</h2>
             <div class="features-list">
                 <div class="feature-row"><i class="fa-solid fa-circle-check"></i><span>Verified badge beside your profile name</span></div>
@@ -297,7 +281,7 @@
             </div>
         </section>
 
-        <section class="section animate-fade-up" style="animation-delay: 0.6s;">
+        <section class="section fvb-animate-fade-up" style="animation-delay: 0.6s;">
             <div class="info-box">
                 <i class="fa-solid fa-circle-info"></i>
                 <div class="info-text">
@@ -307,8 +291,8 @@
             </div>
         </section>
 
-        <div class="bottom-cta animate-fade-up" style="animation-delay: 0.7s;" id="bottom-cta-section">
-            <button class="btn-primary" onclick="proceedToPay(event)">
+        <div class="bottom-cta fvb-animate-fade-up" style="animation-delay: 0.7s;" id="fvb-bottom-cta-section">
+            <button class="btn-primary" onclick="fvbProceedToPay(event)">
                 Continue to Flay Pay <i class="fa-solid fa-arrow-right"></i>
             </button>
             <div class="secure-text">
@@ -317,21 +301,23 @@
         </div>
 
     </div>
+</div>
 
     <script>
-        const SERVICE_ID = 'flayVerifiedBadge';
-        let currentChannelRef = null;
-        let countdownInterval;
+        const FVB_SERVICE_ID = 'flayVerifiedBadge';
+        let fvbCurrentChannelRef = null;
+        let fvbCountdownInterval;
 
-        let selectedPlanAmount = 3;
-        let selectedPlanType = 'monthly';
+        let fvbSelectedPlanAmount = 3;
+        let fvbSelectedPlanType = 'monthly';
 
-        // Custom Premium Alert Function
-        function showPremiumAlert(title, msg, type = 'error') {
-            const overlay = document.getElementById('fv-premium-alert');
-            const iconEl = document.getElementById('fv-alert-icon');
-            const titleEl = document.getElementById('fv-alert-title');
-            const msgEl = document.getElementById('fv-alert-msg');
+        // Isolated Premium Alert Function for Verified Badge Page
+        window.showFlayBadgeAlert = function(title, msg, type = 'error', callback = null) {
+            const overlay = document.getElementById('fvb-premium-alert');
+            const iconEl = document.getElementById('fvb-alert-icon');
+            const titleEl = document.getElementById('fvb-alert-title');
+            const msgEl = document.getElementById('fvb-alert-msg');
+            const btnEl = document.getElementById('fvb-alert-btn');
             
             titleEl.innerText = title;
             msgEl.innerHTML = msg.replace(/\n/g, '<br>');
@@ -341,29 +327,36 @@
             else if (type === 'warning') iconEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
             else iconEl.innerHTML = '<i class="fas fa-times"></i>';
             
+            btnEl.onclick = function() {
+                closeFlayBadgeAlert();
+                if(callback && typeof callback === 'function') {
+                    setTimeout(() => callback(), 150);
+                }
+            };
+            
             overlay.classList.add('active');
-        }
+        };
 
-        function closePremiumAlert() {
-            document.getElementById('fv-premium-alert').classList.remove('active');
-        }
+        window.closeFlayBadgeAlert = function() {
+            document.getElementById('fvb-premium-alert').classList.remove('active');
+        };
 
         if (typeof auth !== 'undefined' && typeof db !== 'undefined') {
             auth.onAuthStateChanged((user) => {
                 if (user) {
-                    fetchChannelData(user.uid);
+                    fvbFetchChannelData(user.uid);
                 } else {
-                    clearChannelPreview();
+                    fvbClearChannelPreview();
                 }
             });
         }
 
-        function clearChannelPreview() {
-            const nameContainer = document.getElementById('db-channel-name-container');
-            const nameEl = document.getElementById('db-channel-name');
-            const handleEl = document.getElementById('db-channel-handle');
-            const avatarEl = document.getElementById('db-channel-avatar');
-            const badgeEl = document.getElementById('db-channel-badge');
+        function fvbClearChannelPreview() {
+            const nameContainer = document.getElementById('fvb-db-channel-name-container');
+            const nameEl = document.getElementById('fvb-db-channel-name');
+            const handleEl = document.getElementById('fvb-db-channel-handle');
+            const avatarEl = document.getElementById('fvb-db-channel-avatar');
+            const badgeEl = document.getElementById('fvb-db-channel-badge');
 
             if (nameEl) nameEl.innerText = '';
             if (nameContainer) nameContainer.classList.remove('skeleton-text');
@@ -379,21 +372,21 @@
             if (badgeEl) badgeEl.style.display = 'none';
         }
 
-        function fetchChannelData(uid) {
-            if (!uid) { clearChannelPreview(); return; }
+        function fvbFetchChannelData(uid) {
+            if (!uid) { fvbClearChannelPreview(); return; }
 
-            if (currentChannelRef) currentChannelRef.off();
-            currentChannelRef = db.ref('channels/' + uid);
+            if (fvbCurrentChannelRef) fvbCurrentChannelRef.off();
+            fvbCurrentChannelRef = db.ref('channels/' + uid);
             
-            currentChannelRef.on('value', (snapshot) => {
+            fvbCurrentChannelRef.on('value', (snapshot) => {
                 const data = snapshot.val();
-                if (!data) { clearChannelPreview(); return; }
+                if (!data) { fvbClearChannelPreview(); return; }
 
-                const nameContainer = document.getElementById('db-channel-name-container');
-                const nameEl = document.getElementById('db-channel-name');
-                const handleEl = document.getElementById('db-channel-handle');
-                const avatarEl = document.getElementById('db-channel-avatar');
-                const badgeEl = document.getElementById('db-channel-badge');
+                const nameContainer = document.getElementById('fvb-db-channel-name-container');
+                const nameEl = document.getElementById('fvb-db-channel-name');
+                const handleEl = document.getElementById('fvb-db-channel-handle');
+                const avatarEl = document.getElementById('fvb-db-channel-avatar');
+                const badgeEl = document.getElementById('fvb-db-channel-badge');
 
                 const channelName = typeof data.channelName === 'string' ? data.channelName.trim() : 'Unnamed';
                 const channelHandle = typeof data.handle === 'string' ? data.handle.trim() : '';
@@ -417,36 +410,35 @@
                     }
                 }
 
-                // Check Subscription Activity
                 if (data.verifiedUntil && data.verifiedUntil > Date.now()) {
                     if (badgeEl) badgeEl.style.display = 'inline-block';
                     
-                    document.getElementById('plans-section').style.display = 'none';
-                    document.getElementById('bottom-cta-section').style.display = 'none';
-                    document.getElementById('active-plan-section').style.display = 'block';
+                    document.getElementById('fvb-plans-section').style.display = 'none';
+                    document.getElementById('fvb-bottom-cta-section').style.display = 'none';
+                    document.getElementById('fvb-active-plan-section').style.display = 'block';
                     
-                    startCountdown(data.verifiedUntil);
+                    fvbStartCountdown(data.verifiedUntil);
                 } else {
                     if (badgeEl) badgeEl.style.display = 'none';
                     
-                    document.getElementById('plans-section').style.display = 'block';
-                    document.getElementById('bottom-cta-section').style.display = 'flex';
-                    document.getElementById('active-plan-section').style.display = 'none';
+                    document.getElementById('fvb-plans-section').style.display = 'block';
+                    document.getElementById('fvb-bottom-cta-section').style.display = 'flex';
+                    document.getElementById('fvb-active-plan-section').style.display = 'none';
                 }
             });
         }
 
-        function startCountdown(expiryTime) {
-            clearInterval(countdownInterval);
-            const el = document.getElementById('expiry-countdown');
+        function fvbStartCountdown(expiryTime) {
+            clearInterval(fvbCountdownInterval);
+            const el = document.getElementById('fvb-expiry-countdown');
             
             function update() {
                 const now = Date.now();
                 const diff = expiryTime - now;
                 if (diff <= 0) {
-                    clearInterval(countdownInterval);
+                    clearInterval(fvbCountdownInterval);
                     el.innerText = "Expired";
-                    if (auth.currentUser) fetchChannelData(auth.currentUser.uid);
+                    if (auth && auth.currentUser) fvbFetchChannelData(auth.currentUser.uid);
                     return;
                 }
                 
@@ -458,10 +450,10 @@
                 el.innerText = `${days}d ${hours}h ${mins}m ${secs}s`;
             }
             update();
-            countdownInterval = setInterval(update, 1000);
+            fvbCountdownInterval = setInterval(update, 1000);
         }
 
-        function handleBack(event) {
+        function fvbHandleBack(event) {
             if (event) event.preventDefault(); 
             if (typeof executeBackAction === 'function') {
                 executeBackAction();
@@ -472,28 +464,28 @@
             }
         }
 
-        function selectPlan(element, amount, type) {
-            document.querySelectorAll('.plan-card').forEach(card => card.classList.remove('active'));
+        function fvbSelectPlan(element, amount, type) {
+            document.querySelectorAll('.fvb-wrapper .plan-card').forEach(card => card.classList.remove('active'));
             element.classList.add('active');
-            selectedPlanAmount = amount;
-            selectedPlanType = type;
+            fvbSelectedPlanAmount = amount;
+            fvbSelectedPlanType = type;
             
             if (navigator.vibrate) navigator.vibrate(50);
         }
 
-        function proceedToPay(event) {
+        function fvbProceedToPay(event) {
             if (event) event.preventDefault(); 
             
             const orderData = {
                 service: 'verifiedBadge',
-                title: `Flay Verified Badge (${selectedPlanType === 'monthly' ? 'Monthly' : 'Yearly'})`,
-                amount: selectedPlanAmount,
-                planType: selectedPlanType
+                title: `Flay Verified Badge (${fvbSelectedPlanType === 'monthly' ? 'Monthly' : 'Yearly'})`,
+                amount: fvbSelectedPlanAmount,
+                planType: fvbSelectedPlanType
             };
             sessionStorage.setItem('flay_pending_checkout', JSON.stringify(orderData));
 
             if (typeof AppNavigation !== 'undefined' && AppNavigation.pushPremiumService) {
-                AppNavigation.pushPremiumService('flay-pay', SERVICE_ID);
+                AppNavigation.pushPremiumService('flay-pay', FVB_SERVICE_ID);
             } else {
                 window.location.href = 'flay-pay.html';
             }

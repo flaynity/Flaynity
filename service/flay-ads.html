@@ -31,8 +31,8 @@
 
         [data-theme=dark] {
             --bg: #000;
-            --surface: #0a0a0a;
-            --surface-hover: #141414;
+            --surface: #111;
+            --surface-hover: #1a1a1a;
             --text: #fff;
             --muted: #aaa;
             --border: #222;
@@ -47,16 +47,28 @@
 
         body {
             margin: 0;
-            background: var(--bg);
-            color: var(--text);
+            /* REMOVED: background: var(--bg); to prevent app background bleeding when routing */
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
-        .app {
-            max-width: 680px;
-            margin: auto;
+        /* Scoped Main App Container */
+        .flay-ads-app {
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
+            width: 100%;
             position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (min-width: 681px) {
+            .flay-ads-app {
+                max-width: 680px;
+                margin: 0 auto;
+                border-left: 1px solid var(--border);
+                border-right: 1px solid var(--border);
+            }
         }
 
         .bar {
@@ -68,7 +80,9 @@
             border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
+            background: rgba(var(--bg-rgb, 255, 255, 255), 0.85); /* Optional Fallback */
             background: var(--bg);
+            backdrop-filter: blur(12px);
             z-index: 50;
         }
 
@@ -81,7 +95,10 @@
             font-size: 20px;
             border-radius: 50%;
             cursor: pointer;
+            transition: background 0.2s;
         }
+        
+        .back:active { background: var(--surface-hover); }
 
         .title {
             font-size: 18px;
@@ -95,15 +112,15 @@
             gap: 6px;
             background: var(--soft);
             color: var(--accent);
-            padding: 6px 9px;
+            padding: 6px 10px;
             border-radius: 999px;
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 900;
+            letter-spacing: 0.5px;
         }
 
         .content {
-            padding: 22px 16px;
-            padding-bottom: 100px;
+            padding: 24px 16px 100px;
         }
 
         /* Dashboard specific */
@@ -117,30 +134,36 @@
         .stat-card {
             background: var(--surface);
             border: 1px solid var(--border);
-            padding: 16px;
-            border-radius: 16px;
+            padding: 20px 16px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
         }
 
         .stat-card.full-width {
             grid-column: 1 / -1;
+            background: var(--accent);
+            color: #fff;
+            border: none;
         }
 
+        .stat-card.full-width .stat-label { color: rgba(255,255,255,0.8); }
+
         .stat-val {
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 900;
             margin-bottom: 4px;
         }
 
         .stat-label {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--muted);
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .section-header {
-            font-size: 18px;
+            font-size: 19px;
             font-weight: 900;
-            margin: 24px 0 16px;
+            margin: 32px 0 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -149,18 +172,22 @@
         .campaign-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 14px;
         }
 
         .campaign-card {
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 16px;
+            border-radius: 20px;
+            padding: 18px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            transition: transform 0.2s;
         }
+        
+        .campaign-card:active { transform: scale(0.98); }
 
         .camp-header {
             display: flex;
@@ -169,25 +196,27 @@
         }
 
         .camp-name {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 800;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .camp-type {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--muted);
             display: flex;
             align-items: center;
             gap: 6px;
+            font-weight: 600;
         }
 
         .camp-status {
             font-size: 11px;
-            font-weight: 800;
-            padding: 4px 8px;
-            border-radius: 6px;
+            font-weight: 900;
+            padding: 6px 10px;
+            border-radius: 8px;
             background: var(--border);
+            text-transform: uppercase;
         }
         
         .status-running { background: rgba(0,168,68,0.1); color: var(--success); }
@@ -200,9 +229,9 @@
             justify-content: space-between;
             align-items: center;
             border-top: 1px solid var(--border);
-            padding-top: 12px;
-            font-size: 12px;
-            font-weight: 600;
+            padding-top: 14px;
+            font-size: 13px;
+            font-weight: 700;
         }
         
         .camp-pay-status { color: var(--muted); }
@@ -211,13 +240,14 @@
             text-align: center;
             padding: 40px 20px;
             color: var(--muted);
-            border: 1px dashed var(--border);
-            border-radius: 16px;
+            border: 1.5px dashed var(--border);
+            border-radius: 20px;
+            font-weight: 600;
         }
 
         .empty-state i {
-            font-size: 32px;
-            margin-bottom: 12px;
+            font-size: 38px;
+            margin-bottom: 16px;
             opacity: 0.5;
         }
 
@@ -229,20 +259,20 @@
             background: var(--accent);
             color: #fff;
             border: none;
-            padding: 16px 32px;
-            border-radius: 99px;
-            font-size: 15px;
+            padding: 18px 36px;
+            border-radius: 999px;
+            font-size: 16px;
             font-weight: 900;
-            box-shadow: 0 8px 24px var(--soft);
+            box-shadow: 0 10px 28px var(--soft);
             cursor: pointer;
             z-index: 40;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             width: calc(100% - 32px);
-            max-width: 360px;
+            max-width: 400px;
             justify-content: center;
-            transition: transform 0.2s;
+            transition: transform 0.2s, background 0.2s;
         }
 
         .fab:active {
@@ -258,44 +288,47 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 24px;
-            padding: 0 12px;
+            margin-bottom: 28px;
+            padding: 0 8px;
         }
 
         .step-dot {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: var(--surface);
             border: 2px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 800;
             color: var(--muted);
             z-index: 2;
+            transition: all 0.3s;
         }
 
         .step-dot.active {
             border-color: var(--accent);
             background: var(--accent);
             color: #fff;
+            box-shadow: 0 4px 12px var(--soft);
         }
 
         .step-line {
             flex: 1;
-            height: 2px;
+            height: 3px;
             background: var(--border);
             margin: 0 -8px;
             z-index: 1;
+            transition: all 0.3s;
         }
 
         .step-line.active { background: var(--accent); }
 
         .create-step {
             display: none;
-            animation: fadeIn 0.3s ease;
+            animation: fadeIn 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
         }
 
         .create-step.active {
@@ -303,37 +336,38 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .step-title {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 900;
             margin: 0 0 8px 0;
         }
         
         .step-subtitle {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--muted);
-            margin-bottom: 24px;
+            margin-bottom: 28px;
+            font-weight: 600;
         }
 
         .placement-card {
             border: 2px solid var(--border);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 12px;
+            border-radius: 20px;
+            padding: 18px;
+            margin-bottom: 14px;
             cursor: pointer;
             display: flex;
-            gap: 16px;
+            gap: 18px;
             align-items: center;
             background: var(--surface);
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
         }
 
-        .placement-card:hover {
-            border-color: #ccc;
+        .placement-card:active {
+            transform: scale(0.98);
         }
 
         .placement-card.active {
@@ -342,58 +376,62 @@
         }
 
         .p-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
             background: var(--bg);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 22px;
             color: var(--text);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            transition: all 0.2s;
         }
 
         .placement-card.active .p-icon {
             color: var(--accent);
+            box-shadow: 0 4px 16px var(--soft);
         }
 
-        .p-info h3 { margin: 0 0 4px; font-size: 15px; font-weight: 800; }
-        .p-info p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+        .p-info h3 { margin: 0 0 6px; font-size: 16px; font-weight: 900; }
+        .p-info p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.4; font-weight: 500; }
 
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 20px;
         }
 
         .form-label {
             display: block;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 800;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             color: var(--text);
         }
 
         .form-control {
             width: 100%;
-            padding: 14px 16px;
-            border-radius: 14px;
-            border: 1.5px solid var(--border);
+            padding: 16px 18px;
+            border-radius: 16px;
+            border: 2px solid var(--border);
             background: var(--surface);
             color: var(--text);
             font-family: inherit;
-            font-size: 14px;
+            /* Font size 16px prevents iOS auto-zoom */
+            font-size: 16px;
             font-weight: 600;
-            transition: border 0.2s;
+            transition: border 0.2s, background 0.2s;
         }
 
         .form-control:focus {
             border-color: var(--accent);
+            background: var(--bg);
             outline: none;
         }
 
         textarea.form-control {
             resize: vertical;
-            min-height: 100px;
+            min-height: 110px;
         }
 
         .bottom-actions {
@@ -401,14 +439,14 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            background: var(--bg);
+            background: rgba(var(--bg-rgb, 255,255,255), 0.9);
+            backdrop-filter: blur(20px);
             border-top: 1px solid var(--border);
             padding: 16px;
             display: flex;
-            gap: 12px;
+            justify-content: center;
             z-index: 40;
             box-sizing: border-box;
-            justify-content: center;
         }
         
         .bottom-actions-inner {
@@ -420,43 +458,49 @@
 
         .btn {
             flex: 1;
-            padding: 16px;
-            border-radius: 14px;
-            font-size: 15px;
+            padding: 18px;
+            border-radius: 16px;
+            font-size: 16px;
             font-weight: 900;
             border: none;
             cursor: pointer;
             text-align: center;
+            transition: all 0.2s;
         }
+
+        .btn:active { transform: scale(0.97); }
 
         .btn-outline {
             background: var(--surface);
-            border: 1.5px solid var(--border);
+            border: 2px solid var(--border);
             color: var(--text);
         }
 
         .btn-primary {
             background: var(--accent);
             color: #fff;
+            box-shadow: 0 8px 24px var(--soft);
         }
 
         .btn:disabled {
-            opacity: 0.5;
+            opacity: 0.6;
             cursor: not-allowed;
+            transform: none;
         }
 
         .review-card {
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 16px;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
         }
 
         .review-item {
             display: flex;
             justify-content: space-between;
-            padding: 12px 0;
+            padding: 14px 0;
             border-bottom: 1px solid var(--border);
             font-size: 14px;
         }
@@ -472,27 +516,70 @@
 
         .review-label {
             color: var(--muted);
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .review-val {
-            font-weight: 800;
+            font-weight: 900;
             text-align: right;
             max-width: 60%;
             word-break: break-all;
         }
 
         .disclaimer {
-            font-size: 11px;
+            font-size: 12px;
             color: var(--muted);
             text-align: center;
-            margin-top: 16px;
-            line-height: 1.5;
+            margin-top: 20px;
+            line-height: 1.6;
             padding-bottom: 20px;
+            font-weight: 600;
         }
         
         .disclaimer i {
             color: var(--accent);
+            margin-right: 4px;
+        }
+
+        /* --- PREMIUM TOAST NOTIFICATION CSS --- */
+        .flay-toast-wrapper {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(120px);
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            padding: 14px 20px;
+            border-radius: 18px;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            z-index: 99999;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0;
+            pointer-events: none;
+            width: max-content;
+            max-width: 90vw;
+        }
+
+        .flay-toast-wrapper.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .flay-toast-icon {
+            font-size: 20px;
+        }
+        
+        .flay-toast-wrapper.error .flay-toast-icon { color: var(--danger); }
+        .flay-toast-wrapper.success .flay-toast-icon { color: var(--success); }
+        .flay-toast-wrapper.info .flay-toast-icon { color: var(--info); }
+
+        .flay-toast-msg {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text);
         }
 
         .premium-service-page .bar {
@@ -506,7 +593,8 @@
 </head>
 <body>
 
-<main class="app">
+<!-- Scoped wrapper class prevents background color bleeding to other pages -->
+<main class="flay-ads-app">
     <header class="bar">
         <button class="back" onclick="handleBack()" aria-label="Back">
             <i class="fas fa-arrow-left"></i>
@@ -702,7 +790,7 @@
         <!-- Step 4: Budget -->
         <div class="create-step" id="step-4">
             <h2 class="step-title">Campaign Budget</h2>
-            <p class="step-subtitle">Set your spending limits. Payments are processed securely via Flay Pay.</p>
+            <p class="step-subtitle">Set your spending limits. Payments are securely processed via Flay Pay.</p>
 
             <div class="form-group">
                 <label class="form-label">Billing Model</label>
@@ -723,7 +811,7 @@
                 <input type="number" class="form-control" id="b-total" placeholder="e.g., 50.00" min="5" step="1">
             </div>
             
-            <div style="background: var(--soft); padding: 12px; border-radius: 12px; font-size: 12px; font-weight: 600; color: var(--accent); display: flex; gap: 8px; align-items: flex-start;">
+            <div style="background: var(--soft); padding: 16px; border-radius: 16px; font-size: 13px; font-weight: 700; color: var(--accent); display: flex; gap: 10px; align-items: flex-start;">
                 <i class="fas fa-circle-info" style="margin-top: 2px;"></i>
                 <span>Your total budget will be deducted automatically from your Flay Pay balance in the next step.</span>
             </div>
@@ -755,15 +843,15 @@
                     <div class="review-label">Daily Budget</div>
                     <div class="review-val" id="r-daily">-</div>
                 </div>
-                <div class="review-item" style="border-top: 2px dashed var(--border);">
+                <div class="review-item" style="border-top: 2px dashed var(--border); padding-top: 18px; margin-top: 4px;">
                     <div class="review-label" style="color: var(--text);">Total Deduction</div>
-                    <div class="review-val" id="r-total" style="color: var(--accent); font-size: 18px;">-</div>
+                    <div class="review-val" id="r-total" style="color: var(--accent); font-size: 20px;">-</div>
                 </div>
             </div>
 
             <div class="disclaimer">
                 <i class="fas fa-shield-halved"></i> Payment is processed securely via Flay Pay.<br>
-                Successful payment is required to submit the campaign for Admin Review.
+                Successful payment is required to submit the campaign.
             </div>
         </div>
 
@@ -774,6 +862,12 @@
             </div>
         </div>
     </section>
+
+    <!-- PREMIUM TOAST NOTIFICATION UI -->
+    <div id="flay-toast" class="flay-toast-wrapper">
+        <div class="flay-toast-icon"><i class="fas fa-circle-exclamation"></i></div>
+        <div class="flay-toast-msg">Notification Message</div>
+    </div>
 </main>
 
 <script>
@@ -784,6 +878,7 @@
     let currentView = 'dashboard';
     let currentStep = 1;
     let maxStep = 5;
+    let toastTimeout = null;
 
     // Campaign drafting state
     let campaignData = {
@@ -793,8 +888,6 @@
         targeting: {},
         budget: {}
     };
-
-    document.documentElement.dataset.theme = localStorage.getItem('flaynity-theme-pref') || 'light';
 
     auth.onAuthStateChanged(function(u) {
         currentUser = u;
@@ -808,6 +901,32 @@
         }
         loadDashboardData();
     });
+
+    // Premium Toast Notification Function
+    function showToast(message, type = 'error') {
+        const toast = document.getElementById('flay-toast');
+        const icon = toast.querySelector('i');
+        const msgDiv = toast.querySelector('.flay-toast-msg');
+        
+        // Reset classes
+        toast.className = 'flay-toast-wrapper ' + type;
+        msgDiv.innerText = message;
+
+        if (type === 'error') {
+            icon.className = 'fas fa-circle-exclamation';
+        } else if (type === 'success') {
+            icon.className = 'fas fa-check-circle';
+        } else {
+            icon.className = 'fas fa-info-circle';
+        }
+
+        toast.classList.add('show');
+        
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3500);
+    }
 
     function handleBack() {
         if (currentView === 'create') {
@@ -837,7 +956,7 @@
             document.querySelectorAll('.placement-card').forEach(el => el.classList.remove('active'));
             updateStepUI();
         } else {
-            loadDashboardData(); // Refresh list on return
+            loadDashboardData(); 
         }
     }
 
@@ -874,12 +993,10 @@
                     <p>You haven't created any campaigns yet.</p>
                 </div>`;
         } else {
-            // Sort by latest
             campaigns.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
             
             let html = '';
             campaigns.forEach(camp => {
-                // Calculate stats
                 if (camp.campaignStatus === 'Running') running++;
                 if (camp.campaignStatus === 'Under Review' || camp.paymentStatus === 'pending') pending++;
                 
@@ -960,7 +1077,7 @@
                 <div class="form-group">
                     <label class="form-label">Video URL (MP4)</label>
                     <input type="url" class="form-control" id="c-video" placeholder="https://.../video.mp4" required>
-                    <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">Recommended: ${type === 'shorts_vast' ? '9:16 Vertical' : '16:9 HD'}</div>
+                    <div style="font-size: 12px; color: var(--muted); margin-top: 6px; font-weight: 600;">Recommended: ${type === 'shorts_vast' ? '9:16 Vertical' : '16:9 HD'}</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Video Thumbnail URL</label>
@@ -984,7 +1101,7 @@
     function validateStep(step) {
         if (step === 1) {
             if (!campaignData.placement) {
-                alert("Please select an ad placement.");
+                showToast("Please select an ad placement.", "error");
                 return false;
             }
         }
@@ -994,7 +1111,7 @@
             const url = document.getElementById('c-url').value.trim();
             
             if (!name || !title || !url) {
-                alert("Please fill out all required fields.");
+                showToast("Please fill out all required fields.", "error");
                 return false;
             }
             
@@ -1009,12 +1126,18 @@
             if (campaignData.placement === 'vast_video' || campaignData.placement === 'shorts_vast') {
                 const vid = document.getElementById('c-video').value.trim();
                 const thumb = document.getElementById('c-thumb').value.trim();
-                if(!vid || !thumb) { alert("Video and Thumbnail URLs are required."); return false; }
+                if(!vid || !thumb) { 
+                    showToast("Video and Thumbnail URLs are required.", "error"); 
+                    return false; 
+                }
                 campaignData.creative.videoUrl = vid;
                 campaignData.creative.thumbnailUrl = thumb;
             } else {
                 const img = document.getElementById('c-image').value.trim();
-                if(!img) { alert("Image URL is required."); return false; }
+                if(!img) { 
+                    showToast("Image URL is required.", "error"); 
+                    return false; 
+                }
                 campaignData.creative.imageUrl = img;
             }
         }
@@ -1032,11 +1155,11 @@
             const model = document.getElementById('b-model').value;
             
             if (!daily || !total || daily < 1 || total < 5) {
-                alert("Please enter valid budget amounts (Min total $5.00).");
+                showToast("Minimum total budget is $5.00", "error");
                 return false;
             }
             if (daily > total) {
-                alert("Daily budget cannot exceed total budget.");
+                showToast("Daily budget cannot exceed total budget.", "error");
                 return false;
             }
             
@@ -1084,7 +1207,7 @@
         }
 
         if (currentStep === maxStep) {
-            btnNext.innerText = 'Continue to Flay Pay';
+            btnNext.innerText = 'Pay & Submit';
             btnNext.onclick = submitToFlayPay;
         } else {
             btnNext.innerText = 'Continue';
@@ -1097,7 +1220,7 @@
             if (currentStep < maxStep) {
                 currentStep++;
                 updateStepUI();
-                window.scrollTo(0,0);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
     }
@@ -1106,18 +1229,20 @@
         if (currentStep > 1) {
             currentStep--;
             updateStepUI();
-            window.scrollTo(0,0);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }
 
     function submitToFlayPay() {
-        if (!currentUser) return;
+        if (!currentUser) {
+            showToast("You need to sign in first.", "error");
+            return;
+        }
         
         const btnNext = document.getElementById('btn-next');
         btnNext.disabled = true;
         btnNext.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
 
-        // Create pending campaign record securely
         const newCampRef = db.ref('flayAds/campaigns').push();
         const campId = newCampRef.key;
 
@@ -1128,14 +1253,13 @@
             creative: campaignData.creative,
             targeting: campaignData.targeting,
             budget: campaignData.budget,
-            paymentStatus: 'pending', // IMPORTANT: Initial state is strictly pending
+            paymentStatus: 'pending', 
             campaignStatus: 'Draft',
             createdAt: firebase.database.ServerValue.TIMESTAMP,
             updatedAt: firebase.database.ServerValue.TIMESTAMP
         };
 
         newCampRef.set(payload).then(() => {
-            // Store payment intent for existing Flay Pay system
             const paymentIntent = {
                 service: 'flayAds',
                 intentId: campId,
@@ -1145,17 +1269,21 @@
             
             localStorage.setItem('flaypay_intent', JSON.stringify(paymentIntent));
             
-            // Redirect using existing app logic to Flay Pay
-            if (typeof AppNavigation !== 'undefined' && AppNavigation.pushPremiumService) {
-                AppNavigation.pushPremiumService('flay-pay', SERVICE);
-            } else {
-                window.location.href = 'flay-pay.html?service=flayAds';
-            }
+            showToast("Redirecting to Flay Pay...", "success");
+
+            setTimeout(() => {
+                if (typeof AppNavigation !== 'undefined' && AppNavigation.pushPremiumService) {
+                    AppNavigation.pushPremiumService('flay-pay', SERVICE);
+                } else {
+                    window.location.href = 'flay-pay.html?service=flayAds';
+                }
+            }, 1000);
+            
         }).catch((err) => {
             console.error("Error creating campaign draft", err);
-            alert("Failed to initiate payment flow. Please try again.");
+            showToast("Failed to initiate payment flow. Try again.", "error");
             btnNext.disabled = false;
-            btnNext.innerText = 'Continue to Flay Pay';
+            btnNext.innerText = 'Pay & Submit';
         });
     }
 

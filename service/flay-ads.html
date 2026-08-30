@@ -467,7 +467,6 @@
 
     document.documentElement.setAttribute('data-theme', localStorage.getItem('flaynity-theme-pref') || 'light');
 
-    // FIX: ADDED MISSING ESCAPEHTML FUNCTION SO UI CAN RENDER PROPERLY
     function escapeHtml(unsafe) {
         return (unsafe || '').toString()
              .replace(/&/g, "&amp;")
@@ -477,18 +476,46 @@
              .replace(/'/g, "&#039;");
     }
 
-    auth.onAuthStateChanged(function(u) {
-        currentUser = u;
-        if (!u) {
-            document.getElementById('campaign-list-container').innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-lock"></i>
-                    <p>Sign in to manage your Flay Ads.</p>
-                </div>`;
+    // Direct Firebase instances for fail-safe execution
+    function getDb() {
+        return (typeof firebase !== 'undefined' && firebase.database) ? firebase.database() : (typeof db !== 'undefined' ? db : null);
+    }
+
+    function getAuth() {
+        return (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth() : (typeof auth !== 'undefined' ? auth : null);
+    }
+
+    function initAuth() {
+        const authInstance = getAuth();
+        if (!authInstance) {
+            setTimeout(initAuth, 200);
             return;
         }
-        loadDashboardData();
-    });
+
+        authInstance.onAuthStateChanged(function(u) {
+            currentUser = u;
+            if (!u) {
+                document.getElementById('stat-total').innerText = '0';
+                document.getElementById('stat-running').innerText = '0';
+                document.getElementById('stat-pending').innerText = '0';
+                document.getElementById('campaign-list-container').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-lock"></i>
+                        <p>Sign in to manage your Flay Ads.</p>
+                    </div>`;
+                return;
+            }
+            loadDashboardData();
+        });
+
+        if (authInstance.currentUser) {
+            currentUser = authInstance.currentUser;
+            loadDashboardData();
+        }
+    }
+
+    // Initialize Auth
+    initAuth();
 
     function showToast(message, type = 'error') {
         const toast = document.getElementById('premium-toast');
@@ -525,7 +552,7 @@
             currentStep = 1;
             campaignData = { placement: '', placementName: '', creative: {}, targeting: {}, budget: {} };
             document.querySelectorAll('.placement-card').forEach(el => el.classList.remove('active'));
-            document.getElementById('btn-next').disabled = false; // FIX: Ensure button isn't stuck disabled
+            document.getElementById('btn-next').disabled = false;
             updateStepUI();
         } else { 
             loadDashboardData(); 
@@ -536,41 +563,79 @@
 
     function loadDashboardData() {
         if (!currentUser) return;
-        db.ref('flayAds/campaigns').orderByChild('advertiserId').equalTo(currentUser.uid)
-            .on('value', snap => { renderCampaignsList(snap.val() || {}); });
+        const database = getDb();
+        if (!database) return;
+
+        const campaignsRef = database.ref('flayAds/campaigns');
+        
+        // Listen to all campaigns and filter locally by current user
+        // This guarantees data loading even if Firebase index is missing
+        campaignsRef.on('value', snap => {
+            const val = snap.val() || {};
+            const userCampaigns = {};
+            
+            Object.entries(val).forEach(([id, camp]) => {
+                if (camp && (camp.advertiserId === currentUser.uid || camp.userId === currentUser.uid)) {
+                    userCampaigns[id] = camp;
+                }
+            });
+            
+            renderCampaignsList(userCampaigns);
+        }, error => {
+            console.error("Firebase read error:", error);
+            // Fallback query if parent read is restricted
+            campaignsRef.orderByChild('advertiserId').equalTo(currentUser.uid).on('value', snap => {
+                renderCampaignsList(snap.val() || {});
+            });
+        });
     }
 
     function renderCampaignsList(data) {
         const container = document.getElementById('campaign-list-container');
-        const campaigns = Object.entries(data).map(([id, val]) => ({ id, ...val }));
+        if (!container) return;
+
+        const campaigns = Object.entries(data || {}).map(([id, val]) => ({ id, ...val }));
         let total = campaigns.length;
-        let running = 0; let pending = 0;
+        let running = 0; 
+        let pending = 0;
 
         if (total === 0) {
             container.innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>No active campaigns found.</p></div>`;
         } else {
-            campaigns.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            campaigns.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
             let html = '';
+            
             campaigns.forEach(camp => {
-                if (camp.campaignStatus === 'Running') running++;
-                if (camp.campaignStatus === 'Under Review') pending++;
+                const rawStatus = (camp.campaignStatus || 'Draft').toString().trim();
+                const statusLower = rawStatus.toLowerCase();
                 
-                const campStatus = (camp.campaignStatus || 'Draft').toUpperCase();
-                let statusBadge = '';
-                if (campStatus === 'RUNNING') statusBadge = `<div class="camp-status status-running">RUNNING</div>`;
-                else if (campStatus === 'REJECTED') statusBadge = `<div class="camp-status status-rejected">REJECTED</div>`;
-                else if (campStatus === 'UNDER REVIEW') statusBadge = `<div class="camp-status status-review">IN REVIEW</div>`;
-                else if (campStatus === 'COMPLETED') statusBadge = `<div class="camp-status status-neutral">COMPLETED</div>`;
-                else statusBadge = `<div class="camp-status status-neutral">DRAFT</div>`;
+                if (statusLower === 'running') {
+                    running++;
+                } else if (statusLower === 'under review' || statusLower === 'in review' || statusLower === 'review') {
+                    pending++;
+                }
 
-                const isPaid = camp.paymentStatus === 'successful';
+                let statusBadge = '';
+                if (statusLower === 'running') {
+                    statusBadge = `<div class="camp-status status-running">RUNNING</div>`;
+                } else if (statusLower === 'rejected') {
+                    statusBadge = `<div class="camp-status status-rejected">REJECTED</div>`;
+                } else if (statusLower === 'under review' || statusLower === 'in review' || statusLower === 'review') {
+                    statusBadge = `<div class="camp-status status-review">IN REVIEW</div>`;
+                } else if (statusLower === 'completed') {
+                    statusBadge = `<div class="camp-status status-neutral">COMPLETED</div>`;
+                } else {
+                    statusBadge = `<div class="camp-status status-neutral">DRAFT</div>`;
+                }
+
+                const isPaid = (camp.paymentStatus || '').toString().toLowerCase() === 'successful';
                 let payStatusTxt = '';
                 let actionBtn = '';
                 
                 if (isPaid) {
                     payStatusTxt = '<span class="muted" style="color:var(--success); font-weight:800;"><i class="fas fa-check-circle" style="margin-right:3px;"></i>Paid</span>';
                 } else {
-                    actionBtn = `<button class="btn btn-primary" style="padding: 8px 16px; font-size: 13px; border-radius: 12px; height: auto;" onclick="payDraftCampaign('${id}', '${escapeHtml(camp.campaignName||'Untitled')}', ${camp.budget?.total||0})">Pay & Submit</button>`;
+                    actionBtn = `<button class="btn btn-primary" style="padding: 8px 16px; font-size: 13px; border-radius: 12px; height: auto;" onclick="payDraftCampaign('${camp.id}', '${escapeHtml(camp.campaignName||'Untitled')}', ${camp.budget?.total||0})">Pay & Submit</button>`;
                 }
 
                 html += `
@@ -578,12 +643,12 @@
                         <div class="camp-top">
                             <div class="camp-info">
                                 <h3>${escapeHtml(camp.campaignName || 'Untitled')}</h3>
-                                <p><i class="fas fa-layer-group"></i> ${formatPlacementName(camp.placement)}</p>
+                                <p><i class="fas fa-layer-group"></i> ${escapeHtml(formatPlacementName(camp.placement))}</p>
                             </div>
                             ${statusBadge}
                         </div>
                         <div class="camp-bottom">
-                            <div>Budget: $${camp.budget?.total || '0.00'}</div>
+                            <div>Budget: $${(Number(camp.budget?.total) || 0).toFixed(2)}</div>
                             <div style="display:flex; align-items:center; gap:8px;">${payStatusTxt} ${actionBtn}</div>
                         </div>
                     </div>
@@ -591,19 +656,24 @@
             });
             container.innerHTML = html;
         }
-        document.getElementById('stat-total').innerText = total;
-        document.getElementById('stat-running').innerText = running;
-        document.getElementById('stat-pending').innerText = pending;
+
+        const statTotalEl = document.getElementById('stat-total');
+        const statRunningEl = document.getElementById('stat-running');
+        const statPendingEl = document.getElementById('stat-pending');
+
+        if (statTotalEl) statTotalEl.innerText = total;
+        if (statRunningEl) statRunningEl.innerText = running;
+        if (statPendingEl) statPendingEl.innerText = pending;
     }
 
     function formatPlacementName(p) {
         const names = { 'vast_video': 'VAST Video', 'shorts_vast': 'Shorts Video', 'shorts_post': 'Shorts Post', 'post_ad': 'Feed Post' };
-        return names[p] || p;
+        return names[p] || p || 'Standard Ad';
     }
 
     // Logic to handle "Pay & Submit" from Dashboard
     window.payDraftCampaign = function(id, name, amount) {
-        const pendingOrder = { type: 'flayAds', campaignId: id, title: `Campaign: ${name}`, amount: amount };
+        const pendingOrder = { type: 'flayAds', campaignId: id, title: `Campaign: ${name}`, amount: Number(amount) || 0 };
         sessionStorage.setItem('flay_pending_checkout', JSON.stringify(pendingOrder));
         if (typeof AppNavigation !== 'undefined' && AppNavigation.pushPremiumService) {
             AppNavigation.pushPremiumService('flay-pay', SERVICE);
@@ -644,7 +714,9 @@
     }
 
     function closeCustomSelect(e, force = false) {
-        if (force || e.target.id === 'sheet-overlay') document.getElementById('sheet-overlay').classList.remove('active');
+        if (force || (e && e.target && e.target.id === 'sheet-overlay')) {
+            document.getElementById('sheet-overlay').classList.remove('active');
+        }
     }
 
     function selectPlacement(type) {
@@ -737,16 +809,29 @@
         if (!currentUser) return showToast("You need to sign in first.", "error");
         
         const btnNext = document.getElementById('btn-next');
-        btnNext.disabled = true; // Prevent double click, NO processing text
+        btnNext.disabled = true;
 
-        const newCampRef = db.ref('flayAds/campaigns').push();
+        const database = getDb();
+        if (!database) {
+            showToast("Database connection error.", "error");
+            btnNext.disabled = false;
+            return;
+        }
+
+        const newCampRef = database.ref('flayAds/campaigns').push();
         const campId = newCampRef.key;
 
         const payload = {
-            advertiserId: currentUser.uid, campaignName: campaignData.campaignName, placement: campaignData.placement,
-            creative: campaignData.creative, targeting: campaignData.targeting, budget: campaignData.budget,
-            paymentStatus: 'pending', campaignStatus: 'Draft',
-            createdAt: firebase.database.ServerValue.TIMESTAMP, updatedAt: firebase.database.ServerValue.TIMESTAMP
+            advertiserId: currentUser.uid,
+            campaignName: campaignData.campaignName,
+            placement: campaignData.placement,
+            creative: campaignData.creative || {},
+            targeting: campaignData.targeting || {},
+            budget: campaignData.budget || {},
+            paymentStatus: 'pending',
+            campaignStatus: 'Draft',
+            createdAt: (firebase.database && firebase.database.ServerValue) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
+            updatedAt: (firebase.database && firebase.database.ServerValue) ? firebase.database.ServerValue.TIMESTAMP : Date.now()
         };
 
         newCampRef.set(payload).then(() => {
@@ -758,7 +843,6 @@
             };
             sessionStorage.setItem('flay_pending_checkout', JSON.stringify(pendingOrder));
             
-            // Switch to dashboard immediately so back behavior is flawless
             switchView('dashboard'); 
 
             if (typeof AppNavigation !== 'undefined' && AppNavigation.pushPremiumService) {
@@ -767,6 +851,7 @@
                 window.location.href = 'flay-pay.html';
             }
         }).catch((err) => {
+            console.error("Error creating campaign:", err);
             showToast("Failed to initiate payment.", "error");
             btnNext.disabled = false;
         });

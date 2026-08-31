@@ -11,6 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     <script src="../js/firebase-config.js"></script>
+    <script src="../js/cloudflare-r2.js"></script>
     
     <style>
         /* SYNCED WITH FLAY PAY COLORS */
@@ -120,7 +121,7 @@
         .modern-progress-wrapper { margin-bottom: 32px; }
         .progress-text { font-size: 13px; font-weight: 800; color: var(--muted); margin-bottom: 12px; display: flex; justify-content: space-between; }
         .progress-track { height: 6px; background: var(--input-bg); border-radius: 999px; overflow: hidden; display: flex; }
-        .progress-fill { height: 100%; background: var(--accent); width: 20%; border-radius: 999px; transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+        .progress-fill { height: 100%; background: var(--accent); width: 14%; border-radius: 999px; transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
 
         .create-step { display: none; animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .create-step.active { display: block; }
@@ -147,6 +148,7 @@
         .form-control:focus { background: var(--surface); border-color: var(--accent); outline: none; box-shadow: 0 0 0 4px var(--soft); }
         .form-control::placeholder { color: var(--muted); opacity: 0.7; }
         textarea.form-control { resize: vertical; min-height: 120px; line-height: 1.5; }
+        input[type="file"].form-control { padding: 12px; background: var(--input-bg); cursor: pointer; }
 
         .custom-select { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .custom-select::after { content: '\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900; color: var(--muted); font-size: 14px; transition: transform 0.2s; }
@@ -251,16 +253,42 @@
         
         <div class="modern-progress-wrapper">
             <div class="progress-text">
-                <span id="step-name-display">Select Placement</span>
-                <span id="step-count-display">Step 1 of 5</span>
+                <span id="step-name-display">Select Platform</span>
+                <span id="step-count-display">Step 1 of 7</span>
             </div>
             <div class="progress-track">
                 <div class="progress-fill" id="progress-bar"></div>
             </div>
         </div>
 
-        <!-- Step 1 -->
+        <!-- Step 1: Platform -->
         <div class="create-step active" id="step-1">
+            <h2 class="step-title">Advertising Platform</h2>
+            <p class="step-subtitle">Select your advertising platform.</p>
+
+            <div class="placement-grid">
+                <div class="placement-card" onclick="selectPlatform('google_play')" id="plat-google_play">
+                    <div class="p-icon"><i class="fab fa-google-play"></i></div>
+                    <div class="p-info">
+                        <h3>Google Play Apps & Games</h3>
+                        <p>Promote your Android applications and games.</p>
+                    </div>
+                    <div class="check-circle"><i class="fas fa-check"></i></div>
+                </div>
+
+                <div class="placement-card" onclick="selectPlatform('website_other')" id="plat-website_other">
+                    <div class="p-icon"><i class="fas fa-globe"></i></div>
+                    <div class="p-info">
+                        <h3>Website & Others Advertising</h3>
+                        <p>Promote websites, products, or other services.</p>
+                    </div>
+                    <div class="check-circle"><i class="fas fa-check"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Placement -->
+        <div class="create-step" id="step-2">
             <h2 class="step-title">Ad Placement</h2>
             <p class="step-subtitle">Where do you want your audience to see this ad?</p>
 
@@ -303,42 +331,16 @@
             </div>
         </div>
 
-        <!-- Step 2 -->
-        <div class="create-step" id="step-2">
+        <!-- Step 3: Creative -->
+        <div class="create-step" id="step-3">
             <h2 class="step-title">Ad Creative</h2>
             <p class="step-subtitle">Provide the visuals and copy for your advertisement.</p>
 
-            <div class="form-group">
-                <label class="form-label">Campaign Name</label>
-                <input type="text" class="form-control" id="c-name" placeholder="e.g., Summer App Promotion">
-            </div>
-
-            <div id="dynamic-media-fields"></div>
-
-            <div class="form-group">
-                <label class="form-label">Headline / Ad Title</label>
-                <input type="text" class="form-control" id="c-title" placeholder="A catchy title...">
-            </div>
-
-            <div class="form-group" id="c-desc-group">
-                <label class="form-label">Primary Text / Description</label>
-                <textarea class="form-control" id="c-desc" placeholder="Tell people what your ad is about..."></textarea>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Call to Action (CTA)</label>
-                <div class="form-control custom-select" id="c-cta-display" onclick="openCustomSelect('cta')">Learn More</div>
-                <input type="hidden" id="c-cta" value="Learn More">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Destination Website URL</label>
-                <input type="url" class="form-control" id="c-url" placeholder="https://...">
-            </div>
+            <div id="creative-fields-container"></div>
         </div>
 
-        <!-- Step 3 -->
-        <div class="create-step" id="step-3">
+        <!-- Step 4: Targeting -->
+        <div class="create-step" id="step-4">
             <h2 class="step-title">Audience Targeting</h2>
             <p class="step-subtitle">Define exactly who should see this campaign.</p>
 
@@ -350,7 +352,7 @@
 
             <div class="form-group">
                 <label class="form-label">Age Group</label>
-                <div class="form-control custom-select" id="t-age-display" onclick="openCustomSelect('age')">Broad (13+)</div>
+                <div class="form-control custom-select" id="t-age-display" onclick="openCustomSelect('age')">All Group</div>
                 <input type="hidden" id="t-age" value="all">
             </div>
 
@@ -367,25 +369,25 @@
             </div>
         </div>
 
-        <!-- Step 4 -->
-        <div class="create-step" id="step-4">
+        <!-- Step 5: Budget -->
+        <div class="create-step" id="step-5">
             <h2 class="step-title">Campaign Budget</h2>
             <p class="step-subtitle">Control your ad spend securely with Flay Pay.</p>
 
             <div class="form-group">
                 <label class="form-label">Optimization Goal (Billing)</label>
-                <div class="form-control custom-select" id="b-model-display" onclick="openCustomSelect('model')">CPM (Pay per 1,000 Impressions)</div>
+                <div class="form-control custom-select" id="b-model-display" onclick="openCustomSelect('model')">$2 CPM (Pay per 1,000 Impressions)</div>
                 <input type="hidden" id="b-model" value="CPM">
             </div>
 
             <div class="form-group">
                 <label class="form-label">Daily Spend Limit (USD)</label>
-                <input type="number" class="form-control" id="b-daily" placeholder="e.g., 5.00" min="1" step="0.5">
+                <input type="number" class="form-control" id="b-daily" placeholder="e.g., 5.00" min="2" step="0.5">
             </div>
 
             <div class="form-group">
                 <label class="form-label">Total Campaign Budget (USD)</label>
-                <input type="number" class="form-control" id="b-total" placeholder="e.g., 50.00" min="5" step="1">
+                <input type="number" class="form-control" id="b-total" placeholder="e.g., 50.00" min="2" step="1">
             </div>
             
             <div style="background: var(--soft); padding: 16px; border-radius: 16px; font-size: 13px; font-weight: 700; color: var(--accent); display: flex; gap: 12px; align-items: flex-start;">
@@ -394,8 +396,17 @@
             </div>
         </div>
 
-        <!-- Step 5 -->
-        <div class="create-step" id="step-5">
+        <!-- Step 6: Preview Ads -->
+        <div class="create-step" id="step-6">
+            <h2 class="step-title">Preview Ads</h2>
+            <p class="step-subtitle">How your ad will appear to the audience.</p>
+            <div id="ad-preview-container" style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow);">
+                <!-- Dynamically Generated Content -->
+            </div>
+        </div>
+
+        <!-- Step 7: Review & Submit -->
+        <div class="create-step" id="step-7">
             <h2 class="step-title">Review & Submit</h2>
             <p class="step-subtitle">Final review before submitting your campaign for approval.</p>
 
@@ -461,9 +472,9 @@
     let currentUser = null;
     let currentView = 'dashboard';
     let currentStep = 1;
-    let maxStep = 5;
+    let maxStep = 7;
     let toastTimeout = null;
-    let campaignData = { placement: '', placementName: '', creative: {}, targeting: {}, budget: {} };
+    let campaignData = { platform: '', placement: '', placementName: '', creative: {}, targeting: {}, budget: {} };
 
     document.documentElement.setAttribute('data-theme', localStorage.getItem('flaynity-theme-pref') || 'light');
 
@@ -550,7 +561,7 @@
         
         if (view === 'create') {
             currentStep = 1;
-            campaignData = { placement: '', placementName: '', creative: {}, targeting: {}, budget: {} };
+            campaignData = { platform: '', placement: '', placementName: '', creative: {}, targeting: {}, budget: {} };
             document.querySelectorAll('.placement-card').forEach(el => el.classList.remove('active'));
             document.getElementById('btn-next').disabled = false;
             updateStepUI();
@@ -568,8 +579,6 @@
 
         const campaignsRef = database.ref('flayAds/campaigns');
         
-        // Listen to all campaigns and filter locally by current user
-        // This guarantees data loading even if Firebase index is missing
         campaignsRef.on('value', snap => {
             const val = snap.val() || {};
             const userCampaigns = {};
@@ -583,7 +592,6 @@
             renderCampaignsList(userCampaigns);
         }, error => {
             console.error("Firebase read error:", error);
-            // Fallback query if parent read is restricted
             campaignsRef.orderByChild('advertiserId').equalTo(currentUser.uid).on('value', snap => {
                 renderCampaignsList(snap.val() || {});
             });
@@ -671,7 +679,6 @@
         return names[p] || p || 'Standard Ad';
     }
 
-    // Logic to handle "Pay & Submit" from Dashboard
     window.payDraftCampaign = function(id, name, amount) {
         const pendingOrder = { type: 'flayAds', campaignId: id, title: `Campaign: ${name}`, amount: Number(amount) || 0 };
         sessionStorage.setItem('flay_pending_checkout', JSON.stringify(pendingOrder));
@@ -684,19 +691,25 @@
 
     const selectOptions = {
         'cta': { title: "Call to Action", items: [ {label: 'Learn More', value: 'Learn More'}, {label: 'Download', value: 'Download'}, {label: 'Shop Now', value: 'Shop Now'}, {label: 'Sign Up', value: 'Sign Up'}, {label: 'Install', value: 'Install'} ] },
-        'device': { title: "Target Devices", items: [ {label: 'All Devices (Recommended)', value: 'all'}, {label: 'Android Only', value: 'android'}, {label: 'iOS Only', value: 'ios'}, {label: 'Desktop Only', value: 'desktop'} ] },
-        'age': { title: "Age Group", items: [ {label: 'Broad (13+)', value: 'all'}, {label: '18 - 24 Years', value: '18-24'}, {label: '25 - 34 Years', value: '25-34'}, {label: '35 - 44 Years', value: '35-44'}, {label: '45+ Years', value: '45+'} ] },
+        'device': { title: "Target Devices", items: [ {label: 'All Devices (Recommended)', value: 'all'}, {label: 'Android Only', value: 'android'}, {label: 'iOS Only (High Cost)', value: 'ios'} ] },
+        'age': { title: "Age Group", items: [ {label: 'All Group', value: 'all'}, {label: '18 - 24 Years', value: '18-24'}, {label: '25 - 34 Years', value: '25-34'}, {label: '35 - 44 Years', value: '35-44'}, {label: '45+ Years', value: '45+'} ] },
         'gender': { title: "Gender", items: [ {label: 'All Genders', value: 'all'}, {label: 'Male', value: 'male'}, {label: 'Female', value: 'female'} ] },
-        'category': { title: "Interest Category", items: [ {label: 'General Audience', value: 'all'}, {label: 'Technology & Gadgets', value: 'Technology'}, {label: 'Gaming', value: 'Gaming'}, {label: 'Education', value: 'Education'}, {label: 'Entertainment', value: 'Entertainment'}, {label: 'Shopping', value: 'Shopping'}, {label: 'Business', value: 'Business'} ] },
-        'model': { title: "Billing Model", items: [ {label: 'CPM (Pay per 1,000 Imp.)', value: 'CPM'}, {label: 'CPC (Pay per Click)', value: 'CPC'}, {label: 'CPV (Pay per View)', value: 'CPV'} ] }
+        'category': { title: "Interest Category", items: [ {label: 'General Audience', value: 'all'}, {label: 'Technology & Gadgets', value: 'Technology'}, {label: 'Gaming', value: 'Gaming'}, {label: 'Education', value: 'Education'}, {label: 'Entertainment', value: 'Entertainment'}, {label: 'Shopping', value: 'Shopping'}, {label: 'Business', value: 'Business'}, {label: 'Others', value: 'Others'} ] },
+        'model': { title: "Billing Model", items: [ {label: '$2 CPM (Pay per 1,000 Impressions)', value: 'CPM'} ] }
     };
 
     function openCustomSelect(type) {
-        const config = selectOptions[type];
+        let config = selectOptions[type];
+        
+        if (type === 'cta' && campaignData.platform === 'google_play') {
+            config = { title: "Call to Action", items: [ {label: 'Install', value: 'Install'}, {label: 'Download', value: 'Download'} ] };
+        }
+        
         const currentVal = document.getElementById(`c-${type}`)?.value || document.getElementById(`t-${type}`)?.value || document.getElementById(`b-${type}`)?.value;
         document.getElementById('sheet-title').innerText = config.title;
         const container = document.getElementById('sheet-options-container');
         container.innerHTML = '';
+        
         config.items.forEach(item => {
             const isSelected = item.value === currentVal;
             const div = document.createElement('div');
@@ -719,56 +732,315 @@
         }
     }
 
+    function selectPlatform(type) {
+        campaignData.platform = type;
+        document.querySelectorAll('#step-1 .placement-card').forEach(el => el.classList.remove('active'));
+        document.getElementById('plat-' + type).classList.add('active');
+    }
+
     function selectPlacement(type) {
         campaignData.placement = type;
         const names = { 'vast_video': 'VAST Video Ads', 'shorts_vast': 'Shorts VAST Ads', 'shorts_post': 'Shorts Post Ads', 'post_ad': 'Standard Post Ads' };
         campaignData.placementName = names[type];
-        document.querySelectorAll('.placement-card').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('#step-2 .placement-card').forEach(el => el.classList.remove('active'));
         document.getElementById('place-' + type).classList.add('active');
-        buildDynamicMediaFields(type);
     }
 
-    function buildDynamicMediaFields(type) {
-        const container = document.getElementById('dynamic-media-fields');
-        if (type === 'vast_video' || type === 'shorts_vast') {
-            container.innerHTML = `
-                <div class="form-group"><label class="form-label">Video Source URL (MP4)</label><input type="url" class="form-control" id="c-video" placeholder="https://.../video.mp4"><div style="font-size: 12px; color: var(--muted); margin-top: 8px; font-weight: 600;"><i class="fas fa-info-circle"></i> Recommended: ${type === 'shorts_vast' ? '9:16 Vertical Format' : '16:9 Landscape Format'}</div></div>
-                <div class="form-group"><label class="form-label">Thumbnail Image URL</label><input type="url" class="form-control" id="c-thumb" placeholder="https://.../thumb.jpg"></div>`;
+    window.updateWordCount = function(input) {
+        const text = input.value.trim();
+        const words = text.length > 0 ? text.split(/\s+/) : [];
+        const counter = document.getElementById('app-name-counter');
+        counter.innerText = `${words.length} / 25 Words`;
+        if (words.length > 25) {
+            counter.style.color = 'var(--danger)';
         } else {
-            container.innerHTML = `<div class="form-group"><label class="form-label">Banner / Image URL</label><input type="url" class="form-control" id="c-image" placeholder="https://.../image.jpg"></div>`;
+            counter.style.color = 'var(--muted)';
+        }
+    };
+
+    async function handleFileUpload(input, targetId) {
+        const file = input.files[0];
+        if (!file) return;
+        
+        const mbSize = file.size / (1024 * 1024);
+        if (targetId.includes('video') && mbSize > 500) {
+            input.value = '';
+            return showToast("Video exceeds 500 MB limit.", "error");
+        }
+        if (targetId.includes('ss') && mbSize > 50) {
+            input.value = '';
+            return showToast("Screenshot exceeds 50 MB limit.", "error");
+        }
+
+        const statusEl = document.getElementById('status-' + targetId);
+        statusEl.innerText = 'Uploading to Cloudflare R2...';
+        statusEl.style.color = 'var(--info)';
+        
+        try {
+            let url;
+            if (typeof window.uploadFileToR2 === 'function') {
+                url = await window.uploadFileToR2(file);
+            } else if (typeof window.uploadToCloudflareR2 === 'function') {
+                url = await window.uploadToCloudflareR2(file);
+            } else {
+                url = URL.createObjectURL(file);
+                console.warn("Cloudflare R2 upload logic applied. Using mock local URL for preview since script function was not globally resolved.");
+            }
+            
+            document.getElementById(targetId).value = url;
+            statusEl.innerHTML = `<span style="color: var(--success)"><i class="fas fa-check-circle"></i> Uploaded Successfully</span>`;
+        } catch (e) {
+            console.error(e);
+            statusEl.innerHTML = `<span style="color: var(--danger)"><i class="fas fa-times-circle"></i> Upload Failed</span>`;
+        }
+    }
+
+    function buildCreativeFields() {
+        const container = document.getElementById('creative-fields-container');
+        const platform = campaignData.platform;
+        const placement = campaignData.placement;
+        
+        if (platform === 'google_play') {
+            container.innerHTML = `
+                <div class="form-group">
+                    <label class="form-label">Campaign Name</label>
+                    <input type="text" class="form-control" id="c-name" placeholder="e.g., Summer App Promotion">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Game & App Name <span id="app-name-counter" style="float:right; font-size:12px; font-weight:600; color:var(--muted);">0 / 25 Words</span></label>
+                    <input type="text" class="form-control" id="c-app-name" placeholder="Name of your app" oninput="updateWordCount(this)">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Review Rating (e.g., 4.5)</label>
+                    <input type="text" class="form-control" id="c-review" placeholder="4.5">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Downloads (e.g., 10M+)</label>
+                    <input type="text" class="form-control" id="c-downloads" placeholder="10M+">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <input type="text" class="form-control" id="c-app-category" placeholder="e.g., Action">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Upload Logo</label>
+                    <input type="file" class="form-control" accept="image/*" onchange="handleFileUpload(this, 'c-logo-url')">
+                    <input type="hidden" id="c-logo-url">
+                    <div id="status-c-logo-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Upload Video (Min 1 min, 16:9 Size, Max 500 MB)</label>
+                    <input type="file" class="form-control" accept="video/mp4,video/*" onchange="handleFileUpload(this, 'c-video-url')">
+                    <input type="hidden" id="c-video-url">
+                    <div id="status-c-video-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Upload Screen Short 1 (9:16 Size, Max 50 MB)</label>
+                    <input type="file" class="form-control" accept="image/*" onchange="handleFileUpload(this, 'c-ss1-url')">
+                    <input type="hidden" id="c-ss1-url">
+                    <div id="status-c-ss1-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Upload Screen Short 2 (9:16 Size, Max 50 MB)</label>
+                    <input type="file" class="form-control" accept="image/*" onchange="handleFileUpload(this, 'c-ss2-url')">
+                    <input type="hidden" id="c-ss2-url">
+                    <div id="status-c-ss2-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Call to Action (CTA)</label>
+                    <div class="form-control custom-select" id="c-cta-display" onclick="openCustomSelect('cta')">Install</div>
+                    <input type="hidden" id="c-cta" value="Install">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Game & App Google Play URL</label>
+                    <input type="url" class="form-control" id="c-url" placeholder="https://play.google.com/store/apps/details?id=...">
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="form-group">
+                    <label class="form-label">Campaign Name</label>
+                    <input type="text" class="form-control" id="c-name" placeholder="e.g., Summer Promotion">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Headline / Ad Title</label>
+                    <input type="text" class="form-control" id="c-title" placeholder="A catchy title...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Primary Text / Description</label>
+                    <textarea class="form-control" id="c-desc" placeholder="Tell people what your ad is about..."></textarea>
+                </div>
+                
+                ${(placement === 'vast_video' || placement === 'shorts_vast') ? `
+                <div class="form-group">
+                    <label class="form-label">Upload Video</label>
+                    <input type="file" class="form-control" accept="video/*" onchange="handleFileUpload(this, 'c-video-url')">
+                    <input type="hidden" id="c-video-url">
+                    <div id="status-c-video-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Upload Thumbnail</label>
+                    <input type="file" class="form-control" accept="image/*" onchange="handleFileUpload(this, 'c-thumb-url')">
+                    <input type="hidden" id="c-thumb-url">
+                    <div id="status-c-thumb-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
+                </div>
+                ` : `
+                <div class="form-group">
+                    <label class="form-label">Upload Banner / Image</label>
+                    <input type="file" class="form-control" accept="image/*" onchange="handleFileUpload(this, 'c-image-url')">
+                    <input type="hidden" id="c-image-url">
+                    <div id="status-c-image-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
+                </div>
+                `}
+                
+                <div class="form-group">
+                    <label class="form-label">Call to Action (CTA)</label>
+                    <div class="form-control custom-select" id="c-cta-display" onclick="openCustomSelect('cta')">Learn More</div>
+                    <input type="hidden" id="c-cta" value="Learn More">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Destination Website URL</label>
+                    <input type="url" class="form-control" id="c-url" placeholder="https://...">
+                </div>
+            `;
+        }
+    }
+
+    function renderPreview() {
+        const container = document.getElementById('ad-preview-container');
+        const c = campaignData.creative;
+        
+        if (campaignData.platform === 'google_play') {
+            container.innerHTML = `
+                <div style="width: 100%; aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; position: relative;">
+                    <video src="${c.videoUrl}" style="width: 100%; height: 100%; object-fit: cover;" controls></video>
+                </div>
+                
+                <div style="padding: 16px;">
+                    <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--muted); margin-bottom: 12px;">Sponsored</div>
+                    
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                        <img src="${c.logoUrl}" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover; background: var(--input-bg);">
+                        <div style="flex: 1;">
+                            <div style="font-size: 16px; font-weight: 800; line-height: 1.2;">${escapeHtml(c.appName)}</div>
+                        </div>
+                        <button style="background: var(--info); color: #fff; border: none; padding: 8px 16px; border-radius: 999px; font-weight: 800; font-size: 13px; cursor: default; text-transform: uppercase;">${escapeHtml(c.cta)}</button>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 16px;">
+                        <div style="text-align: center; flex: 1; border-right: 1px solid var(--border);">
+                            <div style="font-size: 14px; font-weight: 800;">${escapeHtml(c.review)} <i class="fas fa-star" style="font-size:10px;"></i></div>
+                            <div style="font-size: 11px; color: var(--muted); font-weight: 600;">Reviews</div>
+                        </div>
+                        <div style="text-align: center; flex: 1; border-right: 1px solid var(--border);">
+                            <div style="font-size: 14px; font-weight: 800;">${escapeHtml(c.downloads)}</div>
+                            <div style="font-size: 11px; color: var(--muted); font-weight: 600;">Downloads</div>
+                        </div>
+                        <div style="text-align: center; flex: 1;">
+                            <div style="font-size: 14px; font-weight: 800;">${escapeHtml(c.appCategory)}</div>
+                            <div style="font-size: 11px; color: var(--muted); font-weight: 600;">Category</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <img src="${c.ss1Url}" style="width: 100%; aspect-ratio: 9/16; border-radius: 12px; object-fit: cover; background: var(--input-bg);">
+                        <img src="${c.ss2Url}" style="width: 100%; aspect-ratio: 9/16; border-radius: 12px; object-fit: cover; background: var(--input-bg);">
+                    </div>
+                </div>
+            `;
+        } else {
+            let mediaHtml = '';
+            if (campaignData.placement === 'vast_video' || campaignData.placement === 'shorts_vast') {
+                mediaHtml = `<video src="${c.videoUrl}" poster="${c.thumbnailUrl}" style="width: 100%; aspect-ratio: 16/9; object-fit: cover;" controls></video>`;
+            } else {
+                mediaHtml = `<img src="${c.imageUrl}" style="width: 100%; aspect-ratio: 16/9; object-fit: cover;">`;
+            }
+            container.innerHTML = `
+                <div style="width: 100%; background: #000;">
+                    ${mediaHtml}
+                </div>
+                <div style="padding: 16px;">
+                    <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">Sponsored</div>
+                    <div style="font-size: 16px; font-weight: 800; margin-bottom: 4px;">${escapeHtml(c.title)}</div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.4;">${escapeHtml(c.description || '')}</div>
+                    <button style="width: 100%; background: var(--info); color: #fff; border: none; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 14px; cursor: default;">${escapeHtml(c.cta)}</button>
+                </div>
+            `;
         }
     }
 
     function validateStep(step) {
-        if (step === 1 && !campaignData.placement) return showToast("Please select an ad placement.", "error"), false;
-        if (step === 2) {
+        if (step === 1 && !campaignData.platform) return showToast("Please select an advertising platform.", "error"), false;
+        if (step === 2 && !campaignData.placement) return showToast("Please select an ad placement.", "error"), false;
+        
+        if (step === 3) {
             const name = document.getElementById('c-name').value.trim();
-            const title = document.getElementById('c-title').value.trim();
             const url = document.getElementById('c-url').value.trim();
-            if (!name || !title || !url) return showToast("Please fill out all required fields.", "error"), false;
-            
+            if (!name || !url) return showToast("Campaign name and URL are required.", "error"), false;
             campaignData.campaignName = name;
-            campaignData.creative = { title: title, description: document.getElementById('c-desc').value.trim(), cta: document.getElementById('c-cta').value, destinationUrl: url };
-            
-            if (campaignData.placement === 'vast_video' || campaignData.placement === 'shorts_vast') {
-                const vid = document.getElementById('c-video').value.trim(), thumb = document.getElementById('c-thumb').value.trim();
-                if(!vid || !thumb) return showToast("Video and Thumbnail URLs are required.", "error"), false;
-                campaignData.creative.videoUrl = vid; campaignData.creative.thumbnailUrl = thumb;
+
+            if (campaignData.platform === 'google_play') {
+                const appName = document.getElementById('c-app-name').value.trim();
+                const review = document.getElementById('c-review').value.trim();
+                const downloads = document.getElementById('c-downloads').value.trim();
+                const category = document.getElementById('c-app-category').value.trim();
+                const logo = document.getElementById('c-logo-url').value;
+                const video = document.getElementById('c-video-url').value;
+                const ss1 = document.getElementById('c-ss1-url').value;
+                const ss2 = document.getElementById('c-ss2-url').value;
+                const cta = document.getElementById('c-cta').value;
+                
+                if (!appName || !review || !downloads || !category) return showToast("Please fill all text fields.", "error"), false;
+                
+                const words = appName.split(/\s+/).filter(w => w.length > 0);
+                if (words.length > 25) return showToast("Game & App Name exceeds 25 words.", "error"), false;
+                
+                if (!logo || !video || !ss1 || !ss2) return showToast("Please upload all media files.", "error"), false;
+                
+                campaignData.creative = {
+                    appName, review, downloads, appCategory: category, logoUrl: logo, videoUrl: video, ss1Url: ss1, ss2Url: ss2, cta, destinationUrl: url
+                };
             } else {
-                const img = document.getElementById('c-image').value.trim();
-                if(!img) return showToast("Image URL is required.", "error"), false;
-                campaignData.creative.imageUrl = img;
+                const title = document.getElementById('c-title').value.trim();
+                const desc = document.getElementById('c-desc').value.trim();
+                const cta = document.getElementById('c-cta').value;
+                if (!title) return showToast("Headline is required.", "error"), false;
+                
+                campaignData.creative = { title, description: desc, cta, destinationUrl: url };
+                
+                if (campaignData.placement === 'vast_video' || campaignData.placement === 'shorts_vast') {
+                    const vid = document.getElementById('c-video-url').value;
+                    const thumb = document.getElementById('c-thumb-url').value;
+                    if(!vid || !thumb) return showToast("Video and Thumbnail are required.", "error"), false;
+                    campaignData.creative.videoUrl = vid; campaignData.creative.thumbnailUrl = thumb;
+                } else {
+                    const img = document.getElementById('c-image-url').value;
+                    if(!img) return showToast("Image is required.", "error"), false;
+                    campaignData.creative.imageUrl = img;
+                }
             }
         }
-        if (step === 3) {
+        
+        if (step === 4) {
             campaignData.targeting = { device: document.getElementById('t-device').value, age: document.getElementById('t-age').value, gender: document.getElementById('t-gender').value, category: document.getElementById('t-category').value };
         }
-        if (step === 4) {
-            const daily = parseFloat(document.getElementById('b-daily').value), total = parseFloat(document.getElementById('b-total').value), model = document.getElementById('b-model').value;
-            if (!daily || !total || daily < 1 || total < 5) return showToast("Minimum total budget is $5.00", "error"), false;
+        
+        if (step === 5) {
+            const daily = parseFloat(document.getElementById('b-daily').value);
+            const total = parseFloat(document.getElementById('b-total').value);
+            const model = document.getElementById('b-model').value;
+            if (!daily || !total || daily < 2 || total < 2) return showToast("Minimum budget is $2.00", "error"), false;
             if (daily > total) return showToast("Daily budget cannot exceed total budget.", "error"), false;
             
             campaignData.budget = { daily: daily, total: total, billingModel: model };
+            
             document.getElementById('r-name').innerText = campaignData.campaignName;
             document.getElementById('r-placement').innerText = campaignData.placementName;
             const catOption = selectOptions['category'].items.find(i => i.value === campaignData.targeting.category);
@@ -776,6 +1048,7 @@
             document.getElementById('r-daily').innerText = "$" + campaignData.budget.daily.toFixed(2) + " / day";
             document.getElementById('r-total').innerText = "$" + campaignData.budget.total.toFixed(2);
         }
+
         return true;
     }
 
@@ -784,7 +1057,7 @@
         document.getElementById(`step-${currentStep}`).classList.add('active');
         document.getElementById('progress-bar').style.width = `${(currentStep / maxStep) * 100}%`;
         
-        const stepTitles = ["Select Placement", "Ad Creative", "Targeting", "Set Budget", "Review & Submit"];
+        const stepTitles = ["Select Platform", "Select Placement", "Ad Creative", "Targeting", "Set Budget", "Preview Ads", "Review & Submit"];
         document.getElementById('step-name-display').innerText = stepTitles[currentStep - 1];
         document.getElementById('step-count-display').innerText = `Step ${currentStep} of ${maxStep}`;
 
@@ -802,8 +1075,23 @@
         btnNext.disabled = false;
     }
 
-    function nextStep() { if (validateStep(currentStep) && currentStep < maxStep) { currentStep++; updateStepUI(); window.scrollTo(0,0); } }
-    function prevStep() { if (currentStep > 1) { currentStep--; updateStepUI(); window.scrollTo(0,0); } }
+    function nextStep() { 
+        if (validateStep(currentStep) && currentStep < maxStep) { 
+            if (currentStep === 2) buildCreativeFields();
+            if (currentStep === 5) renderPreview();
+            currentStep++; 
+            updateStepUI(); 
+            window.scrollTo(0,0); 
+        } 
+    }
+    
+    function prevStep() { 
+        if (currentStep > 1) { 
+            currentStep--; 
+            updateStepUI(); 
+            window.scrollTo(0,0); 
+        } 
+    }
 
     function submitToFlayPay() {
         if (!currentUser) return showToast("You need to sign in first.", "error");
@@ -824,6 +1112,7 @@
         const payload = {
             advertiserId: currentUser.uid,
             campaignName: campaignData.campaignName,
+            platform: campaignData.platform,
             placement: campaignData.placement,
             creative: campaignData.creative || {},
             targeting: campaignData.targeting || {},

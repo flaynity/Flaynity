@@ -114,7 +114,7 @@
         position: absolute; z-index: 5; left: 0; right: 0; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 70px);
         display: flex; justify-content: center; align-items: center; gap: 7px; pointer-events: none;
     }
-    #flaynity-onboarding-dots span { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.9); display: block; }
+    #flaynity-onboarding-dots span { width: 6px; height: 6px; border-radius: 50%; background: #000; display: block; }
 </style>
 <div id="flaynity-onboarding" aria-hidden="true">
     <div id="flaynity-onboarding-track">
@@ -215,7 +215,12 @@
         const progress = Math.min(1, Math.abs(dx) / Math.max(1, width));
         // A held/tapped image must not slide. Swipe follows the finger and only commits after a real horizontal drag.
         if (swipeMoved && Math.abs(dx) >= Math.max(45, width * 0.18) && Math.abs(dx) > Math.abs(dy) * 1.15) {
-            positionSlide(current + (dx < 0 ? 1 : -1), true);
+            // First slide: lock left swipe. Third slide: lock right swipe.
+            if ((current === 0 && dx < 0) || (current === slides.length - 1 && dx > 0)) {
+                positionSlide(current, true);
+            } else {
+                positionSlide(current + (dx < 0 ? 1 : -1), true);
+            }
         } else {
             positionSlide(current, true);
         }

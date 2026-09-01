@@ -18,6 +18,39 @@ const R2_CONFIG = {
 AWS.config.update(R2_CONFIG);
 const s3 = new AWS.S3({ params: { Bucket: 'flaynity-storage' } });
 const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev";
+const FLAYNITY_CDN_MEDIA_BASE = "https://flaynity-b2y.pages.dev/media";
+
+// Convert an R2 public object URL to the Flaynity Pages/R2 media proxy URL.
+// External URLs are intentionally left untouched.
+function getFlaynityCDNUrl(url) {
+    if (!url || typeof url !== "string") return url;
+
+    const value = url.trim();
+    if (!value) return value;
+
+    try {
+        const parsed = new URL(value);
+        const cdnBase = new URL(FLAYNITY_CDN_MEDIA_BASE);
+
+        if (parsed.origin === cdnBase.origin && parsed.pathname.startsWith(cdnBase.pathname + "/")) {
+            return value;
+        }
+
+        const r2Base = new URL(PUBLIC_R2_DOMAIN_PREFIX);
+        if (parsed.origin !== r2Base.origin) return value;
+
+        const key = parsed.pathname.replace(/^\//, "");
+        if (!key) return value;
+
+        return `${FLAYNITY_CDN_MEDIA_BASE}/${key}${parsed.search}${parsed.hash}`;
+    } catch (e) {
+        const r2Prefix = PUBLIC_R2_DOMAIN_PREFIX + "/";
+        if (value.startsWith(r2Prefix)) {
+            return FLAYNITY_CDN_MEDIA_BASE + "/" + value.slice(r2Prefix.length);
+        }
+        return value;
+    }
+}
 
 // =========================================================
 // S3 R2 OBJECT STORAGE MEDIA UPLOAD MODULE
@@ -35,7 +68,7 @@ async function uploadImageToR2(file, folder = "images", retries = 3) {
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
             await s3.putObject(params).promise();
-            return `${PUBLIC_R2_DOMAIN_PREFIX}/${fileKey}`;
+            return getFlaynityCDNUrl(`${PUBLIC_R2_DOMAIN_PREFIX}/${fileKey}`);
         } catch (err) {
             console.warn(`R2 Image Upload attempt ${attempt} failed:`, err);
             if (attempt === retries) throw err;

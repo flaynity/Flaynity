@@ -313,10 +313,13 @@ __flaynityReady(function() {
         console.warn("Startup sound engine bypassed:", e);
     }
 
-    setTimeout(function() {
-        const splash = document.getElementById('flaynity-startup-splash');
-        if (splash) splash.classList.add('is-hidden');
-    }, 2000); 
+    // Startup splash timing is controlled from index.html so it starts immediately
+    // and cannot appear late or disappear before the full 3.5-second duration.
+    try {
+        if (typeof window.__flaynityHideStartupSplash === 'function') {
+            window.__flaynityHideStartupSplash();
+        }
+    } catch (e) {}
 
     try {
         AppNavigation.stack = [{ type: 'tab', id: 'home' }];

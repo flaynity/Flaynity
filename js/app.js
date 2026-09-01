@@ -903,6 +903,8 @@ auth.onAuthStateChanged(async (user) => {
             // The existing Google auth screen is revealed only after Get Started.
             if (authScr) authScr.style.display = 'none';
             if (typeof window.__flaynityShowOnboarding === 'function') {
+                // The onboarding controller waits for the startup splash and preloads
+                // all images before revealing the screen, preventing late/flickering shows.
                 window.__flaynityShowOnboarding();
             }
             return;

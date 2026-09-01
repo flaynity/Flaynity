@@ -382,12 +382,12 @@
 
             <div class="form-group">
                 <label class="form-label">Daily Spend Limit (USD)</label>
-                <input type="number" class="form-control" id="b-daily" placeholder="e.g., 5.00" min="2" step="0.5">
+                <input type="number" class="form-control" id="b-daily" placeholder="e.g., 2.00" min="1" step="0.5">
             </div>
 
             <div class="form-group">
                 <label class="form-label">Total Campaign Budget (USD)</label>
-                <input type="number" class="form-control" id="b-total" placeholder="e.g., 50.00" min="2" step="1">
+                <input type="number" class="form-control" id="b-total" placeholder="e.g., 20.00" min="1" step="1">
             </div>
             
             <div style="background: var(--soft); padding: 16px; border-radius: 16px; font-size: 13px; font-weight: 700; color: var(--accent); display: flex; gap: 12px; align-items: flex-start;">
@@ -782,9 +782,12 @@
             input.value = '';
             return showToast("Screenshot exceeds 50 MB limit.", "error");
         }
-        if (targetId.includes('image') && mbSize > 50) {
-            input.value = '';
-            return showToast("Image exceeds 50 MB limit.", "error");
+        if (targetId.includes('image')) {
+            let limit = campaignData.placement === 'post_ad' ? 10 : 50;
+            if (mbSize > limit) {
+                input.value = '';
+                return showToast(`Image exceeds ${limit} MB limit.`, "error");
+            }
         }
 
         const statusEl = document.getElementById('status-' + targetId);
@@ -816,9 +819,13 @@
         const placement = campaignData.placement;
         
         if (platform === 'google_play') {
-            if (placement === 'shorts_vast' || placement === 'shorts_post') {
+            if (placement === 'shorts_vast' || placement === 'shorts_post' || placement === 'post_ad') {
                 const isVideo = placement === 'shorts_vast';
-                const mediaLabel = isVideo ? "Upload Video (Max 2 min, 9:16 Size, Max 500 MB)" : "Upload Post Image (9:16 Size, Max 50 MB)";
+                const isPostAd = placement === 'post_ad';
+                let mediaLabel = isVideo ? "Upload Video (Max 2 min, 9:16 Size, Max 500 MB)" : "Upload Post Image (9:16 Size, Max 50 MB)";
+                if (isPostAd) {
+                    mediaLabel = "Upload Image (1:1 Size, Max 10 MB)";
+                }
                 const mediaAccept = isVideo ? "video/mp4,video/*" : "image/*";
                 const mediaId = isVideo ? "c-video-url" : "c-image-url";
                 
@@ -991,19 +998,57 @@
         const c = campaignData.creative;
         
         if (campaignData.platform === 'google_play') {
-            if (campaignData.placement === 'shorts_vast' || campaignData.placement === 'shorts_post') {
+            if (campaignData.placement === 'post_ad') {
+                // Standard Post Ads requirement - 1:1 image aspect ratio
+                container.innerHTML = `
+                    <div style="background: var(--surface);">
+                        <!-- 1:1 Size Image Container -->
+                        <div style="width: 100%; aspect-ratio: 1/1; background: #000; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                            <img src="${c.imageUrl}" style="width: 100%; height: 100%; object-fit: contain;">
+                        </div>
+                        
+                        <!-- Content Details -->
+                        <div style="padding: 16px;">
+                            
+                            <!-- Logo and App Name -->
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                <img src="${c.logoUrl}" style="width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: var(--input-bg);">
+                                <div style="font-size: 16px; font-weight: 800; color: var(--text);">${escapeHtml(c.appName)}</div>
+                            </div>
+
+                            <!-- Title: Maximum 1 Line, Bold -->
+                            <div style="font-size: 17px; font-weight: 900; line-height: 1.3; color: var(--text); margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                ${escapeHtml(c.title)}
+                            </div>
+
+                            <!-- Sponsored | Review | Free/Paid -->
+                            <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 16px;">
+                                <span style="font-weight: 900; color: var(--text);">Sponsored</span>
+                                <span>•</span>
+                                <span>${escapeHtml(c.review)} <i class="fas fa-star" style="color: #ffb020; font-size: 11px;"></i></span>
+                                <span>•</span>
+                                <span>${escapeHtml(c.pricing)}</span>
+                            </div>
+
+                            <!-- Full Width CTA Button -->
+                            <button style="width: 100%; background: var(--info); color: #fff; border: none; padding: 14px; border-radius: 12px; font-weight: 900; font-size: 15px; text-transform: uppercase; cursor: default;">
+                                ${escapeHtml(c.cta)}
+                            </button>
+                            
+                        </div>
+                    </div>
+                `;
+            } else if (campaignData.placement === 'shorts_vast' || campaignData.placement === 'shorts_post') {
                 const isVideo = campaignData.placement === 'shorts_vast';
                 const mediaElement = isVideo 
                     ? `<video src="${c.videoUrl}" style="width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0;" autoplay muted loop playsinline></video>`
                     : `<img src="${c.imageUrl}" style="width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0;">`;
 
-                // Shorts VAST & Shorts Post Ads requirements - Vertical 9:16 aspect ratio Full Container
+                // Shorts VAST & Shorts Post Ads requirements
                 container.innerHTML = `
                     <div style="width: 100%; aspect-ratio: 9/16; background: #000; position: relative; overflow: hidden;">
-                        <!-- Media uses object-fit: contain to ensure Smart Fit without stretching original aspect ratio -->
                         ${mediaElement}
                         
-                        <!-- Overlay bottom UI -->
                         <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 24px 16px 16px; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 60%, transparent 100%); color: #fff; z-index: 10; display: flex; flex-direction: column; gap: 8px;">
                             
                             <div style="display: flex; align-items: center; gap: 10px;">
@@ -1101,7 +1146,7 @@
             campaignData.campaignName = name;
 
             if (campaignData.platform === 'google_play') {
-                if (campaignData.placement === 'shorts_vast' || campaignData.placement === 'shorts_post') {
+                if (['shorts_vast', 'shorts_post', 'post_ad'].includes(campaignData.placement)) {
                     const isVideo = campaignData.placement === 'shorts_vast';
                     const appName = document.getElementById('c-app-name').value.trim();
                     const title = document.getElementById('c-title').value.trim();
@@ -1175,8 +1220,13 @@
             const daily = parseFloat(document.getElementById('b-daily').value);
             const total = parseFloat(document.getElementById('b-total').value);
             const model = document.getElementById('b-model').value;
-            // Updated to minimum $2 limit
-            if (!daily || !total || daily < 2 || total < 2) return showToast("Minimum budget is $2.00", "error"), false;
+            
+            // Dynamic Minimum Budget Checking Based On Placement
+            let minBudget = 2; // Default
+            if (campaignData.placement === 'shorts_vast') minBudget = 3;
+            if (campaignData.placement === 'post_ad') minBudget = 1;
+
+            if (!daily || !total || daily < minBudget || total < minBudget) return showToast(`Minimum budget is $${minBudget.toFixed(2)}`, "error"), false;
             if (daily > total) return showToast("Daily budget cannot exceed total budget.", "error"), false;
             
             campaignData.budget = { daily: daily, total: total, billingModel: model };
@@ -1218,6 +1268,20 @@
     function nextStep() { 
         if (validateStep(currentStep) && currentStep < maxStep) { 
             if (currentStep === 2) buildCreativeFields();
+            if (currentStep === 4) {
+                // Dynamically Update Budget Min/Max & CPM Before Showing Step 5
+                let minB = 2;
+                let cpmT = '$2 CPM (Pay per 1,000 Impressions)';
+                if (campaignData.placement === 'shorts_vast') { minB = 3; cpmT = '$3 CPM (Pay per 1,000 Impressions)'; }
+                if (campaignData.placement === 'post_ad') { minB = 1; cpmT = '$1 CPM (Pay per 1,000 Impressions)'; }
+                
+                document.getElementById('b-model-display').innerText = cpmT;
+                selectOptions['model'].items[0].label = cpmT;
+                document.getElementById('b-daily').min = minB;
+                document.getElementById('b-daily').placeholder = `e.g., ${minB.toFixed(2)}`;
+                document.getElementById('b-total').min = minB;
+                document.getElementById('b-total').placeholder = `e.g., ${(minB * 10).toFixed(2)}`;
+            }
             if (currentStep === 5) renderPreview();
             currentStep++; 
             updateStepUI(); 

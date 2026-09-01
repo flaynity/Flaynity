@@ -63,35 +63,22 @@
 
 /* Premium service menu — scoped to the You page only */
 .premium-service-menu { margin-top: 0 !important; }
-.premium-service-item { 
-    gap: 12px; 
-    background: linear-gradient(90deg, rgba(255, 180, 0, 0.08) 0%, transparent 100%);
+.premium-service-item { gap: 14px; }
+.premium-icon-box {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 140, 0, 0.15));
+    border: 1px solid rgba(255, 140, 0, 0.25);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.premium-service-item:active {
-    background: linear-gradient(90deg, rgba(255, 180, 0, 0.15) 0%, transparent 100%) !important;
-}
-.premium-service-item > i:first-child { 
-    width: 30px; 
+.premium-icon-box i {
     background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    font-size: 1.35rem;
-    filter: drop-shadow(0 3px 6px rgba(255, 140, 0, 0.35));
+    font-size: 1.15rem !important;
+    width: auto !important;
+    filter: drop-shadow(0 2px 4px rgba(255, 140, 0, 0.2));
 }
-.premium-service-item > span:not(.premium-label) { 
-    min-width: 0; 
-    font-weight: 800; 
-}
-.premium-label {
-    flex-shrink: 0; padding: 5px 10px; border-radius: 999px;
-    background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%); 
-    color: #fff !important;
-    border: none; 
-    box-shadow: 0 4px 10px rgba(255, 140, 0, 0.35); 
-    font-size: .60rem !important;
-    font-weight: 900 !important; 
-    letter-spacing: .08em;
-}
+.premium-service-item > span { min-width: 0; font-weight: 800; }
 
 /* View Channel */
         .channel-banner-container { width: 100%; height: 120px; position: relative; background: #E2E8F0; overflow: hidden; }
@@ -345,33 +332,33 @@
 </div>
 <div class="you-menu premium-service-menu">
 <div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('upgrade-pro')">
-<i class="fas fa-crown"></i>
+<div class="premium-icon-box"><i class="fas fa-crown"></i></div>
 <span>Upgrade Pro</span>
-<span class="premium-label">PREMIUM</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
 <div class="you-menu-item premium-service-item" onclick="handleFlayVerifiedBadgeFromYou()">
-<i class="fas fa-award"></i>
+<div class="premium-icon-box">
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 22px; height: 22px;">
+<path d="M11.96 1.171a2.316 2.316 0 0 0-1.63.784L8.76 3.65 6.64 3.96a2.315 2.315 0 0 0-1.928 1.928L4.4 8.01 2.705 9.576a2.316 2.316 0 0 0 0 3.328l1.696 1.566.312 2.122a2.315 2.315 0 0 0 1.928 1.928l2.122.312 1.57 1.696c.866.935 2.392.935 3.258 0l1.57-1.696 2.122-.312a2.315 2.315 0 0 0 1.928-1.928l.312-2.122 1.696-1.566a2.316 2.316 0 0 0 0-3.328L19.6 8.01l-.312-2.122a2.315 2.315 0 0 0-1.928-1.928L15.24 3.65l-1.57-1.695a2.316 2.316 0 0 0-1.63-.784z" fill="#3390ec"></path>
+<path d="M10.15 14.88 7.37 12.1l1.41-1.41 1.37 1.37 4.96-4.96 1.41 1.42-6.37 6.36z" fill="#ffffff"></path>
+</svg>
+</div>
 <span>Flay Verified Badge</span>
-<span class="premium-label">PREMIUM</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
 <div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('flay-ads')">
-<i class="fas fa-rectangle-ad"></i>
+<div class="premium-icon-box"><i class="fas fa-rectangle-ad"></i></div>
 <span>Flay Ads</span>
-<span class="premium-label">PREMIUM</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
 <div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('boost-content')">
-<i class="fas fa-rocket"></i>
+<div class="premium-icon-box"><i class="fas fa-rocket"></i></div>
 <span>Boost Content</span>
-<span class="premium-label">PREMIUM</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
 <div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('flay-pay')">
-<i class="fas fa-wallet"></i>
+<div class="premium-icon-box"><i class="fas fa-wallet"></i></div>
 <span>Flay Pay</span>
-<span class="premium-label">PREMIUM</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
 </div>

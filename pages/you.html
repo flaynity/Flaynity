@@ -5,8 +5,12 @@
 /* You Profile Card */
         .profile-card-you {
             background: var(--surface); border: 1px solid var(--glass-border);
-            margin: 8px 8px 12px 8px !important; border-radius: 20px !important;
-            padding: 16px !important; box-shadow: 0 12px 30px rgba(0,0,0,0.04);
+            /* Status bar-এর নিচ থেকে শুরু করার জন্য safe-area-inset ব্যবহার করা হয়েছে */
+            margin: max(env(safe-area-inset-top, 12px), 12px) 8px 12px 8px !important; 
+            border-radius: 20px !important;
+            /* ওপরের দিকে বক্সের Height বড় করার জন্য padding-top বাড়ানো হয়েছে */
+            padding: 24px 16px 16px 16px !important; 
+            box-shadow: 0 12px 30px rgba(0,0,0,0.04);
             width: calc(100% - 16px) !important;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -67,7 +71,7 @@
     border: none !important;
     box-shadow: none !important;
     margin-top: 0 !important; 
-    gap: 10px; /* Reduced gap to pull items up */
+    gap: 10px; 
     overflow: visible !important;
 }
 [data-theme="dark"] .premium-service-menu { box-shadow: none !important; }
@@ -76,7 +80,7 @@
     background: var(--surface) !important;
     border: 1px solid var(--glass-border) !important;
     border-radius: 16px !important;
-    padding: 12px 16px !important; /* Reduced padding to fit without scrolling */
+    padding: 12px 16px !important; 
     box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important;
     gap: 14px; 
     margin-bottom: 0 !important;
@@ -100,7 +104,7 @@
     background: none !important;
     filter: none !important;
     display: flex; align-items: center; justify-content: center;
-    line-height: 1; /* For perfect centering */
+    line-height: 1; 
 }
 
 /* Unique Colors for each Floating Item */
@@ -356,7 +360,7 @@
 #edit-channel-page .avatar-overlay-camera { opacity: .9; }
 </style></head><body>
 <div class="tab-content" id="you-tab">
-<div class="profile-card-you" style="margin-top: 15px;">
+<div class="profile-card-you">
 <div class="profile-card-main">
 <div class="profile-avatar-large" id="you-avatar-large">U</div>
 <div class="profile-info-you">

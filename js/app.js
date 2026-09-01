@@ -899,7 +899,12 @@ auth.onAuthStateChanged(async (user) => {
             const appScr = document.getElementById('app-screen');
             const authScr = document.getElementById('auth-screen');
             if (appScr) appScr.style.display = 'none';
-            if (authScr) authScr.style.display = 'flex';
+            // First launch / every launch without a signed-in account: show onboarding first.
+            // The existing Google auth screen is revealed only after Get Started.
+            if (authScr) authScr.style.display = 'none';
+            if (typeof window.__flaynityShowOnboarding === 'function') {
+                window.__flaynityShowOnboarding();
+            }
             return;
         }
 
@@ -920,6 +925,9 @@ auth.onAuthStateChanged(async (user) => {
         }
 
         document.body.classList.remove('auth-active');
+        if (typeof window.__flaynityHideOnboarding === 'function') {
+            window.__flaynityHideOnboarding();
+        }
         const authScr = document.getElementById('auth-screen');
         const appScr = document.getElementById('app-screen');
         if (authScr) authScr.style.display = 'none';

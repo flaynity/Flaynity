@@ -268,7 +268,8 @@
 
             <div class="placement-grid">
                 <div class="placement-card" onclick="selectPlatform('google_play')" id="plat-google_play">
-                    <div class="p-icon"><i class="fab fa-google-play"></i></div>
+                    <!-- Fixed FontAwesome Class Here -->
+                    <div class="p-icon"><i class="fa-brands fa-google-play"></i></div>
                     <div class="p-info">
                         <h3>Google Play Apps & Games</h3>
                         <p>Promote your Android applications and games.</p>
@@ -376,18 +377,20 @@
 
             <div class="form-group">
                 <label class="form-label">Optimization Goal (Billing)</label>
-                <div class="form-control custom-select" id="b-model-display" onclick="openCustomSelect('model')">$2 CPM (Pay per 1,000 Impressions)</div>
+                <!-- Budget Updated to $3 CPM -->
+                <div class="form-control custom-select" id="b-model-display" onclick="openCustomSelect('model')">$3 CPM (Pay per 1,000 Impressions)</div>
                 <input type="hidden" id="b-model" value="CPM">
             </div>
 
             <div class="form-group">
+                <!-- Minimum Spending Limit is updated to $3 -->
                 <label class="form-label">Daily Spend Limit (USD)</label>
-                <input type="number" class="form-control" id="b-daily" placeholder="e.g., 5.00" min="2" step="0.5">
+                <input type="number" class="form-control" id="b-daily" placeholder="e.g., 5.00" min="3" step="0.5">
             </div>
 
             <div class="form-group">
                 <label class="form-label">Total Campaign Budget (USD)</label>
-                <input type="number" class="form-control" id="b-total" placeholder="e.g., 50.00" min="2" step="1">
+                <input type="number" class="form-control" id="b-total" placeholder="e.g., 50.00" min="3" step="1">
             </div>
             
             <div style="background: var(--soft); padding: 16px; border-radius: 16px; font-size: 13px; font-weight: 700; color: var(--accent); display: flex; gap: 12px; align-items: flex-start;">
@@ -525,7 +528,6 @@
         }
     }
 
-    // Initialize Auth
     initAuth();
 
     function showToast(message, type = 'error') {
@@ -695,7 +697,8 @@
         'age': { title: "Age Group", items: [ {label: 'All Group', value: 'all'}, {label: '18 - 24 Years', value: '18-24'}, {label: '25 - 34 Years', value: '25-34'}, {label: '35 - 44 Years', value: '35-44'}, {label: '45+ Years', value: '45+'} ] },
         'gender': { title: "Gender", items: [ {label: 'All Genders', value: 'all'}, {label: 'Male', value: 'male'}, {label: 'Female', value: 'female'} ] },
         'category': { title: "Interest Category", items: [ {label: 'General Audience', value: 'all'}, {label: 'Technology & Gadgets', value: 'Technology'}, {label: 'Gaming', value: 'Gaming'}, {label: 'Education', value: 'Education'}, {label: 'Entertainment', value: 'Entertainment'}, {label: 'Shopping', value: 'Shopping'}, {label: 'Business', value: 'Business'}, {label: 'Others', value: 'Others'} ] },
-        'model': { title: "Billing Model", items: [ {label: '$2 CPM (Pay per 1,000 Impressions)', value: 'CPM'} ] }
+        'model': { title: "Billing Model", items: [ {label: '$3 CPM (Pay per 1,000 Impressions)', value: 'CPM'} ] },
+        'pricing': { title: "Pricing Model", items: [ {label: 'Free', value: 'Free'}, {label: 'Paid', value: 'Paid'} ] }
     };
 
     function openCustomSelect(type) {
@@ -716,7 +719,7 @@
             div.className = 'sheet-option' + (isSelected ? ' selected' : '');
             div.innerHTML = `<span>${item.label}</span> ${isSelected ? '<i class="fas fa-check-circle"></i>' : ''}`;
             div.onclick = () => {
-                const prefix = type === 'cta' ? 'c' : (type === 'model' ? 'b' : 't');
+                const prefix = type === 'cta' || type === 'pricing' ? 'c' : (type === 'model' ? 'b' : 't');
                 document.getElementById(`${prefix}-${type}`).value = item.value;
                 document.getElementById(`${prefix}-${type}-display`).innerText = item.label;
                 closeCustomSelect(null, true);
@@ -752,6 +755,17 @@
         const counter = document.getElementById('app-name-counter');
         counter.innerText = `${words.length} / 25 Words`;
         if (words.length > 25) {
+            counter.style.color = 'var(--danger)';
+        } else {
+            counter.style.color = 'var(--muted)';
+        }
+    };
+
+    window.updateCharCount = function(input) {
+        const text = input.value;
+        const counter = document.getElementById('app-name-counter');
+        counter.innerText = `${text.length} / 20 Characters`;
+        if (text.length > 20) {
             counter.style.color = 'var(--danger)';
         } else {
             counter.style.color = 'var(--muted)';
@@ -801,68 +815,122 @@
         const placement = campaignData.placement;
         
         if (platform === 'google_play') {
-            container.innerHTML = `
-                <div class="form-group">
-                    <label class="form-label">Campaign Name</label>
-                    <input type="text" class="form-control" id="c-name" placeholder="e.g., Summer App Promotion">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Game & App Name <span id="app-name-counter" style="float:right; font-size:12px; font-weight:600; color:var(--muted);">0 / 25 Words</span></label>
-                    <input type="text" class="form-control" id="c-app-name" placeholder="Name of your app" oninput="updateWordCount(this)">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Review Rating (e.g., 4.5)</label>
-                    <input type="text" class="form-control" id="c-review" placeholder="4.5">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Downloads (e.g., 10M+)</label>
-                    <input type="text" class="form-control" id="c-downloads" placeholder="10M+">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Category</label>
-                    <input type="text" class="form-control" id="c-app-category" placeholder="e.g., Action">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Upload Logo</label>
-                    <input type="file" class="form-control" accept="image/*" onchange="handleFileUpload(this, 'c-logo-url')">
-                    <input type="hidden" id="c-logo-url">
-                    <div id="status-c-logo-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Upload Video (Min 1 min, 16:9 Size, Max 500 MB)</label>
-                    <input type="file" class="form-control" accept="video/mp4,video/*" onchange="handleFileUpload(this, 'c-video-url')">
-                    <input type="hidden" id="c-video-url">
-                    <div id="status-c-video-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Upload Screen Short 1 (9:16 Size, Max 50 MB)</label>
-                    <input type="file" class="form-control" accept="image/*" onchange="handleFileUpload(this, 'c-ss1-url')">
-                    <input type="hidden" id="c-ss1-url">
-                    <div id="status-c-ss1-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Upload Screen Short 2 (9:16 Size, Max 50 MB)</label>
-                    <input type="file" class="form-control" accept="image/*" onchange="handleFileUpload(this, 'c-ss2-url')">
-                    <input type="hidden" id="c-ss2-url">
-                    <div id="status-c-ss2-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Call to Action (CTA)</label>
-                    <div class="form-control custom-select" id="c-cta-display" onclick="openCustomSelect('cta')">Install</div>
-                    <input type="hidden" id="c-cta" value="Install">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Game & App Google Play URL</label>
-                    <input type="url" class="form-control" id="c-url" placeholder="https://play.google.com/store/apps/details?id=...">
-                </div>
-            `;
+            if (placement === 'shorts_vast') {
+                // New Requirements for Google Play Apps & Games + Shorts VAST Ads
+                container.innerHTML = `
+                    <div class="form-group">
+                        <label class="form-label">Campaign Name</label>
+                        <input type="text" class="form-control" id="c-name" placeholder="e.g., Summer App Promotion">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Game & App Name <span id="app-name-counter" style="float:right; font-size:12px; font-weight:600; color:var(--muted);">0 / 20 Characters</span></label>
+                        <input type="text" class="form-control" id="c-app-name" placeholder="Name of your app" oninput="updateCharCount(this)" maxlength="20">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Title</label>
+                        <input type="text" class="form-control" id="c-title" placeholder="A catchy title...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Review Rating (e.g., 4.5)</label>
+                        <input type="text" class="form-control" id="c-review" placeholder="4.5">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Pricing (Free / Paid)</label>
+                        <div class="form-control custom-select" id="c-pricing-display" onclick="openCustomSelect('pricing')">Free</div>
+                        <input type="hidden" id="c-pricing" value="Free">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Upload Logo</label>
+                        <input type="file" class="form-control" accept="image/*" onchange="handleFileUpload(this, 'c-logo-url')">
+                        <input type="hidden" id="c-logo-url">
+                        <div id="status-c-logo-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Upload Video (Max 2 min, 9:16 Size, Max 500 MB)</label>
+                        <input type="file" class="form-control" accept="video/mp4,video/*" onchange="handleFileUpload(this, 'c-video-url')">
+                        <input type="hidden" id="c-video-url">
+                        <div id="status-c-video-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Call to Action (CTA)</label>
+                        <div class="form-control custom-select" id="c-cta-display" onclick="openCustomSelect('cta')">Install</div>
+                        <input type="hidden" id="c-cta" value="Install">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Game & App Google Play URL</label>
+                        <input type="url" class="form-control" id="c-url" placeholder="https://play.google.com/store/apps/details?id=...">
+                    </div>
+                `;
+            } else {
+                // Default Google Play Layout for other placements
+                container.innerHTML = `
+                    <div class="form-group">
+                        <label class="form-label">Campaign Name</label>
+                        <input type="text" class="form-control" id="c-name" placeholder="e.g., Summer App Promotion">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Game & App Name <span id="app-name-counter" style="float:right; font-size:12px; font-weight:600; color:var(--muted);">0 / 25 Words</span></label>
+                        <input type="text" class="form-control" id="c-app-name" placeholder="Name of your app" oninput="updateWordCount(this)">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Review Rating (e.g., 4.5)</label>
+                        <input type="text" class="form-control" id="c-review" placeholder="4.5">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Downloads (e.g., 10M+)</label>
+                        <input type="text" class="form-control" id="c-downloads" placeholder="10M+">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <input type="text" class="form-control" id="c-app-category" placeholder="e.g., Action">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Upload Logo</label>
+                        <input type="file" class="form-control" accept="image/*" onchange="handleFileUpload(this, 'c-logo-url')">
+                        <input type="hidden" id="c-logo-url">
+                        <div id="status-c-logo-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Upload Video (Min 1 min, 16:9 Size, Max 500 MB)</label>
+                        <input type="file" class="form-control" accept="video/mp4,video/*" onchange="handleFileUpload(this, 'c-video-url')">
+                        <input type="hidden" id="c-video-url">
+                        <div id="status-c-video-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Upload Screen Short 1 (9:16 Size, Max 50 MB)</label>
+                        <input type="file" class="form-control" accept="image/*" onchange="handleFileUpload(this, 'c-ss1-url')">
+                        <input type="hidden" id="c-ss1-url">
+                        <div id="status-c-ss1-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Upload Screen Short 2 (9:16 Size, Max 50 MB)</label>
+                        <input type="file" class="form-control" accept="image/*" onchange="handleFileUpload(this, 'c-ss2-url')">
+                        <input type="hidden" id="c-ss2-url">
+                        <div id="status-c-ss2-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Call to Action (CTA)</label>
+                        <div class="form-control custom-select" id="c-cta-display" onclick="openCustomSelect('cta')">Install</div>
+                        <input type="hidden" id="c-cta" value="Install">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Game & App Google Play URL</label>
+                        <input type="url" class="form-control" id="c-url" placeholder="https://play.google.com/store/apps/details?id=...">
+                    </div>
+                `;
+            }
         } else {
+            // Website & Others Layout
             container.innerHTML = `
                 <div class="form-group">
                     <label class="form-label">Campaign Name</label>
@@ -918,43 +986,79 @@
         const c = campaignData.creative;
         
         if (campaignData.platform === 'google_play') {
-            container.innerHTML = `
-                <div style="width: 100%; aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; position: relative;">
-                    <video src="${c.videoUrl}" style="width: 100%; height: 100%; object-fit: cover;" controls></video>
-                </div>
-                
-                <div style="padding: 16px;">
-                    <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--muted); margin-bottom: 12px;">Sponsored</div>
-                    
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-                        <img src="${c.logoUrl}" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover; background: var(--input-bg);">
-                        <div style="flex: 1;">
-                            <div style="font-size: 16px; font-weight: 800; line-height: 1.2;">${escapeHtml(c.appName)}</div>
+            if (campaignData.placement === 'shorts_vast') {
+                // New Shorts VAST Ads requirements - Vertical 9:16 aspect ratio Full Container
+                container.innerHTML = `
+                    <div style="width: 100%; aspect-ratio: 9/16; background: #000; position: relative; overflow: hidden;">
+                        <!-- Video uses object-fit: contain to ensure Smart Fit without stretching original aspect ratio -->
+                        <video src="${c.videoUrl}" style="width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0;" autoplay muted loop playsinline></video>
+                        
+                        <!-- Overlay bottom UI -->
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 24px 16px 16px; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 60%, transparent 100%); color: #fff; z-index: 10; display: flex; flex-direction: column; gap: 8px;">
+                            
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <img src="${c.logoUrl}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: #333;">
+                                <div style="font-size: 15px; font-weight: 900; text-shadow: 0 1px 4px rgba(0,0,0,0.8);">${escapeHtml(c.appName)}</div>
+                            </div>
+
+                            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.9);">
+                                <span style="font-weight: 900;">Sponsored</span>
+                                <span>•</span>
+                                <span>${escapeHtml(c.review)} <i class="fas fa-star" style="color: #ffb020; font-size: 10px;"></i></span>
+                                <span>•</span>
+                                <span>${escapeHtml(c.pricing)}</span>
+                            </div>
+
+                            <div style="font-size: 18px; font-weight: 900; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,0.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                ${escapeHtml(c.title)}
+                            </div>
+
+                            <button style="width: 100%; background: #007aff; color: #fff; border: none; padding: 12px; border-radius: 999px; font-weight: 900; font-size: 14px; text-transform: uppercase; margin-top: 4px; cursor: default; box-shadow: 0 4px 12px rgba(0,122,255,0.4);">
+                                ${escapeHtml(c.cta)}
+                            </button>
                         </div>
-                        <button style="background: var(--info); color: #fff; border: none; padding: 8px 16px; border-radius: 999px; font-weight: 800; font-size: 13px; cursor: default; text-transform: uppercase;">${escapeHtml(c.cta)}</button>
+                    </div>
+                `;
+            } else {
+                // Default Standard Ad Preview Layout
+                container.innerHTML = `
+                    <div style="width: 100%; aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; position: relative;">
+                        <video src="${c.videoUrl}" style="width: 100%; height: 100%; object-fit: cover;" controls></video>
                     </div>
                     
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 16px;">
-                        <div style="text-align: center; flex: 1; border-right: 1px solid var(--border);">
-                            <div style="font-size: 14px; font-weight: 800;">${escapeHtml(c.review)} <i class="fas fa-star" style="font-size:10px;"></i></div>
-                            <div style="font-size: 11px; color: var(--muted); font-weight: 600;">Reviews</div>
+                    <div style="padding: 16px;">
+                        <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--muted); margin-bottom: 12px;">Sponsored</div>
+                        
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                            <img src="${c.logoUrl}" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover; background: var(--input-bg);">
+                            <div style="flex: 1;">
+                                <div style="font-size: 16px; font-weight: 800; line-height: 1.2;">${escapeHtml(c.appName)}</div>
+                            </div>
+                            <button style="background: var(--info); color: #fff; border: none; padding: 8px 16px; border-radius: 999px; font-weight: 800; font-size: 13px; cursor: default; text-transform: uppercase;">${escapeHtml(c.cta)}</button>
                         </div>
-                        <div style="text-align: center; flex: 1; border-right: 1px solid var(--border);">
-                            <div style="font-size: 14px; font-weight: 800;">${escapeHtml(c.downloads)}</div>
-                            <div style="font-size: 11px; color: var(--muted); font-weight: 600;">Downloads</div>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 16px;">
+                            <div style="text-align: center; flex: 1; border-right: 1px solid var(--border);">
+                                <div style="font-size: 14px; font-weight: 800;">${escapeHtml(c.review)} <i class="fas fa-star" style="font-size:10px;"></i></div>
+                                <div style="font-size: 11px; color: var(--muted); font-weight: 600;">Reviews</div>
+                            </div>
+                            <div style="text-align: center; flex: 1; border-right: 1px solid var(--border);">
+                                <div style="font-size: 14px; font-weight: 800;">${escapeHtml(c.downloads)}</div>
+                                <div style="font-size: 11px; color: var(--muted); font-weight: 600;">Downloads</div>
+                            </div>
+                            <div style="text-align: center; flex: 1;">
+                                <div style="font-size: 14px; font-weight: 800;">${escapeHtml(c.appCategory)}</div>
+                                <div style="font-size: 11px; color: var(--muted); font-weight: 600;">Category</div>
+                            </div>
                         </div>
-                        <div style="text-align: center; flex: 1;">
-                            <div style="font-size: 14px; font-weight: 800;">${escapeHtml(c.appCategory)}</div>
-                            <div style="font-size: 11px; color: var(--muted); font-weight: 600;">Category</div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <img src="${c.ss1Url}" style="width: 100%; aspect-ratio: 9/16; border-radius: 12px; object-fit: cover; background: var(--input-bg);">
+                            <img src="${c.ss2Url}" style="width: 100%; aspect-ratio: 9/16; border-radius: 12px; object-fit: cover; background: var(--input-bg);">
                         </div>
                     </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <img src="${c.ss1Url}" style="width: 100%; aspect-ratio: 9/16; border-radius: 12px; object-fit: cover; background: var(--input-bg);">
-                        <img src="${c.ss2Url}" style="width: 100%; aspect-ratio: 9/16; border-radius: 12px; object-fit: cover; background: var(--input-bg);">
-                    </div>
-                </div>
-            `;
+                `;
+            }
         } else {
             let mediaHtml = '';
             if (campaignData.placement === 'vast_video' || campaignData.placement === 'shorts_vast') {
@@ -987,26 +1091,44 @@
             campaignData.campaignName = name;
 
             if (campaignData.platform === 'google_play') {
-                const appName = document.getElementById('c-app-name').value.trim();
-                const review = document.getElementById('c-review').value.trim();
-                const downloads = document.getElementById('c-downloads').value.trim();
-                const category = document.getElementById('c-app-category').value.trim();
-                const logo = document.getElementById('c-logo-url').value;
-                const video = document.getElementById('c-video-url').value;
-                const ss1 = document.getElementById('c-ss1-url').value;
-                const ss2 = document.getElementById('c-ss2-url').value;
-                const cta = document.getElementById('c-cta').value;
-                
-                if (!appName || !review || !downloads || !category) return showToast("Please fill all text fields.", "error"), false;
-                
-                const words = appName.split(/\s+/).filter(w => w.length > 0);
-                if (words.length > 25) return showToast("Game & App Name exceeds 25 words.", "error"), false;
-                
-                if (!logo || !video || !ss1 || !ss2) return showToast("Please upload all media files.", "error"), false;
-                
-                campaignData.creative = {
-                    appName, review, downloads, appCategory: category, logoUrl: logo, videoUrl: video, ss1Url: ss1, ss2Url: ss2, cta, destinationUrl: url
-                };
+                if (campaignData.placement === 'shorts_vast') {
+                    const appName = document.getElementById('c-app-name').value.trim();
+                    const title = document.getElementById('c-title').value.trim();
+                    const review = document.getElementById('c-review').value.trim();
+                    const pricing = document.getElementById('c-pricing').value;
+                    const logo = document.getElementById('c-logo-url').value;
+                    const video = document.getElementById('c-video-url').value;
+                    const cta = document.getElementById('c-cta').value;
+                    
+                    if (!appName || !title || !review) return showToast("Please fill all text fields.", "error"), false;
+                    if (appName.length > 20) return showToast("Game & App Name exceeds 20 characters.", "error"), false;
+                    if (!logo || !video) return showToast("Please upload logo and video.", "error"), false;
+                    
+                    campaignData.creative = {
+                        appName, title, review, pricing, logoUrl: logo, videoUrl: video, cta, destinationUrl: url
+                    };
+                } else {
+                    const appName = document.getElementById('c-app-name').value.trim();
+                    const review = document.getElementById('c-review').value.trim();
+                    const downloads = document.getElementById('c-downloads').value.trim();
+                    const category = document.getElementById('c-app-category').value.trim();
+                    const logo = document.getElementById('c-logo-url').value;
+                    const video = document.getElementById('c-video-url').value;
+                    const ss1 = document.getElementById('c-ss1-url').value;
+                    const ss2 = document.getElementById('c-ss2-url').value;
+                    const cta = document.getElementById('c-cta').value;
+                    
+                    if (!appName || !review || !downloads || !category) return showToast("Please fill all text fields.", "error"), false;
+                    
+                    const words = appName.split(/\s+/).filter(w => w.length > 0);
+                    if (words.length > 25) return showToast("Game & App Name exceeds 25 words.", "error"), false;
+                    
+                    if (!logo || !video || !ss1 || !ss2) return showToast("Please upload all media files.", "error"), false;
+                    
+                    campaignData.creative = {
+                        appName, review, downloads, appCategory: category, logoUrl: logo, videoUrl: video, ss1Url: ss1, ss2Url: ss2, cta, destinationUrl: url
+                    };
+                }
             } else {
                 const title = document.getElementById('c-title').value.trim();
                 const desc = document.getElementById('c-desc').value.trim();
@@ -1036,7 +1158,8 @@
             const daily = parseFloat(document.getElementById('b-daily').value);
             const total = parseFloat(document.getElementById('b-total').value);
             const model = document.getElementById('b-model').value;
-            if (!daily || !total || daily < 2 || total < 2) return showToast("Minimum budget is $2.00", "error"), false;
+            // Updated to $3 Validation Logic
+            if (!daily || !total || daily < 3 || total < 3) return showToast("Minimum budget is $3.00", "error"), false;
             if (daily > total) return showToast("Daily budget cannot exceed total budget.", "error"), false;
             
             campaignData.budget = { daily: daily, total: total, billingModel: model };

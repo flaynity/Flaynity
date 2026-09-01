@@ -50,6 +50,14 @@
     }
 
     try {
+        if (!document.head.querySelector('link[data-flaynity-cdn-preconnect]')) {
+            const preconnect = document.createElement('link');
+            preconnect.rel = 'preconnect';
+            preconnect.href = 'https://flaynity-b2y.pages.dev';
+            preconnect.crossOrigin = 'anonymous';
+            preconnect.setAttribute('data-flaynity-cdn-preconnect', 'true');
+            document.head.appendChild(preconnect);
+        }
         const app = document.getElementById("app");
         if (!app) throw new Error("#app not found");
         const loaded = [];
@@ -59,7 +67,7 @@
 
         const appScreen = document.createElement("div");
         appScreen.id = "app-screen";
-        const startupIds = new Set(["startupSound","toast-container","network-spinner-overlay","auth-screen"]);
+        const startupIds = new Set(["startupSound","splash-screen","toast-container","network-spinner-overlay","auth-screen"]);
 
         for (const node of loaded[0][1]) {
             if (node.id && startupIds.has(node.id)) app.appendChild(node);
@@ -313,13 +321,13 @@ __flaynityReady(function() {
         console.warn("Startup sound engine bypassed:", e);
     }
 
-    // Startup splash timing is controlled from index.html so it starts immediately
-    // and cannot appear late or disappear before the full 3.5-second duration.
-    try {
-        if (typeof window.__flaynityHideStartupSplash === 'function') {
-            window.__flaynityHideStartupSplash();
+    setTimeout(function() {
+        const splash = document.getElementById('splash-screen');
+        if (splash) {
+            splash.style.opacity = "0";
+            setTimeout(() => { splash.style.display = "none"; }, 600);
         }
-    } catch (e) {}
+    }, 3000); 
 
     try {
         AppNavigation.stack = [{ type: 'tab', id: 'home' }];
@@ -876,6 +884,36 @@ function applyAdminControls() {
     });
 }
 
+function normalizeFlaynityMedia(item) {
+    if (!item || typeof item !== 'object') return item;
+
+    const out = { ...item };
+
+    // Preserve the original R2 URLs for reliable fallback if the CDN proxy is unavailable.
+    if (out.videoLink && !out.r2VideoLink) out.r2VideoLink = out.videoLink;
+    if (out.videoUrl && !out.r2VideoUrl) out.r2VideoUrl = out.videoUrl;
+    if (out.poster && !out.r2Poster) out.r2Poster = out.poster;
+    if (out.banner && !out.r2Banner) out.r2Banner = out.banner;
+
+    if (typeof getFlaynityCDNUrl === 'function') {
+        if (out.videoLink) out.videoLink = getFlaynityCDNUrl(out.videoLink);
+        if (out.videoUrl) out.videoUrl = getFlaynityCDNUrl(out.videoUrl);
+        if (out.poster) out.poster = getFlaynityCDNUrl(out.poster);
+        if (out.banner) out.banner = getFlaynityCDNUrl(out.banner);
+
+        if (Array.isArray(out.images)) {
+            out.r2Images = out.images.slice();
+            out.images = out.images.map(img => getFlaynityCDNUrl(img));
+        }
+    }
+
+    return out;
+}
+
+function normalizeFlaynityMediaList(items) {
+    return Array.isArray(items) ? items.map(normalizeFlaynityMedia) : [];
+}
+
 function enforceContentAdminStatus(items, type) {
     const allowed = items.filter(item => {
         const status = String(item?.status || item?.visibility || 'published').toLowerCase();
@@ -886,7 +924,7 @@ function enforceContentAdminStatus(items, type) {
         if (type === 'post' && !isAdminFeatureEnabled('homePostsEnabled')) return false;
         return true;
     });
-    return allowed;
+    return allowed.map(normalizeFlaynityMedia);
 }
 
 auth.onAuthStateChanged(async (user) => {
@@ -1105,7 +1143,8 @@ async function startS3DirectUpload(item) {
 
         await s3Upload.promise();
         
-        item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
+        item.videoUrl = getFlaynityCDNUrl(`${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`);
+        item.r2VideoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
         item.status = "processing";
         item.retryCount = 0;
         updateManagerUI();
@@ -1153,7 +1192,8 @@ async function runPostUploadProcessingSequence(item) {
         if (finalThumbBlob && s3) {
             const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg" };
             await s3.putObject(thumbParams).promise();
-            item.thumbUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
+            item.thumbUrl = getFlaynityCDNUrl(`${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`);
+            item.r2ThumbUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
         } else {
             item.thumbUrl = item.thumbDataUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
         }
@@ -1540,7 +1580,7 @@ function buildHomeFeed() {
             if (s.userId) uniqueUserIds.add(s.userId);
             html += `
                 <div class="short-home-card-2col" onclick="openShortFromHome('${s.id}')">
-                    <img src="${s.poster}" loading="lazy">
+                    <img src="${s.poster}" loading="lazy" onerror="this.onerror=null; this.src='${s.r2Poster || s.poster}';">
                     <div class="short-home-meta">
                         <h4 style="font-size: 0.85rem; font-weight: 800; margin: 0 0 2px 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(s.title)}</h4>
                         <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}">0</span></p>
@@ -1572,7 +1612,6 @@ function buildHomeFeed() {
             html += renderSinglePostSegmentUI(p);
         });
         container.innerHTML = html;
-        ensureHomePostScrollFlow();
         posts.slice(0, postRenderLimit).forEach(p => {
             registerPostReactionsListener(p.id);
         });
@@ -1617,7 +1656,6 @@ function buildHomeFeed() {
     }
 
     container.innerHTML = html;
-    ensureHomePostScrollFlow();
     postsToBind.forEach(postId => registerPostReactionsListener(postId));
     uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
 }
@@ -1641,7 +1679,7 @@ function renderShortsSegmentUI(segmentShorts) {
     limitedShorts.forEach(s => {
         html += `
             <div class="short-home-card-2col" onclick="openShortFromHome('${s.id}')">
-                <img src="${s.poster}" loading="lazy">
+                <img src="${s.poster}" loading="lazy" onerror="this.onerror=null; this.src='${s.r2Poster || s.poster}';">
                 <div class="short-home-meta">
                     <h4 style="font-size: 0.85rem; font-weight: 800; margin: 0 0 2px 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(s.title)}</h4>
                     <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}">0</span></p>
@@ -1677,7 +1715,7 @@ function renderLongVideosSegmentUI(segmentLongs) {
         html += `
             <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
                 <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #000; overflow: hidden;">
-                    <img src="${v.poster}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+                    <img src="${v.poster}" loading="lazy" onerror="this.onerror=null; this.src='${v.r2Poster || v.poster}';" style="width:100%; height:100%; object-fit:cover;">
                     <span class="long-video-duration" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">${v.duration || '10:00'}</span>
                 </div>
                 <div class="long-video-details" style="padding: 14px 16px; display: flex; gap: 12px;">
@@ -1707,29 +1745,7 @@ function renderLongVideosSegmentUI(segmentLongs) {
     return html;
 }
 
-function ensureHomePostScrollFlow() {
-    try {
-        const homeFeed = document.getElementById('home-feed-container');
-        const homeTab = document.getElementById('home-tab');
-        if (homeFeed) {
-            homeFeed.style.overflow = 'visible';
-            homeFeed.style.height = 'auto';
-            homeFeed.style.maxHeight = 'none';
-            homeFeed.style.touchAction = 'pan-y';
-        }
-        if (homeTab) {
-            homeTab.style.overflow = 'visible';
-            homeTab.style.height = 'auto';
-            homeTab.style.maxHeight = 'none';
-            homeTab.style.touchAction = 'pan-y';
-        }
-        document.body.style.touchAction = 'pan-y';
-        document.documentElement.style.overflowY = 'auto';
-    } catch (e) {}
-}
-
 function renderSinglePostSegmentUI(post) {
-    ensureHomePostScrollFlow();
     if (!post) return '';
 
     const titleText = post.title || post.caption || '';
@@ -1741,15 +1757,15 @@ function renderSinglePostSegmentUI(post) {
     let titleHtml = '';
     if (isLong) {
         titleHtml = `
-            <div id="title-collapsed-${post.id}" style="line-height: 1.4; font-weight: 800; white-space: pre-wrap; word-break: break-word;">
+            <div id="title-collapsed-${post.id}" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; font-weight: 800;">
                 ${escapeHTML(combinedText)}
             </div>
-            <div id="title-expanded-${post.id}" style="display: none; line-height: 1.4; font-weight: 800; white-space: pre-wrap; word-break: break-word;">
+            <div id="title-expanded-${post.id}" style="display: none; line-height: 1.4; max-height: 200px; overflow-y: auto; font-weight: 800;">
                 ${escapeHTML(combinedText)}
             </div>
         `;
     } else {
-        titleHtml = `<div style="line-height: 1.4; font-weight: 800; white-space: pre-wrap; word-break: break-word;">${escapeHTML(combinedText)}</div>`;
+        titleHtml = `<div style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; font-weight: 800;">${escapeHTML(combinedText)}</div>`;
     }
 
     const subBtnId = `post-sub-btn-${post.id}`;
@@ -1777,8 +1793,8 @@ function renderSinglePostSegmentUI(post) {
     let imagesHtml = '';
     if (post.images && post.images.length > 0) {
         imagesHtml = `
-            <div style="margin-left: -16px; margin-right: -16px; margin-top: 12px; margin-bottom: 12px; width: calc(100% + 32px); aspect-ratio: 3/4; position: relative; background: #000; overflow: visible; border-radius: 0 !important;">
-                <img src="${post.images[0]}" onclick="openFullScreenImagePreview('${post.images[0]}')" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; display: block; border-radius: 0 !important;" loading="lazy">
+            <div style="margin-left: -16px; margin-right: -16px; margin-top: 12px; margin-bottom: 12px; width: calc(100% + 32px); aspect-ratio: 3/4; position: relative; background: #000; overflow: hidden; border-radius: 0 !important;">
+                <img src="${post.images[0]}" onerror="this.onerror=null; this.src='${post.r2Images?.[0] || post.images[0]}';" onclick="openFullScreenImagePreview('${post.images[0]}')" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; display: block; border-radius: 0 !important;" loading="lazy">
                 
                 <div style="position: absolute; top: 0; left: 0; right: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%); padding: 16px 20px; color: #FFFFFF; z-index: 10;">
                      <div id="title-container-${post.id}" onclick="event.stopPropagation(); togglePostTitleExpand('${post.id}')" style="cursor: pointer; font-size: 0.95rem; font-weight: 800; line-height: 1.4; text-shadow: 0 2px 8px rgba(0,0,0,0.95); font-family: 'Plus Jakarta Sans', sans-serif;">
@@ -1809,7 +1825,7 @@ function renderSinglePostSegmentUI(post) {
     const loveBtnId = `post-love-btn-${post.id}`;
 
     return `
-        <div class="post-card" id="post-card-${post.id}" style="margin-bottom: 24px; background: transparent; border: none; border-radius: 0; padding: 12px 0; box-shadow: none; overflow: visible; border-bottom: 1px solid var(--border-color);">
+        <div class="post-card" id="post-card-${post.id}" style="margin-bottom: 24px; background: transparent; border: none; border-radius: 0; padding: 12px 0; box-shadow: none; overflow: hidden; border-bottom: 1px solid var(--border-color);">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 4px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     ${avatarHtml}
@@ -2313,7 +2329,7 @@ async function syncOfflineLikes() {
 
 function openShortComments(shortId) {
     playUI('click');
-    currentActiveMovie = allShorts.find(s => s.id === shortId);
+    currentActiveMovie = normalizeFlaynityMedia(allShorts.find(s => s.id === shortId));
     if (!currentActiveMovie) return;
     openCommentModal();
     registerViewAndListen(shortId);
@@ -2322,7 +2338,7 @@ function openShortComments(shortId) {
 // =========================================================
 // SECURE DOWNLOAD SYSTEM IMPLEMENTATION
 // =========================================================
-async function triggerFileDownload(url, filename) {
+async function triggerFileDownload(url, filename, fallbackUrl = null) {
     if (!isAdminFeatureEnabled('downloadEnabled')) {
         showNotification('Downloads are currently disabled by the administrator.', 'error');
         return;
@@ -2341,12 +2357,12 @@ async function triggerFileDownload(url, filename) {
 
     showNotification("Preparing web download transfer...", "success");
     try {
-        const response = await fetch(url, { method: 'GET', mode: 'cors' });
-        if (!response.ok) throw new Error("CORS verification mismatch");
-        
+        let response = await fetch(url, { method: 'GET', mode: 'cors' });
+        if (!response.ok) throw new Error("CDN download failed");
+
         const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
-        
+
         const a = document.createElement('a');
         a.href = blobUrl;
         a.download = filename || "flaynity_video.mp4";
@@ -2354,17 +2370,37 @@ async function triggerFileDownload(url, filename) {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(blobUrl);
-        
+
         showNotification("Download completed successfully!", "success");
     } catch (err) {
+        const backup = fallbackUrl || null;
+        if (backup && backup !== url) {
+            try {
+                const response = await fetch(backup, { method: 'GET', mode: 'cors' });
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = blobUrl;
+                    a.download = filename || "flaynity_video.mp4";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(blobUrl);
+                    showNotification("Download completed successfully!", "success");
+                    return;
+                }
+            } catch (fallbackError) {}
+        }
+
         const a = document.createElement('a');
-        a.href = url;
+        a.href = backup || url;
         a.target = "_blank";
         a.download = filename || "flaynity_video.mp4";
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        showNotification("Redirecting direct download link...", "success");
+        showNotification("Redirecting media link...", "success");
     }
 }
 
@@ -2375,7 +2411,7 @@ function triggerShortDownload(shortId) {
         showNotification("No valid short found.", "error");
         return;
     }
-    currentActiveMovie = s;
+    currentActiveMovie = normalizeFlaynityMedia(s);
     openDownloadModal();
 }
 
@@ -2409,24 +2445,69 @@ function toggleShortSubscribe(channelId, buttonEl) {
 // =========================================================
 let currentActiveShortsIdx = -1;
 
-function attachSmartAdaptiveSource(videoElement, url, shortId) {
-    if (url && url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
-        if(hlsInstances[shortId]) {
-            hlsInstances[shortId].destroy();
+function attachSmartAdaptiveSource(videoElement, url, shortId, fallbackUrl = null) {
+    if (!videoElement || !url) return;
+
+    const primaryUrl = url;
+    const backupUrl = fallbackUrl || null;
+    const isHls = primaryUrl.includes('.m3u8');
+
+    const playNativeSource = (sourceUrl) => {
+        videoElement.src = sourceUrl;
+        videoElement.load();
+    };
+
+    const setupHls = (sourceUrl) => {
+        if (hlsInstances[shortId]) {
+            try { hlsInstances[shortId].destroy(); } catch (e) {}
+            delete hlsInstances[shortId];
         }
-        const hls = new Hls({
-            maxBufferLength: 30,
-            maxMaxBufferLength: 600,
-            enableWorker: true,
-            lowLatencyMode: true,
-            capLevelToPlayerSize: true
-        });
-        hls.loadSource(url);
-        hls.attachMedia(videoElement);
-        hlsInstances[shortId] = hls;
-    } else {
-        videoElement.src = url;
-    }
+        if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+            const hls = new Hls({
+                maxBufferLength: 30,
+                maxMaxBufferLength: 600,
+                enableWorker: true,
+                lowLatencyMode: true,
+                capLevelToPlayerSize: true
+            });
+            hls.on(Hls.Events.ERROR, (event, data) => {
+                if (data && data.fatal && backupUrl && sourceUrl !== backupUrl) {
+                    try { hls.destroy(); } catch (e) {}
+                    delete hlsInstances[shortId];
+                    playNativeSource(backupUrl);
+                }
+            });
+            hls.loadSource(sourceUrl);
+            hls.attachMedia(videoElement);
+            hlsInstances[shortId] = hls;
+        } else {
+            playNativeSource(sourceUrl);
+        }
+    };
+
+    videoElement.dataset.primarySource = primaryUrl;
+    if (backupUrl) videoElement.dataset.fallbackSource = backupUrl;
+    videoElement.dataset.fallbackTried = "0";
+
+    const onError = () => {
+        const fallback = videoElement.dataset.fallbackSource;
+        if (!fallback || videoElement.dataset.fallbackTried === "1") return;
+        if (videoElement.currentSrc === fallback || videoElement.src === fallback) return;
+
+        videoElement.dataset.fallbackTried = "1";
+        if (hlsInstances[shortId]) {
+            try { hlsInstances[shortId].destroy(); } catch (e) {}
+            delete hlsInstances[shortId];
+        }
+        playNativeSource(fallback);
+    };
+
+    videoElement.removeEventListener('error', videoElement.__flaynityMediaErrorHandler);
+    videoElement.__flaynityMediaErrorHandler = onError;
+    videoElement.addEventListener('error', onError);
+
+    if (isHls) setupHls(primaryUrl);
+    else playNativeSource(primaryUrl);
 }
 
 function optimizeShortsMemoryAndPreload(activeIndex) {
@@ -2444,7 +2525,7 @@ function optimizeShortsMemoryAndPreload(activeIndex) {
             }
 
             if (!video.getAttribute('src') && !hlsInstances[shortId]) {
-                attachSmartAdaptiveSource(video, s.videoLink, shortId);
+                attachSmartAdaptiveSource(video, s.videoLink, shortId, s.r2VideoLink);
                 video.preload = (idx === activeIndex) ? "auto" : "metadata";
             }
 
@@ -2799,7 +2880,7 @@ async function openMoviePage(id, isTMDB = false) {
             isTMDB: true 
         };
     } else {
-        currentActiveMovie = allLongVideos.find(m => String(m.id) === String(id));
+        currentActiveMovie = normalizeFlaynityMedia(allLongVideos.find(m => String(m.id) === String(id)));
     }
 
     if(!currentActiveMovie) return;
@@ -2838,7 +2919,7 @@ function startVideoPlayer() {
             const videoEl = document.getElementById('premium-video-watch-el');
             
             if (videoEl) {
-                attachSmartAdaptiveSource(videoEl, link, 'long_video_main');
+                attachSmartAdaptiveSource(videoEl, link, 'long_video_main', currentActiveMovie.r2VideoLink || null);
                 videoEl.play().catch(()=>{});
                 videoEl.onended = () => { playNextRecommendedVideo(); };
             }
@@ -3229,7 +3310,7 @@ function renderMovieWatchRecommendedFeed() {
         html += `
             <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
                 <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #000; overflow: hidden;">
-                    <img src="${v.poster}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+                    <img src="${v.poster}" loading="lazy" onerror="this.onerror=null; this.src='${v.r2Poster || v.poster}';" style="width:100%; height:100%; object-fit:cover;">
                     <span class="long-video-duration" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">${v.duration || '10:00'}</span>
                 </div>
                 <div class="long-video-details" style="padding: 14px 16px; display: flex; gap: 12px;">
@@ -3753,7 +3834,7 @@ function buildChannelShortCard(s) {
 function buildChannelPostCard(p, username) {
     const gridClass = p.images && p.images.length === 1 ? 'grid-1' : p.images && p.images.length === 2 ? 'grid-2' : 'grid-3';
     const imagesHtml = p.images && p.images.length > 0 
-        ? `<div class="post-image-grid ${gridClass}">${p.images.map(img => `<img src="${img}" style="border-radius:12px;">`).join('')}</div>`
+        ? `<div class="post-image-grid ${gridClass}">${p.images.map((img, i) => `<img src="${img}" onerror="this.onerror=null; this.src='${p.r2Images?.[i] || img}';" style="border-radius:12px;">`).join('')}</div>`
         : '';
     return `
         <div class="post-card" style="margin-bottom:12px;">
@@ -3786,7 +3867,7 @@ function renderChannelVideos(userId) {
             return;
         }
 
-        const list = Object.values(data).filter(m => m.userId === userId && !m.isShort);
+        const list = normalizeFlaynityMediaList(Object.values(data).filter(m => m.userId === userId && !m.isShort));
         const vidCount = document.getElementById('view-vid-count');
         if (vidCount) vidCount.innerText = list.length + " Video" + (list.length === 1 ? "" : "s");
 
@@ -3830,7 +3911,7 @@ function renderChannelShorts(userId) {
             return;
         }
 
-        const list = Object.values(data).filter(m => m.userId === userId);
+        const list = normalizeFlaynityMediaList(Object.values(data).filter(m => m.userId === userId));
         if (list.length === 0) {
             grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No shorts uploaded yet.</p>`;
             return;
@@ -3868,7 +3949,7 @@ function renderChannelPosts(userId) {
             return;
         }
 
-        const list = Object.values(data).filter(p => p.userId === userId);
+        const list = normalizeFlaynityMediaList(Object.values(data).filter(p => p.userId === userId));
         if (list.length === 0) {
             grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No posts yet.</p>`;
             return;
@@ -4549,7 +4630,7 @@ function openCommentsForPost(postId) {
     playUI('click');
     const postObj = allCommunityPosts.find(p => p.id === postId);
     if (!postObj) return;
-    currentActiveMovie = postObj;
+    currentActiveMovie = normalizeFlaynityMedia(postObj);
     openCommentModal();
     registerViewAndListen(postId);
 }
@@ -4675,7 +4756,7 @@ function startDownloadAdRequest() {
     }
     const format = document.querySelector('input[name="download-format"]:checked')?.value || "video-720";
     const filename = `${currentActiveMovie.title.replace(/\s+/g, '_')}_${format}.mp4`;
-    triggerFileDownload(currentActiveMovie.videoLink, filename);
+    triggerFileDownload(currentActiveMovie.videoLink, filename, currentActiveMovie.r2VideoLink || null);
 }
 
 // =========================================

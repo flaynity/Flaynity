@@ -82,184 +82,137 @@
 
 <style id="flaynity-onboarding-style">
     #flaynity-onboarding {
-        position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh;
+        position: fixed; inset: 0; width: 100vw; height: 100vh; min-height: 100dvh;
         z-index: 2147483646; background: #000; overflow: hidden; display: none;
         font-family: 'Plus Jakarta Sans', sans-serif; touch-action: pan-y;
-        -webkit-user-select: none; user-select: none;
+    }
+    #flaynity-onboarding-track {
+        position: absolute; inset: 0; width: 100%; height: 100%; display: flex;
+        transform: translate3d(0,0,0); will-change: transform; transition: transform .42s cubic-bezier(.22,.8,.2,1);
+        touch-action: pan-y;
     }
     #flaynity-onboarding .onboarding-slide {
-        position: absolute; inset: 0; width: 100%; height: 100%;
-        object-fit: cover; object-position: center center;
-        opacity: 0; visibility: hidden;
-        transform: translate3d(100%, 0, 0);
-        transition: transform .48s cubic-bezier(.22,.61,.36,1), opacity .48s ease;
-        will-change: transform, opacity;
-        backface-visibility: hidden; -webkit-backface-visibility: hidden;
-        pointer-events: none;
+        position: relative; flex: 0 0 100%; width: 100%; height: 100%; object-fit: cover;
+        display: block; opacity: 1; visibility: visible; user-select: none; -webkit-user-drag: none;
+        background: #000; transform: translateZ(0); backface-visibility: hidden;
     }
-    #flaynity-onboarding .onboarding-slide.active {
-        opacity: 1; visibility: visible; transform: translate3d(0, 0, 0);
-        z-index: 1;
-    }
-    #flaynity-onboarding .onboarding-slide.exit-left {
-        opacity: 1; visibility: visible; transform: translate3d(-100%, 0, 0); z-index: 2;
-    }
-    #flaynity-onboarding .onboarding-slide.exit-right {
-        opacity: 1; visibility: visible; transform: translate3d(100%, 0, 0); z-index: 2;
+    #flaynity-onboarding::after {
+        content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 28%;
+        background: linear-gradient(to top, rgba(0,0,0,.30), rgba(0,0,0,0));
+        pointer-events: none; z-index: 2;
     }
     #flaynity-onboarding-next {
-        position: absolute; z-index: 10; left: 16px; right: 16px;
-        bottom: max(18px, env(safe-area-inset-bottom));
+        position: absolute; z-index: 4; left: 16px; right: 16px; bottom: max(18px, env(safe-area-inset-bottom));
         width: calc(100% - 32px); min-height: 54px; border: 0; border-radius: 16px;
-        background: #fff; color: #111; font-size: 1.05rem; font-weight: 800;
-        cursor: pointer; box-shadow: none !important; filter: none !important;
-        -webkit-tap-highlight-color: transparent; appearance: none;
-        -webkit-appearance: none;
+        background: #FF2E55; color: #fff; font-size: 1.05rem; font-weight: 800;
+        cursor: pointer; box-shadow: none; text-shadow: none; -webkit-box-shadow: none;
+        -webkit-tap-highlight-color: transparent; opacity: 0; transform: translateX(70px);
+        transition: opacity .55s ease, transform .55s cubic-bezier(.22,.8,.2,1);
     }
-    #flaynity-onboarding-next:active { transform: scale(.985); }
+    #flaynity-onboarding.ready #flaynity-onboarding-next { opacity: 1; transform: translateX(0); }
 </style>
 <div id="flaynity-onboarding" aria-hidden="true">
-    <img class="onboarding-slide active" src="https://www.image2url.com/r2/default/images/1788290108326-5cdf2a02-bc51-4194-b8ef-9353347a173c.png" alt="" draggable="false" loading="eager" decoding="sync">
-    <img class="onboarding-slide" src="https://www.image2url.com/r2/default/images/1788290164078-a14cb8c2-8f97-4986-baaf-9b738ecb7753.png" alt="" draggable="false" loading="eager" decoding="sync">
-    <img class="onboarding-slide" src="https://www.image2url.com/r2/default/images/1788290261336-c805b2db-e703-4b5c-8d27-c80fd9bc35bb.png" alt="" draggable="false" loading="eager" decoding="sync">
+    <div id="flaynity-onboarding-track">
+        <img class="onboarding-slide" src="https://www.image2url.com/r2/default/images/1788290108326-5cdf2a02-bc51-4194-b8ef-9353347a173c.png" alt="" draggable="false">
+        <img class="onboarding-slide" src="https://www.image2url.com/r2/default/images/1788290164078-a14cb8c2-8f97-4986-baaf-9b738ecb7753.png" alt="" draggable="false">
+        <img class="onboarding-slide" src="https://www.image2url.com/r2/default/images/1788290261336-c805b2db-e703-4b5c-8d27-c80fd9bc35bb.png" alt="" draggable="false">
+    </div>
     <button id="flaynity-onboarding-next" type="button">Get Started</button>
 </div>
 <script>
 (function () {
     'use strict';
     const onboarding = document.getElementById('flaynity-onboarding');
+    const track = document.getElementById('flaynity-onboarding-track');
     const slides = onboarding ? Array.from(onboarding.querySelectorAll('.onboarding-slide')) : [];
     const nextButton = document.getElementById('flaynity-onboarding-next');
-    let current = 0;
-    let timer = null;
-    let startX = 0;
-    let startY = 0;
-    let dragging = false;
-    let transitionTimer = null;
-    const SLIDE_DURATION = 3000;
-    const TRANSITION_DURATION = 500;
+    const splash = document.getElementById('flaynity-startup-splash');
+    const urls = slides.map(function (img) { return img.getAttribute('src'); });
+    let current = 0, timer = null, swipeStartX = 0, swipeStartY = 0, swipeStartTime = 0, dragging = false;
+    let pendingShow = false;
+    const SLIDE_MS = 3000;
 
-    function preloadImages() {
-        return Promise.all(slides.map(function (img) {
-            return new Promise(function (resolve) {
-                if (img.complete && img.naturalWidth > 0) {
-                    if (img.decode) img.decode().catch(function () {}).finally(resolve);
-                    else resolve();
-                    return;
-                }
-                const done = function () {
-                    if (img.decode) img.decode().catch(function () {}).finally(resolve);
-                    else resolve();
-                };
-                img.addEventListener('load', done, { once: true });
-                img.addEventListener('error', resolve, { once: true });
-            });
-        }));
-    }
-
-    function resetClasses(slide) {
-        slide.classList.remove('active', 'exit-left', 'exit-right');
-    }
-
-    function showSlide(index, direction) {
-        if (!slides.length) return;
-        index = (index + slides.length) % slides.length;
-        if (index === current && !direction) {
-            slides.forEach(function (slide, i) {
-                resetClasses(slide);
-                if (i === current) slide.classList.add('active');
-            });
-            return;
-        }
-        const previous = current;
-        current = index;
-        clearTimeout(transitionTimer);
-
-        slides.forEach(function (slide, i) {
-            resetClasses(slide);
-            if (i === current) slide.classList.add('active');
-            else if (i === previous) slide.classList.add(direction === 'prev' ? 'exit-right' : 'exit-left');
+    // Preload all onboarding images before the onboarding UI becomes visible.
+    const preloadPromise = Promise.all(urls.map(function (url) {
+        return new Promise(function (resolve) {
+            const img = new Image();
+            img.onload = img.onerror = function () { resolve(); };
+            img.src = url;
         });
+    }));
 
-        transitionTimer = setTimeout(function () {
-            slides.forEach(function (slide, i) {
-                if (i !== current) resetClasses(slide);
-            });
-        }, TRANSITION_DURATION + 40);
-    }
-
-    function nextSlide() { showSlide(current + 1, 'next'); }
-    function previousSlide() { showSlide(current - 1, 'prev'); }
-
-    function startAutoSlider() {
-        clearInterval(timer);
-        timer = setInterval(nextSlide, SLIDE_DURATION);
-    }
-
-    window.__flaynityShowOnboarding = function () {
-        if (!onboarding) return;
-        clearInterval(timer);
-        const reveal = function () {
-            onboarding.style.display = 'block';
-            onboarding.setAttribute('aria-hidden', 'false');
-            current = 0;
-            slides.forEach(resetClasses);
-            // Start the first image just outside the right edge, then animate it in.
-            if (slides[0]) {
-                requestAnimationFrame(function () {
-                    requestAnimationFrame(function () {
-                        if (slides[0]) slides[0].classList.add('active');
-                    });
-                });
-            }
-            startAutoSlider();
-        };
-        if (window.__flaynityOnboardingReady) {
-            window.__flaynityOnboardingReady.then(reveal);
-        } else {
-            reveal();
+    function positionSlide(index, animate) {
+        current = (index + slides.length) % slides.length;
+        if (track) {
+            track.style.transition = animate ? 'transform .42s cubic-bezier(.22,.8,.2,1)' : 'none';
+            track.style.transform = 'translate3d(' + (-current * 100) + '%,0,0)';
         }
-    };
-
-    window.__flaynityHideOnboarding = function () {
+    }
+    function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+    function startTimer() {
+        stopTimer();
+        timer = setInterval(function () { positionSlide(current + 1, true); }, SLIDE_MS);
+    }
+    function reveal() {
         if (!onboarding) return;
-        clearInterval(timer);
-        timer = null;
+        onboarding.style.display = 'block';
+        onboarding.setAttribute('aria-hidden', 'false');
+        onboarding.classList.remove('ready');
+        positionSlide(0, false);
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                onboarding.classList.add('ready');
+            });
+        });
+        startTimer();
+    }
+    async function show() {
+        pendingShow = true;
+        // Never reveal onboarding underneath the startup splash.
+        while (splash && !splash.classList.contains('is-hidden')) {
+            await new Promise(function (resolve) { setTimeout(resolve, 60); });
+        }
+        await preloadPromise;
+        if (!pendingShow) return;
+        pendingShow = false;
+        reveal();
+    }
+    window.__flaynityShowOnboarding = function () { show(); };
+    window.__flaynityHideOnboarding = function () {
+        pendingShow = false;
+        stopTimer();
+        if (!onboarding) return;
+        onboarding.classList.remove('ready');
         onboarding.style.display = 'none';
         onboarding.setAttribute('aria-hidden', 'true');
-        slides.forEach(resetClasses);
-        if (slides[0]) slides[0].classList.add('active');
-        current = 0;
     };
 
-    function handleTouchStart(event) {
-        if (!onboarding || onboarding.style.display === 'none') return;
-        const touch = event.touches && event.touches[0];
-        if (!touch) return;
-        startX = touch.clientX;
-        startY = touch.clientY;
-        dragging = true;
-    }
-
-    function handleTouchEnd(event) {
+    function pointerStart(x, y) { swipeStartX = x; swipeStartY = y; swipeStartTime = Date.now(); dragging = true; }
+    function pointerEnd(x, y) {
         if (!dragging) return;
         dragging = false;
-        const touch = event.changedTouches && event.changedTouches[0];
-        if (!touch) return;
-        const dx = touch.clientX - startX;
-        const dy = touch.clientY - startY;
-        if (Math.abs(dx) < 45 || Math.abs(dx) <= Math.abs(dy)) return;
-        if (dx < 0) nextSlide();
-        else previousSlide();
-        startAutoSlider();
+        const dx = x - swipeStartX, dy = y - swipeStartY, dt = Date.now() - swipeStartTime;
+        if (Math.abs(dx) >= 45 && Math.abs(dx) > Math.abs(dy) * 1.15 && dt <= 700) {
+            positionSlide(current + (dx < 0 ? 1 : -1), true);
+            startTimer();
+        }
     }
-
     if (onboarding) {
-        onboarding.addEventListener('touchstart', handleTouchStart, { passive: true });
-        onboarding.addEventListener('touchend', handleTouchEnd, { passive: true });
-        onboarding.addEventListener('touchcancel', function () { dragging = false; }, { passive: true });
+        onboarding.addEventListener('touchstart', function (e) {
+            if (!e.touches.length) return;
+            pointerStart(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: true });
+        onboarding.addEventListener('touchend', function (e) {
+            if (!e.changedTouches.length) return;
+            pointerEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        }, { passive: true });
+        onboarding.addEventListener('pointerdown', function (e) {
+            if (e.pointerType === 'mouse') pointerStart(e.clientX, e.clientY);
+        });
+        onboarding.addEventListener('pointerup', function (e) {
+            if (e.pointerType === 'mouse') pointerEnd(e.clientX, e.clientY);
+        });
     }
-
     if (nextButton) {
         nextButton.addEventListener('click', function () {
             window.__flaynityHideOnboarding();
@@ -268,15 +221,6 @@
             document.body.classList.add('auth-active');
         });
     }
-
-    // Preload + decode all onboarding images before they can be shown.
-    // This prevents a late/blank/partially loaded onboarding screen.
-    const onboardingImagesReady = preloadImages().then(function () {
-        window.__flaynityOnboardingImagesReady = true;
-        return true;
-    });
-
-    window.__flaynityOnboardingReady = onboardingImagesReady;
 })();
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>

@@ -1572,6 +1572,7 @@ function buildHomeFeed() {
             html += renderSinglePostSegmentUI(p);
         });
         container.innerHTML = html;
+        ensureHomePostScrollFlow();
         posts.slice(0, postRenderLimit).forEach(p => {
             registerPostReactionsListener(p.id);
         });
@@ -1616,6 +1617,7 @@ function buildHomeFeed() {
     }
 
     container.innerHTML = html;
+    ensureHomePostScrollFlow();
     postsToBind.forEach(postId => registerPostReactionsListener(postId));
     uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
 }
@@ -1705,7 +1707,29 @@ function renderLongVideosSegmentUI(segmentLongs) {
     return html;
 }
 
+function ensureHomePostScrollFlow() {
+    try {
+        const homeFeed = document.getElementById('home-feed-container');
+        const homeTab = document.getElementById('home-tab');
+        if (homeFeed) {
+            homeFeed.style.overflow = 'visible';
+            homeFeed.style.height = 'auto';
+            homeFeed.style.maxHeight = 'none';
+            homeFeed.style.touchAction = 'pan-y';
+        }
+        if (homeTab) {
+            homeTab.style.overflow = 'visible';
+            homeTab.style.height = 'auto';
+            homeTab.style.maxHeight = 'none';
+            homeTab.style.touchAction = 'pan-y';
+        }
+        document.body.style.touchAction = 'pan-y';
+        document.documentElement.style.overflowY = 'auto';
+    } catch (e) {}
+}
+
 function renderSinglePostSegmentUI(post) {
+    ensureHomePostScrollFlow();
     if (!post) return '';
 
     const titleText = post.title || post.caption || '';
@@ -1717,15 +1741,15 @@ function renderSinglePostSegmentUI(post) {
     let titleHtml = '';
     if (isLong) {
         titleHtml = `
-            <div id="title-collapsed-${post.id}" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; font-weight: 800;">
+            <div id="title-collapsed-${post.id}" style="line-height: 1.4; font-weight: 800; white-space: pre-wrap; word-break: break-word;">
                 ${escapeHTML(combinedText)}
             </div>
-            <div id="title-expanded-${post.id}" style="display: none; line-height: 1.4; font-weight: 800;">
+            <div id="title-expanded-${post.id}" style="display: none; line-height: 1.4; font-weight: 800; white-space: pre-wrap; word-break: break-word;">
                 ${escapeHTML(combinedText)}
             </div>
         `;
     } else {
-        titleHtml = `<div style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; font-weight: 800;">${escapeHTML(combinedText)}</div>`;
+        titleHtml = `<div style="line-height: 1.4; font-weight: 800; white-space: pre-wrap; word-break: break-word;">${escapeHTML(combinedText)}</div>`;
     }
 
     const subBtnId = `post-sub-btn-${post.id}`;
@@ -1753,8 +1777,8 @@ function renderSinglePostSegmentUI(post) {
     let imagesHtml = '';
     if (post.images && post.images.length > 0) {
         imagesHtml = `
-            <div style="margin-left: -16px; margin-right: -16px; margin-top: 12px; margin-bottom: 12px; width: calc(100% + 32px); position: relative; background: #000; overflow: visible; border-radius: 0 !important;">
-                <img src="${post.images[0]}" onclick="openFullScreenImagePreview('${post.images[0]}')" style="width: 100%; height: auto; max-width: 100%; object-fit: contain; cursor: pointer; display: block; border-radius: 0 !important;" loading="lazy">
+            <div style="margin-left: -16px; margin-right: -16px; margin-top: 12px; margin-bottom: 12px; width: calc(100% + 32px); aspect-ratio: 3/4; position: relative; background: #000; overflow: visible; border-radius: 0 !important;">
+                <img src="${post.images[0]}" onclick="openFullScreenImagePreview('${post.images[0]}')" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; display: block; border-radius: 0 !important;" loading="lazy">
                 
                 <div style="position: absolute; top: 0; left: 0; right: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%); padding: 16px 20px; color: #FFFFFF; z-index: 10;">
                      <div id="title-container-${post.id}" onclick="event.stopPropagation(); togglePostTitleExpand('${post.id}')" style="cursor: pointer; font-size: 0.95rem; font-weight: 800; line-height: 1.4; text-shadow: 0 2px 8px rgba(0,0,0,0.95); font-family: 'Plus Jakarta Sans', sans-serif;">

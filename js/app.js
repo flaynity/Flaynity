@@ -59,7 +59,7 @@
 
         const appScreen = document.createElement("div");
         appScreen.id = "app-screen";
-        const startupIds = new Set(["startupSound","splash-screen","toast-container","network-spinner-overlay","auth-screen"]);
+        const startupIds = new Set(["startupSound","toast-container","network-spinner-overlay","auth-screen"]);
 
         for (const node of loaded[0][1]) {
             if (node.id && startupIds.has(node.id)) app.appendChild(node);
@@ -314,12 +314,9 @@ __flaynityReady(function() {
     }
 
     setTimeout(function() {
-        const splash = document.getElementById('splash-screen');
-        if (splash) {
-            splash.style.opacity = "0";
-            setTimeout(() => { splash.style.display = "none"; }, 600);
-        }
-    }, 3000); 
+        const splash = document.getElementById('flaynity-startup-splash');
+        if (splash) splash.classList.add('is-hidden');
+    }, 2000); 
 
     try {
         AppNavigation.stack = [{ type: 'tab', id: 'home' }];

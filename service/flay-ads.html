@@ -268,7 +268,6 @@
 
             <div class="placement-grid">
                 <div class="placement-card" onclick="selectPlatform('google_play')" id="plat-google_play">
-                    <!-- Fixed FontAwesome Class Here -->
                     <div class="p-icon"><i class="fa-brands fa-google-play"></i></div>
                     <div class="p-info">
                         <h3>Google Play Apps & Games</h3>
@@ -377,20 +376,18 @@
 
             <div class="form-group">
                 <label class="form-label">Optimization Goal (Billing)</label>
-                <!-- Budget Updated to $3 CPM -->
-                <div class="form-control custom-select" id="b-model-display" onclick="openCustomSelect('model')">$3 CPM (Pay per 1,000 Impressions)</div>
+                <div class="form-control custom-select" id="b-model-display" onclick="openCustomSelect('model')">$2 CPM (Pay per 1,000 Impressions)</div>
                 <input type="hidden" id="b-model" value="CPM">
             </div>
 
             <div class="form-group">
-                <!-- Minimum Spending Limit is updated to $3 -->
                 <label class="form-label">Daily Spend Limit (USD)</label>
-                <input type="number" class="form-control" id="b-daily" placeholder="e.g., 5.00" min="3" step="0.5">
+                <input type="number" class="form-control" id="b-daily" placeholder="e.g., 5.00" min="2" step="0.5">
             </div>
 
             <div class="form-group">
                 <label class="form-label">Total Campaign Budget (USD)</label>
-                <input type="number" class="form-control" id="b-total" placeholder="e.g., 50.00" min="3" step="1">
+                <input type="number" class="form-control" id="b-total" placeholder="e.g., 50.00" min="2" step="1">
             </div>
             
             <div style="background: var(--soft); padding: 16px; border-radius: 16px; font-size: 13px; font-weight: 700; color: var(--accent); display: flex; gap: 12px; align-items: flex-start;">
@@ -697,7 +694,7 @@
         'age': { title: "Age Group", items: [ {label: 'All Group', value: 'all'}, {label: '18 - 24 Years', value: '18-24'}, {label: '25 - 34 Years', value: '25-34'}, {label: '35 - 44 Years', value: '35-44'}, {label: '45+ Years', value: '45+'} ] },
         'gender': { title: "Gender", items: [ {label: 'All Genders', value: 'all'}, {label: 'Male', value: 'male'}, {label: 'Female', value: 'female'} ] },
         'category': { title: "Interest Category", items: [ {label: 'General Audience', value: 'all'}, {label: 'Technology & Gadgets', value: 'Technology'}, {label: 'Gaming', value: 'Gaming'}, {label: 'Education', value: 'Education'}, {label: 'Entertainment', value: 'Entertainment'}, {label: 'Shopping', value: 'Shopping'}, {label: 'Business', value: 'Business'}, {label: 'Others', value: 'Others'} ] },
-        'model': { title: "Billing Model", items: [ {label: '$3 CPM (Pay per 1,000 Impressions)', value: 'CPM'} ] },
+        'model': { title: "Billing Model", items: [ {label: '$2 CPM (Pay per 1,000 Impressions)', value: 'CPM'} ] },
         'pricing': { title: "Pricing Model", items: [ {label: 'Free', value: 'Free'}, {label: 'Paid', value: 'Paid'} ] }
     };
 
@@ -785,6 +782,10 @@
             input.value = '';
             return showToast("Screenshot exceeds 50 MB limit.", "error");
         }
+        if (targetId.includes('image') && mbSize > 50) {
+            input.value = '';
+            return showToast("Image exceeds 50 MB limit.", "error");
+        }
 
         const statusEl = document.getElementById('status-' + targetId);
         statusEl.innerText = 'Uploading to Cloudflare R2...';
@@ -815,8 +816,12 @@
         const placement = campaignData.placement;
         
         if (platform === 'google_play') {
-            if (placement === 'shorts_vast') {
-                // New Requirements for Google Play Apps & Games + Shorts VAST Ads
+            if (placement === 'shorts_vast' || placement === 'shorts_post') {
+                const isVideo = placement === 'shorts_vast';
+                const mediaLabel = isVideo ? "Upload Video (Max 2 min, 9:16 Size, Max 500 MB)" : "Upload Post Image (9:16 Size, Max 50 MB)";
+                const mediaAccept = isVideo ? "video/mp4,video/*" : "image/*";
+                const mediaId = isVideo ? "c-video-url" : "c-image-url";
+                
                 container.innerHTML = `
                     <div class="form-group">
                         <label class="form-label">Campaign Name</label>
@@ -848,10 +853,10 @@
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">Upload Video (Max 2 min, 9:16 Size, Max 500 MB)</label>
-                        <input type="file" class="form-control" accept="video/mp4,video/*" onchange="handleFileUpload(this, 'c-video-url')">
-                        <input type="hidden" id="c-video-url">
-                        <div id="status-c-video-url" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
+                        <label class="form-label">${mediaLabel}</label>
+                        <input type="file" class="form-control" accept="${mediaAccept}" onchange="handleFileUpload(this, '${mediaId}')">
+                        <input type="hidden" id="${mediaId}">
+                        <div id="status-${mediaId}" class="file-status" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
                     </div>
                     
                     <div class="form-group">
@@ -986,12 +991,17 @@
         const c = campaignData.creative;
         
         if (campaignData.platform === 'google_play') {
-            if (campaignData.placement === 'shorts_vast') {
-                // New Shorts VAST Ads requirements - Vertical 9:16 aspect ratio Full Container
+            if (campaignData.placement === 'shorts_vast' || campaignData.placement === 'shorts_post') {
+                const isVideo = campaignData.placement === 'shorts_vast';
+                const mediaElement = isVideo 
+                    ? `<video src="${c.videoUrl}" style="width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0;" autoplay muted loop playsinline></video>`
+                    : `<img src="${c.imageUrl}" style="width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0;">`;
+
+                // Shorts VAST & Shorts Post Ads requirements - Vertical 9:16 aspect ratio Full Container
                 container.innerHTML = `
                     <div style="width: 100%; aspect-ratio: 9/16; background: #000; position: relative; overflow: hidden;">
-                        <!-- Video uses object-fit: contain to ensure Smart Fit without stretching original aspect ratio -->
-                        <video src="${c.videoUrl}" style="width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0;" autoplay muted loop playsinline></video>
+                        <!-- Media uses object-fit: contain to ensure Smart Fit without stretching original aspect ratio -->
+                        ${mediaElement}
                         
                         <!-- Overlay bottom UI -->
                         <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 24px 16px 16px; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 60%, transparent 100%); color: #fff; z-index: 10; display: flex; flex-direction: column; gap: 8px;">
@@ -1091,22 +1101,29 @@
             campaignData.campaignName = name;
 
             if (campaignData.platform === 'google_play') {
-                if (campaignData.placement === 'shorts_vast') {
+                if (campaignData.placement === 'shorts_vast' || campaignData.placement === 'shorts_post') {
+                    const isVideo = campaignData.placement === 'shorts_vast';
                     const appName = document.getElementById('c-app-name').value.trim();
                     const title = document.getElementById('c-title').value.trim();
                     const review = document.getElementById('c-review').value.trim();
                     const pricing = document.getElementById('c-pricing').value;
                     const logo = document.getElementById('c-logo-url').value;
-                    const video = document.getElementById('c-video-url').value;
+                    const mediaUrl = isVideo ? document.getElementById('c-video-url').value : document.getElementById('c-image-url').value;
                     const cta = document.getElementById('c-cta').value;
                     
                     if (!appName || !title || !review) return showToast("Please fill all text fields.", "error"), false;
                     if (appName.length > 20) return showToast("Game & App Name exceeds 20 characters.", "error"), false;
-                    if (!logo || !video) return showToast("Please upload logo and video.", "error"), false;
+                    if (!logo || !mediaUrl) return showToast(`Please upload logo and ${isVideo ? 'video' : 'image'}.`, "error"), false;
                     
                     campaignData.creative = {
-                        appName, title, review, pricing, logoUrl: logo, videoUrl: video, cta, destinationUrl: url
+                        appName, title, review, pricing, logoUrl: logo, cta, destinationUrl: url
                     };
+
+                    if (isVideo) {
+                        campaignData.creative.videoUrl = mediaUrl;
+                    } else {
+                        campaignData.creative.imageUrl = mediaUrl;
+                    }
                 } else {
                     const appName = document.getElementById('c-app-name').value.trim();
                     const review = document.getElementById('c-review').value.trim();
@@ -1158,8 +1175,8 @@
             const daily = parseFloat(document.getElementById('b-daily').value);
             const total = parseFloat(document.getElementById('b-total').value);
             const model = document.getElementById('b-model').value;
-            // Updated to $3 Validation Logic
-            if (!daily || !total || daily < 3 || total < 3) return showToast("Minimum budget is $3.00", "error"), false;
+            // Updated to minimum $2 limit
+            if (!daily || !total || daily < 2 || total < 2) return showToast("Minimum budget is $2.00", "error"), false;
             if (daily > total) return showToast("Daily budget cannot exceed total budget.", "error"), false;
             
             campaignData.budget = { daily: daily, total: total, billingModel: model };

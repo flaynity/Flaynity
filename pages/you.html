@@ -61,24 +61,58 @@
         .arrow-r { font-size: 0.9rem !important; color: var(--text-muted); opacity: 0.6; }
 
 
-/* Premium service menu — scoped to the You page only */
-.premium-service-menu { margin-top: 0 !important; }
-.premium-service-item { gap: 14px; }
+/* Premium service menu — Floating Cards styling */
+.premium-service-menu { 
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin-top: 0 !important; 
+    gap: 14px; 
+    overflow: visible !important;
+}
+[data-theme="dark"] .premium-service-menu { box-shadow: none !important; }
+
+.premium-service-item { 
+    background: var(--surface) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 20px !important;
+    padding: 16px 20px !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.04) !important;
+    gap: 16px; 
+    margin-bottom: 0 !important;
+}
+[data-theme="dark"] .premium-service-item {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2) !important;
+}
+.premium-service-item:active {
+    transform: scale(0.97) translateY(2px) !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05) !important;
+}
+
 .premium-icon-box {
-    width: 34px; height: 34px; border-radius: 8px;
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 140, 0, 0.15));
-    border: 1px solid rgba(255, 140, 0, 0.25);
+    width: 44px; height: 44px; border-radius: 12px;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .premium-icon-box i {
-    background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-size: 1.15rem !important;
-    width: auto !important;
-    filter: drop-shadow(0 2px 4px rgba(255, 140, 0, 0.2));
+    font-size: 1.4rem !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background: none !important;
+    filter: none !important;
 }
-.premium-service-item > span { min-width: 0; font-weight: 800; }
+
+/* Unique Colors for each Floating Item */
+.icon-pro { background: linear-gradient(135deg, #8B5CF6 0%, #D946EF 100%); box-shadow: 0 4px 14px rgba(139,92,246,0.3); }
+.icon-ads { background: linear-gradient(135deg, #F43F5E 0%, #F97316 100%); box-shadow: 0 4px 14px rgba(244,63,94,0.3); }
+.icon-boost { background: linear-gradient(135deg, #F59E0B 0%, #EAB308 100%); box-shadow: 0 4px 14px rgba(245,158,11,0.3); }
+.icon-pay { background: linear-gradient(135deg, #10B981 0%, #14B8A6 100%); box-shadow: 0 4px 14px rgba(16,185,129,0.3); }
+
+/* Verified Badge Customization */
+.icon-verified { background: #F0F7FF; border: 1px solid #D6EBFF; box-shadow: none; }
+[data-theme="dark"] .icon-verified { background: rgba(51, 144, 236, 0.1); border-color: rgba(51, 144, 236, 0.2); }
+.icon-verified svg { width: 28px !important; height: 28px !important; }
+
+.premium-service-item > span { min-width: 0; font-weight: 800; font-size: 1.05rem; }
 
 /* View Channel */
         .channel-banner-container { width: 100%; height: 120px; position: relative; background: #E2E8F0; overflow: hidden; }
@@ -332,13 +366,13 @@
 </div>
 <div class="you-menu premium-service-menu">
 <div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('upgrade-pro')">
-<div class="premium-icon-box"><i class="fas fa-crown"></i></div>
+<div class="premium-icon-box icon-pro"><i class="fas fa-crown"></i></div>
 <span>Upgrade Pro</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
 <div class="you-menu-item premium-service-item" onclick="handleFlayVerifiedBadgeFromYou()">
-<div class="premium-icon-box">
-<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 22px; height: 22px;">
+<div class="premium-icon-box icon-verified">
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 <path d="M11.96 1.171a2.316 2.316 0 0 0-1.63.784L8.76 3.65 6.64 3.96a2.315 2.315 0 0 0-1.928 1.928L4.4 8.01 2.705 9.576a2.316 2.316 0 0 0 0 3.328l1.696 1.566.312 2.122a2.315 2.315 0 0 0 1.928 1.928l2.122.312 1.57 1.696c.866.935 2.392.935 3.258 0l1.57-1.696 2.122-.312a2.315 2.315 0 0 0 1.928-1.928l.312-2.122 1.696-1.566a2.316 2.316 0 0 0 0-3.328L19.6 8.01l-.312-2.122a2.315 2.315 0 0 0-1.928-1.928L15.24 3.65l-1.57-1.695a2.316 2.316 0 0 0-1.63-.784z" fill="#3390ec"></path>
 <path d="M10.15 14.88 7.37 12.1l1.41-1.41 1.37 1.37 4.96-4.96 1.41 1.42-6.37 6.36z" fill="#ffffff"></path>
 </svg>
@@ -347,17 +381,17 @@
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
 <div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('flay-ads')">
-<div class="premium-icon-box"><i class="fas fa-rectangle-ad"></i></div>
+<div class="premium-icon-box icon-ads"><i class="fas fa-rectangle-ad"></i></div>
 <span>Flay Ads</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
 <div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('boost-content')">
-<div class="premium-icon-box"><i class="fas fa-rocket"></i></div>
+<div class="premium-icon-box icon-boost"><i class="fas fa-rocket"></i></div>
 <span>Boost Content</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
 <div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('flay-pay')">
-<div class="premium-icon-box"><i class="fas fa-wallet"></i></div>
+<div class="premium-icon-box icon-pay"><i class="fas fa-wallet"></i></div>
 <span>Flay Pay</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>

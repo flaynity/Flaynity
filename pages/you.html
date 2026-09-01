@@ -4,12 +4,12 @@
 <style>
 /* You Profile Card */
         .profile-card-you {
-            background: var(--surface); border: 1px solid var(--glass-border);
-            /* Status bar-এর নিচ থেকে শুরু করার জন্য safe-area-inset ব্যবহার করা হয়েছে */
-            margin: max(env(safe-area-inset-top, 12px), 12px) 8px 12px 8px !important; 
+            background: var(--surface); 
+            border: 1px solid var(--glass-border);
+            /* ওপরের বড় গ্যাপটি রিমুভ করে 0 করে দেওয়া হয়েছে, যেন Top Bar এর ঠিক নিচেই থাকে */
+            margin: 0 8px 12px 8px !important; 
             border-radius: 20px !important;
-            /* ওপরের দিকে বক্সের Height বড় করার জন্য padding-top বাড়ানো হয়েছে */
-            padding: 24px 16px 16px 16px !important; 
+            padding: 20px 16px 16px 16px !important; 
             box-shadow: 0 12px 30px rgba(0,0,0,0.04);
             width: calc(100% - 16px) !important;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -27,7 +27,7 @@
         .profile-info-you h3 { margin: 0 0 4px 0; font-size: 1.2rem; font-weight: 800; color: var(--text-main); }
         .profile-info-you p { margin: 0; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
         
-        .channel-action-box { margin-top: 14px; border-top: 1px solid var(--glass-border); padding-top: 5px; }
+        .channel-action-box { margin-top: 14px; border-top: 1px solid var(--glass-border); padding-top: 14px; }
         .btn-create-channel {
             background: var(--primary); color: white; border: none; width: 100%; padding: 12px;
             border-radius: 16px; font-weight: 800; font-size: 1rem; cursor: pointer;

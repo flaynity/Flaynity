@@ -12,39 +12,17 @@
 <style id="flaynity-startup-splash-style">
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
     #flaynity-startup-splash {
-        position: fixed;
-        inset: 0;
-        width: 100vw;
-        height: 100vh;
-        min-height: 100dvh;
-        z-index: 2147483647;
-        background: #000;
-        display: block;
-        opacity: 1;
-        visibility: visible;
-        overflow: hidden;
-        pointer-events: auto;
+        position: fixed; inset: 0; width: 100vw; height: 100vh; min-height: 100dvh;
+        z-index: 2147483647; background: #000; display: block; opacity: 1;
+        visibility: visible; overflow: hidden; pointer-events: auto;
     }
     #flaynity-startup-splash img {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        display: block;
-        object-fit: cover;
-        opacity: 0;
-        visibility: hidden;
-        transition: none;
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
+        position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+        object-fit: cover; opacity: 0; visibility: hidden;
+        -webkit-transform: translateZ(0); transform: translateZ(0);
     }
-    #flaynity-startup-splash.image-ready img {
-        opacity: 1;
-        visibility: visible;
-    }
-    #flaynity-startup-splash.is-hidden {
-        display: none !important;
-    }
+    #flaynity-startup-splash.image-ready img { opacity: 1; visibility: visible; }
+    #flaynity-startup-splash.is-hidden { display: none !important; }
 </style>
 
 <div id="flaynity-startup-splash" aria-hidden="true">
@@ -67,7 +45,6 @@
         image.src = src;
         if (image.complete && image.naturalWidth > 0) splash.classList.add('image-ready');
     }
-
     async function loadCachedSplashImage() {
         try {
             if (!('caches' in window)) return false;
@@ -79,7 +56,6 @@
             return true;
         } catch (e) { return false; }
     }
-
     async function cacheSplashImage() {
         try {
             if (!navigator.onLine || !('caches' in window)) return;
@@ -88,15 +64,11 @@
             if (response.ok) await cache.put(imageUrl, response.clone());
         } catch (e) {}
     }
-
-    // Start the image request immediately, before the rest of the app is initialized.
     showLoadedImage(imageUrl);
     loadCachedSplashImage().then(function (cached) {
         if (!cached && navigator.onLine) showLoadedImage(imageUrl);
     });
     cacheSplashImage();
-
-    // The splash is controlled only by this one timer, preventing late/sudden reappearance.
     window.__flaynitySplashHideAt = startupStartedAt + STARTUP_DURATION;
     window.__flaynityHideStartupSplash = function () {
         const remaining = Math.max(0, window.__flaynitySplashHideAt - Date.now());
@@ -108,6 +80,76 @@
 })();
 </script>
 
+<style id="flaynity-onboarding-style">
+    #flaynity-onboarding {
+        position: fixed; inset: 0; width: 100vw; height: 100vh; min-height: 100dvh;
+        z-index: 2147483646; background: #000; overflow: hidden; display: none;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    #flaynity-onboarding .onboarding-slide {
+        position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+        opacity: 0; visibility: hidden; transition: opacity .45s ease;
+    }
+    #flaynity-onboarding .onboarding-slide.active { opacity: 1; visibility: visible; }
+    #flaynity-onboarding::after {
+        content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 34%;
+        background: linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,0));
+        pointer-events: none;
+    }
+    #flaynity-onboarding-next {
+        position: absolute; z-index: 3; left: 16px; right: 16px; bottom: max(18px, env(safe-area-inset-bottom));
+        width: calc(100% - 32px); min-height: 54px; border: 0; border-radius: 16px;
+        background: #fff; color: #111; font-size: 1.05rem; font-weight: 800;
+        cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+        -webkit-tap-highlight-color: transparent;
+    }
+</style>
+<div id="flaynity-onboarding" aria-hidden="true">
+    <img class="onboarding-slide active" src="https://www.image2url.com/r2/default/images/1788290108326-5cdf2a02-bc51-4194-b8ef-9353347a173c.png" alt="" draggable="false">
+    <img class="onboarding-slide" src="https://www.image2url.com/r2/default/images/1788290164078-a14cb8c2-8f97-4986-baaf-9b738ecb7753.png" alt="" draggable="false">
+    <img class="onboarding-slide" src="https://www.image2url.com/r2/default/images/1788290261336-c805b2db-e703-4b5c-8d27-c80fd9bc35bb.png" alt="" draggable="false">
+    <button id="flaynity-onboarding-next" type="button">Get Started</button>
+</div>
+<script>
+(function () {
+    const onboarding = document.getElementById('flaynity-onboarding');
+    const slides = onboarding ? onboarding.querySelectorAll('.onboarding-slide') : [];
+    const nextButton = document.getElementById('flaynity-onboarding-next');
+    let current = 0;
+    let timer = null;
+    function showSlide(index) {
+        if (!slides.length) return;
+        slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+    }
+    window.__flaynityShowOnboarding = function () {
+        if (!onboarding) return;
+        onboarding.style.display = 'block';
+        onboarding.setAttribute('aria-hidden', 'false');
+        current = 0;
+        showSlide(current);
+        clearInterval(timer);
+        timer = setInterval(function () {
+            current = (current + 1) % slides.length;
+            showSlide(current);
+        }, 3000);
+    };
+    window.__flaynityHideOnboarding = function () {
+        if (!onboarding) return;
+        clearInterval(timer);
+        timer = null;
+        onboarding.style.display = 'none';
+        onboarding.setAttribute('aria-hidden', 'true');
+    };
+    if (nextButton) {
+        nextButton.addEventListener('click', function () {
+            window.__flaynityHideOnboarding();
+            const authScreen = document.getElementById('auth-screen');
+            if (authScreen) authScreen.style.display = 'flex';
+            document.body.classList.add('auth-active');
+        });
+    }
+})();
+</script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>

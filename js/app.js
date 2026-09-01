@@ -1020,6 +1020,9 @@ async function signInWithGoogle() {
             provider.setCustomParameters({ prompt: 'select_account' });
             const result = await auth.signInWithPopup(provider); 
             saveAccountToList(result.user);
+            if (result.additionalUserInfo && result.additionalUserInfo.isNewUser && typeof window.sendFlaynityWelcomeEmail === 'function') {
+                window.sendFlaynityWelcomeEmail(result.user);
+            }
             showNotification("Google Sign-In Successful!", "success"); 
         } catch (err) { 
             showNotification(err.message, "error"); 
@@ -1033,6 +1036,9 @@ window.handleNativeGoogleSignIn = function(idToken) {
     auth.signInWithCredential(credential)
         .then((result) => { 
             saveAccountToList(result.user);
+            if (result.additionalUserInfo && result.additionalUserInfo.isNewUser && typeof window.sendFlaynityWelcomeEmail === 'function') {
+                window.sendFlaynityWelcomeEmail(result.user);
+            }
             showNotification("Google Sign-In Successful!", "success"); 
         })
         .catch(err => { showNotification("Native Auth Error: " + err.message, "error"); });
@@ -4022,6 +4028,9 @@ async function handleAddAccountGoogle() {
             provider.setCustomParameters({ prompt: 'select_account' });
             const result = await auth.signInWithPopup(provider); 
             saveAccountToList(result.user);
+            if (result.additionalUserInfo && result.additionalUserInfo.isNewUser && typeof window.sendFlaynityWelcomeEmail === 'function') {
+                window.sendFlaynityWelcomeEmail(result.user);
+            }
             showNotification("Google Sign-In Successful!", "success"); 
         } catch (err) { 
             showNotification(err.message, "error"); 

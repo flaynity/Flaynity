@@ -15,6 +15,63 @@
 <script src="js/cloudflare-r2.js"></script>
 </head>
 <body>
+
+<style id="flaynity-startup-splash-style">
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
+    #flaynity-startup-splash {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        min-height: 100dvh;
+        z-index: 2147483647;
+        background: #000 url("https://www.image2url.com/r2/default/images/1788267431153-51c681d9-a6ef-41fb-99ac-148a5b8e7e8c.jpg") center center / cover no-repeat;
+        display: block;
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.2s ease;
+        overflow: hidden;
+    }
+    #flaynity-startup-splash.is-hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+</style>
+<div id="flaynity-startup-splash" aria-hidden="true"></div>
+<script>
+(function () {
+    const splash = document.getElementById('flaynity-startup-splash');
+    const imageUrl = 'https://www.image2url.com/r2/default/images/1788267431153-51c681d9-a6ef-41fb-99ac-148a5b8e7e8c.jpg';
+    const cacheName = 'flaynity-startup-image-v1';
+
+    async function loadCachedSplashImage() {
+        try {
+            if (!('caches' in window) || !splash) return;
+            const cache = await caches.open(cacheName);
+            const cached = await cache.match(imageUrl);
+            if (cached) {
+                const blob = await cached.blob();
+                splash.style.backgroundImage = 'url("' + URL.createObjectURL(blob) + '")';
+                return;
+            }
+        } catch (e) {}
+    }
+
+    async function cacheSplashImage() {
+        try {
+            if (!navigator.onLine || !('caches' in window)) return;
+            const cache = await caches.open(cacheName);
+            const response = await fetch(imageUrl, { cache: 'no-store' });
+            if (response.ok) await cache.put(imageUrl, response.clone());
+        } catch (e) {}
+    }
+
+    loadCachedSplashImage();
+    cacheSplashImage();
+})();
+</script>
+
 <div id="app"></div>
 <script src="js/app.js"></script>
 </body>

@@ -63,14 +63,34 @@
 
 /* Premium service menu — scoped to the You page only */
 .premium-service-menu { margin-top: 0 !important; }
-.premium-service-item { gap: 12px; }
-.premium-service-item > i:first-child { width: 30px; }
-.premium-service-item > span:not(.premium-label) { min-width: 0; }
+.premium-service-item { 
+    gap: 12px; 
+    background: linear-gradient(90deg, rgba(255, 180, 0, 0.08) 0%, transparent 100%);
+}
+.premium-service-item:active {
+    background: linear-gradient(90deg, rgba(255, 180, 0, 0.15) 0%, transparent 100%) !important;
+}
+.premium-service-item > i:first-child { 
+    width: 30px; 
+    background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 1.35rem;
+    filter: drop-shadow(0 3px 6px rgba(255, 140, 0, 0.35));
+}
+.premium-service-item > span:not(.premium-label) { 
+    min-width: 0; 
+    font-weight: 800; 
+}
 .premium-label {
-    flex-shrink: 0; padding: 5px 8px; border-radius: 999px;
-    background: var(--primary-glow); color: var(--primary);
-    border: 1px solid rgba(255,46,85,.18); font-size: .58rem !important;
-    font-weight: 900 !important; letter-spacing: .06em;
+    flex-shrink: 0; padding: 5px 10px; border-radius: 999px;
+    background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%); 
+    color: #fff !important;
+    border: none; 
+    box-shadow: 0 4px 10px rgba(255, 140, 0, 0.35); 
+    font-size: .60rem !important;
+    font-weight: 900 !important; 
+    letter-spacing: .08em;
 }
 
 /* View Channel */
@@ -331,7 +351,7 @@
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
 <div class="you-menu-item premium-service-item" onclick="handleFlayVerifiedBadgeFromYou()">
-<i class="fas fa-circle-check"></i>
+<i class="fas fa-award"></i>
 <span>Flay Verified Badge</span>
 <span class="premium-label">PREMIUM</span>
 <i class="fas fa-chevron-right arrow-r"></i>

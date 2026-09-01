@@ -82,64 +82,184 @@
 
 <style id="flaynity-onboarding-style">
     #flaynity-onboarding {
-        position: fixed; inset: 0; width: 100vw; height: 100vh; min-height: 100dvh;
+        position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh;
         z-index: 2147483646; background: #000; overflow: hidden; display: none;
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-family: 'Plus Jakarta Sans', sans-serif; touch-action: pan-y;
+        -webkit-user-select: none; user-select: none;
     }
     #flaynity-onboarding .onboarding-slide {
-        position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
-        opacity: 0; visibility: hidden; transition: opacity .45s ease;
-    }
-    #flaynity-onboarding .onboarding-slide.active { opacity: 1; visibility: visible; }
-    #flaynity-onboarding::after {
-        content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 34%;
-        background: linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,0));
+        position: absolute; inset: 0; width: 100%; height: 100%;
+        object-fit: cover; object-position: center center;
+        opacity: 0; visibility: hidden;
+        transform: translate3d(100%, 0, 0);
+        transition: transform .48s cubic-bezier(.22,.61,.36,1), opacity .48s ease;
+        will-change: transform, opacity;
+        backface-visibility: hidden; -webkit-backface-visibility: hidden;
         pointer-events: none;
     }
+    #flaynity-onboarding .onboarding-slide.active {
+        opacity: 1; visibility: visible; transform: translate3d(0, 0, 0);
+        z-index: 1;
+    }
+    #flaynity-onboarding .onboarding-slide.exit-left {
+        opacity: 1; visibility: visible; transform: translate3d(-100%, 0, 0); z-index: 2;
+    }
+    #flaynity-onboarding .onboarding-slide.exit-right {
+        opacity: 1; visibility: visible; transform: translate3d(100%, 0, 0); z-index: 2;
+    }
     #flaynity-onboarding-next {
-        position: absolute; z-index: 3; left: 16px; right: 16px; bottom: max(18px, env(safe-area-inset-bottom));
+        position: absolute; z-index: 10; left: 16px; right: 16px;
+        bottom: max(18px, env(safe-area-inset-bottom));
         width: calc(100% - 32px); min-height: 54px; border: 0; border-radius: 16px;
         background: #fff; color: #111; font-size: 1.05rem; font-weight: 800;
-        cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,.25);
-        -webkit-tap-highlight-color: transparent;
+        cursor: pointer; box-shadow: none !important; filter: none !important;
+        -webkit-tap-highlight-color: transparent; appearance: none;
+        -webkit-appearance: none;
     }
+    #flaynity-onboarding-next:active { transform: scale(.985); }
 </style>
 <div id="flaynity-onboarding" aria-hidden="true">
-    <img class="onboarding-slide active" src="https://www.image2url.com/r2/default/images/1788290108326-5cdf2a02-bc51-4194-b8ef-9353347a173c.png" alt="" draggable="false">
-    <img class="onboarding-slide" src="https://www.image2url.com/r2/default/images/1788290164078-a14cb8c2-8f97-4986-baaf-9b738ecb7753.png" alt="" draggable="false">
-    <img class="onboarding-slide" src="https://www.image2url.com/r2/default/images/1788290261336-c805b2db-e703-4b5c-8d27-c80fd9bc35bb.png" alt="" draggable="false">
+    <img class="onboarding-slide active" src="https://www.image2url.com/r2/default/images/1788290108326-5cdf2a02-bc51-4194-b8ef-9353347a173c.png" alt="" draggable="false" loading="eager" decoding="sync">
+    <img class="onboarding-slide" src="https://www.image2url.com/r2/default/images/1788290164078-a14cb8c2-8f97-4986-baaf-9b738ecb7753.png" alt="" draggable="false" loading="eager" decoding="sync">
+    <img class="onboarding-slide" src="https://www.image2url.com/r2/default/images/1788290261336-c805b2db-e703-4b5c-8d27-c80fd9bc35bb.png" alt="" draggable="false" loading="eager" decoding="sync">
     <button id="flaynity-onboarding-next" type="button">Get Started</button>
 </div>
 <script>
 (function () {
+    'use strict';
     const onboarding = document.getElementById('flaynity-onboarding');
-    const slides = onboarding ? onboarding.querySelectorAll('.onboarding-slide') : [];
+    const slides = onboarding ? Array.from(onboarding.querySelectorAll('.onboarding-slide')) : [];
     const nextButton = document.getElementById('flaynity-onboarding-next');
     let current = 0;
     let timer = null;
-    function showSlide(index) {
-        if (!slides.length) return;
-        slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+    let startX = 0;
+    let startY = 0;
+    let dragging = false;
+    let transitionTimer = null;
+    const SLIDE_DURATION = 3000;
+    const TRANSITION_DURATION = 500;
+
+    function preloadImages() {
+        return Promise.all(slides.map(function (img) {
+            return new Promise(function (resolve) {
+                if (img.complete && img.naturalWidth > 0) {
+                    if (img.decode) img.decode().catch(function () {}).finally(resolve);
+                    else resolve();
+                    return;
+                }
+                const done = function () {
+                    if (img.decode) img.decode().catch(function () {}).finally(resolve);
+                    else resolve();
+                };
+                img.addEventListener('load', done, { once: true });
+                img.addEventListener('error', resolve, { once: true });
+            });
+        }));
     }
+
+    function resetClasses(slide) {
+        slide.classList.remove('active', 'exit-left', 'exit-right');
+    }
+
+    function showSlide(index, direction) {
+        if (!slides.length) return;
+        index = (index + slides.length) % slides.length;
+        if (index === current && !direction) {
+            slides.forEach(function (slide, i) {
+                resetClasses(slide);
+                if (i === current) slide.classList.add('active');
+            });
+            return;
+        }
+        const previous = current;
+        current = index;
+        clearTimeout(transitionTimer);
+
+        slides.forEach(function (slide, i) {
+            resetClasses(slide);
+            if (i === current) slide.classList.add('active');
+            else if (i === previous) slide.classList.add(direction === 'prev' ? 'exit-right' : 'exit-left');
+        });
+
+        transitionTimer = setTimeout(function () {
+            slides.forEach(function (slide, i) {
+                if (i !== current) resetClasses(slide);
+            });
+        }, TRANSITION_DURATION + 40);
+    }
+
+    function nextSlide() { showSlide(current + 1, 'next'); }
+    function previousSlide() { showSlide(current - 1, 'prev'); }
+
+    function startAutoSlider() {
+        clearInterval(timer);
+        timer = setInterval(nextSlide, SLIDE_DURATION);
+    }
+
     window.__flaynityShowOnboarding = function () {
         if (!onboarding) return;
-        onboarding.style.display = 'block';
-        onboarding.setAttribute('aria-hidden', 'false');
-        current = 0;
-        showSlide(current);
         clearInterval(timer);
-        timer = setInterval(function () {
-            current = (current + 1) % slides.length;
-            showSlide(current);
-        }, 3000);
+        const reveal = function () {
+            onboarding.style.display = 'block';
+            onboarding.setAttribute('aria-hidden', 'false');
+            current = 0;
+            slides.forEach(resetClasses);
+            // Start the first image just outside the right edge, then animate it in.
+            if (slides[0]) {
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () {
+                        if (slides[0]) slides[0].classList.add('active');
+                    });
+                });
+            }
+            startAutoSlider();
+        };
+        if (window.__flaynityOnboardingReady) {
+            window.__flaynityOnboardingReady.then(reveal);
+        } else {
+            reveal();
+        }
     };
+
     window.__flaynityHideOnboarding = function () {
         if (!onboarding) return;
         clearInterval(timer);
         timer = null;
         onboarding.style.display = 'none';
         onboarding.setAttribute('aria-hidden', 'true');
+        slides.forEach(resetClasses);
+        if (slides[0]) slides[0].classList.add('active');
+        current = 0;
     };
+
+    function handleTouchStart(event) {
+        if (!onboarding || onboarding.style.display === 'none') return;
+        const touch = event.touches && event.touches[0];
+        if (!touch) return;
+        startX = touch.clientX;
+        startY = touch.clientY;
+        dragging = true;
+    }
+
+    function handleTouchEnd(event) {
+        if (!dragging) return;
+        dragging = false;
+        const touch = event.changedTouches && event.changedTouches[0];
+        if (!touch) return;
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
+        if (Math.abs(dx) < 45 || Math.abs(dx) <= Math.abs(dy)) return;
+        if (dx < 0) nextSlide();
+        else previousSlide();
+        startAutoSlider();
+    }
+
+    if (onboarding) {
+        onboarding.addEventListener('touchstart', handleTouchStart, { passive: true });
+        onboarding.addEventListener('touchend', handleTouchEnd, { passive: true });
+        onboarding.addEventListener('touchcancel', function () { dragging = false; }, { passive: true });
+    }
+
     if (nextButton) {
         nextButton.addEventListener('click', function () {
             window.__flaynityHideOnboarding();
@@ -148,6 +268,15 @@
             document.body.classList.add('auth-active');
         });
     }
+
+    // Preload + decode all onboarding images before they can be shown.
+    // This prevents a late/blank/partially loaded onboarding screen.
+    const onboardingImagesReady = preloadImages().then(function () {
+        window.__flaynityOnboardingImagesReady = true;
+        return true;
+    });
+
+    window.__flaynityOnboardingReady = onboardingImagesReady;
 })();
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>

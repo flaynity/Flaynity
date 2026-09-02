@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#FFFFFF" id="flaynity-theme-color">
-<script>(function(){var m=document.getElementById('flaynity-theme-color');var dark='#0F0F0F';var light='#FFFFFF';function sync(){var t=localStorage.getItem('flaynity-theme-pref')||'light';if(m)m.setAttribute('content',t==='dark'?dark:light);}sync();})();</script><title>Flaynity</title>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Flaynity</title>
 <style>
 /* =========================================
            ULTRA PREMIUM CLASS GLASS UI ENGINE (MD3)
@@ -26,13 +24,13 @@
         }
 
         [data-theme="dark"] {
-            --bg-color: #0F0F0F;
-            --surface: #0F0F0F;
+            --bg-color: #000000;
+            --surface: #000000;
             --primary: #FF2E55; 
             --primary-glow: rgba(255, 46, 85, 0.15);
             --text-main: #FFFFFF;
             --text-muted: #AAAAAA;
-            --card-bg: #0F0F0F;
+            --card-bg: #000000;
             --glass-bg: rgba(0, 0, 0, 0.95);
             --glass-border: rgba(255, 255, 255, 0.15);
             --border-color: #222222;
@@ -279,12 +277,16 @@
 /* Premium 2-Column Shorts Grid Layout on Home Page */
         .shorts-home-grid-2col {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 12px;
+            width: 100%;
             margin-top: 10px;
+            align-items: start;
         }
         .short-home-card-2col {
             aspect-ratio: 2/3;
+            width: 100%;
+            min-width: 0;
             border-radius: 12px;
             overflow: hidden;
             cursor: pointer;

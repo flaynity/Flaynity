@@ -257,6 +257,9 @@ function renderAllSkeletons() {
 function applyTheme() {
     let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
     document.documentElement.setAttribute('data-theme', pref);
+
+    const themeColorMeta = document.getElementById('flaynity-theme-color');
+    if (themeColorMeta) themeColorMeta.setAttribute('content', pref === 'dark' ? '#0F0F0F' : '#FFFFFF');
     
     const themeBtns = document.querySelectorAll('.appbar-theme-btn');
     themeBtns.forEach(btn => {

@@ -1675,45 +1675,36 @@ function renderShortsSegmentUI(segmentShorts) {
 }
 
 function renderLongVideosSegmentUI(segmentLongs) {
-    if (segmentLongs.length === 0) return '';
-    
+    if (!segmentLongs || segmentLongs.length === 0) return '';
     let html = '';
     segmentLongs.forEach(v => {
         const viewsId = `home-long-views-${v.id}`;
         const relTime = getRelativeTime(v.createdAt);
-        
-        const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
-
+        const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px;height:36px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></div>`;
         html += `
-            <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-                <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #000; overflow: hidden;">
-                    <img src="${v.poster}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
-                    <span class="long-video-duration" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">${v.duration || '10:00'}</span>
+            <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin:0 -16px 24px -16px;width:calc(100% + 32px);cursor:pointer;background:var(--surface);">
+                <div class="long-video-thumb-container" style="position:relative;width:100%;aspect-ratio:16/9;background:#000;overflow:hidden;">
+                    <img src="${v.poster}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;">
+                    <span style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.85);color:#fff;font-size:0.72rem;padding:2px 6px;border-radius:4px;font-weight:800;">${v.duration || '10:00'}</span>
                 </div>
-                <div class="long-video-details" style="padding: 14px 16px; display: flex; gap: 12px;">
+                <div style="padding:14px 16px;display:flex;gap:12px;">
                     ${avatarHtml}
-                    <div class="long-video-meta-text" style="flex-grow: 1; min-width: 0;">
-                        <h4 class="long-video-title" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(v.title)}</h4>
-                        <div class="long-video-subtitle" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;">
+                    <div style="flex-grow:1;min-width:0;">
+                        <h4 class="long-video-title" style="font-size:0.95rem;font-weight:800;color:var(--text-main);margin:0 0 4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHTML(v.title)}</h4>
+                        <div style="font-size:0.8rem;color:var(--text-muted);font-weight:600;display:flex;flex-wrap:wrap;align-items:center;gap:4px;">
                             <span class="live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
-                            <span>•</span>
-                            <span id="${viewsId}">0 Views</span>
-                            <span>•</span>
-                            <span>${relTime}</span>
+                            <span>•</span><span id="${viewsId}">0 Views</span>
+                            <span>•</span><span>${relTime}</span>
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
-
+            </div>`;
         db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
-            const viewsObj = vSnap.val() || {};
-            const count = Object.keys(viewsObj).length;
+            const count = Object.keys(vSnap.val() || {}).length;
             const label = document.getElementById(viewsId);
             if (label) label.innerText = formatCount(count) + " Views";
         });
     });
-
     return html;
 }
 
@@ -2829,31 +2820,32 @@ async function openMoviePage(id, isTMDB = false) {
 }
 
 function startVideoPlayer() {
-    if(!currentActiveMovie || !currentActiveMovie.videoLink) { showNotification("No playable links found.", "error"); return; }
+    if (!currentActiveMovie || !currentActiveMovie.videoLink) { showNotification("No playable links found.", "error"); return; }
     const link = currentActiveMovie.videoLink;
     const container = document.getElementById('video-player-container');
     const skeleton = document.getElementById('video-player-skeleton');
     const banner = document.getElementById('movie-detail-banner');
-    
-    if (banner) banner.style.display = 'none'; 
-    if (skeleton) skeleton.style.display = 'none';
-    if (container) {
-        container.style.display = 'block';
 
-        if(link.includes('youtube.com') || link.includes('youtu.be')) {
-            const ytId = extractVideoID(link);
-            container.innerHTML = `<iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1&modestbranding=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
-        } else {
-            container.innerHTML = `<video id="premium-video-watch-el" controls playsinline style="width:100%; height:100%; object-fit:contain;"></video>`;
-            const videoEl = document.getElementById('premium-video-watch-el');
-            
-            if (videoEl) {
-                attachSmartAdaptiveSource(videoEl, link, 'long_video_main');
-                videoEl.play().catch(()=>{});
-                videoEl.onended = () => { playNextRecommendedVideo(); };
-            }
-        }
+    if (banner) banner.style.display = 'none';
+    if (skeleton) skeleton.style.display = 'none';
+    if (!container) return;
+
+    // Sticky player: status bar-এর ঠিক নিচে top-এ fixed থাকবে, নিচের অংশ scroll হবে
+    const stage = container.parentElement;
+    if (stage) { stage.style.position = 'sticky'; stage.style.top = '0'; stage.style.zIndex = '60'; }
+
+    container.style.display = 'block';
+
+    // YouTube/TMDB trailers → iframe (আগের মতোই, unchanged)
+    if (link.includes('youtube.com') || link.includes('youtu.be')) {
+        const ytId = extractVideoID(link);
+        container.innerHTML = `<iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1&modestbranding=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+        return;
     }
+
+    // Cloudflare CDN / direct / HLS → custom YouTube-style player
+    container.innerHTML = flyBuildPlayerHTML();
+    flyInitPlayer(link);
 }
 
 function playNextRecommendedVideo() {
@@ -5748,3 +5740,230 @@ function openUploadManager() {
 function closeUploadManager() {
     AppNavigation.pop();
 }
+
+
+// =========================================================
+// FLAYNITY YOUTUBE-STYLE LONG VIDEO PLAYER ENGINE
+// =========================================================
+let flyControlsTimer=null, flySingleTapTimer=null, flySeekResetTimer=null;
+let flyLastTapTime=0, flyLastTapSide=null;
+let flySeekAccumRight=0, flySeekAccumLeft=0;
+let flyCurrentSpeed=1;
+
+function flyGetMaxHeight(){
+    let h=1080;
+    try{ if(currentActiveMovie && currentActiveMovie.resolution && currentActiveMovie.resolution.includes('x')){ h=parseInt(currentActiveMovie.resolution.split('x')[1])||1080; } }catch(e){}
+    return h;
+}
+function flyFmt(s){ s=Math.floor(s||0); const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
+    if(h>0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
+
+function flyBuildPlayerHTML(){
+    return `
+    <div class="fly-player-wrap" id="fly-player-wrap">
+        <video id="fly-video" class="fly-video" playsinline webkit-playsinline preload="auto"></video>
+        <img id="fly-poster" class="fly-poster" src="" onerror="this.style.display='none'">
+
+        <div class="fly-buffering" id="fly-buffering"><div class="fly-spinner"></div></div>
+
+        <div class="fly-seek-ripple left" id="fly-ripple-left"><i class="fas fa-backward"></i><span id="fly-ripple-left-txt">10s</span></div>
+        <div class="fly-seek-ripple right" id="fly-ripple-right"><i class="fas fa-forward"></i><span id="fly-ripple-right-txt">10s</span></div>
+
+        <div class="fly-gesture" id="fly-gesture"></div>
+
+        <div class="fly-controls" id="fly-controls">
+            <div class="fly-top-bar">
+                <button class="fly-settings-btn fly-btn" onclick="flyToggleSettings(event)"><i class="fas fa-gear"></i></button>
+            </div>
+            <div class="fly-center">
+                <button class="fly-btn" onclick="flyCenterSeek(-10)"><i class="fas fa-backward"></i></button>
+                <button class="fly-btn" id="fly-play-btn" onclick="flyTogglePlay()"><i class="fas fa-play"></i></button>
+                <button class="fly-btn" onclick="flyCenterSeek(10)"><i class="fas fa-forward"></i></button>
+            </div>
+            <div class="fly-bottom-bar">
+                <span id="fly-time">00:00 / 00:00</span>
+                <div class="fly-progress" id="fly-progress">
+                    <div class="fly-progress-buffered" id="fly-progress-buffered"></div>
+                    <div class="fly-progress-filled" id="fly-progress-filled"></div>
+                </div>
+                <button class="fly-fs-btn fly-btn" onclick="flyToggleFullscreen()"><i class="fas fa-expand" id="fly-fs-icon"></i></button>
+            </div>
+
+            <div class="fly-menu" id="fly-settings-menu">
+                <div class="fly-menu-item" onclick="flyOpenSpeed(event)"><span><i class="fas fa-gauge-high" style="width:20px;"></i> Playback Speed</span><span style="opacity:.6;font-size:.8rem;" id="fly-speed-label">1x</span></div>
+                <div class="fly-menu-item" onclick="flyOpenQuality(event)"><span><i class="fas fa-sliders" style="width:20px;"></i> Quality</span><span style="opacity:.6;font-size:.8rem;" id="fly-quality-label">Auto</span></div>
+            </div>
+
+            <div class="fly-menu" id="fly-speed-menu">
+                <div class="fly-menu-back" onclick="flyBackToSettings(event)"><i class="fas fa-chevron-left"></i> Playback Speed</div>
+                <div id="fly-speed-list"></div>
+            </div>
+
+            <div class="fly-menu" id="fly-quality-menu">
+                <div class="fly-menu-back" onclick="flyBackToSettings(event)"><i class="fas fa-chevron-left"></i> Quality</div>
+                <div id="fly-quality-list"></div>
+            </div>
+        </div>
+    </div>`;
+}
+
+function flyInitPlayer(link){
+    const v=document.getElementById('fly-video');
+    const poster=document.getElementById('fly-poster');
+    if(!v) return;
+    flyCurrentSpeed=1; flySeekAccumRight=0; flySeekAccumLeft=0;
+
+    if(poster && currentActiveMovie){ poster.src=currentActiveMovie.poster||currentActiveMovie.banner||''; poster.style.display='block'; }
+
+    // Cloudflare CDN + HLS adaptive streaming (আপনার existing helper reuse)
+    attachSmartAdaptiveSource(v, link, 'fly_main');
+    v.playbackRate=flyCurrentSpeed;
+
+    flyBuildSpeedMenu();
+    flyBuildQualityMenu();
+
+    v.addEventListener('waiting',()=>flyShowBuffering(true));
+    v.addEventListener('stalled',()=>flyShowBuffering(true));
+    v.addEventListener('playing',()=>{flyShowBuffering(false); if(poster) poster.style.display='none'; flyUpdatePlayIcon();});
+    v.addEventListener('canplay',()=>flyShowBuffering(false));
+    v.addEventListener('play',flyUpdatePlayIcon);
+    v.addEventListener('pause',()=>{flyUpdatePlayIcon(); flyShowControls();});
+    v.addEventListener('timeupdate',flyUpdateProgress);
+    v.addEventListener('loadedmetadata',flyUpdateProgress);
+    v.addEventListener('progress',flyUpdateProgress);
+    v.addEventListener('ended',()=>playNextRecommendedVideo());
+
+    const gesture=document.getElementById('fly-gesture');
+    if(gesture) gesture.addEventListener('click',flyOnTap);
+    flyBindProgressDrag();
+
+    document.addEventListener('fullscreenchange',flyOnFsChange);
+    document.addEventListener('webkitfullscreenchange',flyOnFsChange);
+
+    flyShowBuffering(true);
+    const p=v.play();
+    if(p!==undefined){ p.catch(()=>{ v.muted=true; v.play().catch(()=>{}); }); }
+    flyShowControls();
+}
+
+/* ---------- Buffering ---------- */
+function flyShowBuffering(on){ const b=document.getElementById('fly-buffering'); if(b) b.classList.toggle('show',!!on); }
+
+/* ---------- Play / Pause / Seek ---------- */
+function flyTogglePlay(){ const v=document.getElementById('fly-video'); if(!v) return; if(v.paused){ v.play().catch(()=>{}); } else { v.pause(); } flyResetHideTimer(); }
+function flyUpdatePlayIcon(){ const v=document.getElementById('fly-video'); const b=document.getElementById('fly-play-btn'); if(!v||!b) return; b.innerHTML=v.paused?'<i class="fas fa-play"></i>':'<i class="fas fa-pause"></i>'; }
+function flyCenterSeek(sec){ const v=document.getElementById('fly-video'); if(!v) return; v.currentTime=Math.max(0,Math.min(v.duration||0,v.currentTime+sec)); flyResetHideTimer(); }
+
+/* ---------- Progress ---------- */
+function flyUpdateProgress(){
+    const v=document.getElementById('fly-video'); if(!v||!v.duration) return;
+    const pct=(v.currentTime/v.duration)*100;
+    const f=document.getElementById('fly-progress-filled'); if(f) f.style.width=pct+'%';
+    try{ if(v.buffered.length){ const b=(v.buffered.end(v.buffered.length-1)/v.duration)*100; const be=document.getElementById('fly-progress-buffered'); if(be) be.style.width=b+'%'; } }catch(e){}
+    const t=document.getElementById('fly-time'); if(t) t.innerText=flyFmt(v.currentTime)+' / '+flyFmt(v.duration);
+}
+function flyBindProgressDrag(){
+    const bar=document.getElementById('fly-progress'); const v=document.getElementById('fly-video'); if(!bar||!v) return;
+    const seekTo=(clientX)=>{ const r=bar.getBoundingClientRect(); let x=clientX-r.left; x=Math.max(0,Math.min(x,r.width)); if(v.duration) v.currentTime=(x/r.width)*v.duration; flyUpdateProgress(); };
+    let dragging=false;
+    const down=(e)=>{ dragging=true; flyResetHideTimer(); seekTo(e.touches?e.touches[0].clientX:e.clientX); e.stopPropagation(); };
+    const move=(e)=>{ if(!dragging) return; seekTo(e.touches?e.touches[0].clientX:e.clientX); };
+    const up=()=>{ dragging=false; flyResetHideTimer(); };
+    bar.addEventListener('mousedown',down); bar.addEventListener('touchstart',down,{passive:true});
+    document.addEventListener('mousemove',move); document.addEventListener('touchmove',move,{passive:true});
+    document.addEventListener('mouseup',up); document.addEventListener('touchend',up);
+}
+
+/* ---------- Tap gestures (single=controls, double=seek) ---------- */
+function flyOnTap(e){
+    const wrap=document.getElementById('fly-player-wrap'); if(!wrap) return;
+    const r=wrap.getBoundingClientRect();
+    const cx=(e.clientX!==undefined?e.clientX:(e.changedTouches&&e.changedTouches[0].clientX))||0;
+    const side=(cx-r.left)<r.width/2?'left':'right';
+    const now=Date.now();
+    if(now-flyLastTapTime<300 && side===flyLastTapSide){
+        clearTimeout(flySingleTapTimer);
+        flyDoubleSeek(side);
+        flyLastTapTime=0; flyLastTapSide=null;
+    }else{
+        flyLastTapTime=now; flyLastTapSide=side;
+        clearTimeout(flySingleTapTimer);
+        flySingleTapTimer=setTimeout(()=>{ flyToggleControls(); },260);
+    }
+}
+function flyDoubleSeek(side){
+    const v=document.getElementById('fly-video'); if(!v) return;
+    flyHideControls();
+    if(side==='right'){ v.currentTime=Math.min(v.duration||0,v.currentTime+10); flySeekAccumRight+=10; flyShowRipple('right',flySeekAccumRight); }
+    else{ v.currentTime=Math.max(0,v.currentTime-10); flySeekAccumLeft+=10; flyShowRipple('left',flySeekAccumLeft); }
+    clearTimeout(flySeekResetTimer);
+    flySeekResetTimer=setTimeout(()=>{ flySeekAccumRight=0; flySeekAccumLeft=0; },1500);
+}
+function flyShowRipple(side,total){
+    const el=document.getElementById('fly-ripple-'+side);
+    const txt=document.getElementById('fly-ripple-'+side+'-txt');
+    if(txt) txt.innerText=total+'s';
+    if(!el) return;
+    el.classList.remove('animate'); void el.offsetWidth; el.classList.add('animate');
+    if(navigator.vibrate) navigator.vibrate(12);
+}
+
+/* ---------- Controls show/hide + auto-hide 2s ---------- */
+function flyShowControls(){ const c=document.getElementById('fly-controls'); if(c) c.classList.add('show'); flyResetHideTimer(); }
+function flyHideControls(){ const c=document.getElementById('fly-controls'); if(c) c.classList.remove('show'); clearTimeout(flyControlsTimer); flyCloseAllMenus(); }
+function flyToggleControls(){ const c=document.getElementById('fly-controls'); if(!c) return; c.classList.contains('show')?flyHideControls():flyShowControls(); }
+function flyResetHideTimer(){ clearTimeout(flyControlsTimer); flyControlsTimer=setTimeout(()=>{ const v=document.getElementById('fly-video'); if(v&&!v.paused) flyHideControls(); },2000); }
+
+/* ---------- Settings / Speed / Quality menus ---------- */
+function flyCloseMenu(id){ const m=document.getElementById(id); if(m) m.classList.remove('show'); }
+function flyCloseAllMenus(){ ['fly-settings-menu','fly-speed-menu','fly-quality-menu'].forEach(flyCloseMenu); }
+function flyToggleSettings(e){ if(e) e.stopPropagation(); flyResetHideTimer(); const m=document.getElementById('fly-settings-menu'); const open=m.classList.contains('show'); flyCloseAllMenus(); if(!open) m.classList.add('show'); }
+function flyOpenSpeed(e){ if(e) e.stopPropagation(); flyCloseAllMenus(); document.getElementById('fly-speed-menu').classList.add('show'); flyResetHideTimer(); }
+function flyOpenQuality(e){ if(e) e.stopPropagation(); flyCloseAllMenus(); document.getElementById('fly-quality-menu').classList.add('show'); flyResetHideTimer(); }
+function flyBackToSettings(e){ if(e) e.stopPropagation(); flyCloseAllMenus(); document.getElementById('fly-settings-menu').classList.add('show'); flyResetHideTimer(); }
+
+function flyBuildSpeedMenu(){
+    const list=document.getElementById('fly-speed-list'); if(!list) return;
+    const speeds=[0.25,0.5,0.75,1,1.25,1.5,1.75,2];
+    list.innerHTML=speeds.map(s=>`<div class="fly-menu-item ${s===flyCurrentSpeed?'active':''}" onclick="flySetSpeed(${s},event)"><span>${s===1?'Normal (1x)':s+'x'}</span>${s===flyCurrentSpeed?'<i class="fas fa-check"></i>':''}</div>`).join('');
+}
+function flySetSpeed(val,e){ if(e) e.stopPropagation(); const v=document.getElementById('fly-video'); if(v) v.playbackRate=val; flyCurrentSpeed=val;
+    const lbl=document.getElementById('fly-speed-label'); if(lbl) lbl.innerText=val+'x';
+    flyBuildSpeedMenu(); flyCloseAllMenus(); flyResetHideTimer(); }
+
+function flyBuildQualityMenu(){
+    const list=document.getElementById('fly-quality-list'); if(!list) return;
+    const maxH=flyGetMaxHeight();
+    const qs=[{l:'Low',h:144,p:'144p'},{l:'Fast',h:360,p:'360p'},{l:'High Quality',h:720,p:'720p'},{l:'Premium',h:1080,p:'1080p'}];
+    list.innerHTML=qs.map(q=>{
+        const locked=q.h>maxH;
+        return `<div class="fly-menu-item ${locked?'locked':''}" onclick="${locked?'event.stopPropagation();':`flySetQuality(${q.h},'${q.p}',event)`}">
+            <span>${q.l} (${q.p})</span>${locked?'<i class="fas fa-lock" style="font-size:.8rem;"></i>':''}</div>`;
+    }).join('');
+}
+function flySetQuality(h,label,e){ if(e) e.stopPropagation();
+    try{ const hls=hlsInstances['fly_main']; if(hls&&hls.levels&&hls.levels.length){ let best=-1,diff=1e9; hls.levels.forEach((lv,i)=>{const d=Math.abs((lv.height||0)-h); if(d<diff){diff=d;best=i;}}); hls.currentLevel=best; } }catch(err){}
+    const lbl=document.getElementById('fly-quality-label'); if(lbl) lbl.innerText=label;
+    flyCloseAllMenus(); flyResetHideTimer(); }
+
+/* ---------- Fullscreen (শুধু player landscape) ---------- */
+function flyToggleFullscreen(){
+    const wrap=document.getElementById('fly-player-wrap'); if(!wrap) return;
+    const fsEl=document.fullscreenElement||document.webkitFullscreenElement;
+    if(!fsEl){
+        const req=wrap.requestFullscreen||wrap.webkitRequestFullscreen; if(req) req.call(wrap);
+        try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape'); }catch(e){}
+    }else{
+        const ex=document.exitFullscreen||document.webkitExitFullscreen; if(ex) ex.call(document);
+        try{ if(screen.orientation&&screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
+    }
+    flyResetHideTimer();
+}
+function flyOnFsChange(){
+    const icon=document.getElementById('fly-fs-icon'); if(!icon) return;
+    const fsEl=document.fullscreenElement||document.webkitFullscreenElement;
+    icon.className=fsEl?'fas fa-compress':'fas fa-expand';
+    if(!fsEl){ try{ if(screen.orientation&&screen.orientation.unlock) screen.orientation.unlock(); }catch(e){} }
+}
+

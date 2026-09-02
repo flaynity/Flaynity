@@ -13,6 +13,10 @@
     }
 
     async function getPageSource(name, url) {
+        if (!navigator.onLine) {
+            try { const cached = localStorage.getItem(CACHE_PREFIX + name); if (cached) return cached; } catch (e) {}
+            throw new Error("Page unavailable offline: " + url);
+        }
         try {
             const response = await fetch(url, { cache: "no-store" });
             if (!response.ok) throw new Error("HTTP " + response.status);
@@ -20,10 +24,7 @@
             try { localStorage.setItem(CACHE_PREFIX + name, text); } catch (e) {}
             return text;
         } catch (error) {
-            try {
-                const cached = localStorage.getItem(CACHE_PREFIX + name);
-                if (cached) return cached;
-            } catch (e) {}
+            try { const cached = localStorage.getItem(CACHE_PREFIX + name); if (cached) return cached; } catch (e) {}
             throw new Error("Page unavailable offline: " + url);
         }
     }
@@ -257,9 +258,6 @@ function renderAllSkeletons() {
 function applyTheme() {
     let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
     document.documentElement.setAttribute('data-theme', pref);
-
-    const themeColorMeta = document.getElementById('flaynity-theme-color');
-    if (themeColorMeta) themeColorMeta.setAttribute('content', pref === 'dark' ? '#0F0F0F' : '#FFFFFF');
     
     const themeBtns = document.querySelectorAll('.appbar-theme-btn');
     themeBtns.forEach(btn => {
@@ -346,6 +344,23 @@ __flaynityReady(function() {
 });
 
 // =========================================================
+// OFFLINE DATA CACHE
+// =========================================================
+function saveOfflineFeedCache() {
+    try { localStorage.setItem('flaynity-feed-cache-v2', JSON.stringify({ savedAt: Date.now(), shorts: allShorts || [], longs: allLongVideos || [], posts: allCommunityPosts || [] })); } catch (e) {}
+}
+function loadOfflineFeedCache() {
+    try {
+        const data = JSON.parse(localStorage.getItem('flaynity-feed-cache-v2') || 'null');
+        if (!data) return false;
+        allShorts = Array.isArray(data.shorts) ? data.shorts : [];
+        allLongVideos = Array.isArray(data.longs) ? data.longs : [];
+        allCommunityPosts = Array.isArray(data.posts) ? data.posts : [];
+        return true;
+    } catch (e) { return false; }
+}
+
+// =========================================================
 // OFFLINE -> ONLINE AUTO SYNC & NETWORK MONITORING
 // =========================================================
 let _networkOnlineDebounceTimer = null;
@@ -373,7 +388,7 @@ window.FlaynityNetworkOnline = function() {
     }
 
     syncOfflineLikes();
-    SyncManager.refreshEverything();
+    if (auth && auth.currentUser) SyncManager.refreshEverything();
 
     const activeVideo = document.querySelector('.short-slide video[src]');
     if (activeVideo && activeVideo.paused && activeVideo.readyState > 2) {
@@ -383,9 +398,11 @@ window.FlaynityNetworkOnline = function() {
 
 window.FlaynityNetworkOffline = function() {
     try { firebase.database().goOffline(); } catch(e) {}
-    showNotification("Offline Mode. Showing Skeletons.", "error");
-
-    renderAllSkeletons();
+    loadOfflineFeedCache();
+    const home = document.getElementById('home-tab');
+    if (home && home.classList.contains('active')) buildHomeFeed();
+    const shorts = document.getElementById('shorts-tab');
+    if (shorts && shorts.classList.contains('active')) buildShortsPage();
 
     const activeVideo = document.querySelector('.short-slide video[src]');
     if (activeVideo && !activeVideo.paused) {
@@ -427,6 +444,7 @@ const SyncManager = {
             allLongVideos      = longsSnap.val()  ? Object.values(longsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
             allShorts          = shortsSnap.val() ? Object.values(shortsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
             allCommunityPosts  = postsSnap.val()  ? Object.values(postsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
+            saveOfflineFeedCache();
 
             startRealtimeFeedsListener();
 
@@ -556,7 +574,7 @@ function initPullToRefresh() {
         const deltaY = currentY - touchStartY;
         const deltaX = Math.abs(currentX - touchStartX);
 
-        if (deltaY > 20 && deltaY > deltaX * 1.5) {
+        if (deltaY > 35 && deltaY > deltaX * 1.6) {
             touchMoveY = currentY;
             const pullDistance = (deltaY - 20) * 0.45;
 
@@ -585,7 +603,7 @@ function initPullToRefresh() {
         const deltaY = touchMoveY - touchStartY;
         isPTRActive = false;
 
-        if (deltaY > 90) { 
+        if (deltaY > 120) { 
             isRefreshingNow = true;
             if (ptrIndicator) {
                 ptrIndicator.style.transform = `translateX(-50%) translateY(20px)`;
@@ -739,6 +757,15 @@ function saveAccountToList(user) {
         }
     } catch (e) {}
 }
+
+// Firebase Auth may restore its persisted user asynchronously. Keep the cached
+// signed-in UI alive briefly so startup never flashes the Google Sign-In screen.
+window.__flaynityAuthRestoreUntil = 0;
+try {
+    if (localStorage.getItem('flaynity_user_session_cache')) {
+        window.__flaynityAuthRestoreUntil = Date.now() + 10000;
+    }
+} catch (e) {}
 
 function cleanupUserSessionData() {
     currentChannelData = null;
@@ -897,6 +924,18 @@ auth.onAuthStateChanged(async (user) => {
         clearUserStatusListener();
         detachAdminControlListener();
         if (!user) {
+            let hasCachedSession = false;
+            try { hasCachedSession = !!localStorage.getItem('flaynity_user_session_cache'); } catch (e) {}
+            if (hasCachedSession && (!navigator.onLine || window.__flaynityOfflineSessionActive || Date.now() < window.__flaynityAuthRestoreUntil)) {
+                const appScr = document.getElementById('app-screen');
+                const authScr = document.getElementById('auth-screen');
+                if (appScr) appScr.style.display = 'block';
+                if (authScr) authScr.style.display = 'none';
+                document.body.classList.remove('auth-active');
+                loadOfflineFeedCache();
+                if (!navigator.onLine) { const home = document.getElementById('home-tab'); if (home && home.classList.contains('active')) buildHomeFeed(); }
+                return;
+            }
             cleanupUserSessionData();
             document.body.classList.add('auth-active');
             const appScr = document.getElementById('app-screen');
@@ -929,6 +968,7 @@ auth.onAuthStateChanged(async (user) => {
             return;
         }
 
+        window.__flaynityAuthRestoreUntil = 0;
         document.body.classList.remove('auth-active');
         if (typeof window.__flaynityHideOnboarding === 'function') {
             window.__flaynityHideOnboarding();
@@ -1357,6 +1397,7 @@ function startRealtimeFeedsListener() {
                 const data = snap.val();
                 allLongVideos = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'video') : [];
                 allLongVideos.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                saveOfflineFeedCache();
                 
                 allLongVideos.forEach(m => {
                     if (m && m.id && !allAdminMovies.find(x => x.id === m.id)) {
@@ -1381,6 +1422,7 @@ function startRealtimeFeedsListener() {
                 const data = snap.val();
                 allShorts = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'short') : [];
                 allShorts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                saveOfflineFeedCache();
                 
                 if(allShorts.length !== previousShortsCount) {
                     previousShortsCount = allShorts.length;
@@ -1412,6 +1454,7 @@ function startRealtimeFeedsListener() {
                 const data = snap.val();
                 allCommunityPosts = data ? enforceContentAdminStatus(Object.values(data).filter(p => !p.scheduledTime || p.scheduledTime <= now), 'post') : [];
                 allCommunityPosts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                saveOfflineFeedCache();
                 
                 if (allCommunityPosts.length !== previousPostsCount) {
                     previousPostsCount = allCommunityPosts.length;
@@ -1522,8 +1565,11 @@ function buildHomeFeed() {
     if (!container) return;
 
     if (!navigator.onLine) {
-        container.innerHTML = getHomeSkeletonHTML();
-        return;
+        loadOfflineFeedCache();
+        if (!allShorts.length && !allLongVideos.length && !allCommunityPosts.length) {
+            container.innerHTML = getHomeSkeletonHTML();
+            return;
+        }
     }
 
     let html = '';

@@ -24,7 +24,7 @@
         }
 
         [data-theme="dark"] {
-            --bg-color: #0F0F0F;
+            --bg-color: #000000;
             --surface: #000000;
             --primary: #FF2E55; 
             --primary-glow: rgba(255, 46, 85, 0.15);
@@ -207,6 +207,11 @@
             border-bottom: 1px solid var(--border-color); 
         }
         
+        [data-theme="dark"] header { background: #0F0F0F; }
+        [data-theme="dark"] .appbar { background: #0F0F0F; }
+        [data-theme="dark"] #search-tab,
+        [data-theme="dark"] #you-tab { background-color: #0F0F0F !important; }
+
         .brand { color: var(--text-main); font-size: 1.3rem; font-weight: 900; margin: 0; display: flex; align-items: center; gap: 8px; }
         .brand span { color: var(--primary); }
         .header-avatar { width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), #FF7A00); color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; cursor: pointer; overflow: hidden; border: 1px solid rgba(0,0,0,0.05); }

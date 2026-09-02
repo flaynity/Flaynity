@@ -5947,23 +5947,73 @@ function flySetQuality(h,label,e){ if(e) e.stopPropagation();
     const lbl=document.getElementById('fly-quality-label'); if(lbl) lbl.innerText=label;
     flyCloseAllMenus(); flyResetHideTimer(); }
 
-/* ---------- Fullscreen (শুধু player landscape) ---------- */
-function flyToggleFullscreen(){
-    const wrap=document.getElementById('fly-player-wrap'); if(!wrap) return;
-    const fsEl=document.fullscreenElement||document.webkitFullscreenElement;
-    if(!fsEl){
-        const req=wrap.requestFullscreen||wrap.webkitRequestFullscreen; if(req) req.call(wrap);
-        try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape'); }catch(e){}
-    }else{
-        const ex=document.exitFullscreen||document.webkitExitFullscreen; if(ex) ex.call(document);
-        try{ if(screen.orientation&&screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
-    }
+/* ---------- Fullscreen (Long Video only: landscape player, portrait page) ---------- */
+function flyIsLandscapeFullscreen(){
+    const wrap=document.getElementById('fly-player-wrap');
+    return !!(wrap && wrap.classList.contains('fly-landscape-fullscreen'));
+}
+
+function flyEnterLandscapeFullscreen(){
+    const wrap=document.getElementById('fly-player-wrap');
+    if(!wrap) return;
+
+    // Do not use screen.orientation.lock(): that rotates the whole WebView/Activity.
+    // Rotate only the player so the rest of the page remains portrait.
+    wrap.classList.add('fly-landscape-fullscreen');
+    document.body.classList.add('fly-player-landscape-open');
+
+    const icon=document.getElementById('fly-fs-icon');
+    if(icon) icon.className='fas fa-compress';
+
+    try{
+        if(window.AndroidBridge && typeof AndroidBridge.setVideoPlayerFullscreen==='function'){
+            AndroidBridge.setVideoPlayerFullscreen(true);
+        }
+    }catch(e){}
+
+    flyCloseAllMenus();
     flyResetHideTimer();
 }
+
+function flyExitLandscapeFullscreen(){
+    const wrap=document.getElementById('fly-player-wrap');
+    if(!wrap) return;
+
+    // Only remove the visual fullscreen state. The same <video> element stays alive,
+    // so playback and currentTime are preserved.
+    wrap.classList.remove('fly-landscape-fullscreen');
+    document.body.classList.remove('fly-player-landscape-open');
+
+    const icon=document.getElementById('fly-fs-icon');
+    if(icon) icon.className='fas fa-expand';
+
+    try{
+        if(window.AndroidBridge && typeof AndroidBridge.setVideoPlayerFullscreen==='function'){
+            AndroidBridge.setVideoPlayerFullscreen(false);
+        }
+    }catch(e){}
+
+    flyResetHideTimer();
+}
+
+function flyToggleFullscreen(){
+    if(flyIsLandscapeFullscreen()) flyExitLandscapeFullscreen();
+    else flyEnterLandscapeFullscreen();
+}
+
+/* Android hardware Back calls this before normal WebView navigation. */
+function flyHandleNativeBack(){
+    if(flyIsLandscapeFullscreen()){
+        flyExitLandscapeFullscreen();
+        return true;
+    }
+    return false;
+}
+
 function flyOnFsChange(){
-    const icon=document.getElementById('fly-fs-icon'); if(!icon) return;
-    const fsEl=document.fullscreenElement||document.webkitFullscreenElement;
-    icon.className=fsEl?'fas fa-compress':'fas fa-expand';
-    if(!fsEl){ try{ if(screen.orientation&&screen.orientation.unlock) screen.orientation.unlock(); }catch(e){} }
+    // Kept for compatibility with the existing player engine. Native HTML fullscreen
+    // is intentionally not used because it can rotate the whole WebView.
+    const icon=document.getElementById('fly-fs-icon');
+    if(icon) icon.className=flyIsLandscapeFullscreen()?'fas fa-compress':'fas fa-expand';
 }
 

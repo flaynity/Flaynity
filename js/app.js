@@ -127,48 +127,50 @@ function __flaynityReady(fn) {
 function getHomeSkeletonHTML() {
     return `
         <div class="home-offline-skeleton" aria-hidden="true">
-            <section class="home-skel-video-block">
-                <div class="skel-box home-skel-video"></div>
-                <div class="home-skel-meta">
-                    <div class="skel-box home-skel-avatar"></div>
-                    <div class="home-skel-lines">
-                        <div class="skel-box home-skel-line home-skel-line-lg"></div>
-                        <div class="skel-box home-skel-line home-skel-line-sm"></div>
-                    </div>
+            <div class="home-skel-video skel-box"></div>
+            <div class="home-skel-channel-row">
+                <div class="home-skel-avatar skel-box"></div>
+                <div class="home-skel-lines">
+                    <div class="home-skel-line home-skel-line-lg skel-box"></div>
+                    <div class="home-skel-line home-skel-line-sm skel-box"></div>
                 </div>
-            </section>
+            </div>
 
-            <section class="home-skel-shorts-block">
-                <div class="home-skel-section-title">
-                    <div class="skel-box home-skel-icon"></div>
-                    <div class="skel-box home-skel-title"></div>
-                </div>
-                <div class="home-skel-shorts-grid">
-                    ${[1,2].map(() => `
-                        <div class="home-skel-short-item">
-                            <div class="skel-box home-skel-short-card"></div>
-                            <div class="home-skel-short-meta">
-                                <div class="skel-box home-skel-short-avatar"></div>
-                                <div class="home-skel-lines">
-                                    <div class="skel-box home-skel-line home-skel-short-line"></div>
-                                    <div class="skel-box home-skel-line home-skel-short-line-sm"></div>
-                                </div>
-                            </div>
+            <div class="home-skel-short-heading">
+                <div class="home-skel-icon skel-box"></div>
+                <div class="home-skel-heading-line skel-box"></div>
+            </div>
+            <div class="home-skel-shorts-grid">
+                <div class="home-skel-short-item">
+                    <div class="home-skel-short-card skel-box"></div>
+                    <div class="home-skel-short-meta">
+                        <div class="home-skel-avatar-small skel-box"></div>
+                        <div class="home-skel-lines">
+                            <div class="home-skel-line home-skel-line-md skel-box"></div>
+                            <div class="home-skel-line home-skel-line-xs skel-box"></div>
                         </div>
-                    `).join('')}
-                </div>
-            </section>
-
-            <section class="home-skel-video-block home-skel-video-block-last">
-                <div class="skel-box home-skel-video"></div>
-                <div class="home-skel-meta">
-                    <div class="skel-box home-skel-avatar"></div>
-                    <div class="home-skel-lines">
-                        <div class="skel-box home-skel-line home-skel-line-md"></div>
-                        <div class="skel-box home-skel-line home-skel-line-sm"></div>
                     </div>
                 </div>
-            </section>
+                <div class="home-skel-short-item">
+                    <div class="home-skel-short-card skel-box"></div>
+                    <div class="home-skel-short-meta">
+                        <div class="home-skel-avatar-small skel-box"></div>
+                        <div class="home-skel-lines">
+                            <div class="home-skel-line home-skel-line-md skel-box"></div>
+                            <div class="home-skel-line home-skel-line-xs skel-box"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="home-skel-video home-skel-video-second skel-box"></div>
+            <div class="home-skel-channel-row">
+                <div class="home-skel-avatar skel-box"></div>
+                <div class="home-skel-lines">
+                    <div class="home-skel-line home-skel-line-lg skel-box"></div>
+                    <div class="home-skel-line home-skel-line-sm skel-box"></div>
+                </div>
+            </div>
         </div>
     `;
 }
@@ -176,27 +178,24 @@ function getHomeSkeletonHTML() {
 function getShortsSkeletonHTML() {
     return `
         <div class="shorts-offline-skeleton" aria-hidden="true">
-            <div class="skel-box shorts-skel-background"></div>
+            <div class="shorts-skel-screen skel-box"></div>
             <div class="shorts-skel-actions">
-                <div class="skel-box shorts-skel-action"></div>
-                <div class="skel-box shorts-skel-action"></div>
-                <div class="skel-box shorts-skel-action"></div>
-                <div class="skel-box shorts-skel-disc"></div>
+                <div class="shorts-skel-action skel-box"></div>
+                <div class="shorts-skel-action skel-box"></div>
+                <div class="shorts-skel-action skel-box"></div>
+                <div class="shorts-skel-disc skel-box"></div>
             </div>
-            <div class="shorts-skel-info">
-                <div class="shorts-skel-channel">
-                    <div class="skel-box shorts-skel-avatar"></div>
-                    <div class="skel-box shorts-skel-handle"></div>
-                    <div class="skel-box shorts-skel-subscribe"></div>
+            <div class="shorts-skel-bottom">
+                <div class="shorts-skel-channel-row">
+                    <div class="shorts-skel-avatar skel-box"></div>
+                    <div class="shorts-skel-name skel-box"></div>
                 </div>
-                <div class="skel-box shorts-skel-title"></div>
-                <div class="skel-box shorts-skel-description"></div>
+                <div class="shorts-skel-title skel-box"></div>
+                <div class="shorts-skel-description skel-box"></div>
             </div>
-            <div class="shorts-skel-progress"></div>
         </div>
     `;
 }
-
 function getYouSkeletonHTML() {
     return `
         <div style="display: flex; flex-direction: column; gap: 20px; margin-top: 15px;">
@@ -478,50 +477,50 @@ function _detachAllPostReactionListeners() {
 }
 
 // =========================================================
-// UNIVERSAL NATIVE YOUTUBE-STYLE PULL TO REFRESH ENGINE
+// UNIVERSAL YOUTUBE-STYLE PULL TO REFRESH ENGINE
+// Refresh is available only when the active page is genuinely at scrollTop 0.
 // =========================================================
 let touchStartY = 0;
 let touchStartX = 0;
 let touchMoveY = 0;
 let isPTRActive = false;
 let isRefreshingNow = false;
-let ptrTouchTarget = null;
 
-function getPageScrollTop() {
+function getDocumentScrollTop() {
     return Math.max(
+        window.pageYOffset || 0,
         window.scrollY || 0,
-        document.documentElement?.scrollTop || 0,
-        document.body?.scrollTop || 0
+        document.documentElement ? document.documentElement.scrollTop : 0,
+        document.body ? document.body.scrollTop : 0
     );
 }
 
 function isPTRAllowedOnCurrentView() {
     const modalsOpen = document.querySelectorAll('.fullscreen-page[style*="display: flex"], .fullscreen-page[style*="display: block"], .premium-download-modal[style*="display: flex"], #full-movie-page[style*="display: block"], #theme-popup-menu[style*="display: flex"], #full-image-preview-overlay[style*="display: flex"]');
-    if (modalsOpen.length > 0) return false;
+    if (modalsOpen.length > 0) {
+        const viewChannel = document.getElementById('view-channel-page');
+        return !!(viewChannel && (viewChannel.style.display === 'flex' || viewChannel.style.display === 'block') && viewChannel.scrollTop <= 0);
+    }
 
     const activeNav = document.querySelector('.nav-item.active');
     if (!activeNav) return false;
     const activeTabId = activeNav.id.replace('nav-', '');
 
-    // Pull-to-refresh is intentionally disabled inside Shorts and all nested scroll areas.
+    // Shorts is a vertical player and must NEVER start Pull-to-Refresh.
     if (activeTabId === 'shorts') return false;
+    if (!['home', 'search', 'you'].includes(activeTabId)) return false;
 
-    // Only the actual page-top position may start PTR. This prevents a tiny downward
-    // gesture from triggering refresh while the user is already scrolling the feed.
-    return getPageScrollTop() <= 1;
+    return getDocumentScrollTop() <= 0.5;
 }
 
 function resetPTRIndicator() {
-    const ptrIndicator = document.getElementById('ptr-indicator');
-    const ptrSpinner = document.getElementById('ptr-spinner');
-    if (ptrIndicator) {
-        ptrIndicator.style.transform = 'translateX(-50%) translateY(-70px)';
-        ptrIndicator.style.opacity = '0';
+    const indicator = document.getElementById('ptr-indicator');
+    const spinner = document.getElementById('ptr-spinner');
+    if (indicator) {
+        indicator.style.transform = 'translate3d(-50%, -70px, 0)';
+        indicator.style.opacity = '0';
     }
-    if (ptrSpinner) {
-        ptrSpinner.classList.remove('ptr-spinning');
-        ptrSpinner.style.transform = 'rotate(0deg)';
-    }
+    if (spinner) spinner.classList.remove('ptr-spinning');
 }
 
 function initPullToRefresh() {
@@ -531,8 +530,6 @@ function initPullToRefresh() {
 
     document.addEventListener('touchstart', (e) => {
         if (isRefreshingNow || !e.touches || !e.touches.length) return;
-        ptrTouchTarget = e.target;
-
         if (!isPTRAllowedOnCurrentView()) {
             isPTRActive = false;
             return;
@@ -547,15 +544,8 @@ function initPullToRefresh() {
     document.addEventListener('touchmove', (e) => {
         if (!isPTRActive || isRefreshingNow || !e.touches || !e.touches.length) return;
 
-        // A nested scroll container owns its gesture; never steal it for PTR.
-        const nestedScroller = ptrTouchTarget?.closest?.('.movie-row, .premium-download-content, .download-modal-scrollable, .fullscreen-page, .shorts-swiper');
-        if (nestedScroller) {
-            isPTRActive = false;
-            resetPTRIndicator();
-            return;
-        }
-
-        if (getPageScrollTop() > 1) {
+        // The moment the page is no longer at the absolute top, cancel PTR.
+        if (!isPTRAllowedOnCurrentView()) {
             isPTRActive = false;
             resetPTRIndicator();
             return;
@@ -566,22 +556,17 @@ function initPullToRefresh() {
         const deltaY = currentY - touchStartY;
         const deltaX = Math.abs(currentX - touchStartX);
 
-        if (deltaY > 8 && deltaY > deltaX * 1.25) {
+        if (deltaY > 12 && deltaY > deltaX * 1.35) {
             touchMoveY = currentY;
-            const pullDistance = Math.min(105, (deltaY - 8) * 0.52);
-
-            // Once a downward pull starts at the very top, stop the WebView/browser
-            // native overscroll and let the controlled Flaynity indicator own the gesture.
-            if (e.cancelable) e.preventDefault();
-
-            ptrIndicator.style.opacity = String(Math.min(1, pullDistance / 42));
-            ptrIndicator.style.transform = `translateX(-50%) translateY(${pullDistance - 65}px)`;
-            ptrSpinner.style.transform = `rotate(${pullDistance * 3.2}deg)`;
-        } else if (deltaY < -4 || deltaX > Math.abs(deltaY) * 1.25) {
+            const pullDistance = Math.min(92, deltaY * 0.58);
+            ptrIndicator.style.opacity = String(Math.min(1, pullDistance / 48));
+            ptrIndicator.style.transform = `translate3d(-50%, ${pullDistance - 70}px, 0)`;
+            ptrSpinner.style.transform = `rotate(${pullDistance * 5}deg)`;
+        } else if (deltaY < 0 || deltaX > Math.abs(deltaY) * 1.15) {
             isPTRActive = false;
             resetPTRIndicator();
         }
-    }, { passive: false });
+    }, { passive: true });
 
     document.addEventListener('touchend', () => {
         if (!isPTRActive || isRefreshingNow) {
@@ -592,11 +577,12 @@ function initPullToRefresh() {
         const deltaY = touchMoveY - touchStartY;
         isPTRActive = false;
 
-        if (deltaY >= 78 && getPageScrollTop() <= 1) {
+        if (deltaY >= 82 && isPTRAllowedOnCurrentView()) {
             isRefreshingNow = true;
-            ptrIndicator.style.transform = 'translateX(-50%) translateY(20px)';
+            ptrIndicator.style.transform = 'translate3d(-50%, 16px, 0)';
             ptrIndicator.style.opacity = '1';
             ptrSpinner.classList.add('ptr-spinning');
+
             triggerUniversalPullToRefresh().finally(() => {
                 setTimeout(() => {
                     resetPTRIndicator();
@@ -609,7 +595,6 @@ function initPullToRefresh() {
 
         touchStartY = 0;
         touchMoveY = 0;
-        ptrTouchTarget = null;
     }, { passive: true });
 }
 
@@ -1396,7 +1381,7 @@ function startRealtimeFeedsListener() {
                         const titleEl = document.querySelector(`#slide-short-${s.id} #short-title-val`);
                         if(titleEl) titleEl.innerHTML = `${escapeHTML(s.title)} <span style="font-weight:400; font-size:0.8rem; color:#ccc; display:block;">Click to view description</span>`;
                         const thumbEl = document.querySelector(`.short-home-card-2col[onclick*="${s.id}"] img`);
-                        if (thumbEl) thumbEl.src = getShortPoster(s);
+                        if (thumbEl) thumbEl.src = s.poster;
                     });
                 }
             } catch (e) {}
@@ -1512,14 +1497,6 @@ function selectCategoryChip(category, el) {
 // =========================================================
 // UNIFIED REAL-TIME FEED ENGINE FOR HOME PAGE
 // =========================================================
-function getShortPoster(short) {
-    return short?.poster || short?.thumbnailUrl || short?.thumbnail || short?.posterUrl || short?.coverUrl || '';
-}
-
-function getShortVideoUrl(short) {
-    return short?.videoLink || short?.videoUrl || short?.url || short?.src || '';
-}
-
 function buildHomeFeed() {
     const container = document.getElementById('home-feed-container');
     if (!container) return;
@@ -1556,7 +1533,7 @@ function buildHomeFeed() {
             if (s.userId) uniqueUserIds.add(s.userId);
             html += `
                 <div class="short-home-card-2col" onclick="openShortFromHome('${s.id}')">
-                    <img src="${getShortPoster(s)}" loading="lazy" onerror="this.style.display='none'">
+                    <img src="${s.poster || s.thumbnailUrl || s.thumbnail || s.posterUrl || ""}" loading="lazy" onerror="this.style.opacity='0'">
                     <div class="short-home-meta">
                         <h4 style="font-size: 0.85rem; font-weight: 800; margin: 0 0 2px 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(s.title)}</h4>
                         <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}">0</span></p>
@@ -1634,6 +1611,11 @@ function buildHomeFeed() {
 
     container.innerHTML = html;
     ensureHomePostScrollFlow();
+    // Force the 2-column Shorts grid to resolve its aspect ratio on first Home render.
+    requestAnimationFrame(() => {
+        const grid = container.querySelector('.shorts-home-grid-2col');
+        if (grid) void grid.offsetHeight;
+    });
     postsToBind.forEach(postId => registerPostReactionsListener(postId));
     uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
 }
@@ -1657,7 +1639,7 @@ function renderShortsSegmentUI(segmentShorts) {
     limitedShorts.forEach(s => {
         html += `
             <div class="short-home-card-2col" onclick="openShortFromHome('${s.id}')">
-                <img src="${getShortPoster(s)}" loading="lazy" onerror="this.style.display='none'">
+                <img src="${s.poster || s.thumbnailUrl || s.thumbnail || s.posterUrl || ""}" loading="lazy" onerror="this.style.opacity='0'">
                 <div class="short-home-meta">
                     <h4 style="font-size: 0.85rem; font-weight: 800; margin: 0 0 2px 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(s.title)}</h4>
                     <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}">0</span></p>
@@ -1991,7 +1973,7 @@ function buildShortsPage() {
 
                     <div class="music-disc-container">
                         <div class="music-disc-inner live-disc-avatar-${s.userId}" id="music-disc-${s.id}">
-                            <img src="${s.channelAvatar || s.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                         </div>
                     </div>
                 </div>
@@ -2416,6 +2398,11 @@ function toggleShortSubscribe(channelId, buttonEl) {
 // =========================================================
 let currentActiveShortsIdx = -1;
 
+function getShortVideoUrl(short) {
+    if (!short) return '';
+    return short.videoLink || short.videoUrl || short.videoURL || short.video || short.r2VideoUrl || short.r2VideoURL || short.url || '';
+}
+
 function attachSmartAdaptiveSource(videoElement, url, shortId) {
     if (url && url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
         if(hlsInstances[shortId]) {
@@ -2446,13 +2433,12 @@ function optimizeShortsMemoryAndPreload(activeIndex) {
         if (!s) return;
 
         if (idx >= activeIndex - 1 && idx <= activeIndex + 2) {
-            if (video.getAttribute('poster') !== getShortPoster(s)) {
-                video.setAttribute('poster', getShortPoster(s));
+            if (video.getAttribute('poster') !== s.poster) {
+                video.setAttribute('poster', s.poster);
             }
 
             if (!video.getAttribute('src') && !hlsInstances[shortId]) {
-                const shortVideoUrl = getShortVideoUrl(s);
-                if (shortVideoUrl) attachSmartAdaptiveSource(video, shortVideoUrl, shortId);
+                attachSmartAdaptiveSource(video, getShortVideoUrl(s), shortId);
                 video.preload = (idx === activeIndex) ? "auto" : "metadata";
             }
 

@@ -3287,9 +3287,9 @@ function adjustHeaderForActiveTab(tabId) {
     const chips = document.getElementById('global-category-chips');
 
     if (tabId === 'shorts') {
-        document.body.classList.remove('home-feed-scroll-header');
         header.style.position = 'fixed';
-        if (chips) chips.style.position = 'fixed';
+        header.style.top = '0px';
+        if (chips) { chips.style.position = 'fixed'; chips.style.top = '82px'; }
         header.style.display = 'none';
         document.body.style.paddingTop = '0px';
         document.body.style.paddingBottom = '0px';
@@ -3300,19 +3300,20 @@ function adjustHeaderForActiveTab(tabId) {
         document.body.style.paddingBottom = '50px';
     }
 
-    document.body.style.paddingTop = '126px';
-
     if (tabId === 'home') {
-        // Home feed uses the document's native scroll flow so the complete top bar
-        // moves with the feed at exactly the user's scroll speed (no jump/hide animation).
-        document.body.classList.add('home-feed-scroll-header');
-        header.style.position = 'absolute';
-        if (chips) chips.style.position = 'absolute';
+        // Keep the existing top-bar dimensions/visual position, but let it stay
+        // in the document's normal flow so the browser's native scroll moves
+        // it together with the feed at the user's exact scroll speed.
+        header.style.position = 'relative';
+        header.style.top = '0px';
+        if (chips) { chips.style.position = 'relative'; chips.style.top = 'auto'; }
+        document.body.style.paddingTop = '0px';
         if (chips) chips.style.display = 'grid';
     } else {
-        document.body.classList.remove('home-feed-scroll-header');
         header.style.position = 'fixed';
-        if (chips) chips.style.position = 'fixed';
+        header.style.top = '0px';
+        if (chips) { chips.style.position = 'fixed'; chips.style.top = '82px'; }
+        document.body.style.paddingTop = '126px';
         if (chips) chips.style.display = 'none';
     }
 

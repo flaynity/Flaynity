@@ -91,152 +91,137 @@ function __flaynityReady(fn) {
 }
 
 
-/* =========================================================
-   HOME-ONLY FEED-SYNC BOTTOM NAVIGATION
-   ========================================================= */
+/* Feed-synced bottom navigation.
+   The Home feed uses the document/window as its main scroller. On mobile,
+   touchmove is also tracked so the navigation moves in real time with the
+   user's finger even when the browser delays a scroll event. */
 (function () {
     "use strict";
 
-    var state = {
-        nav: null,
-        height: 48,
-        offset: 0,
-        lastScrollY: 0,
-        touchY: 0,
-        touching: false,
-        frame: 0
-    };
+    var state = { nav:null, lastY:0, offset:0, height:48, frame:0, touchY:null, touchActive:false };
 
-    function scrollY() {
-        var el = document.scrollingElement || document.documentElement || document.body;
-        return Math.max(0, Number(window.pageYOffset || window.scrollY || (el && el.scrollTop) || 0));
+    function getScrollY() {
+        return Math.max(
+            Number(window.scrollY || 0),
+            Number(document.documentElement && document.documentElement.scrollTop || 0),
+            Number(document.body && document.body.scrollTop || 0)
+        );
     }
 
-    function getNav() {
-        var nav = document.querySelector('#app-screen .bottom-nav') || document.querySelector('.bottom-nav');
+    function findNav() {
+        var nav = document.querySelector("#app-screen .bottom-nav") ||
+                  document.querySelector(".bottom-nav");
         if (!nav) return null;
         if (state.nav !== nav) {
             state.nav = nav;
             state.height = Math.max(1, nav.getBoundingClientRect().height || 48);
-            nav.style.setProperty('will-change', 'transform');
-            nav.style.setProperty('transition', 'none', 'important');
-            nav.style.setProperty('-webkit-transition', 'none', 'important');
+            nav.style.willChange = "transform";
+            nav.style.transition = "none";
         }
         return nav;
     }
 
-    function isHomeFeed() {
-        var home = document.getElementById('home-tab');
-        if (!home || !home.classList.contains('active')) return false;
-        if (typeof AppNavigation !== 'undefined' && AppNavigation && typeof AppNavigation.current === 'function') {
-            var current = AppNavigation.current();
-            if (current && (current.type !== 'tab' || current.id !== 'home')) return false;
-        }
-        return true;
-    }
-
     function render() {
         state.frame = 0;
-        var nav = getNav();
+        var nav = findNav();
         if (!nav) return;
-        var y = isHomeFeed() ? Math.max(0, Math.min(state.height, state.offset)) : 0;
-        var transform = 'translate3d(0,' + y.toFixed(2) + 'px,0)';
-        nav.style.setProperty('transform', transform, 'important');
-        nav.style.setProperty('-webkit-transform', transform, 'important');
+        var y = Math.max(0, Math.min(state.height, state.offset));
+        nav.style.webkitTransform = "translate3d(0," + y.toFixed(2) + "px,0)";
+        nav.style.transform = "translate3d(0," + y.toFixed(2) + "px,0)";
     }
 
-    function draw() {
-        if (!state.frame) state.frame = requestAnimationFrame(render);
+    function scheduleRender() {
+        if (!state.frame) state.frame = window.requestAnimationFrame(render);
     }
 
-    function reset() {
-        state.offset = 0;
-        state.lastScrollY = scrollY();
-        state.touching = false;
-        state.touchY = 0;
-        draw();
-    }
-
-    // Mouse wheel / non-touch scrolling. The navigation follows the actual
-    // page scroll delta exactly, without a timer or easing jump.
-    function onScroll() {
-        var current = scrollY();
-        if (!isHomeFeed()) {
-            state.offset = 0;
-            state.lastScrollY = current;
-            draw();
-            return;
-        }
-        // During Android touch scrolling, touchmove already tracks the finger.
-        if (state.touching) {
-            state.lastScrollY = current;
-            return;
-        }
-        var delta = current - state.lastScrollY;
-        state.lastScrollY = current;
-        if (!delta) return;
+    function moveBy(delta) {
+        if (!isFinite(delta) || Math.abs(delta) < 0.01) return;
         state.offset = Math.max(0, Math.min(state.height, state.offset + delta));
-        if (current <= 0) state.offset = 0;
-        draw();
+        scheduleRender();
     }
 
-    // Android WebView can deliver the user's finger movement before a useful
-    // window scroll event. Tracking touch movement makes the nav physically
-    // follow the feed at the same speed and prevents sudden hide/show.
+    function syncFromScroll() {
+        var nav = findNav();
+        var y = getScrollY();
+        if (!nav) { state.lastY = y; return; }
+
+        var delta = y - state.lastY;
+        if (Math.abs(delta) >= 0.01) moveBy(delta);
+
+        if (y <= 0) {
+            state.offset = 0;
+            scheduleRender();
+        }
+        state.lastY = y;
+    }
+
     function onTouchStart(e) {
-        if (!isHomeFeed() || !e.touches || !e.touches.length) return;
-        state.touching = true;
+        if (!e.touches || !e.touches.length) return;
+        state.touchActive = true;
         state.touchY = e.touches[0].clientY;
-        state.lastScrollY = scrollY();
+        state.lastY = getScrollY();
     }
 
     function onTouchMove(e) {
-        if (!state.touching || !isHomeFeed() || !e.touches || !e.touches.length) return;
-        var y = e.touches[0].clientY;
-        var fingerDelta = y - state.touchY;
-        state.touchY = y;
-        if (Math.abs(fingerDelta) < 0.01) return;
+        if (!state.touchActive || !e.touches || !e.touches.length) return;
+        var currentY = e.touches[0].clientY;
+        if (state.touchY === null) { state.touchY = currentY; return; }
 
-        // Finger moves up => feed moves down => nav moves down.
-        // Finger moves down => feed moves up => nav returns up.
-        state.offset = Math.max(0, Math.min(state.height, state.offset - fingerDelta));
-        draw();
+        // Finger up = feed down, so the nav follows downward by the same distance.
+        var delta = state.touchY - currentY;
+        if (Math.abs(delta) >= 0.01) {
+            moveBy(delta);
+            state.touchY = currentY;
+        }
+
+        // Avoid applying the same touch movement twice when scroll fires.
+        state.lastY = getScrollY();
     }
 
     function onTouchEnd() {
-        if (!state.touching) return;
-        state.touching = false;
-        state.lastScrollY = scrollY();
-        if (state.lastScrollY <= 0) state.offset = 0;
-        draw();
+        state.touchActive = false;
+        state.touchY = null;
+        state.lastY = getScrollY();
+    }
+
+    function resetForPage() {
+        state.nav = null;
+        state.offset = 0;
+        state.touchY = null;
+        state.touchActive = false;
+        state.lastY = getScrollY();
+        if (findNav()) scheduleRender();
     }
 
     function start() {
-        getNav();
-        reset();
+        state.lastY = getScrollY();
+        window.addEventListener("scroll", syncFromScroll, { passive:true });
+        document.addEventListener("touchstart", onTouchStart, { passive:true });
+        document.addEventListener("touchmove", onTouchMove, { passive:true });
+        document.addEventListener("touchend", onTouchEnd, { passive:true });
+        document.addEventListener("touchcancel", onTouchEnd, { passive:true });
 
-        window.addEventListener('scroll', onScroll, { passive: true });
-        document.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
-        document.addEventListener('touchmove', onTouchMove, { passive: true, capture: true });
-        document.addEventListener('touchend', onTouchEnd, { passive: true, capture: true });
-        document.addEventListener('touchcancel', onTouchEnd, { passive: true, capture: true });
-
-        window.addEventListener('resize', function () {
-            var nav = getNav();
+        window.addEventListener("resize", function() {
+            var nav = findNav();
             if (nav) {
                 state.height = Math.max(1, nav.getBoundingClientRect().height || 48);
-                state.offset = Math.max(0, Math.min(state.height, state.offset));
-                draw();
+                state.offset = Math.max(0, Math.min(state.offset, state.height));
+                scheduleRender();
             }
-        }, { passive: true });
+        }, { passive:true });
 
-        window.addEventListener('flaynity-dom-ready', reset);
-        window.addEventListener('flaynity-tab-change', reset);
-        window.addEventListener('hashchange', reset);
+        window.addEventListener("flaynity-dom-ready", resetForPage);
+        window.addEventListener("hashchange", resetForPage);
+
+        var observer = new MutationObserver(function() {
+            if (!state.nav || !document.documentElement.contains(state.nav)) resetForPage();
+        });
+        if (document.body) observer.observe(document.body, {childList:true, subtree:true});
     }
 
     __flaynityReady(start);
 })();
+
 (function() {
     try {
         let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
@@ -2842,7 +2827,6 @@ const AppNavigation = {
         if (navEl) navEl.classList.add('active');
 
         adjustHeaderForActiveTab(activeTab);
-        window.dispatchEvent(new Event('flaynity-tab-change'));
 
         if (activeTab === 'you') initYouTabUI();
         if (activeTab === 'shorts') buildShortsPage();

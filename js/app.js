@@ -398,9 +398,12 @@ function renderAllSkeletons() {
     const youBox = document.getElementById('channel-action-box');
 
     if (home) {
+        home.classList.add('offline-skeleton-active');
         home.style.width = '100%';
         home.style.minWidth = '0';
+        home.style.minHeight = 'calc(100vh - 126px)';
         home.style.boxSizing = 'border-box';
+        home.style.overflow = 'visible';
         home.innerHTML = getHomeSkeletonHTML();
     }
     if (shorts) shorts.innerHTML = getShortsSkeletonHTML();
@@ -1688,12 +1691,13 @@ function buildHomeFeed() {
     if (!container) return;
 
     if (!navigator.onLine) {
-        container.style.width = '100%';
-        container.style.minWidth = '0';
-        container.style.boxSizing = 'border-box';
-        container.innerHTML = getHomeSkeletonHTML();
+        renderAllSkeletons();
         return;
     }
+
+    container.classList.remove('offline-skeleton-active');
+    container.style.minHeight = '';
+    container.style.overflow = '';
 
     let html = '';
 

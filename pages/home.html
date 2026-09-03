@@ -326,17 +326,6 @@
             padding: 12px; color: #fff; z-index: 2;
         }
 
-
-/* FEED-SYNC BOTTOM NAVIGATION
-   The navigation follows the user's feed scroll instead of disappearing instantly. */
-.bottom-nav {
-    transform: translate3d(0, 0, 0);
-    will-change: transform;
-    transition: none !important;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-}
-
 /* PREMIUM BOTTOM NAVIGATION DESIGN */
         .bottom-nav {
             position: fixed;
@@ -1357,97 +1346,4 @@
 <span class="nav-label">You</span>
 </div>
 </div>
-
-<script>
-(function () {
-    'use strict';
-
-    // Feed-synced bottom navigation:
-    // - Scroll down: nav moves down by the same amount as the feed (clamped).
-    // - Scroll up: nav follows the user's upward movement and returns.
-    // - No delayed/sudden hide/show animation.
-    // - Uses requestAnimationFrame to keep the transform smooth and avoid jank.
-    var nav = document.querySelector('.bottom-nav');
-    if (!nav) return;
-
-    var hiddenDistance = 0;
-    var lastY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || 0);
-    var ticking = false;
-    var navHeight = 0;
-    var lastDirection = 0;
-
-    function measureNav() {
-        navHeight = nav.getBoundingClientRect().height;
-        if (!navHeight || !isFinite(navHeight)) navHeight = 48;
-        hiddenDistance = Math.min(hiddenDistance, navHeight);
-    }
-
-    function applyNavPosition() {
-        nav.style.transform = 'translate3d(0,' + hiddenDistance.toFixed(2) + 'px,0)';
-        ticking = false;
-    }
-
-    function syncNavigation() {
-        var currentY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || 0);
-        var delta = currentY - lastY;
-
-        // Ignore tiny browser/rounding movements.
-        if (Math.abs(delta) < 0.5) {
-            lastY = currentY;
-            ticking = false;
-            return;
-        }
-
-        // At the very top, always restore the navigation.
-        if (currentY <= 0) {
-            hiddenDistance = 0;
-            lastDirection = -1;
-        } else if (delta > 0) {
-            // Downward feed movement -> navigation follows the same movement.
-            hiddenDistance = Math.min(navHeight, hiddenDistance + delta);
-            lastDirection = 1;
-        } else {
-            // Upward feed movement -> navigation follows the same movement back.
-            hiddenDistance = Math.max(0, hiddenDistance + delta);
-            lastDirection = -1;
-        }
-
-        lastY = currentY;
-
-        if (!ticking) {
-            ticking = true;
-            window.requestAnimationFrame(applyNavPosition);
-        }
-    }
-
-    measureNav();
-    applyNavPosition();
-
-    window.addEventListener('resize', function () {
-        measureNav();
-        if (!ticking) {
-            ticking = true;
-            window.requestAnimationFrame(applyNavPosition);
-        }
-    }, { passive: true });
-
-    window.addEventListener('scroll', function () {
-        if (!ticking) {
-            ticking = true;
-            window.requestAnimationFrame(function () {
-                ticking = false;
-                syncNavigation();
-            });
-        }
-    }, { passive: true });
-
-    // If the page/tab is switched and scroll position is restored,
-    // keep the navigation state consistent without changing other UI.
-    window.addEventListener('pageshow', function () {
-        lastY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || 0);
-        measureNav();
-    });
-})();
-</script>
-
 </body></html>

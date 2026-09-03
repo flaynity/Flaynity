@@ -21,23 +21,21 @@
             --border-color: #EEEEEE;
             --skeleton-base: #E0E0E0;
             --skeleton-shimmer: rgba(255, 255, 255, 0.6);
-            --flaynity-black-bg: #000000;
         }
 
         [data-theme="dark"] {
-            --bg-color: #262729;
-            --surface: #262729;
+            --bg-color: #0F0F0F;
+            --surface: #0F0F0F;
             --primary: #FF2E55; 
             --primary-glow: rgba(255, 46, 85, 0.15);
             --text-main: #FFFFFF;
             --text-muted: #AAAAAA;
-            --card-bg: #262729;
+            --card-bg: #0F0F0F;
             --glass-bg: rgba(0, 0, 0, 0.95);
             --glass-border: rgba(255, 255, 255, 0.15);
             --border-color: #222222;
             --skeleton-base: #212121;
             --skeleton-shimmer: rgba(255, 255, 255, 0.08);
-            --flaynity-black-bg: #262729;
         }
 
         * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
@@ -119,7 +117,7 @@
         .offline-short-card { display:flex; flex-direction:column; gap:8px; min-width:0; }
         .offline-short-meta { display:flex; gap:8px; align-items:center; }
         .offline-short-lines { display:flex; flex-direction:column; gap:4px; flex:1; min-width:0; }
-        .offline-shorts-screen { height:100%; width:100%; position:relative; background:var(--flaynity-black-bg); overflow:hidden; }
+        .offline-shorts-screen { height:100%; width:100%; position:relative; background:#0F0F0F; overflow:hidden; }
         .offline-shorts-screen > .skel-box { opacity:.16; }
         .offline-shorts-actions { position:absolute; right:16px; bottom:80px; display:flex; flex-direction:column; gap:20px; align-items:center; }
         .offline-shorts-info { position:absolute; bottom:60px; left:16px; right:80px; display:flex; flex-direction:column; gap:10px; }
@@ -341,7 +339,7 @@
             overflow: hidden;
             cursor: pointer;
             position: relative;
-            background: var(--flaynity-black-bg);
+            background: #0F0F0F;
             box-shadow: 0 4px 12px rgba(0,0,0,0.04);
             transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -361,7 +359,7 @@
             right: 0;
             width: 100%;
             height: 48px; 
-            background: var(--surface) !important;
+            background: #000000 !important;
             border-top: 1px solid var(--border-color);
             display: flex;
             justify-content: space-around;
@@ -371,7 +369,6 @@
             padding-bottom: env(safe-area-inset-bottom);
             box-sizing: border-box;
         }
-        [data-theme="dark"] .bottom-nav { background: #000000 !important; }
 
         .nav-item {
             display: flex;
@@ -489,7 +486,7 @@
         .back-btn:active { transform: scale(0.85); background: var(--primary); border-color: var(--primary); color: white; }
 
         .full-page-banner { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; border-bottom: 1px solid var(--glass-border); }
-        .video-container { width: 100%; aspect-ratio: 16 / 9; background: var(--flaynity-black-bg); display: none; position: relative; border-bottom: 1px solid var(--glass-border); }
+        .video-container { width: 100%; aspect-ratio: 16 / 9; background: #0F0F0F; display: none; position: relative; border-bottom: 1px solid var(--glass-border); }
         .video-container iframe, .video-container video { width: 100%; height: 100%; border: none; }
 
         .full-page-content { padding: 16px; }
@@ -1033,8 +1030,8 @@
             transform: scale(1);
         }
 /* ===== FLAYNITY YOUTUBE-STYLE LONG VIDEO PLAYER ===== */
-.fly-player-wrap{position:absolute;inset:0;width:100%;height:100%;background:var(--flaynity-black-bg);overflow:hidden;}
-.fly-video{width:100%;height:100%;object-fit:contain;background:var(--flaynity-black-bg);display:block;}
+.fly-player-wrap{position:absolute;inset:0;width:100%;height:100%;background:#0F0F0F;overflow:hidden;}
+.fly-video{width:100%;height:100%;object-fit:contain;background:#0F0F0F;display:block;}
 .fly-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;pointer-events:none;}
 .fly-gesture{position:absolute;inset:0;z-index:5;}
 .fly-buffering{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:transparent;z-index:8;pointer-events:none;}
@@ -1132,8 +1129,8 @@
 <button class="back-btn" onclick="executeBackAction(); playUI('click')">
 <i class="fas fa-arrow-left"></i>
 </button>
-<div style="position: relative; width: 100%; aspect-ratio: 16/9; background: var(--flaynity-black-bg);">
-<div id="video-player-skeleton" style="position: absolute; top:0; left:0; width:100%; height:100%; background:var(--flaynity-black-bg); display:flex; align-items:center; justify-content:center; z-index:11;">
+<div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #0F0F0F;">
+<div id="video-player-skeleton" style="position: absolute; top:0; left:0; width:100%; height:100%; background:#0F0F0F; display:flex; align-items:center; justify-content:center; z-index:11;">
 <div style="width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
 </div>
 <img class="full-page-banner" id="movie-detail-banner" onerror="this.src=''" src="" style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; border-radius:0;"/>

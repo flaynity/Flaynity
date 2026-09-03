@@ -126,45 +126,57 @@ function __flaynityReady(fn) {
 // =========================================================
 function getHomeSkeletonHTML() {
     return `
-        <div class="offline-home-skeleton">
-            <div class="offline-video-skeleton">
-                <div class="skel-box" style="width:100%; aspect-ratio:16/9; border-radius:16px;"></div>
-                <div class="offline-video-meta">
-                    <div class="skel-box" style="width:40px; height:40px; border-radius:50%; flex-shrink:0;"></div>
-                    <div class="offline-video-lines">
-                        <div class="skel-box" style="width:85%; height:16px; border-radius:4px;"></div>
-                        <div class="skel-box" style="width:50%; height:12px; border-radius:4px;"></div>
+        <div style="display: flex; flex-direction: column; gap: 20px; margin-top: 10px;">
+            <!-- Long Video Card Skeleton -->
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="skel-box" style="width: 100%; aspect-ratio: 16/9; border-radius: 16px;"></div>
+                <div style="display: flex; gap: 12px; align-items: flex-start; padding: 0 4px;">
+                    <div class="skel-box" style="width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;"></div>
+                    <div style="display: flex; flex-direction: column; gap: 8px; flex: 1;">
+                        <div class="skel-box" style="width: 85%; height: 16px; border-radius: 4px;"></div>
+                        <div class="skel-box" style="width: 50%; height: 12px; border-radius: 4px;"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="offline-shorts-skeleton">
-                <div class="offline-shorts-heading">
-                    <div class="skel-box" style="width:20px; height:20px; border-radius:4px;"></div>
-                    <div class="skel-box" style="width:80px; height:18px; border-radius:4px;"></div>
+            <!-- 2-Column Shorts Section Skeleton -->
+            <div style="margin-top: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                    <div class="skel-box" style="width: 20px; height: 20px; border-radius: 4px;"></div>
+                    <div class="skel-box" style="width: 80px; height: 18px; border-radius: 4px;"></div>
                 </div>
-                <div class="offline-shorts-grid">
-                    ${[1,2].map(() => `
-                        <div class="offline-short-card">
-                            <div class="skel-box" style="width:100%; aspect-ratio:2/3; border-radius:12px;"></div>
-                            <div class="offline-short-meta">
-                                <div class="skel-box" style="width:28px; height:28px; border-radius:50%; flex-shrink:0;"></div>
-                                <div class="offline-short-lines">
-                                    <div class="skel-box" style="width:90%; height:12px; border-radius:3px;"></div>
-                                    <div class="skel-box" style="width:50%; height:10px; border-radius:3px;"></div>
-                                </div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div class="skel-box" style="width: 100%; aspect-ratio: 2/3; border-radius: 12px;"></div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <div class="skel-box" style="width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;"></div>
+                            <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+                                <div class="skel-box" style="width: 90%; height: 12px; border-radius: 3px;"></div>
+                                <div class="skel-box" style="width: 50%; height: 10px; border-radius: 3px;"></div>
                             </div>
-                        </div>`).join('')}
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div class="skel-box" style="width: 100%; aspect-ratio: 2/3; border-radius: 12px;"></div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <div class="skel-box" style="width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;"></div>
+                            <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+                                <div class="skel-box" style="width: 90%; height: 12px; border-radius: 3px;"></div>
+                                <div class="skel-box" style="width: 50%; height: 10px; border-radius: 3px;"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="offline-video-skeleton" style="margin-top:8px;">
-                <div class="skel-box" style="width:100%; aspect-ratio:16/9; border-radius:16px;"></div>
-                <div class="offline-video-meta">
-                    <div class="skel-box" style="width:40px; height:40px; border-radius:50%; flex-shrink:0;"></div>
-                    <div class="offline-video-lines">
-                        <div class="skel-box" style="width:75%; height:16px; border-radius:4px;"></div>
-                        <div class="skel-box" style="width:45%; height:12px; border-radius:4px;"></div>
+            <!-- Another Long Video Card Skeleton -->
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                <div class="skel-box" style="width: 100%; aspect-ratio: 16/9; border-radius: 16px;"></div>
+                <div style="display: flex; gap: 12px; align-items: flex-start; padding: 0 4px;">
+                    <div class="skel-box" style="width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;"></div>
+                    <div style="display: flex; flex-direction: column; gap: 8px; flex: 1;">
+                        <div class="skel-box" style="width: 75%; height: 16px; border-radius: 4px;"></div>
+                        <div class="skel-box" style="width: 45%; height: 12px; border-radius: 4px;"></div>
                     </div>
                 </div>
             </div>
@@ -174,21 +186,21 @@ function getHomeSkeletonHTML() {
 
 function getShortsSkeletonHTML() {
     return `
-        <div class="offline-shorts-screen">
-            <div class="skel-box" style="width:100%; height:100%; border-radius:0;"></div>
-            <div class="offline-shorts-actions">
-                <div class="skel-box" style="width:44px; height:44px; border-radius:50%;"></div>
-                <div class="skel-box" style="width:44px; height:44px; border-radius:50%;"></div>
-                <div class="skel-box" style="width:44px; height:44px; border-radius:50%;"></div>
-                <div class="skel-box" style="width:40px; height:40px; border-radius:50%;"></div>
+        <div style="height: 100%; width: 100%; position: relative; background: #000; overflow: hidden;">
+            <div class="skel-box" style="width: 100%; height: 100%; border-radius: 0; opacity: 0.15;"></div>
+            <div style="position: absolute; right: 16px; bottom: 80px; display: flex; flex-direction: column; gap: 20px; align-items: center;">
+                <div class="skel-box" style="width: 44px; height: 44px; border-radius: 50%;"></div>
+                <div class="skel-box" style="width: 44px; height: 44px; border-radius: 50%;"></div>
+                <div class="skel-box" style="width: 44px; height: 44px; border-radius: 50%;"></div>
+                <div class="skel-box" style="width: 40px; height: 40px; border-radius: 50%;"></div>
             </div>
-            <div class="offline-shorts-info">
-                <div class="offline-shorts-user">
-                    <div class="skel-box" style="width:36px; height:36px; border-radius:50%; flex-shrink:0;"></div>
-                    <div class="skel-box" style="width:110px; height:14px; border-radius:4px;"></div>
+            <div style="position: absolute; bottom: 60px; left: 16px; right: 80px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div class="skel-box" style="width: 36px; height: 36px; border-radius: 50%;"></div>
+                    <div class="skel-box" style="width: 110px; height: 14px; border-radius: 4px;"></div>
                 </div>
-                <div class="skel-box" style="width:80%; height:16px; border-radius:4px;"></div>
-                <div class="skel-box" style="width:50%; height:12px; border-radius:4px;"></div>
+                <div class="skel-box" style="width: 80%; height: 16px; border-radius: 4px;"></div>
+                <div class="skel-box" style="width: 50%; height: 12px; border-radius: 4px;"></div>
             </div>
         </div>
     `;
@@ -475,71 +487,64 @@ function _detachAllPostReactionListeners() {
 }
 
 // =========================================================
-// TOP-OF-PAGE PULL TO REFRESH ENGINE
+// UNIVERSAL NATIVE YOUTUBE-STYLE PULL TO REFRESH ENGINE
 // =========================================================
 let touchStartY = 0;
 let touchStartX = 0;
 let touchMoveY = 0;
-let ptrStartAtTop = false;
 let isPTRActive = false;
 let isRefreshingNow = false;
 
-function getMainScrollTop() {
-    return Math.max(
-        Number(window.scrollY || 0),
-        Number(document.documentElement.scrollTop || 0),
-        Number(document.body.scrollTop || 0)
-    );
-}
-
 function isPTRAllowedOnCurrentView() {
     const modalsOpen = document.querySelectorAll('.fullscreen-page[style*="display: flex"], .fullscreen-page[style*="display: block"], .premium-download-modal[style*="display: flex"], #full-movie-page[style*="display: block"], #theme-popup-menu[style*="display: flex"], #full-image-preview-overlay[style*="display: flex"]');
-    if (modalsOpen.length > 0) return false;
+    if (modalsOpen.length > 0) {
+        const viewChannel = document.getElementById('view-channel-page');
+        if (viewChannel && (viewChannel.style.display === 'flex' || viewChannel.style.display === 'block')) {
+            return viewChannel.scrollTop <= 0;
+        }
+        return false;
+    }
 
     const activeNav = document.querySelector('.nav-item.active');
     if (!activeNav) return false;
     const activeTabId = activeNav.id.replace('nav-', '');
 
-    // Shorts has its own vertical scroller and must never trigger page PTR.
-    if (activeTabId === 'shorts') return false;
-    return ['home', 'search', 'you'].includes(activeTabId) && getMainScrollTop() <= 0;
-}
-
-function resetPTRIndicator() {
-    const ptrIndicator = document.getElementById('ptr-indicator');
-    const ptrSpinner = document.getElementById('ptr-spinner');
-    if (ptrIndicator) {
-        ptrIndicator.style.transform = 'translate3d(-50%, -70px, 0)';
-        ptrIndicator.style.opacity = '0';
+    if (activeTabId === 'home') {
+        return window.scrollY <= 0 && document.documentElement.scrollTop <= 0;
+    } else if (activeTabId === 'search') {
+        return window.scrollY <= 0 && document.documentElement.scrollTop <= 0;
+    } else if (activeTabId === 'you') {
+        return window.scrollY <= 0 && document.documentElement.scrollTop <= 0;
     }
-    if (ptrSpinner) ptrSpinner.classList.remove('ptr-spinning');
+
+    return false;
 }
 
 function initPullToRefresh() {
-    if (window.__flaynityPTRInitialized) return;
-    window.__flaynityPTRInitialized = true;
-
     const ptrIndicator = document.getElementById('ptr-indicator');
     const ptrSpinner = document.getElementById('ptr-spinner');
-    const PTR_TRIGGER_DISTANCE = 110;
 
     document.addEventListener('touchstart', (e) => {
-        if (isRefreshingNow || !e.touches || !e.touches.length) return;
-        ptrStartAtTop = isPTRAllowedOnCurrentView();
-        isPTRActive = ptrStartAtTop;
-        if (!ptrStartAtTop) return;
-        touchStartY = e.touches[0].clientY;
-        touchStartX = e.touches[0].clientX;
-        touchMoveY = touchStartY;
+        if (isRefreshingNow) return;
+        if (isPTRAllowedOnCurrentView()) {
+            touchStartY = e.touches[0].clientY;
+            touchStartX = e.touches[0].clientX;
+            touchMoveY = touchStartY;
+            isPTRActive = true;
+        } else {
+            isPTRActive = false;
+        }
     }, { passive: true });
 
     document.addEventListener('touchmove', (e) => {
-        if (!isPTRActive || isRefreshingNow || !e.touches || !e.touches.length) return;
-
-        // The gesture is valid only if the page is still exactly at the top.
-        if (!ptrStartAtTop || getMainScrollTop() > 0 || !isPTRAllowedOnCurrentView()) {
+        if (!isPTRActive || isRefreshingNow) return;
+        
+        if (!isPTRAllowedOnCurrentView()) {
             isPTRActive = false;
-            resetPTRIndicator();
+            if (ptrIndicator) {
+                ptrIndicator.style.transform = `translateX(-50%) translateY(-70px)`;
+                ptrIndicator.style.opacity = '0';
+            }
             return;
         }
 
@@ -548,61 +553,66 @@ function initPullToRefresh() {
         const deltaY = currentY - touchStartY;
         const deltaX = Math.abs(currentX - touchStartX);
 
-        if (deltaY > 8 && deltaY > deltaX * 1.35) {
+        if (deltaY > 20 && deltaY > deltaX * 1.5) {
             touchMoveY = currentY;
-            // Damped movement prevents a tiny scroll from looking like a pull.
-            const pullDistance = Math.min(100, deltaY * 0.42);
-            if (e.cancelable) e.preventDefault();
+            const pullDistance = (deltaY - 20) * 0.45;
 
             if (ptrIndicator) {
-                ptrIndicator.style.opacity = String(Math.min(1, pullDistance / 52));
-                ptrIndicator.style.transform = `translate3d(-50%, ${pullDistance - 70}px, 0)`;
+                ptrIndicator.style.opacity = Math.min(1, pullDistance / 40);
+                ptrIndicator.style.transform = `translateX(-50%) translateY(${pullDistance - 65}px)`;
             }
             if (ptrSpinner) {
-                ptrSpinner.style.transform = `rotate(${pullDistance * 3.2}deg)`;
-                ptrSpinner.style.stroke = pullDistance >= PTR_TRIGGER_DISTANCE * 0.42 ? 'var(--primary)' : 'var(--text-muted)';
+                ptrSpinner.style.transform = `rotate(${pullDistance * 3}deg)`;
             }
-        } else if (deltaY <= 0 || deltaX >= Math.abs(deltaY) * 1.35) {
+        } else if (deltaY < 0) {
             isPTRActive = false;
-            resetPTRIndicator();
+            if (ptrIndicator) {
+                ptrIndicator.style.transform = `translateX(-50%) translateY(-70px)`;
+                ptrIndicator.style.opacity = '0';
+            }
         }
-    }, { passive: false });
+    }, { passive: true });
 
     document.addEventListener('touchend', () => {
         if (!isPTRActive || isRefreshingNow) {
             isPTRActive = false;
             return;
         }
-
+        
         const deltaY = touchMoveY - touchStartY;
         isPTRActive = false;
 
-        if (deltaY >= PTR_TRIGGER_DISTANCE && getMainScrollTop() <= 0 && isPTRAllowedOnCurrentView()) {
+        if (deltaY > 90) { 
             isRefreshingNow = true;
             if (ptrIndicator) {
-                ptrIndicator.style.transform = 'translate3d(-50%, 18px, 0)';
+                ptrIndicator.style.transform = `translateX(-50%) translateY(20px)`;
                 ptrIndicator.style.opacity = '1';
             }
             if (ptrSpinner) {
-                ptrSpinner.style.stroke = 'var(--primary)';
-                ptrSpinner.style.transform = '';
                 ptrSpinner.classList.add('ptr-spinning');
             }
 
             triggerUniversalPullToRefresh().finally(() => {
                 setTimeout(() => {
-                    resetPTRIndicator();
+                    if (ptrIndicator) {
+                        ptrIndicator.style.transform = `translateX(-50%) translateY(-70px)`;
+                        ptrIndicator.style.opacity = '0';
+                    }
+                    if (ptrSpinner) {
+                        ptrSpinner.classList.remove('ptr-spinning');
+                    }
                     isRefreshingNow = false;
-                }, 350);
+                }, 400);
             });
         } else {
-            resetPTRIndicator();
+            if (ptrIndicator) {
+                ptrIndicator.style.transform = `translateX(-50%) translateY(-70px)`;
+                ptrIndicator.style.opacity = '0';
+            }
         }
-
         touchStartY = 0;
         touchMoveY = 0;
-        ptrStartAtTop = false;
-    }, { passive: true });
+    });
 }
 
 async function triggerUniversalPullToRefresh() {
@@ -3277,6 +3287,9 @@ function adjustHeaderForActiveTab(tabId) {
     const chips = document.getElementById('global-category-chips');
 
     if (tabId === 'shorts') {
+        document.body.classList.remove('home-feed-scroll-header');
+        header.style.position = 'fixed';
+        if (chips) chips.style.position = 'fixed';
         header.style.display = 'none';
         document.body.style.paddingTop = '0px';
         document.body.style.paddingBottom = '0px';
@@ -3290,8 +3303,16 @@ function adjustHeaderForActiveTab(tabId) {
     document.body.style.paddingTop = '126px';
 
     if (tabId === 'home') {
+        // Home feed uses the document's native scroll flow so the complete top bar
+        // moves with the feed at exactly the user's scroll speed (no jump/hide animation).
+        document.body.classList.add('home-feed-scroll-header');
+        header.style.position = 'absolute';
+        if (chips) chips.style.position = 'absolute';
         if (chips) chips.style.display = 'grid';
     } else {
+        document.body.classList.remove('home-feed-scroll-header');
+        header.style.position = 'fixed';
+        if (chips) chips.style.position = 'fixed';
         if (chips) chips.style.display = 'none';
     }
 

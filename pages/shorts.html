@@ -9,7 +9,7 @@
             left: 0;
             width: 100vw;
             height: calc(100vh - 48px); 
-            background: #0F0F0F !important;
+            background: #000000 !important;
             color: #FFFFFF !important;
             z-index: 500;
             overflow: hidden;
@@ -23,7 +23,7 @@
         
         .short-slide {
             height: 100%; width: 100%; scroll-snap-align: start;
-            scroll-snap-stop: always; position: relative; background: #0F0F0F !important;
+            scroll-snap-stop: always; position: relative; background: #000000 !important;
             display: flex; align-items: center; justify-content: center;
             overflow: hidden;
         }
@@ -250,8 +250,9 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+body { background:#000000 !important; }
 </style></head><body>
-<div class="tab-content" id="shorts-tab" style="padding:0;">
+<div class="tab-content" id="shorts-tab" style="padding:0; background:#000000 !important;">
 <div id="shorts-swiper-container" style="height:100%; width:100%;"></div>
 </div>
 <div class="premium-download-modal" id="short-desc-bottom-sheet" style="z-index: 1900;">

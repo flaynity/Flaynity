@@ -397,12 +397,26 @@ function renderAllSkeletons() {
     const shorts = document.getElementById('shorts-swiper-container');
     const youBox = document.getElementById('channel-action-box');
 
-    if (home) home.innerHTML = getHomeSkeletonHTML();
+    if (home) {
+        home.style.width = '100%';
+        home.style.minWidth = '0';
+        home.style.boxSizing = 'border-box';
+        home.innerHTML = getHomeSkeletonHTML();
+    }
     if (shorts) shorts.innerHTML = getShortsSkeletonHTML();
     if (youBox) {
         youBox.innerHTML = `<div class="skel-box" style="width: 100%; height: 48px; border-radius: 20px;"></div>`;
     }
 }
+
+// Render the Home skeleton immediately when the cached app is opened offline.
+// This runs after the modular page DOM has been injected, before any category
+// interaction is required.
+window.addEventListener('flaynity-dom-ready', function () {
+    if (!navigator.onLine) {
+        requestAnimationFrame(renderAllSkeletons);
+    }
+}, { once: true });
 
 // =========================================
 // AUTOMATIC & MANUAL THEME ENGINE
@@ -1674,6 +1688,9 @@ function buildHomeFeed() {
     if (!container) return;
 
     if (!navigator.onLine) {
+        container.style.width = '100%';
+        container.style.minWidth = '0';
+        container.style.boxSizing = 'border-box';
         container.innerHTML = getHomeSkeletonHTML();
         return;
     }

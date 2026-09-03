@@ -1881,7 +1881,7 @@ function renderLongVideosSegmentUI(segmentLongs) {
         const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px;height:36px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></div>`;
         html += `
             <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin:0 -16px 24px -16px;width:calc(100% + 32px);cursor:pointer;background:var(--surface);">
-                <div class="long-video-thumb-container" style="position:relative;width:100%;aspect-ratio:16/9;background:#000;overflow:hidden;">
+                <div class="long-video-thumb-container" style="position:relative;width:100%;aspect-ratio:16/9;background:#0F0F0F;overflow:hidden;">
                     <img src="${v.poster}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;">
                     <span style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.85);color:#fff;font-size:0.72rem;padding:2px 6px;border-radius:4px;font-weight:800;">${v.duration || '10:00'}</span>
                 </div>
@@ -1976,7 +1976,7 @@ function renderSinglePostSegmentUI(post) {
     let imagesHtml = '';
     if (post.images && post.images.length > 0) {
         imagesHtml = `
-            <div style="margin-left: -16px; margin-right: -16px; margin-top: 12px; margin-bottom: 12px; width: calc(100% + 32px); aspect-ratio: 3/4; position: relative; background: #000; overflow: visible; border-radius: 0 !important;">
+            <div style="margin-left: -16px; margin-right: -16px; margin-top: 12px; margin-bottom: 12px; width: calc(100% + 32px); aspect-ratio: 3/4; position: relative; background: #0F0F0F; overflow: visible; border-radius: 0 !important;">
                 <img src="${post.images[0]}" onclick="openFullScreenImagePreview('${post.images[0]}')" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; display: block; border-radius: 0 !important;" loading="lazy">
                 
                 <div style="position: absolute; top: 0; left: 0; right: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%); padding: 16px 20px; color: #FFFFFF; z-index: 10;">
@@ -3432,7 +3432,7 @@ function renderMovieWatchRecommendedFeed() {
 
         html += `
             <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 24px; cursor: pointer; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-                <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #000; overflow: hidden;">
+                <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #0F0F0F; overflow: hidden;">
                     <img src="${v.poster}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
                     <span class="long-video-duration" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">${v.duration || '10:00'}</span>
                 </div>

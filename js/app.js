@@ -413,13 +413,35 @@ function renderAllSkeletons() {
 }
 
 // Render the Home skeleton immediately when the cached app is opened offline.
-// This runs after the modular page DOM has been injected, before any category
-// interaction is required.
-window.addEventListener('flaynity-dom-ready', function () {
-    if (!navigator.onLine) {
-        requestAnimationFrame(renderAllSkeletons);
-    }
-}, { once: true });
+// The initial offline boot does not pass through a tab change, so Home's
+// header/category layout must be synchronized before the skeleton is measured.
+// Otherwise Android WebView can calculate the first skeleton layout in the
+// pre-navigation state and correct it only after the user taps a control.
+function stabilizeInitialOfflineHomeSkeleton() {
+    if (navigator.onLine) return;
+
+    try {
+        if (typeof adjustHeaderForActiveTab === 'function') {
+            adjustHeaderForActiveTab('home');
+        }
+    } catch (e) {}
+
+    try { window.scrollTo(0, 0); } catch (e) {}
+
+    // Wait for the visible app layout, then render on two frames so WebView has
+    // the final viewport width/height before resolving aspect-ratio skeletons.
+    requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+            renderAllSkeletons();
+            try {
+                const home = document.getElementById('home-feed-container');
+                if (home) void home.offsetHeight;
+            } catch (e) {}
+        });
+    });
+}
+
+window.addEventListener('flaynity-dom-ready', stabilizeInitialOfflineHomeSkeleton, { once: true });
 
 // =========================================
 // AUTOMATIC & MANUAL THEME ENGINE

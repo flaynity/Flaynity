@@ -3287,6 +3287,9 @@ function adjustHeaderForActiveTab(tabId) {
         document.body.style.paddingBottom = '50px';
     }
 
+    // Home's top bars are intentionally document-flow elements (absolute on the page),
+    // not fixed/sticky overlays. This lets native page scrolling move them at exactly
+    // the same speed as the feed, without any JS-driven jump/animation.
     document.body.style.paddingTop = '126px';
 
     if (tabId === 'home') {

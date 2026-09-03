@@ -91,13 +91,14 @@ function __flaynityReady(fn) {
 }
 
 
-/* Home-only feed-synced bottom navigation.
-   The bottom navigation follows the Home page scroll distance in real time.
-   All other tabs keep the navigation locked and fully visible. */
+/* Feed-synced bottom navigation.
+   The Home feed uses the document/window as its main scroller. On mobile,
+   touchmove is also tracked so the navigation moves in real time with the
+   user's finger even when the browser delays a scroll event. */
 (function () {
     "use strict";
 
-    var state = { nav:null, lastY:0, offset:0, height:48, frame:0 };
+    var state = { nav:null, lastY:0, offset:0, height:48, frame:0, touchY:null, touchActive:false };
 
     function getScrollY() {
         return Math.max(
@@ -107,9 +108,10 @@ function __flaynityReady(fn) {
         );
     }
 
-    function isHomeActive() {
-        var activeTab = document.querySelector('.nav-item.active');
-        return !!(activeTab && activeTab.id === 'nav-home');
+    function isHomeTabActive() {
+        var active = document.querySelector(".nav-item.active");
+        if (active && active.id) return active.id === "nav-home";
+        return true;
     }
 
     function findNav() {
@@ -129,10 +131,6 @@ function __flaynityReady(fn) {
         state.frame = 0;
         var nav = findNav();
         if (!nav) return;
-
-        /* Non-Home tabs are permanently locked in the visible position. */
-        if (!isHomeActive()) state.offset = 0;
-
         var y = Math.max(0, Math.min(state.height, state.offset));
         nav.style.webkitTransform = "translate3d(0," + y.toFixed(2) + "px,0)";
         nav.style.transform = "translate3d(0," + y.toFixed(2) + "px,0)";
@@ -142,54 +140,97 @@ function __flaynityReady(fn) {
         if (!state.frame) state.frame = window.requestAnimationFrame(render);
     }
 
-    function resetNavPosition() {
-        state.offset = 0;
-        state.lastY = getScrollY();
+    function moveBy(delta) {
+        if (!isFinite(delta) || Math.abs(delta) < 0.01) return;
+        state.offset = Math.max(0, Math.min(state.height, state.offset + delta));
         scheduleRender();
     }
 
     function syncFromScroll() {
         var nav = findNav();
         var y = getScrollY();
+        if (!nav) { state.lastY = y; return; }
 
-        if (!nav) {
+        // Only Home is allowed to move the bottom navigation. All other tabs
+        // keep it locked at its normal position regardless of page scrolling.
+        if (!isHomeTabActive()) {
+            state.offset = 0;
             state.lastY = y;
-            return;
-        }
-
-        /* Shorts, Upload, Discover and You: navigation does not react to scroll. */
-        if (!isHomeActive()) {
-            state.lastY = y;
-            if (state.offset !== 0) resetNavPosition();
-            return;
-        }
-
-        /* On Home, movement is exactly tied to the user's scroll delta.
-           This prevents sudden hide/show jumps and preserves scroll speed. */
-        var delta = y - state.lastY;
-        if (Math.abs(delta) > 0) {
-            state.offset = Math.max(0, Math.min(state.height, state.offset + delta));
             scheduleRender();
+            return;
         }
 
-        if (y <= 0 && state.offset !== 0) {
+        var delta = y - state.lastY;
+        if (Math.abs(delta) >= 0.01) moveBy(delta);
+
+        if (y <= 0) {
             state.offset = 0;
             scheduleRender();
         }
-
         state.lastY = y;
+    }
+
+    function onTouchStart(e) {
+        if (!e.touches || !e.touches.length) return;
+        if (!isHomeTabActive()) {
+            state.touchActive = false;
+            state.touchY = null;
+            state.offset = 0;
+            state.lastY = getScrollY();
+            scheduleRender();
+            return;
+        }
+        state.touchActive = true;
+        state.touchY = e.touches[0].clientY;
+        state.lastY = getScrollY();
+    }
+
+    function onTouchMove(e) {
+        if (!isHomeTabActive()) {
+            state.touchActive = false;
+            state.touchY = null;
+            state.offset = 0;
+            state.lastY = getScrollY();
+            scheduleRender();
+            return;
+        }
+        if (!state.touchActive || !e.touches || !e.touches.length) return;
+        var currentY = e.touches[0].clientY;
+        if (state.touchY === null) { state.touchY = currentY; return; }
+
+        // Finger up = feed down, so the nav follows downward by the same distance.
+        var delta = state.touchY - currentY;
+        if (Math.abs(delta) >= 0.01) {
+            moveBy(delta);
+            state.touchY = currentY;
+        }
+
+        // Avoid applying the same touch movement twice when scroll fires.
+        state.lastY = getScrollY();
+    }
+
+    function onTouchEnd() {
+        state.touchActive = false;
+        state.touchY = null;
+        state.lastY = getScrollY();
     }
 
     function resetForPage() {
         state.nav = null;
         state.offset = 0;
+        state.touchY = null;
+        state.touchActive = false;
         state.lastY = getScrollY();
-        scheduleRender();
+        if (findNav()) scheduleRender();
     }
 
     function start() {
         state.lastY = getScrollY();
         window.addEventListener("scroll", syncFromScroll, { passive:true });
+        document.addEventListener("touchstart", onTouchStart, { passive:true });
+        document.addEventListener("touchmove", onTouchMove, { passive:true });
+        document.addEventListener("touchend", onTouchEnd, { passive:true });
+        document.addEventListener("touchcancel", onTouchEnd, { passive:true });
 
         window.addEventListener("resize", function() {
             var nav = findNav();
@@ -200,16 +241,15 @@ function __flaynityReady(fn) {
             }
         }, { passive:true });
 
-        /* Tab/page changes must immediately restore the locked Home/non-Home state. */
         window.addEventListener("flaynity-dom-ready", resetForPage);
         window.addEventListener("hashchange", resetForPage);
+        // Tab changes must immediately unlock/lock the navigation state.
+        window.addEventListener("flaynity-tab-changed", resetForPage);
 
         var observer = new MutationObserver(function() {
             if (!state.nav || !document.documentElement.contains(state.nav)) resetForPage();
         });
         if (document.body) observer.observe(document.body, {childList:true, subtree:true});
-
-        resetForPage();
     }
 
     __flaynityReady(start);
@@ -2820,6 +2860,10 @@ const AppNavigation = {
         if (navEl) navEl.classList.add('active');
 
         adjustHeaderForActiveTab(activeTab);
+
+        // The bottom navigation may follow scroll only on Home. Notify the
+        // scroll controller immediately when the active tab changes.
+        window.dispatchEvent(new Event('flaynity-tab-changed'));
 
         if (activeTab === 'you') initYouTabUI();
         if (activeTab === 'shorts') buildShortsPage();

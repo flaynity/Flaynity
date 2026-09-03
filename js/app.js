@@ -90,6 +90,105 @@ function __flaynityReady(fn) {
     }
 }
 
+
+/* Feed-synced bottom navigation.
+   Installed globally because pages/*.html are parsed and injected by the modular loader,
+   so scripts inside those HTML fragments are intentionally not executed. */
+(function () {
+    "use strict";
+
+    var state = {
+        nav: null,
+        lastY: 0,
+        offset: 0,
+        height: 48,
+        frame: 0
+    };
+
+    function findNav() {
+        var nav = document.querySelector("#app-screen .bottom-nav") ||
+                  document.querySelector(".bottom-nav");
+        if (!nav) return null;
+        if (state.nav !== nav) {
+            state.nav = nav;
+            state.height = Math.max(1, nav.getBoundingClientRect().height || 48);
+            nav.style.willChange = "transform";
+            nav.style.transition = "none";
+            nav.style.webkitTransform = "translate3d(0,0,0)";
+            nav.style.transform = "translate3d(0,0,0)";
+        }
+        return nav;
+    }
+
+    function render() {
+        state.frame = 0;
+        var nav = findNav();
+        if (!nav) return;
+        nav.style.webkitTransform = "translate3d(0," + state.offset.toFixed(2) + "px,0)";
+        nav.style.transform = "translate3d(0," + state.offset.toFixed(2) + "px,0)";
+    }
+
+    function scheduleRender() {
+        if (!state.frame) state.frame = window.requestAnimationFrame(render);
+    }
+
+    function sync() {
+        var nav = findNav();
+        var y = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || 0);
+
+        if (!nav) {
+            state.lastY = y;
+            return;
+        }
+
+        var delta = y - state.lastY;
+
+        if (Math.abs(delta) >= 0.5) {
+            // Downward scroll moves the nav down by exactly the feed's movement.
+            // Upward scroll brings it back by exactly the same movement.
+            state.offset = Math.max(0, Math.min(state.height, state.offset + delta));
+        }
+
+        if (y <= 0) state.offset = 0;
+        state.lastY = y;
+        scheduleRender();
+    }
+
+    function resetForPage() {
+        state.nav = null;
+        state.offset = 0;
+        state.lastY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || 0);
+        var nav = findNav();
+        if (nav) scheduleRender();
+    }
+
+    function start() {
+        state.lastY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || 0);
+
+        window.addEventListener("scroll", sync, { passive: true });
+        window.addEventListener("resize", function () {
+            var nav = findNav();
+            if (nav) {
+                state.height = Math.max(1, nav.getBoundingClientRect().height || 48);
+                state.offset = Math.min(state.offset, state.height);
+                scheduleRender();
+            }
+        }, { passive: true });
+
+        window.addEventListener("flaynity-dom-ready", resetForPage);
+        window.addEventListener("hashchange", resetForPage);
+
+        // Page fragments are injected after app.js loads. Observe only for the nav
+        // element, without touching the existing UI or page structure.
+        var observer = new MutationObserver(function () {
+            if (!state.nav || !document.documentElement.contains(state.nav)) resetForPage();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+    __flaynityReady(start);
+})();
+
 (function() {
     try {
         let pref = localStorage.getItem('flaynity-theme-pref') || 'light';

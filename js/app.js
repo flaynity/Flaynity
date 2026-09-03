@@ -3287,15 +3287,31 @@ function adjustHeaderForActiveTab(tabId) {
         document.body.style.paddingBottom = '50px';
     }
 
-    // Home's top bars are intentionally document-flow elements (absolute on the page),
-    // not fixed/sticky overlays. This lets native page scrolling move them at exactly
-    // the same speed as the feed, without any JS-driven jump/animation.
-    document.body.style.paddingTop = '126px';
-
+    // Home feed: keep the header/category bar at their original on-screen
+    // coordinates, but make them normal document-flow elements so native
+    // scrolling moves them with the feed at exactly the user's scroll speed.
     if (tabId === 'home') {
-        if (chips) chips.style.display = 'grid';
+        document.body.style.paddingTop = '0px';
+        header.style.position = 'absolute';
+        header.style.top = '0px';
+        if (chips) {
+            chips.style.display = 'grid';
+            chips.style.position = 'absolute';
+            chips.style.top = '82px';
+        }
+        const homeTab = document.getElementById('home-tab');
+        if (homeTab) homeTab.style.paddingTop = '126px';
     } else {
-        if (chips) chips.style.display = 'none';
+        document.body.style.paddingTop = '126px';
+        const homeTab = document.getElementById('home-tab');
+        if (homeTab) homeTab.style.paddingTop = '0px';
+        header.style.position = 'fixed';
+        header.style.top = '0px';
+        if (chips) {
+            chips.style.position = 'fixed';
+            chips.style.top = '82px';
+            chips.style.display = 'none';
+        }
     }
 
     if (tabId === 'you') {

@@ -82,8 +82,11 @@
         @keyframes skelShimmer {
             100% { transform: translateX(100%); }
         }
-        .offline-home-skeleton { display:flex; flex-direction:column; gap:20px; margin-top:10px; }
-        .offline-video-skeleton { display:flex; flex-direction:column; gap:12px; }
+        .offline-home-skeleton { display:flex; flex-direction:column; gap:20px; margin-top:10px; width:100%; min-width:0; box-sizing:border-box; padding-bottom:80px; }
+        .offline-home-skeleton * { box-sizing:border-box; min-width:0; }
+        .offline-home-skeleton .skel-box { max-width:100%; }
+        #home-feed-container { width:100%; min-width:0; box-sizing:border-box; }
+        .offline-video-skeleton { display:flex; flex-direction:column; gap:12px; width:100%; min-width:0; }
         .offline-video-meta { display:flex; gap:12px; align-items:flex-start; padding:0 4px; }
         .offline-video-lines { display:flex; flex-direction:column; gap:8px; flex:1; }
         .offline-shorts-skeleton { margin-top:8px; }

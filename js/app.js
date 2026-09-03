@@ -99,155 +99,140 @@ function __flaynityReady(fn) {
 
     var state = {
         nav: null,
-        lastY: 0,
-        offset: 0,
         height: 48,
+        offset: 0,
+        lastScrollY: 0,
+        touchY: 0,
+        touching: false,
         frame: 0
     };
 
-    function getScrollY() {
-        var doc = document.documentElement;
-        var body = document.body;
-        return Math.max(
-            Number(window.scrollY || 0),
-            Number(doc && doc.scrollTop || 0),
-            Number(body && body.scrollTop || 0)
-        );
+    function scrollY() {
+        var el = document.scrollingElement || document.documentElement || document.body;
+        return Math.max(0, Number(window.pageYOffset || window.scrollY || (el && el.scrollTop) || 0));
     }
 
-    function findNav() {
-        var nav = document.querySelector("#app-screen .bottom-nav") ||
-                  document.querySelector(".bottom-nav");
+    function getNav() {
+        var nav = document.querySelector('#app-screen .bottom-nav') || document.querySelector('.bottom-nav');
         if (!nav) return null;
-
         if (state.nav !== nav) {
             state.nav = nav;
             state.height = Math.max(1, nav.getBoundingClientRect().height || 48);
-            nav.style.setProperty("will-change", "transform");
-            nav.style.setProperty("transition", "none", "important");
-            nav.style.setProperty("-webkit-transition", "none", "important");
+            nav.style.setProperty('will-change', 'transform');
+            nav.style.setProperty('transition', 'none', 'important');
+            nav.style.setProperty('-webkit-transition', 'none', 'important');
         }
         return nav;
     }
 
-    function homeIsActive() {
-        var home = document.getElementById("home-tab");
-        if (!home || !home.classList.contains("active")) return false;
-
-        if (typeof AppNavigation !== "undefined" &&
-            AppNavigation && typeof AppNavigation.current === "function") {
+    function isHomeFeed() {
+        var home = document.getElementById('home-tab');
+        if (!home || !home.classList.contains('active')) return false;
+        if (typeof AppNavigation !== 'undefined' && AppNavigation && typeof AppNavigation.current === 'function') {
             var current = AppNavigation.current();
-            if (current && (current.type !== "tab" || current.id !== "home")) {
-                return false;
-            }
+            if (current && (current.type !== 'tab' || current.id !== 'home')) return false;
         }
         return true;
     }
 
     function render() {
         state.frame = 0;
-        var nav = findNav();
+        var nav = getNav();
         if (!nav) return;
-
-        var y = homeIsActive()
-            ? Math.max(0, Math.min(state.height, state.offset))
-            : 0;
-
-        nav.style.setProperty(
-            "transform",
-            "translate3d(0," + y.toFixed(2) + "px,0)",
-            "important"
-        );
-        nav.style.setProperty(
-            "-webkit-transform",
-            "translate3d(0," + y.toFixed(2) + "px,0)",
-            "important"
-        );
+        var y = isHomeFeed() ? Math.max(0, Math.min(state.height, state.offset)) : 0;
+        var transform = 'translate3d(0,' + y.toFixed(2) + 'px,0)';
+        nav.style.setProperty('transform', transform, 'important');
+        nav.style.setProperty('-webkit-transform', transform, 'important');
     }
 
-    function scheduleRender() {
+    function draw() {
         if (!state.frame) state.frame = requestAnimationFrame(render);
     }
 
-    function resetNavigation() {
+    function reset() {
         state.offset = 0;
-        state.lastY = getScrollY();
-        scheduleRender();
+        state.lastScrollY = scrollY();
+        state.touching = false;
+        state.touchY = 0;
+        draw();
     }
 
+    // Mouse wheel / non-touch scrolling. The navigation follows the actual
+    // page scroll delta exactly, without a timer or easing jump.
     function onScroll() {
-        var nav = findNav();
-        var currentY = getScrollY();
-
-        if (!nav) {
-            state.lastY = currentY;
-            return;
-        }
-
-        // Shorts, Upload, Discover, You and all internal pages are locked.
-        if (!homeIsActive()) {
+        var current = scrollY();
+        if (!isHomeFeed()) {
             state.offset = 0;
-            state.lastY = currentY;
-            scheduleRender();
+            state.lastScrollY = current;
+            draw();
             return;
         }
-
-        var delta = currentY - state.lastY;
-        state.lastY = currentY;
-
-        if (Math.abs(delta) < 0.01) return;
-
-        // Exact 1:1 movement: no easing, no delayed catch-up, no jump.
-        state.offset = Math.max(
-            0,
-            Math.min(state.height, state.offset + delta)
-        );
-
-        if (currentY <= 0) state.offset = 0;
-        scheduleRender();
+        // During Android touch scrolling, touchmove already tracks the finger.
+        if (state.touching) {
+            state.lastScrollY = current;
+            return;
+        }
+        var delta = current - state.lastScrollY;
+        state.lastScrollY = current;
+        if (!delta) return;
+        state.offset = Math.max(0, Math.min(state.height, state.offset + delta));
+        if (current <= 0) state.offset = 0;
+        draw();
     }
 
-    function onPageChanged() {
-        resetNavigation();
+    // Android WebView can deliver the user's finger movement before a useful
+    // window scroll event. Tracking touch movement makes the nav physically
+    // follow the feed at the same speed and prevents sudden hide/show.
+    function onTouchStart(e) {
+        if (!isHomeFeed() || !e.touches || !e.touches.length) return;
+        state.touching = true;
+        state.touchY = e.touches[0].clientY;
+        state.lastScrollY = scrollY();
+    }
+
+    function onTouchMove(e) {
+        if (!state.touching || !isHomeFeed() || !e.touches || !e.touches.length) return;
+        var y = e.touches[0].clientY;
+        var fingerDelta = y - state.touchY;
+        state.touchY = y;
+        if (Math.abs(fingerDelta) < 0.01) return;
+
+        // Finger moves up => feed moves down => nav moves down.
+        // Finger moves down => feed moves up => nav returns up.
+        state.offset = Math.max(0, Math.min(state.height, state.offset - fingerDelta));
+        draw();
+    }
+
+    function onTouchEnd() {
+        if (!state.touching) return;
+        state.touching = false;
+        state.lastScrollY = scrollY();
+        if (state.lastScrollY <= 0) state.offset = 0;
+        draw();
     }
 
     function start() {
-        findNav();
-        resetNavigation();
+        getNav();
+        reset();
 
-        window.addEventListener("scroll", onScroll, { passive: true });
-        window.addEventListener("resize", function () {
-            var nav = findNav();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        document.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
+        document.addEventListener('touchmove', onTouchMove, { passive: true, capture: true });
+        document.addEventListener('touchend', onTouchEnd, { passive: true, capture: true });
+        document.addEventListener('touchcancel', onTouchEnd, { passive: true, capture: true });
+
+        window.addEventListener('resize', function () {
+            var nav = getNav();
             if (nav) {
                 state.height = Math.max(1, nav.getBoundingClientRect().height || 48);
-                state.offset = Math.max(0, Math.min(state.offset, state.height));
-                scheduleRender();
+                state.offset = Math.max(0, Math.min(state.height, state.offset));
+                draw();
             }
         }, { passive: true });
 
-        window.addEventListener("flaynity-dom-ready", onPageChanged);
-        window.addEventListener("flaynity-tab-change", onPageChanged);
-        window.addEventListener("hashchange", onPageChanged);
-
-        if (document.body) {
-            var observer = new MutationObserver(function (mutations) {
-                for (var i = 0; i < mutations.length; i++) {
-                    if (mutations[i].type === "childList" ||
-                        (mutations[i].type === "attributes" &&
-                         mutations[i].attributeName === "class")) {
-                        onPageChanged();
-                        break;
-                    }
-                }
-            });
-
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true,
-                attributes: true,
-                attributeFilter: ["class"]
-            });
-        }
+        window.addEventListener('flaynity-dom-ready', reset);
+        window.addEventListener('flaynity-tab-change', reset);
+        window.addEventListener('hashchange', reset);
     }
 
     __flaynityReady(start);

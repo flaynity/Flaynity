@@ -91,14 +91,13 @@ function __flaynityReady(fn) {
 }
 
 
-/* Feed-synced bottom navigation.
-   The Home feed uses the document/window as its main scroller. On mobile,
-   touchmove is also tracked so the navigation moves in real time with the
-   user's finger even when the browser delays a scroll event. */
+/* Home-only feed-synced bottom navigation.
+   The bottom navigation follows the Home page scroll distance in real time.
+   All other tabs keep the navigation locked and fully visible. */
 (function () {
     "use strict";
 
-    var state = { nav:null, lastY:0, offset:0, height:48, frame:0, touchY:null, touchActive:false };
+    var state = { nav:null, lastY:0, offset:0, height:48, frame:0 };
 
     function getScrollY() {
         return Math.max(
@@ -106,6 +105,11 @@ function __flaynityReady(fn) {
             Number(document.documentElement && document.documentElement.scrollTop || 0),
             Number(document.body && document.body.scrollTop || 0)
         );
+    }
+
+    function isHomeActive() {
+        var activeTab = document.querySelector('.nav-item.active');
+        return !!(activeTab && activeTab.id === 'nav-home');
     }
 
     function findNav() {
@@ -125,6 +129,10 @@ function __flaynityReady(fn) {
         state.frame = 0;
         var nav = findNav();
         if (!nav) return;
+
+        /* Non-Home tabs are permanently locked in the visible position. */
+        if (!isHomeActive()) state.offset = 0;
+
         var y = Math.max(0, Math.min(state.height, state.offset));
         nav.style.webkitTransform = "translate3d(0," + y.toFixed(2) + "px,0)";
         nav.style.transform = "translate3d(0," + y.toFixed(2) + "px,0)";
@@ -134,72 +142,54 @@ function __flaynityReady(fn) {
         if (!state.frame) state.frame = window.requestAnimationFrame(render);
     }
 
-    function moveBy(delta) {
-        if (!isFinite(delta) || Math.abs(delta) < 0.01) return;
-        state.offset = Math.max(0, Math.min(state.height, state.offset + delta));
+    function resetNavPosition() {
+        state.offset = 0;
+        state.lastY = getScrollY();
         scheduleRender();
     }
 
     function syncFromScroll() {
         var nav = findNav();
         var y = getScrollY();
-        if (!nav) { state.lastY = y; return; }
 
+        if (!nav) {
+            state.lastY = y;
+            return;
+        }
+
+        /* Shorts, Upload, Discover and You: navigation does not react to scroll. */
+        if (!isHomeActive()) {
+            state.lastY = y;
+            if (state.offset !== 0) resetNavPosition();
+            return;
+        }
+
+        /* On Home, movement is exactly tied to the user's scroll delta.
+           This prevents sudden hide/show jumps and preserves scroll speed. */
         var delta = y - state.lastY;
-        if (Math.abs(delta) >= 0.01) moveBy(delta);
+        if (Math.abs(delta) > 0) {
+            state.offset = Math.max(0, Math.min(state.height, state.offset + delta));
+            scheduleRender();
+        }
 
-        if (y <= 0) {
+        if (y <= 0 && state.offset !== 0) {
             state.offset = 0;
             scheduleRender();
         }
+
         state.lastY = y;
-    }
-
-    function onTouchStart(e) {
-        if (!e.touches || !e.touches.length) return;
-        state.touchActive = true;
-        state.touchY = e.touches[0].clientY;
-        state.lastY = getScrollY();
-    }
-
-    function onTouchMove(e) {
-        if (!state.touchActive || !e.touches || !e.touches.length) return;
-        var currentY = e.touches[0].clientY;
-        if (state.touchY === null) { state.touchY = currentY; return; }
-
-        // Finger up = feed down, so the nav follows downward by the same distance.
-        var delta = state.touchY - currentY;
-        if (Math.abs(delta) >= 0.01) {
-            moveBy(delta);
-            state.touchY = currentY;
-        }
-
-        // Avoid applying the same touch movement twice when scroll fires.
-        state.lastY = getScrollY();
-    }
-
-    function onTouchEnd() {
-        state.touchActive = false;
-        state.touchY = null;
-        state.lastY = getScrollY();
     }
 
     function resetForPage() {
         state.nav = null;
         state.offset = 0;
-        state.touchY = null;
-        state.touchActive = false;
         state.lastY = getScrollY();
-        if (findNav()) scheduleRender();
+        scheduleRender();
     }
 
     function start() {
         state.lastY = getScrollY();
         window.addEventListener("scroll", syncFromScroll, { passive:true });
-        document.addEventListener("touchstart", onTouchStart, { passive:true });
-        document.addEventListener("touchmove", onTouchMove, { passive:true });
-        document.addEventListener("touchend", onTouchEnd, { passive:true });
-        document.addEventListener("touchcancel", onTouchEnd, { passive:true });
 
         window.addEventListener("resize", function() {
             var nav = findNav();
@@ -210,6 +200,7 @@ function __flaynityReady(fn) {
             }
         }, { passive:true });
 
+        /* Tab/page changes must immediately restore the locked Home/non-Home state. */
         window.addEventListener("flaynity-dom-ready", resetForPage);
         window.addEventListener("hashchange", resetForPage);
 
@@ -217,6 +208,8 @@ function __flaynityReady(fn) {
             if (!state.nav || !document.documentElement.contains(state.nav)) resetForPage();
         });
         if (document.body) observer.observe(document.body, {childList:true, subtree:true});
+
+        resetForPage();
     }
 
     __flaynityReady(start);

@@ -91,20 +91,27 @@ function __flaynityReady(fn) {
 }
 
 
-/* Feed-synced bottom navigation.
-   The Home feed uses the document/window as its main scroller. On mobile,
-   touchmove is also tracked so the navigation moves in real time with the
-   user's finger even when the browser delays a scroll event. */
+/* =========================================================
+   HOME-ONLY FEED-SYNC BOTTOM NAVIGATION
+   ========================================================= */
 (function () {
     "use strict";
 
-    var state = { nav:null, lastY:0, offset:0, height:48, frame:0, touchY:null, touchActive:false };
+    var state = {
+        nav: null,
+        lastY: 0,
+        offset: 0,
+        height: 48,
+        frame: 0
+    };
 
     function getScrollY() {
+        var doc = document.documentElement;
+        var body = document.body;
         return Math.max(
             Number(window.scrollY || 0),
-            Number(document.documentElement && document.documentElement.scrollTop || 0),
-            Number(document.body && document.body.scrollTop || 0)
+            Number(doc && doc.scrollTop || 0),
+            Number(body && body.scrollTop || 0)
         );
     }
 
@@ -112,116 +119,139 @@ function __flaynityReady(fn) {
         var nav = document.querySelector("#app-screen .bottom-nav") ||
                   document.querySelector(".bottom-nav");
         if (!nav) return null;
+
         if (state.nav !== nav) {
             state.nav = nav;
             state.height = Math.max(1, nav.getBoundingClientRect().height || 48);
-            nav.style.willChange = "transform";
-            nav.style.transition = "none";
+            nav.style.setProperty("will-change", "transform");
+            nav.style.setProperty("transition", "none", "important");
+            nav.style.setProperty("-webkit-transition", "none", "important");
         }
         return nav;
+    }
+
+    function homeIsActive() {
+        var home = document.getElementById("home-tab");
+        if (!home || !home.classList.contains("active")) return false;
+
+        if (typeof AppNavigation !== "undefined" &&
+            AppNavigation && typeof AppNavigation.current === "function") {
+            var current = AppNavigation.current();
+            if (current && (current.type !== "tab" || current.id !== "home")) {
+                return false;
+            }
+        }
+        return true;
     }
 
     function render() {
         state.frame = 0;
         var nav = findNav();
         if (!nav) return;
-        var y = Math.max(0, Math.min(state.height, state.offset));
-        nav.style.webkitTransform = "translate3d(0," + y.toFixed(2) + "px,0)";
-        nav.style.transform = "translate3d(0," + y.toFixed(2) + "px,0)";
+
+        var y = homeIsActive()
+            ? Math.max(0, Math.min(state.height, state.offset))
+            : 0;
+
+        nav.style.setProperty(
+            "transform",
+            "translate3d(0," + y.toFixed(2) + "px,0)",
+            "important"
+        );
+        nav.style.setProperty(
+            "-webkit-transform",
+            "translate3d(0," + y.toFixed(2) + "px,0)",
+            "important"
+        );
     }
 
     function scheduleRender() {
-        if (!state.frame) state.frame = window.requestAnimationFrame(render);
+        if (!state.frame) state.frame = requestAnimationFrame(render);
     }
 
-    function moveBy(delta) {
-        if (!isFinite(delta) || Math.abs(delta) < 0.01) return;
-        state.offset = Math.max(0, Math.min(state.height, state.offset + delta));
+    function resetNavigation() {
+        state.offset = 0;
+        state.lastY = getScrollY();
         scheduleRender();
     }
 
-    function syncFromScroll() {
+    function onScroll() {
         var nav = findNav();
-        var y = getScrollY();
-        if (!nav) { state.lastY = y; return; }
+        var currentY = getScrollY();
 
-        var delta = y - state.lastY;
-        if (Math.abs(delta) >= 0.01) moveBy(delta);
+        if (!nav) {
+            state.lastY = currentY;
+            return;
+        }
 
-        if (y <= 0) {
+        // Shorts, Upload, Discover, You and all internal pages are locked.
+        if (!homeIsActive()) {
             state.offset = 0;
+            state.lastY = currentY;
             scheduleRender();
-        }
-        state.lastY = y;
-    }
-
-    function onTouchStart(e) {
-        if (!e.touches || !e.touches.length) return;
-        state.touchActive = true;
-        state.touchY = e.touches[0].clientY;
-        state.lastY = getScrollY();
-    }
-
-    function onTouchMove(e) {
-        if (!state.touchActive || !e.touches || !e.touches.length) return;
-        var currentY = e.touches[0].clientY;
-        if (state.touchY === null) { state.touchY = currentY; return; }
-
-        // Finger up = feed down, so the nav follows downward by the same distance.
-        var delta = state.touchY - currentY;
-        if (Math.abs(delta) >= 0.01) {
-            moveBy(delta);
-            state.touchY = currentY;
+            return;
         }
 
-        // Avoid applying the same touch movement twice when scroll fires.
-        state.lastY = getScrollY();
+        var delta = currentY - state.lastY;
+        state.lastY = currentY;
+
+        if (Math.abs(delta) < 0.01) return;
+
+        // Exact 1:1 movement: no easing, no delayed catch-up, no jump.
+        state.offset = Math.max(
+            0,
+            Math.min(state.height, state.offset + delta)
+        );
+
+        if (currentY <= 0) state.offset = 0;
+        scheduleRender();
     }
 
-    function onTouchEnd() {
-        state.touchActive = false;
-        state.touchY = null;
-        state.lastY = getScrollY();
-    }
-
-    function resetForPage() {
-        state.nav = null;
-        state.offset = 0;
-        state.touchY = null;
-        state.touchActive = false;
-        state.lastY = getScrollY();
-        if (findNav()) scheduleRender();
+    function onPageChanged() {
+        resetNavigation();
     }
 
     function start() {
-        state.lastY = getScrollY();
-        window.addEventListener("scroll", syncFromScroll, { passive:true });
-        document.addEventListener("touchstart", onTouchStart, { passive:true });
-        document.addEventListener("touchmove", onTouchMove, { passive:true });
-        document.addEventListener("touchend", onTouchEnd, { passive:true });
-        document.addEventListener("touchcancel", onTouchEnd, { passive:true });
+        findNav();
+        resetNavigation();
 
-        window.addEventListener("resize", function() {
+        window.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("resize", function () {
             var nav = findNav();
             if (nav) {
                 state.height = Math.max(1, nav.getBoundingClientRect().height || 48);
                 state.offset = Math.max(0, Math.min(state.offset, state.height));
                 scheduleRender();
             }
-        }, { passive:true });
+        }, { passive: true });
 
-        window.addEventListener("flaynity-dom-ready", resetForPage);
-        window.addEventListener("hashchange", resetForPage);
+        window.addEventListener("flaynity-dom-ready", onPageChanged);
+        window.addEventListener("flaynity-tab-change", onPageChanged);
+        window.addEventListener("hashchange", onPageChanged);
 
-        var observer = new MutationObserver(function() {
-            if (!state.nav || !document.documentElement.contains(state.nav)) resetForPage();
-        });
-        if (document.body) observer.observe(document.body, {childList:true, subtree:true});
+        if (document.body) {
+            var observer = new MutationObserver(function (mutations) {
+                for (var i = 0; i < mutations.length; i++) {
+                    if (mutations[i].type === "childList" ||
+                        (mutations[i].type === "attributes" &&
+                         mutations[i].attributeName === "class")) {
+                        onPageChanged();
+                        break;
+                    }
+                }
+            });
+
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ["class"]
+            });
+        }
     }
 
     __flaynityReady(start);
 })();
-
 (function() {
     try {
         let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
@@ -2827,6 +2857,7 @@ const AppNavigation = {
         if (navEl) navEl.classList.add('active');
 
         adjustHeaderForActiveTab(activeTab);
+        window.dispatchEvent(new Event('flaynity-tab-change'));
 
         if (activeTab === 'you') initYouTabUI();
         if (activeTab === 'shorts') buildShortsPage();

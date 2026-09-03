@@ -92,18 +92,21 @@ function __flaynityReady(fn) {
 
 
 /* Feed-synced bottom navigation.
-   Installed globally because pages/*.html are parsed and injected by the modular loader,
-   so scripts inside those HTML fragments are intentionally not executed. */
+   The Home feed uses the document/window as its main scroller. On mobile,
+   touchmove is also tracked so the navigation moves in real time with the
+   user's finger even when the browser delays a scroll event. */
 (function () {
     "use strict";
 
-    var state = {
-        nav: null,
-        lastY: 0,
-        offset: 0,
-        height: 48,
-        frame: 0
-    };
+    var state = { nav:null, lastY:0, offset:0, height:48, frame:0, touchY:null, touchActive:false };
+
+    function getScrollY() {
+        return Math.max(
+            Number(window.scrollY || 0),
+            Number(document.documentElement && document.documentElement.scrollTop || 0),
+            Number(document.body && document.body.scrollTop || 0)
+        );
+    }
 
     function findNav() {
         var nav = document.querySelector("#app-screen .bottom-nav") ||
@@ -114,8 +117,6 @@ function __flaynityReady(fn) {
             state.height = Math.max(1, nav.getBoundingClientRect().height || 48);
             nav.style.willChange = "transform";
             nav.style.transition = "none";
-            nav.style.webkitTransform = "translate3d(0,0,0)";
-            nav.style.transform = "translate3d(0,0,0)";
         }
         return nav;
     }
@@ -124,66 +125,98 @@ function __flaynityReady(fn) {
         state.frame = 0;
         var nav = findNav();
         if (!nav) return;
-        nav.style.webkitTransform = "translate3d(0," + state.offset.toFixed(2) + "px,0)";
-        nav.style.transform = "translate3d(0," + state.offset.toFixed(2) + "px,0)";
+        var y = Math.max(0, Math.min(state.height, state.offset));
+        nav.style.webkitTransform = "translate3d(0," + y.toFixed(2) + "px,0)";
+        nav.style.transform = "translate3d(0," + y.toFixed(2) + "px,0)";
     }
 
     function scheduleRender() {
         if (!state.frame) state.frame = window.requestAnimationFrame(render);
     }
 
-    function sync() {
-        var nav = findNav();
-        var y = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || 0);
+    function moveBy(delta) {
+        if (!isFinite(delta) || Math.abs(delta) < 0.01) return;
+        state.offset = Math.max(0, Math.min(state.height, state.offset + delta));
+        scheduleRender();
+    }
 
-        if (!nav) {
-            state.lastY = y;
-            return;
-        }
+    function syncFromScroll() {
+        var nav = findNav();
+        var y = getScrollY();
+        if (!nav) { state.lastY = y; return; }
 
         var delta = y - state.lastY;
+        if (Math.abs(delta) >= 0.01) moveBy(delta);
 
-        if (Math.abs(delta) >= 0.5) {
-            // Downward scroll moves the nav down by exactly the feed's movement.
-            // Upward scroll brings it back by exactly the same movement.
-            state.offset = Math.max(0, Math.min(state.height, state.offset + delta));
+        if (y <= 0) {
+            state.offset = 0;
+            scheduleRender();
+        }
+        state.lastY = y;
+    }
+
+    function onTouchStart(e) {
+        if (!e.touches || !e.touches.length) return;
+        state.touchActive = true;
+        state.touchY = e.touches[0].clientY;
+        state.lastY = getScrollY();
+    }
+
+    function onTouchMove(e) {
+        if (!state.touchActive || !e.touches || !e.touches.length) return;
+        var currentY = e.touches[0].clientY;
+        if (state.touchY === null) { state.touchY = currentY; return; }
+
+        // Finger up = feed down, so the nav follows downward by the same distance.
+        var delta = state.touchY - currentY;
+        if (Math.abs(delta) >= 0.01) {
+            moveBy(delta);
+            state.touchY = currentY;
         }
 
-        if (y <= 0) state.offset = 0;
-        state.lastY = y;
-        scheduleRender();
+        // Avoid applying the same touch movement twice when scroll fires.
+        state.lastY = getScrollY();
+    }
+
+    function onTouchEnd() {
+        state.touchActive = false;
+        state.touchY = null;
+        state.lastY = getScrollY();
     }
 
     function resetForPage() {
         state.nav = null;
         state.offset = 0;
-        state.lastY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || 0);
-        var nav = findNav();
-        if (nav) scheduleRender();
+        state.touchY = null;
+        state.touchActive = false;
+        state.lastY = getScrollY();
+        if (findNav()) scheduleRender();
     }
 
     function start() {
-        state.lastY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || 0);
+        state.lastY = getScrollY();
+        window.addEventListener("scroll", syncFromScroll, { passive:true });
+        document.addEventListener("touchstart", onTouchStart, { passive:true });
+        document.addEventListener("touchmove", onTouchMove, { passive:true });
+        document.addEventListener("touchend", onTouchEnd, { passive:true });
+        document.addEventListener("touchcancel", onTouchEnd, { passive:true });
 
-        window.addEventListener("scroll", sync, { passive: true });
-        window.addEventListener("resize", function () {
+        window.addEventListener("resize", function() {
             var nav = findNav();
             if (nav) {
                 state.height = Math.max(1, nav.getBoundingClientRect().height || 48);
-                state.offset = Math.min(state.offset, state.height);
+                state.offset = Math.max(0, Math.min(state.offset, state.height));
                 scheduleRender();
             }
-        }, { passive: true });
+        }, { passive:true });
 
         window.addEventListener("flaynity-dom-ready", resetForPage);
         window.addEventListener("hashchange", resetForPage);
 
-        // Page fragments are injected after app.js loads. Observe only for the nav
-        // element, without touching the existing UI or page structure.
-        var observer = new MutationObserver(function () {
+        var observer = new MutationObserver(function() {
             if (!state.nav || !document.documentElement.contains(state.nav)) resetForPage();
         });
-        observer.observe(document.body, { childList: true, subtree: true });
+        if (document.body) observer.observe(document.body, {childList:true, subtree:true});
     }
 
     __flaynityReady(start);

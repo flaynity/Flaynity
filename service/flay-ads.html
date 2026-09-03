@@ -15,7 +15,7 @@
     
     <style>
         /* SYNCED WITH FLAY PAY COLORS */
-        :root {
+        .app-container {
             --bg: #fdfdfd;
             --surface: #fff;
             --input-bg: #f4f5f7;
@@ -35,7 +35,7 @@
             --overlay-bg: rgba(0,0,0,0.5);
         }
 
-        [data-theme=dark] {
+        [data-theme=dark] .app-container {
             --bg: #0F0F0F;
             --surface: #121212;
             --input-bg: #1a1a1a;
@@ -45,13 +45,14 @@
             --soft: rgba(255,46,85,.14);
             --shadow: 0 14px 40px rgba(0,0,0,.35);
             
-            --bar-bg: rgba(10,10,10,0.85);
+            --bar-bg: #0F0F0F;
             --overlay-bg: rgba(0,0,0,0.7);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); }
+        body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; background: #fdfdfd; color: #000; }
+        [data-theme=dark] body { background: #0F0F0F; color: #fff; }
 
         .app-container {
             width: 100%; max-width: 680px; margin: 0 auto; min-height: 100vh;

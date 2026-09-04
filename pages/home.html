@@ -111,17 +111,17 @@
         .offline-video-skeleton { display:flex; flex-direction:column; gap:12px; width:100%; min-width:0; }
         .offline-video-meta { display:flex; gap:12px; align-items:flex-start; padding:0 4px; }
         .offline-video-lines { display:flex; flex-direction:column; gap:8px; flex:1; }
-        .offline-shorts-skeleton { margin-top:8px; }
-        .offline-shorts-heading { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
-        .offline-shorts-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+        .offline-feels-skeleton { margin-top:8px; }
+        .offline-feels-heading { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+        .offline-feels-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
         .offline-short-card { display:flex; flex-direction:column; gap:8px; min-width:0; }
         .offline-short-meta { display:flex; gap:8px; align-items:center; }
         .offline-short-lines { display:flex; flex-direction:column; gap:4px; flex:1; min-width:0; }
-        .offline-shorts-screen { height:100%; width:100%; position:relative; background:#0F0F0F; overflow:hidden; }
-        .offline-shorts-screen > .skel-box { opacity:.16; }
-        .offline-shorts-actions { position:absolute; right:16px; bottom:80px; display:flex; flex-direction:column; gap:20px; align-items:center; }
-        .offline-shorts-info { position:absolute; bottom:60px; left:16px; right:80px; display:flex; flex-direction:column; gap:10px; }
-        .offline-shorts-user { display:flex; gap:10px; align-items:center; }
+        .offline-feels-screen { height:100%; width:100%; position:relative; background:#0F0F0F; overflow:hidden; }
+        .offline-feels-screen > .skel-box { opacity:.16; }
+        .offline-feels-actions { position:absolute; right:16px; bottom:80px; display:flex; flex-direction:column; gap:20px; align-items:center; }
+        .offline-feels-info { position:absolute; bottom:60px; left:16px; right:80px; display:flex; flex-direction:column; gap:10px; }
+        .offline-feels-user { display:flex; gap:10px; align-items:center; }
 
 /* OFFICIAL-STYLE PULL TO REFRESH INDICATOR */
         .ptr-container {
@@ -326,8 +326,8 @@
         .movie-card img { width: 100%; height: 100%; object-fit: cover; display: block; transition: 0.5s; }
         .movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 14px; }
 
-/* Premium 2-Column Shorts Grid Layout on Home Page */
-        .shorts-home-grid-2col {
+/* Premium 2-Column Feels Grid Layout on Home Page */
+        .feels-home-grid-2col {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 12px;
@@ -1120,7 +1120,7 @@
 <div class="category-chips-container" id="global-category-chips">
 <div class="chip-item active" onclick="selectCategoryChip('All', this)">All</div>
 <div class="chip-item" onclick="selectCategoryChip('Posts', this)">Posts</div>
-<div class="chip-item" onclick="selectCategoryChip('Shorts', this)">Shorts</div>
+<div class="chip-item" onclick="selectCategoryChip('Feels', this)">Feels</div>
 </div>
 <div class="tab-content active" id="home-tab" style="padding-top: 0px;">
 <div id="home-feed-container" style="margin-top: 12px;"></div>
@@ -1331,7 +1331,7 @@
 </div>
 <span class="nav-label">Home</span>
 </div>
-<div class="nav-item" id="nav-shorts" onclick="switchTab('shorts')">
+<div class="nav-item" id="nav-feels" onclick="switchTab('feels')">
 <div class="nav-icon-container">
 <svg class="nav-icon-svg icon-unselected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 <path d="M17.77 10.32c-.77-.32-1.2-.5-1.2-.5L18 8.64a2.53 2.53 0 0 0-1.12-3.37 2.45 2.45 0 0 0-3.3.12L7 10.14a2.53 2.53 0 0 0-.27 3.54s1.2.5 1.2.5l-1.43 1.18a2.53 2.53 0 0 0 1.12 3.37 2.45 2.45 0 0 0 3.3-.12l6.57-4.75a2.53 2.53 0 0 0 .28-3.54z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2.2"></path>
@@ -1340,7 +1340,7 @@
 <path d="M17.77 10.32c-.77-.32-1.2-.5-1.2-.5L18 8.64a2.53 2.53 0 0 0-1.12-3.37 2.45 2.45 0 0 0-3.3.12L7 10.14a2.53 2.53 0 0 0-.27 3.54s1.2.5 1.2.5l-1.43 1.18a2.53 2.53 0 0 0 1.12 3.37 2.45 2.45 0 0 0 3.3-.12l6.57-4.75a2.53 2.53 0 0 0 .28-3.54z" fill="currentColor"></path>
 </svg>
 </div>
-<span class="nav-label">Shorts</span>
+<span class="nav-label">Feels</span>
 </div>
 <div class="nav-item" id="nav-create" onclick="openCreateBottomSheet(); playUI('click')" style="height: 100%; display: flex; align-items: center; justify-content: center;">
 <div class="nav-create-circle">

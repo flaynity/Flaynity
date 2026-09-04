@@ -606,15 +606,23 @@ const SyncManager = {
 
             await this.refreshProfile();
 
-            const [longsSnap, feelsSnap, postsSnap] = await Promise.all([
+            const [longsSnap, feelsSnap, legacyShortsSnap, postsSnap] = await Promise.all([
                 db.ref('admin_panel/movies/user_uploads').once('value'),
                 db.ref('admin_panel/movies/feels').once('value'),
+                db.ref('admin_panel/movies/shorts').once('value'),
                 db.ref('admin_panel/posts').once('value')
             ]);
 
             const now = Date.now();
             allLongVideos      = longsSnap.val()  ? Object.values(longsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
-            allFeels          = feelsSnap.val() ? Object.values(feelsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
+            const feelsData = feelsSnap.val() ? Object.values(feelsSnap.val()) : [];
+            const legacyShortsData = legacyShortsSnap.val() ? Object.values(legacyShortsSnap.val()) : [];
+            const seenFeelIds = new Set();
+            allFeels = [...feelsData, ...legacyShortsData].filter(m => {
+                if (!m || (m.scheduledTime && m.scheduledTime > now) || !m.id || seenFeelIds.has(String(m.id))) return false;
+                seenFeelIds.add(String(m.id));
+                return true;
+            });
             allCommunityPosts  = postsSnap.val()  ? Object.values(postsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
 
             startRealtimeFeedsListener();
@@ -659,6 +667,7 @@ const SyncManager = {
 function _detachAllGlobalFeedListeners() {
     try { db.ref('admin_panel/movies/user_uploads').off(); } catch(e) {}
     try { db.ref('admin_panel/movies/feels').off(); } catch(e) {}
+        try { db.ref('admin_panel/movies/shorts').off(); } catch(e) {}
     try { db.ref('admin_panel/posts').off(); } catch(e) {}
 
     Object.keys(boundChannelListeners).forEach(uid => {
@@ -1526,6 +1535,7 @@ function startRealtimeFeedsListener() {
     if (_feedListenersAttached) {
         try { db.ref('admin_panel/movies/user_uploads').off(); } catch(e) {}
         try { db.ref('admin_panel/movies/feels').off(); } catch(e) {}
+        try { db.ref('admin_panel/movies/shorts').off(); } catch(e) {}
         try { db.ref('admin_panel/posts').off(); } catch(e) {}
         _feedListenersAttached = false;
     }
@@ -1595,6 +1605,27 @@ function startRealtimeFeedsListener() {
                         if (thumbEl) thumbEl.src = s.poster;
                     });
                 }
+            } catch (e) {}
+        });
+
+        // Keep existing Home Page Feels/Shorts cards compatible with the original Firebase path.
+        // The UI is named Feels, but older content is stored under /shorts.
+        db.ref('admin_panel/movies/shorts').on('value', (snap) => {
+            try {
+                const legacyData = snap.val() ? Object.values(snap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
+                db.ref('admin_panel/movies/feels').once('value', (feelsSnap) => {
+                    const feelsData = feelsSnap.val() ? Object.values(feelsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
+                    const merged = [...feelsData, ...legacyData];
+                    const seenIds = new Set();
+                    allFeels = enforceContentAdminStatus(merged.filter(m => {
+                        if (!m || !m.id || seenIds.has(String(m.id))) return false;
+                        seenIds.add(String(m.id));
+                        return true;
+                    }), 'short');
+                    allFeels.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                    previousFeelsCount = allFeels.length;
+                    buildHomeFeed();
+                });
             } catch (e) {}
         });
 

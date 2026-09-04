@@ -14,307 +14,188 @@
     <script src="../js/firebase-config.js"></script>
 
     <style>
-        /* Existing Background & Theme Variables STRICTLY PRESERVED */
-        .premium-service-page {
-            --bg: #fff;
-            --surface: #fff;
-            --text: #000;
-            --muted: #666;
-            --border: #e9e9e9;
-            --accent: #ff2e55;
-            --soft: rgba(255,46,85,.10);
-            --shadow: 0 14px 40px rgba(0,0,0,.07);
-            box-sizing: border-box;
-        }
-
-        [data-theme=dark] .premium-service-page {
-            --bg: #0F0F0F;
-            --surface: #0a0a0a;
-            --text: #fff;
-            --muted: #aaa;
-            --border: #222;
-            --soft: rgba(255,46,85,.14);
-            --shadow: 0 14px 40px rgba(0,0,0,.35);
-        }
-
-        .premium-service-page * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .premium-service-page body {
-            margin: 0;
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            overflow-x: hidden;
-        }
-
-        .premium-service-page .app {
-            max-width: 680px;
-            margin: auto;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* 1. Page Header (Status Bar Adjusted) */
-        .premium-service-page .bar {
+        /* ========================================================
+           1. ORIGINAL GLOBAL CSS (STRICTLY PRESERVED)
+           These styles match the original to prevent any CSS leak
+           to other pages like flay-pay or flay-ads.
+        ======================================================== */
+        .premium-service-page{--bg:#fff;--surface:#fff;--text:#000;--muted:#666;--border:#e9e9e9;--accent:#ff2e55;--soft:rgba(255,46,85,.10);--shadow:0 14px 40px rgba(0,0,0,.07)}
+        [data-theme=dark] .premium-service-page{--bg:#0F0F0F;--surface:#0a0a0a;--text:#fff;--muted:#aaa;--border:#222;--soft:rgba(255,46,85,.14);--shadow:0 14px 40px rgba(0,0,0,.35)}
+        .premium-service-page *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        .premium-service-page body{margin:0;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;overflow-x:hidden;}
+        .premium-service-page .app{max-width:680px;margin:auto;min-height:100vh}
+        
+        /* Original Header & Title (Untouched to fix global leak) */
+        .premium-service-page .bar{height:64px;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:5}
+        .premium-service-page .back{width:40px;height:40px;border:0;background:transparent;color:var(--text);font-size:20px;border-radius:50%;cursor:pointer;}
+        .premium-service-page .title{font-size:18px;font-weight:900;flex:1}
+        .premium-service-page .badge{display:inline-flex;align-items:center;gap:6px;background:var(--soft);color:var(--accent);padding:6px 9px;border-radius:999px;font-size:9px;font-weight:900}
+        
+        /* ========================================================
+           2. UPGRADE PRO SPECIFIC SCOPED CSS
+           Prefixed with #upgrade-pro-app so it NEVER affects other pages
+        ======================================================== */
+        
+        /* Status Bar Fix - ONLY applies to this specific page's header */
+        #upgrade-pro-app .bar {
+            padding-top: env(safe-area-inset-top, 0px);
             height: calc(64px + env(safe-area-inset-top, 0px));
-            padding: env(safe-area-inset-top, 0px) 16px 0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            background: rgba(var(--bg), 0.95);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
             z-index: 100;
         }
         
-        .premium-service-page .back {
-            width: 40px;
-            height: 40px;
-            border: 0;
-            background: var(--surface);
-            color: var(--text);
-            font-size: 18px;
-            border-radius: 50%;
-            display: grid;
-            place-items: center;
-            cursor: pointer;
-            border: 1px solid var(--border);
-            transition: 0.2s ease;
-            flex-shrink: 0;
-        }
-        .premium-service-page .back:active { transform: scale(0.92); }
+        #upgrade-pro-app .content { padding: 24px 16px 40px; }
 
-        /* Premium Header Design */
-        .premium-service-page .title {
-            font-size: 20px;
-            font-weight: 900;
-            flex: 1;
-            text-align: center;
-            margin-right: -10px;
-            background: linear-gradient(135deg, var(--text) 30%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.3px;
-        }
-
-        .premium-service-page .header-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            background: var(--soft);
-            color: var(--accent);
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 10px;
-            font-weight: 900;
-            text-transform: uppercase;
-        }
-
-        .premium-service-page .content { padding: 24px 16px 40px; }
-
-        @keyframes fadeUp {
+        @keyframes upgFadeUp {
             from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .fade-up { animation: fadeUp 0.3s ease-out forwards; opacity: 0; }
-        .delay-1 { animation-delay: 0.05s; }
-        .delay-2 { animation-delay: 0.1s; }
-        .delay-3 { animation-delay: 0.15s; }
-        .delay-4 { animation-delay: 0.2s; }
+        #upgrade-pro-app .fade-up { animation: upgFadeUp 0.3s ease-out forwards; opacity: 0; }
+        #upgrade-pro-app .delay-1 { animation-delay: 0.05s; }
+        #upgrade-pro-app .delay-2 { animation-delay: 0.1s; }
+        #upgrade-pro-app .delay-3 { animation-delay: 0.15s; }
+        #upgrade-pro-app .delay-4 { animation-delay: 0.2s; }
 
-        /* 2. Premium Hero Section */
-        .hero-section {
-            text-align: center;
-            padding: 24px 0 20px; /* Text moved down slightly */
+        /* Premium Hero Section */
+        #upgrade-pro-app .hero-section { text-align: center; padding: 24px 0 20px; }
+        #upgrade-pro-app .pro-glow-badge {
+            display: inline-flex; align-items: center; gap: 8px; background: var(--surface);
+            color: var(--accent); border: 1px solid var(--soft); padding: 8px 16px;
+            border-radius: 999px; font-size: 12px; font-weight: 800; box-shadow: 0 0 20px var(--soft);
+            margin-bottom: 24px; letter-spacing: 0.5px; margin-top: 10px;
         }
-        
-        .pro-glow-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--surface);
-            color: var(--accent);
-            border: 1px solid var(--soft);
-            padding: 8px 16px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 800;
-            box-shadow: 0 0 20px var(--soft);
-            margin-bottom: 24px;
-            letter-spacing: 0.5px;
-            margin-top: 10px; /* Moved FLAYNITY PRO badge slightly downwards */
-        }
-        .pro-glow-badge i { font-size: 14px; }
+        #upgrade-pro-app .pro-glow-badge i { font-size: 14px; }
+        #upgrade-pro-app .hero-section h1 { font-size: 32px; font-weight: 900; margin: 0 0 12px; line-height: 1.2; }
+        #upgrade-pro-app .hero-section .subtitle { font-size: 16px; font-weight: 600; color: var(--text); margin: 0 0 8px; }
+        #upgrade-pro-app .hero-section .desc { font-size: 14px; color: var(--muted); line-height: 1.5; margin: 0; padding: 0 10px; }
 
-        .hero-section h1 { font-size: 32px; font-weight: 900; margin: 0 0 12px; line-height: 1.2; }
-        .hero-section .subtitle { font-size: 16px; font-weight: 600; color: var(--text); margin: 0 0 8px; }
-        .hero-section .desc { font-size: 14px; color: var(--muted); line-height: 1.5; margin: 0; padding: 0 10px; }
-
-        /* 3. Current Plan & User Profile */
-        .plan-status-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 16px 20px;
-            margin-bottom: 32px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
+        /* Current Plan & User Profile */
+        #upgrade-pro-app .plan-status-card {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+            padding: 16px 20px; margin-bottom: 32px; display: flex; flex-direction: column; gap: 6px;
         }
-
-        .plan-status-header { display: flex; justify-content: space-between; align-items: center; }
-        .plan-label { font-size: 13px; font-weight: 700; color: var(--muted); }
-        .free-badge-pill {
-            background: var(--border);
-            color: var(--text);
-            font-size: 11px;
-            font-weight: 800;
-            padding: 4px 10px;
-            border-radius: 6px;
-            text-transform: uppercase;
-            transition: 0.3s;
+        #upgrade-pro-app .plan-status-header { display: flex; justify-content: space-between; align-items: center; }
+        #upgrade-pro-app .plan-label { font-size: 13px; font-weight: 700; color: var(--muted); }
+        #upgrade-pro-app .free-badge-pill {
+            background: var(--border); color: var(--text); font-size: 11px; font-weight: 800;
+            padding: 4px 10px; border-radius: 6px; text-transform: uppercase; transition: 0.3s;
         }
-        
-        .upgrade-prompt { font-size: 14px; font-weight: 700; margin: 4px 0 0; transition: 0.3s; }
+        #upgrade-pro-app .upgrade-prompt { font-size: 14px; font-weight: 700; margin: 4px 0 0; transition: 0.3s; }
 
-        /* User Profile Area (Replaces Signed-in Status) */
-        .pro-user-profile {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px dashed var(--border);
+        /* Dynamic User Profile */
+        #upgrade-pro-app .pro-user-profile {
+            display: flex; align-items: center; gap: 12px; margin-top: 12px;
+            padding-top: 12px; border-top: 1px dashed var(--border);
         }
-        .pro-user-profile img {
-            width: 42px; height: 42px; border-radius: 50%; object-fit: cover;
-            border: 2px solid var(--border);
-        }
-        .pro-user-info h4 { margin: 0 0 2px; font-size: 15px; font-weight: 800; color: var(--text); }
-        .pro-user-info p { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); }
+        #upgrade-pro-app .pro-user-profile img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
+        #upgrade-pro-app .pro-user-info h4 { margin: 0 0 2px; font-size: 15px; font-weight: 800; color: var(--text); }
+        #upgrade-pro-app .pro-user-info p { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); }
 
-        .section-title { font-size: 20px; font-weight: 800; margin: 0 0 16px; }
+        #upgrade-pro-app .section-title { font-size: 20px; font-weight: 800; margin: 0 0 16px; }
 
-        /* 4. Pro Benefits Section */
-        .benefits-section { margin-bottom: 32px; }
-        .feature-item { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border); }
-        .feature-item:last-child { border-bottom: none; }
-        .feature-icon {
-            width: 44px; height: 44px; border-radius: 14px; background: var(--soft); color: var(--accent);
-            display: grid; place-items: center; font-size: 18px; flex-shrink: 0;
+        /* Pro Benefits Section */
+        #upgrade-pro-app .benefits-section { margin-bottom: 32px; }
+        #upgrade-pro-app .feature-item { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border); }
+        #upgrade-pro-app .feature-item:last-child { border-bottom: none; }
+        #upgrade-pro-app .feature-icon {
+            width: 44px; height: 44px; border-radius: 14px; background: var(--soft);
+            color: var(--accent); display: grid; place-items: center; font-size: 18px; flex-shrink: 0;
         }
-        .feature-text h4 { margin: 0 0 4px; font-size: 15px; font-weight: 700; }
-        .feature-text p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+        #upgrade-pro-app .feature-text h4 { margin: 0 0 4px; font-size: 15px; font-weight: 700; }
+        #upgrade-pro-app .feature-text p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
 
         /* Countdown Card */
-        .countdown-card {
+        #upgrade-pro-app .countdown-card {
             background: linear-gradient(135deg, var(--surface), rgba(255,46,85,0.05));
-            border: 1px solid var(--accent);
-            border-radius: 20px;
-            padding: 18px;
-            text-align: center;
-            margin-bottom: 24px;
-            box-shadow: 0 12px 30px var(--soft);
-            display: none; /* Hidden by default */
+            border: 1px solid var(--accent); border-radius: 20px; padding: 18px;
+            text-align: center; margin-bottom: 24px; box-shadow: 0 12px 30px var(--soft); display: none;
         }
-        .countdown-title {
+        #upgrade-pro-app .countdown-title {
             font-size: 12px; font-weight: 900; color: var(--accent);
             text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;
         }
-        .countdown-timer-display {
+        #upgrade-pro-app .countdown-timer-display {
             font-size: 28px; font-weight: 900; color: var(--text);
-            font-variant-numeric: tabular-nums; line-height: 1.2;
-            letter-spacing: -0.5px;
+            font-variant-numeric: tabular-nums; line-height: 1.2; letter-spacing: -0.5px;
         }
 
-        /* 5 & 6. Pro Plan Card & Pricing */
-        .pro-plan-card {
-            background: var(--surface);
-            border: 2px solid var(--accent);
-            border-radius: 24px;
-            padding: 24px;
-            box-shadow: 0 16px 40px var(--soft);
-            margin-bottom: 32px;
-            position: relative;
-            overflow: hidden;
+        /* Pro Plan Card & Pricing */
+        #upgrade-pro-app .pro-plan-card {
+            background: var(--surface); border: 2px solid var(--accent); border-radius: 24px;
+            padding: 24px; box-shadow: 0 16px 40px var(--soft); margin-bottom: 32px; position: relative; overflow: hidden;
         }
-        .pro-plan-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--accent); }
-        .plan-top-label { font-size: 11px; font-weight: 900; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; display: block; }
-        .pro-plan-card h3 { font-size: 24px; font-weight: 900; margin: 0 0 4px; }
-        .pro-plan-card .plan-desc { font-size: 14px; color: var(--muted); margin: 0 0 20px; }
-        .pricing-wrap { display: flex; align-items: baseline; gap: 4px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
-        .price { font-size: 36px; font-weight: 900; }
-        .period { font-size: 14px; color: var(--muted); font-weight: 600; }
-        .plan-checklist { list-style: none; padding: 0; margin: 0 0 24px; display: grid; gap: 12px; }
-        .plan-checklist li { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; }
-        .plan-checklist i { color: var(--accent); font-size: 16px; }
+        #upgrade-pro-app .pro-plan-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--accent); }
+        #upgrade-pro-app .plan-top-label { font-size: 11px; font-weight: 900; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; display: block; }
+        #upgrade-pro-app .pro-plan-card h3 { font-size: 24px; font-weight: 900; margin: 0 0 4px; }
+        #upgrade-pro-app .pro-plan-card .plan-desc { font-size: 14px; color: var(--muted); margin: 0 0 20px; }
+        #upgrade-pro-app .pricing-wrap { display: flex; align-items: baseline; gap: 4px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+        #upgrade-pro-app .price { font-size: 36px; font-weight: 900; }
+        #upgrade-pro-app .period { font-size: 14px; color: var(--muted); font-weight: 600; }
+        #upgrade-pro-app .plan-checklist { list-style: none; padding: 0; margin: 0 0 24px; display: grid; gap: 12px; }
+        #upgrade-pro-app .plan-checklist li { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; }
+        #upgrade-pro-app .plan-checklist i { color: var(--accent); font-size: 16px; }
 
-        /* 7 & 8. Upgrade Button & Payment Info */
-        .primary-cta {
+        /* Upgrade Button */
+        #upgrade-pro-app .primary-cta {
             width: 100%; border: 0; background: var(--accent); color: #fff;
             font-size: 16px; font-weight: 800; padding: 16px; border-radius: 16px;
             cursor: pointer; transition: all 0.2s ease; box-shadow: 0 8px 20px var(--soft);
             display: flex; justify-content: center; align-items: center; gap: 8px;
         }
-        .primary-cta:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; background: var(--text); }
-        .primary-cta:not(:disabled):active { transform: scale(0.97); }
+        #upgrade-pro-app .primary-cta:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; background: var(--text); }
+        #upgrade-pro-app .primary-cta:not(:disabled):active { transform: scale(0.97); }
 
-        .payment-info { text-align: center; margin-top: 16px; }
-        .payment-info .secure-text { font-size: 12px; font-weight: 700; color: var(--text); margin: 0 0 4px; display: flex; justify-content: center; align-items: center; gap: 6px; }
-        .payment-info .secure-text i { color: #00a844; }
-        .payment-info .sub-text { font-size: 11px; color: var(--muted); margin: 0; line-height: 1.4; }
+        #upgrade-pro-app .payment-info { text-align: center; margin-top: 16px; }
+        #upgrade-pro-app .payment-info .secure-text { font-size: 12px; font-weight: 700; color: var(--text); margin: 0 0 4px; display: flex; justify-content: center; align-items: center; gap: 6px; }
+        #upgrade-pro-app .payment-info .secure-text i { color: #00a844; }
+        #upgrade-pro-app .payment-info .sub-text { font-size: 11px; color: var(--muted); margin: 0; line-height: 1.4; }
 
-        /* 9. Comparison Section */
-        .comparison-section { margin-bottom: 32px; }
-        .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .comp-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
-        .comp-card.pro { border-color: var(--accent); background: var(--soft); }
-        .comp-card h4 { margin: 0 0 12px; font-size: 16px; font-weight: 800; text-align: center; }
-        .comp-card.pro h4 { color: var(--accent); }
-        .comp-card ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
-        .comp-card li { font-size: 12px; font-weight: 600; color: var(--muted); display: flex; gap: 8px; line-height: 1.4; }
-        .comp-card.pro li { color: var(--text); }
-        .comp-card li i { font-size: 10px; margin-top: 3px; }
-        .comp-card.free li i { color: var(--muted); }
-        .comp-card.pro li i { color: var(--accent); }
+        /* Comparison Section */
+        #upgrade-pro-app .comparison-section { margin-bottom: 32px; }
+        #upgrade-pro-app .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        #upgrade-pro-app .comp-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
+        #upgrade-pro-app .comp-card.pro { border-color: var(--accent); background: var(--soft); }
+        #upgrade-pro-app .comp-card h4 { margin: 0 0 12px; font-size: 16px; font-weight: 800; text-align: center; }
+        #upgrade-pro-app .comp-card.pro h4 { color: var(--accent); }
+        #upgrade-pro-app .comp-card ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+        #upgrade-pro-app .comp-card li { font-size: 12px; font-weight: 600; color: var(--muted); display: flex; gap: 8px; line-height: 1.4; }
+        #upgrade-pro-app .comp-card.pro li { color: var(--text); }
+        #upgrade-pro-app .comp-card li i { font-size: 10px; margin-top: 3px; }
+        #upgrade-pro-app .comp-card.free li i { color: var(--muted); }
+        #upgrade-pro-app .comp-card.pro li i { color: var(--accent); }
 
-        /* 10. FAQ Section */
-        .faq-section { margin-bottom: 16px; }
-        .faq-item { border-bottom: 1px solid var(--border); }
-        .faq-item:last-child { border-bottom: none; }
-        .faq-btn {
+        /* FAQ Section */
+        #upgrade-pro-app .faq-section { margin-bottom: 16px; }
+        #upgrade-pro-app .faq-item { border-bottom: 1px solid var(--border); }
+        #upgrade-pro-app .faq-item:last-child { border-bottom: none; }
+        #upgrade-pro-app .faq-btn {
             width: 100%; background: transparent; border: none; padding: 16px 0;
             display: flex; justify-content: space-between; align-items: center;
             font-size: 14px; font-weight: 700; color: var(--text); cursor: pointer; text-align: left; font-family: inherit;
         }
-        .faq-btn i { color: var(--muted); transition: transform 0.3s ease; font-size: 12px; }
-        .faq-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
-        .faq-content p { margin: 0 0 16px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+        #upgrade-pro-app .faq-btn i { color: var(--muted); transition: transform 0.3s ease; font-size: 12px; }
+        #upgrade-pro-app .faq-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+        #upgrade-pro-app .faq-content p { margin: 0 0 16px; font-size: 13px; color: var(--muted); line-height: 1.6; }
 
         @media (max-width: 380px) {
-            .hero-section h1 { font-size: 26px; }
-            .pricing-wrap .price { font-size: 30px; }
-            .comparison-grid { grid-template-columns: 1fr; }
-            .countdown-timer-display { font-size: 24px; }
+            #upgrade-pro-app .hero-section h1 { font-size: 26px; }
+            #upgrade-pro-app .pricing-wrap .price { font-size: 30px; }
+            #upgrade-pro-app .comparison-grid { grid-template-columns: 1fr; }
+            #upgrade-pro-app .countdown-timer-display { font-size: 24px; }
         }
     </style>
 </head>
 <body class="premium-service-page">
-    <main class="app">
-        <!-- 1. Page Header (Under Status Bar) -->
+
+    <!-- Unique ID "upgrade-pro-app" ensures CSS scope works strictly for THIS page only -->
+    <main class="app" id="upgrade-pro-app">
+        
+        <!-- 1. Original Page Header (Reverted to Original Left-Aligned Design) -->
         <header class="bar">
             <button class="back" onclick="executeBackAction()" aria-label="Back">
                 <i class="fas fa-arrow-left"></i>
             </button>
             <div class="title">Upgrade Pro</div>
-            <span class="header-badge"><i class="fas fa-crown"></i> Pro</span>
+            <span class="badge"><i class="fas fa-crown"></i> PRO</span>
         </header>
 
         <section class="content">
@@ -458,14 +339,14 @@
 
     <!-- FAQ Accordion JS -->
     <script>
-        document.querySelectorAll('.faq-btn').forEach(button => {
+        document.querySelectorAll('#upgrade-pro-app .faq-btn').forEach(button => {
             button.addEventListener('click', () => {
                 const content = button.nextElementSibling;
                 const icon = button.querySelector('i');
                 const isOpen = content.style.maxHeight;
 
-                document.querySelectorAll('.faq-content').forEach(c => c.style.maxHeight = null);
-                document.querySelectorAll('.faq-btn i').forEach(i => i.style.transform = 'rotate(0deg)');
+                document.querySelectorAll('#upgrade-pro-app .faq-content').forEach(c => c.style.maxHeight = null);
+                document.querySelectorAll('#upgrade-pro-app .faq-btn i').forEach(i => i.style.transform = 'rotate(0deg)');
 
                 if (!isOpen) {
                     content.style.maxHeight = content.scrollHeight + "px";

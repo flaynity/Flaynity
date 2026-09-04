@@ -303,20 +303,20 @@
                     <div class="check-circle"><i class="fas fa-check"></i></div>
                 </div>
 
-                <div class="placement-card" onclick="selectPlacement('shorts_vast')" id="place-shorts_vast">
+                <div class="placement-card" onclick="selectPlacement('feels_vast')" id="place-feels_vast">
                     <div class="p-icon"><i class="fas fa-mobile-screen"></i></div>
                     <div class="p-info">
-                        <h3>Shorts VAST Ads</h3>
-                        <p>Vertical video advertisement inside the Shorts feed.</p>
+                        <h3>Feels VAST Ads</h3>
+                        <p>Vertical video advertisement inside the Feels feed.</p>
                     </div>
                     <div class="check-circle"><i class="fas fa-check"></i></div>
                 </div>
 
-                <div class="placement-card" onclick="selectPlacement('shorts_post')" id="place-shorts_post">
+                <div class="placement-card" onclick="selectPlacement('feels_post')" id="place-feels_post">
                     <div class="p-icon"><i class="fas fa-image"></i></div>
                     <div class="p-info">
-                        <h3>Shorts Post Ads</h3>
-                        <p>Sponsored post image in the Shorts swipe feed.</p>
+                        <h3>Feels Post Ads</h3>
+                        <p>Sponsored post image in the Feels swipe feed.</p>
                     </div>
                     <div class="check-circle"><i class="fas fa-check"></i></div>
                 </div>
@@ -675,7 +675,7 @@
     }
 
     function formatPlacementName(p) {
-        const names = { 'vast_video': 'VAST Video', 'shorts_vast': 'Shorts Video', 'shorts_post': 'Shorts Post', 'post_ad': 'Feed Post' };
+        const names = { 'vast_video': 'VAST Video', 'feels_vast': 'Feels Video', 'feels_post': 'Feels Post', 'post_ad': 'Feed Post' };
         return names[p] || p || 'Standard Ad';
     }
 
@@ -741,7 +741,7 @@
 
     function selectPlacement(type) {
         campaignData.placement = type;
-        const names = { 'vast_video': 'VAST Video Ads', 'shorts_vast': 'Shorts VAST Ads', 'shorts_post': 'Shorts Post Ads', 'post_ad': 'Standard Post Ads' };
+        const names = { 'vast_video': 'VAST Video Ads', 'feels_vast': 'Feels VAST Ads', 'feels_post': 'Feels Post Ads', 'post_ad': 'Standard Post Ads' };
         campaignData.placementName = names[type];
         document.querySelectorAll('#step-2 .placement-card').forEach(el => el.classList.remove('active'));
         document.getElementById('place-' + type).classList.add('active');
@@ -820,8 +820,8 @@
         const placement = campaignData.placement;
         
         if (platform === 'google_play') {
-            if (placement === 'shorts_vast' || placement === 'shorts_post' || placement === 'post_ad') {
-                const isVideo = placement === 'shorts_vast';
+            if (placement === 'feels_vast' || placement === 'feels_post' || placement === 'post_ad') {
+                const isVideo = placement === 'feels_vast';
                 const isPostAd = placement === 'post_ad';
                 let mediaLabel = isVideo ? "Upload Video (Max 2 min, 9:16 Size, Max 500 MB)" : "Upload Post Image (9:16 Size, Max 50 MB)";
                 if (isPostAd) {
@@ -958,7 +958,7 @@
                     <textarea class="form-control" id="c-desc" placeholder="Tell people what your ad is about..."></textarea>
                 </div>
                 
-                ${(placement === 'vast_video' || placement === 'shorts_vast') ? `
+                ${(placement === 'vast_video' || placement === 'feels_vast') ? `
                 <div class="form-group">
                     <label class="form-label">Upload Video</label>
                     <input type="file" class="form-control" accept="video/*" onchange="handleFileUpload(this, 'c-video-url')">
@@ -1039,13 +1039,13 @@
                         </div>
                     </div>
                 `;
-            } else if (campaignData.placement === 'shorts_vast' || campaignData.placement === 'shorts_post') {
-                const isVideo = campaignData.placement === 'shorts_vast';
+            } else if (campaignData.placement === 'feels_vast' || campaignData.placement === 'feels_post') {
+                const isVideo = campaignData.placement === 'feels_vast';
                 const mediaElement = isVideo 
                     ? `<video src="${c.videoUrl}" style="width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0;" autoplay muted loop playsinline></video>`
                     : `<img src="${c.imageUrl}" style="width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0;">`;
 
-                // Shorts VAST & Shorts Post Ads requirements
+                // Feels VAST & Feels Post Ads requirements
                 container.innerHTML = `
                     <div style="width: 100%; aspect-ratio: 9/16; background: #0F0F0F; position: relative; overflow: hidden;">
                         ${mediaElement}
@@ -1117,7 +1117,7 @@
             }
         } else {
             let mediaHtml = '';
-            if (campaignData.placement === 'vast_video' || campaignData.placement === 'shorts_vast') {
+            if (campaignData.placement === 'vast_video' || campaignData.placement === 'feels_vast') {
                 mediaHtml = `<video src="${c.videoUrl}" poster="${c.thumbnailUrl}" style="width: 100%; aspect-ratio: 16/9; object-fit: cover;" controls></video>`;
             } else {
                 mediaHtml = `<img src="${c.imageUrl}" style="width: 100%; aspect-ratio: 16/9; object-fit: cover;">`;
@@ -1147,8 +1147,8 @@
             campaignData.campaignName = name;
 
             if (campaignData.platform === 'google_play') {
-                if (['shorts_vast', 'shorts_post', 'post_ad'].includes(campaignData.placement)) {
-                    const isVideo = campaignData.placement === 'shorts_vast';
+                if (['feels_vast', 'feels_post', 'post_ad'].includes(campaignData.placement)) {
+                    const isVideo = campaignData.placement === 'feels_vast';
                     const appName = document.getElementById('c-app-name').value.trim();
                     const title = document.getElementById('c-title').value.trim();
                     const review = document.getElementById('c-review').value.trim();
@@ -1200,7 +1200,7 @@
                 
                 campaignData.creative = { title, description: desc, cta, destinationUrl: url };
                 
-                if (campaignData.placement === 'vast_video' || campaignData.placement === 'shorts_vast') {
+                if (campaignData.placement === 'vast_video' || campaignData.placement === 'feels_vast') {
                     const vid = document.getElementById('c-video-url').value;
                     const thumb = document.getElementById('c-thumb-url').value;
                     if(!vid || !thumb) return showToast("Video and Thumbnail are required.", "error"), false;
@@ -1224,7 +1224,7 @@
             
             // Dynamic Minimum Budget Checking Based On Placement
             let minBudget = 2; // Default
-            if (campaignData.placement === 'shorts_vast') minBudget = 3;
+            if (campaignData.placement === 'feels_vast') minBudget = 3;
             if (campaignData.placement === 'post_ad') minBudget = 1;
 
             if (!daily || !total || daily < minBudget || total < minBudget) return showToast(`Minimum budget is $${minBudget.toFixed(2)}`, "error"), false;
@@ -1273,7 +1273,7 @@
                 // Dynamically Update Budget Min/Max & CPM Before Showing Step 5
                 let minB = 2;
                 let cpmT = '$2 CPM (Pay per 1,000 Impressions)';
-                if (campaignData.placement === 'shorts_vast') { minB = 3; cpmT = '$3 CPM (Pay per 1,000 Impressions)'; }
+                if (campaignData.placement === 'feels_vast') { minB = 3; cpmT = '$3 CPM (Pay per 1,000 Impressions)'; }
                 if (campaignData.placement === 'post_ad') { minB = 1; cpmT = '$1 CPM (Pay per 1,000 Impressions)'; }
                 
                 document.getElementById('b-model-display').innerText = cpmT;

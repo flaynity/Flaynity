@@ -33,14 +33,14 @@
             --purple: #a855f7;
         }
         [data-theme=dark] .premium-service-page {
-            --bg: #0c0d10;
-            --surface: #14161d;
+            --bg: #0F0F0F; /* মূল ডার্ক ব্যাকগ্রাউন্ড #0F0F0F */
+            --surface: #141414;
             --text: #ffffff;
             --muted: #9496a1;
-            --border: #232631;
+            --border: #222222;
             --soft: rgba(255, 46, 85, 0.12);
             --soft-glow: rgba(255, 46, 85, 0.25);
-            --card-bg: #111318;
+            --card-bg: #121212;
             --shadow: 0 14px 40px rgba(0,0,0,0.55);
         }
 
@@ -63,19 +63,24 @@
         }
 
         /* ========================================================
-           2. TOP BAR (ZERO GAP & SCROLLS WITH PAGE)
+           2. TOP BAR (BACKGROUND #0F0F0F IN DARK & CENTERED TITLE)
         ======================================================== */
         #upgrade-pro-app .bar {
-            position: relative;
+            position: relative; /* স্ক্রল করলে সাথে সাথে ওপরে স্ক্রল হবে */
             height: 52px;
             margin: 0;
             padding: 0 16px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            justify-content: space-between; /* দুই পাশে বাটন ও ব্যাজ */
             background: var(--bg);
             border-bottom: 1px solid var(--border);
             z-index: 10;
+        }
+
+        /* App Dark মোডে Top Bar Box Background строго #0F0F0F */
+        [data-theme=dark] #upgrade-pro-app .bar {
+            background: #0F0F0F !important;
         }
 
         #upgrade-pro-app .back {
@@ -90,14 +95,22 @@
             display: grid;
             place-items: center;
             transition: transform 0.2s, background 0.2s;
+            z-index: 2;
         }
         #upgrade-pro-app .back:active { transform: scale(0.92); }
 
+        /* Upgrade Pro টাইটেল একদম সেন্টারে */
         #upgrade-pro-app .title {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
             font-size: 17.5px;
             font-weight: 800;
-            flex: 1;
             letter-spacing: -0.2px;
+            text-align: center;
+            white-space: nowrap;
+            pointer-events: none; /* ক্লিকের সমস্যা প্রতিরোধ */
+            z-index: 1;
         }
 
         #upgrade-pro-app .badge {
@@ -112,6 +125,7 @@
             font-weight: 800;
             letter-spacing: 0.5px;
             border: 1px solid var(--soft-glow);
+            z-index: 2;
         }
 
         /* Content Area */
@@ -173,7 +187,7 @@
         }
 
         /* ========================================================
-           4. NEW REDESIGNED VIP USER & STATUS PASSPORT CARD
+           4. VIP USER & STATUS PASSPORT CARD (NO RED TICK)
         ======================================================== */
         #upgrade-pro-app .plan-status-card {
             background: var(--surface);
@@ -206,7 +220,7 @@
             box-shadow: 0 10px 30px rgba(251, 191, 36, 0.25);
         }
 
-        /* Top Row: User Avatar, Name, Handle on Left | Status Badge on Right */
+        /* Top Row: User Avatar, Name, Handle | Status Badge */
         #upgrade-pro-app .status-card-inner {
             display: flex;
             justify-content: space-between;
@@ -290,7 +304,7 @@
             transition: 0.3s;
         }
 
-        /* Bottom Section / Upgrade Prompt */
+        /* Bottom Status Footer Bar */
         #upgrade-pro-app .status-footer-bar {
             margin-top: 14px;
             padding-top: 12px;
@@ -339,7 +353,7 @@
         }
 
         /* ========================================================
-           5. PREMIUM FEATURE BOXES WITH UNIQUE COLORS
+           5. PREMIUM FEATURE BOXES WITH DEDICATED COLORS
         ======================================================== */
         #upgrade-pro-app .section-title {
             font-size: 18px;
@@ -418,7 +432,7 @@
         }
 
         /* ========================================================
-           6. MEMBERSHIP PLAN SELECTOR (PRO vs MAX)
+           6. PLAN SELECTOR (PRO vs MAX)
         ======================================================== */
         #upgrade-pro-app .plan-selection-title {
             font-size: 18px;
@@ -508,7 +522,7 @@
             font-weight: 700;
         }
 
-        /* Plan Overview Card */
+        /* Overview & Checkout */
         #upgrade-pro-app .plan-overview-card {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -533,7 +547,7 @@
         }
         #upgrade-pro-app .plan-checklist i { color: var(--accent); font-size: 14px; }
 
-        /* Checkout CTA Button */
+        /* Checkout Button */
         #upgrade-pro-app .primary-cta {
             width: 100%;
             border: 0;
@@ -630,12 +644,17 @@
 
     <main class="app" id="upgrade-pro-app">
         
-        <!-- 1. Top Bar: Starts below status bar & scrolls with page -->
+        <!-- 1. Top Bar: Background #0F0F0F (Dark Mode) & Centered Text -->
         <header class="bar">
+            <!-- Left: Back Button -->
             <button class="back" onclick="executeBackAction()" aria-label="Back">
                 <i class="fas fa-arrow-left"></i>
             </button>
+            
+            <!-- Center: Upgrade Pro Text -->
             <div class="title">Upgrade Pro</div>
+            
+            <!-- Right: PRO Badge -->
             <span class="badge"><i class="fas fa-crown"></i> PRO</span>
         </header>
 
@@ -653,7 +672,6 @@
 
             <!-- 3. Redesigned VIP Status Passport Card (NO RED TICK) -->
             <div class="plan-status-card fade-up delay-1" id="planStatusCard">
-                
                 <div class="status-card-inner">
                     <!-- Left: Avatar, Name (No Red Tick), Handle -->
                     <div class="pro-user-profile" id="proUserProfile" style="display: none;">
@@ -678,7 +696,6 @@
                     <i class="fas fa-sparkles" id="statusIcon"></i>
                     <span class="upgrade-prompt" id="planPrompt">Upgrade to unlock Pro or Max features</span>
                 </div>
-
             </div>
 
             <!-- Countdown Timer (Visible only for Active Members) -->

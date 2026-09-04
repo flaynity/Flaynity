@@ -15,7 +15,7 @@
 
     <style>
         /* ========================================================
-           1. CORE GLOBAL THEME VARIABLES (STRICTLY PRESERVED)
+           1. CORE GLOBAL THEME (STRICTLY PRESERVED)
         ======================================================== */
         .premium-service-page {
             --bg: #ffffff;
@@ -28,17 +28,20 @@
             --soft-glow: rgba(255, 46, 85, 0.20);
             --card-bg: #fbfbfb;
             --shadow: 0 12px 36px rgba(0,0,0,0.06);
+            --gold: #fbbf24;
+            --cyan: #00d2ff;
+            --purple: #a855f7;
         }
         [data-theme=dark] .premium-service-page {
-            --bg: #0F0F0F;
-            --surface: #141414;
+            --bg: #0c0d10;
+            --surface: #14161d;
             --text: #ffffff;
-            --muted: #999999;
-            --border: #222222;
+            --muted: #9496a1;
+            --border: #232631;
             --soft: rgba(255, 46, 85, 0.12);
             --soft-glow: rgba(255, 46, 85, 0.25);
-            --card-bg: #121212;
-            --shadow: 0 14px 40px rgba(0,0,0,0.45);
+            --card-bg: #111318;
+            --shadow: 0 14px 40px rgba(0,0,0,0.55);
         }
 
         .premium-service-page * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -60,10 +63,10 @@
         }
 
         /* ========================================================
-           2. TOP BAR (STATUS BAR GAP FIXED & SCROLLS WITH PAGE)
+           2. TOP BAR (ZERO EXCESS GAP & SCROLLS WITH PAGE)
         ======================================================== */
         #upgrade-pro-app .bar {
-            position: relative; /* স্ক্রল করলে পেজের সাথে সাথে ওপরে স্ক্রল হবে */
+            position: relative;
             height: 52px;
             margin: 0;
             padding: 0 16px;
@@ -113,15 +116,15 @@
 
         /* Content Area */
         #upgrade-pro-app .content { 
-            padding: 12px 16px 40px; 
+            padding: 14px 16px 40px; 
         }
 
         /* Animations */
         @keyframes upgFadeUp {
-            from { opacity: 0; transform: translateY(8px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        #upgrade-pro-app .fade-up { animation: upgFadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        #upgrade-pro-app .fade-up { animation: upgFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         #upgrade-pro-app .delay-1 { animation-delay: 0.05s; }
         #upgrade-pro-app .delay-2 { animation-delay: 0.1s; }
         #upgrade-pro-app .delay-3 { animation-delay: 0.15s; }
@@ -132,7 +135,7 @@
         ======================================================== */
         #upgrade-pro-app .hero-section {
             text-align: center;
-            padding: 10px 0 18px;
+            padding: 10px 0 20px;
         }
         #upgrade-pro-app .pro-glow-badge {
             display: inline-flex;
@@ -149,11 +152,11 @@
             letter-spacing: 0.5px;
         }
         #upgrade-pro-app .hero-section h1 {
-            font-size: 28px;
+            font-size: 30px;
             font-weight: 900;
             margin: 0 0 6px;
             line-height: 1.15;
-            letter-spacing: -0.5px;
+            letter-spacing: -0.6px;
         }
         #upgrade-pro-app .hero-section .subtitle {
             font-size: 13.5px;
@@ -177,7 +180,7 @@
             border: 1px solid var(--border);
             border-radius: 18px;
             padding: 16px 18px;
-            margin-bottom: 22px;
+            margin-bottom: 24px;
             box-shadow: var(--shadow);
             transition: all 0.3s ease;
         }
@@ -191,8 +194,8 @@
             align-items: center;
         }
         #upgrade-pro-app .plan-label {
-            font-size: 11px;
-            font-weight: 700;
+            font-size: 11.5px;
+            font-weight: 800;
             color: var(--muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -200,7 +203,7 @@
         #upgrade-pro-app .free-badge-pill {
             background: var(--border);
             color: var(--text);
-            font-size: 10px;
+            font-size: 10.5px;
             font-weight: 800;
             padding: 3px 9px;
             border-radius: 6px;
@@ -210,7 +213,7 @@
         #upgrade-pro-app .upgrade-prompt {
             font-size: 13px;
             font-weight: 700;
-            margin: 5px 0 0;
+            margin: 6px 0 0;
             display: flex;
             align-items: center;
             gap: 6px;
@@ -249,9 +252,7 @@
             color: var(--muted);
         }
 
-        /* ========================================================
-           5. COUNTDOWN CARD (FOR ACTIVE MEMBERS)
-        ======================================================== */
+        /* Countdown Card */
         #upgrade-pro-app .countdown-card {
             background: var(--surface);
             border: 1px solid var(--accent);
@@ -279,71 +280,188 @@
         }
 
         /* ========================================================
-           6. PRO BENEFITS
+           5. PREMIUM FEATURE BOXES (EACH IN A DEDICATED CARD)
         ======================================================== */
         #upgrade-pro-app .section-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin: 0 0 14px;
+            letter-spacing: -0.3px;
+        }
+        #upgrade-pro-app .features-box-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 26px;
+        }
+
+        /* Individual Feature Box */
+        #upgrade-pro-app .feature-card-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        #upgrade-pro-app .feature-card-box:active {
+            transform: scale(0.98);
+        }
+
+        /* Distinct Icon Containers & Colors */
+        #upgrade-pro-app .box-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            font-size: 17px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+        }
+
+        /* 1. Ad-Free: Electric Cyan */
+        #upgrade-pro-app .icon-adfree {
+            background: rgba(0, 210, 255, 0.12);
+            color: var(--cyan);
+            border: 1px solid rgba(0, 210, 255, 0.25);
+        }
+        /* 2. Premium Creator Tools: Electric Purple */
+        #upgrade-pro-app .icon-creator {
+            background: rgba(168, 85, 247, 0.12);
+            color: var(--purple);
+            border: 1px solid rgba(168, 85, 247, 0.25);
+        }
+        /* 3. Exclusive Pro Badge: Royal Gold */
+        #upgrade-pro-app .icon-badge {
+            background: rgba(251, 191, 36, 0.12);
+            color: var(--gold);
+            border: 1px solid rgba(251, 191, 36, 0.25);
+        }
+        /* 4. Priority Features: Signature Crimson Pink */
+        #upgrade-pro-app .icon-priority {
+            background: rgba(255, 46, 85, 0.12);
+            color: var(--accent);
+            border: 1px solid rgba(255, 46, 85, 0.25);
+        }
+
+        #upgrade-pro-app .box-text h4 {
+            margin: 0 0 3px;
+            font-size: 14.5px;
+            font-weight: 800;
+            letter-spacing: -0.2px;
+        }
+        #upgrade-pro-app .box-text p {
+            margin: 0;
+            font-size: 12.5px;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        /* ========================================================
+           6. MEMBERSHIP PLAN SELECTOR (PRO vs MAX)
+        ======================================================== */
+        #upgrade-pro-app .plan-selection-title {
             font-size: 18px;
             font-weight: 800;
             margin: 0 0 12px;
             letter-spacing: -0.3px;
         }
-        #upgrade-pro-app .benefits-section { margin-bottom: 24px; }
-        #upgrade-pro-app .feature-item {
+        #upgrade-pro-app .plans-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        #upgrade-pro-app .plan-choice-card {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            padding: 16px 14px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.25s ease;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        #upgrade-pro-app .plan-choice-card.selected {
+            border-color: var(--accent);
+            background: linear-gradient(160deg, var(--surface), var(--soft));
+            box-shadow: 0 10px 30px var(--soft);
+        }
+
+        #upgrade-pro-app .plan-tag-badge {
+            position: absolute;
+            top: -10px;
+            right: 12px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 9.5px;
+            font-weight: 900;
+            padding: 3px 8px;
+            border-radius: 999px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        #upgrade-pro-app .plan-tag-badge.gold {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        #upgrade-pro-app .plan-choice-header {
             display: flex;
             align-items: center;
-            gap: 14px;
-            padding: 11px 0;
-            border-bottom: 1px solid var(--border);
+            justify-content: space-between;
+            margin-bottom: 8px;
         }
-        #upgrade-pro-app .feature-item:last-child { border-bottom: none; }
-        #upgrade-pro-app .feature-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            background: var(--soft);
-            color: var(--accent);
+        #upgrade-pro-app .plan-choice-title {
+            font-size: 14.5px;
+            font-weight: 800;
+        }
+        #upgrade-pro-app .plan-radio-circle {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
             display: grid;
             place-items: center;
-            font-size: 15px;
-            flex-shrink: 0;
+            font-size: 9px;
+            color: #fff;
+            transition: all 0.2s ease;
         }
-        #upgrade-pro-app .feature-text h4 { margin: 0 0 2px; font-size: 14px; font-weight: 700; }
-        #upgrade-pro-app .feature-text p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+        #upgrade-pro-app .plan-choice-card.selected .plan-radio-circle {
+            border-color: var(--accent);
+            background: var(--accent);
+        }
 
-        /* ========================================================
-           7. PRO PLAN PRICING CARD
-        ======================================================== */
-        #upgrade-pro-app .pro-plan-card {
-            background: var(--surface);
-            border: 2px solid var(--accent);
-            border-radius: 22px;
-            padding: 20px;
-            box-shadow: 0 14px 36px var(--soft);
-            margin-bottom: 24px;
-            position: relative;
-        }
-        #upgrade-pro-app .plan-top-label {
-            font-size: 10px;
+        #upgrade-pro-app .plan-choice-price {
+            margin: 6px 0 2px;
+            font-size: 24px;
             font-weight: 900;
-            color: var(--accent);
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-            display: block;
+            letter-spacing: -0.5px;
         }
-        #upgrade-pro-app .pro-plan-card h3 { font-size: 21px; font-weight: 900; margin: 0 0 4px; }
-        #upgrade-pro-app .pro-plan-card .plan-desc { font-size: 12.5px; color: var(--muted); margin: 0 0 16px; }
-        #upgrade-pro-app .pricing-wrap {
-            display: flex;
-            align-items: baseline;
-            gap: 4px;
-            margin-bottom: 18px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid var(--border);
+        #upgrade-pro-app .plan-choice-duration {
+            font-size: 11.5px;
+            color: var(--muted);
+            font-weight: 700;
         }
-        #upgrade-pro-app .price { font-size: 32px; font-weight: 900; }
-        #upgrade-pro-app .period { font-size: 12.5px; color: var(--muted); font-weight: 600; }
 
+        /* Detailed Plan Overview Card */
+        #upgrade-pro-app .plan-overview-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 18px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow);
+        }
         #upgrade-pro-app .plan-checklist {
             list-style: none;
             padding: 0;
@@ -360,7 +478,7 @@
         }
         #upgrade-pro-app .plan-checklist i { color: var(--accent); font-size: 14px; }
 
-        /* Upgrade Button */
+        /* Checkout CTA Button */
         #upgrade-pro-app .primary-cta {
             width: 100%;
             border: 0;
@@ -369,7 +487,7 @@
             font-size: 15px;
             font-weight: 800;
             padding: 15px;
-            border-radius: 15px;
+            border-radius: 16px;
             cursor: pointer;
             transition: all 0.2s ease;
             box-shadow: 0 8px 24px var(--soft);
@@ -411,7 +529,7 @@
         #upgrade-pro-app .payment-info .sub-text { font-size: 11px; color: var(--muted); margin: 0; line-height: 1.4; }
 
         /* ========================================================
-           8. COMPARISON SECTION
+           7. COMPARISON & FAQ
         ======================================================== */
         #upgrade-pro-app .comparison-section { margin-bottom: 24px; }
         #upgrade-pro-app .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -422,7 +540,7 @@
             padding: 14px;
         }
         #upgrade-pro-app .comp-card.pro { border-color: var(--accent); background: var(--soft); }
-        #upgrade-pro-app .comp-card h4 { margin: 0 0 8px; font-size: 14.5px; font-weight: 800; text-align: center; }
+        #upgrade-pro-app .comp-card h4 { margin: 0 0 8px; font-size: 14px; font-weight: 800; text-align: center; }
         #upgrade-pro-app .comp-card.pro h4 { color: var(--accent); }
         #upgrade-pro-app .comp-card ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 7px; }
         #upgrade-pro-app .comp-card li { font-size: 11.5px; font-weight: 600; color: var(--muted); display: flex; gap: 6px; line-height: 1.35; }
@@ -431,9 +549,6 @@
         #upgrade-pro-app .comp-card.free li i { color: var(--muted); }
         #upgrade-pro-app .comp-card.pro li i { color: var(--accent); }
 
-        /* ========================================================
-           9. FAQ SECTION
-        ======================================================== */
         #upgrade-pro-app .faq-section { margin-bottom: 16px; }
         #upgrade-pro-app .faq-item { border-bottom: 1px solid var(--border); }
         #upgrade-pro-app .faq-item:last-child { border-bottom: none; }
@@ -461,9 +576,9 @@
 
     <main class="app" id="upgrade-pro-app">
         
-        <!-- 1. Top Bar: Status bar gap fixed & scrolls with page -->
+        <!-- 1. Top Bar: Starts flush below phone status bar & scrolls with page -->
         <header class="bar">
-            <!-- Back বাটন আগের মতো অরিজিনাল executeBackAction() কল করবে -->
+            <!-- Native executeBackAction() preserves smooth navigation without app refresh -->
             <button class="back" onclick="executeBackAction()" aria-label="Back">
                 <i class="fas fa-arrow-left"></i>
             </button>
@@ -476,20 +591,20 @@
             <!-- 2. Hero Section -->
             <div class="hero-section fade-up">
                 <div class="pro-glow-badge">
-                    <i class="fas fa-crown"></i> FLAYNITY PRO
+                    <i class="fas fa-crown"></i> FLAYNITY MEMBERSHIP
                 </div>
-                <h1>Unlock Flaynity Pro</h1>
+                <h1>Choose Your Plan</h1>
                 <p class="subtitle">Experience Flaynity with limitless creativity.</p>
-                <p class="desc">Upgrade today to stand out with advanced creator tools and pro perks.</p>
+                <p class="desc">Unlock exclusive creator privileges, verified badges, and ad-free browsing.</p>
             </div>
 
-            <!-- 3. Current Plan / User Info Card -->
+            <!-- 3. Current Membership Status Card -->
             <div class="plan-status-card fade-up delay-1" id="planStatusCard">
                 <div class="plan-status-header">
-                    <span class="plan-label">Membership Status</span>
+                    <span class="plan-label">Current Status</span>
                     <span class="free-badge-pill" id="planBadge">Free</span>
                 </div>
-                <p class="upgrade-prompt" id="planPrompt">Upgrade to unlock Pro features</p>
+                <p class="upgrade-prompt" id="planPrompt">Upgrade to unlock Pro or Max features</p>
                 
                 <!-- Dynamic User Profile Area -->
                 <div class="pro-user-profile" id="proUserProfile" style="display: none;">
@@ -501,82 +616,139 @@
                 </div>
             </div>
 
-            <!-- Pro Expiration Countdown Card (Only shows when Pro is active) -->
+            <!-- Countdown Timer (Visible only for Active Members) -->
             <div class="countdown-card fade-up delay-2" id="proCountdownCard">
-                <div class="countdown-title"><i class="fas fa-clock"></i> Pro Membership Active For</div>
+                <div class="countdown-title"><i class="fas fa-clock"></i> Membership Active For</div>
                 <div class="countdown-timer-display" id="countdownTimerDisplay">00d : 00h : 00m : 00s</div>
             </div>
 
-            <!-- 4. Pro Benefits Section -->
-            <div class="benefits-section fade-up delay-2">
-                <h2 class="section-title">Why Go Pro?</h2>
-                <div class="feature-item">
-                    <div class="feature-icon"><i class="fas fa-ban"></i></div>
-                    <div class="feature-text"><h4>Ad-Free Experience</h4><p>Enjoy a cleaner Flaynity experience with no interruptions.</p></div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
-                    <div class="feature-text"><h4>Premium Creator Tools</h4><p>Unlock advanced tools crafted to accelerate your reach and content.</p></div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon"><i class="fas fa-id-badge"></i></div>
-                    <div class="feature-text"><h4>Exclusive Pro Badge</h4><p>Stand out across comments and profile with VIP verification.</p></div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon"><i class="fas fa-bolt"></i></div>
-                    <div class="feature-text"><h4>Priority Features</h4><p>Early access to all upcoming experimental and high-speed tools.</p></div>
+            <!-- 4. Premium Feature Boxes with Distinct Unique Colors -->
+            <div class="fade-up delay-2">
+                <h2 class="section-title">Membership Benefits</h2>
+                
+                <div class="features-box-grid">
+                    
+                    <!-- Box 1: Ad-Free Experience (Vibrant Cyan) -->
+                    <div class="feature-card-box">
+                        <div class="box-icon icon-adfree">
+                            <i class="fas fa-shield-halved"></i>
+                        </div>
+                        <div class="box-text">
+                            <h4>Ad-Free Experience</h4>
+                            <p>Enjoy a cleaner, distraction-free Flaynity experience with zero ad interruptions.</p>
+                        </div>
+                    </div>
+
+                    <!-- Box 2: Premium Creator Tools (Electric Purple) -->
+                    <div class="feature-card-box">
+                        <div class="box-icon icon-creator">
+                            <i class="fas fa-wand-magic-sparkles"></i>
+                        </div>
+                        <div class="box-text">
+                            <h4>Premium Creator Tools</h4>
+                            <p>Unlock advanced analytics and suite tools crafted to accelerate content reach.</p>
+                        </div>
+                    </div>
+
+                    <!-- Box 3: Exclusive Pro Badge (Royal Gold) -->
+                    <div class="feature-card-box">
+                        <div class="box-icon icon-badge">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <div class="box-text">
+                            <h4>Exclusive Pro Badge</h4>
+                            <p>Stand out across comments, posts, and your profile with VIP verified identity.</p>
+                        </div>
+                    </div>
+
+                    <!-- Box 4: Priority Features (Signature Crimson Red) -->
+                    <div class="feature-card-box">
+                        <div class="box-icon icon-priority">
+                            <i class="fas fa-bolt-lightning"></i>
+                        </div>
+                        <div class="box-text">
+                            <h4>Priority Features</h4>
+                            <p>Gain early instant access to upcoming experimental and high-speed tools.</p>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
-            <!-- 5. Pro Plan Pricing Card -->
-            <div class="pro-plan-card fade-up delay-3">
-                <span class="plan-top-label">1 Month Plan</span>
-                <h3>Pro Membership</h3>
-                <p class="plan-desc">Complete access for 30 consecutive days.</p>
+            <!-- 5. Plan Selector (Pro vs Max Membership) -->
+            <div class="fade-up delay-3">
+                <h2 class="plan-selection-title">Select Membership Plan</h2>
                 
-                <div class="pricing-wrap">
-                    <span class="price">$4.99</span>
-                    <span class="period">/ month</span>
+                <div class="plans-container">
+                    
+                    <!-- Choice 1: Pro Membership (1 Month - $4.99) -->
+                    <div class="plan-choice-card" id="cardPro" onclick="choosePlan('monthly')">
+                        <span class="plan-tag-badge">MONTHLY</span>
+                        <div class="plan-choice-header">
+                            <span class="plan-choice-title">Pro</span>
+                            <div class="plan-radio-circle" id="radioPro">
+                                <i class="fas fa-check"></i>
+                            </div>
+                        </div>
+                        <div class="plan-choice-price">$4.99</div>
+                        <div class="plan-choice-duration">1 Month Access</div>
+                    </div>
+
+                    <!-- Choice 2: Max Membership (1 Year - $55.99) [SELECTED BY DEFAULT] -->
+                    <div class="plan-choice-card selected" id="cardMax" onclick="choosePlan('yearly')">
+                        <span class="plan-tag-badge gold">BEST VALUE</span>
+                        <div class="plan-choice-header">
+                            <span class="plan-choice-title">Max VIP</span>
+                            <div class="plan-radio-circle" id="radioMax">
+                                <i class="fas fa-check"></i>
+                            </div>
+                        </div>
+                        <div class="plan-choice-price">$55.99</div>
+                        <div class="plan-choice-duration">1 Year (12 Months)</div>
+                    </div>
+
                 </div>
 
-                <ul class="plan-checklist">
-                    <li><i class="fas fa-circle-check"></i> Unlimited Premium Features</li>
-                    <li><i class="fas fa-circle-check"></i> Advanced Creator Analytics & Tools</li>
-                    <li><i class="fas fa-circle-check"></i> Verified Pro Creator Identity</li>
-                    <li><i class="fas fa-circle-check"></i> Ad-Free Fast Experience</li>
-                    <li><i class="fas fa-circle-check"></i> 30 Days Full Access Guarantee</li>
-                </ul>
+                <!-- Plan Overview & Checkout Card -->
+                <div class="plan-overview-card">
+                    <ul class="plan-checklist" id="planChecklist">
+                        <li><i class="fas fa-circle-check"></i> All 4 Premium Features Included</li>
+                        <li><i class="fas fa-circle-check"></i> 1 Year Complete Uninterrupted VIP Access</li>
+                        <li><i class="fas fa-circle-check"></i> Guaranteed Priority Customer Support</li>
+                        <li><i class="fas fa-circle-check"></i> Instant Flay Pay Activation</li>
+                    </ul>
 
-                <!-- Flay Pay Checkout Action Button -->
-                <button class="primary-cta" id="continueBtn" onclick="continueToPay()" disabled>
-                    Upgrade to Pro Flay Pay <i class="fas fa-arrow-right"></i>
-                </button>
+                    <!-- Action Button -->
+                    <button class="primary-cta" id="continueBtn" onclick="continueToPay()" disabled>
+                        Upgrade to Max Flay Pay • $55.99 <i class="fas fa-arrow-right"></i>
+                    </button>
 
-                <!-- Payment Trust Badge -->
-                <div class="payment-info">
-                    <p class="secure-text"><i class="fas fa-shield-halved"></i> Secure instant activation via Flay Pay</p>
-                    <p class="sub-text">Once active, you cannot purchase another plan until your 1-month term completes.</p>
+                    <!-- Payment Trust Badge -->
+                    <div class="payment-info">
+                        <p class="secure-text"><i class="fas fa-shield-halved"></i> Instant secure checkout via Flay Pay</p>
+                        <p class="sub-text">Once active, plan will remain valid for the full period without duplicate charges.</p>
+                    </div>
                 </div>
             </div>
 
             <!-- 6. Comparison Section -->
             <div class="comparison-section fade-up delay-4">
-                <h2 class="section-title">Free vs Pro</h2>
+                <h2 class="section-title">Free vs Membership</h2>
                 <div class="comparison-grid">
                     <div class="comp-card free">
                         <h4>Free</h4>
                         <ul>
                             <li><i class="fas fa-check"></i> Standard feed</li>
-                            <li><i class="fas fa-check"></i> Basic tools</li>
-                            <li><i class="fas fa-check"></i> Standard identity</li>
+                            <li><i class="fas fa-check"></i> Regular tools</li>
+                            <li><i class="fas fa-check"></i> Standard profile</li>
                         </ul>
                     </div>
                     <div class="comp-card pro">
-                        <h4>Pro</h4>
+                        <h4>Pro / Max</h4>
                         <ul>
-                            <li><i class="fas fa-check"></i> Ad-free feed</li>
+                            <li><i class="fas fa-check"></i> 100% Ad-free feed</li>
                             <li><i class="fas fa-check"></i> Advanced creator suite</li>
-                            <li><i class="fas fa-check"></i> Pro crown badge</li>
+                            <li><i class="fas fa-check"></i> Exclusive VIP badge</li>
                             <li><i class="fas fa-check"></i> Priority features</li>
                         </ul>
                     </div>
@@ -587,16 +759,16 @@
             <div class="faq-section fade-up delay-4">
                 <h2 class="section-title">Frequently Asked Questions</h2>
                 <div class="faq-item">
-                    <button class="faq-btn">Can I upgrade multiple times in a month? <i class="fas fa-chevron-down"></i></button>
-                    <div class="faq-content"><p>No. Your Pro membership stays active for 1 month. During this period, your membership remains fully active and locked from duplicate purchases.</p></div>
+                    <button class="faq-btn">What is the difference between Pro and Max? <i class="fas fa-chevron-down"></i></button>
+                    <div class="faq-content"><p>Both tiers offer complete premium benefits. Pro gives you 1 month of flexible access, while Max Membership gives you a full 1-year pass at the best discounted rate.</p></div>
                 </div>
                 <div class="faq-item">
-                    <button class="faq-btn">How does activation work? <i class="fas fa-chevron-down"></i></button>
-                    <div class="faq-content"><p>When you complete payment via Flay Pay, your Pro badge and perks activate automatically on your account in real-time.</p></div>
+                    <button class="faq-btn">Can I upgrade while my plan is active? <i class="fas fa-chevron-down"></i></button>
+                    <div class="faq-content"><p>No duplicate purchases are allowed while your membership is active. Your account is fully protected until your active term expires.</p></div>
                 </div>
                 <div class="faq-item">
-                    <button class="faq-btn">How do I track my active period? <i class="fas fa-chevron-down"></i></button>
-                    <div class="faq-content"><p>A live countdown timer is visible on this page whenever your membership is active, showing exact remaining days, hours, and minutes.</p></div>
+                    <button class="faq-btn">How quickly is membership activated? <i class="fas fa-chevron-down"></i></button>
+                    <div class="faq-content"><p>Immediately! Once Flay Pay confirms the payment, your crown badge and all VIP features activate in real-time.</p></div>
                 </div>
             </div>
 
@@ -622,21 +794,55 @@
         });
     </script>
 
-    <!-- Flay Pay Checkout & Firebase Integration -->
+    <!-- Plan Selection & Firebase Integration -->
     <script>
         (()=>{
             const SERVICE = 'upgradePro';
             let currentUser = null;
             let channelRef = null;
             let countdownInterval = null;
-            let isProActive = false; // 1-month lock tracker
+            let isProActive = false;
+            let selectedPlan = 'yearly'; // 'monthly' | 'yearly' (Default: Max Yearly)
 
-            // Fallback back handler if app hasn't declared one globally
+            // Fallback back handler
             if (typeof window.executeBackAction !== 'function') {
                 window.executeBackAction = function() {
                     window.history.back();
                 };
             }
+
+            // Plan Selector Function
+            window.choosePlan = function(plan) {
+                if (isProActive) return; // Prevent change if active member
+
+                selectedPlan = plan;
+                const cardPro = document.getElementById('cardPro');
+                const cardMax = document.getElementById('cardMax');
+                const btn = document.getElementById('continueBtn');
+                const checklist = document.getElementById('planChecklist');
+
+                if (plan === 'yearly') {
+                    cardMax.classList.add('selected');
+                    cardPro.classList.remove('selected');
+                    btn.innerHTML = 'Upgrade to Max Flay Pay • $55.99 <i class="fas fa-arrow-right"></i>';
+                    checklist.innerHTML = `
+                        <li><i class="fas fa-circle-check"></i> All 4 Premium Features Included</li>
+                        <li><i class="fas fa-circle-check"></i> 1 Year Complete Uninterrupted VIP Access</li>
+                        <li><i class="fas fa-circle-check"></i> Guaranteed Priority Customer Support</li>
+                        <li><i class="fas fa-circle-check"></i> Instant Flay Pay Activation</li>
+                    `;
+                } else {
+                    cardPro.classList.add('selected');
+                    cardMax.classList.remove('selected');
+                    btn.innerHTML = 'Upgrade to Pro Flay Pay • $4.99 <i class="fas fa-arrow-right"></i>';
+                    checklist.innerHTML = `
+                        <li><i class="fas fa-circle-check"></i> All 4 Premium Features Included</li>
+                        <li><i class="fas fa-circle-check"></i> 1 Month Uninterrupted VIP Access</li>
+                        <li><i class="fas fa-circle-check"></i> Flexible Monthly Membership</li>
+                        <li><i class="fas fa-circle-check"></i> Instant Flay Pay Activation</li>
+                    `;
+                }
+            };
 
             auth.onAuthStateChanged(function(u){
                 currentUser = u;
@@ -647,7 +853,6 @@
                     return;
                 }
                 
-                // বাটনটি আগের মতো ডিফল্ট চালু রাখা হলো
                 b.disabled = false;
                 loadUserProfileAndStatus(u.uid);
             });
@@ -660,19 +865,17 @@
                     const data = snap.val() || {};
                     const avatar = data.avatarUrl || "https://ui-avatars.com/api/?name=" + encodeURIComponent(data.channelName || 'User');
                     
-                    // Show Profile Data
                     document.getElementById('proUserAvatar').src = avatar;
                     document.getElementById('proUserName').innerHTML = (data.channelName || 'Flaynity User') + ' <i class="fas fa-circle-check" style="color:var(--accent); font-size:13px;"></i>';
                     document.getElementById('proUserHandle').innerText = '@' + (data.handle || uid.substring(0,8));
                     document.getElementById('proUserProfile').style.display = 'flex';
                     
-                    // Check Active Pro Membership through Expiry Date
                     const verifiedUntil = Number(data.verifiedUntil) || 0;
                     const now = Date.now();
 
                     if (verifiedUntil > now) {
                         isProActive = true;
-                        activateProUI(verifiedUntil);
+                        activateProUI(verifiedUntil, data.planType);
                     } else {
                         isProActive = false;
                         deactivateProUI();
@@ -680,22 +883,21 @@
                 });
             }
 
-            function activateProUI(expiryTime) {
+            function activateProUI(expiryTime, planType) {
                 document.getElementById('planStatusCard').classList.add('is-active-pro');
                 const badge = document.getElementById('planBadge');
-                badge.textContent = 'PRO ACTIVE';
-                badge.style.background = 'var(--accent)';
+                badge.textContent = (planType === 'yearly' ? 'MAX ACTIVE' : 'PRO ACTIVE');
+                badge.style.background = (planType === 'yearly' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'var(--accent)');
                 badge.style.color = '#ffffff';
                 
-                document.getElementById('planPrompt').innerHTML = '<i class="fas fa-circle-check" style="color:#00a844;"></i> You are currently an Active Pro Member';
+                document.getElementById('planPrompt').innerHTML = '<i class="fas fa-circle-check" style="color:#00a844;"></i> You are currently an Active ' + (planType === 'yearly' ? 'Max VIP' : 'Pro') + ' Member';
                 
-                // 1 Month lock & Show Active Membership
+                // Lock Button & Show Active Membership
                 const btn = document.getElementById('continueBtn');
                 btn.disabled = true;
                 btn.classList.add('is-active-btn');
                 btn.innerHTML = '<i class="fas fa-crown"></i> Active Membership';
                 
-                // Show & Start Countdown
                 document.getElementById('proCountdownCard').style.display = 'block';
                 startCountdown(expiryTime);
             }
@@ -707,14 +909,13 @@
                 badge.style.background = 'var(--border)';
                 badge.style.color = 'var(--text)';
                 
-                document.getElementById('planPrompt').textContent = 'Upgrade to unlock Pro features';
+                document.getElementById('planPrompt').textContent = 'Upgrade to unlock Pro or Max features';
                 
                 const btn = document.getElementById('continueBtn');
                 btn.disabled = false;
                 btn.classList.remove('is-active-btn');
-                btn.innerHTML = 'Upgrade to Pro Flay Pay <i class="fas fa-arrow-right"></i>';
+                choosePlan(selectedPlan); // Restore button label based on selection
                 
-                // Hide Countdown
                 document.getElementById('proCountdownCard').style.display = 'none';
                 if(countdownInterval) clearInterval(countdownInterval);
             }
@@ -744,22 +945,31 @@
                 countdownInterval = setInterval(updateTimer, 1000);
             }
             
-            // FLAY PAY AUTO CHECKOUT (হুবহু আগের নিয়মে)
+            // Flay Pay Checkout Action
             window.continueToPay = function(){
                 if(currentUser){
-                    // ১ মাসের মধ্যে পুনরায় সাবস্ক্রাইব করার বাধা
                     if(isProActive){
-                        return;
+                        return; // Active period lock
                     }
 
-                    const orderData = {
-                        title: "Flaynity Pro Membership (1 Month)",
-                        amount: 4.99,
-                        planType: "monthly",
-                        type: "pro_upgrade"
-                    };
+                    // Dynamically set order data based on chosen plan
+                    let orderData;
+                    if (selectedPlan === 'yearly') {
+                        orderData = {
+                            title: "Flaynity Max Membership (1 Year)",
+                            amount: 55.99,
+                            planType: "yearly",
+                            type: "max_upgrade"
+                        };
+                    } else {
+                        orderData = {
+                            title: "Flaynity Pro Membership (1 Month)",
+                            amount: 4.99,
+                            planType: "monthly",
+                            type: "pro_upgrade"
+                        };
+                    }
                     
-                    // Set Data & Trigger Flay Pay
                     sessionStorage.setItem('flay_pending_checkout', JSON.stringify(orderData));
                     AppNavigation.pushPremiumService('flay-pay', SERVICE);
                 }

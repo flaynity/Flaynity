@@ -42,6 +42,68 @@
             display: flex; flex-direction: column; gap: 16px; z-index: 10; align-items: center;
         }
         .short-action-container { display: flex; flex-direction: column; align-items: center; }
+
+        /* TikTok-style channel avatar + subscribe action */
+        .short-channel-action {
+            position: relative;
+            width: 50px;
+            height: 58px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .short-channel-action-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid #fff;
+            background: #222;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+        }
+        .short-channel-action-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .short-channel-subscribe-btn {
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%);
+            width: 22px;
+            height: 22px;
+            padding: 0;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            background: #ff3040;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 900;
+            line-height: 1;
+            box-shadow: 0 2px 7px rgba(0,0,0,0.4);
+            transition: transform 0.22s cubic-bezier(0.175,0.885,0.32,1.275), background 0.22s ease;
+            cursor: pointer;
+        }
+        .short-channel-subscribe-btn:active {
+            transform: translateX(-50%) scale(0.82);
+        }
+        .short-channel-subscribe-btn.subscribed {
+            background: #ff3040;
+        }
+        .short-channel-subscribe-btn.subscribed i {
+            animation: subscribeTickPop 0.32s cubic-bezier(0.175,0.885,0.32,1.275);
+        }
+        @keyframes subscribeTickPop {
+            0% { transform: scale(0.45); opacity: 0; }
+            65% { transform: scale(1.18); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         
         .short-action-btn-tiktok {
             background: transparent !important;

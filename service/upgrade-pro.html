@@ -15,181 +15,591 @@
 
     <style>
         /* ========================================================
-           1. ORIGINAL GLOBAL CSS (STRICTLY PRESERVED)
-           These styles match the original to prevent any CSS leak
-           to other pages like flay-pay or flay-ads.
+           1. ORIGINAL BASE CSS & VARIABLES (PRESERVED)
         ======================================================== */
-        .premium-service-page{--bg:#fff;--surface:#fff;--text:#000;--muted:#666;--border:#e9e9e9;--accent:#ff2e55;--soft:rgba(255,46,85,.10);--shadow:0 14px 40px rgba(0,0,0,.07)}
-        [data-theme=dark] .premium-service-page{--bg:#0F0F0F;--surface:#0a0a0a;--text:#fff;--muted:#aaa;--border:#222;--soft:rgba(255,46,85,.14);--shadow:0 14px 40px rgba(0,0,0,.35)}
-        .premium-service-page *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-        .premium-service-page body{margin:0;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;overflow-x:hidden;}
-        .premium-service-page .app{max-width:680px;margin:auto;min-height:100vh}
-        
-        /* Original Header & Title (Untouched to fix global leak) */
-        .premium-service-page .bar{height:64px;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:5}
-        .premium-service-page .back{width:40px;height:40px;border:0;background:transparent;color:var(--text);font-size:20px;border-radius:50%;cursor:pointer;}
-        .premium-service-page .title{font-size:18px;font-weight:900;flex:1}
-        .premium-service-page .badge{display:inline-flex;align-items:center;gap:6px;background:var(--soft);color:var(--accent);padding:6px 9px;border-radius:999px;font-size:9px;font-weight:900}
-        
+        .premium-service-page {
+            --bg: #fff;
+            --surface: #fff;
+            --text: #000;
+            --muted: #666;
+            --border: #e9e9e9;
+            --accent: #ff2e55;
+            --soft: rgba(255,46,85,.10);
+            --shadow: 0 14px 40px rgba(0,0,0,.07);
+            box-sizing: border-box;
+            padding-top: 0 !important; /* Prevents double gap on status bar */
+        }
+
+        [data-theme=dark] .premium-service-page {
+            --bg: #0F0F0F;
+            --surface: #0a0a0a;
+            --text: #fff;
+            --muted: #aaa;
+            --border: #222;
+            --soft: rgba(255,46,85,.14);
+            --shadow: 0 14px 40px rgba(0,0,0,.35);
+        }
+
+        .premium-service-page * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .premium-service-page body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .premium-service-page .app {
+            max-width: 680px;
+            margin: auto;
+            min-height: 100vh;
+        }
+
+        /* Original Left-Aligned Header Settings */
+        .premium-service-page .bar {
+            height: 58px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 16px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            z-index: 5;
+        }
+        .premium-service-page .back {
+            width: 40px;
+            height: 40px;
+            border: 0;
+            background: transparent;
+            color: var(--text);
+            font-size: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+        }
+        .premium-service-page .title {
+            font-size: 18px;
+            font-weight: 900;
+            flex: 1;
+            color: var(--text);
+        }
+        .premium-service-page .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--soft);
+            color: var(--accent);
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+        }
+
         /* ========================================================
-           2. UPGRADE PRO SPECIFIC SCOPED CSS
-           Prefixed with #upgrade-pro-app so it NEVER affects other pages
+           2. NEW PREMIUM UI/UX (SCOPED TO #upgrade-pro-app)
         ======================================================== */
-        
-        /* Status Bar Fix - ONLY applies to this specific page's header */
+
+        /* Header positioned comfortably under the hardware Status Bar */
         #upgrade-pro-app .bar {
             padding-top: env(safe-area-inset-top, 0px);
-            height: calc(64px + env(safe-area-inset-top, 0px));
+            height: calc(58px + env(safe-area-inset-top, 0px));
+            background: var(--bg);
             z-index: 100;
         }
-        
-        #upgrade-pro-app .content { padding: 24px 16px 40px; }
 
-        @keyframes upgFadeUp {
-            from { opacity: 0; transform: translateY(12px); }
+        #upgrade-pro-app .content {
+            padding: 16px 16px 48px;
+        }
+
+        /* Micro Animations */
+        @keyframes upgFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        #upgrade-pro-app .fade-up { animation: upgFadeUp 0.3s ease-out forwards; opacity: 0; }
+        #upgrade-pro-app .fade-up {
+            animation: upgFadeIn 0.3s ease-out forwards;
+            opacity: 0;
+        }
         #upgrade-pro-app .delay-1 { animation-delay: 0.05s; }
         #upgrade-pro-app .delay-2 { animation-delay: 0.1s; }
         #upgrade-pro-app .delay-3 { animation-delay: 0.15s; }
         #upgrade-pro-app .delay-4 { animation-delay: 0.2s; }
 
         /* Premium Hero Section */
-        #upgrade-pro-app .hero-section { text-align: center; padding: 24px 0 20px; }
-        #upgrade-pro-app .pro-glow-badge {
-            display: inline-flex; align-items: center; gap: 8px; background: var(--surface);
-            color: var(--accent); border: 1px solid var(--soft); padding: 8px 16px;
-            border-radius: 999px; font-size: 12px; font-weight: 800; box-shadow: 0 0 20px var(--soft);
-            margin-bottom: 24px; letter-spacing: 0.5px; margin-top: 10px;
+        #upgrade-pro-app .hero-section {
+            text-align: center;
+            padding: 16px 0 20px;
         }
-        #upgrade-pro-app .pro-glow-badge i { font-size: 14px; }
-        #upgrade-pro-app .hero-section h1 { font-size: 32px; font-weight: 900; margin: 0 0 12px; line-height: 1.2; }
-        #upgrade-pro-app .hero-section .subtitle { font-size: 16px; font-weight: 600; color: var(--text); margin: 0 0 8px; }
-        #upgrade-pro-app .hero-section .desc { font-size: 14px; color: var(--muted); line-height: 1.5; margin: 0; padding: 0 10px; }
-
-        /* Current Plan & User Profile */
-        #upgrade-pro-app .plan-status-card {
-            background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
-            padding: 16px 20px; margin-bottom: 32px; display: flex; flex-direction: column; gap: 6px;
+        #upgrade-pro-app .hero-glow-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface);
+            color: var(--accent);
+            border: 1px solid var(--soft);
+            padding: 7px 16px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 18px var(--soft);
+            margin-bottom: 16px;
         }
-        #upgrade-pro-app .plan-status-header { display: flex; justify-content: space-between; align-items: center; }
-        #upgrade-pro-app .plan-label { font-size: 13px; font-weight: 700; color: var(--muted); }
-        #upgrade-pro-app .free-badge-pill {
-            background: var(--border); color: var(--text); font-size: 11px; font-weight: 800;
-            padding: 4px 10px; border-radius: 6px; text-transform: uppercase; transition: 0.3s;
+        #upgrade-pro-app .hero-section h1 {
+            font-size: 30px;
+            font-weight: 900;
+            line-height: 1.2;
+            margin: 0 0 8px;
+            letter-spacing: -0.5px;
         }
-        #upgrade-pro-app .upgrade-prompt { font-size: 14px; font-weight: 700; margin: 4px 0 0; transition: 0.3s; }
-
-        /* Dynamic User Profile */
-        #upgrade-pro-app .pro-user-profile {
-            display: flex; align-items: center; gap: 12px; margin-top: 12px;
-            padding-top: 12px; border-top: 1px dashed var(--border);
+        #upgrade-pro-app .hero-section .subtitle {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0 0 6px;
         }
-        #upgrade-pro-app .pro-user-profile img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
-        #upgrade-pro-app .pro-user-info h4 { margin: 0 0 2px; font-size: 15px; font-weight: 800; color: var(--text); }
-        #upgrade-pro-app .pro-user-info p { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); }
-
-        #upgrade-pro-app .section-title { font-size: 20px; font-weight: 800; margin: 0 0 16px; }
-
-        /* Pro Benefits Section */
-        #upgrade-pro-app .benefits-section { margin-bottom: 32px; }
-        #upgrade-pro-app .feature-item { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border); }
-        #upgrade-pro-app .feature-item:last-child { border-bottom: none; }
-        #upgrade-pro-app .feature-icon {
-            width: 44px; height: 44px; border-radius: 14px; background: var(--soft);
-            color: var(--accent); display: grid; place-items: center; font-size: 18px; flex-shrink: 0;
-        }
-        #upgrade-pro-app .feature-text h4 { margin: 0 0 4px; font-size: 15px; font-weight: 700; }
-        #upgrade-pro-app .feature-text p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
-
-        /* Countdown Card */
-        #upgrade-pro-app .countdown-card {
-            background: linear-gradient(135deg, var(--surface), rgba(255,46,85,0.05));
-            border: 1px solid var(--accent); border-radius: 20px; padding: 18px;
-            text-align: center; margin-bottom: 24px; box-shadow: 0 12px 30px var(--soft); display: none;
-        }
-        #upgrade-pro-app .countdown-title {
-            font-size: 12px; font-weight: 900; color: var(--accent);
-            text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;
-        }
-        #upgrade-pro-app .countdown-timer-display {
-            font-size: 28px; font-weight: 900; color: var(--text);
-            font-variant-numeric: tabular-nums; line-height: 1.2; letter-spacing: -0.5px;
+        #upgrade-pro-app .hero-section .desc {
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.5;
+            margin: 0;
+            max-width: 480px;
+            margin: 0 auto;
         }
 
-        /* Pro Plan Card & Pricing */
+        /* Current Plan & Creator Profile Card */
+        #upgrade-pro-app .user-status-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 18px 20px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+        #upgrade-pro-app .card-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        #upgrade-pro-app .card-top-row .plan-label {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--muted);
+        }
+        #upgrade-pro-app .plan-pill {
+            font-size: 11px;
+            font-weight: 900;
+            padding: 4px 12px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: var(--border);
+            color: var(--text);
+            transition: 0.25s ease;
+        }
+        #upgrade-pro-app .plan-pill.active-pro {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 4px 12px var(--soft);
+        }
+
+        #upgrade-pro-app .creator-profile {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border);
+        }
+        #upgrade-pro-app .creator-avatar {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border);
+            flex-shrink: 0;
+        }
+        #upgrade-pro-app .creator-meta {
+            flex: 1;
+            min-width: 0;
+        }
+        #upgrade-pro-app .creator-name {
+            font-size: 15px;
+            font-weight: 800;
+            margin: 0 0 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #upgrade-pro-app .creator-handle {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+            margin: 0;
+        }
+        #upgrade-pro-app .status-prompt-text {
+            font-size: 12.5px;
+            font-weight: 700;
+            margin-top: 10px;
+            color: var(--muted);
+        }
+
+        /* Premium Digital Countdown Box */
+        #upgrade-pro-app .countdown-box {
+            background: var(--surface);
+            border: 1.5px solid var(--accent);
+            border-radius: 22px;
+            padding: 18px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px var(--soft);
+            text-align: center;
+            display: none;
+        }
+        #upgrade-pro-app .cd-tag {
+            font-size: 11px;
+            font-weight: 900;
+            color: var(--accent);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        #upgrade-pro-app .timer-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            max-width: 340px;
+            margin: 0 auto;
+        }
+        #upgrade-pro-app .timer-segment {
+            background: var(--soft);
+            padding: 10px 4px;
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #upgrade-pro-app .segment-val {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--text);
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+        #upgrade-pro-app .segment-lbl {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-top: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Section Headings */
+        #upgrade-pro-app .sec-title {
+            font-size: 18px;
+            font-weight: 900;
+            margin: 0 0 14px;
+            letter-spacing: -0.3px;
+        }
+
+        /* Benefits Grid / Items */
+        #upgrade-pro-app .benefits-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 8px 18px;
+            margin-bottom: 24px;
+        }
+        #upgrade-pro-app .benefit-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        #upgrade-pro-app .benefit-row:last-child {
+            border-bottom: none;
+        }
+        #upgrade-pro-app .benefit-icon-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: var(--soft);
+            color: var(--accent);
+            display: grid;
+            place-items: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        #upgrade-pro-app .benefit-text-wrap h4 {
+            margin: 0 0 2px;
+            font-size: 14px;
+            font-weight: 800;
+        }
+        #upgrade-pro-app .benefit-text-wrap p {
+            margin: 0;
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        /* Pro Plan Card */
         #upgrade-pro-app .pro-plan-card {
-            background: var(--surface); border: 2px solid var(--accent); border-radius: 24px;
-            padding: 24px; box-shadow: 0 16px 40px var(--soft); margin-bottom: 32px; position: relative; overflow: hidden;
+            background: var(--surface);
+            border: 2px solid var(--accent);
+            border-radius: 26px;
+            padding: 24px;
+            box-shadow: 0 16px 40px var(--soft);
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
         }
-        #upgrade-pro-app .pro-plan-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--accent); }
-        #upgrade-pro-app .plan-top-label { font-size: 11px; font-weight: 900; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; display: block; }
-        #upgrade-pro-app .pro-plan-card h3 { font-size: 24px; font-weight: 900; margin: 0 0 4px; }
-        #upgrade-pro-app .pro-plan-card .plan-desc { font-size: 14px; color: var(--muted); margin: 0 0 20px; }
-        #upgrade-pro-app .pricing-wrap { display: flex; align-items: baseline; gap: 4px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
-        #upgrade-pro-app .price { font-size: 36px; font-weight: 900; }
-        #upgrade-pro-app .period { font-size: 14px; color: var(--muted); font-weight: 600; }
-        #upgrade-pro-app .plan-checklist { list-style: none; padding: 0; margin: 0 0 24px; display: grid; gap: 12px; }
-        #upgrade-pro-app .plan-checklist li { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; }
-        #upgrade-pro-app .plan-checklist i { color: var(--accent); font-size: 16px; }
-
-        /* Upgrade Button */
-        #upgrade-pro-app .primary-cta {
-            width: 100%; border: 0; background: var(--accent); color: #fff;
-            font-size: 16px; font-weight: 800; padding: 16px; border-radius: 16px;
-            cursor: pointer; transition: all 0.2s ease; box-shadow: 0 8px 20px var(--soft);
-            display: flex; justify-content: center; align-items: center; gap: 8px;
+        #upgrade-pro-app .plan-badge-top {
+            font-size: 11px;
+            font-weight: 900;
+            color: var(--accent);
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            display: block;
         }
-        #upgrade-pro-app .primary-cta:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; background: var(--text); }
-        #upgrade-pro-app .primary-cta:not(:disabled):active { transform: scale(0.97); }
+        #upgrade-pro-app .pro-plan-card h3 {
+            font-size: 22px;
+            font-weight: 900;
+            margin: 0 0 4px;
+        }
+        #upgrade-pro-app .pro-plan-card .sub {
+            font-size: 13px;
+            color: var(--muted);
+            margin: 0 0 16px;
+        }
+        #upgrade-pro-app .pricing-block {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            margin-bottom: 20px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--border);
+        }
+        #upgrade-pro-app .big-price {
+            font-size: 34px;
+            font-weight: 900;
+        }
+        #upgrade-pro-app .unit-period {
+            font-size: 14px;
+            color: var(--muted);
+            font-weight: 600;
+        }
 
-        #upgrade-pro-app .payment-info { text-align: center; margin-top: 16px; }
-        #upgrade-pro-app .payment-info .secure-text { font-size: 12px; font-weight: 700; color: var(--text); margin: 0 0 4px; display: flex; justify-content: center; align-items: center; gap: 6px; }
-        #upgrade-pro-app .payment-info .secure-text i { color: #00a844; }
-        #upgrade-pro-app .payment-info .sub-text { font-size: 11px; color: var(--muted); margin: 0; line-height: 1.4; }
+        #upgrade-pro-app .perks-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 22px;
+            display: grid;
+            gap: 12px;
+        }
+        #upgrade-pro-app .perks-list li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13.5px;
+            font-weight: 700;
+        }
+        #upgrade-pro-app .perks-list i {
+            color: var(--accent);
+            font-size: 15px;
+        }
 
-        /* Comparison Section */
-        #upgrade-pro-app .comparison-section { margin-bottom: 32px; }
-        #upgrade-pro-app .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        #upgrade-pro-app .comp-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
-        #upgrade-pro-app .comp-card.pro { border-color: var(--accent); background: var(--soft); }
-        #upgrade-pro-app .comp-card h4 { margin: 0 0 12px; font-size: 16px; font-weight: 800; text-align: center; }
-        #upgrade-pro-app .comp-card.pro h4 { color: var(--accent); }
-        #upgrade-pro-app .comp-card ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
-        #upgrade-pro-app .comp-card li { font-size: 12px; font-weight: 600; color: var(--muted); display: flex; gap: 8px; line-height: 1.4; }
-        #upgrade-pro-app .comp-card.pro li { color: var(--text); }
-        #upgrade-pro-app .comp-card li i { font-size: 10px; margin-top: 3px; }
-        #upgrade-pro-app .comp-card.free li i { color: var(--muted); }
-        #upgrade-pro-app .comp-card.pro li i { color: var(--accent); }
+        /* The Main Upgrade / Active Button */
+        #upgrade-pro-app .primary-action-btn {
+            width: 100%;
+            border: 0;
+            background: var(--accent);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 800;
+            padding: 16px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: 0.2s ease;
+            box-shadow: 0 8px 22px var(--soft);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+        #upgrade-pro-app .primary-action-btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+        /* Active membership state (Locked) */
+        #upgrade-pro-app .primary-action-btn.is-active-membership {
+            background: #00a844 !important;
+            color: #fff !important;
+            box-shadow: 0 8px 20px rgba(0,168,68,0.2) !important;
+            cursor: default !important;
+            opacity: 1 !important;
+            pointer-events: none;
+        }
+        #upgrade-pro-app .primary-action-btn:disabled:not(.is-active-membership) {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        #upgrade-pro-app .trust-info-footer {
+            text-align: center;
+            margin-top: 14px;
+        }
+        #upgrade-pro-app .trust-info-footer .t-top {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0 0 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+        }
+        #upgrade-pro-app .trust-info-footer .t-top i {
+            color: #00a844;
+        }
+        #upgrade-pro-app .trust-info-footer .t-sub {
+            font-size: 11px;
+            color: var(--muted);
+            margin: 0;
+        }
+
+        /* Free vs Pro Comparison */
+        #upgrade-pro-app .comparison-wrap {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+        #upgrade-pro-app .cmp-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 16px;
+        }
+        #upgrade-pro-app .cmp-card.pro-cmp {
+            border-color: var(--accent);
+            background: var(--soft);
+        }
+        #upgrade-pro-app .cmp-card h4 {
+            margin: 0 0 12px;
+            font-size: 15px;
+            font-weight: 800;
+            text-align: center;
+        }
+        #upgrade-pro-app .cmp-card.pro-cmp h4 {
+            color: var(--accent);
+        }
+        #upgrade-pro-app .cmp-card ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            gap: 9px;
+        }
+        #upgrade-pro-app .cmp-card li {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            display: flex;
+            gap: 8px;
+            line-height: 1.35;
+        }
+        #upgrade-pro-app .cmp-card.pro-cmp li {
+            color: var(--text);
+        }
+        #upgrade-pro-app .cmp-card li i {
+            font-size: 10px;
+            margin-top: 3px;
+        }
+        #upgrade-pro-app .cmp-card.free-cmp li i {
+            color: var(--muted);
+        }
+        #upgrade-pro-app .cmp-card.pro-cmp li i {
+            color: var(--accent);
+        }
 
         /* FAQ Section */
-        #upgrade-pro-app .faq-section { margin-bottom: 16px; }
-        #upgrade-pro-app .faq-item { border-bottom: 1px solid var(--border); }
-        #upgrade-pro-app .faq-item:last-child { border-bottom: none; }
-        #upgrade-pro-app .faq-btn {
-            width: 100%; background: transparent; border: none; padding: 16px 0;
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 14px; font-weight: 700; color: var(--text); cursor: pointer; text-align: left; font-family: inherit;
+        #upgrade-pro-app .faq-card-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 4px 18px;
+            margin-bottom: 12px;
         }
-        #upgrade-pro-app .faq-btn i { color: var(--muted); transition: transform 0.3s ease; font-size: 12px; }
-        #upgrade-pro-app .faq-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
-        #upgrade-pro-app .faq-content p { margin: 0 0 16px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+        #upgrade-pro-app .faq-item {
+            border-bottom: 1px solid var(--border);
+        }
+        #upgrade-pro-app .faq-item:last-child {
+            border-bottom: none;
+        }
+        #upgrade-pro-app .faq-trigger-btn {
+            width: 100%;
+            background: transparent;
+            border: none;
+            padding: 15px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text);
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+        }
+        #upgrade-pro-app .faq-trigger-btn i {
+            color: var(--muted);
+            transition: transform 0.25s ease;
+            font-size: 11px;
+        }
+        #upgrade-pro-app .faq-body-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.28s ease;
+        }
+        #upgrade-pro-app .faq-body-content p {
+            margin: 0 0 14px;
+            font-size: 12.5px;
+            color: var(--muted);
+            line-height: 1.55;
+        }
 
         @media (max-width: 380px) {
-            #upgrade-pro-app .hero-section h1 { font-size: 26px; }
-            #upgrade-pro-app .pricing-wrap .price { font-size: 30px; }
-            #upgrade-pro-app .comparison-grid { grid-template-columns: 1fr; }
-            #upgrade-pro-app .countdown-timer-display { font-size: 24px; }
+            #upgrade-pro-app .hero-section h1 { font-size: 25px; }
+            #upgrade-pro-app .comparison-wrap { grid-template-columns: 1fr; }
+            #upgrade-pro-app .segment-val { font-size: 19px; }
         }
     </style>
 </head>
 <body class="premium-service-page">
 
-    <!-- Unique ID "upgrade-pro-app" ensures CSS scope works strictly for THIS page only -->
+    <!-- Strictly Scoped App Main -->
     <main class="app" id="upgrade-pro-app">
         
-        <!-- 1. Original Page Header (Reverted to Original Left-Aligned Design) -->
+        <!-- Status Bar Optimized Header (Original Left-Aligned Design) -->
         <header class="bar">
             <button class="back" onclick="executeBackAction()" aria-label="Back">
                 <i class="fas fa-arrow-left"></i>
@@ -199,9 +609,9 @@
         </header>
 
         <section class="content">
-            <!-- 2. Premium Hero Section -->
+            <!-- Hero Section -->
             <div class="hero-section fade-up">
-                <div class="pro-glow-badge">
+                <div class="hero-glow-pill">
                     <i class="fas fa-crown"></i> FLAYNITY PRO
                 </div>
                 <h1>Unlock Flaynity Pro</h1>
@@ -209,67 +619,104 @@
                 <p class="desc">Upgrade to Flaynity Pro and unlock exclusive features designed for creators.</p>
             </div>
 
-            <!-- 3. Current Plan / User Info -->
-            <div class="plan-status-card fade-up delay-1">
-                <div class="plan-status-header">
-                    <span class="plan-label">Current Plan</span>
-                    <span class="free-badge-pill" id="planBadge">Free</span>
+            <!-- Current Plan & Creator Profile Card -->
+            <div class="user-status-card fade-up delay-1">
+                <div class="card-top-row">
+                    <span class="plan-label">Current Membership</span>
+                    <span class="plan-pill" id="planBadge">Free</span>
                 </div>
-                <p class="upgrade-prompt" id="planPrompt">Upgrade to unlock Pro features</p>
                 
-                <!-- Dynamic User Profile Area -->
-                <div class="pro-user-profile" id="proUserProfile" style="display: none;">
-                    <img src="" id="proUserAvatar" alt="Avatar">
-                    <div class="pro-user-info">
-                        <h4 id="proUserName">Loading...</h4>
-                        <p id="proUserHandle">@loading</p>
+                <!-- Dynamic Creator Profile Details -->
+                <div class="creator-profile" id="creatorProfileWrap" style="display: none;">
+                    <img src="" id="proUserAvatar" class="creator-avatar" alt="Avatar">
+                    <div class="creator-meta">
+                        <h4 class="creator-name" id="proUserName">Loading User…</h4>
+                        <p class="creator-handle" id="proUserHandle">@username</p>
+                    </div>
+                </div>
+
+                <div class="status-prompt-text" id="planPrompt">Upgrade to unlock Pro features</div>
+            </div>
+
+            <!-- Live Expiration Countdown (Visible Only When Pro is Active) -->
+            <div class="countdown-box fade-up delay-2" id="proCountdownCard">
+                <div class="cd-tag">
+                    <i class="fas fa-clock"></i> Pro Membership Remaining
+                </div>
+                <div class="timer-grid">
+                    <div class="timer-segment">
+                        <span class="segment-val" id="cdDays">00</span>
+                        <span class="segment-lbl">Days</span>
+                    </div>
+                    <div class="timer-segment">
+                        <span class="segment-val" id="cdHours">00</span>
+                        <span class="segment-lbl">Hours</span>
+                    </div>
+                    <div class="timer-segment">
+                        <span class="segment-val" id="cdMins">00</span>
+                        <span class="segment-lbl">Mins</span>
+                    </div>
+                    <div class="timer-segment">
+                        <span class="segment-val" id="cdSecs">00</span>
+                        <span class="segment-lbl">Secs</span>
                     </div>
                 </div>
             </div>
 
-            <!-- 4. Pro Benefits Section -->
-            <div class="benefits-section fade-up delay-2">
-                <h2 class="section-title">Why Go Pro?</h2>
-                <div class="feature-item">
-                    <div class="feature-icon"><i class="fas fa-ban"></i></div>
-                    <div class="feature-text"><h4>Ad-Free Experience</h4><p>Enjoy a cleaner Flaynity experience with fewer interruptions.</p></div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
-                    <div class="feature-text"><h4>Premium Creator Tools</h4><p>Unlock advanced tools designed to help creators grow and manage content.</p></div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon"><i class="fas fa-id-badge"></i></div>
-                    <div class="feature-text"><h4>Pro Badge</h4><p>Stand out with an exclusive Flaynity Pro identity.</p></div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon"><i class="fas fa-star"></i></div>
-                    <div class="feature-text"><h4>Priority Features</h4><p>Get access to selected premium features before free users.</p></div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon"><i class="fas fa-bolt"></i></div>
-                    <div class="feature-text"><h4>Enhanced Creator Experience</h4><p>Enjoy a more powerful and streamlined creator experience.</p></div>
+            <!-- Benefits Section -->
+            <div class="fade-up delay-2">
+                <h3 class="sec-title">Why Go Pro?</h3>
+                <div class="benefits-box">
+                    <div class="benefit-row">
+                        <div class="benefit-icon-circle"><i class="fas fa-ban"></i></div>
+                        <div class="benefit-text-wrap">
+                            <h4>Ad-Free Experience</h4>
+                            <p>Enjoy a cleaner Flaynity experience with fewer interruptions.</p>
+                        </div>
+                    </div>
+                    <div class="benefit-row">
+                        <div class="benefit-icon-circle"><i class="fas fa-wand-magic-sparkles"></i></div>
+                        <div class="benefit-text-wrap">
+                            <h4>Premium Creator Tools</h4>
+                            <p>Unlock advanced tools designed to help creators grow and manage content.</p>
+                        </div>
+                    </div>
+                    <div class="benefit-row">
+                        <div class="benefit-icon-circle"><i class="fas fa-id-badge"></i></div>
+                        <div class="benefit-text-wrap">
+                            <h4>Pro Badge</h4>
+                            <p>Stand out with an exclusive Flaynity Pro identity.</p>
+                        </div>
+                    </div>
+                    <div class="benefit-row">
+                        <div class="benefit-icon-circle"><i class="fas fa-star"></i></div>
+                        <div class="benefit-text-wrap">
+                            <h4>Priority Features</h4>
+                            <p>Get access to selected premium features before free users.</p>
+                        </div>
+                    </div>
+                    <div class="benefit-row">
+                        <div class="benefit-icon-circle"><i class="fas fa-bolt"></i></div>
+                        <div class="benefit-text-wrap">
+                            <h4>Enhanced Creator Experience</h4>
+                            <p>Enjoy a more powerful and streamlined creator experience.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Expiration Countdown Timer (Appears when Pro is Active) -->
-            <div class="countdown-card fade-up delay-3" id="proCountdownCard">
-                <div class="countdown-title"><i class="fas fa-stopwatch"></i> Pro Membership Expires In</div>
-                <div class="countdown-timer-display" id="countdownTimerDisplay">00d : 00h : 00m : 00s</div>
-            </div>
-
-            <!-- 5 & 6. Pro Plan Card -->
+            <!-- Pro Plan Card -->
             <div class="pro-plan-card fade-up delay-3">
-                <span class="plan-top-label">FLAYNITY PRO</span>
+                <span class="plan-badge-top">FLAYNITY PRO</span>
                 <h3>Pro Membership</h3>
-                <p class="plan-desc">Unlock the full Flaynity experience.</p>
-                
-                <div class="pricing-wrap">
-                    <span class="price">$4.99</span>
-                    <span class="period">/ month</span>
+                <p class="sub">Unlock the full Flaynity experience.</p>
+
+                <div class="pricing-block">
+                    <span class="big-price">$4.99</span>
+                    <span class="unit-period">/ month</span>
                 </div>
 
-                <ul class="plan-checklist">
+                <ul class="perks-list">
                     <li><i class="fas fa-circle-check"></i> Premium Features</li>
                     <li><i class="fas fa-circle-check"></i> Creator Tools</li>
                     <li><i class="fas fa-circle-check"></i> Pro Identity</li>
@@ -277,23 +724,22 @@
                     <li><i class="fas fa-circle-check"></i> Priority Access</li>
                 </ul>
 
-                <!-- 7. Flay Pay Checkout Action -->
-                <button class="primary-cta" id="continueBtn" onclick="continueToPay()" disabled>
+                <!-- Action Button: Dynamically Switches to "Active Membership" & Locks During 1 Month -->
+                <button class="primary-action-btn" id="continueBtn" onclick="continueToPay()" disabled>
                     Upgrade to Pro Flay Pay <i class="fas fa-arrow-right"></i>
                 </button>
 
-                <!-- 8. Payment Information -->
-                <div class="payment-info">
-                    <p class="secure-text"><i class="fas fa-shield-halved"></i> Secure payment • Fast activation</p>
-                    <p class="sub-text">Your Pro access will be activated after successful payment.</p>
+                <div class="trust-info-footer">
+                    <p class="t-top"><i class="fas fa-shield-halved"></i> Secure payment • Fast activation</p>
+                    <p class="t-sub" id="membershipStatusNote">Your Pro access will be activated after successful payment.</p>
                 </div>
             </div>
 
-            <!-- 9. Comparison Section -->
-            <div class="comparison-section fade-up delay-4">
-                <h2 class="section-title">Free vs Pro</h2>
-                <div class="comparison-grid">
-                    <div class="comp-card free">
+            <!-- Free vs Pro Comparison -->
+            <div class="fade-up delay-4">
+                <h3 class="sec-title">Free vs Pro</h3>
+                <div class="comparison-wrap">
+                    <div class="cmp-card free-cmp">
                         <h4>Free</h4>
                         <ul>
                             <li><i class="fas fa-check"></i> Basic Flaynity experience</li>
@@ -301,7 +747,7 @@
                             <li><i class="fas fa-check"></i> Standard creator tools</li>
                         </ul>
                     </div>
-                    <div class="comp-card pro">
+                    <div class="cmp-card pro-cmp">
                         <h4>Pro</h4>
                         <ul>
                             <li><i class="fas fa-check"></i> Premium features</li>
@@ -313,56 +759,59 @@
                 </div>
             </div>
 
-            <!-- 10. FAQ Section -->
-            <div class="faq-section fade-up delay-4">
-                <h2 class="section-title">Frequently Asked Questions</h2>
-                <div class="faq-item">
-                    <button class="faq-btn">What is Flaynity Pro? <i class="fas fa-chevron-down"></i></button>
-                    <div class="faq-content"><p>Flaynity Pro is a premium membership that unlocks additional features and an enhanced Flaynity experience.</p></div>
-                </div>
-                <div class="faq-item">
-                    <button class="faq-btn">How do I upgrade? <i class="fas fa-chevron-down"></i></button>
-                    <div class="faq-content"><p>Tap "Upgrade to Pro Flay Pay" and complete the secure payment flow automatically through your Flay Pay balance.</p></div>
-                </div>
-                <div class="faq-item">
-                    <button class="faq-btn">When will Pro activate? <i class="fas fa-chevron-down"></i></button>
-                    <div class="faq-content"><p>Pro access becomes available automatically on your account as soon as the payment is successfully confirmed.</p></div>
-                </div>
-                <div class="faq-item">
-                    <button class="faq-btn">Can I use Pro on mobile? <i class="fas fa-chevron-down"></i></button>
-                    <div class="faq-content"><p>Yes. Flaynity Pro is designed to seamlessly work across all supported Flaynity devices.</p></div>
+            <!-- FAQ Section -->
+            <div class="fade-up delay-4">
+                <h3 class="sec-title">Frequently Asked Questions</h3>
+                <div class="faq-card-box">
+                    <div class="faq-item">
+                        <button class="faq-trigger-btn">What is Flaynity Pro? <i class="fas fa-chevron-down"></i></button>
+                        <div class="faq-body-content"><p>Flaynity Pro is a premium membership that unlocks additional features and an enhanced Flaynity experience.</p></div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-trigger-btn">How do I upgrade? <i class="fas fa-chevron-down"></i></button>
+                        <div class="faq-body-content"><p>Tap Upgrade to Pro and continue through the existing Flay Pay/payment flow.</p></div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-trigger-btn">When will Pro activate? <i class="fas fa-chevron-down"></i></button>
+                        <div class="faq-body-content"><p>Pro access becomes available after the payment is successfully confirmed.</p></div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-trigger-btn">Can I use Pro on mobile? <i class="fas fa-chevron-down"></i></button>
+                        <div class="faq-body-content"><p>Yes. Flaynity Pro is designed to work across supported Flaynity devices.</p></div>
+                    </div>
                 </div>
             </div>
 
         </section>
     </main>
 
-    <!-- FAQ Accordion JS -->
+    <!-- FAQ Accordion Logic -->
     <script>
-        document.querySelectorAll('#upgrade-pro-app .faq-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                const content = button.nextElementSibling;
-                const icon = button.querySelector('i');
+        document.querySelectorAll('#upgrade-pro-app .faq-trigger-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const content = btn.nextElementSibling;
+                const icon = btn.querySelector('i');
                 const isOpen = content.style.maxHeight;
 
-                document.querySelectorAll('#upgrade-pro-app .faq-content').forEach(c => c.style.maxHeight = null);
-                document.querySelectorAll('#upgrade-pro-app .faq-btn i').forEach(i => i.style.transform = 'rotate(0deg)');
+                document.querySelectorAll('#upgrade-pro-app .faq-body-content').forEach(c => c.style.maxHeight = null);
+                document.querySelectorAll('#upgrade-pro-app .faq-trigger-btn i').forEach(i => i.style.transform = 'rotate(0deg)');
 
                 if (!isOpen) {
-                    content.style.maxHeight = content.scrollHeight + "px";
+                    content.style.maxHeight = content.scrollHeight + 'px';
                     icon.style.transform = 'rotate(180deg)';
                 }
             });
         });
     </script>
 
-    <!-- Flay Pay User Profile, Countdown & Firebase Integration -->
+    <!-- Pro Membership State, 1-Month Lock & Firebase Integration -->
     <script>
         (()=>{
             const SERVICE = 'upgradePro';
             let currentUser = null;
             let channelRef = null;
             let countdownInterval = null;
+            let isProActive = false;
             
             auth.onAuthStateChanged(function(u){
                 currentUser = u;
@@ -379,69 +828,82 @@
             
             function loadUserProfileAndStatus(uid){
                 if(channelRef) channelRef.off();
-                channelRef = db.ref('channels/'+uid);
+                channelRef = db.ref('channels/' + uid);
                 
                 channelRef.on('value', function(snap){
                     const data = snap.val() || {};
                     const avatar = data.avatarUrl || "https://ui-avatars.com/api/?name=" + (data.channelName || 'User');
                     
-                    // Show Profile Data
+                    // Show Creator Details
                     document.getElementById('proUserAvatar').src = avatar;
                     document.getElementById('proUserName').innerText = data.channelName || 'Flaynity User';
-                    document.getElementById('proUserHandle').innerText = '@' + (data.handle || uid.substring(0,8));
-                    document.getElementById('proUserProfile').style.display = 'flex';
+                    document.getElementById('proUserHandle').innerText = '@' + (data.handle || uid.substring(0, 8));
+                    document.getElementById('creatorProfileWrap').style.display = 'flex';
                     
-                    // Check Active Pro Membership through Expiry Date
-                    const verifiedUntil = data.verifiedUntil || 0;
-                    if (verifiedUntil > Date.now()) {
+                    // Verify Pro Membership Expiry
+                    const verifiedUntil = Number(data.verifiedUntil) || 0;
+                    const now = Date.now();
+                    
+                    if (verifiedUntil > now) {
+                        isProActive = true;
                         activateProUI(verifiedUntil);
                     } else {
+                        isProActive = false;
                         deactivateProUI();
                     }
                 });
             }
 
             function activateProUI(expiryTime) {
-                // UI Changes for Active Member
+                // Update Badge & Status
                 const badge = document.getElementById('planBadge');
                 badge.textContent = 'PRO';
-                badge.style.background = 'var(--accent)';
-                badge.style.color = '#fff';
+                badge.classList.add('active-pro');
                 
-                document.getElementById('planPrompt').innerHTML = '<i class="fas fa-circle-check" style="color:#00a844;"></i> You are a Flaynity Pro member';
+                document.getElementById('planPrompt').innerHTML = '<span style="color:#00a844"><i class="fas fa-circle-check"></i> Pro Membership is active on this account</span>';
                 
+                // 1 Month Subscription Lock: Show "Active Membership" & Disable Re-purchase
                 const btn = document.getElementById('continueBtn');
                 btn.disabled = true;
-                btn.innerHTML = 'Active Pro Member <i class="fas fa-check"></i>';
+                btn.classList.add('is-active-membership');
+                btn.innerHTML = '<i class="fas fa-circle-check"></i> Active Membership';
+
+                document.getElementById('membershipStatusNote').innerHTML = 'Your Pro Membership is active. You can renew after the current plan expires.';
                 
-                // Show & Start Countdown
+                // Trigger Countdown Timer
                 document.getElementById('proCountdownCard').style.display = 'block';
-                startCountdown(expiryTime);
+                startDigitalCountdown(expiryTime);
             }
 
             function deactivateProUI() {
-                // UI Changes for Free Member
                 const badge = document.getElementById('planBadge');
                 badge.textContent = 'Free';
-                badge.style.background = 'var(--border)';
-                badge.style.color = 'var(--text)';
+                badge.classList.remove('active-pro');
                 
                 document.getElementById('planPrompt').textContent = 'Upgrade to unlock Pro features';
                 
+                // Reset Button to Standard Upgrade Action
                 const btn = document.getElementById('continueBtn');
                 btn.disabled = false;
+                btn.classList.remove('is-active-membership');
                 btn.innerHTML = 'Upgrade to Pro Flay Pay <i class="fas fa-arrow-right"></i>';
+
+                document.getElementById('membershipStatusNote').textContent = 'Your Pro access will be activated after successful payment.';
                 
-                // Hide Countdown
+                // Hide Countdown Box
                 document.getElementById('proCountdownCard').style.display = 'none';
                 if(countdownInterval) clearInterval(countdownInterval);
             }
 
-            function startCountdown(expiryTime) {
+            function startDigitalCountdown(expiryTime) {
                 if(countdownInterval) clearInterval(countdownInterval);
-                const timerEl = document.getElementById('countdownTimerDisplay');
                 
-                const updateTimer = () => {
+                const dEl = document.getElementById('cdDays');
+                const hEl = document.getElementById('cdHours');
+                const mEl = document.getElementById('cdMins');
+                const sEl = document.getElementById('cdSecs');
+                
+                const update = () => {
                     const diff = expiryTime - Date.now();
                     if (diff <= 0) {
                         clearInterval(countdownInterval);
@@ -451,30 +913,34 @@
                     
                     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
                     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const secs = Math.floor((diff % (1000 * 60)) / 1000);
                     
-                    timerEl.innerHTML = `${String(days).padStart(2,'0')}d : ${String(hours).padStart(2,'0')}h : ${String(minutes).padStart(2,'0')}m : ${String(seconds).padStart(2,'0')}s`;
+                    dEl.textContent = String(days).padStart(2, '0');
+                    hEl.textContent = String(hours).padStart(2, '0');
+                    mEl.textContent = String(mins).padStart(2, '0');
+                    sEl.textContent = String(secs).padStart(2, '0');
                 };
                 
-                updateTimer(); // Initial Call
-                countdownInterval = setInterval(updateTimer, 1000);
+                update();
+                countdownInterval = setInterval(update, 1000);
             }
             
+            // Flay Pay Checkout Action
             window.continueToPay = function(){
-                if(currentUser){
-                    // FLAY PAY AUTO CHECKOUT ORDER DATA
-                    const orderData = {
-                        title: "Flaynity Pro Membership (1 Month)",
-                        amount: 4.99,
-                        planType: "monthly",
-                        type: "pro_upgrade"
-                    };
-                    
-                    // Set Data & Trigger Flay Pay
-                    sessionStorage.setItem('flay_pending_checkout', JSON.stringify(orderData));
-                    AppNavigation.pushPremiumService('flay-pay', SERVICE);
-                }
+                // Prevent purchase if membership is already active
+                if (!currentUser || isProActive) return;
+
+                const orderData = {
+                    title: "Flaynity Pro Membership (1 Month)",
+                    amount: 4.99,
+                    planType: "monthly",
+                    type: "pro_upgrade"
+                };
+                
+                // Pass order data to Flay Pay and route
+                sessionStorage.setItem('flay_pending_checkout', JSON.stringify(orderData));
+                AppNavigation.pushPremiumService('flay-pay', SERVICE);
             };
         })();
     </script>

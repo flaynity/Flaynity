@@ -1600,7 +1600,7 @@ function startRealtimeFeedsListener() {
                 } else {
                     allFeels.forEach(s => {
                         const titleEl = document.querySelector(`#slide-short-${s.id} #short-title-val`);
-                        if(titleEl) titleEl.innerHTML = `${escapeHTML(s.title)} <span style="font-weight:400; font-size:0.8rem; color:#ccc; display:block;">Click to view description</span>`;
+                        if(titleEl) titleEl.innerHTML = `${escapeHTML(s.title)}`;
                         const thumbEl = document.querySelector(`.short-home-card-2col[onclick*="${s.id}"] img`);
                         if (thumbEl) thumbEl.src = s.poster;
                     });
@@ -2191,6 +2191,15 @@ function buildFeelsPage() {
                 </div>
 
                 <div class="short-right-actions">
+                    <div class="short-channel-action">
+                        <div class="short-channel-action-avatar">
+                            <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" alt="Channel">
+                        </div>
+                        <button class="short-channel-subscribe-btn" id="short-sub-btn-${s.id}" aria-label="Subscribe" onclick="toggleClipSubscribe('${s.userId}', this)">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+
                     <div class="short-action-container">
                         <button class="short-action-btn-tiktok" id="${isLikedId}" onclick="toggleShortLike('${s.id}')">
                             <i class="${isLocallyLiked ? 'fas fa-heart liked' : 'far fa-heart'}"></i>
@@ -2223,12 +2232,11 @@ function buildFeelsPage() {
                     <div class="short-channel-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
                         <div class="live-avatar-${s.userId}" style="width:32px; height:32px; border-radius:50%; border:2px solid #fff; overflow:hidden;"></div>
                         <span class="short-channel-handle live-handle-${s.userId}" style="font-size:0.9rem; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8);">@${s.username || 'flaynity'}</span>
-                        <button class="short-subscribe-btn" id="short-sub-btn-${s.id}" onclick="toggleClipSubscribe('${s.userId}', this)">Subscribe</button>
                     </div>
                     
                     <div class="short-title-wrap" onclick="openShortDescBottomSheet('${s.id}')" style="cursor:pointer;">
                         <h2 id="short-title-val" style="font-size: 0.95rem; font-weight: 800; color: #ffffff; margin: 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
-                            ${escapeHTML(s.title)} <span style="font-weight:400; font-size:0.8rem; color:#ccc; display:block;">Click to view description</span>
+                            ${escapeHTML(s.title)}
                         </h2>
                     </div>
                 </div>
@@ -2279,11 +2287,11 @@ function buildFeelsPage() {
                 const subBtn = document.getElementById(`short-sub-btn-${s.id}`);
                 if (subBtn) {
                     if (snapshot.exists()) {
-                        subBtn.innerText = "Subscribed";
-                        subBtn.style.background = "#4B5563";
+                        subBtn.classList.add('subscribed');
+                        subBtn.innerHTML = '<i class="fas fa-check"></i>';
                     } else {
-                        subBtn.innerText = "Subscribe";
-                        subBtn.style.background = "var(--primary)";
+                        subBtn.classList.remove('subscribed');
+                        subBtn.innerHTML = '<i class="fas fa-plus"></i>';
                     }
                 }
             });
@@ -2611,6 +2619,9 @@ function triggerShortDownload(shortId) {
 
 function toggleClipSubscribe(channelId, buttonEl) {
     playUI('click');
+    try {
+        if (navigator.vibrate) navigator.vibrate(12);
+    } catch (e) {}
     if (!auth.currentUser) { showNotification("Please sign in to Subscribe", "error"); return; }
     if (channelId === auth.currentUser.uid) { showNotification("You cannot subscribe to your own channel!", "error"); return; }
 

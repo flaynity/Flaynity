@@ -1,6 +1,6 @@
 /* Flaynity Modular Loader — serial page loading + offline cache */
 (async function () {
-    const pageFiles = [["home","pages/home.html"],["shorts","pages/shorts.html"],["upload","pages/upload.html"],["discover","pages/discover.html"],["you","pages/you.html"]];
+    const pageFiles = [["home","pages/home.html"],["feels","pages/feels.html"],["upload","pages/upload.html"],["discover","pages/discover.html"],["you","pages/you.html"]];
     const CACHE_PREFIX = "flaynity-page-cache-v1:";
 
     function addPageStyle(doc, name) {
@@ -303,12 +303,12 @@ function getHomeSkeletonHTML() {
                 </div>
             </div>
 
-            <div class="offline-shorts-skeleton">
-                <div class="offline-shorts-heading">
+            <div class="offline-feels-skeleton">
+                <div class="offline-feels-heading">
                     <div class="skel-box" style="width:20px; height:20px; border-radius:4px;"></div>
                     <div class="skel-box" style="width:80px; height:18px; border-radius:4px;"></div>
                 </div>
-                <div class="offline-shorts-grid">
+                <div class="offline-feels-grid">
                     ${[1,2].map(() => `
                         <div class="offline-short-card">
                             <div class="skel-box" style="width:100%; aspect-ratio:2/3; border-radius:12px;"></div>
@@ -337,18 +337,18 @@ function getHomeSkeletonHTML() {
     `;
 }
 
-function getShortsSkeletonHTML() {
+function getFeelsSkeletonHTML() {
     return `
-        <div class="offline-shorts-screen">
+        <div class="offline-feels-screen">
             <div class="skel-box" style="width:100%; height:100%; border-radius:0;"></div>
-            <div class="offline-shorts-actions">
+            <div class="offline-feels-actions">
                 <div class="skel-box" style="width:44px; height:44px; border-radius:50%;"></div>
                 <div class="skel-box" style="width:44px; height:44px; border-radius:50%;"></div>
                 <div class="skel-box" style="width:44px; height:44px; border-radius:50%;"></div>
                 <div class="skel-box" style="width:40px; height:40px; border-radius:50%;"></div>
             </div>
-            <div class="offline-shorts-info">
-                <div class="offline-shorts-user">
+            <div class="offline-feels-info">
+                <div class="offline-feels-user">
                     <div class="skel-box" style="width:36px; height:36px; border-radius:50%; flex-shrink:0;"></div>
                     <div class="skel-box" style="width:110px; height:14px; border-radius:4px;"></div>
                 </div>
@@ -394,7 +394,7 @@ function getYouSkeletonHTML() {
 
 function renderAllSkeletons() {
     const home = document.getElementById('home-feed-container');
-    const shorts = document.getElementById('shorts-swiper-container');
+    const feels = document.getElementById('feels-swiper-container');
     const youBox = document.getElementById('channel-action-box');
 
     if (home) {
@@ -406,7 +406,7 @@ function renderAllSkeletons() {
         home.style.overflow = 'visible';
         home.innerHTML = getHomeSkeletonHTML();
     }
-    if (shorts) shorts.innerHTML = getShortsSkeletonHTML();
+    if (feels) feels.innerHTML = getFeelsSkeletonHTML();
     if (youBox) {
         youBox.innerHTML = `<div class="skel-box" style="width: 100%; height: 48px; border-radius: 20px;"></div>`;
     }
@@ -600,29 +600,29 @@ const SyncManager = {
         try {
             _detachAllGlobalFeedListeners();
 
-            previousShortsCount = -1;
+            previousFeelsCount = -1;
             previousLongsCount  = -1;
             previousPostsCount  = -1;
 
             await this.refreshProfile();
 
-            const [longsSnap, shortsSnap, postsSnap] = await Promise.all([
+            const [longsSnap, feelsSnap, postsSnap] = await Promise.all([
                 db.ref('admin_panel/movies/user_uploads').once('value'),
-                db.ref('admin_panel/movies/shorts').once('value'),
+                db.ref('admin_panel/movies/feels').once('value'),
                 db.ref('admin_panel/posts').once('value')
             ]);
 
             const now = Date.now();
             allLongVideos      = longsSnap.val()  ? Object.values(longsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
-            allShorts          = shortsSnap.val() ? Object.values(shortsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
+            allFeels          = feelsSnap.val() ? Object.values(feelsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
             allCommunityPosts  = postsSnap.val()  ? Object.values(postsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
 
             startRealtimeFeedsListener();
 
             buildHomeFeed();
 
-            const shortsTab = document.getElementById('shorts-tab');
-            if (shortsTab && shortsTab.classList.contains('active')) buildShortsPage();
+            const feelsTab = document.getElementById('feels-tab');
+            if (feelsTab && feelsTab.classList.contains('active')) buildFeelsPage();
 
             this.refreshAnalytics();
 
@@ -658,7 +658,7 @@ const SyncManager = {
 
 function _detachAllGlobalFeedListeners() {
     try { db.ref('admin_panel/movies/user_uploads').off(); } catch(e) {}
-    try { db.ref('admin_panel/movies/shorts').off(); } catch(e) {}
+    try { db.ref('admin_panel/movies/feels').off(); } catch(e) {}
     try { db.ref('admin_panel/posts').off(); } catch(e) {}
 
     Object.keys(boundChannelListeners).forEach(uid => {
@@ -704,8 +704,8 @@ function isPTRAllowedOnCurrentView() {
     if (!activeNav) return false;
     const activeTabId = activeNav.id.replace('nav-', '');
 
-    // Shorts has its own vertical scroller and must never trigger page PTR.
-    if (activeTabId === 'shorts') return false;
+    // Feels has its own vertical scroller and must never trigger page PTR.
+    if (activeTabId === 'feels') return false;
     return ['home', 'search', 'you'].includes(activeTabId) && getMainScrollTop() <= 0;
 }
 
@@ -883,7 +883,7 @@ let activeCommentsRef = null;
 // =========================================
 // DYNAMIC FEED DATA VARIABLES
 // =========================================
-let allShorts = [];
+let allFeels = [];
 let allLongVideos = [];
 let allCommunityPosts = [];
 let activeHomeCategory = "All";
@@ -940,7 +940,7 @@ function cleanupUserSessionData() {
     currentDetailItem = null;
 
     allAdminMovies = [];
-    allShorts = [];
+    allFeels = [];
     allLongVideos = [];
     allCommunityPosts = [];
     uploadQueue = [];
@@ -950,8 +950,8 @@ function cleanupUserSessionData() {
     const homeFeed = document.getElementById('home-feed-container');
     if (homeFeed) homeFeed.innerHTML = '';
     
-    const shortsSwiper = document.getElementById('shorts-swiper-container');
-    if (shortsSwiper) shortsSwiper.innerHTML = '';
+    const feelsSwiper = document.getElementById('feels-swiper-container');
+    if (feelsSwiper) feelsSwiper.innerHTML = '';
 
     const searchResults = document.getElementById('search-results');
     if (searchResults) searchResults.innerHTML = '<p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding: 60px 0; font-weight: 500;">Search or use the mic to find movies.</p>';
@@ -974,7 +974,7 @@ function cleanupUserSessionData() {
     if (activeStatsRef) { try { activeStatsRef.off(); } catch(e) {} activeStatsRef = null; }
     if (activeCommentsRef) { try { activeCommentsRef.off(); } catch(e) {} activeCommentsRef = null; }
     if (activeChannelVideosListener) { try { activeChannelVideosListener.off(); } catch(e) {} activeChannelVideosListener = null; }
-    if (activeChannelShortsListener) { try { activeChannelShortsListener.off(); } catch(e) {} activeChannelShortsListener = null; }
+    if (activeChannelFeelsListener) { try { activeChannelFeelsListener.off(); } catch(e) {} activeChannelFeelsListener = null; }
     if (activeChannelPostsListener) { try { activeChannelPostsListener.off(); } catch(e) {} activeChannelPostsListener = null; }
 
     _detachAllGlobalFeedListeners();
@@ -1062,7 +1062,7 @@ function applyAdminControls() {
     searchButtons.forEach(b => b.style.display = isAdminFeatureEnabled('searchEnabled') ? '' : 'none');
     document.querySelectorAll('.mode-item').forEach(item => {
         const mode = item.dataset.mode;
-        const enabled = mode === 'video' ? isAdminFeatureEnabled('uploadVideoEnabled') : mode === 'short' ? isAdminFeatureEnabled('uploadShortsEnabled') : mode === 'post' ? isAdminFeatureEnabled('uploadPostsEnabled') : true;
+        const enabled = mode === 'video' ? isAdminFeatureEnabled('uploadVideoEnabled') : mode === 'short' ? isAdminFeatureEnabled('uploadFeelsEnabled') : mode === 'post' ? isAdminFeatureEnabled('uploadPostsEnabled') : true;
         item.style.display = enabled ? '' : 'none';
     });
     document.querySelectorAll('[onclick*="download"], [data-download]').forEach(b => {
@@ -1076,7 +1076,7 @@ function enforceContentAdminStatus(items, type) {
         if (status === 'hidden' || status === 'deleted' || status === 'disabled' || status === 'banned') return false;
         if (item?.userId && bannedUserIds.has(String(item.userId))) return false;
         if (type === 'video' && !isAdminFeatureEnabled('homeVideosEnabled')) return false;
-        if (type === 'short' && !isAdminFeatureEnabled('homeShortsEnabled')) return false;
+        if (type === 'short' && !isAdminFeatureEnabled('homeFeelsEnabled')) return false;
         if (type === 'post' && !isAdminFeatureEnabled('homePostsEnabled')) return false;
         return true;
     });
@@ -1436,18 +1436,18 @@ async function pushVideoMetadataToDatabase(item) {
     };
 
     const targetPath = item.type === 'video-short' 
-        ? `admin_panel/movies/shorts/${item.id}` 
+        ? `admin_panel/movies/feels/${item.id}` 
         : `admin_panel/movies/user_uploads/${item.id}`;
         
     await db.ref(targetPath).set(moviePayload);
 
     if (!isScheduled) {
         if (item.type === 'video-short') {
-            const idx = allShorts.findIndex(s => s.id === item.id);
-            if (idx !== -1) allShorts[idx] = moviePayload;
-            else allShorts.unshift(moviePayload);
+            const idx = allFeels.findIndex(s => s.id === item.id);
+            if (idx !== -1) allFeels[idx] = moviePayload;
+            else allFeels.unshift(moviePayload);
             
-            buildShortsPage();
+            buildFeelsPage();
         } else {
             const idx = allLongVideos.findIndex(v => v.id === item.id);
             if (idx !== -1) allLongVideos[idx] = moviePayload;
@@ -1458,7 +1458,7 @@ async function pushVideoMetadataToDatabase(item) {
 
         const activePage = AppNavigation.current();
         if (activePage && activePage.id === 'view-channel-page') {
-            if (item.type === 'video-short') renderChannelShorts(user.uid);
+            if (item.type === 'video-short') renderChannelFeels(user.uid);
             else renderChannelVideos(user.uid);
         }
     }
@@ -1517,7 +1517,7 @@ function restoreQueueFromLocalStorage() {
 // =========================================================
 // REALTIME LISTENERS FOR ZERO-REFRESH FEED PROPAGATION
 // =========================================================
-let previousShortsCount = -1;
+let previousFeelsCount = -1;
 let previousLongsCount = -1;
 let previousPostsCount = -1;
 let _feedListenersAttached = false; 
@@ -1525,7 +1525,7 @@ let _feedListenersAttached = false;
 function startRealtimeFeedsListener() {
     if (_feedListenersAttached) {
         try { db.ref('admin_panel/movies/user_uploads').off(); } catch(e) {}
-        try { db.ref('admin_panel/movies/shorts').off(); } catch(e) {}
+        try { db.ref('admin_panel/movies/feels').off(); } catch(e) {}
         try { db.ref('admin_panel/posts').off(); } catch(e) {}
         _feedListenersAttached = false;
     }
@@ -1538,7 +1538,7 @@ function startRealtimeFeedsListener() {
             const users = snap.val() || {};
             bannedUserIds = new Set(Object.entries(users).filter(([uid,u]) => String(u?.userStatus || u?.accountStatus || '').toLowerCase() === 'banned').map(([uid]) => String(uid)));
             allLongVideos = enforceContentAdminStatus(allLongVideos, 'video');
-            allShorts = enforceContentAdminStatus(allShorts, 'short');
+            allFeels = enforceContentAdminStatus(allFeels, 'short');
             allCommunityPosts = enforceContentAdminStatus(allCommunityPosts, 'post');
             buildHomeFeed();
         });
@@ -1567,19 +1567,19 @@ function startRealtimeFeedsListener() {
             } catch (e) {}
         });
 
-        db.ref('admin_panel/movies/shorts').on('value', (snap) => {
+        db.ref('admin_panel/movies/feels').on('value', (snap) => {
             try {
                 const data = snap.val();
-                allShorts = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'short') : [];
-                allShorts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                allFeels = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'short') : [];
+                allFeels.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                 
-                if(allShorts.length !== previousShortsCount) {
-                    previousShortsCount = allShorts.length;
+                if(allFeels.length !== previousFeelsCount) {
+                    previousFeelsCount = allFeels.length;
                     buildHomeFeed();
-                    const shortsTab = document.getElementById('shorts-tab');
-                    if (shortsTab && shortsTab.classList.contains('active')) {
+                    const feelsTab = document.getElementById('feels-tab');
+                    if (feelsTab && feelsTab.classList.contains('active')) {
                         const activeShortId = document.querySelector('.short-slide video[src]')?.closest('.short-slide')?.getAttribute('data-shortid');
-                        buildShortsPage();
+                        buildFeelsPage();
                         if(activeShortId) {
                              setTimeout(() => {
                                  const targetSlide = document.getElementById(`slide-short-${activeShortId}`);
@@ -1588,7 +1588,7 @@ function startRealtimeFeedsListener() {
                         }
                     }
                 } else {
-                    allShorts.forEach(s => {
+                    allFeels.forEach(s => {
                         const titleEl = document.querySelector(`#slide-short-${s.id} #short-title-val`);
                         if(titleEl) titleEl.innerHTML = `${escapeHTML(s.title)} <span style="font-weight:400; font-size:0.8rem; color:#ccc; display:block;">Click to view description</span>`;
                         const thumbEl = document.querySelector(`.short-home-card-2col[onclick*="${s.id}"] img`);
@@ -1725,26 +1725,26 @@ function buildHomeFeed() {
 
     if (!isAdminFeatureEnabled('homeFeedEnabled')) { container.innerHTML = '<div style="padding:48px 20px;text-align:center;opacity:.7;font-weight:700;">Home Feed is currently disabled by the administrator.</div>'; return; }
 
-    let shorts = isAdminFeatureEnabled('homeShortsEnabled') ? [...allShorts] : [];
+    let feels = isAdminFeatureEnabled('homeFeelsEnabled') ? [...allFeels] : [];
     let longs = isAdminFeatureEnabled('homeVideosEnabled') ? [...allLongVideos] : [];
     let posts = isAdminFeatureEnabled('homePostsEnabled') ? [...allCommunityPosts] : [];
 
-    shorts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+    feels.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
     longs.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
     posts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
 
     const uniqueUserIds = new Set();
 
-    if (activeHomeCategory === "Shorts") {
-        if (shorts.length === 0) {
+    if (activeHomeCategory === "Feels") {
+        if (feels.length === 0) {
             container.innerHTML = getHomeSkeletonHTML();
             return;
         }
         html += `
-            <div class="shorts-section-container" style="margin-top: 10px;">
-                <div class="shorts-home-grid-2col">
+            <div class="feels-section-container" style="margin-top: 10px;">
+                <div class="feels-home-grid-2col">
         `;
-        shorts.forEach(s => {
+        feels.forEach(s => {
             if (s.userId) uniqueUserIds.add(s.userId);
             html += `
                 <div class="short-home-card-2col" onclick="openShortFromHome('${s.id}')">
@@ -1793,19 +1793,19 @@ function buildHomeFeed() {
     let longIdx = 0;
     let postIdx = 0;
 
-    if (shorts.length === 0 && longs.length === 0 && posts.length === 0) {
+    if (feels.length === 0 && longs.length === 0 && posts.length === 0) {
         container.innerHTML = getHomeSkeletonHTML();
         return;
     }
 
     let postsToBind = [];
 
-    while (longIdx < longs.length || shortIdx < shorts.length || postIdx < posts.length) {
-        if (shortIdx < shorts.length) {
-            const segmentShorts = shorts.slice(shortIdx, shortIdx + 6);
+    while (longIdx < longs.length || shortIdx < feels.length || postIdx < posts.length) {
+        if (shortIdx < feels.length) {
+            const segmentFeels = feels.slice(shortIdx, shortIdx + 6);
             shortIdx += 6;
-            segmentShorts.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
-            html += renderShortsSegmentUI(segmentShorts);
+            segmentFeels.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
+            html += renderFeelsSegmentUI(segmentFeels);
         }
 
         if (longIdx < longs.length) {
@@ -1830,23 +1830,23 @@ function buildHomeFeed() {
     uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
 }
 
-function renderShortsSegmentUI(segmentShorts) {
-    if (segmentShorts.length === 0) return '';
+function renderFeelsSegmentUI(segmentFeels) {
+    if (segmentFeels.length === 0) return '';
     
-    const limitedShorts = segmentShorts.slice(0, 6);
+    const limitedFeels = segmentFeels.slice(0, 6);
     
     let html = `
-        <div class="shorts-section-container" style="margin-bottom: 24px;">
+        <div class="feels-section-container" style="margin-bottom: 24px;">
             <div class="section-title">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:var(--primary);">
                     <path d="M17.77 10.32c-.77-.32-1.2-.5-1.2-.5L18 8.64a2.53 2.53 0 0 0-1.12-3.37 2.45 2.45 0 0 0-3.3.12L7 10.14a2.53 2.53 0 0 0-.27 3.54s1.2.5 1.2.5l-1.43 1.18a2.53 2.53 0 0 0 1.12 3.37 2.45 2.45 0 0 0 3.3-.12l6.57-4.75a2.53 2.53 0 0 0 .28-3.54z" fill="currentColor"/>
                 </svg>
-                Shorts
+                Feels
             </div>
-            <div class="shorts-home-grid-2col">
+            <div class="feels-home-grid-2col">
     `;
 
-    limitedShorts.forEach(s => {
+    limitedFeels.forEach(s => {
         html += `
             <div class="short-home-card-2col" onclick="openShortFromHome('${s.id}')">
                 <img src="${s.poster}" loading="lazy">
@@ -2017,7 +2017,7 @@ function renderSinglePostSegmentUI(post) {
                         <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${getRelativeTime(post.createdAt)}</span>
                     </div>
                 </div>
-                <button id="${subBtnId}" onclick="toggleShortSubscribe('${post.userId}', this)" style="background: none; border: 1.5px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 800; cursor: pointer; transition: all 0.2s;">Subscribe</button>
+                <button id="${subBtnId}" onclick="toggleClipSubscribe('${post.userId}', this)" style="background: none; border: 1.5px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 800; cursor: pointer; transition: all 0.2s;">Subscribe</button>
             </div>
 
             ${imagesHtml}
@@ -2070,8 +2070,8 @@ function togglePostTitleExpand(postId) {
 }
 
 function openShortFromHome(shortId) {
-    switchTab('shorts');
-    buildShortsPage();
+    switchTab('feels');
+    buildFeelsPage();
     setTimeout(() => {
         const targetSlide = document.getElementById(`slide-short-${shortId}`);
         if (targetSlide) {
@@ -2112,28 +2112,28 @@ function spawnDoubleTapHeart(e, slideElement) {
 }
 
 // =========================================================
-// HIGH PERFORMANCE SHORTS BUILDER
+// HIGH PERFORMANCE FEELS BUILDER
 // =========================================================
 let hlsInstances = {}; 
 
-function buildShortsPage() {
-    const container = document.getElementById('shorts-swiper-container');
+function buildFeelsPage() {
+    const container = document.getElementById('feels-swiper-container');
     if (!container) return;
     
     if (!navigator.onLine) {
-        container.innerHTML = getShortsSkeletonHTML();
+        container.innerHTML = getFeelsSkeletonHTML();
         return;
     }
 
-    let activeShortsList = allShorts;
+    let activeFeelsList = allFeels;
 
-    if (activeShortsList.length === 0) {
-        container.innerHTML = getShortsSkeletonHTML();
+    if (activeFeelsList.length === 0) {
+        container.innerHTML = getFeelsSkeletonHTML();
         return;
     }
 
     let html = '';
-    activeShortsList.forEach(s => {
+    activeFeelsList.forEach(s => {
         const isLikedId = `short-like-btn-${s.id}`;
         const likesCountId = `short-likes-count-${s.id}`;
         const commentsCountId = `short-comments-count-${s.id}`;
@@ -2192,7 +2192,7 @@ function buildShortsPage() {
                     <div class="short-channel-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
                         <div class="live-avatar-${s.userId}" style="width:32px; height:32px; border-radius:50%; border:2px solid #fff; overflow:hidden;"></div>
                         <span class="short-channel-handle live-handle-${s.userId}" style="font-size:0.9rem; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8);">@${s.username || 'flaynity'}</span>
-                        <button class="short-subscribe-btn" id="short-sub-btn-${s.id}" onclick="toggleShortSubscribe('${s.userId}', this)">Subscribe</button>
+                        <button class="short-subscribe-btn" id="short-sub-btn-${s.id}" onclick="toggleClipSubscribe('${s.userId}', this)">Subscribe</button>
                     </div>
                     
                     <div class="short-title-wrap" onclick="openShortDescBottomSheet('${s.id}')" style="cursor:pointer;">
@@ -2259,13 +2259,13 @@ function buildShortsPage() {
         }
     });
 
-    container.innerHTML = `<div class="shorts-swiper">${html}</div>`;
-    initShortsObserver();
+    container.innerHTML = `<div class="feels-swiper">${html}</div>`;
+    initFeelsObserver();
     setupDoubleTapListeners();
-    bindShortsVideoEvents();
+    bindFeelsVideoEvents();
 
     const uniqueUserIds = new Set();
-    activeShortsList.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
+    activeFeelsList.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
     uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
 }
 
@@ -2318,7 +2318,7 @@ function setupDoubleTapListeners() {
     });
 }
 
-function bindShortsVideoEvents() {
+function bindFeelsVideoEvents() {
     document.querySelectorAll('.short-slide').forEach(slide => {
         const video = slide.querySelector('video');
         if (!video) return;
@@ -2355,13 +2355,13 @@ function bindShortsVideoEvents() {
 
 function openShortDescBottomSheet(shortId) {
     playUI('click');
-    const s = allShorts.find(item => item.id === shortId);
+    const s = allFeels.find(item => item.id === shortId);
     if (!s) return;
 
     document.getElementById('short-sheet-full-title').innerText = s.title;
     
     const hashtagRegex = /#\w+/g;
-    const hashtags = s.description.match(hashtagRegex) ? s.description.match(hashtagRegex).join(' ') : '#shorts #flaynity';
+    const hashtags = s.description.match(hashtagRegex) ? s.description.match(hashtagRegex).join(' ') : '#feels #flaynity';
     const plainDescription = s.description.replace(hashtagRegex, '').trim();
     
     document.getElementById('short-sheet-hashtags').innerText = hashtags;
@@ -2512,7 +2512,7 @@ async function syncOfflineLikes() {
 
 function openShortComments(shortId) {
     playUI('click');
-    currentActiveMovie = allShorts.find(s => s.id === shortId);
+    currentActiveMovie = allFeels.find(s => s.id === shortId);
     if (!currentActiveMovie) return;
     openCommentModal();
     registerViewAndListen(shortId);
@@ -2569,7 +2569,7 @@ async function triggerFileDownload(url, filename) {
 
 function triggerShortDownload(shortId) {
     playUI('click');
-    const s = allShorts.find(item => item.id === shortId);
+    const s = allFeels.find(item => item.id === shortId);
     if (!s) {
         showNotification("No valid short found.", "error");
         return;
@@ -2578,7 +2578,7 @@ function triggerShortDownload(shortId) {
     openDownloadModal();
 }
 
-function toggleShortSubscribe(channelId, buttonEl) {
+function toggleClipSubscribe(channelId, buttonEl) {
     playUI('click');
     if (!auth.currentUser) { showNotification("Please sign in to Subscribe", "error"); return; }
     if (channelId === auth.currentUser.uid) { showNotification("You cannot subscribe to your own channel!", "error"); return; }
@@ -2604,9 +2604,9 @@ function toggleShortSubscribe(channelId, buttonEl) {
 }
 
 // =========================================================
-// SHORTS MEMORY OPTIMIZATION & INTERSECTION OBSERVER
+// FEELS MEMORY OPTIMIZATION & INTERSECTION OBSERVER
 // =========================================================
-let currentActiveShortsIdx = -1;
+let currentActiveFeelsIdx = -1;
 
 function attachSmartAdaptiveSource(videoElement, url, shortId) {
     if (url && url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
@@ -2628,13 +2628,13 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
     }
 }
 
-function optimizeShortsMemoryAndPreload(activeIndex) {
+function optimizeFeelsMemoryAndPreload(activeIndex) {
     const slides = document.querySelectorAll('.short-slide');
     slides.forEach((slide, idx) => {
         const video = slide.querySelector('video');
         if (!video) return;
         const shortId = slide.getAttribute('data-shortid');
-        const s = allShorts.find(item => item.id === shortId);
+        const s = allFeels.find(item => item.id === shortId);
         if (!s) return;
 
         if (idx >= activeIndex - 1 && idx <= activeIndex + 2) {
@@ -2675,11 +2675,11 @@ function optimizeShortsMemoryAndPreload(activeIndex) {
     });
 }
 
-let shortsObserver;
-function initShortsObserver() {
-    if (shortsObserver) shortsObserver.disconnect();
+let feelsObserver;
+function initFeelsObserver() {
+    if (feelsObserver) feelsObserver.disconnect();
     
-    shortsObserver = new IntersectionObserver((entries) => {
+    feelsObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target.querySelector('video');
             const shortId = entry.target.id.replace('slide-short-', '');
@@ -2689,9 +2689,9 @@ function initShortsObserver() {
                 if (entry.isIntersecting) {
                     const slides = Array.from(document.querySelectorAll('.short-slide'));
                     const activeIdx = slides.indexOf(entry.target);
-                    if (activeIdx !== -1 && activeIdx !== currentActiveShortsIdx) {
-                        currentActiveShortsIdx = activeIdx;
-                        optimizeShortsMemoryAndPreload(activeIdx);
+                    if (activeIdx !== -1 && activeIdx !== currentActiveFeelsIdx) {
+                        currentActiveFeelsIdx = activeIdx;
+                        optimizeFeelsMemoryAndPreload(activeIdx);
                     }
 
                     const userId = auth.currentUser ? auth.currentUser.uid : 'anonymous';
@@ -2713,7 +2713,7 @@ function initShortsObserver() {
         });
     }, { threshold: 0.6 });
 
-    document.querySelectorAll('.short-slide').forEach(slide => { shortsObserver.observe(slide); });
+    document.querySelectorAll('.short-slide').forEach(slide => { feelsObserver.observe(slide); });
 }
 
 // =========================================================
@@ -2909,7 +2909,7 @@ const AppNavigation = {
         window.dispatchEvent(new Event('flaynity-tab-changed'));
 
         if (activeTab === 'you') initYouTabUI();
-        if (activeTab === 'shorts') buildShortsPage();
+        if (activeTab === 'feels') buildFeelsPage();
 
         if (activePage) {
             if (activePage === 'full-movie-page') {
@@ -3488,7 +3488,7 @@ function adjustHeaderForActiveTab(tabId) {
     const actions = header.querySelector('.header-actions');
     const chips = document.getElementById('global-category-chips');
 
-    if (tabId === 'shorts') {
+    if (tabId === 'feels') {
         header.style.display = 'none';
         document.body.style.paddingTop = '0px';
         document.body.style.paddingBottom = '0px';
@@ -3863,7 +3863,7 @@ async function submitCreateChannel() {
             category: category,
             subscribersCount: 1, 
             videosCount: 0,
-            shortsCount: 0,
+            feelsCount: 0,
             postsCount: 0,
             totalViews: 0,
             totalLikes: 0,
@@ -3922,7 +3922,7 @@ function openViewChannelPage() {
 }
 
 let activeChannelVideosListener = null;
-let activeChannelShortsListener = null;
+let activeChannelFeelsListener = null;
 let activeChannelPostsListener = null;
 
 let activeChannelTab = 'videos';
@@ -3938,7 +3938,7 @@ function switchChannelTab(type) {
 
     let targetId = auth.currentUser.uid;
     if (type === 'videos') renderChannelVideos(targetId);
-    else if (type === 'shorts') renderChannelShorts(targetId);
+    else if (type === 'feels') renderChannelFeels(targetId);
     else if (type === 'posts') renderChannelPosts(targetId);
 }
 
@@ -4040,22 +4040,22 @@ function renderChannelVideos(userId) {
     });
 }
 
-function renderChannelShorts(userId) {
-    const grid = document.getElementById('channel-shorts-grid');
+function renderChannelFeels(userId) {
+    const grid = document.getElementById('channel-feels-grid');
     if (!grid) return;
-    if (activeChannelShortsListener) { activeChannelShortsListener.off(); }
+    if (activeChannelFeelsListener) { activeChannelFeelsListener.off(); }
 
-    activeChannelShortsListener = db.ref('admin_panel/movies/shorts');
-    activeChannelShortsListener.on('value', (snap) => {
+    activeChannelFeelsListener = db.ref('admin_panel/movies/feels');
+    activeChannelFeelsListener.on('value', (snap) => {
         const data = snap.val();
         if (!data) {
-            grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No shorts uploaded yet.</p>`;
+            grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No feels uploaded yet.</p>`;
             return;
         }
 
         const list = Object.values(data).filter(m => m.userId === userId);
         if (list.length === 0) {
-            grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No shorts uploaded yet.</p>`;
+            grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No feels uploaded yet.</p>`;
             return;
         }
 
@@ -4275,7 +4275,7 @@ async function calculateChannelAnalytics() {
     const userId = auth.currentUser.uid;
     let tViews = 0, tLikes = 0, tComments = 0;
     let vCount = 0, sCount = 0, pCount = 0;
-    let longViews = 0, shortsViews = 0;
+    let longViews = 0, feelsViews = 0;
 
     if(navigator.onLine) {
         const vSnap = await db.ref('admin_panel/movies/user_uploads').once('value');
@@ -4295,7 +4295,7 @@ async function calculateChannelAnalytics() {
             }
         }
 
-        const sSnap = await db.ref('admin_panel/movies/shorts').once('value');
+        const sSnap = await db.ref('admin_panel/movies/feels').once('value');
         if (sSnap.exists()) {
             const sData = Object.values(sSnap.val()).filter(m => m.userId === userId);
             sCount = sData.length;
@@ -4304,7 +4304,7 @@ async function calculateChannelAnalytics() {
                 const stat = statSnap.val() || {};
                 const viewsCount = Object.keys(stat.views || {}).length;
                 tViews += viewsCount;
-                shortsViews += viewsCount;
+                feelsViews += viewsCount;
                 tLikes += Object.keys(stat.likes || {}).length;
 
                 const commSnap = await db.ref(`movie_comments/${m.id}`).once('value');
@@ -4318,14 +4318,14 @@ async function calculateChannelAnalytics() {
         }
     }
 
-    const calculatedRevenue = ((longViews / 1000) * 0.30) + ((shortsViews / 1000) * 0.15);
+    const calculatedRevenue = ((longViews / 1000) * 0.30) + ((feelsViews / 1000) * 0.15);
     const estRevenueElement = document.getElementById('estimated-revenue-val');
     if (estRevenueElement) {
         estRevenueElement.innerText = '$' + calculatedRevenue.toFixed(2) + ' USDT';
     }
 
     const watchHours = parseFloat(((longViews * 3.5) / 60).toFixed(1)) || 0;
-    const totalViews = longViews + shortsViews;
+    const totalViews = longViews + feelsViews;
     const subsCount = currentChannelData ? (currentChannelData.subscribersCount || 0) : 0;
 
     const viewsVal = document.getElementById('anal-views');
@@ -4358,12 +4358,12 @@ async function calculateChannelAnalytics() {
             totalSubscribers: subsCount,
             totalViews: tViews,
             publicWatchHours: watchHours,
-            publicShortsViews: shortsViews,
+            publicFeelsViews: feelsViews,
             publicLongVideoViews: longViews,
             totalLikes: tLikes,
             totalComments: tComments,
             totalVideos: vCount,
-            totalShorts: sCount,
+            totalFeels: sCount,
             totalPosts: pCount,
             totalRevenue: calculatedRevenue.toFixed(2),
             updatedAt: Date.now()
@@ -4992,7 +4992,7 @@ window.closeAndPausePreview = function() {
 
 // Fixed Centered Mode Slider
 function switchUploadMode(mode) {
-    const flag = mode === 'video' ? 'uploadVideoEnabled' : mode === 'short' ? 'uploadShortsEnabled' : mode === 'post' ? 'uploadPostsEnabled' : null;
+    const flag = mode === 'video' ? 'uploadVideoEnabled' : mode === 'short' ? 'uploadFeelsEnabled' : mode === 'post' ? 'uploadPostsEnabled' : null;
     if (flag && !isAdminFeatureEnabled(flag)) { showNotification('This upload type is currently disabled by the administrator.', 'error'); return; }
     if (!isAdminFeatureEnabled('uploadSystemEnabled')) { showNotification('Uploading is currently disabled by the administrator.', 'error'); return; }
     currentUploadMode = mode;
@@ -5577,7 +5577,7 @@ async function handlePremiumFileSelected(e, type) {
         const dlBtn = document.getElementById('short-preview-download-btn');
         if(dlBtn) dlBtn.style.display = isShortFromCamera ? 'flex' : 'none';
         
-        // Full interactive trimmer for shorts
+        // Full interactive trimmer for feels
         initShortTrimmer(vidEl, 'sp-trimmer-container', 'sp-trim-start', 'sp-trim-end', 'sp-trim-playhead', 'sp-time-display');
         AppNavigation.pushPage('short-preview-page');
     } else {

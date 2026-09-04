@@ -153,7 +153,7 @@
         .channel-tab-content.active { display: block; }
         
         .channel-videos-container { display: flex; flex-direction: column; gap: 16px; }
-        .channel-shorts-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .channel-feels-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .channel-posts-container { display: flex; flex-direction: column; gap: 16px; }
         
         .channel-video-card-long { display: flex; gap: 12px; cursor: pointer; }
@@ -494,14 +494,14 @@
 </div>
 <div class="channel-tabs">
 <div class="channel-tab-item active" id="tab-channel-videos" onclick="switchChannelTab('videos')">Videos</div>
-<div class="channel-tab-item" id="tab-channel-shorts" onclick="switchChannelTab('shorts')">Shorts</div>
+<div class="channel-tab-item" id="tab-channel-feels" onclick="switchChannelTab('feels')">Feels</div>
 <div class="channel-tab-item" id="tab-channel-posts" onclick="switchChannelTab('posts')">Posts</div>
 </div>
 <div class="channel-tab-content active" id="channel-content-videos">
 <div class="channel-videos-container" id="channel-videos-grid"></div>
 </div>
-<div class="channel-tab-content" id="channel-content-shorts">
-<div class="channel-shorts-container" id="channel-shorts-grid"></div>
+<div class="channel-tab-content" id="channel-content-feels">
+<div class="channel-feels-container" id="channel-feels-grid"></div>
 </div>
 <div class="channel-tab-content" id="channel-content-posts">
 <div class="channel-posts-container" id="channel-posts-feed"></div>
@@ -562,7 +562,7 @@
 <div class="analytics-card">
 <span class="stat-lbl"><i class="fas fa-video"></i> Created Items</span>
 <h2 class="stat-num" id="anal-content">0</h2>
-<span class="stat-sub-text">Videos, Shorts, Posts</span>
+<span class="stat-sub-text">Videos, Feels, Posts</span>
 </div>
 </div>
 <h4 class="section-title">Monthly Growth Channel</h4>
@@ -691,8 +691,8 @@
 <path d="M40 40V50M36 45H44" stroke="#10B981" stroke-linecap="round" stroke-width="3"></path>
 </svg>
 </div>
-<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Shorts Feed Ads</h4>
-<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Earn from ads shown in the Shorts Feed.</p>
+<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Feels Feed Ads</h4>
+<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Earn from ads shown in the Feels Feed.</p>
 </div>
 <div class="slider-card">
 <div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
@@ -766,7 +766,7 @@
 </div>
 <div style="margin-bottom: 8px;">
 <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem; margin-bottom: 4px;">
-<span style="color: var(--text-main);">Public Views (Shorts &amp; Videos)</span>
+<span style="color: var(--text-main);">Public Views (Feels &amp; Videos)</span>
 <span id="req-views-txt" style="color: var(--text-muted);">0 / 10K</span>
 </div>
 <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px;">Last 365 Days</div>

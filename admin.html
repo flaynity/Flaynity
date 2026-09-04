@@ -479,7 +479,7 @@ body{font-weight:600;}
     <div class="nav-group">
       <div class="nav-group-label">Content</div>
       <div class="nav-item" data-section="videos"><span class="dot"></span><span class="ic">▶</span> Long Videos</div>
-      <div class="nav-item" data-section="shorts"><span class="dot"></span><span class="ic">◫</span> Shorts</div>
+      <div class="nav-item" data-section="feels"><span class="dot"></span><span class="ic">◫</span> Feels</div>
       <div class="nav-item" data-section="posts"><span class="dot"></span><span class="ic">▧</span> Community Posts</div>
       <div class="nav-item" data-section="scheduled"><span class="dot"></span><span class="ic">◷</span> Scheduled Content</div>
     </div>
@@ -552,7 +552,7 @@ body{font-weight:600;}
           <div class="card stat-card"><div class="label">Total Users</div><div class="value" id="stat-users">—</div></div>
           <div class="card stat-card"><div class="label">Total Channels</div><div class="value" id="stat-channels">—</div></div>
           <div class="card stat-card"><div class="label">Long Videos</div><div class="value" id="stat-videos">—</div></div>
-          <div class="card stat-card"><div class="label">Shorts</div><div class="value" id="stat-shorts">—</div></div>
+          <div class="card stat-card"><div class="label">Feels</div><div class="value" id="stat-feels">—</div></div>
           <div class="card stat-card"><div class="label">Community Posts</div><div class="value" id="stat-posts">—</div></div>
           <div class="card stat-card"><div class="label">Total Views</div><div class="value" id="stat-views">—</div></div>
           <div class="card stat-card"><div class="label">Total Likes</div><div class="value" id="stat-likes">—</div></div>
@@ -584,7 +584,7 @@ body{font-weight:600;}
           <div id="growth-body" class="grid grid-3">
             <div class="card tight"><div class="label muted" style="font-size:11px;">New Channels</div><div class="value" style="font-size:20px;" id="growth-channels">0</div></div>
             <div class="card tight"><div class="label muted" style="font-size:11px;">New Videos</div><div class="value" style="font-size:20px;" id="growth-videos">0</div></div>
-            <div class="card tight"><div class="label muted" style="font-size:11px;">New Shorts</div><div class="value" style="font-size:20px;" id="growth-shorts">0</div></div>
+            <div class="card tight"><div class="label muted" style="font-size:11px;">New Feels</div><div class="value" style="font-size:20px;" id="growth-feels">0</div></div>
             <div class="card tight"><div class="label muted" style="font-size:11px;">New Posts</div><div class="value" style="font-size:20px;" id="growth-posts">0</div></div>
           </div>
         </div>
@@ -651,11 +651,11 @@ body{font-weight:600;}
         <div id="videos-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
       </section>
 
-      <!-- ================= SHORTS ================= -->
-      <section class="section" id="section-shorts">
+      <!-- ================= FEELS ================= -->
+      <section class="section" id="section-feels">
         <div class="search-bar">
-          <input class="input" id="shorts-search" placeholder="Search by caption, short ID, or channel ID…">
-          <select class="input" id="shorts-filter" style="max-width:170px;">
+          <input class="input" id="feels-search" placeholder="Search by caption, short ID, or channel ID…">
+          <select class="input" id="feels-filter" style="max-width:170px;">
             <option value="all">All statuses</option>
             <option value="published">Published</option>
             <option value="hidden">Hidden</option>
@@ -666,10 +666,10 @@ body{font-weight:600;}
         <div class="table-wrap">
           <table>
             <thead><tr><th>Short</th><th>Channel ID</th><th>Views</th><th>Likes</th><th>Comments</th><th>Status</th><th></th></tr></thead>
-            <tbody id="shorts-tbody"></tbody>
+            <tbody id="feels-tbody"></tbody>
           </table>
         </div>
-        <div id="shorts-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+        <div id="feels-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
       </section>
 
       <!-- ================= POSTS ================= -->
@@ -690,16 +690,16 @@ body{font-weight:600;}
       <section class="section" id="section-scheduled">
         <div class="tabs">
           <div class="tab-btn active" data-tab="sched-videos">Videos</div>
-          <div class="tab-btn" data-tab="sched-shorts">Shorts</div>
+          <div class="tab-btn" data-tab="sched-feels">Feels</div>
           <div class="tab-btn" data-tab="sched-posts">Posts</div>
         </div>
         <div class="tab-pane active" id="tab-sched-videos">
           <div class="table-wrap"><table><thead><tr><th>Title</th><th>Channel ID</th><th>Scheduled For</th><th></th></tr></thead><tbody id="sched-videos-tbody"></tbody></table></div>
           <div id="sched-videos-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
         </div>
-        <div class="tab-pane" id="tab-sched-shorts">
-          <div class="table-wrap"><table><thead><tr><th>Caption</th><th>Channel ID</th><th>Scheduled For</th><th></th></tr></thead><tbody id="sched-shorts-tbody"></tbody></table></div>
-          <div id="sched-shorts-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
+        <div class="tab-pane" id="tab-sched-feels">
+          <div class="table-wrap"><table><thead><tr><th>Caption</th><th>Channel ID</th><th>Scheduled For</th><th></th></tr></thead><tbody id="sched-feels-tbody"></tbody></table></div>
+          <div id="sched-feels-empty" class="empty-state" style="display:none;"><div class="big">◌</div>No data available</div>
         </div>
         <div class="tab-pane" id="tab-sched-posts">
           <div class="table-wrap"><table><thead><tr><th>Post</th><th>Channel ID</th><th>Scheduled For</th><th></th></tr></thead><tbody id="sched-posts-tbody"></tbody></table></div>
@@ -732,15 +732,15 @@ body{font-weight:600;}
             <label class="toggle"><input type="checkbox" data-flag="uploadVideoEnabled"><span class="slider"></span></label>
           </div>
           <div class="settings-row">
-            <div><div class="t">Shorts Upload</div><div class="d">Enable or disable Shorts uploads app-wide</div></div>
-            <label class="toggle"><input type="checkbox" data-flag="uploadShortsEnabled"><span class="slider"></span></label>
+            <div><div class="t">Feels Upload</div><div class="d">Enable or disable Feels uploads app-wide</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="uploadFeelsEnabled"><span class="slider"></span></label>
           </div>
           <div class="settings-row">
             <div><div class="t">Post Creation</div><div class="d">Enable or disable Community Post creation</div></div>
             <label class="toggle"><input type="checkbox" data-flag="uploadPostsEnabled"><span class="slider"></span></label>
           </div>
           <div class="settings-row">
-            <div><div class="t">Short Camera</div><div class="d">Enable or disable the in-app Shorts camera</div></div>
+            <div><div class="t">Short Camera</div><div class="d">Enable or disable the in-app Feels camera</div></div>
             <label class="toggle"><input type="checkbox" data-flag="shortCameraEnabled"><span class="slider"></span></label>
           </div>
         </div>
@@ -779,7 +779,7 @@ body{font-weight:600;}
             <label class="toggle"><input type="checkbox" data-flag="videoDownloadEnabled"><span class="slider"></span></label>
           </div>
           <div class="settings-row">
-            <div><div class="t">Shorts Download</div><div class="d">Allow downloading Shorts</div></div>
+            <div><div class="t">Feels Download</div><div class="d">Allow downloading Feels</div></div>
             <label class="toggle"><input type="checkbox" data-flag="shortDownloadEnabled"><span class="slider"></span></label>
           </div>
         </div>
@@ -956,7 +956,7 @@ body{font-weight:600;}
         <div class="stats-grid">
           <div class="stat-card"><div class="label">Users / Channels</div><div class="value" id="pa-users">0</div></div>
           <div class="stat-card"><div class="label">Long Videos</div><div class="value" id="pa-videos">0</div></div>
-          <div class="stat-card"><div class="label">Shorts</div><div class="value" id="pa-shorts">0</div></div>
+          <div class="stat-card"><div class="label">Feels</div><div class="value" id="pa-feels">0</div></div>
           <div class="stat-card"><div class="label">Posts</div><div class="value" id="pa-posts">0</div></div>
           <div class="stat-card"><div class="label">Total Views</div><div class="value" id="pa-views">0</div></div>
           <div class="stat-card"><div class="label">Total Likes</div><div class="value" id="pa-likes">0</div></div>
@@ -993,8 +993,8 @@ body{font-weight:600;}
             <label class="toggle"><input type="checkbox" data-flag="homeVideosEnabled"><span class="slider"></span></label>
           </div>
           <div class="settings-row">
-            <div><div class="t">Shorts on Home</div><div class="d">Show the Shorts section in the Home feed</div></div>
-            <label class="toggle"><input type="checkbox" data-flag="homeShortsEnabled"><span class="slider"></span></label>
+            <div><div class="t">Feels on Home</div><div class="d">Show the Feels section in the Home feed</div></div>
+            <label class="toggle"><input type="checkbox" data-flag="homeFeelsEnabled"><span class="slider"></span></label>
           </div>
           <div class="settings-row">
             <div><div class="t">Posts on Home</div><div class="d">Show Community Posts in the Home feed</div></div>
@@ -1141,7 +1141,7 @@ const REF = {
   users:           db.ref('users'),
   channels:        db.ref('channels'),
   videos:          db.ref('admin_panel/movies/user_uploads'),
-  shorts:          db.ref('admin_panel/movies/shorts'),
+  feels:          db.ref('admin_panel/movies/feels'),
   posts:           db.ref('admin_panel/posts'),
   comments:        db.ref('movie_comments'),
   postReactions:   db.ref('post_reactions'),
@@ -1260,7 +1260,7 @@ const pageMeta = {
   users:                ['Users', 'Manage existing Flaynity accounts'],
   channels:              ['Channels', 'Manage existing Flaynity channels'],
   videos:                ['Long Videos', 'Manage existing long-form video content'],
-  shorts:                ['Shorts', 'Manage existing Shorts content'],
+  feels:                ['Feels', 'Manage existing Feels content'],
   posts:                 ['Community Posts', 'Manage existing community posts'],
   scheduled:             ['Scheduled Content', 'Content awaiting publish'],
   subscribers:           ['Subscribers', 'Adjust existing subscriber counts'],
@@ -1425,7 +1425,7 @@ function bootApp(){
   initDashboard();
   initUsersAndChannels();
   initVideos();
-  initShorts();
+  initFeels();
   initPosts();
   initScheduled();
   initSubscribers();
@@ -1448,7 +1448,7 @@ function bootApp(){
 /* =========================================================
    DASHBOARD
    ========================================================= */
-let rawUsers = {}, rawChannels = {}, rawVideos = {}, rawShorts = {}, rawPosts = {}, rawComments = {};
+let rawUsers = {}, rawChannels = {}, rawVideos = {}, rawFeels = {}, rawPosts = {}, rawComments = {};
 
 function initDashboard(){
   trackListener(REF.users, 'value', snap => {
@@ -1459,7 +1459,7 @@ function initDashboard(){
   });
   trackListener(REF.channels, 'value', snap => { rawChannels = snap.val() || {}; recomputeDashboard(); renderChannelsTable(); renderUsersTable(); renderSubsTable(); });
   trackListener(REF.videos, 'value', snap => { rawVideos = snap.val() || {}; recomputeDashboard(); renderVideosTable(); renderScheduled(); });
-  trackListener(REF.shorts, 'value', snap => { rawShorts = snap.val() || {}; recomputeDashboard(); renderShortsTable(); renderScheduled(); });
+  trackListener(REF.feels, 'value', snap => { rawFeels = snap.val() || {}; recomputeDashboard(); renderFeelsTable(); renderScheduled(); });
   trackListener(REF.posts, 'value', snap => { rawPosts = snap.val() || {}; recomputeDashboard(); renderPostsTable(); renderScheduled(); });
   trackListener(REF.comments, 'value', snap => { rawComments = snap.val() || {}; recomputeDashboard(); renderCommentsTable(); });
 
@@ -1475,19 +1475,19 @@ function initDashboard(){
 function recomputeDashboard(){
   const channels = Object.values(rawChannels);
   const videos   = Object.values(rawVideos);
-  const shorts   = Object.values(rawShorts);
+  const feels   = Object.values(rawFeels);
   const posts    = Object.values(rawPosts);
   const comments = Object.values(rawComments);
 
   set('stat-users', channels.length);
   set('stat-channels', channels.length);
   set('stat-videos', videos.length);
-  set('stat-shorts', shorts.length);
+  set('stat-feels', feels.length);
   set('stat-posts', posts.length);
 
   const sum = (arr, field) => arr.reduce((a,v) => a + (Number(v && v[field]) || 0), 0);
-  const totalViews = sum(videos,'views') + sum(shorts,'views');
-  const totalLikes = sum(videos,'likes') + sum(shorts,'likes');
+  const totalViews = sum(videos,'views') + sum(feels,'views');
+  const totalLikes = sum(videos,'likes') + sum(feels,'likes');
   set('stat-views', totalViews);
   set('stat-likes', totalLikes);
   set('stat-comments', comments.length);
@@ -1495,8 +1495,8 @@ function recomputeDashboard(){
 
   const isPublished = v => (v.status||v.visibility) === 'published' || (v.status||v.visibility) === 'public';
   const isScheduled = v => !!v.scheduledPublishTime && v.scheduledPublishTime > Date.now();
-  set('stat-published', videos.filter(isPublished).length + shorts.filter(isPublished).length + posts.filter(isPublished).length);
-  set('stat-scheduled', videos.filter(isScheduled).length + shorts.filter(isScheduled).length + posts.filter(isScheduled).length);
+  set('stat-published', videos.filter(isPublished).length + feels.filter(isPublished).length + posts.filter(isPublished).length);
+  set('stat-scheduled', videos.filter(isScheduled).length + feels.filter(isScheduled).length + posts.filter(isScheduled).length);
   set('stat-monetized', channels.filter(c => c.monetizationStatus === 'active').length);
 
   const days = Number(document.querySelector('.range-btn.active')?.dataset.days || 7);
@@ -1504,9 +1504,9 @@ function recomputeDashboard(){
   const inRange = (v) => (Number(v.createdAt || v.uploadTime || v.timestamp || 0)) >= since;
   const gC = channels.filter(inRange).length;
   const gV = videos.filter(inRange).length;
-  const gS = shorts.filter(inRange).length;
+  const gS = feels.filter(inRange).length;
   const gP = posts.filter(inRange).length;
-  set('growth-channels', gC); set('growth-videos', gV); set('growth-shorts', gS); set('growth-posts', gP);
+  set('growth-channels', gC); set('growth-videos', gV); set('growth-feels', gS); set('growth-posts', gP);
   const anyGrowth = gC+gV+gS+gP > 0;
   document.getElementById('growth-empty').style.display = anyGrowth ? 'none' : 'block';
   document.getElementById('growth-body').style.display = anyGrowth ? 'grid' : 'none';
@@ -1660,8 +1660,8 @@ function channelStatus(id, next){
 function initVideos(){ document.getElementById('videos-search').addEventListener('input', renderVideosTable); document.getElementById('videos-filter').addEventListener('change', renderVideosTable); }
 function renderVideosTable(){ renderContentTable({ dataMap: rawVideos, ref: REF.videos, searchId:'videos-search', filterId:'videos-filter', tbodyId:'videos-tbody', emptyId:'videos-empty', titleField:'title', targetType:'video' }); }
 
-function initShorts(){ document.getElementById('shorts-search').addEventListener('input', renderShortsTable); document.getElementById('shorts-filter').addEventListener('change', renderShortsTable); }
-function renderShortsTable(){ renderContentTable({ dataMap: rawShorts, ref: REF.shorts, searchId:'shorts-search', filterId:'shorts-filter', tbodyId:'shorts-tbody', emptyId:'shorts-empty', titleField:'caption', targetType:'short' }); }
+function initFeels(){ document.getElementById('feels-search').addEventListener('input', renderFeelsTable); document.getElementById('feels-filter').addEventListener('change', renderFeelsTable); }
+function renderFeelsTable(){ renderContentTable({ dataMap: rawFeels, ref: REF.feels, searchId:'feels-search', filterId:'feels-filter', tbodyId:'feels-tbody', emptyId:'feels-empty', titleField:'caption', targetType:'short' }); }
 
 function renderContentTable({dataMap, ref, searchId, filterId, tbodyId, emptyId, titleField, targetType}){
   const q = (document.getElementById(searchId).value||'').toLowerCase();
@@ -1816,7 +1816,7 @@ function renderPostsTable(){
 function initScheduled(){ }
 function renderScheduled(){
   renderScheduledList(rawVideos, 'sched-videos-tbody', 'sched-videos-empty', 'title', REF.videos, 'video');
-  renderScheduledList(rawShorts, 'sched-shorts-tbody', 'sched-shorts-empty', 'caption', REF.shorts, 'short');
+  renderScheduledList(rawFeels, 'sched-feels-tbody', 'sched-feels-empty', 'caption', REF.feels, 'short');
   renderScheduledList(rawPosts, 'sched-posts-tbody', 'sched-posts-empty', 'content', REF.posts, 'post');
 }
 function renderScheduledList(dataMap, tbodyId, emptyId, titleField, ref, targetType){
@@ -2213,15 +2213,15 @@ function initPlatformAnalytics(){
   const render=()=>{
     const users=Object.keys(rawUsers).length;
     const channels=Object.values(rawChannels);
-    const videos=Object.values(rawVideos), shorts=Object.values(rawShorts), posts=Object.values(rawPosts);
+    const videos=Object.values(rawVideos), feels=Object.values(rawFeels), posts=Object.values(rawPosts);
     const sum=(arr,k)=>arr.reduce((a,v)=>a+Number(v?.[k]||0),0);
     const vals={
       'pa-users': users || channels.length,
       'pa-videos': videos.length,
-      'pa-shorts': shorts.length,
+      'pa-feels': feels.length,
       'pa-posts': posts.length,
-      'pa-views': sum(videos,'views')+sum(shorts,'views'),
-      'pa-likes': sum(videos,'likes')+sum(shorts,'likes'),
+      'pa-views': sum(videos,'views')+sum(feels,'views'),
+      'pa-likes': sum(videos,'likes')+sum(feels,'likes'),
       'pa-subs': sum(channels,'subscribersCount') || sum(channels,'subscribers'),
       'pa-monetized': channels.filter(c=>c.monetizationStatus==='active').length
     };
@@ -2230,7 +2230,7 @@ function initPlatformAnalytics(){
     tb.innerHTML=Object.entries(vals).map(([id,v])=>`<tr><td>${id.replace('pa-','').replace(/-/g,' ')}</td><td>${fmtNum(v)}</td></tr>`).join('');
   };
   render();
-  ['users','channels','videos','shorts','posts'].forEach(k=>{ const r=REF[k]; if(r) trackListener(r,'value',render); });
+  ['users','channels','videos','feels','posts'].forEach(k=>{ const r=REF[k]; if(r) trackListener(r,'value',render); });
 }
 
 function initChannelAnalytics(){
@@ -2243,8 +2243,8 @@ function initChannelAnalytics(){
     document.getElementById('ca-empty-hint').style.display='none';
     document.getElementById('ca-detail').style.display='block';
     const myVideos = Object.values(rawVideos).filter(v => v.channelId === id);
-    const myShorts = Object.values(rawShorts).filter(v => v.channelId === id);
-    document.getElementById('ca-views').textContent = fmtNum(myVideos.reduce((a,v)=>a+Number(v.views||0),0)+myShorts.reduce((a,v)=>a+Number(v.views||0),0));
+    const myFeels = Object.values(rawFeels).filter(v => v.channelId === id);
+    document.getElementById('ca-views').textContent = fmtNum(myVideos.reduce((a,v)=>a+Number(v.views||0),0)+myFeels.reduce((a,v)=>a+Number(v.views||0),0));
     document.getElementById('ca-watchtime').textContent = myVideos.some(v=>v.watchTime!=null) ? fmtNum(myVideos.reduce((a,v)=>a+Number(v.watchTime||0),0)) : 'No data available';
     document.getElementById('ca-subs').textContent = fmtNum(c.subscribersCount ?? c.subscribers ?? 0);
     const mon = Object.values(rawMonetization).find(m => m.channelId === id);

@@ -988,6 +988,7 @@ function cleanupUserSessionData() {
     if (activeChannelPostsListener) { try { activeChannelPostsListener.off(); } catch(e) {} activeChannelPostsListener = null; }
 
     _detachAllGlobalFeedListeners();
+    try { clearFeelsSubscriptionListeners(); } catch(e) {}
     _feedListenersAttached = false;
 
     SyncManager.isRefreshing = false;
@@ -2155,7 +2156,64 @@ function spawnDoubleTapHeart(e, slideElement) {
 // =========================================================
 // HIGH PERFORMANCE FEELS BUILDER
 // =========================================================
-let hlsInstances = {}; 
+let hlsInstances = {};
+
+let feelsFeedMode = 'for-you';
+const feelsSubscribedChannels = {};
+const feelsSubscriptionListeners = {};
+
+function triggerFeelsHaptic(pattern = 12) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} }
+function setFeelsFeedMode(mode) {
+    feelsFeedMode = mode === 'subscribe' ? 'subscribe' : 'for-you';
+    triggerFeelsHaptic(12);
+    updateFeelsModeButtons();
+    buildFeelsPage();
+}
+function updateFeelsModeButtons() {
+    document.querySelectorAll('.feels-mode-btn').forEach(btn => {
+        const active = btn.dataset.mode === feelsFeedMode;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+}
+function ensureFeelsSubscriptionListeners() {
+    if (!auth.currentUser || !navigator.onLine) return;
+    const uid = auth.currentUser.uid;
+    const ids = new Set(allFeels.map(s => s.userId || s.channelId).filter(Boolean));
+    ids.forEach(channelId => {
+        if (feelsSubscriptionListeners[channelId]) return;
+        const ref = db.ref(`subscribers/${channelId}/${uid}`);
+        feelsSubscriptionListeners[channelId] = ref;
+        ref.on('value', snap => {
+            const next = snap.exists();
+            const changed = feelsSubscribedChannels[channelId] !== next;
+            feelsSubscribedChannels[channelId] = next;
+            if (changed && feelsFeedMode === 'subscribe') buildFeelsPage();
+        });
+    });
+}
+function clearFeelsSubscriptionListeners() {
+    Object.keys(feelsSubscriptionListeners).forEach(id => { try { feelsSubscriptionListeners[id].off(); } catch(e) {} delete feelsSubscriptionListeners[id]; });
+    Object.keys(feelsSubscribedChannels).forEach(id => delete feelsSubscribedChannels[id]);
+}
+function openFeelsDescription(shortId, event) {
+    if (event) { event.preventDefault(); event.stopPropagation(); }
+    triggerFeelsHaptic(10);
+    const s = allFeels.find(item => String(item.id) === String(shortId));
+    if (!s) return;
+    currentActiveMovie = s;
+    keepFeelsVideoActive(s.id);
+    openShortDescBottomSheet(s.id);
+}
+function openFeelsComments(shortId, event) {
+    if (event) { event.preventDefault(); event.stopPropagation(); }
+    triggerFeelsHaptic(10);
+    const s = allFeels.find(item => String(item.id) === String(shortId));
+    if (!s) return;
+    currentActiveMovie = s;
+    keepFeelsVideoActive(s.id);
+    openShortComments(s.id);
+}
 
 function buildFeelsPage() {
     const container = document.getElementById('feels-swiper-container');
@@ -2166,7 +2224,9 @@ function buildFeelsPage() {
         return;
     }
 
-    let activeFeelsList = allFeels;
+    ensureFeelsSubscriptionListeners();
+    updateFeelsModeButtons();
+    let activeFeelsList = feelsFeedMode === 'subscribe' ? allFeels.filter(s => feelsSubscribedChannels[s.userId || s.channelId]) : allFeels;
 
     if (activeFeelsList.length === 0) {
         container.innerHTML = getFeelsSkeletonHTML();
@@ -2218,7 +2278,7 @@ function buildFeelsPage() {
                     </div>
 
                     <div class="short-action-container">
-                        <button class="short-action-btn-tiktok-other" onclick="handleFeelsInfoClick(event, '${s.id}', 'comment')">
+                        <button class="short-action-btn-tiktok-other" onclick="openFeelsComments('${s.id}', event)">
                             <i class="fas fa-comment"></i>
                         </button>
                         <div class="short-action-label-tiktok" id="${commentsCountId}">${formatCount(cachedStats.comments)}</div>
@@ -2240,7 +2300,7 @@ function buildFeelsPage() {
 
                 <div class="short-bottom-info">
                     <div class="short-channel-name live-username-${s.userId || s.channelId}" style="color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8); margin-bottom:6px;">${escapeHTML(String(s.channelName || s.username || 'Flaynity').slice(0, 25))}</div>
-                    <div class="short-title-wrap" style="cursor:pointer;" onclick="handleFeelsInfoClick(event, '${s.id}', 'title')">
+                    <div class="short-title-wrap" style="cursor:pointer;" onclick="openFeelsDescription('${s.id}', event)">
                         <h2 id="short-title-val-${s.id}" class="short-title-text" style="font-size:0.82rem; font-weight:700; color:#EBEBEB; margin:0; line-height:1.4; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; text-overflow:ellipsis;">
                             ${escapeHTML(s.title)}
                         </h2>
@@ -2417,11 +2477,16 @@ function openShortDescBottomSheet(shortId) {
     const s = allFeels.find(item => item.id === shortId);
     if (!s) return;
 
-    document.getElementById('short-sheet-full-title').innerText = s.title;
+    currentActiveMovie = s;
+    keepFeelsVideoActive(s.id);
+    const titleEl = document.getElementById('short-sheet-full-title');
+    if (titleEl) titleEl.innerText = s.title || 'Feels';
     
+    const description = String(s.description || '');
     const hashtagRegex = /#\w+/g;
-    const hashtags = s.description.match(hashtagRegex) ? s.description.match(hashtagRegex).join(' ') : '#feels #flaynity';
-    const plainDescription = s.description.replace(hashtagRegex, '').trim();
+    const matches = description.match(hashtagRegex) || [];
+    const hashtags = matches.length ? matches.join(' ') : '#feels #flaynity';
+    const plainDescription = description.replace(hashtagRegex, '').trim();
     
     document.getElementById('short-sheet-hashtags').innerText = hashtags;
     document.getElementById('short-sheet-description').innerText = plainDescription || "No description provided.";
@@ -2613,13 +2678,19 @@ function handleFeelsInfoClick(event, shortId, action) {
 function openShortComments(shortId) {
     playUI('click');
     triggerHapticFeedback();
-    currentActiveMovie = allFeels.find(s => s.id === shortId);
+    currentActiveMovie = allFeels.find(s => String(s.id) === String(shortId));
     if (!currentActiveMovie) return;
-
-    // The comment sheet is a modal over the exact Feels that was tapped.
-    // Do not rebuild the swiper or change its scroll position.
     keepFeelsVideoActive(shortId);
+    if (activeCommentsRef) { try { activeCommentsRef.off(); } catch(e) {} }
+    activeCommentsRef = db.ref(`movie_comments/${currentActiveMovie.id}`);
+    activeCommentsRef.on('value', snapshot => {
+        const commentsObj = snapshot.val() || {};
+        const countEl = document.getElementById(`short-comments-count-${currentActiveMovie.id}`);
+        if (countEl) countEl.innerText = formatCount(Object.keys(commentsObj).length);
+        renderCommentList(commentsObj);
+    });
     openCommentModal();
+    requestAnimationFrame(() => keepFeelsVideoActive(shortId));
 }
 
 // =========================================================
@@ -3392,6 +3463,7 @@ function openCommentModal() {
 }
 
 function closeCommentModal() {
+    if (activeCommentsRef) { try { activeCommentsRef.off(); } catch(e) {} activeCommentsRef = null; }
     AppNavigation.pop();
 }
 
@@ -3431,7 +3503,7 @@ function renderCommentList(commentsObj) {
     const container = document.getElementById('comment-list-container');
     if (!container) return;
 
-    const comments = Object.values(commentsObj).sort((a,b) => b.timestamp - a.timestamp);
+    const comments = Object.values(commentsObj || {}).sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
     if (comments.length === 0) {
         container.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:40px;">No comments yet. Be the first to comment!</p>`;
         return;

@@ -2208,7 +2208,7 @@ function buildFeelsPage() {
                     </div>
 
                     <div class="short-action-container">
-                        <button class="short-action-btn-tiktok-other" onclick="openShortComments('${s.id}')">
+                        <button class="short-action-btn-tiktok-other" onclick="handleFeelsInfoClick(event, '${s.id}', 'comment')">
                             <i class="fas fa-comment"></i>
                         </button>
                         <div class="short-action-label-tiktok" id="${commentsCountId}">${formatCount(cachedStats.comments)}</div>
@@ -2229,9 +2229,9 @@ function buildFeelsPage() {
                 </div>
 
                 <div class="short-bottom-info">
-                    <div class="short-channel-name" style="font-size:0.95rem; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8); margin-bottom:6px;">${escapeHTML(s.channelName || s.username || 'Flaynity')}</div>
-                    <div class="short-title-wrap" style="cursor:default;">
-                        <h2 id="short-title-val" style="font-size: 0.95rem; font-weight: 800; color: #ffffff; margin: 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
+                    <div class="short-channel-name" style="color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8); margin-bottom:6px;">${escapeHTML(String(s.channelName || s.username || 'Flaynity').slice(0, 25))}</div>
+                    <div class="short-title-wrap" style="cursor:default;" onclick="handleFeelsInfoClick(event, '${s.id}', 'title')">
+                        <h2 id="short-title-val-${s.id}" class="short-title-text" style="font-size:0.9rem; font-weight:800; color:#EBEBEB; margin:0; line-height:1.4; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; text-overflow:ellipsis;">
                             ${escapeHTML(s.title)}
                         </h2>
                     </div>
@@ -2548,7 +2548,43 @@ async function syncOfflineLikes() {
     } catch (e) {}
 }
 
+function keepFeelsVideoActive(shortId) {
+    const slide = document.getElementById(`slide-short-${shortId}`);
+    if (!slide) return;
+    const swiper = slide.closest('.feels-swiper');
+    if (swiper) {
+        const rect = slide.getBoundingClientRect();
+        const parentRect = swiper.getBoundingClientRect();
+        if (Math.abs(rect.top - parentRect.top) > 8) {
+            slide.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+    }
+    const video = slide.querySelector('video');
+    if (video) {
+        video.muted = false;
+        const play = () => video.play().catch(() => { video.muted = true; video.play().catch(() => {}); });
+        if (video.readyState >= 2) play();
+        else video.addEventListener('canplay', play, { once: true });
+    }
+    currentActiveFeelsIdx = Array.from(document.querySelectorAll('.short-slide')).indexOf(slide);
+}
+
+function handleFeelsInfoClick(event, shortId, action) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    playUI('click');
+    triggerHapticFeedback();
+    keepFeelsVideoActive(shortId);
+    // Feels title intentionally does not open the description.
+    if (action === 'comment') {
+        openShortComments(shortId);
+    }
+}
+
 function openShortComments(shortId) {
+    keepFeelsVideoActive(shortId);
     playUI('click');
     triggerHapticFeedback();
     currentActiveMovie = allFeels.find(s => s.id === shortId);

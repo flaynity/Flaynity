@@ -2202,14 +2202,14 @@ function buildFeelsPage() {
 
                     <div class="short-action-container">
                         <button class="short-action-btn-tiktok" id="${isLikedId}" onclick="toggleShortLike('${s.id}')">
-                            <i class="${isLocallyLiked ? 'fas fa-heart liked' : 'far fa-heart'}"></i>
+                            <i class="fas fa-heart${isLocallyLiked ? ' liked' : ''}"></i>
                         </button>
                         <div class="short-action-label-tiktok" id="${likesCountId}">${formatCount(cachedStats.likes)}</div>
                     </div>
 
                     <div class="short-action-container">
                         <button class="short-action-btn-tiktok-other" onclick="openShortComments('${s.id}')">
-                            <i class="far fa-comment"></i>
+                            <i class="fas fa-comment"></i>
                         </button>
                         <div class="short-action-label-tiktok" id="${commentsCountId}">${formatCount(cachedStats.comments)}</div>
                     </div>
@@ -2229,12 +2229,8 @@ function buildFeelsPage() {
                 </div>
 
                 <div class="short-bottom-info">
-                    <div class="short-channel-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-                        <div class="live-avatar-${s.userId}" style="width:32px; height:32px; border-radius:50%; border:2px solid #fff; overflow:hidden;"></div>
-                        <span class="short-channel-handle live-handle-${s.userId}" style="font-size:0.9rem; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8);">@${s.username || 'flaynity'}</span>
-                    </div>
-                    
-                    <div class="short-title-wrap" onclick="openShortDescBottomSheet('${s.id}')" style="cursor:pointer;">
+                    <div class="short-channel-name" style="font-size:0.95rem; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8); margin-bottom:6px;">${escapeHTML(s.channelName || s.username || 'Flaynity')}</div>
+                    <div class="short-title-wrap" style="cursor:default;">
                         <h2 id="short-title-val" style="font-size: 0.95rem; font-weight: 800; color: #ffffff; margin: 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
                             ${escapeHTML(s.title)}
                         </h2>
@@ -2263,7 +2259,7 @@ function buildFeelsPage() {
                 if (likesObj[auth.currentUser.uid]) {
                     likeBtn.innerHTML = `<i class="fas fa-heart liked"></i>`;
                 } else {
-                    likeBtn.innerHTML = `<i class="far fa-heart"></i>`;
+                    likeBtn.innerHTML = `<i class="fas fa-heart"></i>`;
                 }
             }
         });
@@ -2289,9 +2285,11 @@ function buildFeelsPage() {
                     if (snapshot.exists()) {
                         subBtn.classList.add('subscribed');
                         subBtn.innerHTML = '<i class="fas fa-check"></i>';
+                        subBtn.style.display = 'none';
                     } else {
                         subBtn.classList.remove('subscribed');
                         subBtn.innerHTML = '<i class="fas fa-plus"></i>';
+                        subBtn.style.display = 'flex';
                     }
                 }
             });
@@ -2469,6 +2467,7 @@ function setupSwipeToClose(element, handleId, closeCallback) {
 
 function toggleShortLike(shortId, forceLike = false) {
     playUI('click');
+    triggerHapticFeedback();
     if (!auth.currentUser) { showNotification("Please sign in to Like", "error"); return; }
     const userId = auth.currentUser.uid;
     
@@ -2528,7 +2527,7 @@ function updateLikesDOMOffline(shortId) {
             if (isLocallyLiked) {
                 likeBtn.innerHTML = `<i class="fas fa-heart liked"></i>`;
             } else {
-                likeBtn.innerHTML = `<i class="far fa-heart"></i>`;
+                likeBtn.innerHTML = `<i class="fas fa-heart"></i>`;
             }
         }
     } catch (e) {}
@@ -2551,10 +2550,11 @@ async function syncOfflineLikes() {
 
 function openShortComments(shortId) {
     playUI('click');
+    triggerHapticFeedback();
     currentActiveMovie = allFeels.find(s => s.id === shortId);
     if (!currentActiveMovie) return;
+    // Open comments without registering/loading the watch page, so the active Feels stays visible.
     openCommentModal();
-    registerViewAndListen(shortId);
 }
 
 // =========================================================

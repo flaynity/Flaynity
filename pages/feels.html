@@ -3,6 +3,30 @@
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Flaynity</title>
 <style>
 /* FEELS TAB CONFIGURATIONS ( TikTok Premium Player Layout ) */
+        /* Minimal Feels mode switch */
+        .feels-mode-switch {
+            position:absolute; top:12px; left:50%; transform:translateX(-50%);
+            z-index:30; display:flex; align-items:center; gap:6px;
+            padding:5px; border-radius:24px; background:rgba(0,0,0,.32);
+            backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+            border:1px solid rgba(255,255,255,.12);
+        }
+        .feels-mode-btn {
+            appearance:none; border:0; background:transparent; color:#fff;
+            font-size:14px; font-weight:800; line-height:1; padding:9px 16px;
+            border-radius:19px; cursor:pointer; transition:transform .22s ease, background .22s ease, opacity .22s ease;
+            opacity:.82; -webkit-tap-highlight-color:transparent;
+        }
+        .feels-mode-btn.active { background:rgba(255,255,255,.18); opacity:1; transform:scale(1.02); }
+        .feels-mode-btn:active { transform:scale(.96); }
+        .feels-swiper { scroll-behavior:smooth; }
+        .short-slide { animation:feelsSlideIn .28s ease both; }
+        @keyframes feelsSlideIn { from { opacity:.72; transform:scale(.985); } to { opacity:1; transform:scale(1); } }
+        @media (prefers-reduced-motion:reduce) {
+            .feels-mode-btn, .short-slide { transition:none; animation:none; }
+            .feels-swiper { scroll-behavior:auto; }
+        }
+
         #feels-tab {
             position: fixed;
             top: 0;
@@ -339,6 +363,10 @@
         .short-channel-action{pointer-events:auto;}
         </style></head><body>
 <div class="tab-content" id="feels-tab" style="padding:0;">
+<div class="feels-mode-switch" role="tablist" aria-label="Feels feed">
+<button type="button" class="feels-mode-btn active" data-mode="for-you" role="tab" aria-selected="true" onclick="setFeelsFeedMode('for-you')">For You</button>
+<button type="button" class="feels-mode-btn" data-mode="subscribe" role="tab" aria-selected="false" onclick="setFeelsFeedMode('subscribe')">Subscribe</button>
+</div>
 <div id="feels-swiper-container" style="height:100%; width:100%;"></div>
 </div>
 </body></html>

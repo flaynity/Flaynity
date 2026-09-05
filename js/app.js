@@ -941,6 +941,7 @@ function saveAccountToList(user) {
 }
 
 function cleanupUserSessionData() {
+    Object.keys(liveChannelDataCache).forEach(uid => delete liveChannelDataCache[uid]);
     currentChannelData = null;
     tempCreateAvatarUrl = "";
     tempEditAvatarUrl = "";
@@ -1672,11 +1673,19 @@ function startRealtimeFeedsListener() {
 }
 
 const boundChannelListeners = {};
+const liveChannelDataCache = {};
 function bindLiveChannelUI(userId) {
     if (!userId) return;
-    if (boundChannelListeners[userId]) return;
     if (!navigator.onLine) return;
 
+    // A channel can already have a listener because Home and Feels share the
+    // same live channel engine. Always apply the cached Firebase data to newly
+    // created Feels DOM instead of waiting for another database event.
+    if (liveChannelDataCache[userId]) {
+        updateChannelDOM(userId, liveChannelDataCache[userId]);
+    }
+
+    if (boundChannelListeners[userId]) return;
     boundChannelListeners[userId] = true;
     db.ref(`channels/${userId}`).on('value', (snap) => {
         updateChannelDOM(userId, snap.val());
@@ -1685,6 +1694,7 @@ function bindLiveChannelUI(userId) {
 
 function updateChannelDOM(userId, data) {
     if (!data) return;
+    liveChannelDataCache[userId] = data;
     const name = data.channelName || "Flaynity User";
     const handle = data.handle || "handle";
     const avatar = data.avatarUrl || "";
@@ -2192,10 +2202,10 @@ function buildFeelsPage() {
 
                 <div class="short-right-actions">
                     <div class="short-channel-action">
-                        <div class="short-channel-action-avatar">
+                        <div class="short-channel-action-avatar live-avatar-${s.userId || s.channelId}">
                             <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" alt="Channel">
                         </div>
-                        <button class="short-channel-subscribe-btn" id="short-sub-btn-${s.id}" aria-label="Subscribe" onclick="toggleClipSubscribe('${s.userId}', this)">
+                        <button class="short-channel-subscribe-btn" id="short-sub-btn-${s.id}" aria-label="Subscribe" onclick="toggleClipSubscribe('${s.userId || s.channelId}', this)">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
@@ -2215,21 +2225,21 @@ function buildFeelsPage() {
                     </div>
 
                     <div class="short-action-container">
-                        <button class="short-action-btn-tiktok-other" onclick="triggerShortDownload('${s.id}')">
+                        <button class="short-action-btn-tiktok-other" onclick="triggerShortDownload('${s.id}', event)">
                             <i class="fas fa-download"></i>
                         </button>
                         <div class="short-action-label-tiktok">Save</div>
                     </div>
 
                     <div class="music-disc-container">
-                        <div class="music-disc-inner live-disc-avatar-${s.userId}" id="music-disc-${s.id}">
+                        <div class="music-disc-inner live-disc-avatar-${s.userId || s.channelId}" id="music-disc-${s.id}">
                             <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                         </div>
                     </div>
                 </div>
 
                 <div class="short-bottom-info">
-                    <div class="short-channel-name" style="color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8); margin-bottom:6px;">${escapeHTML(String(s.channelName || s.username || 'Flaynity').slice(0, 25))}</div>
+                    <div class="short-channel-name live-username-${s.userId || s.channelId}" style="color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8); margin-bottom:6px;">${escapeHTML(String(s.channelName || s.username || 'Flaynity').slice(0, 25))}</div>
                     <div class="short-title-wrap" style="cursor:pointer;" onclick="handleFeelsInfoClick(event, '${s.id}', 'title')">
                         <h2 id="short-title-val-${s.id}" class="short-title-text" style="font-size:0.82rem; font-weight:700; color:#EBEBEB; margin:0; line-height:1.4; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; text-overflow:ellipsis;">
                             ${escapeHTML(s.title)}
@@ -2286,10 +2296,11 @@ function buildFeelsPage() {
     // because the buttons are created by the template above.
     if (auth.currentUser) {
         activeFeelsList.forEach(s => {
-            if (!s.userId) return;
+            const channelId = s.userId || s.channelId;
+            if (!channelId) return;
             const subBtn = document.getElementById(`short-sub-btn-${s.id}`);
             if (!subBtn) return;
-            db.ref(`subscribers/${s.userId}/${auth.currentUser.uid}`).on('value', (snapshot) => {
+            db.ref(`subscribers/${channelId}/${auth.currentUser.uid}`).on('value', (snapshot) => {
                 const btn = document.getElementById(`short-sub-btn-${s.id}`);
                 if (!btn) return;
                 // Already subscribed: hide BOTH + and tick; keep only avatar visible.
@@ -2600,15 +2611,15 @@ function handleFeelsInfoClick(event, shortId, action) {
 }
 
 function openShortComments(shortId) {
-    keepFeelsVideoActive(shortId);
     playUI('click');
     triggerHapticFeedback();
     currentActiveMovie = allFeels.find(s => s.id === shortId);
     if (!currentActiveMovie) return;
-    // Open comments as a modal only; never load/navigate to another Feels.
-    const activeId = shortId;
+
+    // The comment sheet is a modal over the exact Feels that was tapped.
+    // Do not rebuild the swiper or change its scroll position.
+    keepFeelsVideoActive(shortId);
     openCommentModal();
-    requestAnimationFrame(() => keepFeelsVideoActive(activeId));
 }
 
 // =========================================================
@@ -2660,14 +2671,22 @@ async function triggerFileDownload(url, filename) {
     }
 }
 
-function triggerShortDownload(shortId) {
+function triggerShortDownload(shortId, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
     playUI('click');
+    triggerHapticFeedback();
     const s = allFeels.find(item => item.id === shortId);
     if (!s) {
-        showNotification("No valid short found.", "error");
+        showNotification("No valid Feels found.", "error");
         return;
     }
+
+    // Keep the exact Feels the user tapped active. Do not navigate the swiper.
     currentActiveMovie = s;
+    keepFeelsVideoActive(shortId);
     openDownloadModal();
 }
 
@@ -3005,7 +3024,16 @@ const AppNavigation = {
         window.dispatchEvent(new Event('flaynity-tab-changed'));
 
         if (activeTab === 'you') initYouTabUI();
-        if (activeTab === 'feels') buildFeelsPage();
+        // Opening/closing a Comment or Download modal must never rebuild the
+        // Feels swiper. Rebuilding replaces the DOM and makes the current Feels
+        // disappear or jump to another item. Build only when the Feels DOM is
+        // actually missing (for example, the first time the tab is opened).
+        if (activeTab === 'feels') {
+            const feelsContainer = document.getElementById('feels-swiper-container');
+            if (feelsContainer && !feelsContainer.querySelector('.short-slide')) {
+                buildFeelsPage();
+            }
+        }
 
         if (activePage) {
             if (activePage === 'full-movie-page') {

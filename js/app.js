@@ -2161,8 +2161,46 @@ let hlsInstances = {};
 let feelsFeedMode = 'for-you';
 const feelsSubscribedChannels = {};
 const feelsSubscriptionListeners = {};
+const feelsLikedByUser = {};
+const feelsCommentsCache = {};
+let feelsLastPlayedId = null;
 
 function triggerFeelsHaptic(pattern = 12) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} }
+function getCurrentVisibleFeelsId() {
+    const swiper = document.querySelector('#feels-swiper-container .feels-swiper');
+    if (!swiper) return feelsLastPlayedId;
+    const slides = Array.from(swiper.querySelectorAll('.short-slide'));
+    if (!slides.length) return feelsLastPlayedId;
+
+    let best = null;
+    let bestDistance = Infinity;
+    const swiperRect = swiper.getBoundingClientRect();
+    slides.forEach(slide => {
+        const rect = slide.getBoundingClientRect();
+        const distance = Math.abs(rect.top - swiperRect.top);
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            best = slide;
+        }
+    });
+    if (best && bestDistance < swiper.clientHeight * 0.55) {
+        return best.getAttribute('data-shortid') || feelsLastPlayedId;
+    }
+    return feelsLastPlayedId;
+}
+
+function scrollFeelsToSlide(swiper, slide, behavior = 'auto') {
+    if (!swiper || !slide) return;
+    // Never use scrollIntoView here. It can scroll the page/window itself,
+    // which makes the first Feels appear to jump upward when changing feeds.
+    const top = slide.offsetTop;
+    try {
+        swiper.scrollTo({ top, behavior });
+    } catch (e) {
+        swiper.scrollTop = top;
+    }
+}
+
 function setFeelsFeedMode(mode) {
     const nextMode = mode === 'subscribe' ? 'subscribe' : 'for-you';
     if (feelsFeedMode === nextMode) {
@@ -2171,19 +2209,11 @@ function setFeelsFeedMode(mode) {
         return;
     }
 
-    // Remember the exact Feels currently visible so switching feeds never
-    // unexpectedly jumps to another video or leaves the video element in a
-    // blank/native placeholder state.
-    const currentSlide = document.querySelector('.feels-swiper .short-slide');
-    const currentVisibleSlide = Array.from(document.querySelectorAll('.feels-swiper .short-slide'))
-        .find(slide => {
-            const r = slide.getBoundingClientRect();
-            const parent = slide.closest('.feels-swiper');
-            if (!parent) return false;
-            const pr = parent.getBoundingClientRect();
-            return Math.abs(r.top - pr.top) < 12;
-        }) || currentSlide;
-    const restoreId = currentVisibleSlide ? currentVisibleSlide.getAttribute('data-shortid') : null;
+    // Keep one global playback identity across both feeds. If a Feels was
+    // played in Subscribe and the user returns to For You, that exact Feels
+    // should be selected automatically (and vice versa).
+    const visibleId = getCurrentVisibleFeelsId();
+    if (visibleId) feelsLastPlayedId = visibleId;
 
     feelsFeedMode = nextMode;
     triggerFeelsHaptic(12);
@@ -2198,17 +2228,21 @@ function setFeelsFeedMode(mode) {
         requestAnimationFrame(() => {
             const swiper = document.querySelector('#feels-swiper-container .feels-swiper');
             if (!swiper) return;
-            const target = restoreId ? document.getElementById(`slide-short-${restoreId}`) : null;
+            const target = feelsLastPlayedId
+                ? document.getElementById(`slide-short-${feelsLastPlayedId}`)
+                : null;
             const targetSlide = target || swiper.querySelector('.short-slide');
             if (targetSlide) {
-                targetSlide.scrollIntoView({ behavior: 'auto', block: 'start' });
+                scrollFeelsToSlide(swiper, targetSlide, 'auto');
                 currentActiveFeelsIdx = Array.from(swiper.querySelectorAll('.short-slide')).indexOf(targetSlide);
+                feelsLastPlayedId = targetSlide.getAttribute('data-shortid') || feelsLastPlayedId;
                 optimizeFeelsMemoryAndPreload(currentActiveFeelsIdx);
             }
             requestAnimationFrame(() => swiper.classList.remove('feels-switching'));
         });
     }, 90);
 }
+
 function updateFeelsModeButtons() {
     document.querySelectorAll('.feels-mode-btn').forEach(btn => {
         const active = btn.dataset.mode === feelsFeedMode;
@@ -2266,7 +2300,7 @@ function buildFeelsPage() {
 
     ensureFeelsSubscriptionListeners();
     updateFeelsModeButtons();
-    let activeFeelsList = feelsFeedMode === 'subscribe' ? allFeels.filter(s => feelsSubscribedChannels[s.userId || s.channelId]) : allFeels;
+    let activeFeelsList = feelsFeedMode === 'subscribe' ? allFeels.filter(s => { const channelId = s.userId || s.channelId; return channelId && channelId !== auth.currentUser?.uid && !!feelsSubscribedChannels[channelId]; }) : allFeels;
 
     if (activeFeelsList.length === 0) {
         container.innerHTML = getFeelsSkeletonHTML();
@@ -2282,7 +2316,7 @@ function buildFeelsPage() {
 
         let cachedStats = { likes: 0, comments: 0 };
         let offlineLikes = JSON.parse(localStorage.getItem('flaynity_offline_likes') || '{}');
-        let isLocallyLiked = !!offlineLikes[s.id];
+        let isLocallyLiked = !!offlineLikes[s.id] || !!feelsLikedByUser[s.id];
         try {
             cachedStats = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
         } catch(e) {}
@@ -2354,6 +2388,9 @@ function buildFeelsPage() {
             const viewsObj = stats.views || {};
             const likesObj = stats.likes || {};
             const likesCount = Object.keys(likesObj).length;
+            if (auth.currentUser) {
+                feelsLikedByUser[s.id] = !!likesObj[auth.currentUser.uid];
+            }
 
             try {
                 let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
@@ -2377,6 +2414,7 @@ function buildFeelsPage() {
         db.ref(`movie_comments/${s.id}`).on('value', (snapshot) => {
             const commentsObj = snapshot.val() || {};
             const count = Object.keys(commentsObj).length;
+            feelsCommentsCache[s.id] = commentsObj;
 
             try {
                 let currCache = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
@@ -2386,6 +2424,11 @@ function buildFeelsPage() {
 
             const lblComments = document.getElementById(commentsCountId);
             if (lblComments) lblComments.innerText = formatCount(count);
+            if (currentActiveMovie && String(currentActiveMovie.id) === String(s.id)) {
+                renderCommentList(commentsObj);
+                const modalCount = document.getElementById('modal-comment-count');
+                if (modalCount) modalCount.innerText = formatCount(count);
+            }
         });
 
     });
@@ -2683,7 +2726,7 @@ function keepFeelsVideoActive(shortId) {
         const rect = slide.getBoundingClientRect();
         const parentRect = swiper.getBoundingClientRect();
         if (Math.abs(rect.top - parentRect.top) > 8) {
-            slide.scrollIntoView({ behavior: 'auto', block: 'start' });
+            scrollFeelsToSlide(swiper, slide, 'auto');
         }
     }
     const video = slide.querySelector('video');
@@ -2694,6 +2737,7 @@ function keepFeelsVideoActive(shortId) {
         else video.addEventListener('canplay', play, { once: true });
     }
     currentActiveFeelsIdx = Array.from(document.querySelectorAll('.short-slide')).indexOf(slide);
+    feelsLastPlayedId = shortId;
 }
 
 function handleFeelsInfoClick(event, shortId, action) {
@@ -2723,6 +2767,9 @@ function openShortComments(shortId) {
     keepFeelsVideoActive(shortId);
     if (activeCommentsRef) { try { activeCommentsRef.off(); } catch(e) {} }
     activeCommentsRef = db.ref(`movie_comments/${currentActiveMovie.id}`);
+    if (feelsCommentsCache[currentActiveMovie.id]) {
+        renderCommentList(feelsCommentsCache[currentActiveMovie.id]);
+    }
     activeCommentsRef.on('value', snapshot => {
         const commentsObj = snapshot.val() || {};
         const countEl = document.getElementById(`short-comments-count-${currentActiveMovie.id}`);
@@ -2917,6 +2964,7 @@ function initFeelsObserver() {
                     const activeIdx = slides.indexOf(entry.target);
                     if (activeIdx !== -1 && activeIdx !== currentActiveFeelsIdx) {
                         currentActiveFeelsIdx = activeIdx;
+                        feelsLastPlayedId = shortId;
                         optimizeFeelsMemoryAndPreload(activeIdx);
                     }
 

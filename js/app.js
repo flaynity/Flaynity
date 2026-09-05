@@ -2164,10 +2164,50 @@ const feelsSubscriptionListeners = {};
 
 function triggerFeelsHaptic(pattern = 12) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} }
 function setFeelsFeedMode(mode) {
-    feelsFeedMode = mode === 'subscribe' ? 'subscribe' : 'for-you';
+    const nextMode = mode === 'subscribe' ? 'subscribe' : 'for-you';
+    if (feelsFeedMode === nextMode) {
+        triggerFeelsHaptic(8);
+        updateFeelsModeButtons();
+        return;
+    }
+
+    // Remember the exact Feels currently visible so switching feeds never
+    // unexpectedly jumps to another video or leaves the video element in a
+    // blank/native placeholder state.
+    const currentSlide = document.querySelector('.feels-swiper .short-slide');
+    const currentVisibleSlide = Array.from(document.querySelectorAll('.feels-swiper .short-slide'))
+        .find(slide => {
+            const r = slide.getBoundingClientRect();
+            const parent = slide.closest('.feels-swiper');
+            if (!parent) return false;
+            const pr = parent.getBoundingClientRect();
+            return Math.abs(r.top - pr.top) < 12;
+        }) || currentSlide;
+    const restoreId = currentVisibleSlide ? currentVisibleSlide.getAttribute('data-shortid') : null;
+
+    feelsFeedMode = nextMode;
     triggerFeelsHaptic(12);
     updateFeelsModeButtons();
-    buildFeelsPage();
+
+    const oldSwiper = document.querySelector('#feels-swiper-container .feels-swiper');
+    if (oldSwiper) oldSwiper.classList.add('feels-switching');
+
+    setTimeout(() => {
+        buildFeelsPage();
+
+        requestAnimationFrame(() => {
+            const swiper = document.querySelector('#feels-swiper-container .feels-swiper');
+            if (!swiper) return;
+            const target = restoreId ? document.getElementById(`slide-short-${restoreId}`) : null;
+            const targetSlide = target || swiper.querySelector('.short-slide');
+            if (targetSlide) {
+                targetSlide.scrollIntoView({ behavior: 'auto', block: 'start' });
+                currentActiveFeelsIdx = Array.from(swiper.querySelectorAll('.short-slide')).indexOf(targetSlide);
+                optimizeFeelsMemoryAndPreload(currentActiveFeelsIdx);
+            }
+            requestAnimationFrame(() => swiper.classList.remove('feels-switching'));
+        });
+    }, 90);
 }
 function updateFeelsModeButtons() {
     document.querySelectorAll('.feels-mode-btn').forEach(btn => {
@@ -2254,7 +2294,7 @@ function buildFeelsPage() {
                 <div class="short-buffer-spinner" id="short-spinner-${s.id}"></div>
                 <div class="short-play-pause-overlay" id="short-pp-overlay-${s.id}"></div>
 
-                <video class="short-video-el" loop playsinline webkit-playsinline></video>
+                <video class="short-video-el" loop playsinline webkit-playsinline poster="${s.poster || ''}" preload="metadata"></video>
 
                 <div class="short-progress-container">
                     <div class="short-progress-bar" id="short-progress-bar-${s.id}"></div>

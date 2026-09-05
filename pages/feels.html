@@ -176,13 +176,14 @@
         }
         .short-channel-name {
             max-width: 100%;
-            font-size: 1.12rem;
+            font-size: 1.32rem;
             font-weight: 900;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .short-title-text {
+            font-size: 0.82rem !important;
             color: #EBEBEB !important;
             text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
         }
@@ -334,7 +335,9 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
-</style></head><body>
+.short-channel-subscribe-btn[aria-hidden="true"]{display:none!important;pointer-events:none!important;}
+        .short-channel-action{pointer-events:auto;}
+        </style></head><body>
 <div class="tab-content" id="feels-tab" style="padding:0;">
 <div id="feels-swiper-container" style="height:100%; width:100%;"></div>
 </div>

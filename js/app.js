@@ -2172,6 +2172,14 @@ function getCurrentVisibleFeelsId() {
     const slides = Array.from(swiper.querySelectorAll('.short-slide'));
     if (!slides.length) return feelsLastPlayedId;
 
+    // Prefer the Feels whose video is actually playing. This avoids saving a
+    // stale/adjacent slide when switching between For You and Subscribe.
+    const playingSlide = slides.find(slide => {
+        const video = slide.querySelector('video');
+        return video && !video.paused && !video.ended && video.readyState >= 2;
+    });
+    if (playingSlide) return playingSlide.getAttribute('data-shortid') || feelsLastPlayedId;
+
     let best = null;
     let bestDistance = Infinity;
     const swiperRect = swiper.getBoundingClientRect();
@@ -2228,6 +2236,13 @@ function setFeelsFeedMode(mode) {
         requestAnimationFrame(() => {
             const swiper = document.querySelector('#feels-swiper-container .feels-swiper');
             if (!swiper) return;
+
+            // Always establish the new feed's scroll position explicitly.
+            // This prevents the first Feels from inheriting the previous
+            // feed/page scroll offset and appearing slightly above the screen.
+            swiper.style.overflowAnchor = 'none';
+            swiper.scrollTop = 0;
+
             const target = feelsLastPlayedId
                 ? document.getElementById(`slide-short-${feelsLastPlayedId}`)
                 : null;
@@ -2772,12 +2787,32 @@ function openShortComments(shortId) {
     }
     activeCommentsRef.on('value', snapshot => {
         const commentsObj = snapshot.val() || {};
-        const countEl = document.getElementById(`short-comments-count-${currentActiveMovie.id}`);
-        if (countEl) countEl.innerText = formatCount(Object.keys(commentsObj).length);
+        const movieId = currentActiveMovie ? currentActiveMovie.id : shortId;
+        const count = Object.keys(commentsObj).length;
+        feelsCommentsCache[movieId] = commentsObj;
+
+        // Keep the Feels counter and the comment modal header in sync with the
+        // exact Feels currently open, including immediately after posting.
+        const countEl = document.getElementById(`short-comments-count-${movieId}`);
+        if (countEl) countEl.innerText = formatCount(count);
+        const modalCount = document.getElementById('modal-comment-count');
+        if (modalCount) modalCount.innerText = formatCount(count);
+
+        try {
+            const cacheKey = `flaynity_stats_cache_${movieId}`;
+            let currCache = JSON.parse(localStorage.getItem(cacheKey) || '{"likes": 0, "comments": 0}');
+            currCache.comments = count;
+            localStorage.setItem(cacheKey, JSON.stringify(currCache));
+        } catch (e) {}
+
         renderCommentList(commentsObj);
     });
     openCommentModal();
-    requestAnimationFrame(() => keepFeelsVideoActive(shortId));
+    requestAnimationFrame(() => {
+        keepFeelsVideoActive(shortId);
+        const input = document.getElementById('comment-input');
+        if (input) input.focus({ preventScroll: true });
+    });
 }
 
 // =========================================================
@@ -3582,6 +3617,27 @@ function submitComment() {
             .then(() => {
                 if (input) input.value = "";
                 showNotification("Comment posted!", "success");
+
+                // The realtime listener normally updates this immediately;
+                // also refresh the active Feels cache/count directly so the
+                // newly posted comment is visible without waiting for a
+                // second UI rebuild.
+                db.ref(`movie_comments/${movieId}`).once('value').then(snapshot => {
+                    const commentsObj = snapshot.val() || {};
+                    feelsCommentsCache[movieId] = commentsObj;
+                    const count = Object.keys(commentsObj).length;
+                    const countEl = document.getElementById(`short-comments-count-${movieId}`);
+                    if (countEl) countEl.innerText = formatCount(count);
+                    const modalCount = document.getElementById('modal-comment-count');
+                    if (modalCount) modalCount.innerText = formatCount(count);
+                    renderCommentList(commentsObj);
+                    try {
+                        const cacheKey = `flaynity_stats_cache_${movieId}`;
+                        let currCache = JSON.parse(localStorage.getItem(cacheKey) || '{"likes": 0, "comments": 0}');
+                        currCache.comments = count;
+                        localStorage.setItem(cacheKey, JSON.stringify(currCache));
+                    } catch (e) {}
+                }).catch(() => {});
             })
             .catch(err => { showNotification("Failed to post comment", "error"); });
     });

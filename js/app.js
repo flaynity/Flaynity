@@ -2230,8 +2230,8 @@ function buildFeelsPage() {
 
                 <div class="short-bottom-info">
                     <div class="short-channel-name" style="color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8); margin-bottom:6px;">${escapeHTML(String(s.channelName || s.username || 'Flaynity').slice(0, 25))}</div>
-                    <div class="short-title-wrap" style="cursor:default;" onclick="handleFeelsInfoClick(event, '${s.id}', 'title')">
-                        <h2 id="short-title-val-${s.id}" class="short-title-text" style="font-size:0.9rem; font-weight:800; color:#EBEBEB; margin:0; line-height:1.4; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; text-overflow:ellipsis;">
+                    <div class="short-title-wrap" style="cursor:pointer;" onclick="handleFeelsInfoClick(event, '${s.id}', 'title')">
+                        <h2 id="short-title-val-${s.id}" class="short-title-text" style="font-size:0.82rem; font-weight:700; color:#EBEBEB; margin:0; line-height:1.4; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; text-overflow:ellipsis;">
                             ${escapeHTML(s.title)}
                         </h2>
                     </div>
@@ -2278,25 +2278,36 @@ function buildFeelsPage() {
             if (lblComments) lblComments.innerText = formatCount(count);
         });
 
-        if (auth.currentUser) {
-            db.ref(`subscribers/${s.userId}/${auth.currentUser.uid}`).on('value', (snapshot) => {
-                const subBtn = document.getElementById(`short-sub-btn-${s.id}`);
-                if (subBtn) {
-                    if (snapshot.exists()) {
-                        subBtn.classList.add('subscribed');
-                        subBtn.innerHTML = '<i class="fas fa-check"></i>';
-                        subBtn.style.display = 'none';
-                    } else {
-                        subBtn.classList.remove('subscribed');
-                        subBtn.innerHTML = '<i class="fas fa-plus"></i>';
-                        subBtn.style.display = 'flex';
-                    }
-                }
-            });
-        }
     });
 
     container.innerHTML = `<div class="feels-swiper">${html}</div>`;
+
+    // Bind subscription state AFTER the Feels DOM exists. This is required
+    // because the buttons are created by the template above.
+    if (auth.currentUser) {
+        activeFeelsList.forEach(s => {
+            if (!s.userId) return;
+            const subBtn = document.getElementById(`short-sub-btn-${s.id}`);
+            if (!subBtn) return;
+            db.ref(`subscribers/${s.userId}/${auth.currentUser.uid}`).on('value', (snapshot) => {
+                const btn = document.getElementById(`short-sub-btn-${s.id}`);
+                if (!btn) return;
+                // Already subscribed: hide BOTH + and tick; keep only avatar visible.
+                if (snapshot.exists()) {
+                    btn.classList.add('subscribed');
+                    btn.innerHTML = '';
+                    btn.style.display = 'none';
+                    btn.setAttribute('aria-hidden', 'true');
+                } else {
+                    btn.classList.remove('subscribed');
+                    btn.innerHTML = '<i class="fas fa-plus"></i>';
+                    btn.style.display = 'flex';
+                    btn.removeAttribute('aria-hidden');
+                }
+            });
+        });
+    }
+
     initFeelsObserver();
     setupDoubleTapListeners();
     bindFeelsVideoEvents();
@@ -2576,9 +2587,14 @@ function handleFeelsInfoClick(event, shortId, action) {
     }
     playUI('click');
     triggerHapticFeedback();
+    // Lock the interaction to the Feels the user actually tapped. Never
+    // navigate the swiper to another/next Feels because of a title/comment tap.
     keepFeelsVideoActive(shortId);
-    // Feels title intentionally does not open the description.
-    if (action === 'comment') {
+
+    if (action === 'title') {
+        // Title tap opens the description sheet while keeping this Feels active.
+        openShortDescBottomSheet(shortId);
+    } else if (action === 'comment') {
         openShortComments(shortId);
     }
 }
@@ -2589,8 +2605,10 @@ function openShortComments(shortId) {
     triggerHapticFeedback();
     currentActiveMovie = allFeels.find(s => s.id === shortId);
     if (!currentActiveMovie) return;
-    // Open comments without registering/loading the watch page, so the active Feels stays visible.
+    // Open comments as a modal only; never load/navigate to another Feels.
+    const activeId = shortId;
     openCommentModal();
+    requestAnimationFrame(() => keepFeelsVideoActive(activeId));
 }
 
 // =========================================================

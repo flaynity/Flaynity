@@ -2164,21 +2164,15 @@ const feelsSubscriptionListeners = {};
 const feelsLikedByUser = {};
 const feelsCommentsCache = {};
 let feelsLastPlayedId = null;
+let feelsPendingRestoreId = null;
+const feelsLastPlayedByMode = { 'for-you': null, 'subscribe': null };
 
 function triggerFeelsHaptic(pattern = 12) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} }
-function getCurrentVisibleFeelsId() {
+function getCurrentVisibleFeelsId(mode = feelsFeedMode) {
     const swiper = document.querySelector('#feels-swiper-container .feels-swiper');
-    if (!swiper) return feelsLastPlayedId;
+    if (!swiper) return feelsLastPlayedByMode[mode] || feelsLastPlayedId;
     const slides = Array.from(swiper.querySelectorAll('.short-slide'));
-    if (!slides.length) return feelsLastPlayedId;
-
-    // Prefer the Feels whose video is actually playing. This avoids saving a
-    // stale/adjacent slide when switching between For You and Subscribe.
-    const playingSlide = slides.find(slide => {
-        const video = slide.querySelector('video');
-        return video && !video.paused && !video.ended && video.readyState >= 2;
-    });
-    if (playingSlide) return playingSlide.getAttribute('data-shortid') || feelsLastPlayedId;
+    if (!slides.length) return feelsLastPlayedByMode[mode] || feelsLastPlayedId;
 
     let best = null;
     let bestDistance = Infinity;
@@ -2192,9 +2186,9 @@ function getCurrentVisibleFeelsId() {
         }
     });
     if (best && bestDistance < swiper.clientHeight * 0.55) {
-        return best.getAttribute('data-shortid') || feelsLastPlayedId;
+        return best.getAttribute('data-shortid') || feelsLastPlayedByMode[mode] || feelsLastPlayedId;
     }
-    return feelsLastPlayedId;
+    return feelsLastPlayedByMode[mode] || feelsLastPlayedId;
 }
 
 function scrollFeelsToSlide(swiper, slide, behavior = 'auto') {
@@ -2217,11 +2211,18 @@ function setFeelsFeedMode(mode) {
         return;
     }
 
-    // Keep one global playback identity across both feeds. If a Feels was
-    // played in Subscribe and the user returns to For You, that exact Feels
-    // should be selected automatically (and vice versa).
-    const visibleId = getCurrentVisibleFeelsId();
-    if (visibleId) feelsLastPlayedId = visibleId;
+    // Remember the last Feels independently for each feed. Switching to
+    // Subscribe must not replace the For You position, and switching back
+    // must restore the last Feels from For You (and vice versa).
+    const visibleId = getCurrentVisibleFeelsId(feelsFeedMode);
+    if (visibleId) {
+        feelsLastPlayedByMode[feelsFeedMode] = visibleId;
+        feelsLastPlayedId = visibleId;
+    }
+    // Freeze the exact Feels being switched away from. During the rebuild,
+    // IntersectionObserver may briefly see the first slide and must not
+    // overwrite this selection before it is restored in the new feed.
+    feelsPendingRestoreId = feelsLastPlayedByMode[nextMode] || null;
 
     feelsFeedMode = nextMode;
     triggerFeelsHaptic(12);
@@ -2236,23 +2237,20 @@ function setFeelsFeedMode(mode) {
         requestAnimationFrame(() => {
             const swiper = document.querySelector('#feels-swiper-container .feels-swiper');
             if (!swiper) return;
-
-            // Always establish the new feed's scroll position explicitly.
-            // This prevents the first Feels from inheriting the previous
-            // feed/page scroll offset and appearing slightly above the screen.
-            swiper.style.overflowAnchor = 'none';
-            swiper.scrollTop = 0;
-
-            const target = feelsLastPlayedId
-                ? document.getElementById(`slide-short-${feelsLastPlayedId}`)
+            const restoreId = feelsPendingRestoreId || feelsLastPlayedByMode[nextMode] || null;
+            const target = restoreId
+                ? document.getElementById(`slide-short-${restoreId}`)
                 : null;
             const targetSlide = target || swiper.querySelector('.short-slide');
             if (targetSlide) {
                 scrollFeelsToSlide(swiper, targetSlide, 'auto');
                 currentActiveFeelsIdx = Array.from(swiper.querySelectorAll('.short-slide')).indexOf(targetSlide);
                 feelsLastPlayedId = targetSlide.getAttribute('data-shortid') || feelsLastPlayedId;
+                feelsLastPlayedByMode[nextMode] = feelsLastPlayedId;
+                feelsPendingRestoreId = null;
                 optimizeFeelsMemoryAndPreload(currentActiveFeelsIdx);
             }
+            feelsPendingRestoreId = null;
             requestAnimationFrame(() => swiper.classList.remove('feels-switching'));
         });
     }, 90);
@@ -2546,6 +2544,13 @@ function bindFeelsVideoEvents() {
         video.style.background = 'transparent';
 
         video.onplay = () => {
+            // Playback is the authoritative selection: switching feeds must
+            // restore the exact Feels the user was watching, not merely the
+            // first slide that happened to intersect during the rebuild.
+            if (!feelsPendingRestoreId) {
+                feelsLastPlayedId = shortId;
+                feelsLastPlayedByMode[feelsFeedMode] = shortId;
+            }
             const disc = document.getElementById(`music-disc-${shortId}`);
             if (disc) disc.style.animationPlayState = 'running';
         };
@@ -2787,32 +2792,12 @@ function openShortComments(shortId) {
     }
     activeCommentsRef.on('value', snapshot => {
         const commentsObj = snapshot.val() || {};
-        const movieId = currentActiveMovie ? currentActiveMovie.id : shortId;
-        const count = Object.keys(commentsObj).length;
-        feelsCommentsCache[movieId] = commentsObj;
-
-        // Keep the Feels counter and the comment modal header in sync with the
-        // exact Feels currently open, including immediately after posting.
-        const countEl = document.getElementById(`short-comments-count-${movieId}`);
-        if (countEl) countEl.innerText = formatCount(count);
-        const modalCount = document.getElementById('modal-comment-count');
-        if (modalCount) modalCount.innerText = formatCount(count);
-
-        try {
-            const cacheKey = `flaynity_stats_cache_${movieId}`;
-            let currCache = JSON.parse(localStorage.getItem(cacheKey) || '{"likes": 0, "comments": 0}');
-            currCache.comments = count;
-            localStorage.setItem(cacheKey, JSON.stringify(currCache));
-        } catch (e) {}
-
+        const countEl = document.getElementById(`short-comments-count-${currentActiveMovie.id}`);
+        if (countEl) countEl.innerText = formatCount(Object.keys(commentsObj).length);
         renderCommentList(commentsObj);
     });
     openCommentModal();
-    requestAnimationFrame(() => {
-        keepFeelsVideoActive(shortId);
-        const input = document.getElementById('comment-input');
-        if (input) input.focus({ preventScroll: true });
-    });
+    requestAnimationFrame(() => keepFeelsVideoActive(shortId));
 }
 
 // =========================================================
@@ -2999,7 +2984,10 @@ function initFeelsObserver() {
                     const activeIdx = slides.indexOf(entry.target);
                     if (activeIdx !== -1 && activeIdx !== currentActiveFeelsIdx) {
                         currentActiveFeelsIdx = activeIdx;
-                        feelsLastPlayedId = shortId;
+                        if (!feelsPendingRestoreId) {
+                feelsLastPlayedId = shortId;
+                feelsLastPlayedByMode[feelsFeedMode] = shortId;
+            }
                         optimizeFeelsMemoryAndPreload(activeIdx);
                     }
 
@@ -3617,27 +3605,6 @@ function submitComment() {
             .then(() => {
                 if (input) input.value = "";
                 showNotification("Comment posted!", "success");
-
-                // The realtime listener normally updates this immediately;
-                // also refresh the active Feels cache/count directly so the
-                // newly posted comment is visible without waiting for a
-                // second UI rebuild.
-                db.ref(`movie_comments/${movieId}`).once('value').then(snapshot => {
-                    const commentsObj = snapshot.val() || {};
-                    feelsCommentsCache[movieId] = commentsObj;
-                    const count = Object.keys(commentsObj).length;
-                    const countEl = document.getElementById(`short-comments-count-${movieId}`);
-                    if (countEl) countEl.innerText = formatCount(count);
-                    const modalCount = document.getElementById('modal-comment-count');
-                    if (modalCount) modalCount.innerText = formatCount(count);
-                    renderCommentList(commentsObj);
-                    try {
-                        const cacheKey = `flaynity_stats_cache_${movieId}`;
-                        let currCache = JSON.parse(localStorage.getItem(cacheKey) || '{"likes": 0, "comments": 0}');
-                        currCache.comments = count;
-                        localStorage.setItem(cacheKey, JSON.stringify(currCache));
-                    } catch (e) {}
-                }).catch(() => {});
             })
             .catch(err => { showNotification("Failed to post comment", "error"); });
     });

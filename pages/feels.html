@@ -95,6 +95,12 @@
         .short-channel-subscribe-btn.subscribed {
             background: #ff3040;
         }
+        .short-channel-subscribe-btn {
+            will-change: transform, opacity;
+        }
+        .short-channel-subscribe-btn i {
+            font-size: 11px;
+        }
         .short-channel-subscribe-btn.subscribed i {
             animation: subscribeTickPop 0.32s cubic-bezier(0.175,0.885,0.32,1.275);
         }
@@ -116,6 +122,10 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.4);
         }
         .short-action-btn-tiktok:active { transform: scale(0.8) rotate(-15deg); }
+        .short-action-btn-tiktok i {
+            color: #FFFFFF !important;
+            font-weight: 900 !important;
+        }
         .short-action-btn-tiktok i.liked {
             color: #FF2E55 !important;
             animation: tiktokHeartPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.5) forwards;
@@ -124,6 +134,11 @@
             0% { transform: scale(0.5); }
             50% { transform: scale(1.3); }
             100% { transform: scale(1.0); }
+        }
+
+        .short-action-btn-tiktok-other i {
+            color: #FFFFFF !important;
+            font-weight: 900 !important;
         }
 
         .short-action-btn-tiktok-other {
@@ -159,6 +174,12 @@
         .short-channel-handle {
             color: #FFFFFF !important;
             text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
+        }
+        .short-channel-name {
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .short-title-text {
             color: #FFFFFF !important;
@@ -315,33 +336,5 @@
 </style></head><body>
 <div class="tab-content" id="feels-tab" style="padding:0;">
 <div id="feels-swiper-container" style="height:100%; width:100%;"></div>
-</div>
-<div class="premium-download-modal" id="short-desc-bottom-sheet" style="z-index: 1900;">
-<div class="premium-download-content" style="max-height: 50vh;">
-<div class="drag-handle-line" id="short-desc-drag-handle"></div>
-<div class="download-modal-header">
-<h3>Description</h3>
-<button class="close-download-modal" onclick="closeShortDescBottomSheet()"><i class="fas fa-times"></i></button>
-</div>
-<div class="download-modal-scrollable" style="padding-bottom: 24px;">
-<h2 id="short-sheet-full-title" style="font-size: 1.15rem; font-weight: 800; margin: 0 0 8px 0; color: var(--text-main);">Title</h2>
-<p id="short-sheet-hashtags" style="font-size: 0.9rem; color: var(--primary); font-weight: 700; margin: 0 0 12px 0;">Hashtags</p>
-<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: var(--bg-color); padding: 12px; border-radius: 12px; margin-bottom: 16px;">
-<div style="text-align: center;">
-<span style="font-size: 0.72rem; color: var(--text-muted); display: block; font-weight: 700;">Views</span>
-<span id="short-sheet-views" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">0</span>
-</div>
-<div style="text-align: center; border-left: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border);">
-<span style="font-size: 0.72rem; color: var(--text-muted); display: block; font-weight: 700;">Likes</span>
-<span id="short-sheet-likes" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">0</span>
-</div>
-<div style="text-align: center;">
-<span style="font-size: 0.72rem; color: var(--text-muted); display: block; font-weight: 700;">Uploaded</span>
-<span id="short-sheet-uploaded" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">Just Now</span>
-</div>
-</div>
-<p id="short-sheet-description" style="font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); white-space: pre-wrap; margin: 0;"></p>
-</div>
-</div>
 </div>
 </body></html>

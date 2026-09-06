@@ -449,12 +449,13 @@
         .nav-create-circle:active {
             transform: none !important;
             background-color: var(--border-color) !important; 
-        }
-
-        .nav-create-circle svg {
-            width: 20px;
-            height: 20px;
-            color: var(--text-main);
+        }        
+        .nav-create-circle img {
+            width: 36px;
+            height: 36px;
+            display: block;
+            object-fit: cover;
+            border-radius: 50%;
         }
 
         .nav-avatar-circle {
@@ -1344,9 +1345,7 @@
 </div>
 <div class="nav-item" id="nav-create" onclick="openCreateBottomSheet(); playUI('click')" style="height: 100%; display: flex; align-items: center; justify-content: center;">
 <div class="nav-create-circle">
-<svg fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"></path>
-</svg>
+<img src="assets/upload-icon.png" alt="Upload">
 </div>
 </div>
 <div class="nav-item" id="nav-search" onclick="switchTab('search')">

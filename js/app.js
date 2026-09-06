@@ -2142,13 +2142,20 @@ function playFeelsSlide(shortId, resetTime = true) {
 }
 
 function openShortFromHome(shortId) {
+    const targetId = String(shortId);
+    // Lock the exact Home Feels before navigation so the first slide cannot
+    // become active while the Feels tab is being shown/rebuilt.
+    feelsProgrammaticTargetId = targetId;
+    feelsProgrammaticTargetUntil = Date.now() + 1500;
     switchTab('feels');
-    buildFeelsPage();
-    setTimeout(() => {
-        if (!playFeelsSlide(String(shortId), true)) {
-            requestAnimationFrame(() => playFeelsSlide(String(shortId), true));
+
+    // AppNavigation builds the Feels tab synchronously when needed. Activate
+    // the exact tapped Feels directly; do not wait 50ms for another slide.
+    requestAnimationFrame(() => {
+        if (!playFeelsSlide(targetId, true)) {
+            requestAnimationFrame(() => playFeelsSlide(targetId, true));
         }
-    }, 50);
+    });
 }
 
 function triggerHapticFeedback() {
@@ -2185,6 +2192,10 @@ const feelsLikedByUser = {};
 const feelsCommentsCache = {};
 let feelsLastPlayedId = null;
 let feelsPendingRestoreId = null;
+// Locks the exact Feels being opened/restored so IntersectionObserver cannot
+// temporarily select the first slide during a DOM rebuild.
+let feelsProgrammaticTargetId = null;
+let feelsProgrammaticTargetUntil = 0;
 const feelsLastPlayedByMode = { 'for-you': null, 'subscribe': null };
 
 function triggerFeelsHaptic(pattern = 12) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} }
@@ -2251,34 +2262,35 @@ function setFeelsFeedMode(mode) {
     const oldSwiper = document.querySelector('#feels-swiper-container .feels-swiper');
     if (oldSwiper) oldSwiper.classList.add('feels-switching');
 
-    setTimeout(() => {
+    // Lock the exact Feels to restore before rebuilding. This blocks the
+    // transient first-slide IntersectionObserver event during the switch.
+    const restoreId = feelsPendingRestoreId || feelsLastPlayedByMode[nextMode] || null;
+    feelsProgrammaticTargetId = restoreId ? String(restoreId) : null;
+    feelsProgrammaticTargetUntil = Date.now() + 1500;
+
+    requestAnimationFrame(() => {
         buildFeelsPage();
 
         requestAnimationFrame(() => {
             const swiper = document.querySelector('#feels-swiper-container .feels-swiper');
-            if (!swiper) return;
-            const restoreId = feelsPendingRestoreId || feelsLastPlayedByMode[nextMode] || null;
-            const target = restoreId
-                ? document.getElementById(`slide-short-${restoreId}`)
-                : null;
+            if (!swiper) {
+                feelsPendingRestoreId = null;
+                return;
+            }
+            const target = restoreId ? document.getElementById(`slide-short-${restoreId}`) : null;
             const targetSlide = target || swiper.querySelector('.short-slide');
             if (targetSlide) {
                 const targetId = targetSlide.getAttribute('data-shortid');
-                scrollFeelsToSlide(swiper, targetSlide, 'auto');
-                currentActiveFeelsIdx = Array.from(swiper.querySelectorAll('.short-slide')).indexOf(targetSlide);
-                feelsLastPlayedId = targetId || feelsLastPlayedId;
-                feelsLastPlayedByMode[nextMode] = feelsLastPlayedId;
+                if (targetId) {
+                    feelsProgrammaticTargetId = String(targetId);
+                    feelsProgrammaticTargetUntil = Date.now() + 1500;
+                    playFeelsSlide(targetId, false);
+                }
                 feelsPendingRestoreId = null;
-                optimizeFeelsMemoryAndPreload(currentActiveFeelsIdx);
-                // Switching between For You and Subscribe must immediately
-                // start the restored/selected Feels instead of waiting for a
-                // later observer tick.
-                if (targetId) playFeelsSlide(targetId, false);
             }
-            feelsPendingRestoreId = null;
             requestAnimationFrame(() => swiper.classList.remove('feels-switching'));
         });
-    }, 90);
+    });
 }
 
 function updateFeelsModeButtons() {
@@ -2503,6 +2515,21 @@ function buildFeelsPage() {
     initFeelsObserver();
     setupDoubleTapListeners();
     bindFeelsVideoEvents();
+
+    // Immediately activate an explicitly requested Home/mode-switch target.
+    // This avoids the initial observer pass picking another Feels first.
+    if (feelsProgrammaticTargetId) {
+        const targetId = String(feelsProgrammaticTargetId);
+        if (document.getElementById(`slide-short-${targetId}`)) {
+            playFeelsSlide(targetId, true);
+        }
+    } else if (currentActiveFeelsIdx < 0) {
+        const firstSlide = container.querySelector('.short-slide');
+        if (firstSlide) {
+            const firstId = firstSlide.getAttribute('data-shortid');
+            if (firstId) playFeelsSlide(firstId, true);
+        }
+    }
 
     const uniqueUserIds = new Set();
     activeFeelsList.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
@@ -3014,14 +3041,26 @@ function initFeelsObserver() {
 
             if (video) {
                 if (entry.isIntersecting) {
+                    // Ignore transient intersections from other slides while a
+                    // specific Feels is being opened/restored.
+                    if (feelsProgrammaticTargetId) {
+                        if (Date.now() <= feelsProgrammaticTargetUntil && String(shortId) !== String(feelsProgrammaticTargetId)) {
+                            return;
+                        }
+                        if (String(shortId) === String(feelsProgrammaticTargetId) || Date.now() > feelsProgrammaticTargetUntil) {
+                            feelsProgrammaticTargetId = null;
+                            feelsProgrammaticTargetUntil = 0;
+                        }
+                    }
+
                     const slides = Array.from(document.querySelectorAll('.short-slide'));
                     const activeIdx = slides.indexOf(entry.target);
                     if (activeIdx !== -1 && activeIdx !== currentActiveFeelsIdx) {
                         currentActiveFeelsIdx = activeIdx;
                         if (!feelsPendingRestoreId) {
-                feelsLastPlayedId = shortId;
-                feelsLastPlayedByMode[feelsFeedMode] = shortId;
-            }
+                            feelsLastPlayedId = shortId;
+                            feelsLastPlayedByMode[feelsFeedMode] = shortId;
+                        }
                         optimizeFeelsMemoryAndPreload(activeIdx);
                     }
 

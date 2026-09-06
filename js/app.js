@@ -2149,13 +2149,15 @@ function openShortFromHome(shortId) {
     feelsProgrammaticTargetUntil = Date.now() + 1500;
     switchTab('feels');
 
-    // AppNavigation builds the Feels tab synchronously when needed. Activate
-    // the exact tapped Feels directly; do not wait 50ms for another slide.
-    requestAnimationFrame(() => {
-        if (!playFeelsSlide(targetId, true)) {
-            requestAnimationFrame(() => playFeelsSlide(targetId, true));
-        }
-    });
+    // AppNavigation.syncUI() builds the Feels DOM synchronously when the tab
+    // is opened. Activate the exact tapped Feels SYNCHRONOUSLY, before the
+    // IntersectionObserver gets its first callback. Waiting for a frame lets
+    // the observer see A/B/C/D first, which makes those Feels briefly play
+    // while the swiper moves to the user's tapped Feels (for example E).
+    // Never animate through the intermediate Feels on a Home-card open.
+    if (!playFeelsSlide(targetId, true)) {
+        feelsProgrammaticTargetUntil = Date.now() + 3000;
+    }
 }
 
 function triggerHapticFeedback() {
@@ -2224,11 +2226,19 @@ function getCurrentVisibleFeelsId(mode = feelsFeedMode) {
 
 function scrollFeelsToSlide(swiper, slide, behavior = 'auto') {
     if (!swiper || !slide) return;
-    // Never use scrollIntoView here. It can scroll the page/window itself,
-    // which makes the first Feels appear to jump upward when changing feeds.
+    // Never use scrollIntoView here. It can scroll the page/window itself.
+    // Home-card opens must be an instant jump to the tapped Feels, not a
+    // smooth traversal through every Feels before it.
     const top = slide.offsetTop;
     try {
-        swiper.scrollTo({ top, behavior });
+        if (behavior === 'auto') {
+            const previousBehavior = swiper.style.scrollBehavior;
+            swiper.style.scrollBehavior = 'auto';
+            swiper.scrollTop = top;
+            swiper.style.scrollBehavior = previousBehavior;
+        } else {
+            swiper.scrollTo({ top, behavior });
+        }
     } catch (e) {
         swiper.scrollTop = top;
     }

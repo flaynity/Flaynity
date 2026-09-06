@@ -433,29 +433,30 @@
         }
 
         .nav-create-circle {
-            background-color: var(--border-color);
+            background: transparent !important;
             color: var(--text-main);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
+            width: 44px;
+            height: 30px;
+            border-radius: 0 !important;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
-            overflow: hidden;
+            overflow: visible !important;
             transition: none !important;
         }
 
         .nav-create-circle:active {
             transform: none !important;
-            background-color: var(--border-color) !important; 
+            background: transparent !important;
         }        
         .nav-create-circle img {
-            width: 100%;
-            height: 100%;
+            width: 44px !important;
+            height: 30px !important;
             display: block;
-            object-fit: contain;
-            border-radius: 50%;
+            object-fit: fill !important;
+            border-radius: 0 !important;
+            max-width: none !important;
         }
 
         .nav-avatar-circle {

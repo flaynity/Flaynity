@@ -2111,44 +2111,63 @@ function togglePostTitleExpand(postId) {
     }
 }
 
-function playFeelsSlide(shortId, resetTime = true) {
-    const targetSlide = document.getElementById(`slide-short-${shortId}`);
-    if (!targetSlide) return false;
-
-    const swiper = targetSlide.closest('.feels-swiper');
-    // Only scroll the Feels feed itself. scrollIntoView() can move the whole
-    // app/document, which makes a Feels selected from Home jump unexpectedly.
-    if (swiper) scrollFeelsToSlide(swiper, targetSlide, 'auto');
-
-    const slides = Array.from(document.querySelectorAll('#feels-swiper-container .short-slide'));
-    currentActiveFeelsIdx = slides.indexOf(targetSlide);
-    feelsLastPlayedId = shortId;
-    feelsLastPlayedByMode[feelsFeedMode] = shortId;
-
-    const video = targetSlide.querySelector('video');
-    if (video) {
-        if (resetTime) video.currentTime = 0;
-        video.muted = false;
-        const play = () => video.play().catch(() => {
-            video.muted = true;
-            video.play().catch(() => {});
-        });
-        if (video.readyState >= 2) play();
-        else video.addEventListener('canplay', play, { once: true });
-    }
-
-    optimizeFeelsMemoryAndPreload(currentActiveFeelsIdx);
-    return true;
-}
-
 function openShortFromHome(shortId) {
+    // Open exactly the Feels the user tapped. Do not rebuild the swiper twice
+    // and do not use scrollIntoView(), because that can make the browser/WebView
+    // animate through several Feels before the requested item becomes active.
+    const targetId = String(shortId);
+    feelsPendingRestoreId = targetId;
+    feelsNavigationLock = true;
+    feelsNavigationTargetId = targetId;
+
     switchTab('feels');
-    buildFeelsPage();
-    setTimeout(() => {
-        if (!playFeelsSlide(String(shortId), true)) {
-            requestAnimationFrame(() => playFeelsSlide(String(shortId), true));
+
+    const activateTarget = () => {
+        const swiper = document.querySelector('#feels-swiper-container .feels-swiper');
+        const targetSlide = document.getElementById(`slide-short-${targetId}`);
+        if (!swiper || !targetSlide) return false;
+
+        currentActiveFeelsIdx = Array.from(swiper.querySelectorAll('.short-slide')).indexOf(targetSlide);
+        if (currentActiveFeelsIdx < 0) return false;
+
+        // Only the Feels feed's own scroller is allowed to move. The page/window
+        // itself must never be scrolled while opening a Feels from Home.
+        scrollFeelsToSlide(swiper, targetSlide, 'auto');
+        feelsLastPlayedId = targetId;
+        feelsLastPlayedByMode[feelsFeedMode] = targetId;
+
+        optimizeFeelsMemoryAndPreload(currentActiveFeelsIdx);
+        const video = targetSlide.querySelector('video');
+        if (video) {
+            video.currentTime = 0;
+            video.muted = false;
+            const playTarget = () => video.play().catch(() => {
+                video.muted = true;
+                video.play().catch(() => {});
+            });
+            if (video.readyState >= 2) playTarget();
+            else video.addEventListener('canplay', playTarget, { once: true });
         }
-    }, 50);
+
+        feelsPendingRestoreId = null;
+        requestAnimationFrame(() => {
+            feelsNavigationLock = false;
+            feelsNavigationTargetId = null;
+        });
+        return true;
+    };
+
+    let attempts = 0;
+    const waitForTarget = () => {
+        if (activateTarget()) return;
+        if (++attempts < 30) setTimeout(waitForTarget, 30);
+        else {
+            feelsNavigationLock = false;
+            feelsNavigationTargetId = null;
+            feelsPendingRestoreId = null;
+        }
+    };
+    requestAnimationFrame(waitForTarget);
 }
 
 function triggerHapticFeedback() {
@@ -2243,6 +2262,8 @@ function setFeelsFeedMode(mode) {
     // IntersectionObserver may briefly see the first slide and must not
     // overwrite this selection before it is restored in the new feed.
     feelsPendingRestoreId = feelsLastPlayedByMode[nextMode] || null;
+    feelsNavigationLock = true;
+    feelsNavigationTargetId = feelsPendingRestoreId;
 
     feelsFeedMode = nextMode;
     triggerFeelsHaptic(12);
@@ -2264,19 +2285,19 @@ function setFeelsFeedMode(mode) {
             const targetSlide = target || swiper.querySelector('.short-slide');
             if (targetSlide) {
                 const targetId = targetSlide.getAttribute('data-shortid');
+                feelsNavigationTargetId = targetId;
                 scrollFeelsToSlide(swiper, targetSlide, 'auto');
                 currentActiveFeelsIdx = Array.from(swiper.querySelectorAll('.short-slide')).indexOf(targetSlide);
                 feelsLastPlayedId = targetId || feelsLastPlayedId;
                 feelsLastPlayedByMode[nextMode] = feelsLastPlayedId;
-                feelsPendingRestoreId = null;
                 optimizeFeelsMemoryAndPreload(currentActiveFeelsIdx);
-                // Switching between For You and Subscribe must immediately
-                // start the restored/selected Feels instead of waiting for a
-                // later observer tick.
-                if (targetId) playFeelsSlide(targetId, false);
             }
             feelsPendingRestoreId = null;
-            requestAnimationFrame(() => swiper.classList.remove('feels-switching'));
+            requestAnimationFrame(() => {
+                swiper.classList.remove('feels-switching');
+                feelsNavigationLock = false;
+                feelsNavigationTargetId = null;
+            });
         });
     }, 90);
 }
@@ -2812,22 +2833,13 @@ function openShortComments(shortId) {
     keepFeelsVideoActive(shortId);
     if (activeCommentsRef) { try { activeCommentsRef.off(); } catch(e) {} }
     activeCommentsRef = db.ref(`movie_comments/${currentActiveMovie.id}`);
-    const initialComments = feelsCommentsCache[currentActiveMovie.id] || {};
-    renderCommentList(initialComments);
-    const initialCount = Object.keys(initialComments).length;
-    const initialCountEl = document.getElementById(`short-comments-count-${currentActiveMovie.id}`);
-    if (initialCountEl) initialCountEl.innerText = formatCount(initialCount);
-    const initialModalCount = document.getElementById('modal-comment-count');
-    if (initialModalCount) initialModalCount.innerText = formatCount(initialCount);
-
+    if (feelsCommentsCache[currentActiveMovie.id]) {
+        renderCommentList(feelsCommentsCache[currentActiveMovie.id]);
+    }
     activeCommentsRef.on('value', snapshot => {
         const commentsObj = snapshot.val() || {};
-        const count = Object.keys(commentsObj).length;
-        feelsCommentsCache[currentActiveMovie.id] = commentsObj;
         const countEl = document.getElementById(`short-comments-count-${currentActiveMovie.id}`);
-        if (countEl) countEl.innerText = formatCount(count);
-        const modalCount = document.getElementById('modal-comment-count');
-        if (modalCount) modalCount.innerText = formatCount(count);
+        if (countEl) countEl.innerText = formatCount(Object.keys(commentsObj).length);
         renderCommentList(commentsObj);
     });
     openCommentModal();
@@ -2934,6 +2946,11 @@ function toggleClipSubscribe(channelId, buttonEl) {
 // FEELS MEMORY OPTIMIZATION & INTERSECTION OBSERVER
 // =========================================================
 let currentActiveFeelsIdx = -1;
+// While opening a Feels directly (Home tap or feed switch), IntersectionObserver
+// is temporarily prevented from selecting intermediate slides during the DOM
+// rebuild/scroll operation.
+let feelsNavigationLock = false;
+let feelsNavigationTargetId = null;
 
 function attachSmartAdaptiveSource(videoElement, url, shortId) {
     if (url && url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
@@ -3013,6 +3030,14 @@ function initFeelsObserver() {
             const progressBar = entry.target.querySelector(`#short-progress-bar-${shortId}`);
 
             if (video) {
+                // During direct navigation, ignore every intermediate Feels.
+                // This is the key guard against auto-scrolling/auto-playing
+                // multiple Feels before the user's selected Feels starts.
+                if (feelsNavigationLock && shortId !== String(feelsNavigationTargetId)) {
+                    video.pause();
+                    return;
+                }
+
                 if (entry.isIntersecting) {
                     const slides = Array.from(document.querySelectorAll('.short-slide'));
                     const activeIdx = slides.indexOf(entry.target);
@@ -3638,19 +3663,6 @@ function submitComment() {
         db.ref(`movie_comments/${movieId}`).push(commentData)
             .then(() => {
                 if (input) input.value = "";
-
-                // Update the open Feels comment UI immediately. The realtime
-                // listener will reconcile this with Firebase as well.
-                const cached = feelsCommentsCache[movieId] || {};
-                const optimisticKey = `__pending_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-                cached[optimisticKey] = commentData;
-                feelsCommentsCache[movieId] = cached;
-                renderCommentList(cached);
-                const count = Object.keys(cached).length;
-                const countEl = document.getElementById(`short-comments-count-${movieId}`);
-                if (countEl) countEl.innerText = formatCount(count);
-                const modalCount = document.getElementById('modal-comment-count');
-                if (modalCount) modalCount.innerText = formatCount(count);
                 showNotification("Comment posted!", "success");
             })
             .catch(err => { showNotification("Failed to post comment", "error"); });

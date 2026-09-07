@@ -2390,7 +2390,7 @@ function buildFeelsPage() {
                 <div class="short-buffer-spinner" id="short-spinner-${s.id}"></div>
                 <div class="short-play-pause-overlay" id="short-pp-overlay-${s.id}"></div>
 
-                <video class="short-video-el" loop playsinline webkit-playsinline poster="${s.poster || ''}" preload="metadata"></video>
+                <video class="short-video-el" loop playsinline webkit-playsinline poster="${s.poster || ''}" preload="auto" fetchpriority="high"></video>
 
                 <div class="short-progress-container">
                     <div class="short-progress-bar" id="short-progress-bar-${s.id}"></div>
@@ -2974,23 +2974,54 @@ function toggleClipSubscribe(channelId, buttonEl) {
 // =========================================================
 let currentActiveFeelsIdx = -1;
 
-function attachSmartAdaptiveSource(videoElement, url, shortId) {
-    if (url && url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
-        if(hlsInstances[shortId]) {
-            hlsInstances[shortId].destroy();
+// Warm the CDN connection once so the first media request avoids avoidable
+// DNS/TLS connection setup latency in Android WebView.
+function warmFlaynityCDN() {
+    try {
+        const cdn = (typeof FLAYNITY_CDN_DOMAIN !== 'undefined') ? FLAYNITY_CDN_DOMAIN : 'https://cnd.flaynity.indevs.in';
+        if (!document.querySelector('link[data-flaynity-cdn-preconnect]')) {
+            const link = document.createElement('link');
+            link.rel = 'preconnect';
+            link.href = cdn;
+            link.crossOrigin = 'anonymous';
+            link.dataset.flaynityCdnPreconnect = '1';
+            document.head.appendChild(link);
         }
+    } catch (e) {}
+}
+
+warmFlaynityCDN();
+
+function attachSmartAdaptiveSource(videoElement, url, shortId) {
+    if (!videoElement || !url) return;
+
+    // Keep playback on the CDN origin and let the browser use HTTP Range requests.
+    // This avoids downloading the complete file before playback can begin.
+    videoElement.setAttribute('playsinline', '');
+    videoElement.setAttribute('webkit-playsinline', '');
+    videoElement.preload = 'auto';
+
+    if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
+        if(hlsInstances[shortId]) hlsInstances[shortId].destroy();
         const hls = new Hls({
-            maxBufferLength: 30,
-            maxMaxBufferLength: 600,
+            maxBufferLength: 20,
+            maxMaxBufferLength: 90,
+            backBufferLength: 15,
             enableWorker: true,
             lowLatencyMode: true,
-            capLevelToPlayerSize: true
+            capLevelToPlayerSize: true,
+            startLevel: -1,
+            maxBufferHole: 0.5,
+            abrEwmaDefaultEstimate: 2500000
         });
         hls.loadSource(url);
         hls.attachMedia(videoElement);
         hlsInstances[shortId] = hls;
     } else {
-        videoElement.src = url;
+        if (videoElement.src !== url) {
+            videoElement.src = url;
+            videoElement.load();
+        }
     }
 }
 
@@ -3008,13 +3039,20 @@ function optimizeFeelsMemoryAndPreload(activeIndex) {
                 video.setAttribute('poster', s.poster);
             }
 
+            const isActive = idx === activeIndex;
+            const isNext = idx === activeIndex + 1;
+            const isPrevious = idx === activeIndex - 1;
+            const shouldPreload = isActive || isNext;
+
             if (!video.getAttribute('src') && !hlsInstances[shortId]) {
                 attachSmartAdaptiveSource(video, s.videoLink, shortId);
-                video.preload = (idx === activeIndex) ? "auto" : "metadata";
             }
 
-            if (idx === activeIndex) {
-                video.preload = "auto";
+            // Active + next Short are aggressively warmed for near-instant swipes.
+            // Previous stays available without consuming another full preload.
+            video.preload = shouldPreload ? "auto" : "metadata";
+
+            if (isActive) {
                 video.muted = false;
                 let playPromise = video.play();
                 if (playPromise !== undefined) {
@@ -6396,7 +6434,7 @@ function flyFmt(s){ s=Math.floor(s||0); const h=Math.floor(s/3600),m=Math.floor(
 function flyBuildPlayerHTML(){
     return `
     <div class="fly-player-wrap" id="fly-player-wrap">
-        <video id="fly-video" class="fly-video" playsinline webkit-playsinline preload="auto"></video>
+        <video id="fly-video" class="fly-video" playsinline webkit-playsinline preload="auto" fetchpriority="high"></video>
         <img id="fly-poster" class="fly-poster" src="" onerror="this.style.display='none'">
 
         <div class="fly-buffering" id="fly-buffering"><div class="fly-spinner"></div></div>

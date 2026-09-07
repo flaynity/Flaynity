@@ -1297,7 +1297,8 @@ async function startS3DirectUpload(item) {
         const params = {
             Key: item.key,
             Body: item.file,
-            ContentType: item.file.type || 'video/mp4'
+            ContentType: item.file.type || 'video/mp4',
+            CacheControl: 'public, max-age=31536000, immutable'
         };
         
         const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
@@ -1320,7 +1321,8 @@ async function startS3DirectUpload(item) {
 
         await s3Upload.promise();
         
-        item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
+        // Store the public CDN URL in Firebase metadata (never the raw R2 URL).
+        item.videoUrl = `${FLAYNITY_CDN_DOMAIN}/${item.key}`;
         item.status = "processing";
         item.retryCount = 0;
         updateManagerUI();
@@ -1366,9 +1368,9 @@ async function runPostUploadProcessingSequence(item) {
         }
 
         if (finalThumbBlob && s3) {
-            const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg" };
+            const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg", CacheControl: "public, max-age=31536000, immutable" };
             await s3.putObject(thumbParams).promise();
-            item.thumbUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
+            item.thumbUrl = `${FLAYNITY_CDN_DOMAIN}/${item.thumbKey}`;
         } else {
             item.thumbUrl = item.thumbDataUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
         }
@@ -6248,8 +6250,16 @@ async function publishPremiumVideoOrShort(modeType) {
         return;
     }
 
+    const user = auth.currentUser;
+    if (!user || !user.uid) {
+        showNotification("Please sign in before uploading.", "error");
+        return;
+    }
+
     const uniqueId = "st_" + Date.now() + "_" + Math.floor(Math.random()*1000);
-    const fileKey = `uploads/${uniqueId}/${currentUploadFile.name.replace(/\s+/g, '_')}`;
+    const mediaFolder = isShort ? "shorts" : "videos";
+    const fileName = getMediaFileName(currentUploadFile, "mp4");
+    const fileKey = `${mediaFolder}/${user.uid}/${fileName}`;
     
     // Convert active trim percentage to actual duration if trimmed
     let finalDuration = currentUploadFrameMeta.duration;
@@ -6272,7 +6282,7 @@ async function publishPremiumVideoOrShort(modeType) {
         duration: finalDuration,
         thumbDataUrl: currentUploadFrameMeta.dataUrl,
         thumbBlob: currentUploadFrameMeta.blob, 
-        thumbKey: `uploads/${uniqueId}/thumbnail.jpg`,
+        thumbKey: `thumbnails/${user.uid}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`,
         createdAt: Date.now(),
         scheduledTime: visibility === 'Schedule' && scheduleDate ? new Date(scheduleDate).getTime() : 0
     };

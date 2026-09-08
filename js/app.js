@@ -1296,32 +1296,64 @@ async function triggerNextActiveUpload() {
 
 async function startS3DirectUpload(item) {
     if (!navigator.onLine) {
-        item.status = "paused"; updateManagerUI();
-        showNotification("Offline: Upload paused.", "error");
-        activeUploadsCount = Math.max(0, activeUploadsCount - 1); return;
+        item.status = 'paused'; updateManagerUI();
+        showNotification('Offline: Upload paused.', 'error');
+        activeUploadsCount = Math.max(0, activeUploadsCount - 1);
+        return;
     }
-    item.status = "uploading"; item.progress = item.progress || 0; updateManagerUI();
-    const startTime = Date.now();
+
+    item.status = 'uploading';
+    item.progress = item.progress || 0;
+    updateManagerUI();
+
     try {
-        const data = await uploadVideoToR2(item.file, item.type === 'video-short' ? 'feels' : 'videos', (pct, loaded, total) => {
-            if (item.status !== 'uploading') return;
-            item.progress = pct;
-            const elapsed = (Date.now() - startTime) / 1000;
-            if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
+        const result = await uploadVideoToFlaynity(item.file, item.type === 'video-short' ? 'feels' : 'video-long', {
+            title: item.title,
+            description: item.description,
+            visibility: item.visibility,
+            duration: item.duration,
+            onProgress: (loaded, total) => {
+                item.progress = total ? Math.round((loaded / total) * 85) : item.progress;
+                updateManagerUI();
+            }
+        });
+
+        item.mediaId = result.id || item.mediaId;
+        item.sourceKey = result.sourceKey || item.sourceKey;
+        item.videoUrl = result.videoUrl || result.hlsUrl || '';
+        item.status = 'processing';
+        item.progress = Math.max(item.progress, 85);
+        updateManagerUI();
+
+        const ready = await waitForMediaReady(item.mediaId, (state) => {
+            item.processingMsg = state.status === 'processing' ? 'Processing video...' : 'Queued for processing...';
+            item.progress = Math.min(99, Math.max(item.progress, 86));
             updateManagerUI();
         });
-        item.videoUrl = data;
-        item.key = data.replace(PUBLIC_R2_DOMAIN_PREFIX + '/', '');
-        item.status = "processing"; item.retryCount = 0; updateManagerUI();
+
+        Object.assign(item, {
+            videoUrl: ready.videoUrl || ready.hlsUrl || ready.cdnUrl || item.videoUrl,
+            hlsUrl: ready.hlsUrl || '',
+            qualityUrls: ready.qualityUrls || {},
+            sourceKey: ready.sourceKey || item.sourceKey,
+            status: 'processing'
+        });
         await runPostUploadProcessingSequence(item);
     } catch (err) {
-        if (!navigator.onLine) { item.status = "paused"; updateManagerUI(); showNotification("Connection lost. Upload paused.", "error"); }
-        else {
+        console.error('Secure upload error:', err);
+        if (!navigator.onLine) {
+            item.status = 'paused';
+            showNotification('Connection lost. Upload paused.', 'error');
+        } else {
             item.retryCount = (item.retryCount || 0) + 1;
-            if (item.retryCount <= 5) { item.status = "waiting"; updateManagerUI(); showNotification(`Network hiccup. Retrying (${item.retryCount}/5)...`, "error"); }
-            else { item.status = "failed"; updateManagerUI(); showNotification(`Upload failed: ${err.message}`, "error"); }
+            item.status = item.retryCount <= 5 ? 'waiting' : 'failed';
+            showNotification(item.retryCount <= 5 ? `Upload retrying (${item.retryCount}/5)...` : `Upload failed: ${err.message}`, 'error');
         }
-    } finally { activeUploadsCount = Math.max(0, activeUploadsCount - 1); triggerNextActiveUpload(); }
+        updateManagerUI();
+    } finally {
+        activeUploadsCount = Math.max(0, activeUploadsCount - 1);
+        triggerNextActiveUpload();
+    }
 }
 
 async function runPostUploadProcessingSequence(item) {
@@ -2979,12 +3011,10 @@ function attachSmartAdaptiveSource(videoElement, mediaOrUrl, shortId, quality) {
                 enableWorker: true,
                 lowLatencyMode: false,
                 capLevelToPlayerSize: true,
-                startLevel: 0,
-                abrEwmaFastLive: 1.0,
-                abrEwmaSlowLive: 3.0,
-                maxBufferLength: 12,
-                maxMaxBufferLength: 30,
-                backBufferLength: 6,
+                startLevel: -1,
+                maxBufferLength: 20,
+                maxMaxBufferLength: 90,
+                backBufferLength: 10,
                 fragLoadingMaxRetry: 3,
                 manifestLoadingMaxRetry: 3,
                 levelLoadingMaxRetry: 3
@@ -3019,10 +3049,7 @@ function preloadFeelsWindow(activeIndex) {
                 attachSmartAdaptiveSource(video, item, shortId);
             }
             video.preload = idx <= activeIndex + FLAYNITY_CDN_CONFIG.aggressiveFeelsWindow ? 'auto' : 'metadata';
-            // Do not issue manual Range warmups; HLS.js/CDN handles the initial segment efficiently.
-            if (idx > activeIndex + FLAYNITY_CDN_CONFIG.aggressiveFeelsWindow) {
-                try { video.preload = 'metadata'; } catch (e) {}
-            }
+            if (idx > activeIndex && idx <= end) warmMediaRange(url);
         } else {
             video.pause();
             video.removeAttribute('src');

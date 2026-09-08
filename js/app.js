@@ -1297,8 +1297,7 @@ async function startS3DirectUpload(item) {
         const params = {
             Key: item.key,
             Body: item.file,
-            ContentType: item.file.type || 'video/mp4',
-            CacheControl: 'public, max-age=31536000, immutable'
+            ContentType: item.file.type || 'video/mp4'
         };
         
         const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
@@ -1321,8 +1320,7 @@ async function startS3DirectUpload(item) {
 
         await s3Upload.promise();
         
-        // Store the public CDN URL in Firebase metadata (never the raw R2 URL).
-        item.videoUrl = `${FLAYNITY_CDN_DOMAIN}/${item.key}`;
+        item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
         item.status = "processing";
         item.retryCount = 0;
         updateManagerUI();
@@ -1368,9 +1366,9 @@ async function runPostUploadProcessingSequence(item) {
         }
 
         if (finalThumbBlob && s3) {
-            const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg", CacheControl: "public, max-age=31536000, immutable" };
+            const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg" };
             await s3.putObject(thumbParams).promise();
-            item.thumbUrl = `${FLAYNITY_CDN_DOMAIN}/${item.thumbKey}`;
+            item.thumbUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
         } else {
             item.thumbUrl = item.thumbDataUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
         }
@@ -2390,7 +2388,7 @@ function buildFeelsPage() {
                 <div class="short-buffer-spinner" id="short-spinner-${s.id}"></div>
                 <div class="short-play-pause-overlay" id="short-pp-overlay-${s.id}"></div>
 
-                <video class="short-video-el" loop playsinline webkit-playsinline poster="${s.poster || ''}" preload="auto" fetchpriority="high"></video>
+                <video class="short-video-el" loop playsinline webkit-playsinline poster="${s.poster || ''}" preload="metadata"></video>
 
                 <div class="short-progress-container">
                     <div class="short-progress-bar" id="short-progress-bar-${s.id}"></div>
@@ -2974,54 +2972,23 @@ function toggleClipSubscribe(channelId, buttonEl) {
 // =========================================================
 let currentActiveFeelsIdx = -1;
 
-// Warm the CDN connection once so the first media request avoids avoidable
-// DNS/TLS connection setup latency in Android WebView.
-function warmFlaynityCDN() {
-    try {
-        const cdn = (typeof FLAYNITY_CDN_DOMAIN !== 'undefined') ? FLAYNITY_CDN_DOMAIN : 'https://cnd.flaynity.indevs.in';
-        if (!document.querySelector('link[data-flaynity-cdn-preconnect]')) {
-            const link = document.createElement('link');
-            link.rel = 'preconnect';
-            link.href = cdn;
-            link.crossOrigin = 'anonymous';
-            link.dataset.flaynityCdnPreconnect = '1';
-            document.head.appendChild(link);
-        }
-    } catch (e) {}
-}
-
-warmFlaynityCDN();
-
 function attachSmartAdaptiveSource(videoElement, url, shortId) {
-    if (!videoElement || !url) return;
-
-    // Keep playback on the CDN origin and let the browser use HTTP Range requests.
-    // This avoids downloading the complete file before playback can begin.
-    videoElement.setAttribute('playsinline', '');
-    videoElement.setAttribute('webkit-playsinline', '');
-    videoElement.preload = 'auto';
-
-    if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
-        if(hlsInstances[shortId]) hlsInstances[shortId].destroy();
+    if (url && url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
+        if(hlsInstances[shortId]) {
+            hlsInstances[shortId].destroy();
+        }
         const hls = new Hls({
-            maxBufferLength: 20,
-            maxMaxBufferLength: 90,
-            backBufferLength: 15,
+            maxBufferLength: 30,
+            maxMaxBufferLength: 600,
             enableWorker: true,
             lowLatencyMode: true,
-            capLevelToPlayerSize: true,
-            startLevel: -1,
-            maxBufferHole: 0.5,
-            abrEwmaDefaultEstimate: 2500000
+            capLevelToPlayerSize: true
         });
         hls.loadSource(url);
         hls.attachMedia(videoElement);
         hlsInstances[shortId] = hls;
     } else {
-        if (videoElement.src !== url) {
-            videoElement.src = url;
-            videoElement.load();
-        }
+        videoElement.src = url;
     }
 }
 
@@ -3039,20 +3006,13 @@ function optimizeFeelsMemoryAndPreload(activeIndex) {
                 video.setAttribute('poster', s.poster);
             }
 
-            const isActive = idx === activeIndex;
-            const isNext = idx === activeIndex + 1;
-            const isPrevious = idx === activeIndex - 1;
-            const shouldPreload = isActive || isNext;
-
             if (!video.getAttribute('src') && !hlsInstances[shortId]) {
                 attachSmartAdaptiveSource(video, s.videoLink, shortId);
+                video.preload = (idx === activeIndex) ? "auto" : "metadata";
             }
 
-            // Active + next Short are aggressively warmed for near-instant swipes.
-            // Previous stays available without consuming another full preload.
-            video.preload = shouldPreload ? "auto" : "metadata";
-
-            if (isActive) {
+            if (idx === activeIndex) {
+                video.preload = "auto";
                 video.muted = false;
                 let playPromise = video.play();
                 if (playPromise !== undefined) {
@@ -6288,16 +6248,8 @@ async function publishPremiumVideoOrShort(modeType) {
         return;
     }
 
-    const user = auth.currentUser;
-    if (!user || !user.uid) {
-        showNotification("Please sign in before uploading.", "error");
-        return;
-    }
-
     const uniqueId = "st_" + Date.now() + "_" + Math.floor(Math.random()*1000);
-    const mediaFolder = isShort ? "shorts" : "videos";
-    const fileName = getMediaFileName(currentUploadFile, "mp4");
-    const fileKey = `${mediaFolder}/${user.uid}/${fileName}`;
+    const fileKey = `uploads/${uniqueId}/${currentUploadFile.name.replace(/\s+/g, '_')}`;
     
     // Convert active trim percentage to actual duration if trimmed
     let finalDuration = currentUploadFrameMeta.duration;
@@ -6320,7 +6272,7 @@ async function publishPremiumVideoOrShort(modeType) {
         duration: finalDuration,
         thumbDataUrl: currentUploadFrameMeta.dataUrl,
         thumbBlob: currentUploadFrameMeta.blob, 
-        thumbKey: `thumbnails/${user.uid}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`,
+        thumbKey: `uploads/${uniqueId}/thumbnail.jpg`,
         createdAt: Date.now(),
         scheduledTime: visibility === 'Schedule' && scheduleDate ? new Date(scheduleDate).getTime() : 0
     };
@@ -6434,7 +6386,7 @@ function flyFmt(s){ s=Math.floor(s||0); const h=Math.floor(s/3600),m=Math.floor(
 function flyBuildPlayerHTML(){
     return `
     <div class="fly-player-wrap" id="fly-player-wrap">
-        <video id="fly-video" class="fly-video" playsinline webkit-playsinline preload="auto" fetchpriority="high"></video>
+        <video id="fly-video" class="fly-video" playsinline webkit-playsinline preload="auto"></video>
         <img id="fly-poster" class="fly-poster" src="" onerror="this.style.display='none'">
 
         <div class="fly-buffering" id="fly-buffering"><div class="fly-spinner"></div></div>

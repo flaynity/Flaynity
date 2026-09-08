@@ -1295,116 +1295,45 @@ async function triggerNextActiveUpload() {
 }
 
 async function startS3DirectUpload(item) {
-    if (!navigator.onLine) {
-        item.status = 'paused'; updateManagerUI();
-        showNotification('Offline: Upload paused.', 'error');
-        activeUploadsCount = Math.max(0, activeUploadsCount - 1);
-        return;
-    }
-    item.status = 'uploading'; item.progress = item.progress || 0; updateManagerUI();
+    if (!navigator.onLine) { item.status='paused'; updateManagerUI(); showNotification('Offline: Upload paused.','error'); activeUploadsCount=Math.max(0,activeUploadsCount-1); return; }
+    item.status='uploading'; item.progress=item.progress||0; updateManagerUI();
     try {
-        const isShort = item.type === 'video-short';
-        const apiType = isShort ? 'feels' : 'video-long';
-        const session = await createUploadSession(item.file, apiType, 'video');
-        item.id = session.id; item.key = session.sourceKey;
-        await uploadToPresignedUrl(session.uploadUrl, item.file, (loaded, total) => {
-            item.progress = Math.round((loaded / total) * 90);
-            updateManagerUI();
-        });
-
-        item.status = 'processing'; item.progress = 92; updateManagerUI();
-        let thumbKey = '';
-        if (item.thumbBlob) {
-            const thumbFile = new File([item.thumbBlob], `${session.id}.jpg`, { type: 'image/jpeg' });
-            const thumbSession = await createUploadSession(thumbFile, 'thumbnails', 'image');
-            await uploadToPresignedUrl(thumbSession.uploadUrl, thumbFile);
-            await flaynityApiFetch('/v1/media/complete-upload', {
-                method: 'POST',
-                body: JSON.stringify({ id: thumbSession.id, sourceKey: thumbSession.sourceKey, uid: auth.currentUser.uid, type: 'thumbnails', mediaKind: 'image' })
-            });
-            thumbKey = thumbSession.sourceKey;
-            item.thumbKey = thumbKey;
-            item.thumbUrl = getFastMediaUrl(thumbKey);
-        } else {
-            item.thumbUrl = item.thumbDataUrl || '';
-        }
-
-        const completed = await flaynityApiFetch('/v1/media/complete-upload', {
-            method: 'POST',
-            body: JSON.stringify({ id: session.id, sourceKey: session.sourceKey, uid: auth.currentUser.uid, type: apiType, title: item.title, description: item.description, visibility: item.visibility, duration: item.duration, thumbKey, mediaKind: 'video' })
-        });
-        item.id = completed.id || session.id;
-        item.videoUrl = completed.videoUrl || '';
-        item.status = 'processing'; item.progress = 95; updateManagerUI();
-        await waitForMediaReady(item);
+        const mediaKind='video';
+        const created = await createAndUploadMedia(item.file, item.type === 'video-short' ? 'feels' : 'video', mediaKind, pct => { item.progress=pct; updateManagerUI(); });
+        item.id=created.id; item.key=created.sourceKey; item.uploadUrl=created.uploadUrl; item.status='processing'; item.progress=100; updateManagerUI();
         await runPostUploadProcessingSequence(item);
-    } catch (err) {
-        console.error('Upload error:', err);
-        item.retryCount = (item.retryCount || 0) + 1;
-        if (item.retryCount <= 3 && navigator.onLine) {
-            item.status = 'waiting'; updateManagerUI();
-            showNotification(`Upload failed. Retrying (${item.retryCount}/3)...`, 'error');
-        } else {
-            item.status = 'failed'; updateManagerUI();
-            showNotification(`Upload failed: ${err.message}`, 'error');
-        }
-    } finally {
-        activeUploadsCount = Math.max(0, activeUploadsCount - 1);
-        triggerNextActiveUpload();
-    }
-}
-
-async function waitForMediaReady(item) {
-    const maxAttempts = 180;
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        const data = await flaynityApiFetch(`/v1/media/${encodeURIComponent(item.id)}`, { method: 'GET' });
-        if (data.status === 'ready') {
-            Object.assign(item, data);
-            item.progress = 100;
-            return data;
-        }
-        if (data.status === 'failed') throw new Error(data.error || 'Video processing failed.');
-        item.status = data.status || 'processing';
-        item.progress = Math.min(99, 95 + Math.floor(attempt / 10));
+    } catch(err) {
+        console.error('Upload error:',err);
+        item.retryCount=(item.retryCount||0)+1;
+        if(item.retryCount<=3){ item.status='waiting'; showNotification(`Upload retrying (${item.retryCount}/3): ${err.message}`,'error'); }
+        else { item.status='failed'; showNotification(`Upload failed: ${err.message}`,'error'); }
         updateManagerUI();
-        await new Promise(r => setTimeout(r, 2000));
-    }
-    throw new Error('Video processing timed out.');
+    } finally { activeUploadsCount=Math.max(0,activeUploadsCount-1); triggerNextActiveUpload(); }
 }
 
 async function runPostUploadProcessingSequence(item) {
-    item.status = "processing";
-    item.progress = 0;
-    updateManagerUI();
-
+    item.status='processing'; item.progress=0; updateManagerUI();
     try {
-        let finalThumbBlob = item.thumbBlob;
-        if (!finalThumbBlob && item.thumbDataUrl && item.thumbDataUrl.startsWith('data:')) {
-            try { finalThumbBlob = dataURLtoBlob(item.thumbDataUrl); } catch (e) {}
+        let thumbKey='';
+        if (item.thumbBlob || (item.thumbDataUrl && item.thumbDataUrl.startsWith('data:'))) {
+            const blob=item.thumbBlob || dataURLtoBlob(item.thumbDataUrl);
+            const thumbFile=new File([blob], `${item.id}_thumb.jpg`, {type:'image/jpeg'});
+            const thumbCreated=await createAndUploadMedia(thumbFile,'thumbnails','image');
+            thumbKey=thumbCreated.sourceKey; item.thumbKey=thumbKey;
+            const thumbDone=await completeMediaUpload(thumbCreated,{type:'thumbnails',mediaKind:'image'});
+            item.thumbUrl=thumbDone.imageUrl || getFastMediaUrl(thumbCreated.sourceKey);
         }
-
-        if (!item.thumbUrl && finalThumbBlob) {
-            const thumbFile = new File([finalThumbBlob], `${item.id}-thumb.jpg`, { type: 'image/jpeg' });
-            item.thumbUrl = await uploadImageToR2(thumbFile, 'thumbnails');
-        }
-        if (!item.thumbUrl) item.thumbUrl = item.thumbDataUrl || '';
-
-        item.processingMsg = "Publishing Feed...";
-        item.progress = 100;
-        updateManagerUI();
-
+        item.processingMsg='Publishing Feed...'; updateManagerUI();
+        const completed=await completeMediaUpload({id:item.id,sourceKey:item.key},{type:item.type==='video-short'?'feels':'video',title:item.title,description:item.description,visibility:item.visibility,duration:item.duration,thumbKey,mediaKind:'video'});
+        const result=await pollMediaUpload(item.id);
+        item.videoUrl=result.videoUrl || result.hlsUrl || result.masterUrl || '';
+        item.hlsUrl=result.hlsUrl || result.masterUrl || '';
+        item.qualityUrls=result.qualityUrls || {};
+        item.cdnUrl=result.cdnUrl || item.videoUrl;
+        item.progress=100; updateManagerUI();
         await pushVideoMetadataToDatabase(item);
-
-        item.status = "completed";
-        updateManagerUI();
-        saveQueueStateToLocalStorage();
-        showNotification(`"${item.title}" is published instantly!`, "success");
-
-    } catch (err) {
-        item.status = "failed";
-        updateManagerUI();
-        showNotification("Post-processing error: " + err.message, "error");
-    }
+        item.status='completed'; updateManagerUI(); saveQueueStateToLocalStorage(); showNotification(`"${item.title}" published successfully!`,'success');
+    } catch(err) { item.status='failed'; updateManagerUI(); showNotification('Post-processing error: '+err.message,'error'); throw err; }
 }
 
 function extractHashtags(text) {
@@ -6359,7 +6288,7 @@ async function publishPremiumPostAction() {
         const username = uData.username || user.email.split('@')[0];
         const avatar = currentChannelData?.avatarUrl || user.photoURL || "";
 
-        const imgUrl = getFastMediaUrl(await uploadImageToR2(currentUploadFile, "posts"));
+        const imgUrl = await uploadImageToR2(currentUploadFile, 'posts');
         
         const postPayload = {
             id: "post_" + Date.now(),

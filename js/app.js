@@ -618,7 +618,7 @@ const SyncManager = {
             const feelsData = feelsSnap.val() ? Object.values(feelsSnap.val()) : [];
             const legacyShortsData = legacyShortsSnap.val() ? Object.values(legacyShortsSnap.val()) : [];
             const seenFeelIds = new Set();
-            allFeels = [...feelsData, ...legacyShortsData].filter(m => {
+            allFeels = [...feelsData, ...legacyShortsData].map(normalizeFlaynityMediaRecord).filter(m => {
                 if (!m || (m.scheduledTime && m.scheduledTime > now) || !m.id || seenFeelIds.has(String(m.id))) return false;
                 seenFeelIds.add(String(m.id));
                 return true;
@@ -1249,6 +1249,41 @@ function logout() {
 }
 
 // =========================================================
+// CLOUDFLARE CDN MEDIA DELIVERY / STREAMING HELPERS
+// =========================================================
+const FLAYNITY_CDN_HOST = "https://cdn.flaynity.indevs.in";
+const FLAYNITY_FEELS_PRELOAD_AHEAD = 20;
+const FLAYNITY_FEELS_PRELOAD_BEHIND = 2;
+function normalizeFlaynityMediaUrl(url){ if(!url) return ""; try{ return typeof flaynityCdnUrl==='function' ? flaynityCdnUrl(url) : String(url); }catch(e){ return String(url); } }
+function normalizeFlaynityMediaRecord(item){
+    if(!item || typeof item!=='object') return item;
+    const out=item;
+    ['poster','banner','videoLink','cdnUrl','sourceUrl','hlsUrl','dashUrl','imageUrl','avatar','channelAvatar'].forEach(k=>{if(out[k]) out[k]=normalizeFlaynityMediaUrl(out[k]);});
+    if(Array.isArray(out.images)) out.images=out.images.map(normalizeFlaynityMediaUrl);
+    if(out.videoQualities&&typeof out.videoQualities==='object') Object.keys(out.videoQualities).forEach(k=>{if(out.videoQualities[k]) out.videoQualities[k]=normalizeFlaynityMediaUrl(out.videoQualities[k]);});
+    return out;
+}
+function getMovieQualitySources(movie){
+ const result={}; if(!movie) return result; const q=movie.videoQualities||movie.qualities||{};
+ [1080,720,360,144].forEach(h=>{const k=h+'p',v=q[k]||q[String(h)]||movie[k]||movie['video'+k]; if(v) result[k]=normalizeFlaynityMediaUrl(v);});
+ const source=normalizeFlaynityMediaUrl(movie.videoLink||movie.cdnUrl||''); if(source) result.source=source;
+ // Progressive MP4 quality variants are considered available only after the encoder publishes qualityReady/URLs in RTDB.
+ if(source && movie.qualityReady === true && /\.(mp4|webm|mov)(?:$|\?)/i.test(source)) [1080,720,360,144].forEach(h=>{try{result[h+'p']=flaynityCdnUrl(flaynityQualityKeyFromVideoUrl(source,h+'p'));}catch(e){}});
+ if(movie.hlsUrl||movie.hls) result.hls=normalizeFlaynityMediaUrl(movie.hlsUrl||movie.hls); if(movie.dashUrl||movie.dash) result.dash=normalizeFlaynityMediaUrl(movie.dashUrl||movie.dash); return result;
+}
+function isNativeHlsCapable(video){return !!(video&&video.canPlayType&&video.canPlayType('application/vnd.apple.mpegurl'));}
+function destroySmartMediaInstance(id){try{if(hlsInstances[id]){hlsInstances[id].destroy();delete hlsInstances[id];}}catch(e){} try{if(window.dashInstances&&window.dashInstances[id]){window.dashInstances[id].reset();delete window.dashInstances[id];}}catch(e){}}
+function attachCdnMediaSource(videoElement,media,id){
+ if(!videoElement||!media) return Promise.resolve(false); destroySmartMediaInstance(id); const source=typeof media==='string'?normalizeFlaynityMediaUrl(media):media;
+ const hlsUrl=typeof source==='object'?source.hls:''; const dashUrl=typeof source==='object'?source.dash:''; const directUrl=typeof source==='string'?source:source.source;
+ if(hlsUrl&&typeof Hls!=='undefined'&&Hls.isSupported()){const hls=new Hls({enableWorker:true,lowLatencyMode:true,capLevelToPlayerSize:true,maxBufferLength:45,maxMaxBufferLength:180,backBufferLength:30,startLevel:-1,maxBufferHole:.5});hls.loadSource(hlsUrl);hls.attachMedia(videoElement);hlsInstances[id]=hls;return Promise.resolve(true);}
+ if(hlsUrl&&isNativeHlsCapable(videoElement)){videoElement.src=hlsUrl;return Promise.resolve(true);}
+ if(dashUrl&&typeof dashjs!=='undefined'){window.dashInstances=window.dashInstances||{};const player=dashjs.MediaPlayer().create();player.initialize(videoElement,dashUrl,false);window.dashInstances[id]=player;return Promise.resolve(true);}
+ if(directUrl){videoElement.src=normalizeFlaynityMediaUrl(directUrl);return Promise.resolve(true);} return Promise.resolve(false);
+}
+function warmCdnMediaUrl(url){if(!url||!navigator.onLine)return;const u=normalizeFlaynityMediaUrl(url);try{const l=document.createElement('link');l.rel='preload';l.as='video';l.href=u;l.setAttribute('data-flaynity-media-preload',u);document.head.appendChild(l);}catch(e){}}
+
+// =========================================================
 // FAST PARALLEL UPLOAD ENGINE & WATCHDOG
 // =========================================================
 let uploadQueue = [];
@@ -1320,7 +1355,8 @@ async function startS3DirectUpload(item) {
 
         await s3Upload.promise();
         
-        item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
+        item.videoUrl = flaynityCdnUrl(item.key);
+        item.cdnUrl = item.videoUrl;
         item.status = "processing";
         item.retryCount = 0;
         updateManagerUI();
@@ -1368,7 +1404,7 @@ async function runPostUploadProcessingSequence(item) {
         if (finalThumbBlob && s3) {
             const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg" };
             await s3.putObject(thumbParams).promise();
-            item.thumbUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
+            item.thumbUrl = flaynityCdnUrl(item.thumbKey);
         } else {
             item.thumbUrl = item.thumbDataUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
         }
@@ -1423,6 +1459,12 @@ async function pushVideoMetadataToDatabase(item) {
         poster: item.thumbUrl || item.thumbDataUrl || "",
         banner: item.thumbUrl || item.thumbDataUrl || "",
         videoLink: item.videoUrl,
+        cdnUrl: item.videoUrl,
+        sourceUrl: item.videoUrl,
+        streaming: { protocol: "progressive", range: true },
+        encodingStatus: "pending",
+        videoQualities: item.videoQualities || {},
+        encoding: item.encoding || null,
         uploadTime: Date.now(),
         updateTime: Date.now(),
         visibility: item.visibility,
@@ -1505,6 +1547,7 @@ function saveQueueStateToLocalStorage() {
             thumbKey: item.thumbKey,
             thumbUrl: item.thumbUrl,
             videoUrl: item.videoUrl,
+            encoding: item.encoding || null,
             retryCount: item.retryCount,
             createdAt: item.createdAt,
             scheduledTime: item.scheduledTime
@@ -1558,7 +1601,7 @@ function startRealtimeFeedsListener() {
         db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
             try {
                 const data = snap.val();
-                allLongVideos = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'video') : [];
+                allLongVideos = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now).map(normalizeFlaynityMediaRecord), 'video') : [];
                 allLongVideos.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                 
                 allLongVideos.forEach(m => {
@@ -1582,7 +1625,7 @@ function startRealtimeFeedsListener() {
         db.ref('admin_panel/movies/feels').on('value', (snap) => {
             try {
                 const data = snap.val();
-                allFeels = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'short') : [];
+                allFeels = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now).map(normalizeFlaynityMediaRecord), 'short') : [];
                 allFeels.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                 
                 if(allFeels.length !== previousFeelsCount) {
@@ -1619,7 +1662,7 @@ function startRealtimeFeedsListener() {
                     const feelsData = feelsSnap.val() ? Object.values(feelsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
                     const merged = [...feelsData, ...legacyData];
                     const seenIds = new Set();
-                    allFeels = enforceContentAdminStatus(merged.filter(m => {
+                    allFeels = enforceContentAdminStatus(merged.map(normalizeFlaynityMediaRecord).filter(m => {
                         if (!m || !m.id || seenIds.has(String(m.id))) return false;
                         seenIds.add(String(m.id));
                         return true;
@@ -1634,7 +1677,7 @@ function startRealtimeFeedsListener() {
         db.ref('admin_panel/posts').on('value', (snap) => {
             try {
                 const data = snap.val();
-                allCommunityPosts = data ? enforceContentAdminStatus(Object.values(data).filter(p => !p.scheduledTime || p.scheduledTime <= now), 'post') : [];
+                allCommunityPosts = data ? enforceContentAdminStatus(Object.values(data).filter(p => !p.scheduledTime || p.scheduledTime <= now).map(normalizeFlaynityMediaRecord), 'post') : [];
                 allCommunityPosts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                 
                 if (allCommunityPosts.length !== previousPostsCount) {
@@ -2972,71 +3015,14 @@ function toggleClipSubscribe(channelId, buttonEl) {
 // =========================================================
 let currentActiveFeelsIdx = -1;
 
-function attachSmartAdaptiveSource(videoElement, url, shortId) {
-    if (url && url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
-        if(hlsInstances[shortId]) {
-            hlsInstances[shortId].destroy();
-        }
-        const hls = new Hls({
-            maxBufferLength: 30,
-            maxMaxBufferLength: 600,
-            enableWorker: true,
-            lowLatencyMode: true,
-            capLevelToPlayerSize: true
-        });
-        hls.loadSource(url);
-        hls.attachMedia(videoElement);
-        hlsInstances[shortId] = hls;
-    } else {
-        videoElement.src = url;
-    }
-}
-
+function attachSmartAdaptiveSource(videoElement, url, shortId) { return attachCdnMediaSource(videoElement, url, shortId); }
 function optimizeFeelsMemoryAndPreload(activeIndex) {
-    const slides = document.querySelectorAll('.short-slide');
-    slides.forEach((slide, idx) => {
-        const video = slide.querySelector('video');
-        if (!video) return;
-        const shortId = slide.getAttribute('data-shortid');
-        const s = allFeels.find(item => item.id === shortId);
-        if (!s) return;
-
-        if (idx >= activeIndex - 1 && idx <= activeIndex + 2) {
-            if (video.getAttribute('poster') !== s.poster) {
-                video.setAttribute('poster', s.poster);
-            }
-
-            if (!video.getAttribute('src') && !hlsInstances[shortId]) {
-                attachSmartAdaptiveSource(video, s.videoLink, shortId);
-                video.preload = (idx === activeIndex) ? "auto" : "metadata";
-            }
-
-            if (idx === activeIndex) {
-                video.preload = "auto";
-                video.muted = false;
-                let playPromise = video.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(() => {
-                        video.muted = true;
-                        video.play().catch(e => console.log(e));
-                    });
-                }
-            } else {
-                video.preload = "metadata";
-                video.pause();
-                video.currentTime = 0;
-            }
-        } else {
-            video.pause();
-            video.removeAttribute('src');
-            video.removeAttribute('preload');
-            if (hlsInstances[shortId]) {
-                hlsInstances[shortId].destroy();
-                delete hlsInstances[shortId];
-            }
-            video.load();
-        }
-    });
+ const slides=Array.from(document.querySelectorAll('.short-slide'));
+ slides.forEach((slide,idx)=>{const video=slide.querySelector('video');if(!video)return;const shortId=slide.getAttribute('data-shortid');const item=allFeels.find(x=>String(x.id)===String(shortId));if(!item)return;const d=idx-activeIndex;
+  if(d>=-FLAYNITY_FEELS_PRELOAD_BEHIND&&d<=FLAYNITY_FEELS_PRELOAD_AHEAD){video.setAttribute('poster',normalizeFlaynityMediaUrl(item.poster||''));video.preload='auto';video.setAttribute('playsinline','');video.setAttribute('webkit-playsinline','');video.setAttribute('data-cdn-url',normalizeFlaynityMediaUrl(item.videoLink||item.cdnUrl||''));if(!video.getAttribute('src')&&!hlsInstances[shortId]){const src=getMovieQualitySources(item);attachCdnMediaSource(video,src.hls||src.dash||src.source||item.videoLink,shortId);}if(d===0){video.muted=false;const pp=video.play();if(pp)pp.catch(()=>{video.muted=true;video.play().catch(()=>{});});}else{video.pause();try{video.currentTime=0;}catch(e){}}}
+  else{video.pause();destroySmartMediaInstance(shortId);video.removeAttribute('src');video.removeAttribute('preload');video.load();}
+ });
+ for(let i=activeIndex+1;i<=Math.min(slides.length-1,activeIndex+FLAYNITY_FEELS_PRELOAD_AHEAD);i++){const id=slides[i].getAttribute('data-shortid');const item=allFeels.find(x=>String(x.id)===String(id));if(item&&i<=activeIndex+2)warmCdnMediaUrl(item.videoLink||item.cdnUrl);}
 }
 
 let feelsObserver;
@@ -6249,7 +6235,10 @@ async function publishPremiumVideoOrShort(modeType) {
     }
 
     const uniqueId = "st_" + Date.now() + "_" + Math.floor(Math.random()*1000);
-    const fileKey = `uploads/${uniqueId}/${currentUploadFile.name.replace(/\s+/g, '_')}`;
+    const ownerId = auth.currentUser ? auth.currentUser.uid : 'global';
+    const safeFileName = currentUploadFile.name.replace(/\s+/g, '_');
+    const mediaFolder = isShort ? 'feels' : 'videos';
+    const fileKey = `${mediaFolder}/${ownerId}/${uniqueId}_${safeFileName}`;
     
     // Convert active trim percentage to actual duration if trimmed
     let finalDuration = currentUploadFrameMeta.duration;
@@ -6272,7 +6261,19 @@ async function publishPremiumVideoOrShort(modeType) {
         duration: finalDuration,
         thumbDataUrl: currentUploadFrameMeta.dataUrl,
         thumbBlob: currentUploadFrameMeta.blob, 
-        thumbKey: `uploads/${uniqueId}/thumbnail.jpg`,
+        thumbKey: `thumbnails/${ownerId}/${uniqueId}.jpg`,
+        encoding: {
+            status: 'pending',
+            sourceKey: fileKey,
+            profiles: {
+                '1080p': `${mediaFolder}/${ownerId}/${uniqueId}/1080p.mp4`,
+                '720p': `${mediaFolder}/${ownerId}/${uniqueId}/720p.mp4`,
+                '360p': `${mediaFolder}/${ownerId}/${uniqueId}/360p.mp4`,
+                '144p': `${mediaFolder}/${ownerId}/${uniqueId}/144p.mp4`
+            },
+            hls: `${mediaFolder}/${ownerId}/${uniqueId}/master.m3u8`,
+            dash: `${mediaFolder}/${ownerId}/${uniqueId}/manifest.mpd`
+        },
         createdAt: Date.now(),
         scheduledTime: visibility === 'Schedule' && scheduleDate ? new Date(scheduleDate).getTime() : 0
     };
@@ -6313,10 +6314,11 @@ async function publishPremiumPostAction() {
         const username = uData.username || user.email.split('@')[0];
         const avatar = currentChannelData?.avatarUrl || user.photoURL || "";
 
-        const imgUrl = await uploadImageToR2(currentUploadFile, "posts");
+        const postId = "post_" + Date.now();
+        const imgUrl = await uploadImageToR2(currentUploadFile, "posts", 3, user.uid, postId);
         
         const postPayload = {
-            id: "post_" + Date.now(),
+            id: postId,
             userId: user.uid,
             channelId: user.uid,
             title: title.split('\n')[0].substring(0, 50) || "Community Post",
@@ -6441,7 +6443,8 @@ function flyInitPlayer(link){
     if(poster && currentActiveMovie){ poster.src=currentActiveMovie.poster||currentActiveMovie.banner||''; poster.style.display='block'; }
 
     // Cloudflare CDN + HLS adaptive streaming (আপনার existing helper reuse)
-    attachSmartAdaptiveSource(v, link, 'fly_main');
+    const mediaSources = getMovieQualitySources(currentActiveMovie);
+    attachCdnMediaSource(v, mediaSources.hls || mediaSources.dash || mediaSources.source || link, 'fly_main');
     v.playbackRate=flyCurrentSpeed;
 
     flyBuildSpeedMenu();
@@ -6557,19 +6560,11 @@ function flySetSpeed(val,e){ if(e) e.stopPropagation(); const v=document.getElem
     flyBuildSpeedMenu(); flyCloseAllMenus(); flyResetHideTimer(); }
 
 function flyBuildQualityMenu(){
-    const list=document.getElementById('fly-quality-list'); if(!list) return;
-    const maxH=flyGetMaxHeight();
-    const qs=[{l:'Low',h:144,p:'144p'},{l:'Fast',h:360,p:'360p'},{l:'High Quality',h:720,p:'720p'},{l:'Premium',h:1080,p:'1080p'}];
-    list.innerHTML=qs.map(q=>{
-        const locked=q.h>maxH;
-        return `<div class="fly-menu-item ${locked?'locked':''}" onclick="${locked?'event.stopPropagation();':`flySetQuality(${q.h},'${q.p}',event)`}">
-            <span>${q.l} (${q.p})</span>${locked?'<i class="fas fa-lock" style="font-size:.8rem;"></i>':''}</div>`;
-    }).join('');
+ const list=document.getElementById('fly-quality-list');if(!list)return;const maxH=flyGetMaxHeight(),src=getMovieQualitySources(currentActiveMovie);const qs=[{h:1080,p:'1080p'},{h:720,p:'720p'},{h:360,p:'360p'},{h:144,p:'144p'}];
+ list.innerHTML=qs.map(q=>{const locked=q.h>maxH,available=!!src[q.p]||!!src.hls||!!src.dash;const disabled=locked||!available;return `<div class="fly-menu-item ${disabled?'locked':''}" onclick="${disabled?'event.stopPropagation();':`flySetQuality(${q.h},'${q.p}',event)`}"><span>${q.p}${locked?' (Unavailable)':''}</span>${disabled?'<i class="fas fa-lock" style="font-size:.8rem;"></i>':''}</div>`;}).join('');
 }
-function flySetQuality(h,label,e){ if(e) e.stopPropagation();
-    try{ const hls=hlsInstances['fly_main']; if(hls&&hls.levels&&hls.levels.length){ let best=-1,diff=1e9; hls.levels.forEach((lv,i)=>{const d=Math.abs((lv.height||0)-h); if(d<diff){diff=d;best=i;}}); hls.currentLevel=best; } }catch(err){}
-    const lbl=document.getElementById('fly-quality-label'); if(lbl) lbl.innerText=label;
-    flyCloseAllMenus(); flyResetHideTimer(); }
+function flySetQuality(h,label,e){
+ if(e)e.stopPropagation();const v=document.getElementById('fly-video'),src=getMovieQualitySources(currentActiveMovie),key=h+'p';try{const hls=hlsInstances['fly_main'];if(hls&&hls.levels&&hls.levels.length){let best=-1,diff=1e9;hls.levels.forEach((lv,i)=>{const d=Math.abs((lv.height||0)-h);if(d<diff){diff=d;best=i;}});if(best>=0)hls.currentLevel=best;}else if(v&&src[key]){const playing=!v.paused,t=v.currentTime||0;destroySmartMediaInstance('fly_main');v.src=normalizeFlaynityMediaUrl(src[key]);v.preload='auto';v.load();v.addEventListener('loadedmetadata',function restore(){try{v.currentTime=Math.min(t,Math.max(0,(v.duration||t)-.1));}catch(err){}v.removeEventListener('loadedmetadata',restore);if(playing)v.play().catch(()=>{});});}}catch(err){console.warn('Quality switch failed',err);}const lbl=document.getElementById('fly-quality-label');if(lbl)lbl.innerText=label;flyCloseAllMenus();flyResetHideTimer();}
 
 /* ---------- Fullscreen (শুধু player landscape) ---------- */
 function flyToggleFullscreen(){

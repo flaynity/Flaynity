@@ -1,22 +1,8 @@
 // =========================================================
 // CLOUDFLARE R2 OBJECT STORAGE MODULE
 // =========================================================
-const R2_CONFIG = {
-    accessKeyId: "c4d26ef58f7d0818695c8710af083fb6",
-    secretAccessKey: "97bc62a7b0c961001611489e28f9dbd41d2b30cda3e8348bb32d12a7c1d319a8",
-    endpoint: "https://b3741135bd1f3e96b6744f11e6a06600.r2.cloudflarestorage.com",
-    s3ForcePathStyle: true,
-    signatureVersion: 'v4',
-    region: 'auto',
-    maxRetries: 5,
-    httpOptions: {
-        timeout: 300000, 
-        connectTimeout: 30000
-    }
-};
-
-AWS.config.update(R2_CONFIG);
-const s3 = new AWS.S3({ params: { Bucket: 'flaynity-storage' } });
+const R2_CONFIG = {};
+// R2 credentials are intentionally not stored in the app. Uploads use the secure Render API.
 const PUBLIC_R2_DOMAIN_PREFIX = "https://cdn.flaynity.indevs.in";
 const LEGACY_R2_DOMAIN_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev";
 
@@ -25,9 +11,8 @@ const LEGACY_R2_DOMAIN_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2
 // =========================================================
 const FLAYNITY_CDN_CONFIG = {
     origin: PUBLIC_R2_DOMAIN_PREFIX.replace(/\/$/, ''),
-    preloadFeels: 20,
-    aggressiveFeelsWindow: 3,
-    rangeWarmupBytes: 262144,
+    preloadFeels: 3,
+    aggressiveFeelsWindow: 1,
     cacheVersion: 'v3'
 };
 
@@ -78,18 +63,7 @@ function setFastMediaAttributes(video, options) {
     video.setAttribute('fetchpriority', options?.fetchPriority || 'high');
 }
 
-function warmMediaRange(url, bytes = FLAYNITY_CDN_CONFIG.rangeWarmupBytes) {
-    if (!url || !/^https?:\/\//i.test(url) || typeof fetch !== 'function') return;
-    try {
-        fetch(url, {
-            method: 'GET',
-            headers: { Range: `bytes=0-${Math.max(65535, bytes - 1)}` },
-            mode: 'cors',
-            credentials: 'omit',
-            cache: 'force-cache'
-        }).then(r => { if (r.body && r.body.cancel) r.body.cancel(); }).catch(() => {});
-    } catch (e) {}
-}
+function warmMediaRange(url) { return; }
 
 
 // Upload functions are provided by js/media-api.js.

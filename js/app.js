@@ -1301,59 +1301,75 @@ async function startS3DirectUpload(item) {
         activeUploadsCount = Math.max(0, activeUploadsCount - 1);
         return;
     }
-
-    item.status = 'uploading';
-    item.progress = item.progress || 0;
-    updateManagerUI();
-
+    item.status = 'uploading'; item.progress = item.progress || 0; updateManagerUI();
     try {
-        const result = await uploadVideoToFlaynity(item.file, item.type === 'video-short' ? 'feels' : 'video-long', {
-            title: item.title,
-            description: item.description,
-            visibility: item.visibility,
-            duration: item.duration,
-            onProgress: (loaded, total) => {
-                item.progress = total ? Math.round((loaded / total) * 85) : item.progress;
-                updateManagerUI();
-            }
-        });
-
-        item.mediaId = result.id || item.mediaId;
-        item.sourceKey = result.sourceKey || item.sourceKey;
-        item.videoUrl = result.videoUrl || result.hlsUrl || '';
-        item.status = 'processing';
-        item.progress = Math.max(item.progress, 85);
-        updateManagerUI();
-
-        const ready = await waitForMediaReady(item.mediaId, (state) => {
-            item.processingMsg = state.status === 'processing' ? 'Processing video...' : 'Queued for processing...';
-            item.progress = Math.min(99, Math.max(item.progress, 86));
+        const isShort = item.type === 'video-short';
+        const apiType = isShort ? 'feels' : 'video-long';
+        const session = await createUploadSession(item.file, apiType, 'video');
+        item.id = session.id; item.key = session.sourceKey;
+        await uploadToPresignedUrl(session.uploadUrl, item.file, (loaded, total) => {
+            item.progress = Math.round((loaded / total) * 90);
             updateManagerUI();
         });
 
-        Object.assign(item, {
-            videoUrl: ready.videoUrl || ready.hlsUrl || ready.cdnUrl || item.videoUrl,
-            hlsUrl: ready.hlsUrl || '',
-            qualityUrls: ready.qualityUrls || {},
-            sourceKey: ready.sourceKey || item.sourceKey,
-            status: 'processing'
+        item.status = 'processing'; item.progress = 92; updateManagerUI();
+        let thumbKey = '';
+        if (item.thumbBlob) {
+            const thumbFile = new File([item.thumbBlob], `${session.id}.jpg`, { type: 'image/jpeg' });
+            const thumbSession = await createUploadSession(thumbFile, 'thumbnails', 'image');
+            await uploadToPresignedUrl(thumbSession.uploadUrl, thumbFile);
+            await flaynityApiFetch('/v1/media/complete-upload', {
+                method: 'POST',
+                body: JSON.stringify({ id: thumbSession.id, sourceKey: thumbSession.sourceKey, uid: auth.currentUser.uid, type: 'thumbnails', mediaKind: 'image' })
+            });
+            thumbKey = thumbSession.sourceKey;
+            item.thumbKey = thumbKey;
+            item.thumbUrl = getFastMediaUrl(thumbKey);
+        } else {
+            item.thumbUrl = item.thumbDataUrl || '';
+        }
+
+        const completed = await flaynityApiFetch('/v1/media/complete-upload', {
+            method: 'POST',
+            body: JSON.stringify({ id: session.id, sourceKey: session.sourceKey, uid: auth.currentUser.uid, type: apiType, title: item.title, description: item.description, visibility: item.visibility, duration: item.duration, thumbKey, mediaKind: 'video' })
         });
+        item.id = completed.id || session.id;
+        item.videoUrl = completed.videoUrl || '';
+        item.status = 'processing'; item.progress = 95; updateManagerUI();
+        await waitForMediaReady(item);
         await runPostUploadProcessingSequence(item);
     } catch (err) {
-        console.error('Secure upload error:', err);
-        if (!navigator.onLine) {
-            item.status = 'paused';
-            showNotification('Connection lost. Upload paused.', 'error');
+        console.error('Upload error:', err);
+        item.retryCount = (item.retryCount || 0) + 1;
+        if (item.retryCount <= 3 && navigator.onLine) {
+            item.status = 'waiting'; updateManagerUI();
+            showNotification(`Upload failed. Retrying (${item.retryCount}/3)...`, 'error');
         } else {
-            item.retryCount = (item.retryCount || 0) + 1;
-            item.status = item.retryCount <= 5 ? 'waiting' : 'failed';
-            showNotification(item.retryCount <= 5 ? `Upload retrying (${item.retryCount}/5)...` : `Upload failed: ${err.message}`, 'error');
+            item.status = 'failed'; updateManagerUI();
+            showNotification(`Upload failed: ${err.message}`, 'error');
         }
-        updateManagerUI();
     } finally {
         activeUploadsCount = Math.max(0, activeUploadsCount - 1);
         triggerNextActiveUpload();
     }
+}
+
+async function waitForMediaReady(item) {
+    const maxAttempts = 180;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const data = await flaynityApiFetch(`/v1/media/${encodeURIComponent(item.id)}`, { method: 'GET' });
+        if (data.status === 'ready') {
+            Object.assign(item, data);
+            item.progress = 100;
+            return data;
+        }
+        if (data.status === 'failed') throw new Error(data.error || 'Video processing failed.');
+        item.status = data.status || 'processing';
+        item.progress = Math.min(99, 95 + Math.floor(attempt / 10));
+        updateManagerUI();
+        await new Promise(r => setTimeout(r, 2000));
+    }
+    throw new Error('Video processing timed out.');
 }
 
 async function runPostUploadProcessingSequence(item) {
@@ -1367,11 +1383,11 @@ async function runPostUploadProcessingSequence(item) {
             try { finalThumbBlob = dataURLtoBlob(item.thumbDataUrl); } catch (e) {}
         }
 
-        if (finalThumbBlob) {
-            item.thumbUrl = await uploadImageToR2(finalThumbBlob, "thumbnails");
-        } else {
-            item.thumbUrl = item.thumbDataUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
+        if (!item.thumbUrl && finalThumbBlob) {
+            const thumbFile = new File([finalThumbBlob], `${item.id}-thumb.jpg`, { type: 'image/jpeg' });
+            item.thumbUrl = await uploadImageToR2(thumbFile, 'thumbnails');
         }
+        if (!item.thumbUrl) item.thumbUrl = item.thumbDataUrl || '';
 
         item.processingMsg = "Publishing Feed...";
         item.progress = 100;

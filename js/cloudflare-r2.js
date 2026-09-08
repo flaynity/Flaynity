@@ -17,15 +17,63 @@ const R2_CONFIG = {
 
 AWS.config.update(R2_CONFIG);
 const s3 = new AWS.S3({ params: { Bucket: 'flaynity-storage' } });
-const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev";
+// Public delivery hostname. Keep all playback/media URLs on the Cloudflare CDN hostname.
+const FLAYNITY_CDN_BASE = "https://cdn.flaynity.indevs.in";
+const PUBLIC_R2_DOMAIN_PREFIX = FLAYNITY_CDN_BASE;
+
+const FLAYNITY_MEDIA_FOLDERS = Object.freeze({
+    video: "videos",
+    feels: "feels",
+    post: "posts",
+    thumbnail: "thumbnails",
+    avatar: "avatars"
+});
+
+function flaynityCdnUrl(path) {
+    if (!path) return "";
+    const value = String(path).trim();
+    if (!value) return "";
+    if (/^https?:\/\//i.test(value)) {
+        try {
+            const u = new URL(value);
+            if (u.hostname === "pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev" ||
+                u.hostname === "b3741135bd1f3e96b6744f11e6a06600.r2.cloudflarestorage.com") {
+                return FLAYNITY_CDN_BASE + u.pathname + u.search;
+            }
+            return value;
+        } catch (e) { return value; }
+    }
+    return FLAYNITY_CDN_BASE + "/" + value.replace(/^\/+/, "");
+}
+
+function flaynityMediaKey(kind, ownerId, fileName, mediaId) {
+    const folder = FLAYNITY_MEDIA_FOLDERS[kind] || kind || "media";
+    const owner = String(ownerId || "global").replace(/[^A-Za-z0-9_-]/g, "_");
+    const id = String(mediaId || (Date.now() + "_" + Math.random().toString(36).slice(2, 8))).replace(/[^A-Za-z0-9_-]/g, "_");
+    const safeName = String(fileName || "media").replace(/[^A-Za-z0-9._-]/g, "_");
+    return `${folder}/${owner}/${id}_${safeName}`;
+}
+
+function flaynityQualityKeyFromVideoUrl(url, quality) {
+    if (!url || !quality) return "";
+    const clean = String(url).split("?")[0];
+    const marker = String(quality).toLowerCase().replace(/[^0-9a-z]/g, "");
+    const slash = clean.lastIndexOf("/");
+    const dir = slash >= 0 ? clean.slice(0, slash + 1) : "";
+    const file = slash >= 0 ? clean.slice(slash + 1) : clean;
+    const dot = file.lastIndexOf(".");
+    if (dot < 0) return clean;
+    return `${dir}${file.slice(0, dot)}_${marker}${file.slice(dot)}`;
+}
 
 // =========================================================
 // S3 R2 OBJECT STORAGE MEDIA UPLOAD MODULE
 // =========================================================
-async function uploadImageToR2(file, folder = "images", retries = 3) {
+async function uploadImageToR2(file, folder = "images", retries = 3, ownerId = "global", mediaId = "") {
     if (!s3) throw new Error("R2 Client storage unit is not configured.");
-    const uniqueId = "img_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-    const fileKey = `uploads/${folder}/${uniqueId}_${file.name.replace(/\s+/g, '_')}`;
+    const uniqueId = mediaId || ("img_" + Date.now() + "_" + Math.floor(Math.random() * 1000));
+    const kind = folder === "posts" ? "post" : folder === "thumbnails" ? "thumbnail" : folder === "avatars" ? "avatar" : folder;
+    const fileKey = flaynityMediaKey(kind, ownerId, file.name, uniqueId);
     const params = {
         Key: fileKey,
         Body: file,
@@ -35,7 +83,7 @@ async function uploadImageToR2(file, folder = "images", retries = 3) {
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
             await s3.putObject(params).promise();
-            return `${PUBLIC_R2_DOMAIN_PREFIX}/${fileKey}`;
+            return flaynityCdnUrl(fileKey);
         } catch (err) {
             console.warn(`R2 Image Upload attempt ${attempt} failed:`, err);
             if (attempt === retries) throw err;

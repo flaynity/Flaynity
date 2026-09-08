@@ -2979,10 +2979,12 @@ function attachSmartAdaptiveSource(videoElement, mediaOrUrl, shortId, quality) {
                 enableWorker: true,
                 lowLatencyMode: false,
                 capLevelToPlayerSize: true,
-                startLevel: -1,
-                maxBufferLength: 20,
-                maxMaxBufferLength: 90,
-                backBufferLength: 10,
+                startLevel: 0,
+                abrEwmaFastLive: 1.0,
+                abrEwmaSlowLive: 3.0,
+                maxBufferLength: 12,
+                maxMaxBufferLength: 30,
+                backBufferLength: 6,
                 fragLoadingMaxRetry: 3,
                 manifestLoadingMaxRetry: 3,
                 levelLoadingMaxRetry: 3
@@ -3017,7 +3019,10 @@ function preloadFeelsWindow(activeIndex) {
                 attachSmartAdaptiveSource(video, item, shortId);
             }
             video.preload = idx <= activeIndex + FLAYNITY_CDN_CONFIG.aggressiveFeelsWindow ? 'auto' : 'metadata';
-            if (idx > activeIndex && idx <= end) warmMediaRange(url);
+            // Do not issue manual Range warmups; HLS.js/CDN handles the initial segment efficiently.
+            if (idx > activeIndex + FLAYNITY_CDN_CONFIG.aggressiveFeelsWindow) {
+                try { video.preload = 'metadata'; } catch (e) {}
+            }
         } else {
             video.pause();
             video.removeAttribute('src');

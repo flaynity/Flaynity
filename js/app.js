@@ -618,7 +618,7 @@ const SyncManager = {
             const feelsData = feelsSnap.val() ? Object.values(feelsSnap.val()) : [];
             const legacyShortsData = legacyShortsSnap.val() ? Object.values(legacyShortsSnap.val()) : [];
             const seenFeelIds = new Set();
-            allFeels = [...feelsData, ...legacyShortsData].map(normalizeFlaynityMediaRecord).filter(m => {
+            allFeels = [...feelsData, ...legacyShortsData].filter(m => {
                 if (!m || (m.scheduledTime && m.scheduledTime > now) || !m.id || seenFeelIds.has(String(m.id))) return false;
                 seenFeelIds.add(String(m.id));
                 return true;
@@ -1081,8 +1081,24 @@ function applyAdminControls() {
     });
 }
 
+function normalizeMediaRecord(item, type) {
+    if (!item || typeof item !== 'object') return item;
+    const out = { ...item };
+    if (out.videoLink) out.videoLink = getFastMediaUrl(out.videoLink);
+    if (out.videoUrl) out.videoUrl = getFastMediaUrl(out.videoUrl);
+    if (out.streamUrl) out.streamUrl = getFastMediaUrl(out.streamUrl);
+    if (out.poster) out.poster = getFastMediaUrl(out.poster);
+    if (out.banner) out.banner = getFastMediaUrl(out.banner);
+    if (out.imageUrl) out.imageUrl = getFastMediaUrl(out.imageUrl);
+    if (Array.isArray(out.images)) out.images = out.images.map(getFastMediaUrl);
+    if (out.qualityUrls) {
+        out.qualityUrls = Object.fromEntries(Object.entries(out.qualityUrls).map(([k,v]) => [k, getFastMediaUrl(v)]));
+    }
+    return out;
+}
+
 function enforceContentAdminStatus(items, type) {
-    const allowed = items.filter(item => {
+    const allowed = items.map(item => normalizeMediaRecord(item, type)).filter(item => {
         const status = String(item?.status || item?.visibility || 'published').toLowerCase();
         if (status === 'hidden' || status === 'deleted' || status === 'disabled' || status === 'banned') return false;
         if (item?.userId && bannedUserIds.has(String(item.userId))) return false;
@@ -1249,41 +1265,6 @@ function logout() {
 }
 
 // =========================================================
-// CLOUDFLARE CDN MEDIA DELIVERY / STREAMING HELPERS
-// =========================================================
-const FLAYNITY_CDN_HOST = "https://cdn.flaynity.indevs.in";
-const FLAYNITY_FEELS_PRELOAD_AHEAD = 20;
-const FLAYNITY_FEELS_PRELOAD_BEHIND = 2;
-function normalizeFlaynityMediaUrl(url){ if(!url) return ""; try{ return typeof flaynityCdnUrl==='function' ? flaynityCdnUrl(url) : String(url); }catch(e){ return String(url); } }
-function normalizeFlaynityMediaRecord(item){
-    if(!item || typeof item!=='object') return item;
-    const out=item;
-    ['poster','banner','videoLink','cdnUrl','sourceUrl','hlsUrl','dashUrl','imageUrl','avatar','channelAvatar'].forEach(k=>{if(out[k]) out[k]=normalizeFlaynityMediaUrl(out[k]);});
-    if(Array.isArray(out.images)) out.images=out.images.map(normalizeFlaynityMediaUrl);
-    if(out.videoQualities&&typeof out.videoQualities==='object') Object.keys(out.videoQualities).forEach(k=>{if(out.videoQualities[k]) out.videoQualities[k]=normalizeFlaynityMediaUrl(out.videoQualities[k]);});
-    return out;
-}
-function getMovieQualitySources(movie){
- const result={}; if(!movie) return result; const q=movie.videoQualities||movie.qualities||{};
- [1080,720,360,144].forEach(h=>{const k=h+'p',v=q[k]||q[String(h)]||movie[k]||movie['video'+k]; if(v) result[k]=normalizeFlaynityMediaUrl(v);});
- const source=normalizeFlaynityMediaUrl(movie.videoLink||movie.cdnUrl||''); if(source) result.source=source;
- // Progressive MP4 quality variants are considered available only after the encoder publishes qualityReady/URLs in RTDB.
- if(source && movie.qualityReady === true && /\.(mp4|webm|mov)(?:$|\?)/i.test(source)) [1080,720,360,144].forEach(h=>{try{result[h+'p']=flaynityCdnUrl(flaynityQualityKeyFromVideoUrl(source,h+'p'));}catch(e){}});
- if(movie.hlsUrl||movie.hls) result.hls=normalizeFlaynityMediaUrl(movie.hlsUrl||movie.hls); if(movie.dashUrl||movie.dash) result.dash=normalizeFlaynityMediaUrl(movie.dashUrl||movie.dash); return result;
-}
-function isNativeHlsCapable(video){return !!(video&&video.canPlayType&&video.canPlayType('application/vnd.apple.mpegurl'));}
-function destroySmartMediaInstance(id){try{if(hlsInstances[id]){hlsInstances[id].destroy();delete hlsInstances[id];}}catch(e){} try{if(window.dashInstances&&window.dashInstances[id]){window.dashInstances[id].reset();delete window.dashInstances[id];}}catch(e){}}
-function attachCdnMediaSource(videoElement,media,id){
- if(!videoElement||!media) return Promise.resolve(false); destroySmartMediaInstance(id); const source=typeof media==='string'?normalizeFlaynityMediaUrl(media):media;
- const hlsUrl=typeof source==='object'?source.hls:''; const dashUrl=typeof source==='object'?source.dash:''; const directUrl=typeof source==='string'?source:source.source;
- if(hlsUrl&&typeof Hls!=='undefined'&&Hls.isSupported()){const hls=new Hls({enableWorker:true,lowLatencyMode:true,capLevelToPlayerSize:true,maxBufferLength:45,maxMaxBufferLength:180,backBufferLength:30,startLevel:-1,maxBufferHole:.5});hls.loadSource(hlsUrl);hls.attachMedia(videoElement);hlsInstances[id]=hls;return Promise.resolve(true);}
- if(hlsUrl&&isNativeHlsCapable(videoElement)){videoElement.src=hlsUrl;return Promise.resolve(true);}
- if(dashUrl&&typeof dashjs!=='undefined'){window.dashInstances=window.dashInstances||{};const player=dashjs.MediaPlayer().create();player.initialize(videoElement,dashUrl,false);window.dashInstances[id]=player;return Promise.resolve(true);}
- if(directUrl){videoElement.src=normalizeFlaynityMediaUrl(directUrl);return Promise.resolve(true);} return Promise.resolve(false);
-}
-function warmCdnMediaUrl(url){if(!url||!navigator.onLine)return;const u=normalizeFlaynityMediaUrl(url);try{const l=document.createElement('link');l.rel='preload';l.as='video';l.href=u;l.setAttribute('data-flaynity-media-preload',u);document.head.appendChild(l);}catch(e){}}
-
-// =========================================================
 // FAST PARALLEL UPLOAD ENGINE & WATCHDOG
 // =========================================================
 let uploadQueue = [];
@@ -1332,7 +1313,9 @@ async function startS3DirectUpload(item) {
         const params = {
             Key: item.key,
             Body: item.file,
-            ContentType: item.file.type || 'video/mp4'
+            ContentType: item.file.type || 'video/mp4',
+            CacheControl: 'public,max-age=31536000,immutable',
+            ContentDisposition: 'inline'
         };
         
         const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
@@ -1355,8 +1338,7 @@ async function startS3DirectUpload(item) {
 
         await s3Upload.promise();
         
-        item.videoUrl = flaynityCdnUrl(item.key);
-        item.cdnUrl = item.videoUrl;
+        item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
         item.status = "processing";
         item.retryCount = 0;
         updateManagerUI();
@@ -1402,9 +1384,9 @@ async function runPostUploadProcessingSequence(item) {
         }
 
         if (finalThumbBlob && s3) {
-            const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg" };
+            const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg", CacheControl: "public,max-age=31536000,immutable", ContentDisposition: "inline" };
             await s3.putObject(thumbParams).promise();
-            item.thumbUrl = flaynityCdnUrl(item.thumbKey);
+            item.thumbUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
         } else {
             item.thumbUrl = item.thumbDataUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
         }
@@ -1460,11 +1442,9 @@ async function pushVideoMetadataToDatabase(item) {
         banner: item.thumbUrl || item.thumbDataUrl || "",
         videoLink: item.videoUrl,
         cdnUrl: item.videoUrl,
-        sourceUrl: item.videoUrl,
-        streaming: { protocol: "progressive", range: true },
-        encodingStatus: "pending",
-        videoQualities: item.videoQualities || {},
-        encoding: item.encoding || null,
+        hlsUrl: item.hlsUrl || item.m3u8Url || '',
+        dashUrl: item.dashUrl || item.mpdUrl || '',
+        qualityUrls: item.qualityUrls || item.videoQualities || {},
         uploadTime: Date.now(),
         updateTime: Date.now(),
         visibility: item.visibility,
@@ -1547,7 +1527,6 @@ function saveQueueStateToLocalStorage() {
             thumbKey: item.thumbKey,
             thumbUrl: item.thumbUrl,
             videoUrl: item.videoUrl,
-            encoding: item.encoding || null,
             retryCount: item.retryCount,
             createdAt: item.createdAt,
             scheduledTime: item.scheduledTime
@@ -1601,7 +1580,7 @@ function startRealtimeFeedsListener() {
         db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
             try {
                 const data = snap.val();
-                allLongVideos = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now).map(normalizeFlaynityMediaRecord), 'video') : [];
+                allLongVideos = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'video') : [];
                 allLongVideos.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                 
                 allLongVideos.forEach(m => {
@@ -1625,7 +1604,7 @@ function startRealtimeFeedsListener() {
         db.ref('admin_panel/movies/feels').on('value', (snap) => {
             try {
                 const data = snap.val();
-                allFeels = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now).map(normalizeFlaynityMediaRecord), 'short') : [];
+                allFeels = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'short') : [];
                 allFeels.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                 
                 if(allFeels.length !== previousFeelsCount) {
@@ -1662,7 +1641,7 @@ function startRealtimeFeedsListener() {
                     const feelsData = feelsSnap.val() ? Object.values(feelsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
                     const merged = [...feelsData, ...legacyData];
                     const seenIds = new Set();
-                    allFeels = enforceContentAdminStatus(merged.map(normalizeFlaynityMediaRecord).filter(m => {
+                    allFeels = enforceContentAdminStatus(merged.filter(m => {
                         if (!m || !m.id || seenIds.has(String(m.id))) return false;
                         seenIds.add(String(m.id));
                         return true;
@@ -1677,7 +1656,7 @@ function startRealtimeFeedsListener() {
         db.ref('admin_panel/posts').on('value', (snap) => {
             try {
                 const data = snap.val();
-                allCommunityPosts = data ? enforceContentAdminStatus(Object.values(data).filter(p => !p.scheduledTime || p.scheduledTime <= now).map(normalizeFlaynityMediaRecord), 'post') : [];
+                allCommunityPosts = data ? enforceContentAdminStatus(Object.values(data).filter(p => !p.scheduledTime || p.scheduledTime <= now), 'post') : [];
                 allCommunityPosts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
                 
                 if (allCommunityPosts.length !== previousPostsCount) {
@@ -2229,6 +2208,7 @@ function spawnDoubleTapHeart(e, slideElement) {
 // HIGH PERFORMANCE FEELS BUILDER
 // =========================================================
 let hlsInstances = {};
+let dashInstances = {};
 
 let feelsFeedMode = 'for-you';
 const feelsSubscribedChannels = {};
@@ -2431,7 +2411,7 @@ function buildFeelsPage() {
                 <div class="short-buffer-spinner" id="short-spinner-${s.id}"></div>
                 <div class="short-play-pause-overlay" id="short-pp-overlay-${s.id}"></div>
 
-                <video class="short-video-el" loop playsinline webkit-playsinline poster="${s.poster || ''}" preload="metadata"></video>
+                <video class="short-video-el" loop playsinline webkit-playsinline poster="${s.poster || ''}" preload="auto" fetchpriority="high"></video>
 
                 <div class="short-progress-container">
                     <div class="short-progress-bar" id="short-progress-bar-${s.id}"></div>
@@ -3015,15 +2995,94 @@ function toggleClipSubscribe(channelId, buttonEl) {
 // =========================================================
 let currentActiveFeelsIdx = -1;
 
-function attachSmartAdaptiveSource(videoElement, url, shortId) { return attachCdnMediaSource(videoElement, url, shortId); }
-function optimizeFeelsMemoryAndPreload(activeIndex) {
- const slides=Array.from(document.querySelectorAll('.short-slide'));
- slides.forEach((slide,idx)=>{const video=slide.querySelector('video');if(!video)return;const shortId=slide.getAttribute('data-shortid');const item=allFeels.find(x=>String(x.id)===String(shortId));if(!item)return;const d=idx-activeIndex;
-  if(d>=-FLAYNITY_FEELS_PRELOAD_BEHIND&&d<=FLAYNITY_FEELS_PRELOAD_AHEAD){video.setAttribute('poster',normalizeFlaynityMediaUrl(item.poster||''));video.preload='auto';video.setAttribute('playsinline','');video.setAttribute('webkit-playsinline','');video.setAttribute('data-cdn-url',normalizeFlaynityMediaUrl(item.videoLink||item.cdnUrl||''));if(!video.getAttribute('src')&&!hlsInstances[shortId]){const src=getMovieQualitySources(item);attachCdnMediaSource(video,src.hls||src.dash||src.source||item.videoLink,shortId);}if(d===0){video.muted=false;const pp=video.play();if(pp)pp.catch(()=>{video.muted=true;video.play().catch(()=>{});});}else{video.pause();try{video.currentTime=0;}catch(e){}}}
-  else{video.pause();destroySmartMediaInstance(shortId);video.removeAttribute('src');video.removeAttribute('preload');video.load();}
- });
- for(let i=activeIndex+1;i<=Math.min(slides.length-1,activeIndex+FLAYNITY_FEELS_PRELOAD_AHEAD);i++){const id=slides[i].getAttribute('data-shortid');const item=allFeels.find(x=>String(x.id)===String(id));if(item&&i<=activeIndex+2)warmCdnMediaUrl(item.videoLink||item.cdnUrl);}
+function attachSmartAdaptiveSource(videoElement, mediaOrUrl, shortId, quality) {
+    if (!videoElement) return;
+    const media = (mediaOrUrl && typeof mediaOrUrl === 'object') ? mediaOrUrl : { videoLink: mediaOrUrl };
+    const sources = getMediaSources(media);
+    const selected = getPreferredMediaUrl(media, quality || 'auto');
+    setFastMediaAttributes(videoElement, { preload: 'auto', fetchPriority: 'high' });
+
+    if (!selected) return;
+
+    // DASH: use dash.js when the CDN exposes an MPD manifest.
+    if ((quality === 'dash' || sources.dash && selected === sources.dash) && typeof dashjs !== 'undefined' && dashjs.MediaPlayer) {
+        try {
+            if (dashInstances[shortId]) dashInstances[shortId].reset();
+            const player = dashjs.MediaPlayer().create();
+            player.updateSettings({ streaming: { buffer: { fastSwitchEnabled: true, stableBufferTime: 12 } } });
+            player.initialize(videoElement, selected, true);
+            dashInstances[shortId] = player;
+            return;
+        } catch (e) { console.warn('DASH init failed, falling back to MP4.', e); }
+    }
+
+    // HLS: native playback on Android/WebView where available, hls.js otherwise.
+    if ((selected.includes('.m3u8') || quality === 'hls') && videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+        videoElement.src = selected;
+        videoElement.load();
+        return;
+    }
+    if (selected.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
+        try {
+            if (hlsInstances[shortId]) hlsInstances[shortId].destroy();
+            const hls = new Hls({
+                enableWorker: true,
+                lowLatencyMode: false,
+                capLevelToPlayerSize: true,
+                startLevel: -1,
+                maxBufferLength: 20,
+                maxMaxBufferLength: 90,
+                backBufferLength: 10,
+                fragLoadingMaxRetry: 3,
+                manifestLoadingMaxRetry: 3,
+                levelLoadingMaxRetry: 3
+            });
+            hls.loadSource(selected);
+            hls.attachMedia(videoElement);
+            hlsInstances[shortId] = hls;
+            return;
+        } catch (e) { console.warn('HLS init failed, falling back to MP4.', e); }
+    }
+
+    videoElement.src = selected;
+    videoElement.load();
 }
+
+function preloadFeelsWindow(activeIndex) {
+    const slides = document.querySelectorAll('.short-slide');
+    const start = Math.max(0, activeIndex - 1);
+    const end = Math.min(slides.length - 1, activeIndex + FLAYNITY_CDN_CONFIG.preloadFeels);
+    slides.forEach((slide, idx) => {
+        const video = slide.querySelector('video');
+        if (!video) return;
+        const shortId = slide.getAttribute('data-shortid');
+        const item = allFeels.find(x => String(x.id) === String(shortId));
+        if (!item) return;
+        if (idx >= start && idx <= end) {
+            const url = getPreferredMediaUrl(item, 'auto');
+            if (video.getAttribute('data-fast-url') !== url) {
+                if (dashInstances[shortId]) { try { dashInstances[shortId].reset(); } catch(e) {} delete dashInstances[shortId]; }
+                if (hlsInstances[shortId]) { try { hlsInstances[shortId].destroy(); } catch(e) {} delete hlsInstances[shortId]; }
+                video.setAttribute('data-fast-url', url);
+                attachSmartAdaptiveSource(video, item, shortId);
+            }
+            video.preload = idx <= activeIndex + FLAYNITY_CDN_CONFIG.aggressiveFeelsWindow ? 'auto' : 'metadata';
+            if (idx > activeIndex && idx <= end) warmMediaRange(url);
+        } else {
+            video.pause();
+            video.removeAttribute('src');
+            video.removeAttribute('data-fast-url');
+            if (hlsInstances[shortId]) { try { hlsInstances[shortId].destroy(); } catch(e) {} delete hlsInstances[shortId]; }
+            if (dashInstances[shortId]) { try { dashInstances[shortId].reset(); } catch(e) {} delete dashInstances[shortId]; }
+            video.load();
+        }
+    });
+}
+
+function optimizeFeelsMemoryAndPreload(activeIndex) {
+    preloadFeelsWindow(activeIndex);
+}
+
 
 let feelsObserver;
 function initFeelsObserver() {
@@ -6235,10 +6294,10 @@ async function publishPremiumVideoOrShort(modeType) {
     }
 
     const uniqueId = "st_" + Date.now() + "_" + Math.floor(Math.random()*1000);
-    const ownerId = auth.currentUser ? auth.currentUser.uid : 'global';
-    const safeFileName = currentUploadFile.name.replace(/\s+/g, '_');
+    const uid = auth.currentUser ? auth.currentUser.uid : 'public';
     const mediaFolder = isShort ? 'feels' : 'videos';
-    const fileKey = `${mediaFolder}/${ownerId}/${uniqueId}_${safeFileName}`;
+    const safeName = currentUploadFile.name.replace(/\s+/g, '_');
+    const fileKey = `${mediaFolder}/${uid}/${Date.now()}_${safeName}`;
     
     // Convert active trim percentage to actual duration if trimmed
     let finalDuration = currentUploadFrameMeta.duration;
@@ -6261,19 +6320,7 @@ async function publishPremiumVideoOrShort(modeType) {
         duration: finalDuration,
         thumbDataUrl: currentUploadFrameMeta.dataUrl,
         thumbBlob: currentUploadFrameMeta.blob, 
-        thumbKey: `thumbnails/${ownerId}/${uniqueId}.jpg`,
-        encoding: {
-            status: 'pending',
-            sourceKey: fileKey,
-            profiles: {
-                '1080p': `${mediaFolder}/${ownerId}/${uniqueId}/1080p.mp4`,
-                '720p': `${mediaFolder}/${ownerId}/${uniqueId}/720p.mp4`,
-                '360p': `${mediaFolder}/${ownerId}/${uniqueId}/360p.mp4`,
-                '144p': `${mediaFolder}/${ownerId}/${uniqueId}/144p.mp4`
-            },
-            hls: `${mediaFolder}/${ownerId}/${uniqueId}/master.m3u8`,
-            dash: `${mediaFolder}/${ownerId}/${uniqueId}/manifest.mpd`
-        },
+        thumbKey: `thumbnails/${uid}/${Date.now()}_${uniqueId}.jpg`,
         createdAt: Date.now(),
         scheduledTime: visibility === 'Schedule' && scheduleDate ? new Date(scheduleDate).getTime() : 0
     };
@@ -6314,11 +6361,10 @@ async function publishPremiumPostAction() {
         const username = uData.username || user.email.split('@')[0];
         const avatar = currentChannelData?.avatarUrl || user.photoURL || "";
 
-        const postId = "post_" + Date.now();
-        const imgUrl = await uploadImageToR2(currentUploadFile, "posts", 3, user.uid, postId);
+        const imgUrl = getFastMediaUrl(await uploadImageToR2(currentUploadFile, "posts"));
         
         const postPayload = {
-            id: postId,
+            id: "post_" + Date.now(),
             userId: user.uid,
             channelId: user.uid,
             title: title.split('\n')[0].substring(0, 50) || "Community Post",
@@ -6443,8 +6489,7 @@ function flyInitPlayer(link){
     if(poster && currentActiveMovie){ poster.src=currentActiveMovie.poster||currentActiveMovie.banner||''; poster.style.display='block'; }
 
     // Cloudflare CDN + HLS adaptive streaming (আপনার existing helper reuse)
-    const mediaSources = getMovieQualitySources(currentActiveMovie);
-    attachCdnMediaSource(v, mediaSources.hls || mediaSources.dash || mediaSources.source || link, 'fly_main');
+    attachSmartAdaptiveSource(v, currentActiveMovie || { videoLink: link }, 'fly_main', 'auto');
     v.playbackRate=flyCurrentSpeed;
 
     flyBuildSpeedMenu();
@@ -6560,11 +6605,34 @@ function flySetSpeed(val,e){ if(e) e.stopPropagation(); const v=document.getElem
     flyBuildSpeedMenu(); flyCloseAllMenus(); flyResetHideTimer(); }
 
 function flyBuildQualityMenu(){
- const list=document.getElementById('fly-quality-list');if(!list)return;const maxH=flyGetMaxHeight(),src=getMovieQualitySources(currentActiveMovie);const qs=[{h:1080,p:'1080p'},{h:720,p:'720p'},{h:360,p:'360p'},{h:144,p:'144p'}];
- list.innerHTML=qs.map(q=>{const locked=q.h>maxH,available=!!src[q.p]||!!src.hls||!!src.dash;const disabled=locked||!available;return `<div class="fly-menu-item ${disabled?'locked':''}" onclick="${disabled?'event.stopPropagation();':`flySetQuality(${q.h},'${q.p}',event)`}"><span>${q.p}${locked?' (Unavailable)':''}</span>${disabled?'<i class="fas fa-lock" style="font-size:.8rem;"></i>':''}</div>`;}).join('');
+    const list=document.getElementById('fly-quality-list'); if(!list) return;
+    const maxH=flyGetMaxHeight();
+    const qs=[{l:'Low',h:144,p:'144p'},{l:'Fast',h:360,p:'360p'},{l:'High Quality',h:720,p:'720p'},{l:'Premium',h:1080,p:'1080p'}];
+    list.innerHTML=qs.map(q=>{
+        const locked=q.h>maxH;
+        return `<div class="fly-menu-item ${locked?'locked':''}" onclick="${locked?'event.stopPropagation();':`flySetQuality(${q.h},'${q.p}',event)`}">
+            <span>${q.l} (${q.p})</span>${locked?'<i class="fas fa-lock" style="font-size:.8rem;"></i>':''}</div>`;
+    }).join('');
 }
-function flySetQuality(h,label,e){
- if(e)e.stopPropagation();const v=document.getElementById('fly-video'),src=getMovieQualitySources(currentActiveMovie),key=h+'p';try{const hls=hlsInstances['fly_main'];if(hls&&hls.levels&&hls.levels.length){let best=-1,diff=1e9;hls.levels.forEach((lv,i)=>{const d=Math.abs((lv.height||0)-h);if(d<diff){diff=d;best=i;}});if(best>=0)hls.currentLevel=best;}else if(v&&src[key]){const playing=!v.paused,t=v.currentTime||0;destroySmartMediaInstance('fly_main');v.src=normalizeFlaynityMediaUrl(src[key]);v.preload='auto';v.load();v.addEventListener('loadedmetadata',function restore(){try{v.currentTime=Math.min(t,Math.max(0,(v.duration||t)-.1));}catch(err){}v.removeEventListener('loadedmetadata',restore);if(playing)v.play().catch(()=>{});});}}catch(err){console.warn('Quality switch failed',err);}const lbl=document.getElementById('fly-quality-label');if(lbl)lbl.innerText=label;flyCloseAllMenus();flyResetHideTimer();}
+function flySetQuality(h,label,e){ if(e) e.stopPropagation();
+    const v=document.getElementById('fly-video');
+    if(!v || !currentActiveMovie) return;
+    const source = getPreferredMediaUrl(currentActiveMovie, String(h));
+    try {
+        const hls = hlsInstances['fly_main'];
+        if (hls && hls.levels && hls.levels.length) {
+            let best=-1,diff=1e9;
+            hls.levels.forEach((lv,i)=>{ const d=Math.abs((lv.height||0)-h); if(d<diff){diff=d;best=i;} });
+            if(best>=0){ hls.currentLevel=best; }
+        } else if (source) {
+            const t=v.currentTime||0, wasPlaying=!v.paused;
+            attachSmartAdaptiveSource(v,currentActiveMovie,'fly_main',String(h));
+            const restore=()=>{ try{v.currentTime=Math.min(t,v.duration||t);}catch(e){}; if(wasPlaying) v.play().catch(()=>{}); v.removeEventListener('loadedmetadata',restore); };
+            v.addEventListener('loadedmetadata',restore);
+        }
+    } catch(err) {}
+    const lbl=document.getElementById('fly-quality-label'); if(lbl) lbl.innerText=label;
+    flyCloseAllMenus(); flyResetHideTimer(); }
 
 /* ---------- Fullscreen (শুধু player landscape) ---------- */
 function flyToggleFullscreen(){

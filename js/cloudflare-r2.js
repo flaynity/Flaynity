@@ -1,54 +1,97 @@
 // =========================================================
-// CLOUDFLARE R2 OBJECT STORAGE MODULE
+// FLAYNITY SECURE MEDIA CLIENT
+// R2 credentials NEVER belong in the WebView/frontend.
+// Upload authorization is issued by Flaynity-Server.
 // =========================================================
-const R2_CONFIG = {
-    accessKeyId: "c4d26ef58f7d0818695c8710af083fb6",
-    secretAccessKey: "97bc62a7b0c961001611489e28f9dbd41d2b30cda3e8348bb32d12a7c1d319a8",
-    endpoint: "https://b3741135bd1f3e96b6744f11e6a06600.r2.cloudflarestorage.com",
-    s3ForcePathStyle: true,
-    signatureVersion: 'v4',
-    region: 'auto',
-    maxRetries: 5,
-    httpOptions: {
-        timeout: 300000, 
-        connectTimeout: 30000
+const FLAYNITY_API_BASE = "https://api.flaynity.indevs.in/api";
+const FLAYNITY_MEDIA_BASE = "https://cdn.flaynity.indevs.in/media";
+const LEGACY_R2_PUBLIC_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev";
+
+function normalizeFlaynityMediaUrl(url) {
+    if (!url) return url;
+    const value = String(url);
+    if (value.startsWith(LEGACY_R2_PUBLIC_PREFIX + "/")) {
+        const key = value.slice((LEGACY_R2_PUBLIC_PREFIX + "/").length).split(/[?#]/)[0];
+        return flaynityMediaUrl(key) + (value.includes("?") ? value.slice(value.indexOf("?")) : "");
     }
-};
+    return value;
+}
 
-AWS.config.update(R2_CONFIG);
-const s3 = new AWS.S3({ params: { Bucket: 'flaynity-storage' } });
-const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev";
+function flaynityMediaUrl(key) {
+    if (!key) return "";
+    return `${FLAYNITY_MEDIA_BASE}/${String(key).split('/').map(encodeURIComponent).join('/')}`;
+}
 
-// =========================================================
-// S3 R2 OBJECT STORAGE MEDIA UPLOAD MODULE
-// =========================================================
+async function flaynityAuthHeaders() {
+    const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
+    if (!user) throw new Error("Please sign in first.");
+    const token = await user.getIdToken();
+    return { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
+}
+
+async function flaynityCreateUpload(file, folder = "images", options = {}) {
+    if (!file) throw new Error("No file selected.");
+    const safeFolder = String(folder || "images").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 32) || "images";
+    const safeName = String(file.name || "file.bin").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-140);
+    const id = `${Date.now()}_${crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
+    const key = `uploads/${safeFolder}/${id}_${safeName}`;
+    const headers = await flaynityAuthHeaders();
+    const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/upload-url`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+            key,
+            contentType: file.type || options.contentType || "application/octet-stream",
+            expiresIn: 900
+        })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.uploadUrl) throw new Error(data.error || "Could not create secure upload URL.");
+    return { key: data.key || key, uploadUrl: data.uploadUrl, publicUrl: data.publicUrl || flaynityMediaUrl(data.key || key) };
+}
+
+function flaynityPutWithProgress(uploadUrl, file, onProgress) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", uploadUrl, true);
+        xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable && typeof onProgress === "function") onProgress(e.loaded, e.total);
+        };
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve();
+            else reject(new Error(`Upload failed (${xhr.status}).`));
+        };
+        xhr.onerror = () => reject(new Error("Network error while uploading media."));
+        xhr.onabort = () => reject(new Error("Upload aborted."));
+        xhr.send(file);
+    });
+}
+
 async function uploadImageToR2(file, folder = "images", retries = 3) {
-    if (!s3) throw new Error("R2 Client storage unit is not configured.");
-    const uniqueId = "img_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-    const fileKey = `uploads/${folder}/${uniqueId}_${file.name.replace(/\s+/g, '_')}`;
-    const params = {
-        Key: fileKey,
-        Body: file,
-        ContentType: file.type || "image/jpeg"
-    };
-
+    let lastError;
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            await s3.putObject(params).promise();
-            return `${PUBLIC_R2_DOMAIN_PREFIX}/${fileKey}`;
+            const upload = await flaynityCreateUpload(file, folder, { contentType: file.type || "image/jpeg" });
+            await flaynityPutWithProgress(upload.uploadUrl, file);
+            return upload.publicUrl;
         } catch (err) {
-            console.warn(`R2 Image Upload attempt ${attempt} failed:`, err);
-            if (attempt === retries) throw err;
-            await new Promise(res => setTimeout(res, 1000 * Math.pow(2, attempt)));
+            lastError = err;
+            if (attempt < retries) await new Promise(r => setTimeout(r, 600 * attempt));
         }
     }
+    throw lastError || new Error("Image upload failed.");
+}
+
+async function uploadMediaToFlaynity(file, folder = "videos", onProgress) {
+    const upload = await flaynityCreateUpload(file, folder, { contentType: file.type || "video/mp4" });
+    await flaynityPutWithProgress(upload.uploadUrl, file, onProgress);
+    return upload;
 }
 
 function dataURLtoBlob(dataurl) {
     var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
         bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-    while(n--){
-        u8arr[n] = bstr.charCodeAt(n);
-    }
+    while(n--) u8arr[n] = bstr.charCodeAt(n);
     return new Blob([u8arr], {type:mime});
 }

@@ -25,6 +25,7 @@ function flaynityMediaUrl(key) {
 async function flaynityAuthHeaders() {
     const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
     if (!user) throw new Error("Please sign in first.");
+    // Force refresh so the server never receives a stale Firebase ID token.
     const token = await user.getIdToken(true);
     return { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
 }
@@ -39,11 +40,7 @@ async function flaynityCreateUpload(file, folder = "images", options = {}) {
     const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/upload-url`, {
         method: "POST",
         headers,
-        body: JSON.stringify({
-            key,
-            contentType: file.type || options.contentType || "application/octet-stream",
-            expiresIn: 900
-        })
+        body: JSON.stringify({ key, contentType: file.type || options.contentType || "application/octet-stream", expiresIn: 900 })
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.uploadUrl) {

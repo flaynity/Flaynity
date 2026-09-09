@@ -17,7 +17,7 @@ const R2_CONFIG = {
 
 AWS.config.update(R2_CONFIG);
 const s3 = new AWS.S3({ params: { Bucket: 'flaynity-storage' } });
-const PUBLIC_R2_DOMAIN_PREFIX = "https://cdn.flaynity.indevs.in";
+const PUBLIC_R2_DOMAIN_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev";
 
 // =========================================================
 // S3 R2 OBJECT STORAGE MEDIA UPLOAD MODULE

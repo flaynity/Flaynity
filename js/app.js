@@ -1248,6 +1248,19 @@ function logout() {
     auth.signOut(); 
 }
 
+// Normalize API/XHR/R2 errors so the UI never shows "[object Object]".
+function formatUploadError(err) {
+    if (!err) return "Unknown upload error";
+    if (typeof err === "string") return err;
+    if (err.message && err.message !== "[object Object]") return err.message;
+    if (err.error) {
+        if (typeof err.error === "string") return err.error;
+        if (err.error.message) return err.error.message;
+        try { return JSON.stringify(err.error); } catch (_) {}
+    }
+    try { return JSON.stringify(err); } catch (_) { return String(err); }
+}
+
 // =========================================================
 // FAST PARALLEL UPLOAD ENGINE & WATCHDOG
 // =========================================================
@@ -1294,31 +1307,34 @@ async function startS3DirectUpload(item) {
     const startTime = Date.now();
 
     try {
-        if (!currentUploadFile && !item.file) throw new Error("Video file is no longer available. Please select it again.");
-        const file = item.file || currentUploadFile;
+        const params = {
+            Key: item.key,
+            Body: item.file,
+            ContentType: item.file.type || 'video/mp4'
+        };
+        
+        const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
 
-        // Large video bytes go directly from WebView to R2 using a short-lived presigned URL.
-        const session = item.uploadSession || await createVideoUploadSession(file);
-        item.uploadSession = session;
-        item.key = session.objectKey;
+        const s3Upload = s3.upload(params, uploadOpts);
+        item.s3UploadRef = s3Upload;
 
-        await uploadFileToPresignedUrl(file, session, (loaded, total) => {
-            if (item.status !== 'uploading') return;
-            const pct = Math.round((loaded / total) * 100);
+        s3Upload.on('httpUploadProgress', (evt) => {
+            if (item.status !== 'uploading') return; 
+            const pct = Math.round((evt.loaded / evt.total) * 100);
             item.progress = pct;
 
             const elapsed = (Date.now() - startTime) / 1000;
             if (elapsed > 0) {
-                item.speed = loaded / elapsed;
-                item.eta = item.speed > 0 ? (total - loaded) / item.speed : 0;
+                item.speed = evt.loaded / elapsed; 
+                item.eta = (evt.total - evt.loaded) / item.speed;
             }
             updateManagerUI();
         });
 
-        const verified = await verifyVideoUpload(item.key);
-        item.videoUrl = verified.playbackUrl;
+        await s3Upload.promise();
+        
+        item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
         item.status = "processing";
-        item.progress = 100;
         item.retryCount = 0;
         updateManagerUI();
 
@@ -1334,17 +1350,15 @@ async function startS3DirectUpload(item) {
         } else {
             console.error("Upload error: ", err);
             item.retryCount = (item.retryCount || 0) + 1;
-
+            
             if (item.retryCount <= 5) {
                 item.status = "waiting";
-                // A presigned URL is short-lived; request a fresh one on retry.
-                item.uploadSession = null;
                 updateManagerUI();
                 showNotification(`Network hiccup. Retrying (${item.retryCount}/5)...`, "error");
             } else {
                 item.status = "failed";
                 updateManagerUI();
-                showNotification(`Upload failed: ${err.message}`, "error");
+                showNotification(`Upload failed: ${formatUploadError(err)}`, "error");
             }
         }
     } finally {
@@ -1364,12 +1378,11 @@ async function runPostUploadProcessingSequence(item) {
             try { finalThumbBlob = dataURLtoBlob(item.thumbDataUrl); } catch (e) {}
         }
 
-        if (finalThumbBlob && s3) {
-            const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg" };
-            await s3.putObject(thumbParams).promise();
-            item.thumbUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
+        if (finalThumbBlob) {
+            const thumbFile = new File([finalThumbBlob], `thumbnail-${item.id}.jpg`, { type: "image/jpeg" });
+            item.thumbUrl = await uploadImageToR2(thumbFile, "thumbnails");
         } else {
-            item.thumbUrl = item.thumbDataUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
+            item.thumbUrl = item.thumbDataUrl || "";
         }
 
         item.processingMsg = "Publishing Feed...";
@@ -6248,6 +6261,7 @@ async function publishPremiumVideoOrShort(modeType) {
     }
 
     const uniqueId = "st_" + Date.now() + "_" + Math.floor(Math.random()*1000);
+    const fileKey = `uploads/${uniqueId}/${currentUploadFile.name.replace(/\s+/g, '_')}`;
     
     // Convert active trim percentage to actual duration if trimmed
     let finalDuration = currentUploadFrameMeta.duration;
@@ -6258,8 +6272,7 @@ async function publishPremiumVideoOrShort(modeType) {
     const queueItem = {
         id: uniqueId,
         file: currentUploadFile,
-        key: null,
-        uploadSession: null,
+        key: fileKey,
         type: modeType,
         title: title,
         description: desc,

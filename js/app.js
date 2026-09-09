@@ -1294,34 +1294,31 @@ async function startS3DirectUpload(item) {
     const startTime = Date.now();
 
     try {
-        const params = {
-            Key: item.key,
-            Body: item.file,
-            ContentType: item.file.type || 'video/mp4'
-        };
-        
-        const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
+        if (!currentUploadFile && !item.file) throw new Error("Video file is no longer available. Please select it again.");
+        const file = item.file || currentUploadFile;
 
-        const s3Upload = s3.upload(params, uploadOpts);
-        item.s3UploadRef = s3Upload;
+        // Large video bytes go directly from WebView to R2 using a short-lived presigned URL.
+        const session = item.uploadSession || await createVideoUploadSession(file);
+        item.uploadSession = session;
+        item.key = session.objectKey;
 
-        s3Upload.on('httpUploadProgress', (evt) => {
-            if (item.status !== 'uploading') return; 
-            const pct = Math.round((evt.loaded / evt.total) * 100);
+        await uploadFileToPresignedUrl(file, session, (loaded, total) => {
+            if (item.status !== 'uploading') return;
+            const pct = Math.round((loaded / total) * 100);
             item.progress = pct;
 
             const elapsed = (Date.now() - startTime) / 1000;
             if (elapsed > 0) {
-                item.speed = evt.loaded / elapsed; 
-                item.eta = (evt.total - evt.loaded) / item.speed;
+                item.speed = loaded / elapsed;
+                item.eta = item.speed > 0 ? (total - loaded) / item.speed : 0;
             }
             updateManagerUI();
         });
 
-        await s3Upload.promise();
-        
-        item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
+        const verified = await verifyVideoUpload(item.key);
+        item.videoUrl = verified.playbackUrl;
         item.status = "processing";
+        item.progress = 100;
         item.retryCount = 0;
         updateManagerUI();
 
@@ -1337,9 +1334,11 @@ async function startS3DirectUpload(item) {
         } else {
             console.error("Upload error: ", err);
             item.retryCount = (item.retryCount || 0) + 1;
-            
+
             if (item.retryCount <= 5) {
                 item.status = "waiting";
+                // A presigned URL is short-lived; request a fresh one on retry.
+                item.uploadSession = null;
                 updateManagerUI();
                 showNotification(`Network hiccup. Retrying (${item.retryCount}/5)...`, "error");
             } else {
@@ -6249,7 +6248,6 @@ async function publishPremiumVideoOrShort(modeType) {
     }
 
     const uniqueId = "st_" + Date.now() + "_" + Math.floor(Math.random()*1000);
-    const fileKey = `uploads/${uniqueId}/${currentUploadFile.name.replace(/\s+/g, '_')}`;
     
     // Convert active trim percentage to actual duration if trimmed
     let finalDuration = currentUploadFrameMeta.duration;
@@ -6260,7 +6258,8 @@ async function publishPremiumVideoOrShort(modeType) {
     const queueItem = {
         id: uniqueId,
         file: currentUploadFile,
-        key: fileKey,
+        key: null,
+        uploadSession: null,
         type: modeType,
         title: title,
         description: desc,

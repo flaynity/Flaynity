@@ -903,7 +903,7 @@ let postRenderLimit = 30;
 // CLOUDFLARE R2 OBJECT STORAGE
 // =========================================================
 // R2 configuration/client/helpers are provided by js/cloudflare-r2.js.
-// Shared media API globals: R2_CONFIG, uploadImageToR2, uploadVideoToR2, verifyVideoUpload, dataURLtoBlob
+// Shared globals: R2_CONFIG, s3, PUBLIC_R2_DOMAIN_PREFIX, uploadImageToR2, dataURLtoBlob
 
 // =========================================
 // AUTHENTICATION & SESSION MANAGEMENT
@@ -1286,55 +1286,40 @@ async function startS3DirectUpload(item) {
         activeUploadsCount = Math.max(0, activeUploadsCount - 1);
         return;
     }
-
     item.status = "uploading";
     item.progress = item.progress || 0;
     updateManagerUI();
-    const startTime = Date.now();
-
     try {
         const result = await uploadVideoToR2(item.file, (loaded, total) => {
-            if (item.status !== "uploading") return;
-            const pct = total ? Math.round((loaded / total) * 100) : 0;
-            item.progress = pct;
-            const elapsed = (Date.now() - startTime) / 1000;
-            if (elapsed > 0 && loaded > 0) {
-                item.speed = loaded / elapsed;
-                item.eta = Math.max(0, (total - loaded) / item.speed);
-            }
+            if (item.status !== 'uploading') return;
+            item.progress = total ? Math.round((loaded / total) * 100) : 0;
             updateManagerUI();
         });
-
         item.videoUrl = result.playbackUrl;
         item.objectKey = result.objectKey;
         item.status = "processing";
         item.retryCount = 0;
         updateManagerUI();
-
-        // Verify that the object is really present in the bound R2 bucket.
-        const verified = await verifyVideoUpload(item.objectKey);
-        if (verified?.playbackUrl) item.videoUrl = verified.playbackUrl;
-
+        if (item.objectKey) {
+            const verified = await verifyVideoUpload(item.objectKey);
+            if (verified?.playbackUrl) item.videoUrl = verified.playbackUrl;
+        }
         await runPostUploadProcessingSequence(item);
     } catch (err) {
-        if (item.status === 'paused') {
-            console.log("Upload paused safely.");
-        } else if (!navigator.onLine) {
+        console.error("Upload error:", err);
+        item.retryCount = (item.retryCount || 0) + 1;
+        if (!navigator.onLine) {
             item.status = "paused";
             updateManagerUI();
             showNotification("Connection lost. Upload paused.", "error");
+        } else if (item.retryCount <= 5) {
+            item.status = "waiting";
+            updateManagerUI();
+            showNotification(`Upload error. Retrying (${item.retryCount}/5)...`, "error");
         } else {
-            console.error("Upload error:", err);
-            item.retryCount = (item.retryCount || 0) + 1;
-            if (item.retryCount <= 5) {
-                item.status = "waiting";
-                updateManagerUI();
-                showNotification(`Upload error. Retrying (${item.retryCount}/5): ${err?.message || String(err)}`, "error");
-            } else {
-                item.status = "failed";
-                updateManagerUI();
-                showNotification(`Upload failed: ${err?.message || String(err)}`, "error");
-            }
+            item.status = "failed";
+            updateManagerUI();
+            showNotification(`Upload failed: ${err?.message || String(err)}`, "error");
         }
     } finally {
         activeUploadsCount = Math.max(0, activeUploadsCount - 1);
@@ -1355,10 +1340,8 @@ async function runPostUploadProcessingSequence(item) {
 
         if (finalThumbBlob) {
             item.thumbUrl = await uploadImageToR2(finalThumbBlob, "thumbnails");
-        } else if (item.thumbDataUrl) {
-            item.thumbUrl = item.thumbDataUrl;
         } else {
-            item.thumbUrl = "";
+            item.thumbUrl = item.thumbDataUrl || "";
         }
 
         item.processingMsg = "Publishing Feed...";
@@ -6302,7 +6285,6 @@ async function publishPremiumPostAction() {
         const avatar = currentChannelData?.avatarUrl || user.photoURL || "";
 
         const imgUrl = await uploadImageToR2(currentUploadFile, "posts");
-        if (!imgUrl) throw new Error("Image upload server returned an empty CDN URL.");
         
         const postPayload = {
             id: "post_" + Date.now(),

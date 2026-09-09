@@ -90,6 +90,15 @@ async function apiJson(path, payload, retryAuth = true) {
     return body;
 }
 
+function videoMimeFromName(name) {
+    const ext = String(name || "").split(".").pop().toLowerCase();
+    return ({ mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime", mkv: "video/x-matroska" })[ext] || "video/mp4";
+}
+function imageMimeFromName(name) {
+    const ext = String(name || "").split(".").pop().toLowerCase();
+    return ({ jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif" })[ext] || "image/jpeg";
+}
+
 async function requestUploadUrl(file, kind, folder = "images") {
     if (!file) throw mediaError("No file selected.");
     if (!file.name) throw mediaError("Selected file has no valid file name.");
@@ -97,7 +106,7 @@ async function requestUploadUrl(file, kind, folder = "images") {
     const path = kind === "video" ? "/v1/video/upload-url" : "/v1/image/upload-url";
     return apiJson(path, {
         fileName: file.name,
-        contentType: file.type || (kind === "video" ? "video/mp4" : "image/jpeg"),
+        contentType: file.type || (kind === "video" ? videoMimeFromName(file.name) : imageMimeFromName(file.name)),
         size: Number(file.size || 0),
         ...(kind === "image" ? { folder } : {})
     });
@@ -122,7 +131,7 @@ function putToPresignedUrl(uploadUrl, file, headers, onProgress) {
             if (xhr.status >= 200 && xhr.status < 300) resolve();
             else reject(mediaError(`R2 upload failed (HTTP ${xhr.status})`, xhr.responseText));
         };
-        xhr.onerror = () => reject(mediaError("Network error while uploading the file to Cloudflare R2."));
+        xhr.onerror = () => reject(mediaError("Network error while uploading the file to Cloudflare R2. Your WebView origin may be blocked by R2 CORS. Add Origin null to the R2 CORS policy or host the app from https://flaynity.indevs.in."));
         xhr.onabort = () => reject(mediaError("Upload was cancelled."));
         xhr.ontimeout = () => reject(mediaError("R2 upload timed out. Please try again."));
         xhr.send(file);

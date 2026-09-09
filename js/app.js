@@ -903,7 +903,7 @@ let postRenderLimit = 30;
 // CLOUDFLARE R2 OBJECT STORAGE
 // =========================================================
 // R2 configuration/client/helpers are provided by js/cloudflare-r2.js.
-// Shared globals: R2_CONFIG, s3, PUBLIC_R2_DOMAIN_PREFIX, uploadImageToR2, dataURLtoBlob
+// Shared media API globals: R2_CONFIG, uploadImageToR2, uploadVideoToR2, verifyVideoUpload, dataURLtoBlob
 
 // =========================================
 // AUTHENTICATION & SESSION MANAGEMENT
@@ -1248,19 +1248,6 @@ function logout() {
     auth.signOut(); 
 }
 
-// Normalize API/XHR/R2 errors so the UI never shows "[object Object]".
-function formatUploadError(err) {
-    if (!err) return "Unknown upload error";
-    if (typeof err === "string") return err;
-    if (err.message && err.message !== "[object Object]") return err.message;
-    if (err.error) {
-        if (typeof err.error === "string") return err.error;
-        if (err.error.message) return err.error.message;
-        try { return JSON.stringify(err.error); } catch (_) {}
-    }
-    try { return JSON.stringify(err); } catch (_) { return String(err); }
-}
-
 // =========================================================
 // FAST PARALLEL UPLOAD ENGINE & WATCHDOG
 // =========================================================
@@ -1303,48 +1290,32 @@ async function startS3DirectUpload(item) {
     item.status = "uploading";
     item.progress = item.progress || 0;
     updateManagerUI();
+    const startTime = Date.now();
 
     try {
-        if (!item.file) throw new Error("Upload file is missing. Please select the file again.");
-
-        // Get a short-lived presigned R2 URL from the Flaynity API.
-        const session = await createVideoUploadSession(item.file);
-        item.key = session.objectKey;
-
-        await new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open(session.uploadMethod || "PUT", session.uploadUrl, true);
-
-            Object.entries(session.uploadHeaders || {}).forEach(([key, value]) => {
-                xhr.setRequestHeader(key, value);
-            });
-
-            xhr.upload.onprogress = (evt) => {
-                if (!evt.lengthComputable) return;
-                item.progress = Math.round((evt.loaded / evt.total) * 100);
-                updateManagerUI();
-            };
-
-            xhr.onload = () => {
-                if (xhr.status >= 200 && xhr.status < 300) resolve();
-                else reject(new Error(`R2 upload failed (HTTP ${xhr.status}).`));
-            };
-            xhr.onerror = () => reject(new Error("Network error while uploading video."));
-            xhr.onabort = () => reject(new Error("Video upload was aborted."));
-            item.uploadXhr = xhr;
-            xhr.send(item.file);
+        const result = await uploadVideoToR2(item.file, (loaded, total) => {
+            if (item.status !== "uploading") return;
+            const pct = total ? Math.round((loaded / total) * 100) : 0;
+            item.progress = pct;
+            const elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed > 0 && loaded > 0) {
+                item.speed = loaded / elapsed;
+                item.eta = Math.max(0, (total - loaded) / item.speed);
+            }
+            updateManagerUI();
         });
 
-        // Verify that R2 actually contains the uploaded object before publishing.
-        const verified = await verifyVideoUpload(item.key);
-        item.videoUrl = verified.playbackUrl || session.playbackUrl || `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
+        item.videoUrl = result.playbackUrl;
+        item.objectKey = result.objectKey;
         item.status = "processing";
-        item.progress = 100;
         item.retryCount = 0;
         updateManagerUI();
 
-        await runPostUploadProcessingSequence(item);
+        // Verify that the object is really present in the bound R2 bucket.
+        const verified = await verifyVideoUpload(item.objectKey);
+        if (verified?.playbackUrl) item.videoUrl = verified.playbackUrl;
 
+        await runPostUploadProcessingSequence(item);
     } catch (err) {
         if (item.status === 'paused') {
             console.log("Upload paused safely.");
@@ -1355,23 +1326,22 @@ async function startS3DirectUpload(item) {
         } else {
             console.error("Upload error:", err);
             item.retryCount = (item.retryCount || 0) + 1;
-
             if (item.retryCount <= 5) {
                 item.status = "waiting";
                 updateManagerUI();
-                showNotification(`Upload error. Retrying (${item.retryCount}/5): ${formatUploadError(err)}`, "error");
+                showNotification(`Upload error. Retrying (${item.retryCount}/5): ${err?.message || String(err)}`, "error");
             } else {
                 item.status = "failed";
                 updateManagerUI();
-                showNotification(`Upload failed: ${formatUploadError(err)}`, "error");
+                showNotification(`Upload failed: ${err?.message || String(err)}`, "error");
             }
         }
     } finally {
-        item.uploadXhr = null;
         activeUploadsCount = Math.max(0, activeUploadsCount - 1);
         triggerNextActiveUpload();
     }
 }
+
 async function runPostUploadProcessingSequence(item) {
     item.status = "processing";
     item.progress = 0;
@@ -1384,10 +1354,11 @@ async function runPostUploadProcessingSequence(item) {
         }
 
         if (finalThumbBlob) {
-            const thumbFile = new File([finalThumbBlob], `thumbnail-${item.id}.jpg`, { type: "image/jpeg" });
-            item.thumbUrl = await uploadImageToR2(thumbFile, "thumbnails");
+            item.thumbUrl = await uploadImageToR2(finalThumbBlob, "thumbnails");
+        } else if (item.thumbDataUrl) {
+            item.thumbUrl = item.thumbDataUrl;
         } else {
-            item.thumbUrl = item.thumbDataUrl || "";
+            item.thumbUrl = "";
         }
 
         item.processingMsg = "Publishing Feed...";
@@ -6331,6 +6302,7 @@ async function publishPremiumPostAction() {
         const avatar = currentChannelData?.avatarUrl || user.photoURL || "";
 
         const imgUrl = await uploadImageToR2(currentUploadFile, "posts");
+        if (!imgUrl) throw new Error("Image upload server returned an empty CDN URL.");
         
         const postPayload = {
             id: "post_" + Date.now(),

@@ -1304,37 +1304,42 @@ async function startS3DirectUpload(item) {
     item.progress = item.progress || 0;
     updateManagerUI();
 
-    const startTime = Date.now();
-
     try {
-        const params = {
-            Key: item.key,
-            Body: item.file,
-            ContentType: item.file.type || 'video/mp4'
-        };
-        
-        const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
+        if (!item.file) throw new Error("Upload file is missing. Please select the file again.");
 
-        const s3Upload = s3.upload(params, uploadOpts);
-        item.s3UploadRef = s3Upload;
+        // Get a short-lived presigned R2 URL from the Flaynity API.
+        const session = await createVideoUploadSession(item.file);
+        item.key = session.objectKey;
 
-        s3Upload.on('httpUploadProgress', (evt) => {
-            if (item.status !== 'uploading') return; 
-            const pct = Math.round((evt.loaded / evt.total) * 100);
-            item.progress = pct;
+        await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open(session.uploadMethod || "PUT", session.uploadUrl, true);
 
-            const elapsed = (Date.now() - startTime) / 1000;
-            if (elapsed > 0) {
-                item.speed = evt.loaded / elapsed; 
-                item.eta = (evt.total - evt.loaded) / item.speed;
-            }
-            updateManagerUI();
+            Object.entries(session.uploadHeaders || {}).forEach(([key, value]) => {
+                xhr.setRequestHeader(key, value);
+            });
+
+            xhr.upload.onprogress = (evt) => {
+                if (!evt.lengthComputable) return;
+                item.progress = Math.round((evt.loaded / evt.total) * 100);
+                updateManagerUI();
+            };
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) resolve();
+                else reject(new Error(`R2 upload failed (HTTP ${xhr.status}).`));
+            };
+            xhr.onerror = () => reject(new Error("Network error while uploading video."));
+            xhr.onabort = () => reject(new Error("Video upload was aborted."));
+            item.uploadXhr = xhr;
+            xhr.send(item.file);
         });
 
-        await s3Upload.promise();
-        
-        item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
+        // Verify that R2 actually contains the uploaded object before publishing.
+        const verified = await verifyVideoUpload(item.key);
+        item.videoUrl = verified.playbackUrl || session.playbackUrl || `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
         item.status = "processing";
+        item.progress = 100;
         item.retryCount = 0;
         updateManagerUI();
 
@@ -1348,13 +1353,13 @@ async function startS3DirectUpload(item) {
             updateManagerUI();
             showNotification("Connection lost. Upload paused.", "error");
         } else {
-            console.error("Upload error: ", err);
+            console.error("Upload error:", err);
             item.retryCount = (item.retryCount || 0) + 1;
-            
+
             if (item.retryCount <= 5) {
                 item.status = "waiting";
                 updateManagerUI();
-                showNotification(`Network hiccup. Retrying (${item.retryCount}/5)...`, "error");
+                showNotification(`Upload error. Retrying (${item.retryCount}/5): ${formatUploadError(err)}`, "error");
             } else {
                 item.status = "failed";
                 updateManagerUI();
@@ -1362,11 +1367,11 @@ async function startS3DirectUpload(item) {
             }
         }
     } finally {
+        item.uploadXhr = null;
         activeUploadsCount = Math.max(0, activeUploadsCount - 1);
         triggerNextActiveUpload();
     }
 }
-
 async function runPostUploadProcessingSequence(item) {
     item.status = "processing";
     item.progress = 0;

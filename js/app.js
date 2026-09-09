@@ -1286,40 +1286,67 @@ async function startS3DirectUpload(item) {
         activeUploadsCount = Math.max(0, activeUploadsCount - 1);
         return;
     }
+
     item.status = "uploading";
     item.progress = item.progress || 0;
     updateManagerUI();
+
+    const startTime = Date.now();
+
     try {
-        const result = await uploadVideoToR2(item.file, (loaded, total) => {
-            if (item.status !== 'uploading') return;
-            item.progress = total ? Math.round((loaded / total) * 100) : 0;
+        const params = {
+            Key: item.key,
+            Body: item.file,
+            ContentType: item.file.type || 'video/mp4'
+        };
+        
+        const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
+
+        const s3Upload = s3.upload(params, uploadOpts);
+        item.s3UploadRef = s3Upload;
+
+        s3Upload.on('httpUploadProgress', (evt) => {
+            if (item.status !== 'uploading') return; 
+            const pct = Math.round((evt.loaded / evt.total) * 100);
+            item.progress = pct;
+
+            const elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed > 0) {
+                item.speed = evt.loaded / elapsed; 
+                item.eta = (evt.total - evt.loaded) / item.speed;
+            }
             updateManagerUI();
         });
-        item.videoUrl = result.playbackUrl;
-        item.objectKey = result.objectKey;
+
+        await s3Upload.promise();
+        
+        item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
         item.status = "processing";
         item.retryCount = 0;
         updateManagerUI();
-        if (item.objectKey) {
-            const verified = await verifyVideoUpload(item.objectKey);
-            if (verified?.playbackUrl) item.videoUrl = verified.playbackUrl;
-        }
+
         await runPostUploadProcessingSequence(item);
+
     } catch (err) {
-        console.error("Upload error:", err);
-        item.retryCount = (item.retryCount || 0) + 1;
-        if (!navigator.onLine) {
+        if (item.status === 'paused') {
+            console.log("Upload paused safely.");
+        } else if (!navigator.onLine) {
             item.status = "paused";
             updateManagerUI();
             showNotification("Connection lost. Upload paused.", "error");
-        } else if (item.retryCount <= 5) {
-            item.status = "waiting";
-            updateManagerUI();
-            showNotification(`Upload error. Retrying (${item.retryCount}/5)...`, "error");
         } else {
-            item.status = "failed";
-            updateManagerUI();
-            showNotification(`Upload failed: ${err?.message || String(err)}`, "error");
+            console.error("Upload error: ", err);
+            item.retryCount = (item.retryCount || 0) + 1;
+            
+            if (item.retryCount <= 5) {
+                item.status = "waiting";
+                updateManagerUI();
+                showNotification(`Network hiccup. Retrying (${item.retryCount}/5)...`, "error");
+            } else {
+                item.status = "failed";
+                updateManagerUI();
+                showNotification(`Upload failed: ${err.message}`, "error");
+            }
         }
     } finally {
         activeUploadsCount = Math.max(0, activeUploadsCount - 1);
@@ -1338,10 +1365,12 @@ async function runPostUploadProcessingSequence(item) {
             try { finalThumbBlob = dataURLtoBlob(item.thumbDataUrl); } catch (e) {}
         }
 
-        if (finalThumbBlob) {
-            item.thumbUrl = await uploadImageToR2(finalThumbBlob, "thumbnails");
+        if (finalThumbBlob && s3) {
+            const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg" };
+            await s3.putObject(thumbParams).promise();
+            item.thumbUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
         } else {
-            item.thumbUrl = item.thumbDataUrl || "";
+            item.thumbUrl = item.thumbDataUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
         }
 
         item.processingMsg = "Publishing Feed...";

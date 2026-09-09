@@ -36,35 +36,60 @@ async function flaynityCreateUpload(file, folder = "images", options = {}) {
     const id = `${Date.now()}_${crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
     const key = `uploads/${safeFolder}/${id}_${safeName}`;
     const headers = await flaynityAuthHeaders();
-    const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/upload-url`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-            key,
-            contentType: file.type || options.contentType || "application/octet-stream",
-            expiresIn: 900
-        })
-    });
+    let response;
+    try {
+        response = await fetch(`${FLAYNITY_API_BASE}/v1/media/upload-url`, {
+            method: "POST",
+            mode: "cors",
+            cache: "no-store",
+            credentials: "omit",
+            headers,
+            body: JSON.stringify({
+                key,
+                contentType: file.type || options.contentType || "application/octet-stream",
+                expiresIn: 900
+            })
+        });
+    } catch (e) {
+        throw new Error("Upload authorization network error. Please check the app WebView internet/CORS access.");
+    }
     const data = await response.json().catch(() => ({}));
-    if (!response.ok || !data.uploadUrl) throw new Error(data.error || "Could not create secure upload URL.");
+    if (!response.ok || !data.uploadUrl) throw new Error(data.error || `Could not create secure upload URL (HTTP ${response.status}).`);
     return { key: data.key || key, uploadUrl: data.uploadUrl, publicUrl: data.publicUrl || flaynityMediaUrl(data.key || key) };
 }
 
 function flaynityPutWithProgress(uploadUrl, file, onProgress) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+        let settled = false;
+        const finishError = (message) => {
+            if (settled) return;
+            settled = true;
+            reject(new Error(message));
+        };
         xhr.open("PUT", uploadUrl, true);
+        xhr.timeout = 10 * 60 * 1000;
         xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
         xhr.upload.onprogress = (e) => {
             if (e.lengthComputable && typeof onProgress === "function") onProgress(e.loaded, e.total);
         };
         xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) resolve();
-            else reject(new Error(`Upload failed (${xhr.status}).`));
+            if (settled) return;
+            if (xhr.status >= 200 && xhr.status < 300) {
+                settled = true;
+                resolve();
+            } else {
+                finishError(`Upload failed (HTTP ${xhr.status}).`);
+            }
         };
-        xhr.onerror = () => reject(new Error("Network error while uploading media."));
-        xhr.onabort = () => reject(new Error("Upload aborted."));
-        xhr.send(file);
+        xhr.onerror = () => finishError("Network error while uploading media. Check R2 CORS and the WebView Origin.");
+        xhr.ontimeout = () => finishError("Upload timed out. Please retry on a stable connection.");
+        xhr.onabort = () => finishError("Upload aborted.");
+        try {
+            xhr.send(file);
+        } catch (e) {
+            finishError(e?.message || "Could not start media upload.");
+        }
     });
 }
 

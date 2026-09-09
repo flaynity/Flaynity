@@ -52,3 +52,74 @@ function dataURLtoBlob(dataurl) {
     }
     return new Blob([u8arr], {type:mime});
 }
+
+
+// =========================================================
+// FLAYNITY VIDEO API (Presigned R2 Upload)
+// =========================================================
+const FLAYNITY_VIDEO_API = "https://api.flaynity.indevs.in";
+
+async function getFlaynityAuthHeaders() {
+    const user = (typeof auth !== "undefined" && auth) ? auth.currentUser : null;
+    if (!user) throw new Error("Please sign in to Flaynity before uploading.");
+    const token = await user.getIdToken(true);
+    return {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+    };
+}
+
+async function createVideoUploadSession(file) {
+    if (!file) throw new Error("No video file selected.");
+    const headers = await getFlaynityAuthHeaders();
+    const response = await fetch(`${FLAYNITY_VIDEO_API}/v1/video/upload-url`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+            fileName: file.name,
+            contentType: file.type || "video/mp4",
+            size: file.size
+        })
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok || !data.uploadUrl || !data.objectKey) {
+        throw new Error(data.error || data.message || `Upload authorization failed (HTTP ${response.status}).`);
+    }
+    return data;
+}
+
+function uploadFileToPresignedUrl(file, session, onProgress) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open(session.uploadMethod || "PUT", session.uploadUrl, true);
+        const uploadHeaders = session.uploadHeaders || {};
+        Object.keys(uploadHeaders).forEach(key => xhr.setRequestHeader(key, uploadHeaders[key]));
+
+        xhr.upload.onprogress = event => {
+            if (!event.lengthComputable || typeof onProgress !== "function") return;
+            onProgress(event.loaded, event.total);
+        };
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve();
+            else reject(new Error(`R2 upload failed (HTTP ${xhr.status}).`));
+        };
+        xhr.onerror = () => reject(new Error("Network error while uploading video."));
+        xhr.onabort = () => reject(new Error("Upload was aborted."));
+        xhr.send(file);
+    });
+}
+
+async function verifyVideoUpload(objectKey) {
+    const headers = await getFlaynityAuthHeaders();
+    const response = await fetch(`${FLAYNITY_VIDEO_API}/v1/video/verify-upload`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ objectKey })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok || !data.playbackUrl) {
+        throw new Error(data.error || data.message || `Upload verification failed (HTTP ${response.status}).`);
+    }
+    return data;
+}

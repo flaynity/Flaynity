@@ -1081,24 +1081,8 @@ function applyAdminControls() {
     });
 }
 
-function normalizeMediaRecord(item, type) {
-    if (!item || typeof item !== 'object') return item;
-    const out = { ...item };
-    if (out.videoLink) out.videoLink = getFastMediaUrl(out.videoLink);
-    if (out.videoUrl) out.videoUrl = getFastMediaUrl(out.videoUrl);
-    if (out.streamUrl) out.streamUrl = getFastMediaUrl(out.streamUrl);
-    if (out.poster) out.poster = getFastMediaUrl(out.poster);
-    if (out.banner) out.banner = getFastMediaUrl(out.banner);
-    if (out.imageUrl) out.imageUrl = getFastMediaUrl(out.imageUrl);
-    if (Array.isArray(out.images)) out.images = out.images.map(getFastMediaUrl);
-    if (out.qualityUrls) {
-        out.qualityUrls = Object.fromEntries(Object.entries(out.qualityUrls).map(([k,v]) => [k, getFastMediaUrl(v)]));
-    }
-    return out;
-}
-
 function enforceContentAdminStatus(items, type) {
-    const allowed = items.map(item => normalizeMediaRecord(item, type)).filter(item => {
+    const allowed = items.filter(item => {
         const status = String(item?.status || item?.visibility || 'published').toLowerCase();
         if (status === 'hidden' || status === 'deleted' || status === 'disabled' || status === 'banned') return false;
         if (item?.userId && bannedUserIds.has(String(item.userId))) return false;
@@ -1295,45 +1279,116 @@ async function triggerNextActiveUpload() {
 }
 
 async function startS3DirectUpload(item) {
-    if (!navigator.onLine) { item.status='paused'; updateManagerUI(); showNotification('Offline: Upload paused.','error'); activeUploadsCount=Math.max(0,activeUploadsCount-1); return; }
-    item.status='uploading'; item.progress=item.progress||0; updateManagerUI();
-    try {
-        const mediaKind='video';
-        const created = await createAndUploadMedia(item.file, item.type === 'video-short' ? 'feels' : 'video', mediaKind, pct => { item.progress=pct; updateManagerUI(); });
-        item.id=created.id; item.key=created.sourceKey; item.uploadUrl=created.uploadUrl; item.status='processing'; item.progress=100; updateManagerUI();
-        await runPostUploadProcessingSequence(item);
-    } catch(err) {
-        console.error('Upload error:',err);
-        item.retryCount=(item.retryCount||0)+1;
-        if(item.retryCount<=3){ item.status='waiting'; showNotification(`Upload retrying (${item.retryCount}/3): ${err.message}`,'error'); }
-        else { item.status='failed'; showNotification(`Upload failed: ${err.message}`,'error'); }
+    if (!navigator.onLine) {
+        item.status = "paused";
         updateManagerUI();
-    } finally { activeUploadsCount=Math.max(0,activeUploadsCount-1); triggerNextActiveUpload(); }
+        showNotification("Offline: Upload paused.", "error");
+        activeUploadsCount = Math.max(0, activeUploadsCount - 1);
+        return;
+    }
+
+    item.status = "uploading";
+    item.progress = item.progress || 0;
+    updateManagerUI();
+
+    const startTime = Date.now();
+
+    try {
+        const params = {
+            Key: item.key,
+            Body: item.file,
+            ContentType: item.file.type || 'video/mp4'
+        };
+        
+        const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
+
+        const s3Upload = s3.upload(params, uploadOpts);
+        item.s3UploadRef = s3Upload;
+
+        s3Upload.on('httpUploadProgress', (evt) => {
+            if (item.status !== 'uploading') return; 
+            const pct = Math.round((evt.loaded / evt.total) * 100);
+            item.progress = pct;
+
+            const elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed > 0) {
+                item.speed = evt.loaded / elapsed; 
+                item.eta = (evt.total - evt.loaded) / item.speed;
+            }
+            updateManagerUI();
+        });
+
+        await s3Upload.promise();
+        
+        item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
+        item.status = "processing";
+        item.retryCount = 0;
+        updateManagerUI();
+
+        await runPostUploadProcessingSequence(item);
+
+    } catch (err) {
+        if (item.status === 'paused') {
+            console.log("Upload paused safely.");
+        } else if (!navigator.onLine) {
+            item.status = "paused";
+            updateManagerUI();
+            showNotification("Connection lost. Upload paused.", "error");
+        } else {
+            console.error("Upload error: ", err);
+            item.retryCount = (item.retryCount || 0) + 1;
+            
+            if (item.retryCount <= 5) {
+                item.status = "waiting";
+                updateManagerUI();
+                showNotification(`Network hiccup. Retrying (${item.retryCount}/5)...`, "error");
+            } else {
+                item.status = "failed";
+                updateManagerUI();
+                showNotification(`Upload failed: ${err.message}`, "error");
+            }
+        }
+    } finally {
+        activeUploadsCount = Math.max(0, activeUploadsCount - 1);
+        triggerNextActiveUpload();
+    }
 }
 
 async function runPostUploadProcessingSequence(item) {
-    item.status='processing'; item.progress=0; updateManagerUI();
+    item.status = "processing";
+    item.progress = 0;
+    updateManagerUI();
+
     try {
-        let thumbKey='';
-        if (item.thumbBlob || (item.thumbDataUrl && item.thumbDataUrl.startsWith('data:'))) {
-            const blob=item.thumbBlob || dataURLtoBlob(item.thumbDataUrl);
-            const thumbFile=new File([blob], `${item.id}_thumb.jpg`, {type:'image/jpeg'});
-            const thumbCreated=await createAndUploadMedia(thumbFile,'thumbnails','image');
-            thumbKey=thumbCreated.sourceKey; item.thumbKey=thumbKey;
-            const thumbDone=await completeMediaUpload(thumbCreated,{type:'thumbnails',mediaKind:'image'});
-            item.thumbUrl=thumbDone.imageUrl || getFastMediaUrl(thumbCreated.sourceKey);
+        let finalThumbBlob = item.thumbBlob;
+        if (!finalThumbBlob && item.thumbDataUrl && item.thumbDataUrl.startsWith('data:')) {
+            try { finalThumbBlob = dataURLtoBlob(item.thumbDataUrl); } catch (e) {}
         }
-        item.processingMsg='Publishing Feed...'; updateManagerUI();
-        const completed=await completeMediaUpload({id:item.id,sourceKey:item.key},{type:item.type==='video-short'?'feels':'video',title:item.title,description:item.description,visibility:item.visibility,duration:item.duration,thumbKey,mediaKind:'video'});
-        const result=await pollMediaUpload(item.id);
-        item.videoUrl=result.videoUrl || result.hlsUrl || result.masterUrl || '';
-        item.hlsUrl=result.hlsUrl || result.masterUrl || '';
-        item.qualityUrls=result.qualityUrls || {};
-        item.cdnUrl=result.cdnUrl || item.videoUrl;
-        item.progress=100; updateManagerUI();
+
+        if (finalThumbBlob && s3) {
+            const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg" };
+            await s3.putObject(thumbParams).promise();
+            item.thumbUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
+        } else {
+            item.thumbUrl = item.thumbDataUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
+        }
+
+        item.processingMsg = "Publishing Feed...";
+        item.progress = 100;
+        updateManagerUI();
+
         await pushVideoMetadataToDatabase(item);
-        item.status='completed'; updateManagerUI(); saveQueueStateToLocalStorage(); showNotification(`"${item.title}" published successfully!`,'success');
-    } catch(err) { item.status='failed'; updateManagerUI(); showNotification('Post-processing error: '+err.message,'error'); throw err; }
+
+        item.status = "completed";
+        updateManagerUI();
+        saveQueueStateToLocalStorage();
+        showNotification(`"${item.title}" is published instantly!`, "success");
+
+    } catch (err) {
+        item.status = "failed";
+        updateManagerUI();
+        showNotification("Post-processing error: " + err.message, "error");
+    }
 }
 
 function extractHashtags(text) {
@@ -1368,10 +1423,6 @@ async function pushVideoMetadataToDatabase(item) {
         poster: item.thumbUrl || item.thumbDataUrl || "",
         banner: item.thumbUrl || item.thumbDataUrl || "",
         videoLink: item.videoUrl,
-        cdnUrl: item.videoUrl,
-        hlsUrl: item.hlsUrl || item.m3u8Url || '',
-        dashUrl: item.dashUrl || item.mpdUrl || '',
-        qualityUrls: item.qualityUrls || item.videoQualities || {},
         uploadTime: Date.now(),
         updateTime: Date.now(),
         visibility: item.visibility,
@@ -2135,7 +2186,6 @@ function spawnDoubleTapHeart(e, slideElement) {
 // HIGH PERFORMANCE FEELS BUILDER
 // =========================================================
 let hlsInstances = {};
-let dashInstances = {};
 
 let feelsFeedMode = 'for-you';
 const feelsSubscribedChannels = {};
@@ -2338,7 +2388,7 @@ function buildFeelsPage() {
                 <div class="short-buffer-spinner" id="short-spinner-${s.id}"></div>
                 <div class="short-play-pause-overlay" id="short-pp-overlay-${s.id}"></div>
 
-                <video class="short-video-el" loop playsinline webkit-playsinline poster="${s.poster || ''}" preload="auto" fetchpriority="high"></video>
+                <video class="short-video-el" loop playsinline webkit-playsinline poster="${s.poster || ''}" preload="metadata"></video>
 
                 <div class="short-progress-container">
                     <div class="short-progress-bar" id="short-progress-bar-${s.id}"></div>
@@ -2922,94 +2972,72 @@ function toggleClipSubscribe(channelId, buttonEl) {
 // =========================================================
 let currentActiveFeelsIdx = -1;
 
-function attachSmartAdaptiveSource(videoElement, mediaOrUrl, shortId, quality) {
-    if (!videoElement) return;
-    const media = (mediaOrUrl && typeof mediaOrUrl === 'object') ? mediaOrUrl : { videoLink: mediaOrUrl };
-    const sources = getMediaSources(media);
-    const selected = getPreferredMediaUrl(media, quality || 'auto');
-    setFastMediaAttributes(videoElement, { preload: 'auto', fetchPriority: 'high' });
-
-    if (!selected) return;
-
-    // DASH: use dash.js when the CDN exposes an MPD manifest.
-    if ((quality === 'dash' || sources.dash && selected === sources.dash) && typeof dashjs !== 'undefined' && dashjs.MediaPlayer) {
-        try {
-            if (dashInstances[shortId]) dashInstances[shortId].reset();
-            const player = dashjs.MediaPlayer().create();
-            player.updateSettings({ streaming: { buffer: { fastSwitchEnabled: true, stableBufferTime: 12 } } });
-            player.initialize(videoElement, selected, true);
-            dashInstances[shortId] = player;
-            return;
-        } catch (e) { console.warn('DASH init failed, falling back to MP4.', e); }
+function attachSmartAdaptiveSource(videoElement, url, shortId) {
+    if (url && url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
+        if(hlsInstances[shortId]) {
+            hlsInstances[shortId].destroy();
+        }
+        const hls = new Hls({
+            maxBufferLength: 30,
+            maxMaxBufferLength: 600,
+            enableWorker: true,
+            lowLatencyMode: true,
+            capLevelToPlayerSize: true
+        });
+        hls.loadSource(url);
+        hls.attachMedia(videoElement);
+        hlsInstances[shortId] = hls;
+    } else {
+        videoElement.src = url;
     }
-
-    // HLS: native playback on Android/WebView where available, hls.js otherwise.
-    if ((selected.includes('.m3u8') || quality === 'hls') && videoElement.canPlayType('application/vnd.apple.mpegurl')) {
-        videoElement.src = selected;
-        videoElement.load();
-        return;
-    }
-    if (selected.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
-        try {
-            if (hlsInstances[shortId]) hlsInstances[shortId].destroy();
-            const hls = new Hls({
-                enableWorker: true,
-                lowLatencyMode: false,
-                capLevelToPlayerSize: true,
-                startLevel: -1,
-                maxBufferLength: 20,
-                maxMaxBufferLength: 90,
-                backBufferLength: 10,
-                fragLoadingMaxRetry: 3,
-                manifestLoadingMaxRetry: 3,
-                levelLoadingMaxRetry: 3
-            });
-            hls.loadSource(selected);
-            hls.attachMedia(videoElement);
-            hlsInstances[shortId] = hls;
-            return;
-        } catch (e) { console.warn('HLS init failed, falling back to MP4.', e); }
-    }
-
-    videoElement.src = selected;
-    videoElement.load();
 }
 
-function preloadFeelsWindow(activeIndex) {
+function optimizeFeelsMemoryAndPreload(activeIndex) {
     const slides = document.querySelectorAll('.short-slide');
-    const start = Math.max(0, activeIndex - 1);
-    const end = Math.min(slides.length - 1, activeIndex + FLAYNITY_CDN_CONFIG.preloadFeels);
     slides.forEach((slide, idx) => {
         const video = slide.querySelector('video');
         if (!video) return;
         const shortId = slide.getAttribute('data-shortid');
-        const item = allFeels.find(x => String(x.id) === String(shortId));
-        if (!item) return;
-        if (idx >= start && idx <= end) {
-            const url = getPreferredMediaUrl(item, 'auto');
-            if (video.getAttribute('data-fast-url') !== url) {
-                if (dashInstances[shortId]) { try { dashInstances[shortId].reset(); } catch(e) {} delete dashInstances[shortId]; }
-                if (hlsInstances[shortId]) { try { hlsInstances[shortId].destroy(); } catch(e) {} delete hlsInstances[shortId]; }
-                video.setAttribute('data-fast-url', url);
-                attachSmartAdaptiveSource(video, item, shortId);
+        const s = allFeels.find(item => item.id === shortId);
+        if (!s) return;
+
+        if (idx >= activeIndex - 1 && idx <= activeIndex + 2) {
+            if (video.getAttribute('poster') !== s.poster) {
+                video.setAttribute('poster', s.poster);
             }
-            video.preload = idx <= activeIndex + FLAYNITY_CDN_CONFIG.aggressiveFeelsWindow ? 'auto' : 'metadata';
-            if (idx > activeIndex && idx <= end) warmMediaRange(url);
+
+            if (!video.getAttribute('src') && !hlsInstances[shortId]) {
+                attachSmartAdaptiveSource(video, s.videoLink, shortId);
+                video.preload = (idx === activeIndex) ? "auto" : "metadata";
+            }
+
+            if (idx === activeIndex) {
+                video.preload = "auto";
+                video.muted = false;
+                let playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(() => {
+                        video.muted = true;
+                        video.play().catch(e => console.log(e));
+                    });
+                }
+            } else {
+                video.preload = "metadata";
+                video.pause();
+                video.currentTime = 0;
+            }
         } else {
             video.pause();
             video.removeAttribute('src');
-            video.removeAttribute('data-fast-url');
-            if (hlsInstances[shortId]) { try { hlsInstances[shortId].destroy(); } catch(e) {} delete hlsInstances[shortId]; }
-            if (dashInstances[shortId]) { try { dashInstances[shortId].reset(); } catch(e) {} delete dashInstances[shortId]; }
+            video.removeAttribute('preload');
+            if (hlsInstances[shortId]) {
+                hlsInstances[shortId].destroy();
+                delete hlsInstances[shortId];
+            }
             video.load();
         }
     });
 }
-
-function optimizeFeelsMemoryAndPreload(activeIndex) {
-    preloadFeelsWindow(activeIndex);
-}
-
 
 let feelsObserver;
 function initFeelsObserver() {
@@ -6221,10 +6249,7 @@ async function publishPremiumVideoOrShort(modeType) {
     }
 
     const uniqueId = "st_" + Date.now() + "_" + Math.floor(Math.random()*1000);
-    const uid = auth.currentUser ? auth.currentUser.uid : 'public';
-    const mediaFolder = isShort ? 'feels' : 'videos';
-    const safeName = currentUploadFile.name.replace(/\s+/g, '_');
-    const fileKey = `${mediaFolder}/${uid}/${Date.now()}_${safeName}`;
+    const fileKey = `uploads/${uniqueId}/${currentUploadFile.name.replace(/\s+/g, '_')}`;
     
     // Convert active trim percentage to actual duration if trimmed
     let finalDuration = currentUploadFrameMeta.duration;
@@ -6247,7 +6272,7 @@ async function publishPremiumVideoOrShort(modeType) {
         duration: finalDuration,
         thumbDataUrl: currentUploadFrameMeta.dataUrl,
         thumbBlob: currentUploadFrameMeta.blob, 
-        thumbKey: `thumbnails/${uid}/${Date.now()}_${uniqueId}.jpg`,
+        thumbKey: `uploads/${uniqueId}/thumbnail.jpg`,
         createdAt: Date.now(),
         scheduledTime: visibility === 'Schedule' && scheduleDate ? new Date(scheduleDate).getTime() : 0
     };
@@ -6288,7 +6313,7 @@ async function publishPremiumPostAction() {
         const username = uData.username || user.email.split('@')[0];
         const avatar = currentChannelData?.avatarUrl || user.photoURL || "";
 
-        const imgUrl = await uploadImageToR2(currentUploadFile, 'posts');
+        const imgUrl = await uploadImageToR2(currentUploadFile, "posts");
         
         const postPayload = {
             id: "post_" + Date.now(),
@@ -6416,7 +6441,7 @@ function flyInitPlayer(link){
     if(poster && currentActiveMovie){ poster.src=currentActiveMovie.poster||currentActiveMovie.banner||''; poster.style.display='block'; }
 
     // Cloudflare CDN + HLS adaptive streaming (আপনার existing helper reuse)
-    attachSmartAdaptiveSource(v, currentActiveMovie || { videoLink: link }, 'fly_main', 'auto');
+    attachSmartAdaptiveSource(v, link, 'fly_main');
     v.playbackRate=flyCurrentSpeed;
 
     flyBuildSpeedMenu();
@@ -6542,22 +6567,7 @@ function flyBuildQualityMenu(){
     }).join('');
 }
 function flySetQuality(h,label,e){ if(e) e.stopPropagation();
-    const v=document.getElementById('fly-video');
-    if(!v || !currentActiveMovie) return;
-    const source = getPreferredMediaUrl(currentActiveMovie, String(h));
-    try {
-        const hls = hlsInstances['fly_main'];
-        if (hls && hls.levels && hls.levels.length) {
-            let best=-1,diff=1e9;
-            hls.levels.forEach((lv,i)=>{ const d=Math.abs((lv.height||0)-h); if(d<diff){diff=d;best=i;} });
-            if(best>=0){ hls.currentLevel=best; }
-        } else if (source) {
-            const t=v.currentTime||0, wasPlaying=!v.paused;
-            attachSmartAdaptiveSource(v,currentActiveMovie,'fly_main',String(h));
-            const restore=()=>{ try{v.currentTime=Math.min(t,v.duration||t);}catch(e){}; if(wasPlaying) v.play().catch(()=>{}); v.removeEventListener('loadedmetadata',restore); };
-            v.addEventListener('loadedmetadata',restore);
-        }
-    } catch(err) {}
+    try{ const hls=hlsInstances['fly_main']; if(hls&&hls.levels&&hls.levels.length){ let best=-1,diff=1e9; hls.levels.forEach((lv,i)=>{const d=Math.abs((lv.height||0)-h); if(d<diff){diff=d;best=i;}}); hls.currentLevel=best; } }catch(err){}
     const lbl=document.getElementById('fly-quality-label'); if(lbl) lbl.innerText=label;
     flyCloseAllMenus(); flyResetHideTimer(); }
 
@@ -6580,4 +6590,3 @@ function flyOnFsChange(){
     icon.className=fsEl?'fas fa-compress':'fas fa-expand';
     if(!fsEl){ try{ if(screen.orientation&&screen.orientation.unlock) screen.orientation.unlock(); }catch(e){} }
 }
-

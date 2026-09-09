@@ -36,17 +36,33 @@ async function flaynityCreateUpload(file, folder = "images", options = {}) {
     const safeName = String(file.name || "file.bin").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-140);
     const id = `${Date.now()}_${crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
     const key = `uploads/${safeFolder}/${id}_${safeName}`;
-    const headers = await flaynityAuthHeaders();
-    const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/upload-url`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ key, contentType: file.type || options.contentType || "application/octet-stream", expiresIn: 900 })
-    });
-    const data = await response.json().catch(() => ({}));
+
+    async function requestUploadUrl(forceFreshToken) {
+        const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
+        if (!user) throw new Error("Please sign in first.");
+        const token = await user.getIdToken(!!forceFreshToken);
+        const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/upload-url`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ key, contentType: file.type || options.contentType || "application/octet-stream", expiresIn: 900 }),
+            cache: "no-store"
+        });
+        const data = await response.json().catch(() => ({}));
+        return { response, data };
+    }
+
+    // First request uses the currently cached Firebase ID token. If the server
+    // rejects it, immediately refresh Firebase auth and retry once.
+    let result = await requestUploadUrl(false);
+    if (result.response.status === 401) {
+        result = await requestUploadUrl(true);
+    }
+
+    const { response, data } = result;
     if (!response.ok || !data.uploadUrl) {
         const serverError = data && (data.error || data.message);
-        if (response.status === 401 && /token key|token|unauthorized/i.test(String(serverError || ""))) {
-            throw new Error("Authentication token rejected. Please sign in again and retry.");
+        if (response.status === 401) {
+            throw new Error(serverError || "Authentication token rejected. Please sign in again and retry.");
         }
         throw new Error(serverError || `Could not create secure upload URL (HTTP ${response.status}).`);
     }

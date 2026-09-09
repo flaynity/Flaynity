@@ -25,7 +25,7 @@ function flaynityMediaUrl(key) {
 async function flaynityAuthHeaders() {
     const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
     if (!user) throw new Error("Please sign in first.");
-    const token = await user.getIdToken();
+    const token = await user.getIdToken(true);
     return { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
 }
 
@@ -36,60 +36,41 @@ async function flaynityCreateUpload(file, folder = "images", options = {}) {
     const id = `${Date.now()}_${crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
     const key = `uploads/${safeFolder}/${id}_${safeName}`;
     const headers = await flaynityAuthHeaders();
-    let response;
-    try {
-        response = await fetch(`${FLAYNITY_API_BASE}/v1/media/upload-url`, {
-            method: "POST",
-            mode: "cors",
-            cache: "no-store",
-            credentials: "omit",
-            headers,
-            body: JSON.stringify({
-                key,
-                contentType: file.type || options.contentType || "application/octet-stream",
-                expiresIn: 900
-            })
-        });
-    } catch (e) {
-        throw new Error("Upload authorization network error. Please check the app WebView internet/CORS access.");
-    }
+    const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/upload-url`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+            key,
+            contentType: file.type || options.contentType || "application/octet-stream",
+            expiresIn: 900
+        })
+    });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok || !data.uploadUrl) throw new Error(data.error || `Could not create secure upload URL (HTTP ${response.status}).`);
+    if (!response.ok || !data.uploadUrl) {
+        const serverError = data && (data.error || data.message);
+        if (response.status === 401 && /token key|token|unauthorized/i.test(String(serverError || ""))) {
+            throw new Error("Authentication token rejected. Please sign in again and retry.");
+        }
+        throw new Error(serverError || `Could not create secure upload URL (HTTP ${response.status}).`);
+    }
     return { key: data.key || key, uploadUrl: data.uploadUrl, publicUrl: data.publicUrl || flaynityMediaUrl(data.key || key) };
 }
 
 function flaynityPutWithProgress(uploadUrl, file, onProgress) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        let settled = false;
-        const finishError = (message) => {
-            if (settled) return;
-            settled = true;
-            reject(new Error(message));
-        };
         xhr.open("PUT", uploadUrl, true);
-        xhr.timeout = 10 * 60 * 1000;
         xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
         xhr.upload.onprogress = (e) => {
             if (e.lengthComputable && typeof onProgress === "function") onProgress(e.loaded, e.total);
         };
         xhr.onload = () => {
-            if (settled) return;
-            if (xhr.status >= 200 && xhr.status < 300) {
-                settled = true;
-                resolve();
-            } else {
-                finishError(`Upload failed (HTTP ${xhr.status}).`);
-            }
+            if (xhr.status >= 200 && xhr.status < 300) resolve();
+            else reject(new Error(`Upload failed (${xhr.status}).`));
         };
-        xhr.onerror = () => finishError("Network error while uploading media. Check R2 CORS and the WebView Origin.");
-        xhr.ontimeout = () => finishError("Upload timed out. Please retry on a stable connection.");
-        xhr.onabort = () => finishError("Upload aborted.");
-        try {
-            xhr.send(file);
-        } catch (e) {
-            finishError(e?.message || "Could not start media upload.");
-        }
+        xhr.onerror = () => reject(new Error("Network error while uploading media."));
+        xhr.onabort = () => reject(new Error("Upload aborted."));
+        xhr.send(file);
     });
 }
 

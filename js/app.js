@@ -1294,33 +1294,20 @@ async function startS3DirectUpload(item) {
     const startTime = Date.now();
 
     try {
-        const params = {
-            Key: item.key,
-            Body: item.file,
-            ContentType: item.file.type || 'video/mp4'
-        };
-        
-        const uploadOpts = { partSize: 5 * 1024 * 1024, queueSize: 2 };
-
-        const s3Upload = s3.upload(params, uploadOpts);
-        item.s3UploadRef = s3Upload;
-
-        s3Upload.on('httpUploadProgress', (evt) => {
-            if (item.status !== 'uploading') return; 
-            const pct = Math.round((evt.loaded / evt.total) * 100);
+        const upload = await uploadMediaToFlaynity(item.file, item.type === 'video-short' ? 'feels' : 'videos', (loaded, total) => {
+            if (item.status !== 'uploading') return;
+            const pct = total ? Math.round((loaded / total) * 100) : 0;
             item.progress = pct;
-
             const elapsed = (Date.now() - startTime) / 1000;
             if (elapsed > 0) {
-                item.speed = evt.loaded / elapsed; 
-                item.eta = (evt.total - evt.loaded) / item.speed;
+                item.speed = loaded / elapsed;
+                item.eta = total > loaded && item.speed > 0 ? (total - loaded) / item.speed : 0;
             }
             updateManagerUI();
         });
 
-        await s3Upload.promise();
-        
-        item.videoUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.key}`;
+        item.key = upload.key;
+        item.videoUrl = upload.publicUrl;
         item.status = "processing";
         item.retryCount = 0;
         updateManagerUI();
@@ -1365,10 +1352,11 @@ async function runPostUploadProcessingSequence(item) {
             try { finalThumbBlob = dataURLtoBlob(item.thumbDataUrl); } catch (e) {}
         }
 
-        if (finalThumbBlob && s3) {
-            const thumbParams = { Body: finalThumbBlob, Key: item.thumbKey, ContentType: "image/jpeg" };
-            await s3.putObject(thumbParams).promise();
-            item.thumbUrl = `${PUBLIC_R2_DOMAIN_PREFIX}/${item.thumbKey}`;
+        if (finalThumbBlob) {
+            const thumbFile = new File([finalThumbBlob], `thumb_${item.id}.jpg`, { type: "image/jpeg" });
+            const thumbUpload = await uploadMediaToFlaynity(thumbFile, "thumbnails");
+            item.thumbKey = thumbUpload.key;
+            item.thumbUrl = thumbUpload.publicUrl;
         } else {
             item.thumbUrl = item.thumbDataUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
         }
@@ -1790,7 +1778,7 @@ function buildHomeFeed() {
             if (s.userId) uniqueUserIds.add(s.userId);
             html += `
                 <div class="short-home-card-2col" onclick="openShortFromHome('${s.id}')">
-                    <img src="${s.poster}" loading="lazy">
+                    <img src="${typeof normalizeFlaynityMediaUrl === 'function' ? normalizeFlaynityMediaUrl(s.poster) : s.poster}" loading="lazy">
                     <div class="short-home-meta">
                         <h4 style="font-size: 0.85rem; font-weight: 800; margin: 0 0 2px 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(s.title)}</h4>
                         <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}">0</span></p>
@@ -1891,7 +1879,7 @@ function renderFeelsSegmentUI(segmentFeels) {
     limitedFeels.forEach(s => {
         html += `
             <div class="short-home-card-2col" onclick="openShortFromHome('${s.id}')">
-                <img src="${s.poster}" loading="lazy">
+                <img src="${typeof normalizeFlaynityMediaUrl === 'function' ? normalizeFlaynityMediaUrl(s.poster) : s.poster}" loading="lazy">
                 <div class="short-home-meta">
                     <h4 style="font-size: 0.85rem; font-weight: 800; margin: 0 0 2px 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(s.title)}</h4>
                     <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}">0</span></p>
@@ -1924,7 +1912,7 @@ function renderLongVideosSegmentUI(segmentLongs) {
         html += `
             <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin:0 -16px 24px -16px;width:calc(100% + 32px);cursor:pointer;background:var(--surface);">
                 <div class="long-video-thumb-container" style="position:relative;width:100%;aspect-ratio:16/9;background:#0F0F0F;overflow:hidden;">
-                    <img src="${v.poster}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;">
+                    <img src="${typeof normalizeFlaynityMediaUrl === 'function' ? normalizeFlaynityMediaUrl(v.poster) : v.poster}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;">
                     <span style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.85);color:#fff;font-size:0.72rem;padding:2px 6px;border-radius:4px;font-weight:800;">${v.duration || '10:00'}</span>
                 </div>
                 <div style="padding:14px 16px;display:flex;gap:12px;">
@@ -2973,7 +2961,8 @@ function toggleClipSubscribe(channelId, buttonEl) {
 let currentActiveFeelsIdx = -1;
 
 function attachSmartAdaptiveSource(videoElement, url, shortId) {
-    if (url && url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
+    url = typeof normalizeFlaynityMediaUrl === 'function' ? normalizeFlaynityMediaUrl(url) : url;
+    if (url && /\.m3u8(?:$|[?#])/i.test(url) && typeof Hls !== 'undefined' && Hls.isSupported()) {
         if(hlsInstances[shortId]) {
             hlsInstances[shortId].destroy();
         }
@@ -2986,6 +2975,9 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
         });
         hls.loadSource(url);
         hls.attachMedia(videoElement);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            if (shortId === 'fly_main') flyBuildQualityMenu();
+        });
         hlsInstances[shortId] = hls;
     } else {
         videoElement.src = url;
@@ -6558,16 +6550,20 @@ function flySetSpeed(val,e){ if(e) e.stopPropagation(); const v=document.getElem
 
 function flyBuildQualityMenu(){
     const list=document.getElementById('fly-quality-list'); if(!list) return;
-    const maxH=flyGetMaxHeight();
-    const qs=[{l:'Low',h:144,p:'144p'},{l:'Fast',h:360,p:'360p'},{l:'High Quality',h:720,p:'720p'},{l:'Premium',h:1080,p:'1080p'}];
+    const hls=hlsInstances['fly_main'];
+    const levels=(hls&&hls.levels)||[];
+    if(!levels.length){
+        list.innerHTML='<div class="fly-menu-item locked"><span>Quality is fixed for this video</span><i class="fas fa-info-circle" style="font-size:.8rem;"></i></div>';
+        return;
+    }
+    const qs=[{l:'144p',h:144},{l:'360p',h:360},{l:'720p',h:720},{l:'1080p',h:1080}];
     list.innerHTML=qs.map(q=>{
-        const locked=q.h>maxH;
-        return `<div class="fly-menu-item ${locked?'locked':''}" onclick="${locked?'event.stopPropagation();':`flySetQuality(${q.h},'${q.p}',event)`}">
-            <span>${q.l} (${q.p})</span>${locked?'<i class="fas fa-lock" style="font-size:.8rem;"></i>':''}</div>`;
+        const available=levels.some(lv=>Math.abs((lv.height||0)-q.h)<=24);
+        return `<div class="fly-menu-item ${available?'':'locked'}" onclick="${available?`flySetQuality(${q.h},'${q.l}',event)`:'event.stopPropagation();'}"><span>${q.l}</span>${available?'':'<i class="fas fa-lock" style="font-size:.8rem;"></i>'}</div>`;
     }).join('');
 }
 function flySetQuality(h,label,e){ if(e) e.stopPropagation();
-    try{ const hls=hlsInstances['fly_main']; if(hls&&hls.levels&&hls.levels.length){ let best=-1,diff=1e9; hls.levels.forEach((lv,i)=>{const d=Math.abs((lv.height||0)-h); if(d<diff){diff=d;best=i;}}); hls.currentLevel=best; } }catch(err){}
+    try{ const hls=hlsInstances['fly_main']; if(hls&&hls.levels&&hls.levels.length){ let best=-1,diff=1e9; hls.levels.forEach((lv,i)=>{const d=Math.abs((lv.height||0)-h); if(d<diff){diff=d;best=i;}}); if(best>=0) hls.currentLevel=best; } }catch(err){}
     const lbl=document.getElementById('fly-quality-label'); if(lbl) lbl.innerText=label;
     flyCloseAllMenus(); flyResetHideTimer(); }
 

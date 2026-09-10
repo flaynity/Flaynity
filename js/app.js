@@ -2999,18 +2999,19 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
             enableWorker: true,
             lowLatencyMode: false,
             capLevelToPlayerSize: true,
-            startLevel: -1,
+            startLevel: 0,
             autoStartLoad: false,
-            maxBufferLength: shortId === 'fly_main' ? 10 : 6,
-            maxMaxBufferLength: shortId === 'fly_main' ? 30 : 18,
-            backBufferLength: shortId === 'fly_main' ? 6 : 3,
+            capLevelOnFPSDrop: true,
+            maxBufferLength: shortId === 'fly_main' ? 8 : 4,
+            maxMaxBufferLength: shortId === 'fly_main' ? 24 : 10,
+            backBufferLength: shortId === 'fly_main' ? 4 : 2,
             maxBufferHole: 0.5,
-            abrEwmaFastVoD: 2.0,
-            abrEwmaSlowVoD: 6.0,
-            abrBandWidthFactor: 0.80,
-            abrBandWidthUpFactor: 0.70,
-            maxStarvationDelay: 2,
-            maxLoadingDelay: 4
+            abrEwmaFastVoD: 1.0,
+            abrEwmaSlowVoD: 3.0,
+            abrBandWidthFactor: 0.70,
+            abrBandWidthUpFactor: 0.55,
+            maxStarvationDelay: 1.5,
+            maxLoadingDelay: 2
         });
 
         hlsInstances[shortId] = hls;
@@ -3021,13 +3022,19 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
             hls.startLoad(-1);
         });
 
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        const refreshMainQuality = () => {
             if (shortId === 'fly_main') flyBuildQualityMenu();
+        };
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            refreshMainQuality();
             if (videoElement.paused) {
                 const playPromise = videoElement.play();
                 if (playPromise && playPromise.catch) playPromise.catch(() => {});
             }
         });
+        hls.on(Hls.Events.LEVELS_UPDATED, refreshMainQuality);
+        hls.on(Hls.Events.LEVEL_SWITCHED, refreshMainQuality);
 
         hls.on(Hls.Events.ERROR, (_event, data) => {
             if (!data || !data.fatal) return;
@@ -3071,14 +3078,18 @@ function optimizeFeelsMemoryAndPreload(activeIndex) {
         const s = allFeels.find(item => item.id === shortId);
         if (!s) return;
 
-        if (idx >= activeIndex && idx <= activeIndex + 1) {
+        if (idx === activeIndex || idx === activeIndex + 1) {
             if (video.getAttribute('poster') !== s.poster) {
                 video.setAttribute('poster', s.poster);
             }
 
-            if (!video.getAttribute('src') && !hlsInstances[shortId]) {
+            if (idx === activeIndex && !video.getAttribute('src') && !hlsInstances[shortId]) {
                 attachSmartAdaptiveSource(video, s.videoLink, shortId);
-                video.preload = (idx === activeIndex) ? "auto" : "none";
+                video.preload = "auto";
+            } else if (idx === activeIndex + 1) {
+                // Keep the next Feels lightweight: poster only until the user approaches it.
+                video.preload = "none";
+                video.pause();
             }
 
             if (idx === activeIndex) {
@@ -6536,8 +6547,11 @@ function flyInitPlayer(link){
     document.addEventListener('webkitfullscreenchange',flyOnFsChange);
 
     flyShowBuffering(true);
-    const p=v.play();
-    if(p!==undefined){ p.catch(()=>{ v.muted=true; v.play().catch(()=>{}); }); }
+    // HLS playback starts from MANIFEST_PARSED. For direct/native sources, start immediately.
+    if (!/\.m3u8(?:$|[?#])/i.test(link)) {
+        const p=v.play();
+        if(p!==undefined){ p.catch(()=>{ v.muted=true; v.play().catch(()=>{}); }); }
+    }
     flyShowControls();
 }
 
@@ -6639,7 +6653,7 @@ function flyBuildQualityMenu(){
     const hls=hlsInstances['fly_main'];
     const levels=flyGetHlsQualityLevels();
     if(!levels.length){
-        list.innerHTML='<div class="fly-menu-item locked"><span>Quality loading...</span></div>';
+        list.innerHTML='<div class="fly-menu-item locked"><span>Detecting network quality…</span></div>';
         return;
     }
     const current=(hls && hls.currentLevel != null) ? hls.currentLevel : -1;

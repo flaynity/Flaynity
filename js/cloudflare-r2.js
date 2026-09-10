@@ -3,7 +3,7 @@
 // R2 credentials NEVER belong in the WebView/frontend.
 // Upload authorization is issued by Flaynity-Server.
 // =========================================================
-const FLAYNITY_API_BASE = "https://flaynity.indevs.in/api";
+const FLAYNITY_API_BASE = "https://api.flaynity.indevs.in/api";
 const FLAYNITY_MEDIA_BASE = "https://cdn.flaynity.indevs.in/media";
 const LEGACY_R2_PUBLIC_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev";
 
@@ -13,19 +13,6 @@ function normalizeFlaynityMediaUrl(url) {
     if (value.startsWith(LEGACY_R2_PUBLIC_PREFIX + "/")) {
         const key = value.slice((LEGACY_R2_PUBLIC_PREFIX + "/").length).split(/[?#]/)[0];
         return flaynityMediaUrl(key) + (value.includes("?") ? value.slice(value.indexOf("?")) : "");
-    }
-    // Canonical CDN URL: https://cdn.flaynity.indevs.in/media/<key>
-    // Repair older records that were saved without the /media prefix.
-    const cdnPrefix = "https://cdn.flaynity.indevs.in/";
-    if (value.startsWith(cdnPrefix)) {
-        const rest = value.slice(cdnPrefix.length);
-        if (rest.startsWith("media/")) return value;
-        return `${FLAYNITY_MEDIA_BASE}/${rest}`;
-    }
-    const oldWorkerMediaPrefix = "https://flaynity.indevs.in/media/";
-    if (value.startsWith(oldWorkerMediaPrefix)) {
-        const key = value.slice(oldWorkerMediaPrefix.length);
-        return `${FLAYNITY_MEDIA_BASE}/${key}`;
     }
     return value;
 }
@@ -101,39 +88,15 @@ function flaynityPutWithProgress(uploadUrl, file, onProgress) {
 }
 
 async function uploadImageToR2(file, folder = "images", retries = 3) {
-    if (!file) throw new Error("No image selected.");
     let lastError;
-
-    // WebView-safe image upload: send the image body to our Worker instead of
-    // doing a cross-origin PUT directly to the R2 S3 endpoint. This avoids
-    // Android WebView CORS/preflight differences while keeping R2 credentials
-    // and signing entirely server-side.
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            const safeFolder = String(folder || "images").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 32) || "images";
-            const safeName = String(file.name || "image.jpg").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-140);
-            const id = `${Date.now()}_${crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
-            const key = `uploads/${safeFolder}/${id}_${safeName}`;
-            const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
-            if (!user) throw new Error("Please sign in first.");
-            const token = await user.getIdToken(attempt > 1);
-            const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/upload`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": file.type || "image/jpeg",
-                    "X-Flaynity-Key": key
-                },
-                body: file,
-                cache: "no-store"
-            });
-            const data = await response.json().catch(() => ({}));
-            if (response.ok && data.publicUrl) return data.publicUrl;
-            if (response.status === 401 && attempt < retries) continue;
-            throw new Error(data.error || `Image upload failed (HTTP ${response.status}).`);
+            const upload = await flaynityCreateUpload(file, folder, { contentType: file.type || "image/jpeg" });
+            await flaynityPutWithProgress(upload.uploadUrl, file);
+            return upload.publicUrl;
         } catch (err) {
             lastError = err;
-            if (attempt < retries) await new Promise(r => setTimeout(r, 700 * attempt));
+            if (attempt < retries) await new Promise(r => setTimeout(r, 600 * attempt));
         }
     }
     throw lastError || new Error("Image upload failed.");

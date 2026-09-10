@@ -113,7 +113,7 @@ async function uploadMediaToFlaynity(file, folder = "videos", onProgress) {
 // CLOUDFLARE STREAM: ADAPTIVE VIDEO UPLOAD / HLS PLAYBACK
 // =========================================================
 const FLAYNITY_STREAM_ENABLED = true;
-const FLAYNITY_STREAM_STATUS_TIMEOUT = 180000;
+const FLAYNITY_STREAM_STATUS_TIMEOUT = 300000;
 const FLAYNITY_TUS_CHUNK_SIZE = 50 * 1024 * 1024;
 
 async function flaynityStreamAuthToken() {
@@ -204,8 +204,14 @@ async function waitForFlaynityStreamReady(uid, onStatus) {
     while (Date.now() - started < FLAYNITY_STREAM_STATUS_TIMEOUT) {
         const data = await flaynityStreamRequest(`/v1/stream/status/${encodeURIComponent(uid)}`);
         if (typeof onStatus === "function") onStatus(data);
-        if (data.readyToStream && data.hls) return data;
-        await new Promise(r => setTimeout(r, 2200));
+        // Cloudflare can mark a video ready while some quality levels are still
+        // encoding. Wait for the full encode before publishing so the first
+        // playback session has a complete ABR ladder instead of a stuck
+        // "Loading quality..." state.
+        const pct = Number(data.pctComplete);
+        const fullyEncoded = !Number.isFinite(pct) || pct >= 100;
+        if (data.readyToStream && data.hls && fullyEncoded) return data;
+        await new Promise(r => setTimeout(r, 1800));
     }
     throw new Error("Video upload finished, but Stream encoding is still processing. Please try again shortly.");
 }

@@ -2999,26 +2999,29 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
             enableWorker: true,
             lowLatencyMode: false,
             capLevelToPlayerSize: true,
-            startLevel: -1,
+            startLevel: 0,
             autoStartLoad: true,
+            startFragPrefetch: true,
             capLevelOnFPSDrop: true,
-            maxBufferLength: shortId === 'fly_main' ? 12 : 4,
-            maxMaxBufferLength: shortId === 'fly_main' ? 30 : 10,
-            backBufferLength: shortId === 'fly_main' ? 6 : 2,
+            maxBufferLength: shortId === 'fly_main' ? 24 : 10,
+            maxMaxBufferLength: shortId === 'fly_main' ? 60 : 24,
+            backBufferLength: shortId === 'fly_main' ? 8 : 3,
             maxBufferHole: 0.5,
             abrEwmaFastVoD: 1.0,
             abrEwmaSlowVoD: 3.0,
-            abrBandWidthFactor: 0.70,
-            abrBandWidthUpFactor: 0.55,
-            maxStarvationDelay: 1.5,
-            maxLoadingDelay: 2
+            abrBandWidthFactor: 0.62,
+            abrBandWidthUpFactor: 0.50,
+            maxStarvationDelay: 1.2,
+            maxLoadingDelay: 1.5
         });
 
         hlsInstances[shortId] = hls;
         if (shortId === 'fly_main') flySetQualityLoading();
 
         hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+            // Start fetching the manifest/fragments immediately. Do not wait for play().
             hls.loadSource(url);
+            try { hls.startLoad(0); } catch (e) {}
         });
 
         const refreshMainQuality = () => {
@@ -3065,7 +3068,7 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
 
 function flySetQualityLoading(){
     const list=document.getElementById('fly-quality-list');
-    if(list) list.innerHTML='<div class="fly-menu-item locked"><span>Loading quality...</span></div>';
+    if(list) list.innerHTML='<div class="fly-menu-item active"><span>Auto</span><i class="fas fa-check"></i></div>';
 }
 
 function optimizeFeelsMemoryAndPreload(activeIndex) {
@@ -3092,6 +3095,7 @@ function optimizeFeelsMemoryAndPreload(activeIndex) {
                 if (!video.getAttribute('src') && !hlsInstances[shortId]) {
                     attachSmartAdaptiveSource(video, s.videoLink, shortId);
                 }
+                // Keep the next Feel loaded/buffered, but never start audible playback.
                 video.pause();
             }
 
@@ -6656,7 +6660,9 @@ function flyBuildQualityMenu(){
     const hls=hlsInstances['fly_main'];
     const levels=flyGetHlsQualityLevels();
     if(!levels.length){
-        list.innerHTML='<div class="fly-menu-item locked"><span>Loading quality...</span></div>';
+        // Never expose a blocking "Loading quality..." state. The menu is useful immediately;
+        // actual Stream levels replace Auto as soon as the manifest is parsed.
+        list.innerHTML='<div class="fly-menu-item active" onclick="flySetQuality(0,\'Auto\',event)"><span>Auto</span><i class="fas fa-check"></i></div>';
         return;
     }
 

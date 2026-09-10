@@ -3,8 +3,8 @@
 // R2 credentials NEVER belong in the WebView/frontend.
 // Upload authorization is issued by Flaynity-Server.
 // =========================================================
-const FLAYNITY_API_BASE = "https://api.flaynity.indevs.in/api";
-const FLAYNITY_MEDIA_BASE = "https://cdn.flaynity.indevs.in/media";
+const FLAYNITY_API_BASE = "https://flaynity.indevs.in/api";
+const FLAYNITY_MEDIA_BASE = "https://cdn.flaynity.indevs.in";
 const LEGACY_R2_PUBLIC_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev";
 
 function normalizeFlaynityMediaUrl(url) {
@@ -13,6 +13,13 @@ function normalizeFlaynityMediaUrl(url) {
     if (value.startsWith(LEGACY_R2_PUBLIC_PREFIX + "/")) {
         const key = value.slice((LEGACY_R2_PUBLIC_PREFIX + "/").length).split(/[?#]/)[0];
         return flaynityMediaUrl(key) + (value.includes("?") ? value.slice(value.indexOf("?")) : "");
+    }
+    // Backward compatibility for media URLs created by the old Worker proxy.
+    // R2 Custom Domain serves object keys directly, so /media/ must be removed.
+    const oldWorkerMediaPrefix = "https://cdn.flaynity.indevs.in/media/";
+    if (value.startsWith(oldWorkerMediaPrefix)) {
+        const rest = value.slice(oldWorkerMediaPrefix.length);
+        return `https://cdn.flaynity.indevs.in/${rest}`;
     }
     return value;
 }

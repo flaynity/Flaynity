@@ -113,6 +113,24 @@ async function uploadMediaToFlaynity(file, folder = "videos", onProgress) {
 // CLOUDFLARE STREAM: ADAPTIVE VIDEO UPLOAD / HLS PLAYBACK
 // =========================================================
 const FLAYNITY_STREAM_ENABLED = true;
+const FLAYNITY_STREAM_CAPABILITY_TTL = 5 * 60 * 1000;
+let flaynityStreamCapabilityCache = { checkedAt: 0, enabled: false };
+
+async function flaynityStreamAvailable(force = false) {
+    if (!force && Date.now() - flaynityStreamCapabilityCache.checkedAt < FLAYNITY_STREAM_CAPABILITY_TTL) {
+        return flaynityStreamCapabilityCache.enabled;
+    }
+    try {
+        const response = await fetch(`${FLAYNITY_API_BASE}/v1/stream/capability`, { cache: "no-store" });
+        const data = await response.json().catch(() => ({}));
+        const enabled = !!(response.ok && data && data.enabled);
+        flaynityStreamCapabilityCache = { checkedAt: Date.now(), enabled };
+        return enabled;
+    } catch (e) {
+        flaynityStreamCapabilityCache = { checkedAt: Date.now(), enabled: false };
+        return false;
+    }
+}
 const FLAYNITY_STREAM_STATUS_TIMEOUT = 300000;
 const FLAYNITY_TUS_CHUNK_SIZE = 50 * 1024 * 1024;
 

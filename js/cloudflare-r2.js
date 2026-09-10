@@ -14,11 +14,12 @@ function normalizeFlaynityMediaUrl(url) {
         const key = value.slice((LEGACY_R2_PUBLIC_PREFIX + "/").length).split(/[?#]/)[0];
         return flaynityMediaUrl(key) + (value.includes("?") ? value.slice(value.indexOf("?")) : "");
     }
-    // CDN hostname is the canonical public media URL.
+    // Canonical CDN URL: https://cdn.flaynity.indevs.in/media/<key>
+    // Repair older records that were saved without the /media prefix.
     const cdnPrefix = "https://cdn.flaynity.indevs.in/";
-    if (value.startsWith(cdnPrefix + "media/")) return value;
     if (value.startsWith(cdnPrefix)) {
         const rest = value.slice(cdnPrefix.length);
+        if (rest.startsWith("media/")) return value;
         return `${FLAYNITY_MEDIA_BASE}/${rest}`;
     }
     const oldWorkerMediaPrefix = "https://flaynity.indevs.in/media/";

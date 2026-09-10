@@ -2980,34 +2980,106 @@ function toggleClipSubscribe(channelId, buttonEl) {
 let currentActiveFeelsIdx = -1;
 
 function attachSmartAdaptiveSource(videoElement, url, shortId) {
-    if (url && url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
-        if(hlsInstances[shortId]) {
-            hlsInstances[shortId].destroy();
+    if (!videoElement || !url) return null;
+
+    // Cloudflare Stream HLS manifests must be fetched fresh and played directly.
+    // Use HLS.js for adaptive playback and native HLS only as a fallback.
+    if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
+        if (hlsInstances[shortId]) {
+            try { hlsInstances[shortId].destroy(); } catch (e) {}
+            delete hlsInstances[shortId];
         }
+
         const hls = new Hls({
             enableWorker: true,
             lowLatencyMode: false,
-            capLevelToPlayerSize: true,
+            // Do not cap the manual quality list to the small mobile player box.
+            // ABR still selects the best level automatically in Auto mode.
+            capLevelToPlayerSize: false,
             startLevel: -1,
-            autoStartLoad: true,
-            maxBufferLength: 12,
-            maxMaxBufferLength: 45,
-            backBufferLength: 8,
+            autoStartLoad: false,
+            maxBufferLength: 8,
+            maxMaxBufferLength: 24,
+            backBufferLength: 6,
             maxBufferHole: 0.5,
             abrEwmaFastVoD: 2.0,
-            abrEwmaSlowVoD: 6.0,
-            abrBandWidthFactor: 0.80,
-            abrBandWidthUpFactor: 0.70
+            abrEwmaSlowVoD: 5.0,
+            abrBandWidthFactor: 0.85,
+            abrBandWidthUpFactor: 0.75,
+            fragLoadingMaxRetry: 4,
+            manifestLoadingMaxRetry: 4,
+            levelLoadingMaxRetry: 4,
+            fragLoadingRetryDelay: 500,
+            manifestLoadingRetryDelay: 500,
+            levelLoadingRetryDelay: 500
         });
-        hls.loadSource(url);
-        hls.attachMedia(videoElement);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            if (shortId === 'fly_main') flyBuildQualityMenu();
-        });
+
         hlsInstances[shortId] = hls;
-    } else {
-        videoElement.src = url;
+
+        const startPlaybackWhenReady = () => {
+            const activeIndex = allFeels.findIndex(item => String(item.id) === String(shortId));
+            const active = shortId === 'fly_main' || activeIndex === currentActiveFeelsIdx;
+            if (!active || videoElement.paused === false) return;
+            const p = videoElement.play();
+            if (p && typeof p.catch === 'function') p.catch(() => {
+                videoElement.muted = true;
+                videoElement.play().catch(() => {});
+            });
+        };
+
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+            try {
+                hls.loadSource(url);
+                hls.startLoad(-1);
+            } catch (e) {
+                console.warn('[Flaynity] HLS start error:', e);
+            }
+        });
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            if (shortId === 'fly_main') {
+                flyBuildQualityMenu(false);
+            }
+            startPlaybackWhenReady();
+        });
+
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+            if (!data || !data.fatal) return;
+            console.warn('[Flaynity] HLS fatal error:', data.type, data.details);
+
+            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                try { hls.startLoad(-1); } catch (e) {}
+            } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                try { hls.recoverMediaError(); } catch (e) {}
+            } else {
+                try {
+                    hls.destroy();
+                    delete hlsInstances[shortId];
+                    videoElement.src = url;
+                    videoElement.load();
+                    const p = videoElement.play();
+                    if (p && typeof p.catch === 'function') p.catch(() => {});
+                } catch (e) {
+                    console.warn('[Flaynity] HLS fallback error:', e);
+                }
+            }
+        });
+
+        hls.attachMedia(videoElement);
+        return hls;
     }
+
+    // Native HLS fallback (Safari/WebKit and compatible WebViews).
+    if (url.includes('.m3u8') && videoElement.canPlayType && videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+        videoElement.src = url;
+        videoElement.preload = 'auto';
+        videoElement.load();
+        return null;
+    }
+
+    videoElement.src = url;
+    videoElement.preload = 'auto';
+    return null;
 }
 
 function optimizeFeelsMemoryAndPreload(activeIndex) {
@@ -3019,30 +3091,31 @@ function optimizeFeelsMemoryAndPreload(activeIndex) {
         const s = allFeels.find(item => item.id === shortId);
         if (!s) return;
 
-        if (idx >= activeIndex - 1 && idx <= activeIndex + 2) {
+        // Keep only the active Feel and the next one warm. This greatly reduces
+        // startup bandwidth/memory on Android WebView while keeping swipe playback fast.
+        if (idx === activeIndex || idx === activeIndex + 1) {
             if (video.getAttribute('poster') !== s.poster) {
                 video.setAttribute('poster', s.poster);
             }
 
             if (!video.getAttribute('src') && !hlsInstances[shortId]) {
-                attachSmartAdaptiveSource(video, s.videoLink, shortId);
                 video.preload = (idx === activeIndex) ? "auto" : "metadata";
+                video.muted = true;
+                attachSmartAdaptiveSource(video, s.videoLink, shortId);
             }
 
             if (idx === activeIndex) {
                 video.preload = "auto";
-                video.muted = false;
-                let playPromise = video.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(() => {
-                        video.muted = true;
-                        video.play().catch(e => console.log(e));
-                    });
+                // HLS.js starts playback after MANIFEST_PARSED; native HLS uses
+                // the small fallback below when metadata becomes available.
+                if (!hlsInstances[shortId]) {
+                    const playPromise = video.play();
+                    if (playPromise !== undefined) playPromise.catch(() => {});
                 }
             } else {
                 video.preload = "metadata";
                 video.pause();
-                video.currentTime = 0;
+                try { video.currentTime = 0; } catch (e) {}
             }
         } else {
             video.pause();
@@ -6458,12 +6531,13 @@ function flyInitPlayer(link){
 
     if(poster && currentActiveMovie){ poster.src=currentActiveMovie.poster||currentActiveMovie.banner||''; poster.style.display='block'; }
 
-    // Cloudflare CDN + HLS adaptive streaming (আপনার existing helper reuse)
-    attachSmartAdaptiveSource(v, link, 'fly_main');
+    // Cloudflare Stream HLS adaptive playback. Quality levels are populated
+    // only after the fresh manifest has been parsed.
+    const flyHls = attachSmartAdaptiveSource(v, link, 'fly_main');
     v.playbackRate=flyCurrentSpeed;
 
     flyBuildSpeedMenu();
-    flyBuildQualityMenu();
+    flyBuildQualityMenu(true);
 
     v.addEventListener('waiting',()=>flyShowBuffering(true));
     v.addEventListener('stalled',()=>flyShowBuffering(true));
@@ -6484,8 +6558,12 @@ function flyInitPlayer(link){
     document.addEventListener('webkitfullscreenchange',flyOnFsChange);
 
     flyShowBuffering(true);
-    const p=v.play();
-    if(p!==undefined){ p.catch(()=>{ v.muted=true; v.play().catch(()=>{}); }); }
+    // HLS.js starts playback from MANIFEST_PARSED. For MP4/native-HLS fallbacks,
+    // start immediately as before. This removes the HLS startup race.
+    if(!flyHls){
+        const p=v.play();
+        if(p!==undefined){ p.catch(()=>{ v.muted=true; v.play().catch(()=>{}); }); }
+    }
     flyShowControls();
 }
 
@@ -6582,31 +6660,57 @@ function flyGetHlsQualityLevels(){
     }catch(e){ return []; }
 }
 
-function flyBuildQualityMenu(){
+function flyBuildQualityMenu(waitingForManifest=false){
     const list=document.getElementById('fly-quality-list'); if(!list) return;
     const hls=hlsInstances['fly_main'];
     const levels=flyGetHlsQualityLevels();
+
+    if(!levels.length && waitingForManifest){
+        list.innerHTML='<div class="fly-menu-item locked"><span>Loading quality...</span><span style="opacity:.45;font-size:.72rem;">Please wait</span></div>';
+        return;
+    }
+
     const current=(hls && hls.currentLevel != null) ? hls.currentLevel : -1;
     const qs=[
-        {label:'Auto',height:0,index:-1},
+        {label:'Auto',height:0},
         {label:'1080p',height:1080},
         {label:'720p',height:720},
         {label:'360p',height:360},
         {label:'144p',height:144}
     ];
+
     list.innerHTML=qs.map(q=>{
-        let available=q.height===0 || levels.some(l=>l.height===q.height);
-        if(q.height && !available){
-            // A source may expose a nearby rendition (for example 1080/720/360).
-            // Never pretend a missing 144p rendition is available.
-            const near=q.height===1080 ? levels.some(l=>l.height>900) : q.height===720 ? levels.some(l=>l.height>=600&&l.height<900) : q.height===360 ? levels.some(l=>l.height>=300&&l.height<600) : false;
-            available=near;
+        let available=q.height===0;
+        if(q.height){
+            available=levels.some(l=>l.height===q.height);
+            if(!available){
+                const near=q.height===1080
+                    ? levels.some(l=>l.height>900)
+                    : q.height===720
+                        ? levels.some(l=>l.height>=600&&l.height<900)
+                        : q.height===360
+                            ? levels.some(l=>l.height>=300&&l.height<600)
+                            : false;
+                available=near;
+            }
         }
-        const active=q.height===0 ? current===-1 : levels.some(l=>l.index===current && (q.height===l.height || (q.height===1080&&l.height>900) || (q.height===720&&l.height>=600&&l.height<900) || (q.height===360&&l.height>=300&&l.height<600)));
-        return `<div class="fly-menu-item ${available?'':'locked'} ${active?'active':''}" onclick="${available?`flySetQuality(${q.height},'${q.label}',event)`:'event.stopPropagation();'}"><span>${q.label}</span>${available?(active?'<i class="fas fa-check"></i>':''):'<span style="opacity:.45;font-size:.72rem;">Unavailable</span>'}</div>`;
+
+        const active=q.height===0
+            ? current===-1
+            : levels.some(l=>l.index===current && (
+                q.height===l.height ||
+                (q.height===1080&&l.height>900) ||
+                (q.height===720&&l.height>=600&&l.height<900) ||
+                (q.height===360&&l.height>=300&&l.height<600)
+            ));
+
+        const label=q.label;
+        const action=available
+            ? `flySetQuality(${q.height},'${label}',event)`
+            : 'event.stopPropagation();';
+        return `<div class="fly-menu-item ${available?'':'locked'} ${active?'active':''}" onclick="${action}"><span>${label}</span>${available?(active?'<i class="fas fa-check"></i>':''):'<span style="opacity:.45;font-size:.72rem;">Unavailable</span>'}</div>`;
     }).join('');
 }
-
 function flySetQuality(height,label,e){
     if(e) e.stopPropagation();
     const hls=hlsInstances['fly_main'];

@@ -2193,6 +2193,7 @@ function spawnDoubleTapHeart(e, slideElement) {
 // HIGH PERFORMANCE FEELS BUILDER
 // =========================================================
 let hlsInstances = {};
+bindFlaynityNetworkAdaptivePlayback();
 
 let feelsFeedMode = 'for-you';
 const feelsSubscribedChannels = {};
@@ -2395,7 +2396,7 @@ function buildFeelsPage() {
                 <div class="short-buffer-spinner" id="short-spinner-${s.id}"></div>
                 <div class="short-play-pause-overlay" id="short-pp-overlay-${s.id}"></div>
 
-                <video class="short-video-el" loop playsinline webkit-playsinline poster="${s.poster || ''}" preload="metadata"></video>
+                <video class="short-video-el" loop playsinline webkit-playsinline poster="${s.poster || ''}" preload="auto"></video>
 
                 <div class="short-progress-container">
                     <div class="short-progress-bar" id="short-progress-bar-${s.id}"></div>
@@ -2979,7 +2980,20 @@ function toggleClipSubscribe(channelId, buttonEl) {
 // =========================================================
 let currentActiveFeelsIdx = -1;
 
-function attachSmartAdaptiveSource(videoElement, url, shortId) {
+function getFlaynityNetworkProfile() {
+    try {
+        const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        const type = String(c?.effectiveType || '').toLowerCase();
+        const downlink = Number(c?.downlink || 0);
+        if (type === 'slow-2g' || type === '2g' || (downlink > 0 && downlink < 1.2)) return { startLevel: 0, maxAutoLevel: 1, buffer: 3 };
+        if (type === '3g' || (downlink > 0 && downlink < 3.5)) return { startLevel: 0, maxAutoLevel: 2, buffer: 5 };
+        return { startLevel: 0, maxAutoLevel: -1, buffer: 7 };
+    } catch (e) {
+        return { startLevel: 0, maxAutoLevel: -1, buffer: 5 };
+    }
+}
+
+function attachSmartAdaptiveSource(videoElement, url, shortId, options = {}) {
     if (!videoElement || !url) return;
 
     if (hlsInstances[shortId]) {
@@ -2990,54 +3004,71 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
     const isHls = /\.m3u8(?:$|[?#])/i.test(url);
     if (!isHls) {
         videoElement.src = url;
+        videoElement.preload = options.preload || 'auto';
         return;
     }
 
-    // Prefer HLS.js on Android/WebView, with native HLS as a fallback.
+    const net = getFlaynityNetworkProfile();
+    const isPreload = !!options.preloadOnly;
+    const isMain = shortId === 'fly_main';
+
+    // Cloudflare Stream HLS is an adaptive bitrate ladder. Start from the
+    // smallest playable rendition so playback can begin quickly, then let
+    // HLS.js climb as bandwidth/throughput becomes known.
     if (typeof Hls !== 'undefined' && Hls.isSupported()) {
         const hls = new Hls({
             enableWorker: true,
             lowLatencyMode: false,
             capLevelToPlayerSize: true,
-            startLevel: 0,
-            autoStartLoad: true,
-            startFragPrefetch: true,
             capLevelOnFPSDrop: true,
-            maxBufferLength: shortId === 'fly_main' ? 24 : 10,
-            maxMaxBufferLength: shortId === 'fly_main' ? 60 : 24,
-            backBufferLength: shortId === 'fly_main' ? 8 : 3,
-            maxBufferHole: 0.5,
+            startLevel: net.startLevel,
+            autoStartLoad: true,
+            maxBufferLength: isMain ? 20 : (isPreload ? 5 : Math.max(6, net.buffer)),
+            maxMaxBufferLength: isMain ? 45 : (isPreload ? 10 : 18),
+            backBufferLength: isMain ? 6 : 2,
+            maxBufferHole: 0.35,
             abrEwmaFastVoD: 1.0,
             abrEwmaSlowVoD: 3.0,
-            abrBandWidthFactor: 0.62,
-            abrBandWidthUpFactor: 0.50,
-            maxStarvationDelay: 1.2,
-            maxLoadingDelay: 1.5
+            abrBandWidthFactor: 0.82,
+            abrBandWidthUpFactor: 0.70,
+            maxStarvationDelay: 1.0,
+            maxLoadingDelay: 1.5,
+            nudgeOffset: 0.1,
+            nudgeMaxRetry: 3,
+            maxFragLookUpTolerance: 0.15
         });
 
         hlsInstances[shortId] = hls;
         if (shortId === 'fly_main') flySetQualityLoading();
 
-        hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-            // Start fetching the manifest/fragments immediately. Do not wait for play().
-            hls.loadSource(url);
-            try { hls.startLoad(0); } catch (e) {}
-        });
-
-        const refreshMainQuality = () => {
-            if (shortId === 'fly_main') flyBuildQualityMenu();
+        const applyNetworkCap = () => {
+            try {
+                const profile = getFlaynityNetworkProfile();
+                hls.autoLevelEnabled = true;
+                hls.autoLevelCapping = profile.maxAutoLevel;
+                if (profile.maxAutoLevel >= 0) hls.autoLevelCapping = profile.maxAutoLevel;
+                else if ('autoLevelCapping' in hls) hls.autoLevelCapping = -1;
+            } catch (e) {}
         };
 
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(url));
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            refreshMainQuality();
-            if (videoElement.paused) {
+            applyNetworkCap();
+            if (isMain) flyBuildQualityMenu();
+            // For the active Feel/main player, start immediately. Preloaded
+            // Feel videos remain paused but their HLS buffer keeps filling.
+            if (!isPreload && videoElement.paused) {
                 const playPromise = videoElement.play();
                 if (playPromise && playPromise.catch) playPromise.catch(() => {});
             }
         });
-        hls.on(Hls.Events.LEVELS_UPDATED, refreshMainQuality);
-        hls.on(Hls.Events.LEVEL_SWITCHED, refreshMainQuality);
-
+        hls.on(Hls.Events.LEVELS_UPDATED, () => {
+            applyNetworkCap();
+            if (isMain) flyBuildQualityMenu();
+        });
+        hls.on(Hls.Events.LEVEL_SWITCHED, () => {
+            if (isMain) flyBuildQualityMenu();
+        });
         hls.on(Hls.Events.ERROR, (_event, data) => {
             if (!data || !data.fatal) return;
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
@@ -3048,6 +3079,7 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
                 try { hls.destroy(); } catch (e) {}
                 delete hlsInstances[shortId];
                 videoElement.src = url;
+                videoElement.preload = 'auto';
                 videoElement.load();
             }
         });
@@ -3056,23 +3088,48 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
         return;
     }
 
-    // Native HLS fallback (Safari/WebView variants that expose it).
     if (videoElement.canPlayType && videoElement.canPlayType('application/vnd.apple.mpegurl')) {
         videoElement.src = url;
+        videoElement.preload = 'auto';
         videoElement.load();
         if (shortId === 'fly_main') flyBuildQualityMenu();
     } else {
         videoElement.src = url;
+        videoElement.preload = 'auto';
     }
+}
+
+let flaynityNetworkChangeTimer = null;
+function bindFlaynityNetworkAdaptivePlayback() {
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (!connection || connection.__flaynityBound) return;
+    connection.__flaynityBound = true;
+    const refresh = () => {
+        clearTimeout(flaynityNetworkChangeTimer);
+        flaynityNetworkChangeTimer = setTimeout(() => {
+            Object.values(hlsInstances || {}).forEach(hls => {
+                try {
+                    const profile = getFlaynityNetworkProfile();
+                    hls.autoLevelEnabled = true;
+                    hls.autoLevelCapping = profile.maxAutoLevel;
+                    if (profile.maxAutoLevel < 0) hls.nextAutoLevel = -1;
+                } catch (e) {}
+            });
+        }, 150);
+    };
+    connection.addEventListener?.('change', refresh);
 }
 
 function flySetQualityLoading(){
     const list=document.getElementById('fly-quality-list');
-    if(list) list.innerHTML='<div class="fly-menu-item active"><span>Auto</span><i class="fas fa-check"></i></div>';
+    if(list) list.innerHTML='<div class="fly-menu-item locked"><span>Loading quality...</span></div>';
 }
 
 function optimizeFeelsMemoryAndPreload(activeIndex) {
-    const slides = document.querySelectorAll('.short-slide');
+    const slides = Array.from(document.querySelectorAll('.short-slide'));
+    const keepFrom = Math.max(0, activeIndex - 1);
+    const keepTo = Math.min(slides.length - 1, activeIndex + 2);
+
     slides.forEach((slide, idx) => {
         const video = slide.querySelector('video');
         if (!video) return;
@@ -3080,49 +3137,49 @@ function optimizeFeelsMemoryAndPreload(activeIndex) {
         const s = allFeels.find(item => item.id === shortId);
         if (!s) return;
 
-        if (idx === activeIndex || idx === activeIndex + 1) {
-            if (video.getAttribute('poster') !== s.poster) {
-                video.setAttribute('poster', s.poster);
-            }
-
-            if (idx === activeIndex && !video.getAttribute('src') && !hlsInstances[shortId]) {
-                attachSmartAdaptiveSource(video, s.videoLink, shortId);
-                video.preload = "auto";
-            } else if (idx === activeIndex + 1) {
-                // Preload the next Feel so scrolling to it does not require a fresh 3–4s startup.
-                video.preload = "auto";
-                video.muted = true;
-                if (!video.getAttribute('src') && !hlsInstances[shortId]) {
-                    attachSmartAdaptiveSource(video, s.videoLink, shortId);
-                }
-                // Keep the next Feel loaded/buffered, but never start audible playback.
-                video.pause();
-            }
-
-            if (idx === activeIndex) {
-                video.preload = "auto";
-                video.muted = false;
-                let playPromise = video.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(() => {
-                        video.muted = true;
-                        video.play().catch(e => console.log(e));
-                    });
-                }
-            } else {
-                video.preload = "none";
-                video.pause();
-                video.currentTime = 0;
-            }
-        } else {
+        if (idx < keepFrom || idx > keepTo) {
             video.pause();
             video.removeAttribute('src');
             video.removeAttribute('preload');
             if (hlsInstances[shortId]) {
-                hlsInstances[shortId].destroy();
+                try { hlsInstances[shortId].destroy(); } catch (e) {}
                 delete hlsInstances[shortId];
             }
             video.load();
+            return;
+        }
+
+        if (video.getAttribute('poster') !== s.poster) video.setAttribute('poster', s.poster);
+
+        const isActive = idx === activeIndex;
+        const isNext = idx === activeIndex + 1;
+        const isNearNext = idx === activeIndex + 2;
+        const hasSource = !!video.getAttribute('src') || !!hlsInstances[shortId];
+
+        // Keep the active Feel and the next two Feels warm. The next Feel is
+        // fully preloaded; the second-next Feel gets a lighter preload so a
+        // fast swipe/scroll has a manifest and initial segments ready.
+        if (!hasSource) {
+            attachSmartAdaptiveSource(video, s.videoLink, shortId, {
+                preloadOnly: !isActive
+            });
+        }
+
+        video.preload = 'auto';
+
+        if (isActive) {
+            video.muted = false;
+            const playPromise = video.play();
+            if (playPromise !== undefined) playPromise.catch(() => {
+                video.muted = true;
+                video.play().catch(() => {});
+            });
+        } else {
+            video.muted = true;
+            video.pause();
+            if (!isNext && isNearNext && hlsInstances[shortId]) {
+                try { hlsInstances[shortId].startLoad(); } catch (e) {}
+            }
         }
     });
 }
@@ -6660,9 +6717,7 @@ function flyBuildQualityMenu(){
     const hls=hlsInstances['fly_main'];
     const levels=flyGetHlsQualityLevels();
     if(!levels.length){
-        // Never expose a blocking "Loading quality..." state. The menu is useful immediately;
-        // actual Stream levels replace Auto as soon as the manifest is parsed.
-        list.innerHTML='<div class="fly-menu-item active" onclick="flySetQuality(0,\'Auto\',event)"><span>Auto</span><i class="fas fa-check"></i></div>';
+        list.innerHTML='<div class="fly-menu-item locked"><span>Loading quality...</span></div>';
         return;
     }
 

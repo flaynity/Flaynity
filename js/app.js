@@ -1288,44 +1288,33 @@ async function startS3DirectUpload(item) {
     item.status = "uploading"; item.progress = item.progress || 0; updateManagerUI();
     const startTime = Date.now();
     try {
-        // B version: use R2 directly while Stream is not subscribed. Once the
-        // Worker has a Stream API token, capability detection automatically
-        // switches new uploads to Stream without requiring a frontend rebuild.
+        // Video/Feels now use Cloudflare Stream so the uploaded source is encoded
+        // into adaptive HLS renditions instead of forcing every viewer to download
+        // one large MP4. R2 remains the fallback for older/legacy deployments.
         let upload;
-        const streamReady = typeof flaynityStreamAvailable === 'function'
-            ? await flaynityStreamAvailable()
-            : false;
-
-        if (streamReady) {
-            try {
-                upload = await uploadVideoToFlaynityStream(item.file, {
-                    maxDurationSeconds: Math.min(Math.max(Number(item.duration) || 3600, 1), 36000),
-                    onStatus: status => {
-                        item.processingMsg = status?.status?.state === 'inprogress' ? 'Encoding video qualities...' : 'Preparing adaptive playback...';
-                        updateManagerUI();
-                    }
-                }, (loaded, total) => {
-                    if (item.status !== 'uploading') return;
-                    item.progress = Math.round((loaded / total) * 100);
-                    const elapsed = (Date.now() - startTime) / 1000;
-                    if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
+        try {
+            upload = await uploadVideoToFlaynityStream(item.file, {
+                maxDurationSeconds: Math.min(Math.max(Number(item.duration) || 3600, 1), 36000),
+                onStatus: status => {
+                    item.processingMsg = status?.status?.state === 'inprogress' ? 'Encoding video qualities...' : 'Preparing adaptive playback...';
                     updateManagerUI();
-                });
-                item.streamUid = upload.uid;
-                item.videoProvider = upload.provider;
-                item.videoUrl = upload.hlsUrl || upload.videoUrl;
-                item.hlsUrl = upload.hlsUrl || upload.videoUrl;
-                item.dashUrl = upload.dashUrl || '';
-                item.streamThumbnail = upload.thumbnail || '';
-                item.streamQualityLadder = [144, 360, 480, 720, 1080];
-                if (upload.width && upload.height) item.resolution = `${upload.width}x${upload.height}`;
-            } catch (streamErr) {
-                console.warn('[Flaynity] Stream is configured but upload failed; falling back to R2:', streamErr);
-                upload = null;
-            }
-        }
-
-        if (!upload) {
+                }
+            }, (loaded, total) => {
+                if (item.status !== 'uploading') return;
+                item.progress = Math.round((loaded / total) * 100);
+                const elapsed = (Date.now() - startTime) / 1000;
+                if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
+                updateManagerUI();
+            });
+            item.streamUid = upload.uid;
+            item.videoProvider = upload.provider;
+            item.videoUrl = upload.hlsUrl || upload.videoUrl;
+            item.hlsUrl = upload.hlsUrl || upload.videoUrl;
+            item.dashUrl = upload.dashUrl || '';
+            item.streamThumbnail = upload.thumbnail || '';
+            if (upload.width && upload.height) item.resolution = `${upload.width}x${upload.height}`;
+        } catch (streamErr) {
+            console.warn('[Flaynity] Stream upload unavailable; falling back to R2:', streamErr);
             const uploadFolder = item.type === 'video-short' ? 'feels' : 'videos';
             upload = await uploadMediaToFlaynity(item.file, uploadFolder, (loaded, total) => {
                 if (item.status !== 'uploading') return;
@@ -1336,10 +1325,7 @@ async function startS3DirectUpload(item) {
             });
             item.key = upload.key;
             item.videoProvider = 'r2';
-            item.videoUrl = normalizeFlaynityMediaUrl(upload.publicUrl);
-            item.hlsUrl = '';
-            item.dashUrl = '';
-            item.videoQualities = { auto: item.videoUrl, original: item.videoUrl };
+            item.videoUrl = upload.publicUrl;
         }
         item.status = "processing"; item.retryCount = 0; updateManagerUI();
         await runPostUploadProcessingSequence(item);
@@ -1442,10 +1428,8 @@ async function pushVideoMetadataToDatabase(item) {
         videoQualities: item.videoProvider === 'cloudflare-stream' ? {
             auto: item.hlsUrl || item.videoUrl,
             hls: item.hlsUrl || item.videoUrl,
-            dash: item.dashUrl || '',
-            preferred: [144, 360, 480, 720, 1080]
+            dash: item.dashUrl || ''
         } : (item.videoQualities || null),
-        streamQualityLadder: item.streamQualityLadder || [144, 360, 480, 720, 1080],
         uploadTime: Date.now(),
         updateTime: Date.now(),
         visibility: item.visibility,
@@ -2995,46 +2979,24 @@ function toggleClipSubscribe(channelId, buttonEl) {
 // =========================================================
 let currentActiveFeelsIdx = -1;
 
-const FLAYNITY_STREAM_PREFERRED_QUALITY_LADDER = [144, 360, 480, 720, 1080];
-const FLAYNITY_STREAM_START_HEIGHT = 360;
-
-function chooseClosestHlsLevel(levels, targetHeight = FLAYNITY_STREAM_START_HEIGHT) {
-    if (!Array.isArray(levels) || !levels.length) return -1;
-    const usable = levels.map((lv, i) => ({
-        index: i,
-        height: Number(lv.height) || 0,
-        bitrate: Number(lv.bitrate) || 0
-    })).filter(x => x.height > 0);
-    if (!usable.length) return -1;
-    const atOrBelow = usable.filter(x => x.height <= targetHeight);
-    const pool = atOrBelow.length ? atOrBelow : usable;
-    pool.sort((a, b) => Math.abs(a.height - targetHeight) - Math.abs(b.height - targetHeight) || a.bitrate - b.bitrate);
-    return pool[0]?.index ?? -1;
-}
-
 function attachSmartAdaptiveSource(videoElement, url, shortId) {
     if (!videoElement || !url) return;
+    try {
+        if (typeof normalizeFlaynityMediaUrl === 'function') url = normalizeFlaynityMediaUrl(url);
+    } catch (e) {}
 
     if (hlsInstances[shortId]) {
         try { hlsInstances[shortId].destroy(); } catch (e) {}
         delete hlsInstances[shortId];
     }
 
-    const normalizedUrl = normalizeFlaynityMediaUrl(url);
-    const isHls = /\.m3u8(?:$|[?#])/i.test(normalizedUrl);
+    const isHls = /\.m3u8(?:$|[?#])/i.test(url);
     if (!isHls) {
-        // R2 B-version: progressive MP4. Range support is provided by the
-        // Worker and Cloudflare CDN, so the browser can start from the needed
-        // byte range instead of downloading the whole file first.
-        videoElement.preload = shortId === 'fly_main' ? 'auto' : 'metadata';
-        videoElement.src = normalizedUrl;
-        videoElement.load();
+        videoElement.src = url;
         return;
     }
 
-    // Future Stream path: HLS.js ABR is kept ready. Stream currently advertises
-    // 360p–1080p; if a 144p rendition ever appears in the manifest, the ladder
-    // and quality menu will automatically include it.
+    // Prefer HLS.js on Android/WebView, with native HLS as a fallback.
     if (typeof Hls !== 'undefined' && Hls.isSupported()) {
         const hls = new Hls({
             enableWorker: true,
@@ -3043,35 +3005,30 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
             startLevel: -1,
             autoStartLoad: true,
             capLevelOnFPSDrop: true,
-            maxBufferLength: shortId === 'fly_main' ? 18 : 8,
-            maxMaxBufferLength: shortId === 'fly_main' ? 45 : 18,
-            backBufferLength: shortId === 'fly_main' ? 8 : 3,
+            maxBufferLength: shortId === 'fly_main' ? 12 : 4,
+            maxMaxBufferLength: shortId === 'fly_main' ? 30 : 10,
+            backBufferLength: shortId === 'fly_main' ? 6 : 2,
             maxBufferHole: 0.5,
-            abrEwmaFastVoD: 2.0,
-            abrEwmaSlowVoD: 6.0,
-            abrBandWidthFactor: 0.78,
-            abrBandWidthUpFactor: 0.62,
-            maxStarvationDelay: 1.0,
-            maxLoadingDelay: 1.5
+            abrEwmaFastVoD: 1.0,
+            abrEwmaSlowVoD: 3.0,
+            abrBandWidthFactor: 0.70,
+            abrBandWidthUpFactor: 0.55,
+            maxStarvationDelay: 1.5,
+            maxLoadingDelay: 2
         });
 
         hlsInstances[shortId] = hls;
         if (shortId === 'fly_main') flySetQualityLoading();
 
-        hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(normalizedUrl));
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+            hls.loadSource(url);
+        });
 
         const refreshMainQuality = () => {
             if (shortId === 'fly_main') flyBuildQualityMenu();
         };
 
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            // Start around 360p for fast first-frame playback, then return to
-            // normal ABR immediately so quality can rise/fall with bandwidth.
-            const startIndex = chooseClosestHlsLevel(hls.levels, FLAYNITY_STREAM_START_HEIGHT);
-            if (startIndex >= 0) {
-                try { hls.nextAutoLevel = startIndex; } catch (e) {}
-            }
-            try { hls.currentLevel = -1; } catch (e) {}
             refreshMainQuality();
             if (videoElement.paused) {
                 const playPromise = videoElement.play();
@@ -3080,6 +3037,7 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
         });
         hls.on(Hls.Events.LEVELS_UPDATED, refreshMainQuality);
         hls.on(Hls.Events.LEVEL_SWITCHED, refreshMainQuality);
+
         hls.on(Hls.Events.ERROR, (_event, data) => {
             if (!data || !data.fatal) return;
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
@@ -3089,7 +3047,7 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
             } else {
                 try { hls.destroy(); } catch (e) {}
                 delete hlsInstances[shortId];
-                videoElement.src = normalizedUrl;
+                videoElement.src = url;
                 videoElement.load();
             }
         });
@@ -3098,54 +3056,19 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
         return;
     }
 
+    // Native HLS fallback (Safari/WebView variants that expose it).
     if (videoElement.canPlayType && videoElement.canPlayType('application/vnd.apple.mpegurl')) {
-        videoElement.src = normalizedUrl;
+        videoElement.src = url;
         videoElement.load();
         if (shortId === 'fly_main') flyBuildQualityMenu();
     } else {
-        videoElement.src = normalizedUrl;
+        videoElement.src = url;
     }
 }
 
 function flySetQualityLoading(){
     const list=document.getElementById('fly-quality-list');
     if(list) list.innerHTML='<div class="fly-menu-item locked"><span>Loading quality...</span></div>';
-}
-
-const FEELS_FULL_PRELOAD_AHEAD = 2;
-const FEELS_WARM_AHEAD = 20;
-let feelsWarmGeneration = 0;
-const feelsWarmCache = new Map();
-
-function warmFeelRange(url, key, generation) {
-    if (!url || generation !== feelsWarmGeneration || feelsWarmCache.has(key)) return;
-    if (!/^https?:\/\//i.test(url) || /\.m3u8(?:$|[?#])/i.test(url)) return;
-    feelsWarmCache.set(key, 'pending');
-    fetch(normalizeFlaynityMediaUrl(url), {
-        method: 'GET',
-        headers: { Range: 'bytes=0-262143' },
-        cache: 'force-cache',
-        credentials: 'omit'
-    }).then(r => {
-        if (generation === feelsWarmGeneration && r.ok) feelsWarmCache.set(key, 'warm');
-        else feelsWarmCache.delete(key);
-    }).catch(() => feelsWarmCache.delete(key));
-}
-
-function warmNextFeels(activeIndex) {
-    const generation = ++feelsWarmGeneration;
-    const total = allFeels.length;
-    if (!total) return;
-    let launched = 0;
-    const pump = () => {
-        if (generation !== feelsWarmGeneration || launched >= FEELS_WARM_AHEAD) return;
-        const idx = (activeIndex + 1 + launched) % total;
-        const s = allFeels[idx];
-        launched++;
-        if (s?.videoLink) warmFeelRange(s.videoLink, s.id, generation);
-        if (launched < FEELS_WARM_AHEAD) setTimeout(pump, 70);
-    };
-    pump();
 }
 
 function optimizeFeelsMemoryAndPreload(activeIndex) {
@@ -3157,44 +3080,50 @@ function optimizeFeelsMemoryAndPreload(activeIndex) {
         const s = allFeels.find(item => item.id === shortId);
         if (!s) return;
 
-        const distance = idx - activeIndex;
-        if (idx === activeIndex || (distance > 0 && distance <= FEELS_FULL_PRELOAD_AHEAD)) {
-            if (video.getAttribute('poster') !== s.poster) video.setAttribute('poster', s.poster);
+        if (idx === activeIndex || idx === activeIndex + 1) {
+            if (video.getAttribute('poster') !== s.poster) {
+                video.setAttribute('poster', s.poster);
+            }
 
-            video.preload = 'auto';
-            if (!video.getAttribute('src') && !hlsInstances[shortId]) {
+            if (idx === activeIndex && !video.getAttribute('src') && !hlsInstances[shortId]) {
                 attachSmartAdaptiveSource(video, s.videoLink, shortId);
+                video.preload = "auto";
+            } else if (idx === activeIndex + 1) {
+                // Preload the next Feel so scrolling to it does not require a fresh 3–4s startup.
+                video.preload = "auto";
+                video.muted = true;
+                if (!video.getAttribute('src') && !hlsInstances[shortId]) {
+                    attachSmartAdaptiveSource(video, s.videoLink, shortId);
+                }
+                video.pause();
             }
 
             if (idx === activeIndex) {
+                video.preload = "auto";
                 video.muted = false;
-                const playPromise = video.play();
-                if (playPromise?.catch) {
+                let playPromise = video.play();
+                if (playPromise !== undefined) {
                     playPromise.catch(() => {
                         video.muted = true;
-                        video.play().catch(() => {});
+                        video.play().catch(e => console.log(e));
                     });
                 }
             } else {
-                video.muted = true;
+                video.preload = "none";
                 video.pause();
-                try { if (video.currentTime > 0) video.currentTime = 0; } catch (e) {}
+                video.currentTime = 0;
             }
         } else {
             video.pause();
             video.removeAttribute('src');
-            video.preload = 'none';
+            video.removeAttribute('preload');
             if (hlsInstances[shortId]) {
-                try { hlsInstances[shortId].destroy(); } catch (e) {}
+                hlsInstances[shortId].destroy();
                 delete hlsInstances[shortId];
             }
             video.load();
         }
     });
-    // Warm the next 20 with a small initial byte-range request. This avoids
-    // keeping 20 full decoders/buffers alive while still reducing edge/origin
-    // latency when the user rapidly scrolls through Feels.
-    warmNextFeels(activeIndex);
 }
 
 let feelsObserver;
@@ -6598,50 +6527,33 @@ function flyInitPlayer(link){
 
     if(poster && currentActiveMovie){ poster.src=currentActiveMovie.poster||currentActiveMovie.banner||''; poster.style.display='block'; }
 
+    // Cloudflare CDN + HLS adaptive streaming (আপনার existing helper reuse)
     attachSmartAdaptiveSource(v, link, 'fly_main');
     v.playbackRate=flyCurrentSpeed;
 
     flyBuildSpeedMenu();
     flySetQualityLoading();
 
-    // Use property handlers so reopening the player never stacks duplicate
-    // waiting/playing/progress listeners.
-    v.onwaiting=()=>flyShowBuffering(true);
-    v.onstalled=()=>flyShowBuffering(true);
-    v.onplaying=()=>{flyShowBuffering(false); if(poster) poster.style.display='none'; flyUpdatePlayIcon();};
-    v.oncanplay=()=>flyShowBuffering(false);
-    v.onplay=flyUpdatePlayIcon;
-    v.onpause=()=>{flyUpdatePlayIcon(); flyShowControls();};
-    v.ontimeupdate=flyUpdateProgress;
-    v.onloadedmetadata=flyUpdateProgress;
-    v.onprogress=flyUpdateProgress;
-    v.onended=()=>playNextRecommendedVideo();
-
-    // Progressive R2 recovery: one lightweight seek/reload retry if the browser
-    // stalls after the initial range request. HLS has its own recovery logic.
-    v.dataset.r2RecoveryCount='0';
-    const recoverR2=()=>{
-        if(/\.m3u8(?:$|[?#])/i.test(link)) return;
-        if(v.dataset.r2RecoveryCount==='1') return;
-        const pos=v.currentTime||0;
-        v.dataset.r2RecoveryCount='1';
-        setTimeout(()=>{
-            if(!v.paused && v.readyState < 3){
-                try{ v.load(); v.currentTime=pos; v.play().catch(()=>{}); }catch(e){}
-            }
-        },900);
-    };
-    v.onstalled=recoverR2;
-    v.onwaiting=()=>{flyShowBuffering(true); recoverR2();};
+    v.addEventListener('waiting',()=>flyShowBuffering(true));
+    v.addEventListener('stalled',()=>flyShowBuffering(true));
+    v.addEventListener('playing',()=>{flyShowBuffering(false); if(poster) poster.style.display='none'; flyUpdatePlayIcon();});
+    v.addEventListener('canplay',()=>flyShowBuffering(false));
+    v.addEventListener('play',flyUpdatePlayIcon);
+    v.addEventListener('pause',()=>{flyUpdatePlayIcon(); flyShowControls();});
+    v.addEventListener('timeupdate',flyUpdateProgress);
+    v.addEventListener('loadedmetadata',flyUpdateProgress);
+    v.addEventListener('progress',flyUpdateProgress);
+    v.addEventListener('ended',()=>playNextRecommendedVideo());
 
     const gesture=document.getElementById('fly-gesture');
-    if(gesture) gesture.onclick=flyOnTap;
+    if(gesture) gesture.addEventListener('click',flyOnTap);
     flyBindProgressDrag();
 
     document.addEventListener('fullscreenchange',flyOnFsChange);
     document.addEventListener('webkitfullscreenchange',flyOnFsChange);
 
     flyShowBuffering(true);
+    // HLS playback starts from MANIFEST_PARSED. For direct/native sources, start immediately.
     if (!/\.m3u8(?:$|[?#])/i.test(link)) {
         const p=v.play();
         if(p!==undefined){ p.catch(()=>{ v.muted=true; v.play().catch(()=>{}); }); }
@@ -6746,35 +6658,30 @@ function flyBuildQualityMenu(){
     const list=document.getElementById('fly-quality-list'); if(!list) return;
     const hls=hlsInstances['fly_main'];
     const levels=flyGetHlsQualityLevels();
-
-    if(levels.length){
-        const current=(hls && hls.currentLevel != null) ? hls.currentLevel : -1;
-        const unique=[];
-        const seen=new Set();
-        levels.slice().sort((a,b)=>b.height-a.height || b.bitrate-a.bitrate).forEach(l=>{
-            if(!seen.has(l.height)){
-                seen.add(l.height);
-                unique.push(l);
-            }
-        });
-        const items=[{label:'Auto',height:0,index:-1}].concat(unique.map(l=>({label:`${l.height}p`,height:l.height,index:l.index})));
-        list.innerHTML=items.map(q=>{
-            const active=q.height===0 ? current===-1 : current===q.index;
-            return `<div class="fly-menu-item ${active?'active':''}" onclick="flySetQuality(${q.height},'${q.label}',event)"><span>${q.label}</span>${active?'<i class="fas fa-check"></i>':''}</div>`;
-        }).join('');
+    if(!levels.length){
+        list.innerHTML='<div class="fly-menu-item locked"><span>Loading quality...</span></div>';
         return;
     }
 
-    // R2 has no transcoded quality ladder; expose the actual progressive source
-    // instead of leaving the menu stuck at "Loading quality...".
-    const provider=currentActiveMovie?.videoProvider || 'r2';
-    if(provider !== 'cloudflare-stream'){
-        list.innerHTML=`<div class="fly-menu-item active"><span>Auto · Original</span><i class="fas fa-check"></i></div>`;
-        return;
-    }
-    list.innerHTML='<div class="fly-menu-item locked"><span>Loading quality...</span></div>';
+    const current=(hls && hls.currentLevel != null) ? hls.currentLevel : -1;
+    const unique=[];
+    const seen=new Set();
+    levels.slice().sort((a,b)=>b.height-a.height || b.bitrate-a.bitrate).forEach(l=>{
+        if(!seen.has(l.height)){
+            seen.add(l.height);
+            unique.push(l);
+        }
+    });
+
+    const items=[{label:'Auto',height:0,index:-1}].concat(unique.map(l=>(
+        {label:`${l.height}p`,height:l.height,index:l.index}
+    )));
+
+    list.innerHTML=items.map(q=>{
+        const active=q.height===0 ? current===-1 : current===q.index;
+        return `<div class="fly-menu-item ${active?'active':''}" onclick="flySetQuality(${q.height},'${q.label}',event)"><span>${q.label}</span>${active?'<i class="fas fa-check"></i>':''}</div>`;
+    }).join('');
 }
-
 function flySetQuality(height,label,e){
     if(e) e.stopPropagation();
     const hls=hlsInstances['fly_main'];

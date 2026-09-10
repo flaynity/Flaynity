@@ -2999,12 +2999,12 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
             enableWorker: true,
             lowLatencyMode: false,
             capLevelToPlayerSize: true,
-            startLevel: 0,
-            autoStartLoad: false,
+            startLevel: -1,
+            autoStartLoad: true,
             capLevelOnFPSDrop: true,
-            maxBufferLength: shortId === 'fly_main' ? 8 : 4,
-            maxMaxBufferLength: shortId === 'fly_main' ? 24 : 10,
-            backBufferLength: shortId === 'fly_main' ? 4 : 2,
+            maxBufferLength: shortId === 'fly_main' ? 12 : 4,
+            maxMaxBufferLength: shortId === 'fly_main' ? 30 : 10,
+            backBufferLength: shortId === 'fly_main' ? 6 : 2,
             maxBufferHole: 0.5,
             abrEwmaFastVoD: 1.0,
             abrEwmaSlowVoD: 3.0,
@@ -3019,7 +3019,6 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
 
         hls.on(Hls.Events.MEDIA_ATTACHED, () => {
             hls.loadSource(url);
-            hls.startLoad(-1);
         });
 
         const refreshMainQuality = () => {
@@ -3087,8 +3086,12 @@ function optimizeFeelsMemoryAndPreload(activeIndex) {
                 attachSmartAdaptiveSource(video, s.videoLink, shortId);
                 video.preload = "auto";
             } else if (idx === activeIndex + 1) {
-                // Keep the next Feels lightweight: poster only until the user approaches it.
-                video.preload = "none";
+                // Preload the next Feel so scrolling to it does not require a fresh 3–4s startup.
+                video.preload = "auto";
+                video.muted = true;
+                if (!video.getAttribute('src') && !hlsInstances[shortId]) {
+                    attachSmartAdaptiveSource(video, s.videoLink, shortId);
+                }
                 video.pause();
             }
 
@@ -6653,27 +6656,29 @@ function flyBuildQualityMenu(){
     const hls=hlsInstances['fly_main'];
     const levels=flyGetHlsQualityLevels();
     if(!levels.length){
-        list.innerHTML='<div class="fly-menu-item locked"><span>Detecting network quality…</span></div>';
+        list.innerHTML='<div class="fly-menu-item locked"><span>Loading quality...</span></div>';
         return;
     }
+
     const current=(hls && hls.currentLevel != null) ? hls.currentLevel : -1;
-    const groups=[
-        {label:'Auto',height:0},
-        {label:'1080p',height:1080},
-        {label:'720p',height:720},
-        {label:'360p',height:360},
-        {label:'144p',height:144}
-    ];
-    list.innerHTML=groups.map(q=>{
-        let match=null;
-        if(q.height===0) match={i:-1};
-        else match=levels.map(l=>({i:l.index,h:l.height})).filter(x=>x.h===q.height).sort((a,b)=>Math.abs(a.h-q.height)-Math.abs(b.h-q.height))[0] || null;
-        const active=q.height===0 ? current===-1 : levels.some(l=>l.index===current && l.height===q.height);
-        const available=!!match;
-        return `<div class="fly-menu-item ${available?'':'locked'} ${active?'active':''}" onclick="${available?`flySetQuality(${q.height},'${q.label}',event)`:'event.stopPropagation();'}"><span>${q.label}</span>${available?(active?'<i class="fas fa-check"></i>':''):'<span style="opacity:.45;font-size:.72rem;">Unavailable</span>'}</div>`;
+    const unique=[];
+    const seen=new Set();
+    levels.slice().sort((a,b)=>b.height-a.height || b.bitrate-a.bitrate).forEach(l=>{
+        if(!seen.has(l.height)){
+            seen.add(l.height);
+            unique.push(l);
+        }
+    });
+
+    const items=[{label:'Auto',height:0,index:-1}].concat(unique.map(l=>(
+        {label:`${l.height}p`,height:l.height,index:l.index}
+    )));
+
+    list.innerHTML=items.map(q=>{
+        const active=q.height===0 ? current===-1 : current===q.index;
+        return `<div class="fly-menu-item ${active?'active':''}" onclick="flySetQuality(${q.height},'${q.label}',event)"><span>${q.label}</span>${active?'<i class="fas fa-check"></i>':''}</div>`;
     }).join('');
 }
-
 function flySetQuality(height,label,e){
     if(e) e.stopPropagation();
     const hls=hlsInstances['fly_main'];

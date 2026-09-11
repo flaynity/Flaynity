@@ -86,10 +86,12 @@
     catch (e) { throw new Error(`HLS transcoder is not connected: ${e.message || e}`); }
     const ready = await window.flaynityWaitForHlsReady(job.jobId, options.onStatus);
     const canonicalJobId = ready.jobId || job.jobId;
-    const base = window.FLAYNITY_MEDIA_BASE || "https://cdn.flaynity.indevs.in/media";
+    const base = "https://cdn.flaynity.indevs.in/media";
     const canonical = `${base}/uploads/hls/${encodeURIComponent(canonicalJobId)}/master.m3u8`;
     const hlsUrl = ready.hlsUrl || canonical;
     return { key: baseUpload.key, videoUrl: hlsUrl, hlsUrl, hlsKey: ready.hlsKey || `uploads/hls/${canonicalJobId}/master.m3u8`, transcodeJobId: canonicalJobId, videoQualities: { auto: hlsUrl, hls: hlsUrl, preferred: [144, 360, 480, 720, 1080] }, provider: "r2-hls" };
   }
   window.uploadVideoToFlaynityHls = fastUploadVideo;
+  window.uploadVideoToFlaynityStream = async function () { throw new Error("Cloudflare Stream is disabled. Video and Feels use R2-HLS only."); };
+  window.flaynityStreamAvailable = async function () { return false; };
 })();

@@ -14,6 +14,14 @@ function normalizeFlaynityMediaUrl(url) {
         const key = value.slice((LEGACY_R2_PUBLIC_PREFIX + "/").length).split(/[?#]/)[0];
         return flaynityMediaUrl(key) + (value.includes("?") ? value.slice(value.indexOf("?")) : "");
     }
+    const cdnPrefix = "https://cdn.flaynity.indevs.in/";
+    if (value.startsWith(cdnPrefix)) {
+        const rest = value.slice(cdnPrefix.length);
+        if (rest.startsWith("media/")) return value;
+        return `${FLAYNITY_MEDIA_BASE}/${rest}`;
+    }
+    const oldWorkerMediaPrefix = "https://flaynity.indevs.in/media/";
+    if (value.startsWith(oldWorkerMediaPrefix)) return value;
     return value;
 }
 
@@ -110,187 +118,79 @@ async function uploadMediaToFlaynity(file, folder = "videos", onProgress) {
 
 
 // =========================================================
-// CLOUDFLARE STREAM: ADAPTIVE VIDEO UPLOAD / HLS PLAYBACK
+// FLAYNITY SELF-HOSTED HLS TRANSCODER (NO CLOUDFLARE STREAM)
 // =========================================================
-const FLAYNITY_STREAM_ENABLED = true;
-const FLAYNITY_STREAM_CAPABILITY_TTL = 5 * 60 * 1000;
-let flaynityStreamCapabilityCache = { checkedAt: 0, enabled: false };
+const FLAYNITY_HLS_TRANSCODE_TIMEOUT = 30 * 60 * 1000;
 
-async function flaynityStreamAvailable(force = false) {
-    if (!force && Date.now() - flaynityStreamCapabilityCache.checkedAt < FLAYNITY_STREAM_CAPABILITY_TTL) {
-        return flaynityStreamCapabilityCache.enabled;
-    }
-    try {
-        const response = await fetch(`${FLAYNITY_API_BASE}/v1/stream/capability`, { cache: "no-store" });
-        const data = await response.json().catch(() => ({}));
-        const enabled = !!(response.ok && data && data.enabled);
-        flaynityStreamCapabilityCache = { checkedAt: Date.now(), enabled };
-        return enabled;
-    } catch (e) {
-        flaynityStreamCapabilityCache = { checkedAt: Date.now(), enabled: false };
-        return false;
-    }
-}
-const FLAYNITY_STREAM_STATUS_TIMEOUT = 300000;
-const FLAYNITY_TUS_CHUNK_SIZE = 50 * 1024 * 1024;
-
-async function flaynityStreamAuthToken() {
+async function flaynityHlsAuthToken(forceRefresh = false) {
     const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
-    if (!user) throw new Error("Please sign in first.");
-    return user.getIdToken(true);
+    if (!user) throw new Error('Please sign in first.');
+    return user.getIdToken(!!forceRefresh);
 }
 
-async function flaynityStreamRequest(path, options = {}) {
-    const token = await flaynityStreamAuthToken();
-    const headers = { ...(options.headers || {}), "Authorization": `Bearer ${token}` };
-    if (!headers["Content-Type"] && options.body && typeof options.body === "string") headers["Content-Type"] = "application/json";
-    const response = await fetch(`${FLAYNITY_API_BASE}${path}`, { ...options, headers, cache: "no-store" });
+async function flaynityStartHlsTranscode(sourceKey, contentType = 'video/mp4') {
+    if (!sourceKey) throw new Error('Video source key is missing.');
+    async function request(force) {
+        const token = await flaynityHlsAuthToken(force);
+        return fetch(`${FLAYNITY_API_BASE}/v1/media/transcode`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key: sourceKey, contentType }),
+            cache: 'no-store'
+        });
+    }
+    let response = await request(false);
+    if (response.status === 401) response = await request(true);
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || `Stream request failed (${response.status}).`);
+    if (!response.ok || !data.jobId) throw new Error(data.error || `Could not start HLS encoding (HTTP ${response.status}).`);
     return data;
 }
 
-function flaynityXhrPostForm(uploadUrl, file, onProgress) {
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", uploadUrl, true);
-        xhr.upload.onprogress = e => {
-            if (e.lengthComputable && typeof onProgress === "function") onProgress(e.loaded, e.total);
-        };
-        xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) resolve();
-            else reject(new Error(`Stream upload failed (${xhr.status}).`));
-        };
-        xhr.onerror = () => reject(new Error("Network error while uploading video to Stream."));
-        xhr.onabort = () => reject(new Error("Stream upload aborted."));
-        const form = new FormData();
-        form.append("file", file, file.name || "video.mp4");
-        xhr.send(form);
-    });
-}
-
-function flaynityTusPatch(uploadUrl, chunk, offset, onLoaded) {
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("PATCH", uploadUrl, true);
-        xhr.setRequestHeader("Tus-Resumable", "1.0.0");
-        xhr.setRequestHeader("Upload-Offset", String(offset));
-        xhr.setRequestHeader("Content-Type", "application/offset+octet-stream");
-        xhr.upload.onprogress = e => {
-            if (e.lengthComputable && typeof onLoaded === "function") onLoaded(e.loaded);
-        };
-        xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                const next = Number(xhr.getResponseHeader("Upload-Offset"));
-                resolve(Number.isFinite(next) ? next : offset + chunk.size);
-            } else reject(new Error(`Stream chunk upload failed (${xhr.status}).`));
-        };
-        xhr.onerror = () => reject(new Error("Network error during resumable Stream upload."));
-        xhr.onabort = () => reject(new Error("Stream chunk upload aborted."));
-        xhr.send(chunk);
-    });
-}
-
-async function flaynityTusUpload(uploadUrl, file, onProgress) {
-    let offset = 0;
-    const total = file.size;
-    while (offset < total) {
-        const end = Math.min(offset + FLAYNITY_TUS_CHUNK_SIZE, total);
-        const chunk = file.slice(offset, end);
-        let ok = false;
-        let lastError;
-        for (let attempt = 0; attempt < 4 && !ok; attempt++) {
-            try {
-                const base = offset;
-                const next = await flaynityTusPatch(uploadUrl, chunk, offset, loaded => {
-                    if (typeof onProgress === "function") onProgress(base + loaded, total);
-                });
-                offset = next;
-                ok = true;
-                if (typeof onProgress === "function") onProgress(offset, total);
-            } catch (e) {
-                lastError = e;
-                await new Promise(r => setTimeout(r, 700 * (attempt + 1)));
-            }
-        }
-        if (!ok) throw lastError || new Error("Resumable Stream upload failed.");
-    }
-}
-
-async function waitForFlaynityStreamReady(uid, onStatus) {
+async function flaynityWaitForHlsReady(jobId, onStatus) {
     const started = Date.now();
-    while (Date.now() - started < FLAYNITY_STREAM_STATUS_TIMEOUT) {
-        const data = await flaynityStreamRequest(`/v1/stream/status/${encodeURIComponent(uid)}`);
-        if (typeof onStatus === "function") onStatus(data);
-        // Cloudflare can mark a video ready while some quality levels are still
-        // encoding. Wait for the full encode before publishing so the first
-        // playback session has a complete ABR ladder instead of a stuck
-        // "Loading quality..." state.
-        const pct = Number(data.pctComplete);
-        const fullyEncoded = !Number.isFinite(pct) || pct >= 100;
-        if (data.readyToStream && data.hls && fullyEncoded) return data;
-        await new Promise(r => setTimeout(r, 1800));
-    }
-    throw new Error("Video upload finished, but Stream encoding is still processing. Please try again shortly.");
-}
-
-async function uploadVideoToFlaynityStream(file, options = {}, onProgress) {
-    if (!FLAYNITY_STREAM_ENABLED) throw new Error("Stream upload is disabled.");
-    const maxDurationSeconds = Math.min(Math.max(Number(options.maxDurationSeconds) || 3600, 1), 36000);
-    const name = String(file.name || "video.mp4");
-
-    if (file.size <= 200 * 1024 * 1024) {
-        const data = await flaynityStreamRequest("/v1/stream/upload-url", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ maxDurationSeconds, name })
+    while (Date.now() - started < FLAYNITY_HLS_TRANSCODE_TIMEOUT) {
+        const token = await flaynityHlsAuthToken(false);
+        const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/transcode/status/${encodeURIComponent(jobId)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }, cache: 'no-store'
         });
-        await flaynityXhrPostForm(data.uploadUrl, file, onProgress);
-        const ready = await waitForFlaynityStreamReady(data.uid, options.onStatus);
-        return {
-            uid: data.uid,
-            videoUrl: ready.hls,
-            hlsUrl: ready.hls,
-            dashUrl: ready.dash || "",
-            thumbnail: ready.thumbnail || "",
-            duration: ready.duration || null,
-            width: ready.width || null,
-            height: ready.height || null,
-            provider: "cloudflare-stream"
-        };
+        if (response.status === 401) {
+            const fresh = await flaynityHlsAuthToken(true);
+            const retry = await fetch(`${FLAYNITY_API_BASE}/v1/media/transcode/status/${encodeURIComponent(jobId)}`, {
+                headers: { 'Authorization': `Bearer ${fresh}` }, cache: 'no-store'
+            });
+            const retryData = await retry.json().catch(() => ({}));
+            if (!retry.ok) throw new Error(retryData.error || `HLS status failed (HTTP ${retry.status}).`);
+            if (typeof onStatus === 'function') onStatus(retryData);
+            if (retryData.status === 'ready' && retryData.hlsUrl) return retryData;
+            if (retryData.status === 'failed') throw new Error(retryData.message || 'HLS transcoding failed.');
+        } else {
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || `HLS status failed (HTTP ${response.status}).`);
+            if (typeof onStatus === 'function') onStatus(data);
+            if (data.status === 'ready' && data.hlsUrl) return data;
+            if (data.status === 'failed') throw new Error(data.message || 'HLS transcoding failed.');
+        }
+        await new Promise(r => setTimeout(r, 2000));
     }
-
-    const token = await flaynityStreamAuthToken();
-    const tusResponse = await fetch(`${FLAYNITY_API_BASE}/v1/stream/tus-url`, {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${token}`,
-            "Upload-Length": String(file.size),
-            "X-Flaynity-Filename": name
-        },
-        cache: "no-store"
-    });
-    const tusData = await tusResponse.json().catch(() => ({}));
-    if (!tusResponse.ok || !tusData.uploadUrl) throw new Error(tusData.error || "Could not create resumable Stream upload.");
-    await flaynityTusUpload(tusData.uploadUrl, file, onProgress);
-    if (!tusData.uid) throw new Error("Stream did not return a video ID for the resumable upload.");
-    const ready = await waitForFlaynityStreamReady(tusData.uid, options.onStatus);
-    return {
-        uid: tusData.uid,
-        videoUrl: ready.hls,
-        hlsUrl: ready.hls,
-        dashUrl: ready.dash || "",
-        thumbnail: ready.thumbnail || "",
-        duration: ready.duration || null,
-        width: ready.width || null,
-        height: ready.height || null,
-        provider: "cloudflare-stream"
-    };
+    throw new Error('HLS transcoding is taking longer than expected. The original upload is safe; retry processing later.');
 }
 
-function dataURLtoBlob(dataurl) {
-    var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-        bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-    while(n--) u8arr[n] = bstr.charCodeAt(n);
-    return new Blob([u8arr], {type:mime});
+async function uploadVideoToFlaynityHls(file, options = {}, onProgress) {
+    const folder = options.folder === 'feels' ? 'feels' : 'videos';
+    const upload = await uploadMediaToFlaynity(file, folder, onProgress);
+    const job = await flaynityStartHlsTranscode(upload.key, file.type || 'video/mp4');
+    if (typeof options.onStatus === 'function') options.onStatus({ status: 'queued', progress: 0, message: 'HLS encoding queued...' });
+    const ready = await flaynityWaitForHlsReady(job.jobId, status => {
+        if (typeof options.onStatus === 'function') options.onStatus(status);
+    });
+    return {
+        ...upload,
+        provider: 'r2-hls',
+        videoUrl: ready.hlsUrl,
+        hlsUrl: ready.hlsUrl,
+        dashUrl: '',
+        hlsKey: ready.hlsKey || '',
+        transcodeJobId: job.jobId,
+        videoQualities: { auto: ready.hlsUrl, hls: ready.hlsUrl, preferred: [144, 360, 480, 720, 1080] }
+    };
 }

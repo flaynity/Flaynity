@@ -3131,7 +3131,7 @@ function flySetQualityLoading(){
     list.innerHTML='<div class="fly-menu-item active" onclick="flySetQuality(0,\'Auto\',event)"><span>Auto</span><i class="fas fa-check"></i></div>'+levels.map(h=>`<div class="fly-menu-item" onclick="flySetQuality(${h},\'${h}p\',event)"><span>${h}p</span></div>`).join('');
 }
 
-const FEELS_FULL_PRELOAD_AHEAD = 2;
+const FEELS_FULL_PRELOAD_AHEAD = 3;
 const FEELS_WARM_AHEAD = 20;
 let feelsWarmGeneration = 0;
 const feelsWarmCache = new Map();
@@ -3151,6 +3151,20 @@ function warmFeelRange(url, key, generation) {
     }).catch(() => feelsWarmCache.delete(key));
 }
 
+function warmHlsManifest(url, key, generation) {
+    if (!url || generation !== feelsWarmGeneration || feelsWarmCache.has('hls:' + key)) return;
+    const normalized = normalizeFlaynityMediaUrl(url);
+    if (!/\.m3u8(?:$|[?#])/i.test(normalized)) return;
+    feelsWarmCache.set('hls:' + key, 'pending');
+    fetch(normalized, { method: 'GET', cache: 'force-cache', credentials: 'omit' })
+        .then(r => {
+            if (generation !== feelsWarmGeneration) return;
+            if (r.ok) feelsWarmCache.set('hls:' + key, 'warm');
+            else feelsWarmCache.delete('hls:' + key);
+        })
+        .catch(() => feelsWarmCache.delete('hls:' + key));
+}
+
 function warmNextFeels(activeIndex) {
     const generation = ++feelsWarmGeneration;
     const total = allFeels.length;
@@ -3161,8 +3175,12 @@ function warmNextFeels(activeIndex) {
         const idx = (activeIndex + 1 + launched) % total;
         const s = allFeels[idx];
         launched++;
-        if (s?.videoLink) warmFeelRange(s.videoLink, s.id, generation);
-        if (launched < FEELS_WARM_AHEAD) setTimeout(pump, 70);
+        if (s?.videoLink) {
+            const url = normalizeFlaynityMediaUrl(s.videoLink);
+            if (/\.m3u8(?:$|[?#])/i.test(url)) warmHlsManifest(url, s.id, generation);
+            else warmFeelRange(url, s.id, generation);
+        }
+        if (launched < FEELS_WARM_AHEAD) setTimeout(pump, 60);
     };
     pump();
 }

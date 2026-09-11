@@ -1253,6 +1253,80 @@ function logout() {
 // =========================================================
 let uploadQueue = [];
 let activeUploadsCount = 0;
+let currentNativeUploadUri = "";
+
+function consumeNativeSelectedUri() {
+    try {
+        if (window.AndroidBridge && typeof AndroidBridge.consumeSelectedUri === "function") {
+            return AndroidBridge.consumeSelectedUri() || "";
+        }
+    } catch (e) {}
+    return "";
+}
+
+function syncNativeUploadResults() {
+    try {
+        if (!window.AndroidBridge || typeof AndroidBridge.consumeBackgroundUploadResults !== "function") return;
+        const raw = AndroidBridge.consumeBackgroundUploadResults();
+        if (!raw) return;
+        const results = JSON.parse(raw);
+        if (!Array.isArray(results)) return;
+        results.forEach(async result => {
+            const item = uploadQueue.find(x => x.id === result.id);
+            if (!item) return;
+            item.key = result.key || item.key;
+            item.videoUrl = normalizeFlaynityMediaUrl(result.publicUrl || item.videoUrl || "");
+            item.progress = 100;
+            item.status = "processing";
+            item.videoProvider = "r2";
+            updateManagerUI();
+            saveQueueStateToLocalStorage();
+            try {
+                if (item.type === "post") await publishQueuedNativePost(item);
+                else await runPostUploadProcessingSequence(item);
+            } catch (e) {
+                item.status = "failed";
+                updateManagerUI();
+                saveQueueStateToLocalStorage();
+                showNotification("Post-processing error: " + e.message, "error");
+            }
+        });
+    } catch (e) { console.warn("Native upload result sync failed", e); }
+}
+
+async function enqueueNativeUpload(item) {
+    if (!item.nativeUri || !window.AndroidBridge || typeof AndroidBridge.enqueueBackgroundUpload !== "function") return false;
+    item.status = "uploading";
+    item.progress = 0;
+    updateManagerUI();
+    saveQueueStateToLocalStorage();
+    AndroidBridge.enqueueBackgroundUpload(item.nativeUri, item.id, item.key, item.fileType || "application/octet-stream", Number(item.fileSize || 0), item.title || "Upload", item.type || "video");
+    return true;
+}
+
+async function publishQueuedNativePost(item) {
+    const user = auth.currentUser;
+    if (!user) throw new Error("Please sign in again.");
+    const userSnap = await db.ref(`users/${user.uid}`).once("value");
+    const uData = userSnap.val() || {};
+    const username = uData.username || user.email.split("@")[0];
+    const avatar = currentChannelData?.avatarUrl || user.photoURL || "";
+    const imgUrl = item.videoUrl || normalizeFlaynityMediaUrl(item.publicUrl || "");
+    const postPayload = {
+        id: item.id, userId: user.uid, channelId: user.uid,
+        title: (item.title || "Community Post").split("\n")[0].substring(0, 50),
+        imageUrl: imgUrl, caption: item.description || item.title || "", uploadTime: Date.now(),
+        visibility: item.visibility || "Public", status: (item.scheduledTime && item.scheduledTime > Date.now()) ? "scheduled" : "published",
+        isShort: false, isPost: true, username, avatar, images: [imgUrl], hideLikes: false,
+        createdAt: Date.now(), reaction: {}, totalLikes: 0, totalReaction: 0, totalComments: 0,
+        scheduledTime: item.scheduledTime || 0
+    };
+    await db.ref(`admin_panel/posts/${postPayload.id}`).set(postPayload);
+    item.status = "completed"; item.progress = 100; updateManagerUI(); saveQueueStateToLocalStorage();
+    showNotification("Community Post published successfully!", "success");
+}
+
+setInterval(syncNativeUploadResults, 2000);
 const MAX_CONCURRENT_UPLOADS = 3;
 
 setInterval(() => {
@@ -1288,36 +1362,67 @@ async function startS3DirectUpload(item) {
     item.status = "uploading"; item.progress = item.progress || 0; updateManagerUI();
     const startTime = Date.now();
     try {
-        // Stream is intentionally NOT used. Every new video goes to R2 first,
-        // then the self-hosted FFmpeg service creates the adaptive HLS ladder.
-        const uploadFolder = item.type === 'video-short' ? 'feels' : 'videos';
-        const upload = await uploadVideoToFlaynityHls(item.file, {
-            folder: uploadFolder,
-            onStatus: status => {
-                const p = Number(status?.progress);
-                item.processingMsg = status?.message || (status?.status === 'processing' ? 'Encoding adaptive qualities...' : 'Preparing adaptive playback...');
-                if (Number.isFinite(p)) item.progress = Math.max(0, Math.min(99, Math.round(p)));
-                updateManagerUI();
+        // Android WebView uploads are handed to the native foreground service so they
+        // continue when the WebView is minimized or the task is swiped away.
+        if (item.nativeUri && window.AndroidBridge && typeof AndroidBridge.enqueueBackgroundUpload === "function") {
+            const started = await enqueueNativeUpload(item);
+            if (started) return;
+        }
+
+        // B version: use R2 directly while Stream is not subscribed. Once the
+        // Worker has a Stream API token, capability detection automatically
+        // switches new uploads to Stream without requiring a frontend rebuild.
+        let upload;
+        const streamReady = typeof flaynityStreamAvailable === 'function'
+            ? await flaynityStreamAvailable()
+            : false;
+
+        if (streamReady) {
+            try {
+                upload = await uploadVideoToFlaynityStream(item.file, {
+                    maxDurationSeconds: Math.min(Math.max(Number(item.duration) || 3600, 1), 36000),
+                    onStatus: status => {
+                        item.processingMsg = status?.status?.state === 'inprogress' ? 'Encoding video qualities...' : 'Preparing adaptive playback...';
+                        updateManagerUI();
+                    }
+                }, (loaded, total) => {
+                    if (item.status !== 'uploading') return;
+                    item.progress = Math.round((loaded / total) * 100);
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
+                    updateManagerUI();
+                });
+                item.streamUid = upload.uid;
+                item.videoProvider = upload.provider;
+                item.videoUrl = upload.hlsUrl || upload.videoUrl;
+                item.hlsUrl = upload.hlsUrl || upload.videoUrl;
+                item.dashUrl = upload.dashUrl || '';
+                item.streamThumbnail = upload.thumbnail || '';
+                item.streamQualityLadder = [144, 360, 480, 720, 1080];
+                if (upload.width && upload.height) item.resolution = `${upload.width}x${upload.height}`;
+            } catch (streamErr) {
+                console.warn('[Flaynity] Stream is configured but upload failed; falling back to R2:', streamErr);
+                upload = null;
             }
-        }, (loaded, total) => {
-            if (item.status !== 'uploading') return;
-            item.progress = Math.round((loaded / total) * 100);
-            const elapsed = (Date.now() - startTime) / 1000;
-            if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
-            updateManagerUI();
-        });
+        }
 
-        item.key = upload.key;
-        item.videoProvider = 'r2-hls';
-        item.videoUrl = normalizeFlaynityMediaUrl(upload.hlsUrl || upload.videoUrl);
-        item.hlsUrl = normalizeFlaynityMediaUrl(upload.hlsUrl || upload.videoUrl);
-        item.dashUrl = '';
-        item.hlsKey = upload.hlsKey || '';
-        item.transcodeJobId = upload.transcodeJobId || '';
-        item.videoQualities = upload.videoQualities || { auto: item.hlsUrl, hls: item.hlsUrl, preferred: [144, 360, 480, 720, 1080] };
-        item.streamQualityLadder = [144, 360, 480, 720, 1080];
-
-        item.status = "processing"; item.retryCount = 0; item.progress = 100; updateManagerUI();
+        if (!upload) {
+            const uploadFolder = item.type === 'video-short' ? 'feels' : 'videos';
+            upload = await uploadMediaToFlaynity(item.file, uploadFolder, (loaded, total) => {
+                if (item.status !== 'uploading') return;
+                item.progress = Math.round((loaded / total) * 100);
+                const elapsed = (Date.now() - startTime) / 1000;
+                if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
+                updateManagerUI();
+            });
+            item.key = upload.key;
+            item.videoProvider = 'r2';
+            item.videoUrl = normalizeFlaynityMediaUrl(upload.publicUrl);
+            item.hlsUrl = '';
+            item.dashUrl = '';
+            item.videoQualities = { auto: item.videoUrl, original: item.videoUrl };
+        }
+        item.status = "processing"; item.retryCount = 0; updateManagerUI();
         await runPostUploadProcessingSequence(item);
     } catch (err) {
         if (item.status === 'paused') { console.log("Upload paused safely."); }
@@ -1415,7 +1520,7 @@ async function pushVideoMetadataToDatabase(item) {
         streamUid: item.streamUid || '',
         hlsUrl: item.hlsUrl || '',
         dashUrl: item.dashUrl || '',
-        videoQualities: (item.videoProvider === 'r2-hls' || item.videoProvider === 'cloudflare-stream') ? {
+        videoQualities: item.videoProvider === 'cloudflare-stream' ? {
             auto: item.hlsUrl || item.videoUrl,
             hls: item.hlsUrl || item.videoUrl,
             dash: item.dashUrl || '',
@@ -1506,7 +1611,10 @@ function saveQueueStateToLocalStorage() {
             videoUrl: item.videoUrl,
             retryCount: item.retryCount,
             createdAt: item.createdAt,
-            scheduledTime: item.scheduledTime
+            scheduledTime: item.scheduledTime,
+            nativeUri: item.nativeUri || "",
+            fileType: item.fileType || "",
+            fileSize: item.fileSize || 0
         }));
         localStorage.setItem('flaynity_upload_queue_v2', JSON.stringify(queueToSave));
     } catch(e) {}
@@ -1516,11 +1624,12 @@ function restoreQueueFromLocalStorage() {
     try {
         const saved = JSON.parse(localStorage.getItem('flaynity_upload_queue_v2') || '[]');
         saved.forEach(item => {
-            if(item.status !== 'completed') {
-                // Ignore File blobs as they can't be restored from local storage. Require user re-selection if paused.
-                // In a true PWA we'd use IndexedDB.
+            if (item.status === 'completed') return;
+            if (!uploadQueue.some(x => x.id === item.id)) {
+                uploadQueue.push({ ...item, file: null });
             }
         });
+        syncNativeUploadResults();
     } catch(e) {}
 }
 
@@ -2972,7 +3081,7 @@ function toggleClipSubscribe(channelId, buttonEl) {
 let currentActiveFeelsIdx = -1;
 
 const FLAYNITY_STREAM_PREFERRED_QUALITY_LADDER = [144, 360, 480, 720, 1080];
-const FLAYNITY_STREAM_START_HEIGHT = 144;
+const FLAYNITY_STREAM_START_HEIGHT = 360;
 
 function chooseClosestHlsLevel(levels, targetHeight = FLAYNITY_STREAM_START_HEIGHT) {
     if (!Array.isArray(levels) || !levels.length) return -1;
@@ -2999,105 +3108,63 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
     const normalizedUrl = normalizeFlaynityMediaUrl(url);
     const isHls = /\.m3u8(?:$|[?#])/i.test(normalizedUrl);
     if (!isHls) {
+        // R2 B-version: progressive MP4. Range support is provided by the
+        // Worker and Cloudflare CDN, so the browser can start from the needed
+        // byte range instead of downloading the whole file first.
         videoElement.preload = shortId === 'fly_main' ? 'auto' : 'metadata';
         videoElement.src = normalizedUrl;
         videoElement.load();
         return;
     }
 
+    // Future Stream path: HLS.js ABR is kept ready. Stream currently advertises
+    // 360p–1080p; if a 144p rendition ever appears in the manifest, the ladder
+    // and quality menu will automatically include it.
     if (typeof Hls !== 'undefined' && Hls.isSupported()) {
         const hls = new Hls({
             enableWorker: true,
             lowLatencyMode: false,
-            capLevelToPlayerSize: false,
-            startLevel: 0,
-            autoStartLoad: false,
+            capLevelToPlayerSize: true,
+            startLevel: -1,
+            autoStartLoad: true,
             capLevelOnFPSDrop: true,
-            maxBufferLength: shortId === 'fly_main' ? 20 : 6,
-            maxMaxBufferLength: shortId === 'fly_main' ? 50 : 14,
-            backBufferLength: shortId === 'fly_main' ? 8 : 2,
-            maxBufferHole: 0.35,
-            abrEwmaFastVoD: 1.0,
-            abrEwmaSlowVoD: 3.0,
-            abrEwmaDefaultEstimate: 500000,
-            abrBandWidthFactor: 0.80,
-            abrBandWidthUpFactor: 0.70,
-            maxStarvationDelay: 0.8,
-            maxLoadingDelay: 1.0,
-            fragLoadingMaxRetry: 4,
-            manifestLoadingMaxRetry: 4,
-            levelLoadingMaxRetry: 4
+            maxBufferLength: shortId === 'fly_main' ? 18 : 8,
+            maxMaxBufferLength: shortId === 'fly_main' ? 45 : 18,
+            backBufferLength: shortId === 'fly_main' ? 8 : 3,
+            maxBufferHole: 0.5,
+            abrEwmaFastVoD: 2.0,
+            abrEwmaSlowVoD: 6.0,
+            abrBandWidthFactor: 0.78,
+            abrBandWidthUpFactor: 0.62,
+            maxStarvationDelay: 1.0,
+            maxLoadingDelay: 1.5
         });
 
         hlsInstances[shortId] = hls;
         if (shortId === 'fly_main') flySetQualityLoading();
 
-        let lowQualityLocked = true;
-        let firstFragBuffered = false;
-        let pendingQuality = null;
-
-        const applyPendingQuality = () => {
-            if (pendingQuality == null || !hls.levels?.length) return;
-            const target = Number(pendingQuality);
-            pendingQuality = null;
-            if (target === 0) {
-                hls.currentLevel = -1;
-                return;
-            }
-            const idx = chooseClosestHlsLevel(hls.levels, target);
-            if (idx >= 0) hls.currentLevel = idx;
-        };
-
-        hls.__flaynitySetQuality = (height) => {
-            if (!hls.levels?.length) {
-                pendingQuality = Number(height);
-                return;
-            }
-            if (Number(height) === 0) hls.currentLevel = -1;
-            else {
-                const idx = chooseClosestHlsLevel(hls.levels, Number(height));
-                if (idx >= 0) hls.currentLevel = idx;
-            }
-        };
-
         hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(normalizedUrl));
 
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            // Always begin at the lowest rendition, even on a very fast network.
-            // After the first buffered segment, ABR is released so quality can climb.
-            const startIndex = chooseClosestHlsLevel(hls.levels, 144);
-            const safeStart = startIndex >= 0 ? startIndex : 0;
-            try {
-                hls.startLevel = safeStart;
-                hls.nextAutoLevel = safeStart;
-                hls.currentLevel = safeStart;
-            } catch (e) {}
-            applyPendingQuality();
+        const refreshMainQuality = () => {
             if (shortId === 'fly_main') flyBuildQualityMenu();
-            hls.startLoad(-1);
+        };
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            // Start around 360p for fast first-frame playback, then return to
+            // normal ABR immediately so quality can rise/fall with bandwidth.
+            const startIndex = chooseClosestHlsLevel(hls.levels, FLAYNITY_STREAM_START_HEIGHT);
+            if (startIndex >= 0) {
+                try { hls.nextAutoLevel = startIndex; } catch (e) {}
+            }
+            try { hls.currentLevel = -1; } catch (e) {}
+            refreshMainQuality();
             if (videoElement.paused) {
                 const playPromise = videoElement.play();
-                if (playPromise?.catch) playPromise.catch(() => {});
+                if (playPromise && playPromise.catch) playPromise.catch(() => {});
             }
         });
-
-        hls.on(Hls.Events.FRAG_BUFFERED, () => {
-            if (firstFragBuffered) return;
-            firstFragBuffered = true;
-            // Keep the first segment low-quality for reliable startup, then hand
-            // control to ABR. This prevents a fast connection from requesting
-            // 720p/1080p before the first frame is ready.
-            setTimeout(() => {
-                if (!hlsInstances[shortId] || hlsInstances[shortId] !== hls) return;
-                if (lowQualityLocked) {
-                    lowQualityLocked = false;
-                    try { hls.currentLevel = -1; } catch (e) {}
-                }
-            }, shortId === 'fly_main' ? 700 : 450);
-        });
-
-        hls.on(Hls.Events.LEVELS_UPDATED, () => { if (shortId === 'fly_main') flyBuildQualityMenu(); });
-        hls.on(Hls.Events.LEVEL_SWITCHED, () => { if (shortId === 'fly_main') flyBuildQualityMenu(); });
+        hls.on(Hls.Events.LEVELS_UPDATED, refreshMainQuality);
+        hls.on(Hls.Events.LEVEL_SWITCHED, refreshMainQuality);
         hls.on(Hls.Events.ERROR, (_event, data) => {
             if (!data || !data.fatal) return;
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
@@ -3119,19 +3186,18 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
     if (videoElement.canPlayType && videoElement.canPlayType('application/vnd.apple.mpegurl')) {
         videoElement.src = normalizedUrl;
         videoElement.load();
+        if (shortId === 'fly_main') flyBuildQualityMenu();
     } else {
         videoElement.src = normalizedUrl;
-        videoElement.load();
     }
 }
+
 function flySetQualityLoading(){
     const list=document.getElementById('fly-quality-list');
-    if(!list) return;
-    const levels=[1080,720,480,360,144];
-    list.innerHTML='<div class="fly-menu-item active" onclick="flySetQuality(0,\'Auto\',event)"><span>Auto</span><i class="fas fa-check"></i></div>'+levels.map(h=>`<div class="fly-menu-item" onclick="flySetQuality(${h},\'${h}p\',event)"><span>${h}p</span></div>`).join('');
+    if(list) list.innerHTML='<div class="fly-menu-item locked"><span>Loading quality...</span></div>';
 }
 
-const FEELS_FULL_PRELOAD_AHEAD = 3;
+const FEELS_FULL_PRELOAD_AHEAD = 2;
 const FEELS_WARM_AHEAD = 20;
 let feelsWarmGeneration = 0;
 const feelsWarmCache = new Map();
@@ -3151,20 +3217,6 @@ function warmFeelRange(url, key, generation) {
     }).catch(() => feelsWarmCache.delete(key));
 }
 
-function warmHlsManifest(url, key, generation) {
-    if (!url || generation !== feelsWarmGeneration || feelsWarmCache.has('hls:' + key)) return;
-    const normalized = normalizeFlaynityMediaUrl(url);
-    if (!/\.m3u8(?:$|[?#])/i.test(normalized)) return;
-    feelsWarmCache.set('hls:' + key, 'pending');
-    fetch(normalized, { method: 'GET', cache: 'force-cache', credentials: 'omit' })
-        .then(r => {
-            if (generation !== feelsWarmGeneration) return;
-            if (r.ok) feelsWarmCache.set('hls:' + key, 'warm');
-            else feelsWarmCache.delete('hls:' + key);
-        })
-        .catch(() => feelsWarmCache.delete('hls:' + key));
-}
-
 function warmNextFeels(activeIndex) {
     const generation = ++feelsWarmGeneration;
     const total = allFeels.length;
@@ -3175,12 +3227,8 @@ function warmNextFeels(activeIndex) {
         const idx = (activeIndex + 1 + launched) % total;
         const s = allFeels[idx];
         launched++;
-        if (s?.videoLink) {
-            const url = normalizeFlaynityMediaUrl(s.videoLink);
-            if (/\.m3u8(?:$|[?#])/i.test(url)) warmHlsManifest(url, s.id, generation);
-            else warmFeelRange(url, s.id, generation);
-        }
-        if (launched < FEELS_WARM_AHEAD) setTimeout(pump, 60);
+        if (s?.videoLink) warmFeelRange(s.videoLink, s.id, generation);
+        if (launched < FEELS_WARM_AHEAD) setTimeout(pump, 70);
     };
     pump();
 }
@@ -6094,6 +6142,7 @@ function triggerShortDownloadLocal() {
 // VALIDATION & CORE PROCESSING (Auto Short Rule)
 // ---------------------------------------------------------
 async function handlePremiumFileSelected(e, type) {
+    currentNativeUploadUri = consumeNativeSelectedUri();
     const file = e.target && e.target.files ? e.target.files[0] : (e.files ? e.files[0] : null);
     if (!file) return;
 
@@ -6188,6 +6237,7 @@ async function handlePremiumFileSelected(e, type) {
 }
 
 function handlePremiumImagesSelected(e) {
+    currentNativeUploadUri = consumeNativeSelectedUri();
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
     currentUploadFile = files[0];
@@ -6469,7 +6519,10 @@ async function publishPremiumVideoOrShort(modeType) {
         thumbBlob: currentUploadFrameMeta.blob, 
         thumbKey: `uploads/${uniqueId}/thumbnail.jpg`,
         createdAt: Date.now(),
-        scheduledTime: visibility === 'Schedule' && scheduleDate ? new Date(scheduleDate).getTime() : 0
+        scheduledTime: visibility === 'Schedule' && scheduleDate ? new Date(scheduleDate).getTime() : 0,
+        nativeUri: currentNativeUploadUri || "",
+        fileType: currentUploadFile.type || "video/mp4",
+        fileSize: currentUploadFile.size || 0
     };
 
     uploadQueue.push(queueItem);
@@ -6485,71 +6538,45 @@ async function publishPremiumPostAction() {
     playUI('click');
     const titleEl = document.getElementById('pd-title');
     const title = titleEl ? titleEl.value.trim() : "";
-    
     const visEl = document.getElementById('pd-visibility');
     const visibility = visEl ? visEl.value : "Public";
-    
     const schedEl = document.getElementById('pd-schedule-date');
     const scheduleDate = schedEl ? schedEl.value : "";
-    
-    if (!title) {
-        showNotification("Title/Caption is required!", "error");
-        return;
-    }
-    
-    showNotification("Publishing post...", "success");
+    if (!title) { showNotification("Title/Caption is required!", "error"); return; }
     const pubBtn = document.getElementById('premium-post-publish-btn');
     if (pubBtn) pubBtn.disabled = true;
-
     try {
-        const user = auth.currentUser;
-        const userSnap = await db.ref(`users/${user.uid}`).once('value');
-        const uData = userSnap.val() || {};
-        const username = uData.username || user.email.split('@')[0];
-        const avatar = currentChannelData?.avatarUrl || user.photoURL || "";
-
-        const imgUrl = await uploadImageToR2(currentUploadFile, "posts");
-        
-        const postPayload = {
-            id: "post_" + Date.now(),
-            userId: user.uid,
-            channelId: user.uid,
-            title: title.split('\n')[0].substring(0, 50) || "Community Post",
-            imageUrl: imgUrl || "",
-            caption: title,
-            uploadTime: Date.now(),
-            visibility: visibility,
-            status: (visibility === 'Schedule' && scheduleDate) ? "scheduled" : "published",
-            isShort: false,
-            isPost: true,
-            username: username,
-            avatar: avatar,
-            images: [imgUrl],
-            hideLikes: false,
-            createdAt: Date.now(),
-            reaction: {},
-            totalLikes: 0,
-            totalReaction: 0,
-            totalComments: 0,
-            scheduledTime: visibility === 'Schedule' && scheduleDate ? new Date(scheduleDate).getTime() : 0
-        };
-
-        await db.ref(`admin_panel/posts/${postPayload.id}`).set(postPayload);
-        
-        showNotification("Community Post published successfully!", "success");
-        AppNavigation.pop(); 
-        buildHomeFeed();
-    } catch (err) {
-        showNotification("Failed to publish: " + err.message, "error");
-    } finally {
-        if (pubBtn) pubBtn.disabled = false;
-    }
+        if (currentNativeUploadUri && window.AndroidBridge && typeof AndroidBridge.enqueueBackgroundUpload === "function") {
+            const id = "post_" + Date.now();
+            const safeName = String(currentUploadFile.name || "post.jpg").replace(/[^a-zA-Z0-9._-]/g, "_");
+            const key = `uploads/posts/${Date.now()}_${safeName}`;
+            const item = { id, file: null, key, type: "post", title, description: title, visibility, status: "waiting", progress: 0, fileType: currentUploadFile.type || "image/jpeg", fileSize: currentUploadFile.size || 0, nativeUri: currentNativeUploadUri, createdAt: Date.now(), scheduledTime: visibility === 'Schedule' && scheduleDate ? new Date(scheduleDate).getTime() : 0 };
+            uploadQueue.push(item);
+            saveQueueStateToLocalStorage();
+            await enqueueNativeUpload(item);
+            AppNavigation.pop();
+            openUploadManager();
+            showNotification("Post added to Upload Manager", "success");
+        } else {
+            showNotification("Publishing post...", "success");
+            const user = auth.currentUser;
+            const userSnap = await db.ref(`users/${user.uid}`).once('value');
+            const uData = userSnap.val() || {};
+            const username = uData.username || user.email.split('@')[0];
+            const avatar = currentChannelData?.avatarUrl || user.photoURL || "";
+            const imgUrl = await uploadImageToR2(currentUploadFile, "posts");
+            const postPayload = { id: "post_" + Date.now(), userId: user.uid, channelId: user.uid, title: title.split('\n')[0].substring(0, 50) || "Community Post", imageUrl: imgUrl || "", caption: title, uploadTime: Date.now(), visibility, status: (visibility === 'Schedule' && scheduleDate) ? "scheduled" : "published", isShort: false, isPost: true, username, avatar, images: [imgUrl], hideLikes: false, createdAt: Date.now(), reaction: {}, totalLikes: 0, totalReaction: 0, totalComments: 0, scheduledTime: visibility === 'Schedule' && scheduleDate ? new Date(scheduleDate).getTime() : 0 };
+            await db.ref(`admin_panel/posts/${postPayload.id}`).set(postPayload);
+            showNotification("Community Post published successfully!", "success"); AppNavigation.pop(); buildHomeFeed();
+        }
+    } catch (err) { showNotification("Failed to publish: " + err.message, "error"); }
+    finally { if (pubBtn) pubBtn.disabled = false; }
 }
 
 // upload.html is injected asynchronously by the modular page loader.
 // Bind the recording button only after all page DOM nodes exist.
 window.addEventListener('flaynity-dom-ready', setupHoldToRecord, { once: true });
-__flaynityReady(function() { setupHoldToRecord(); });
+__flaynityReady(function() { setupHoldToRecord(); syncNativeUploadResults(); });
 
 function openUploadManager() {
     updateManagerUI();
@@ -6805,28 +6832,34 @@ function flyBuildQualityMenu(){
     // R2 has no transcoded quality ladder; expose the actual progressive source
     // instead of leaving the menu stuck at "Loading quality...".
     const provider=currentActiveMovie?.videoProvider || 'r2';
-    if(provider !== 'cloudflare-stream' && provider !== 'r2-hls'){
+    if(provider !== 'cloudflare-stream'){
         list.innerHTML=`<div class="fly-menu-item active"><span>Auto · Original</span><i class="fas fa-check"></i></div>`;
         return;
     }
-    list.innerHTML='<div class="fly-menu-item active"><span>Auto</span><i class="fas fa-check"></i></div>'+[1080,720,480,360,144].map(h=>`<div class="fly-menu-item" onclick="flySetQuality(${h},\'${h}p\',event)"><span>${h}p</span></div>`).join('');
+    list.innerHTML='<div class="fly-menu-item locked"><span>Loading quality...</span></div>';
 }
 
 function flySetQuality(height,label,e){
     if(e) e.stopPropagation();
-    const target = Number(height) || 0;
     const hls=hlsInstances['fly_main'];
     try{
-        if(hls && typeof hls.__flaynitySetQuality === 'function') {
-            hls.__flaynitySetQuality(target);
-        } else if(hls && hls.levels && hls.levels.length){
-            if(target===0) hls.currentLevel=-1;
-            else {
-                const idx=chooseClosestHlsLevel(hls.levels,target);
-                if(idx>=0) hls.currentLevel=idx;
+        if(hls && hls.levels && hls.levels.length){
+            if(height===0){
+                hls.currentLevel=-1;
+            }else{
+                let candidates=hls.levels.map((lv,i)=>({i,h:Number(lv.height)||0})).filter(x=>x.h>0);
+                let best=candidates.filter(x=>x.h===height);
+                if(!best.length){
+                    const range=height===1080?[900,9999]:height===720?[600,899]:height===360?[300,599]:[0,299];
+                    best=candidates.filter(x=>x.h>=range[0]&&x.h<=range[1]);
+                }
+                if(best.length){
+                    best.sort((a,b)=>Math.abs(a.h-height)-Math.abs(b.h-height));
+                    hls.currentLevel=best[0].i;
+                }
             }
-        } else if(currentActiveMovie && currentActiveMovie.videoQualities){
-            const q=currentActiveMovie.videoQualities[target===0?'auto':`${target}p`];
+        }else if(currentActiveMovie && currentActiveMovie.videoQualities){
+            const q=currentActiveMovie.videoQualities[height===0?'auto':`${height}p`];
             if(q){ const v=document.getElementById('fly-video'); const wasPlaying=v&&!v.paused; const pos=v?v.currentTime:0; if(v){v.src=q;v.load();v.addEventListener('loadedmetadata',function once(){v.currentTime=Math.min(pos,v.duration||pos);if(wasPlaying)v.play().catch(()=>{});},{once:true});} }
         }
     }catch(err){ console.warn('[Flaynity] Quality switch:',err); }
@@ -6834,6 +6867,7 @@ function flySetQuality(height,label,e){
     flyBuildQualityMenu();
     flyCloseAllMenus(); flyResetHideTimer();
 }
+
 /* ---------- Fullscreen (শুধু player landscape) ---------- */
 function flyToggleFullscreen(){
     const wrap=document.getElementById('fly-player-wrap'); if(!wrap) return;

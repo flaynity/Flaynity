@@ -222,6 +222,10 @@ async function waitForFlaynityStreamReady(uid, onStatus) {
     while (Date.now() - started < FLAYNITY_STREAM_STATUS_TIMEOUT) {
         const data = await flaynityStreamRequest(`/v1/stream/status/${encodeURIComponent(uid)}`);
         if (typeof onStatus === "function") onStatus(data);
+        // Cloudflare can mark a video ready while some quality levels are still
+        // encoding. Wait for the full encode before publishing so the first
+        // playback session has a complete ABR ladder instead of a stuck
+        // "Loading quality..." state.
         const pct = Number(data.pctComplete);
         const fullyEncoded = !Number.isFinite(pct) || pct >= 100;
         if (data.readyToStream && data.hls && fullyEncoded) return data;
@@ -297,7 +301,7 @@ function dataURLtoBlob(dataurl) {
 // No Cloudflare Stream dependency.
 // =========================================================
 const FLAYNITY_HLS_STATUS_TIMEOUT = 30 * 60 * 1000;
-const FLAYNITY_HLS_POLL_MS = 700;
+const FLAYNITY_HLS_POLL_MS = 1800;
 
 async function flaynityHlsRequest(path, options = {}) {
     const headers = await flaynityAuthHeaders();
@@ -343,6 +347,8 @@ async function flaynityWaitForHlsReady(jobId, onStatus) {
         } catch (e) {
             if (String(e?.message || e).toLowerCase().includes("hls transcoding failed")) throw e;
             lastError = e;
+            // A transient Render cold-start/network response should not instantly
+            // fail an upload; keep polling for a short period.
         }
         await new Promise(r => setTimeout(r, FLAYNITY_HLS_POLL_MS));
     }
@@ -368,15 +374,13 @@ async function uploadVideoToFlaynityHls(file, options = {}, onProgress) {
     }
 
     const ready = await flaynityWaitForHlsReady(job.jobId, options.onStatus);
-    const canonicalJobId = ready.jobId || job.jobId;
-    const canonicalHlsUrl = `${FLAYNITY_MEDIA_BASE}/uploads/hls/${encodeURIComponent(canonicalJobId)}/master.m3u8`;
-    const hlsUrl = normalizeFlaynityMediaUrl(ready.hlsUrl) || canonicalHlsUrl;
+    const hlsUrl = normalizeFlaynityMediaUrl(ready.hlsUrl);
     return {
         key: upload.key,
         videoUrl: hlsUrl,
         hlsUrl,
-        hlsKey: ready.hlsKey || `uploads/hls/${canonicalJobId}/master.m3u8`,
-        transcodeJobId: canonicalJobId,
+        hlsKey: ready.hlsKey || "",
+        transcodeJobId: ready.jobId || job.jobId,
         videoQualities: {
             auto: hlsUrl,
             hls: hlsUrl,

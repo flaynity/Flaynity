@@ -1288,60 +1288,36 @@ async function startS3DirectUpload(item) {
     item.status = "uploading"; item.progress = item.progress || 0; updateManagerUI();
     const startTime = Date.now();
     try {
-        // B version: use R2 directly while Stream is not subscribed. Once the
-        // Worker has a Stream API token, capability detection automatically
-        // switches new uploads to Stream without requiring a frontend rebuild.
-        let upload;
-        const streamReady = typeof flaynityStreamAvailable === 'function'
-            ? await flaynityStreamAvailable()
-            : false;
-
-        if (streamReady) {
-            try {
-                upload = await uploadVideoToFlaynityStream(item.file, {
-                    maxDurationSeconds: Math.min(Math.max(Number(item.duration) || 3600, 1), 36000),
-                    onStatus: status => {
-                        item.processingMsg = status?.status?.state === 'inprogress' ? 'Encoding video qualities...' : 'Preparing adaptive playback...';
-                        updateManagerUI();
-                    }
-                }, (loaded, total) => {
-                    if (item.status !== 'uploading') return;
-                    item.progress = Math.round((loaded / total) * 100);
-                    const elapsed = (Date.now() - startTime) / 1000;
-                    if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
-                    updateManagerUI();
-                });
-                item.streamUid = upload.uid;
-                item.videoProvider = upload.provider;
-                item.videoUrl = upload.hlsUrl || upload.videoUrl;
-                item.hlsUrl = upload.hlsUrl || upload.videoUrl;
-                item.dashUrl = upload.dashUrl || '';
-                item.streamThumbnail = upload.thumbnail || '';
-                item.streamQualityLadder = [144, 360, 480, 720, 1080];
-                if (upload.width && upload.height) item.resolution = `${upload.width}x${upload.height}`;
-            } catch (streamErr) {
-                console.warn('[Flaynity] Stream is configured but upload failed; falling back to R2:', streamErr);
-                upload = null;
-            }
-        }
-
-        if (!upload) {
-            const uploadFolder = item.type === 'video-short' ? 'feels' : 'videos';
-            upload = await uploadMediaToFlaynity(item.file, uploadFolder, (loaded, total) => {
-                if (item.status !== 'uploading') return;
-                item.progress = Math.round((loaded / total) * 100);
-                const elapsed = (Date.now() - startTime) / 1000;
-                if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
+        // Stream is intentionally NOT used. Every new video goes to R2 first,
+        // then the self-hosted FFmpeg service creates the adaptive HLS ladder.
+        const uploadFolder = item.type === 'video-short' ? 'feels' : 'videos';
+        const upload = await uploadVideoToFlaynityHls(item.file, {
+            folder: uploadFolder,
+            onStatus: status => {
+                const p = Number(status?.progress);
+                item.processingMsg = status?.message || (status?.status === 'processing' ? 'Encoding adaptive qualities...' : 'Preparing adaptive playback...');
+                if (Number.isFinite(p)) item.progress = Math.max(0, Math.min(99, Math.round(p)));
                 updateManagerUI();
-            });
-            item.key = upload.key;
-            item.videoProvider = 'r2';
-            item.videoUrl = normalizeFlaynityMediaUrl(upload.publicUrl);
-            item.hlsUrl = '';
-            item.dashUrl = '';
-            item.videoQualities = { auto: item.videoUrl, original: item.videoUrl };
-        }
-        item.status = "processing"; item.retryCount = 0; updateManagerUI();
+            }
+        }, (loaded, total) => {
+            if (item.status !== 'uploading') return;
+            item.progress = Math.round((loaded / total) * 100);
+            const elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
+            updateManagerUI();
+        });
+
+        item.key = upload.key;
+        item.videoProvider = 'r2-hls';
+        item.videoUrl = normalizeFlaynityMediaUrl(upload.hlsUrl || upload.videoUrl);
+        item.hlsUrl = normalizeFlaynityMediaUrl(upload.hlsUrl || upload.videoUrl);
+        item.dashUrl = '';
+        item.hlsKey = upload.hlsKey || '';
+        item.transcodeJobId = upload.transcodeJobId || '';
+        item.videoQualities = upload.videoQualities || { auto: item.hlsUrl, hls: item.hlsUrl, preferred: [144, 360, 480, 720, 1080] };
+        item.streamQualityLadder = [144, 360, 480, 720, 1080];
+
+        item.status = "processing"; item.retryCount = 0; item.progress = 100; updateManagerUI();
         await runPostUploadProcessingSequence(item);
     } catch (err) {
         if (item.status === 'paused') { console.log("Upload paused safely."); }
@@ -1439,7 +1415,7 @@ async function pushVideoMetadataToDatabase(item) {
         streamUid: item.streamUid || '',
         hlsUrl: item.hlsUrl || '',
         dashUrl: item.dashUrl || '',
-        videoQualities: item.videoProvider === 'cloudflare-stream' ? {
+        videoQualities: (item.videoProvider === 'r2-hls' || item.videoProvider === 'cloudflare-stream') ? {
             auto: item.hlsUrl || item.videoUrl,
             hls: item.hlsUrl || item.videoUrl,
             dash: item.dashUrl || '',
@@ -3067,7 +3043,7 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
             // Start around 360p for fast first-frame playback, then return to
             // normal ABR immediately so quality can rise/fall with bandwidth.
-            const startIndex = chooseClosestHlsLevel(hls.levels, FLAYNITY_STREAM_START_HEIGHT);
+            const startIndex = chooseClosestHlsLevel(hls.levels, 360);
             if (startIndex >= 0) {
                 try { hls.nextAutoLevel = startIndex; } catch (e) {}
             }
@@ -6768,7 +6744,7 @@ function flyBuildQualityMenu(){
     // R2 has no transcoded quality ladder; expose the actual progressive source
     // instead of leaving the menu stuck at "Loading quality...".
     const provider=currentActiveMovie?.videoProvider || 'r2';
-    if(provider !== 'cloudflare-stream'){
+    if(provider !== 'cloudflare-stream' && provider !== 'r2-hls'){
         list.innerHTML=`<div class="fly-menu-item active"><span>Auto · Original</span><i class="fas fa-check"></i></div>`;
         return;
     }

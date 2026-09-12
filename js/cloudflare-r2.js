@@ -69,40 +69,22 @@ async function flaynityCreateUpload(file, folder = "images", options = {}) {
     return { key: data.key || key, uploadUrl: data.uploadUrl, publicUrl: data.publicUrl || flaynityMediaUrl(data.key || key) };
 }
 
-function flaynityPutWithProgress(uploadUrl, file, onProgress, timeoutMs = 12000) {
+function flaynityPutWithProgress(uploadUrl, file, onProgress) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        let settled = false;
-        const finish = (fn, value) => { if (!settled) { settled = true; fn(value); } };
         xhr.open("PUT", uploadUrl, true);
-        xhr.timeout = Math.max(5000, Number(timeoutMs) || 12000);
         xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
         xhr.upload.onprogress = (e) => {
             if (e.lengthComputable && typeof onProgress === "function") onProgress(e.loaded, e.total);
         };
-        xhr.onload = () => xhr.status >= 200 && xhr.status < 300
-            ? finish(resolve)
-            : finish(reject, new Error(`Upload failed (${xhr.status}).`));
-        xhr.onerror = () => finish(reject, new Error("Network error while uploading media."));
-        xhr.ontimeout = () => finish(reject, new Error("Direct R2 upload timed out."));
-        xhr.onabort = () => finish(reject, new Error("Upload aborted."));
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve();
+            else reject(new Error(`Upload failed (${xhr.status}).`));
+        };
+        xhr.onerror = () => reject(new Error("Network error while uploading media."));
+        xhr.onabort = () => reject(new Error("Upload aborted."));
         xhr.send(file);
     });
-}
-
-async function flaynityPutViaWorker(file, key, onProgress) {
-    if (!key) throw new Error("Missing R2 upload key.");
-    const headers = await flaynityAuthHeaders();
-    const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/upload?key=${encodeURIComponent(key)}`, {
-        method: "PUT",
-        headers: { ...headers, "Content-Type": file.type || "application/octet-stream" },
-        body: file,
-        cache: "no-store"
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || !data.ok) throw new Error(data.error || `Worker upload failed (HTTP ${response.status}).`);
-    if (typeof onProgress === "function") onProgress(file.size, file.size);
-    return data;
 }
 
 async function uploadImageToR2(file, folder = "images", retries = 3) {
@@ -352,30 +334,6 @@ async function flaynityGetHlsStatus(jobId) {
     return flaynityHlsRequest(`/v1/media/transcode/status/${encodeURIComponent(jobId)}`, { method: "GET" });
 }
 
-async function flaynityWaitForHlsInitial(jobId, onStatus) {
-    const started = Date.now();
-    while (Date.now() - started < 10 * 60 * 1000) {
-        const data = await flaynityGetHlsStatus(jobId);
-        if (typeof onStatus === "function") onStatus(data);
-        if ((data.status === "processing" || data.status === "ready") && data.initialReady && data.hlsUrl) return data;
-        if (data.status === "failed") throw new Error(data.message || "HLS transcoding failed.");
-        await new Promise(r => setTimeout(r, FLAYNITY_HLS_POLL_MS));
-    }
-    throw new Error("Initial 144p HLS preparation timed out.");
-}
-
-async function flaynityMonitorHlsLadder(jobId, onStatus) {
-    const started = Date.now();
-    while (Date.now() - started < FLAYNITY_HLS_STATUS_TIMEOUT) {
-        const data = await flaynityGetHlsStatus(jobId);
-        if (typeof onStatus === "function") onStatus(data);
-        if (data.status === "ready") return data;
-        if (data.status === "failed") throw new Error(data.message || "HLS transcoding failed.");
-        await new Promise(r => setTimeout(r, FLAYNITY_HLS_POLL_MS));
-    }
-    throw new Error("HLS background processing timed out.");
-}
-
 async function flaynityWaitForHlsReady(jobId, onStatus) {
     const started = Date.now();
     let lastError = null;
@@ -401,25 +359,13 @@ async function uploadVideoToFlaynityHls(file, options = {}, onProgress) {
     if (!file) throw new Error("No video selected.");
     const folder = options.folder === "feels" ? "feels" : "videos";
 
+    // 1) Secure direct upload of the original MP4 to R2.
     const upload = await flaynityCreateUpload(file, folder, {
         contentType: file.type || "video/mp4"
     });
+    await flaynityPutWithProgress(upload.uploadUrl, file, onProgress);
 
-    // Android WebView/R2 CORS is the common failure point for tiny uploads.
-    // For small media, upload through the authenticated Worker directly so a
-    // 20 KB Feel does not wait on a browser preflight/CORS failure.
-    const SMALL_UPLOAD_LIMIT = 10 * 1024 * 1024;
-    if (file.size <= SMALL_UPLOAD_LIMIT) {
-        await flaynityPutViaWorker(file, upload.key, onProgress);
-    } else {
-        try {
-            await flaynityPutWithProgress(upload.uploadUrl, file, onProgress, 30000);
-        } catch (directError) {
-            console.warn("Direct R2 upload failed; using Worker upload fallback:", directError);
-            await flaynityPutViaWorker(file, upload.key, onProgress);
-        }
-    }
-
+    // 2) Ask the Worker to enqueue FFmpeg transcoding on the Render service.
     let job;
     try {
         job = await flaynityStartHlsTranscode(upload.key, { type: folder });
@@ -427,31 +373,19 @@ async function uploadVideoToFlaynityHls(file, options = {}, onProgress) {
         throw new Error(`HLS transcoder is not connected: ${e.message || e}`);
     }
 
-    const hlsUrl = normalizeFlaynityMediaUrl(
-        `${FLAYNITY_MEDIA_BASE}/uploads/hls/${encodeURIComponent(job.jobId)}/master.m3u8`
-    );
-    const result = {
+    const ready = await flaynityWaitForHlsReady(job.jobId, options.onStatus);
+    const hlsUrl = normalizeFlaynityMediaUrl(ready.hlsUrl);
+    return {
         key: upload.key,
         videoUrl: hlsUrl,
         hlsUrl,
-        hlsKey: `uploads/hls/${job.jobId}/master.m3u8`,
-        transcodeJobId: job.jobId,
-        initialReady: false,
-        processing: true,
-        videoQualities: { auto: hlsUrl, hls: hlsUrl, preferred: [144, 360, 480, 720, 1080] },
+        hlsKey: ready.hlsKey || "",
+        transcodeJobId: ready.jobId || job.jobId,
+        videoQualities: {
+            auto: hlsUrl,
+            hls: hlsUrl,
+            preferred: [144, 360, 480, 720, 1080]
+        },
         provider: "r2-hls"
     };
-
-    if (typeof options.onStatus === "function") {
-        Promise.resolve().then(async () => {
-            try {
-                await flaynityWaitForHlsInitial(job.jobId, options.onStatus);
-                await flaynityMonitorHlsLadder(job.jobId, options.onStatus);
-            } catch (e) {
-                options.onStatus({ status: "failed", message: e?.message || "HLS background processing failed." });
-            }
-        });
-    }
-    return result;
 }
-

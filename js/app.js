@@ -1300,6 +1300,7 @@ async function startS3DirectUpload(item) {
             try {
                 upload = await uploadVideoToFlaynityStream(item.file, {
                     maxDurationSeconds: Math.min(Math.max(Number(item.duration) || 3600, 1), 36000),
+                    onXhr: xhr => { item._xhr = xhr; },
                     onStatus: status => {
                         item.processingMsg = status?.status?.state === 'inprogress' ? 'Encoding video qualities...' : 'Preparing adaptive playback...';
                         updateManagerUI();
@@ -1320,6 +1321,7 @@ async function startS3DirectUpload(item) {
                 item.streamQualityLadder = [144, 360, 480, 720, 1080];
                 if (upload.width && upload.height) item.resolution = `${upload.width}x${upload.height}`;
             } catch (streamErr) {
+                if (item._pauseRequested || item._cancelRequested) throw streamErr;
                 console.warn('[Flaynity] Stream is configured but upload failed; falling back to R2:', streamErr);
                 upload = null;
             }
@@ -1333,7 +1335,7 @@ async function startS3DirectUpload(item) {
                 const elapsed = (Date.now() - startTime) / 1000;
                 if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
                 updateManagerUI();
-            });
+            }, xhr => { item._xhr = xhr; });
             item.key = upload.key;
             item.videoProvider = 'r2';
             item.videoUrl = normalizeFlaynityMediaUrl(upload.publicUrl);
@@ -1344,7 +1346,7 @@ async function startS3DirectUpload(item) {
         item.status = "processing"; item.retryCount = 0; updateManagerUI();
         await runPostUploadProcessingSequence(item);
     } catch (err) {
-        if (item.status === 'paused') { console.log("Upload paused safely."); }
+        if (item.status === 'paused' || item._cancelRequested) { console.log("Upload stopped safely."); }
         else if (!navigator.onLine) {
             item.status = "paused"; updateManagerUI();
             showNotification("Connection lost. Upload paused.", "error");
@@ -1500,14 +1502,94 @@ async function pushVideoMetadataToDatabase(item) {
 
 // Queue Helper Functions
 function updateManagerUI() {
-    const listEl = document.getElementById('manager-items-list');
-    if (!listEl) return;
-    const activeCount = uploadQueue.filter(i => i.status !== 'completed' && i.status !== 'failed').length;
-    const draftsCount = uploadQueue.filter(i => i.status === 'failed').length;
-    
-    document.getElementById('man-count-active').innerText = activeCount;
-    document.getElementById('man-count-drafts').innerText = draftsCount;
-    // Real implementation of render UI for queue happens via standard loop...
+    // Upload Manager screen was removed. Uploads are shown directly on Channel.
+    renderChannelUploadCards();
+}
+
+function uploadQueueTypeMatches(item, type) {
+    return type === 'feels' ? item.type === 'video-short' : item.type === 'video-long';
+}
+
+function getUploadStatusText(item) {
+    if (item.status === 'uploading') return `${item.progress || 0}% uploading`;
+    if (item.status === 'processing') return 'Publishing…';
+    if (item.status === 'paused') return 'Paused';
+    if (item.status === 'waiting') return 'Waiting to upload';
+    if (item.status === 'failed') return 'Upload failed';
+    return 'Uploading';
+}
+
+function renderChannelUploadCards() {
+    const videoGrid = document.getElementById('channel-videos-grid');
+    const feelsGrid = document.getElementById('channel-feels-grid');
+    const videoItems = uploadQueue.filter(i => uploadQueueTypeMatches(i, 'videos') && i.status !== 'completed');
+    const feelItems = uploadQueue.filter(i => uploadQueueTypeMatches(i, 'feels') && i.status !== 'completed');
+    [videoGrid, feelsGrid].forEach(grid => {
+        if (grid) grid.querySelectorAll('.flaynity-upload-card').forEach(el => el.remove());
+    });
+    if (videoGrid && videoItems.length) videoGrid.insertAdjacentHTML('afterbegin', videoItems.map(buildChannelUploadCard).join(''));
+    if (feelsGrid && feelItems.length) feelsGrid.insertAdjacentHTML('afterbegin', feelItems.map(buildChannelUploadCard).join(''));
+}
+
+function buildChannelUploadCard(item) {
+    const pct = Math.max(0, Math.min(100, Number(item.progress) || 0));
+    const thumb = item.thumbUrl || item.thumbDataUrl || item.streamThumbnail || 'assets/upload-icon.png';
+    const typeLabel = item.type === 'video-short' ? 'Feels' : 'Video';
+    const paused = item.status === 'paused';
+    const failed = item.status === 'failed';
+    return `
+      <div class="flaynity-upload-card" data-upload-id="${item.id}" onclick="event.stopPropagation()">
+        <div class="flaynity-upload-thumb-wrap">
+          <img src="${thumb}" class="flaynity-upload-thumb" onerror="this.src='assets/upload-icon.png'">
+          <div class="flaynity-upload-type">${typeLabel}</div>
+        </div>
+        <div class="flaynity-upload-info">
+          <div class="flaynity-upload-title">${escapeHTML(item.title || typeLabel)}</div>
+          <div class="flaynity-upload-status">${getUploadStatusText(item)}</div>
+          <div class="flaynity-upload-progress"><div style="width:${pct}%"></div></div>
+          <div class="flaynity-upload-actions">
+            ${paused ? `<button onclick="resumeQueuedUpload('${item.id}')"><i class="fas fa-play"></i> Resume</button>` : failed ? `<button onclick="retryQueuedUpload('${item.id}')"><i class="fas fa-rotate-right"></i> Retry</button>` : `<button onclick="pauseQueuedUpload('${item.id}')"><i class="fas fa-pause"></i> Pause</button>`}
+            ${failed ? `<button onclick="retryQueuedUpload('${item.id}')"><i class="fas fa-rotate-right"></i> Retry</button>` : ''}
+            <button onclick="renameQueuedUpload('${item.id}')"><i class="fas fa-pen"></i> Rename</button>
+            <button class="danger" onclick="cancelQueuedUpload('${item.id}')"><i class="fas fa-xmark"></i> Cancel</button>
+          </div>
+        </div>
+      </div>`;
+}
+
+function findQueuedUpload(id) { return uploadQueue.find(i => i.id === id); }
+
+function pauseQueuedUpload(id) {
+    const item = findQueuedUpload(id); if (!item) return;
+    item.status = 'paused'; item._pauseRequested = true;
+    if (item._xhr && item._xhr.readyState !== 4) { try { item._xhr.abort(); } catch(e) {} }
+    saveQueueStateToLocalStorage(); updateManagerUI();
+}
+
+function resumeQueuedUpload(id) {
+    const item = findQueuedUpload(id); if (!item) return;
+    item._pauseRequested = false; item.status = 'waiting';
+    saveQueueStateToLocalStorage(); updateManagerUI(); triggerNextActiveUpload();
+}
+
+function retryQueuedUpload(id) { resumeQueuedUpload(id); }
+
+function cancelQueuedUpload(id) {
+    const item = findQueuedUpload(id); if (!item) return;
+    item._pauseRequested = true; item._cancelRequested = true; item.status = 'cancelled';
+    if (item._xhr && item._xhr.readyState !== 4) { try { item._xhr.abort(); } catch(e) {} }
+    uploadQueue = uploadQueue.filter(i => i.id !== id);
+    saveQueueStateToLocalStorage(); updateManagerUI();
+    showNotification('Upload cancelled', 'success');
+}
+
+function renameQueuedUpload(id) {
+    const item = findQueuedUpload(id); if (!item) return;
+    const next = prompt('Rename upload', item.title || 'Untitled');
+    if (next === null) return;
+    const title = next.trim(); if (!title) return;
+    item.title = title;
+    saveQueueStateToLocalStorage(); updateManagerUI();
 }
 
 function saveQueueStateToLocalStorage() {
@@ -4562,6 +4644,7 @@ function renderChannelVideos(userId) {
     
     activeChannelVideosListener = db.ref('admin_panel/movies/user_uploads');
     activeChannelVideosListener.on('value', (snap) => {
+        setTimeout(renderChannelUploadCards, 0);
         const data = snap.val();
         if (!data) {
             grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No uploaded videos yet.</p>`;
@@ -4608,6 +4691,7 @@ function renderChannelFeels(userId) {
 
     activeChannelFeelsListener = db.ref('admin_panel/movies/feels');
     activeChannelFeelsListener.on('value', (snap) => {
+        setTimeout(renderChannelUploadCards, 0);
         const data = snap.val();
         if (!data) {
             grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No feels uploaded yet.</p>`;
@@ -6436,11 +6520,14 @@ async function publishPremiumVideoOrShort(modeType) {
     };
 
     uploadQueue.push(queueItem);
-    saveQueueStateToLocalStorage(); 
-    
-    AppNavigation.pop(); 
-    showNotification("Added to Upload Queue", "success");
-    openUploadManager();
+    saveQueueStateToLocalStorage();
+
+    AppNavigation.pop();
+    setTimeout(() => {
+        openViewChannelPage();
+        setTimeout(() => { switchChannelTab(isShort ? 'feels' : 'videos'); }, 60);
+    }, 0);
+    showNotification("Upload started", "success");
     triggerNextActiveUpload();
 }
 
@@ -6500,7 +6587,11 @@ async function publishPremiumPostAction() {
         await db.ref(`admin_panel/posts/${postPayload.id}`).set(postPayload);
         
         showNotification("Community Post published successfully!", "success");
-        AppNavigation.pop(); 
+        AppNavigation.pop();
+        setTimeout(() => {
+            openViewChannelPage();
+            setTimeout(() => { switchChannelTab('posts'); }, 60);
+        }, 0);
         buildHomeFeed();
     } catch (err) {
         showNotification("Failed to publish: " + err.message, "error");
@@ -6515,13 +6606,10 @@ window.addEventListener('flaynity-dom-ready', setupHoldToRecord, { once: true })
 __flaynityReady(function() { setupHoldToRecord(); });
 
 function openUploadManager() {
-    updateManagerUI();
-    AppNavigation.pushModal('upload-manager-screen');
+    renderChannelUploadCards();
 }
 
-function closeUploadManager() {
-    AppNavigation.pop();
-}
+function closeUploadManager() { return; }
 
 
 // =========================================================

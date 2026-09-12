@@ -4693,6 +4693,61 @@ function renderChannelVideos(userId) {
     });
 }
 
+function lockChannelFeelsGridLayout() {
+    const grid = document.getElementById('channel-feels-grid');
+    if (!grid) return;
+
+    // Android WebView can calculate CSS aspect-ratio incorrectly when a grid
+    // item is inserted dynamically. Measure the real grid width and lock each
+    // normal Feels card to an exact 3-column / 9:16 box.
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(3, minmax(0, 1fr))';
+    grid.style.columnGap = '8px';
+    grid.style.rowGap = '8px';
+    grid.style.width = '100%';
+    grid.style.maxWidth = '100%';
+    grid.style.minWidth = '0';
+    grid.style.overflowX = 'hidden';
+    grid.style.boxSizing = 'border-box';
+
+    const gridWidth = grid.clientWidth;
+    if (!gridWidth) return;
+    const cardWidth = Math.floor((gridWidth - 16) / 3);
+    const cardHeight = Math.round(cardWidth * 16 / 9);
+
+    grid.querySelectorAll(':scope > .feels-grid-card').forEach(card => {
+        card.style.width = cardWidth + 'px';
+        card.style.maxWidth = cardWidth + 'px';
+        card.style.minWidth = cardWidth + 'px';
+        card.style.height = cardHeight + 'px';
+        card.style.minHeight = cardHeight + 'px';
+        card.style.maxHeight = cardHeight + 'px';
+        card.style.aspectRatio = '9 / 16';
+        card.style.boxSizing = 'border-box';
+        card.style.overflow = 'hidden';
+        const img = card.querySelector('img');
+        if (img) {
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.maxWidth = '100%';
+            img.style.objectFit = 'cover';
+            img.style.display = 'block';
+        }
+    });
+
+    grid.querySelectorAll(':scope > .fl-live-upload-card').forEach(card => {
+        card.style.gridColumn = '1 / -1';
+        card.style.width = '100%';
+        card.style.maxWidth = '100%';
+        card.style.minWidth = '0';
+        card.style.boxSizing = 'border-box';
+    });
+}
+
+window.addEventListener('resize', () => {
+    if (document.getElementById('channel-feels-grid')) lockChannelFeelsGridLayout();
+});
+
 function renderChannelFeels(userId) {
     const grid = document.getElementById('channel-feels-grid');
     if (!grid) return;
@@ -4720,7 +4775,9 @@ function renderChannelFeels(userId) {
             views: 0
         })).join('');
 
+        lockChannelFeelsGridLayout();
         renderChannelUploadQueue('feels');
+        lockChannelFeelsGridLayout();
 
         if(navigator.onLine) {
             list.forEach(m => {

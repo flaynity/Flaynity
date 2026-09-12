@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Flaynity Studio</title>
+<title>Flaynity Upload</title>
 <style>
 /* =======================================================
    PREMIUM STUDIO CSS
@@ -414,25 +414,6 @@
         <div class="studio-popup-option selected" onclick="setCameraSetting('speed', 1)">1x <i class="fas fa-check" style="display: block;"></i></div>
         <div class="studio-popup-option" onclick="setCameraSetting('speed', 2)">2x <i class="fas fa-check" style="display: none;"></i></div>
         <div class="studio-popup-option" onclick="setCameraSetting('speed', 3)">3x <i class="fas fa-check" style="display: none;"></i></div>
-    </div>
-</div>
-
-<!-- ━━━━━━━━━━━━━━━━━━━━━━
-   9. UPLOAD MANAGER
-━━━━━━━━━━━━━━━━━━━━━━ -->
-<div class="premium-download-modal" id="upload-manager-screen" style="z-index: 2050;">
-    <div class="premium-download-content" style="max-height: 85vh; height: 85vh;">
-        <div class="drag-handle-line"></div>
-        <div class="download-modal-header" style="margin-bottom: 8px;">
-            <h3 style="font-size: 1.3rem;"><i class="fas fa-tasks" style="color: var(--primary);"></i> Upload Manager</h3>
-            <button class="close-download-modal" onclick="closeUploadManager()"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="inner-tab-container">
-            <div class="inner-tab-item active" id="man-tab-uploading" onclick="switchManagerTab('uploading')">Active (<span id="man-count-active">0</span>)</div>
-            <div class="inner-tab-item" id="man-tab-drafts" onclick="switchManagerTab('drafts')">Drafts (<span id="man-count-drafts">0</span>)</div>
-            <div class="inner-tab-item" id="man-tab-completed" onclick="switchManagerTab('completed')">Completed</div>
-        </div>
-        <div class="download-modal-scrollable" id="manager-items-list" style="flex-grow: 1;"></div>
     </div>
 </div>
 

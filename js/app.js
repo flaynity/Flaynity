@@ -4587,7 +4587,7 @@ function switchChannelTab(type) {
 
     let targetId = auth.currentUser.uid;
     if (type === 'videos') renderChannelVideos(targetId);
-    else if (type === 'feels') renderChannelFeels(targetId);
+    else if (type === 'feels') { renderChannelFeels(targetId); requestAnimationFrame(lockChannelFeelsGridLayout); }
     else if (type === 'posts') renderChannelPosts(targetId);
 }
 
@@ -4697,52 +4697,34 @@ function lockChannelFeelsGridLayout() {
     const grid = document.getElementById('channel-feels-grid');
     if (!grid) return;
 
-    // Keep the layout deterministic in Android/Sketchware WebView.
-    // Do not use :scope here because older WebViews can fail on that selector.
     grid.style.display = 'grid';
     grid.style.gridTemplateColumns = 'repeat(3, minmax(0, 1fr))';
-    grid.style.gridAutoFlow = 'row';
-    grid.style.columnGap = '12px';
-    grid.style.rowGap = '12px';
+    grid.style.columnGap = '8px';
+    grid.style.rowGap = '8px';
     grid.style.width = '100%';
     grid.style.maxWidth = '100%';
     grid.style.minWidth = '0';
     grid.style.overflowX = 'hidden';
     grid.style.boxSizing = 'border-box';
 
-    const gridWidth = grid.clientWidth;
+    // Use the actual rendered grid width instead of relying only on CSS
+    // aspect-ratio. This keeps 3 columns and an exact 9:16 card in Android WebView.
+    const gridWidth = grid.getBoundingClientRect().width || grid.clientWidth;
     if (!gridWidth) return;
+    const cardWidth = (gridWidth - 16) / 3;
+    const cardHeight = cardWidth * 16 / 9;
 
-    const gap = 12;
-    const cardWidth = Math.max(1, Math.floor((gridWidth - (gap * 2)) / 3));
-    const cardHeight = Math.round(cardWidth * 16 / 9);
-    const children = Array.from(grid.children);
-
-    children.forEach(card => {
-        if (card.classList.contains('fl-live-upload-card')) {
-            card.style.gridColumn = '1 / -1';
-            card.style.width = '100%';
-            card.style.maxWidth = '100%';
-            card.style.minWidth = '0';
-            card.style.height = 'auto';
-            card.style.minHeight = '0';
-            card.style.maxHeight = 'none';
-            card.style.boxSizing = 'border-box';
-            return;
-        }
-
-        if (!card.classList.contains('feels-grid-card')) return;
-
-        card.style.gridColumn = 'auto';
+    grid.querySelectorAll('.feels-grid-card').forEach(card => {
         card.style.width = cardWidth + 'px';
-        card.style.maxWidth = cardWidth + 'px';
         card.style.minWidth = cardWidth + 'px';
+        card.style.maxWidth = cardWidth + 'px';
         card.style.height = cardHeight + 'px';
         card.style.minHeight = cardHeight + 'px';
         card.style.maxHeight = cardHeight + 'px';
         card.style.aspectRatio = '9 / 16';
         card.style.boxSizing = 'border-box';
         card.style.overflow = 'hidden';
+        card.style.position = 'relative';
 
         const img = card.querySelector('img');
         if (img) {
@@ -4756,10 +4738,20 @@ function lockChannelFeelsGridLayout() {
             img.style.display = 'block';
         }
     });
+
+    grid.querySelectorAll('.fl-live-upload-card').forEach(card => {
+        card.style.gridColumn = '1 / -1';
+        card.style.width = '100%';
+        card.style.maxWidth = '100%';
+        card.style.minWidth = '0';
+        card.style.boxSizing = 'border-box';
+    });
 }
 
 window.addEventListener('resize', () => {
-    if (document.getElementById('channel-feels-grid')) lockChannelFeelsGridLayout();
+    if (document.getElementById('channel-feels-grid')) {
+        requestAnimationFrame(lockChannelFeelsGridLayout);
+    }
 });
 
 function renderChannelFeels(userId) {
@@ -4792,7 +4784,6 @@ function renderChannelFeels(userId) {
         lockChannelFeelsGridLayout();
         renderChannelUploadQueue('feels');
         lockChannelFeelsGridLayout();
-        requestAnimationFrame(() => lockChannelFeelsGridLayout());
 
         if(navigator.onLine) {
             list.forEach(m => {

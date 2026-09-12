@@ -4697,13 +4697,13 @@ function lockChannelFeelsGridLayout() {
     const grid = document.getElementById('channel-feels-grid');
     if (!grid) return;
 
-    // Android WebView can calculate CSS aspect-ratio incorrectly when a grid
-    // item is inserted dynamically. Measure the real grid width and lock each
-    // normal Feels card to an exact 3-column / 9:16 box.
+    // Keep the layout deterministic in Android/Sketchware WebView.
+    // Do not use :scope here because older WebViews can fail on that selector.
     grid.style.display = 'grid';
     grid.style.gridTemplateColumns = 'repeat(3, minmax(0, 1fr))';
-    grid.style.columnGap = '8px';
-    grid.style.rowGap = '8px';
+    grid.style.gridAutoFlow = 'row';
+    grid.style.columnGap = '12px';
+    grid.style.rowGap = '12px';
     grid.style.width = '100%';
     grid.style.maxWidth = '100%';
     grid.style.minWidth = '0';
@@ -4712,10 +4712,28 @@ function lockChannelFeelsGridLayout() {
 
     const gridWidth = grid.clientWidth;
     if (!gridWidth) return;
-    const cardWidth = Math.floor((gridWidth - 16) / 3);
-    const cardHeight = Math.round(cardWidth * 16 / 9);
 
-    grid.querySelectorAll(':scope > .feels-grid-card').forEach(card => {
+    const gap = 12;
+    const cardWidth = Math.max(1, Math.floor((gridWidth - (gap * 2)) / 3));
+    const cardHeight = Math.round(cardWidth * 16 / 9);
+    const children = Array.from(grid.children);
+
+    children.forEach(card => {
+        if (card.classList.contains('fl-live-upload-card')) {
+            card.style.gridColumn = '1 / -1';
+            card.style.width = '100%';
+            card.style.maxWidth = '100%';
+            card.style.minWidth = '0';
+            card.style.height = 'auto';
+            card.style.minHeight = '0';
+            card.style.maxHeight = 'none';
+            card.style.boxSizing = 'border-box';
+            return;
+        }
+
+        if (!card.classList.contains('feels-grid-card')) return;
+
+        card.style.gridColumn = 'auto';
         card.style.width = cardWidth + 'px';
         card.style.maxWidth = cardWidth + 'px';
         card.style.minWidth = cardWidth + 'px';
@@ -4725,22 +4743,18 @@ function lockChannelFeelsGridLayout() {
         card.style.aspectRatio = '9 / 16';
         card.style.boxSizing = 'border-box';
         card.style.overflow = 'hidden';
+
         const img = card.querySelector('img');
         if (img) {
             img.style.width = '100%';
             img.style.height = '100%';
-            img.style.maxWidth = '100%';
+            img.style.minWidth = '0';
+            img.style.minHeight = '0';
+            img.style.maxWidth = 'none';
+            img.style.maxHeight = 'none';
             img.style.objectFit = 'cover';
             img.style.display = 'block';
         }
-    });
-
-    grid.querySelectorAll(':scope > .fl-live-upload-card').forEach(card => {
-        card.style.gridColumn = '1 / -1';
-        card.style.width = '100%';
-        card.style.maxWidth = '100%';
-        card.style.minWidth = '0';
-        card.style.boxSizing = 'border-box';
     });
 }
 
@@ -4778,6 +4792,7 @@ function renderChannelFeels(userId) {
         lockChannelFeelsGridLayout();
         renderChannelUploadQueue('feels');
         lockChannelFeelsGridLayout();
+        requestAnimationFrame(() => lockChannelFeelsGridLayout());
 
         if(navigator.onLine) {
             list.forEach(m => {

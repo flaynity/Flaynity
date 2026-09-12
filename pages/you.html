@@ -6,7 +6,6 @@
         .profile-card-you {
             background: var(--surface); 
             border: 1px solid var(--glass-border);
-            /* ওপরের বড় গ্যাপটি রিমুভ করে 0 করে দেওয়া হয়েছে, যেন Top Bar এর ঠিক নিচেই থাকে */
             margin: 0 8px 12px 8px !important; 
             border-radius: 20px !important;
             padding: 20px 16px 16px 16px !important; 
@@ -64,7 +63,6 @@
         .you-menu-item span { font-size: 1.05rem; font-weight: 700; flex-grow: 1; }
         .arrow-r { font-size: 0.9rem !important; color: var(--text-muted); opacity: 0.6; }
 
-
 /* Premium service menu — Floating Cards styling */
 .premium-service-menu { 
     background: transparent !important;
@@ -120,12 +118,40 @@
 
 .premium-service-item > span { min-width: 0; font-weight: 800; font-size: 1.05rem; }
 
-/* View Channel */
-        .channel-banner-container { width: 100%; aspect-ratio: 16 / 9; height: auto; min-height: 0; position: relative; background: #E2E8F0; overflow: hidden; }
-        .channel-banner-img { display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; object-fit: cover; }
-        .banner-gradient { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 80%); }
+/* View Channel Banner & Header */
+        .channel-banner-container { 
+            width: 100%; 
+            aspect-ratio: 16 / 9; 
+            height: auto; 
+            position: relative; 
+            background: #0F0F0F; 
+            overflow: hidden; 
+        }
+        .channel-banner-img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            display: block; 
+        }
+        .banner-gradient { 
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 70%); 
+            pointer-events: none; 
+        }
         
-        .channel-profile-section { padding: 16px 20px; background: var(--surface); border-bottom: 1px solid var(--glass-border); margin-top: -32px; border-radius: 32px 32px 0 0; position: relative; z-index: 2; }
+        .channel-profile-section { 
+            padding: 16px 20px; 
+            background: var(--surface); 
+            border-bottom: 1px solid var(--glass-border); 
+            margin-top: -32px; 
+            border-radius: 32px 32px 0 0; 
+            position: relative; 
+            z-index: 2; 
+        }
         .profile-row-main { display: flex; gap: 16px; align-items: center; }
         .view-avatar-img { width: 80px; height: 80px; border-radius: 50%; border: 4px solid var(--surface); object-fit: cover; box-shadow: 0 6px 15px rgba(0,0,0,0.08); background: var(--bg-color); }
         .channel-main-meta h2 { margin: 0 0 4px; font-size: 1.35rem; font-weight: 900; color: var(--text-main); }
@@ -153,7 +179,16 @@
         .channel-tab-content.active { display: block; }
         
         .channel-videos-container { display: flex; flex-direction: column; gap: 16px; }
-        .channel-feels-container { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px; width: 100%; box-sizing: border-box; align-items: start; }
+        
+        .channel-feels-container { 
+            display: grid !important; 
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important; 
+            gap: 8px; 
+            width: 100%; 
+            box-sizing: border-box; 
+            align-items: stretch; 
+            justify-items: stretch; 
+        }
         /* Live uploads occupy the full Feels grid width so normal Feels cards keep their original 3-column design. */
         .channel-feels-container > .fl-live-upload-card { grid-column: 1 / -1; width: 100%; box-sizing: border-box; }
         .channel-posts-container { display: flex; flex-direction: column; gap: 16px; }
@@ -166,9 +201,42 @@
         .video-card-meta-long h4 { margin: 0 0 4px; font-size: 0.9rem; font-weight: 800; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.25; }
         .video-card-meta-long p { margin: 0; font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
         
-        .feels-grid-card { display: block; width: 100%; min-width: 0; aspect-ratio: 9 / 16; height: auto; border-radius: 12px; overflow: hidden; background: #E2E8F0; position: relative; cursor: pointer; box-sizing: border-box; }
-        .feels-grid-card img { display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; object-fit: cover; }
-        .feels-grid-views { position: absolute; bottom: 8px; left: 8px; color: white; font-size: 0.75rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.8); display: flex; align-items: center; gap: 4px; }
+        .feels-grid-card { 
+            display: block; 
+            width: 100%; 
+            min-width: 0; 
+            aspect-ratio: 9 / 16; 
+            height: auto; 
+            border-radius: 12px; 
+            overflow: hidden; 
+            background: #0F0F0F; 
+            position: relative; 
+            cursor: pointer; 
+            box-sizing: border-box; 
+        }
+        .feels-grid-card img, .feels-grid-card video { 
+            position: absolute; 
+            inset: 0; 
+            width: 100%; 
+            height: 100%; 
+            min-width: 0; 
+            min-height: 0; 
+            object-fit: cover; 
+            display: block; 
+        }
+        .feels-grid-views { 
+            position: absolute; 
+            bottom: 8px; 
+            left: 8px; 
+            color: white; 
+            font-size: 0.75rem; 
+            font-weight: 800; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8); 
+            display: flex; 
+            align-items: center; 
+            gap: 4px; 
+            z-index: 2; 
+        }
 
 /* Account Switching */
         .account-row { display: flex; align-items: center; gap: 14px; padding: 16px; background: var(--bg-color); border: 1px solid var(--glass-border); border-radius: 20px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
@@ -228,7 +296,6 @@
 /* You page: safe-area + channel form repair (scoped to this page only) */
 .fullscreen-page#you-tab,
 .fullscreen-page#create-channel-page,
-.fullscreen-page#view-channel-page,
 .fullscreen-page#analytics-page,
 .fullscreen-page#edit-channel-page,
 .fullscreen-page#monetization-page {
@@ -237,8 +304,14 @@
     min-height: 100vh;
     overflow-x: hidden;
 }
+.fullscreen-page#view-channel-page {
+    padding-top: 0 !important;
+    height: 100dvh;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+}
 #create-channel-page > .appbar,
-#view-channel-page > .appbar,
 #analytics-page > .appbar,
 #edit-channel-page > .appbar,
 #monetization-page > .appbar {
@@ -247,6 +320,47 @@
     position: sticky;
     top: 0;
     z-index: 100;
+}
+#view-channel-page > .appbar {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: calc(56px + env(safe-area-inset-top, 0px)) !important;
+    padding-top: env(safe-area-inset-top, 0px) !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.2) 60%, transparent 100%) !important;
+    border-bottom: none !important;
+    z-index: 100 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+}
+#view-channel-page > .appbar .appbar-back-btn {
+    color: #ffffff !important;
+    background: rgba(0, 0, 0, 0.35) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    cursor: pointer !important;
+    transition: transform 0.15s ease !important;
+}
+#view-channel-page > .appbar .appbar-back-btn:active {
+    transform: scale(0.9) !important;
+}
+#view-channel-page > .appbar .appbar-title {
+    color: #ffffff !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
+    font-weight: 800 !important;
 }
 
 /* Keep You-page sub-page titles optically centered while the back button stays left. */
@@ -262,10 +376,9 @@
     text-align: center;
 }
 
-/* Status-bar-safe top edge: the appbar begins immediately below the phone status bar. */
+/* Status-bar-safe top edge */
 .fullscreen-page#you-tab,
 .fullscreen-page#create-channel-page,
-.fullscreen-page#view-channel-page,
 .fullscreen-page#analytics-page,
 .fullscreen-page#edit-channel-page,
 .fullscreen-page#monetization-page {
@@ -361,7 +474,7 @@
 #edit-channel-page .edit-form-container { padding: 22px 20px 44px !important; }
 #edit-channel-page .avatar-overlay-camera { opacity: .9; }
 
-/* FINAL: View Channel Feels grid — locked to 3 columns / 9:16 and no page-side scrolling */
+/* FINAL: View Channel Feels 3-Column Grid 9:16 Aspect Ratio & Banner 16:9 Specifications */
 #view-channel-page,
 #view-channel-page .page-content,
 #view-channel-page .channel-tab-content,
@@ -371,92 +484,98 @@
     max-width: 100%;
     min-width: 0;
     box-sizing: border-box;
-    overflow-x: hidden !important;
 }
-#view-channel-page #channel-feels-grid {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    grid-auto-flow: row;
-    gap: 8px !important;
-    align-items: start;
-    justify-items: stretch;
-    padding: 0 !important;
-}
-#view-channel-page #channel-feels-grid > .feels-grid-card {
-    display: block !important;
+#view-channel-page .channel-banner-container {
     width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
+    aspect-ratio: 16 / 9 !important;
     height: auto !important;
-    aspect-ratio: 9 / 16 !important;
-    box-sizing: border-box !important;
+    max-height: none !important;
+    position: relative !important;
+    background: #0F0F0F !important;
     overflow: hidden !important;
-    position: relative;
 }
-#view-channel-page #channel-feels-grid > .feels-grid-card > img {
-    display: block !important;
+#view-channel-page .channel-banner-img {
     width: 100% !important;
     height: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    max-width: none !important;
     object-fit: cover !important;
+    display: block !important;
 }
-#view-channel-page #channel-feels-grid > .fl-live-upload-card {
-    grid-column: 1 / -1 !important;
+#view-channel-page #channel-content-feels {
+    padding: 10px 14px 40px !important;
+    overflow-x: hidden !important;
     width: 100% !important;
-    max-width: 100% !important;
+    box-sizing: border-box !important;
 }
-
-/* FINAL HARD FIX: Channel Feels cards for Android WebView. */
-html, body { overflow-x: hidden !important; max-width: 100vw !important; }
-#view-channel-page, #view-channel-page * { box-sizing: border-box; }
-#view-channel-page .channel-tab-content { width: 100% !important; max-width: 100% !important; min-width: 0 !important; overflow-x: hidden !important; }
-#view-channel-page #channel-content-feels { padding: 8px 16px 24px !important; overflow-x: hidden !important; }
 #view-channel-page #channel-feels-grid {
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    grid-auto-flow: row !important;
-    grid-auto-columns: auto !important;
-    column-gap: 8px !important;
-    row-gap: 8px !important;
+    gap: 8px !important;
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
-    overflow-x: hidden !important;
-    overflow-y: visible !important;
+    box-sizing: border-box !important;
+    align-items: stretch !important;
     justify-items: stretch !important;
-    align-items: start !important;
 }
 #view-channel-page #channel-feels-grid > .feels-grid-card {
-    grid-column: auto !important;
-    grid-row: auto !important;
+    position: relative !important;
+    display: block !important;
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
     aspect-ratio: 9 / 16 !important;
+    height: auto !important;
+    border-radius: 12px !important;
     overflow: hidden !important;
-    position: relative !important;
+    background: #0F0F0F !important;
     box-sizing: border-box !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+    transition: transform 0.15s ease !important;
 }
-#view-channel-page #channel-feels-grid > .feels-grid-card img {
-    display: block !important;
+#view-channel-page #channel-feels-grid > .feels-grid-card:active {
+    transform: scale(0.96) !important;
+}
+#view-channel-page #channel-feels-grid > .feels-grid-card img,
+#view-channel-page #channel-feels-grid > .feels-grid-card video {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
     width: 100% !important;
     height: 100% !important;
+    max-width: none !important;
     min-width: 0 !important;
     min-height: 0 !important;
-    max-width: none !important;
     object-fit: cover !important;
+    display: block !important;
+}
+#view-channel-page #channel-feels-grid > .feels-grid-card::after {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background: linear-gradient(180deg, transparent 65%, rgba(0, 0, 0, 0.65) 100%) !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
+}
+#view-channel-page #channel-feels-grid > .feels-grid-card .feels-grid-views {
+    position: absolute !important;
+    bottom: 6px !important;
+    left: 6px !important;
+    color: #ffffff !important;
+    font-size: 0.72rem !important;
+    font-weight: 800 !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    z-index: 2 !important;
+    line-height: 1 !important;
 }
 #view-channel-page #channel-feels-grid > .fl-live-upload-card {
     grid-column: 1 / -1 !important;
     width: 100% !important;
-    min-width: 0 !important;
     max-width: 100% !important;
 }
 </style></head><body>

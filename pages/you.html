@@ -407,6 +407,55 @@
     width: 100% !important;
     max-width: 100% !important;
 }
+
+/* FINAL HARD FIX: Channel Feels cards for Android WebView. */
+html, body { overflow-x: hidden !important; max-width: 100vw !important; }
+#view-channel-page, #view-channel-page * { box-sizing: border-box; }
+#view-channel-page .channel-tab-content { width: 100% !important; max-width: 100% !important; min-width: 0 !important; overflow-x: hidden !important; }
+#view-channel-page #channel-content-feels { padding: 8px 16px 24px !important; overflow-x: hidden !important; }
+#view-channel-page #channel-feels-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-auto-columns: minmax(0, 1fr) !important;
+    grid-auto-flow: row !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    justify-items: start !important;
+    align-items: start !important;
+}
+#view-channel-page #channel-feels-grid > .feels-grid-card {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: 9 / 16 !important;
+    overflow: hidden !important;
+    position: relative !important;
+}
+#view-channel-page #channel-feels-grid > .feels-grid-card img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    object-fit: cover !important;
+    display: block !important;
+}
+#view-channel-page #channel-feels-grid > .fl-live-upload-card {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
 </style></head><body>
 <div class="tab-content" id="you-tab">
 <div class="profile-card-you">

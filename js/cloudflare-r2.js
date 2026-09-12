@@ -354,6 +354,25 @@ async function flaynityWaitForHlsInitial(jobId, onStatus) {
     throw lastError || new Error("Initial 144p HLS preparation timed out. Please retry shortly.");
 }
 
+async function flaynityMonitorHlsLadder(jobId, onStatus) {
+    const started = Date.now();
+    let lastError = null;
+    while (Date.now() - started < FLAYNITY_HLS_STATUS_TIMEOUT) {
+        try {
+            const data = await flaynityGetHlsStatus(jobId);
+            if (typeof onStatus === "function") onStatus(data);
+            if (data.status === "ready") return data;
+            if (data.status === "failed") throw new Error(data.message || "HLS transcoding failed.");
+            lastError = null;
+        } catch (e) {
+            if (String(e?.message || e).toLowerCase().includes("hls transcoding failed")) throw e;
+            lastError = e;
+        }
+        await new Promise(r => setTimeout(r, FLAYNITY_HLS_POLL_MS));
+    }
+    throw lastError || new Error("HLS background processing timed out.");
+}
+
 async function flaynityWaitForHlsReady(jobId, onStatus) {
     const started = Date.now();
     let lastError = null;
@@ -393,17 +412,20 @@ async function uploadVideoToFlaynityHls(file, options = {}, onProgress) {
         throw new Error(`HLS transcoder is not connected: ${e.message || e}`);
     }
 
-    // Do not wait for every rendition. The transcoder exposes the HLS master as soon
-    // as 144p is available, while 360p/480p/720p/1080p continue in the background.
-    const initial = await flaynityWaitForHlsInitial(job.jobId, options.onStatus);
-    const hlsUrl = normalizeFlaynityMediaUrl(initial.hlsUrl);
-    return {
+    // IMPORTANT: do not keep the mobile upload queue blocked while Render wakes
+    // up or FFmpeg renders 144p. The original MP4 upload is already complete.
+    // Polling continues in the background and calls onStatus as each quality lands.
+    const hlsUrl = normalizeFlaynityMediaUrl(
+        `${FLAYNITY_MEDIA_BASE}/uploads/hls/${encodeURIComponent(job.jobId)}/master.m3u8`
+    );
+    const result = {
         key: upload.key,
         videoUrl: hlsUrl,
         hlsUrl,
-        hlsKey: initial.hlsKey || `uploads/hls/${job.jobId}/master.m3u8`,
-        transcodeJobId: initial.jobId || job.jobId,
-        initialReady: true,
+        hlsKey: `uploads/hls/${job.jobId}/master.m3u8`,
+        transcodeJobId: job.jobId,
+        initialReady: false,
+        processing: true,
         videoQualities: {
             auto: hlsUrl,
             hls: hlsUrl,
@@ -411,4 +433,17 @@ async function uploadVideoToFlaynityHls(file, options = {}, onProgress) {
         },
         provider: "r2-hls"
     };
+
+    // Never await this. A slow/cold Render instance must not make a 20 KB upload
+    // look like a 20-minute upload. The app publishes only when initialReady=true.
+    if (typeof options.onStatus === "function") {
+        Promise.resolve().then(async () => {
+            try {
+                await flaynityMonitorHlsLadder(job.jobId, options.onStatus);
+            } catch (e) {
+                options.onStatus({ status: "failed", message: e?.message || "HLS background processing failed." });
+            }
+        });
+    }
+    return result;
 }

@@ -4612,8 +4612,8 @@ function buildChannelVideoCard(v) {
 
 function buildChannelShortCard(s) {
     return `
-        <div class="feels-grid-card" style="display:block;width:100%;min-width:0;aspect-ratio:9/16;height:auto;box-sizing:border-box;" onclick="openMoviePage('${s.id}', false)">
-            <img src="${s.poster}" style="display:block;width:100%;height:100%;min-width:0;min-height:0;object-fit:cover;">
+        <div class="feels-grid-card" onclick="openMoviePage('${s.id}', false)">
+            <img src="${s.poster}">
             <div class="feels-grid-views">
                 <i class="fas fa-play"></i>
                 <span id="chan-short-views-${s.id}">${formatCount(s.views || 0)}</span>

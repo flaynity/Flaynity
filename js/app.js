@@ -1285,7 +1285,7 @@ async function startS3DirectUpload(item) {
         activeUploadsCount = Math.max(0, activeUploadsCount - 1);
         return;
     }
-    item.status = "uploading"; item.progress = item.progress || 0; updateManagerUI();
+    item.status = "uploading"; item.progress = item.progress || 0; ensureLiveUploadStyles(); updateManagerUI();
     const startTime = Date.now();
     try {
         // B version: use R2 directly while Stream is not subscribed. Once the
@@ -1300,7 +1300,6 @@ async function startS3DirectUpload(item) {
             try {
                 upload = await uploadVideoToFlaynityStream(item.file, {
                     maxDurationSeconds: Math.min(Math.max(Number(item.duration) || 3600, 1), 36000),
-                    onXhr: xhr => { item._xhr = xhr; },
                     onStatus: status => {
                         item.processingMsg = status?.status?.state === 'inprogress' ? 'Encoding video qualities...' : 'Preparing adaptive playback...';
                         updateManagerUI();
@@ -1321,7 +1320,6 @@ async function startS3DirectUpload(item) {
                 item.streamQualityLadder = [144, 360, 480, 720, 1080];
                 if (upload.width && upload.height) item.resolution = `${upload.width}x${upload.height}`;
             } catch (streamErr) {
-                if (item._pauseRequested || item._cancelRequested) throw streamErr;
                 console.warn('[Flaynity] Stream is configured but upload failed; falling back to R2:', streamErr);
                 upload = null;
             }
@@ -1335,7 +1333,7 @@ async function startS3DirectUpload(item) {
                 const elapsed = (Date.now() - startTime) / 1000;
                 if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
                 updateManagerUI();
-            }, xhr => { item._xhr = xhr; });
+            }, item.control);
             item.key = upload.key;
             item.videoProvider = 'r2';
             item.videoUrl = normalizeFlaynityMediaUrl(upload.publicUrl);
@@ -1346,7 +1344,7 @@ async function startS3DirectUpload(item) {
         item.status = "processing"; item.retryCount = 0; updateManagerUI();
         await runPostUploadProcessingSequence(item);
     } catch (err) {
-        if (item.status === 'paused' || item._cancelRequested) { console.log("Upload stopped safely."); }
+        if (item.status === 'paused') { console.log("Upload paused safely."); }
         else if (!navigator.onLine) {
             item.status = "paused"; updateManagerUI();
             showNotification("Connection lost. Upload paused.", "error");
@@ -1501,95 +1499,102 @@ async function pushVideoMetadataToDatabase(item) {
 }
 
 // Queue Helper Functions
-function updateManagerUI() {
-    // Upload Manager screen was removed. Uploads are shown directly on Channel.
-    renderChannelUploadCards();
-}
+function escapeUploadTitle(value) { return escapeHTML(String(value || "Upload")); }
 
-function uploadQueueTypeMatches(item, type) {
-    return type === 'feels' ? item.type === 'video-short' : item.type === 'video-long';
-}
+function uploadQueueTypeForChannel(item) { return item.type === 'video-short' ? 'feels' : 'videos'; }
 
-function getUploadStatusText(item) {
-    if (item.status === 'uploading') return `${item.progress || 0}% uploading`;
-    if (item.status === 'processing') return 'Publishing…';
-    if (item.status === 'paused') return 'Paused';
+function uploadStatusText(item) {
+    if (item.status === 'uploading') return `${Math.max(0, item.progress || 0)}% uploading`;
+    if (item.status === 'paused') return `${Math.max(0, item.progress || 0)}% paused`;
     if (item.status === 'waiting') return 'Waiting to upload';
+    if (item.status === 'processing') return item.processingMsg || 'Processing…';
     if (item.status === 'failed') return 'Upload failed';
-    return 'Uploading';
+    if (item.status === 'completed') return 'Published';
+    return item.status || 'Preparing…';
 }
 
-function renderChannelUploadCards() {
-    const videoGrid = document.getElementById('channel-videos-grid');
-    const feelsGrid = document.getElementById('channel-feels-grid');
-    const videoItems = uploadQueue.filter(i => uploadQueueTypeMatches(i, 'videos') && i.status !== 'completed');
-    const feelItems = uploadQueue.filter(i => uploadQueueTypeMatches(i, 'feels') && i.status !== 'completed');
-    [videoGrid, feelsGrid].forEach(grid => {
-        if (grid) grid.querySelectorAll('.flaynity-upload-card').forEach(el => el.remove());
-    });
-    if (videoGrid && videoItems.length) videoGrid.insertAdjacentHTML('afterbegin', videoItems.map(buildChannelUploadCard).join(''));
-    if (feelsGrid && feelItems.length) feelsGrid.insertAdjacentHTML('afterbegin', feelItems.map(buildChannelUploadCard).join(''));
-}
-
-function buildChannelUploadCard(item) {
+function buildLiveUploadCard(item) {
     const pct = Math.max(0, Math.min(100, Number(item.progress) || 0));
-    const thumb = item.thumbUrl || item.thumbDataUrl || item.streamThumbnail || 'assets/upload-icon.png';
-    const typeLabel = item.type === 'video-short' ? 'Feels' : 'Video';
     const paused = item.status === 'paused';
     const failed = item.status === 'failed';
-    return `
-      <div class="flaynity-upload-card" data-upload-id="${item.id}" onclick="event.stopPropagation()">
-        <div class="flaynity-upload-thumb-wrap">
-          <img src="${thumb}" class="flaynity-upload-thumb" onerror="this.src='assets/upload-icon.png'">
-          <div class="flaynity-upload-type">${typeLabel}</div>
+    const done = item.status === 'completed';
+    const busy = item.status === 'uploading' || item.status === 'processing';
+    const action = busy ? `pauseUploadItem('${item.id}')` : (paused || item.status === 'waiting' ? `resumeUploadItem('${item.id}')` : `retryUploadItem('${item.id}')`);
+    const actionIcon = busy ? 'pause' : 'play';
+    const thumb = item.thumbDataUrl || item.streamThumbnail || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop';
+    return `<div class="fl-live-upload-card" id="live-upload-${item.id}">
+        <div class="fl-live-upload-head">
+            <img src="${thumb}" class="fl-live-upload-thumb">
+            <div class="fl-live-upload-info">
+                <div class="fl-live-upload-title">${escapeUploadTitle(item.title)}</div>
+                <div class="fl-live-upload-status">${escapeHTML(uploadStatusText(item))}</div>
+            </div>
+            <button class="fl-upload-more" onclick="renameUploadItem('${item.id}')"><i class="fas fa-pen"></i></button>
         </div>
-        <div class="flaynity-upload-info">
-          <div class="flaynity-upload-title">${escapeHTML(item.title || typeLabel)}</div>
-          <div class="flaynity-upload-status">${getUploadStatusText(item)}</div>
-          <div class="flaynity-upload-progress"><div style="width:${pct}%"></div></div>
-          <div class="flaynity-upload-actions">
-            ${paused ? `<button onclick="resumeQueuedUpload('${item.id}')"><i class="fas fa-play"></i> Resume</button>` : failed ? `<button onclick="retryQueuedUpload('${item.id}')"><i class="fas fa-rotate-right"></i> Retry</button>` : `<button onclick="pauseQueuedUpload('${item.id}')"><i class="fas fa-pause"></i> Pause</button>`}
-            ${failed ? `<button onclick="retryQueuedUpload('${item.id}')"><i class="fas fa-rotate-right"></i> Retry</button>` : ''}
-            <button onclick="renameQueuedUpload('${item.id}')"><i class="fas fa-pen"></i> Rename</button>
-            <button class="danger" onclick="cancelQueuedUpload('${item.id}')"><i class="fas fa-xmark"></i> Cancel</button>
-          </div>
+        <div class="fl-live-progress"><div style="width:${pct}%"></div></div>
+        <div class="fl-live-upload-actions">
+            ${done ? '<span class="fl-upload-published"><i class="fas fa-check-circle"></i> Published</span>' : `
+            <button onclick="${action}"><i class="fas fa-${actionIcon}"></i> ${busy ? 'Pause' : 'Resume'}</button>
+            <button onclick="retryUploadItem('${item.id}')"><i class="fas fa-rotate-right"></i> Retry</button>
+            <button class="danger" onclick="cancelUploadItem('${item.id}')"><i class="fas fa-xmark"></i> Cancel</button>`}
         </div>
-      </div>`;
+    </div>`;
 }
 
-function findQueuedUpload(id) { return uploadQueue.find(i => i.id === id); }
-
-function pauseQueuedUpload(id) {
-    const item = findQueuedUpload(id); if (!item) return;
-    item.status = 'paused'; item._pauseRequested = true;
-    if (item._xhr && item._xhr.readyState !== 4) { try { item._xhr.abort(); } catch(e) {} }
-    saveQueueStateToLocalStorage(); updateManagerUI();
+function renderChannelUploadQueue(type) {
+    const grid = document.getElementById(type === 'feels' ? 'channel-feels-grid' : 'channel-videos-grid');
+    if (!grid) return;
+    const items = uploadQueue.filter(i => uploadQueueTypeForChannel(i) === type && i.status !== 'completed');
+    const old = grid.querySelectorAll('.fl-live-upload-card');
+    old.forEach(el => el.remove());
+    if (!items.length) return;
+    grid.insertAdjacentHTML('afterbegin', items.map(buildLiveUploadCard).join(''));
 }
 
-function resumeQueuedUpload(id) {
-    const item = findQueuedUpload(id); if (!item) return;
-    item._pauseRequested = false; item.status = 'waiting';
-    saveQueueStateToLocalStorage(); updateManagerUI(); triggerNextActiveUpload();
+function findUploadItem(id) { return uploadQueue.find(i => i.id === id); }
+
+function pauseUploadItem(id) {
+    const item = findUploadItem(id); if (!item || item.status !== 'uploading') return;
+    item.status = 'paused';
+    try { if (item.control && item.control.xhr) item.control.xhr.abort(); } catch(e) {}
+    updateManagerUI(); saveQueueStateToLocalStorage();
 }
 
-function retryQueuedUpload(id) { resumeQueuedUpload(id); }
+function resumeUploadItem(id) {
+    const item = findUploadItem(id); if (!item || item.status === 'completed') return;
+    item.status = 'waiting'; item.retryCount = 0;
+    updateManagerUI(); saveQueueStateToLocalStorage(); triggerNextActiveUpload();
+}
 
-function cancelQueuedUpload(id) {
-    const item = findQueuedUpload(id); if (!item) return;
-    item._pauseRequested = true; item._cancelRequested = true; item.status = 'cancelled';
-    if (item._xhr && item._xhr.readyState !== 4) { try { item._xhr.abort(); } catch(e) {} }
+function retryUploadItem(id) {
+    const item = findUploadItem(id); if (!item || item.status === 'completed') return;
+    item.status = 'waiting'; item.retryCount = 0; item.progress = 0;
+    item.control = { xhr: null, uploadUrl: "" };
+    updateManagerUI(); saveQueueStateToLocalStorage(); triggerNextActiveUpload();
+}
+
+function cancelUploadItem(id) {
+    const item = findUploadItem(id); if (!item) return;
+    try { if (item.control && item.control.xhr) item.control.xhr.abort(); } catch(e) {}
+    item.status = 'cancelled';
     uploadQueue = uploadQueue.filter(i => i.id !== id);
-    saveQueueStateToLocalStorage(); updateManagerUI();
+    updateManagerUI(); saveQueueStateToLocalStorage();
     showNotification('Upload cancelled', 'success');
 }
 
-function renameQueuedUpload(id) {
-    const item = findQueuedUpload(id); if (!item) return;
-    const next = prompt('Rename upload', item.title || 'Untitled');
-    if (next === null) return;
-    const title = next.trim(); if (!title) return;
-    item.title = title;
-    saveQueueStateToLocalStorage(); updateManagerUI();
+function renameUploadItem(id) {
+    const item = findUploadItem(id); if (!item) return;
+    const next = prompt('Rename upload', item.title || 'Upload');
+    if (next && next.trim()) { item.title = next.trim().slice(0, 100); updateManagerUI(); saveQueueStateToLocalStorage(); }
+}
+
+function updateManagerUI() {
+    const activeCount = uploadQueue.filter(i => i.status !== 'completed' && i.status !== 'failed').length;
+    const draftsCount = uploadQueue.filter(i => i.status === 'failed').length;
+    const activeEl = document.getElementById('man-count-active'); if (activeEl) activeEl.innerText = activeCount;
+    const draftsEl = document.getElementById('man-count-drafts'); if (draftsEl) draftsEl.innerText = draftsCount;
+    renderChannelUploadQueue('videos');
+    renderChannelUploadQueue('feels');
 }
 
 function saveQueueStateToLocalStorage() {
@@ -4540,6 +4545,7 @@ async function submitCreateChannel() {
 }
 
 function openViewChannelPage() {
+    ensureLiveUploadStyles();
     playUI('click');
     let data = currentChannelData;
     if (!data) return;
@@ -4644,12 +4650,12 @@ function renderChannelVideos(userId) {
     
     activeChannelVideosListener = db.ref('admin_panel/movies/user_uploads');
     activeChannelVideosListener.on('value', (snap) => {
-        setTimeout(renderChannelUploadCards, 0);
         const data = snap.val();
         if (!data) {
             grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No uploaded videos yet.</p>`;
             const vidCount = document.getElementById('view-vid-count');
             if (vidCount) vidCount.innerText = "0 Videos";
+            renderChannelUploadQueue('videos');
             return;
         }
 
@@ -4659,6 +4665,7 @@ function renderChannelVideos(userId) {
 
         if (list.length === 0) {
             grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No uploaded videos yet.</p>`;
+            renderChannelUploadQueue('videos');
             return;
         }
 
@@ -4670,6 +4677,8 @@ function renderChannelVideos(userId) {
             poster: m.poster,
             createdAt: m.createdAt
         })).join('');
+
+        renderChannelUploadQueue('videos');
 
         if(navigator.onLine) {
             list.forEach(m => {
@@ -4691,16 +4700,17 @@ function renderChannelFeels(userId) {
 
     activeChannelFeelsListener = db.ref('admin_panel/movies/feels');
     activeChannelFeelsListener.on('value', (snap) => {
-        setTimeout(renderChannelUploadCards, 0);
         const data = snap.val();
         if (!data) {
             grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No feels uploaded yet.</p>`;
+            renderChannelUploadQueue('feels');
             return;
         }
 
         const list = Object.values(data).filter(m => m.userId === userId);
         if (list.length === 0) {
             grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No feels uploaded yet.</p>`;
+            renderChannelUploadQueue('feels');
             return;
         }
 
@@ -4709,6 +4719,8 @@ function renderChannelFeels(userId) {
             poster: m.poster,
             views: 0
         })).join('');
+
+        renderChannelUploadQueue('feels');
 
         if(navigator.onLine) {
             list.forEach(m => {
@@ -6516,19 +6528,21 @@ async function publishPremiumVideoOrShort(modeType) {
         thumbBlob: currentUploadFrameMeta.blob, 
         thumbKey: `uploads/${uniqueId}/thumbnail.jpg`,
         createdAt: Date.now(),
-        scheduledTime: visibility === 'Schedule' && scheduleDate ? new Date(scheduleDate).getTime() : 0
+        scheduledTime: visibility === 'Schedule' && scheduleDate ? new Date(scheduleDate).getTime() : 0,
+        control: { xhr: null, uploadUrl: "" }
     };
 
     uploadQueue.push(queueItem);
-    saveQueueStateToLocalStorage();
-
+    saveQueueStateToLocalStorage(); 
+    
     AppNavigation.pop();
-    setTimeout(() => {
-        openViewChannelPage();
-        setTimeout(() => { switchChannelTab(isShort ? 'feels' : 'videos'); }, 60);
-    }, 0);
     showNotification("Upload started", "success");
-    triggerNextActiveUpload();
+    openViewChannelPage();
+    setTimeout(() => {
+        switchChannelTab(isShort ? 'feels' : 'videos');
+        renderChannelUploadQueue(isShort ? 'feels' : 'videos');
+        triggerNextActiveUpload();
+    }, 80);
 }
 
 async function publishPremiumPostAction() {
@@ -6587,11 +6601,7 @@ async function publishPremiumPostAction() {
         await db.ref(`admin_panel/posts/${postPayload.id}`).set(postPayload);
         
         showNotification("Community Post published successfully!", "success");
-        AppNavigation.pop();
-        setTimeout(() => {
-            openViewChannelPage();
-            setTimeout(() => { switchChannelTab('posts'); }, 60);
-        }, 0);
+        AppNavigation.pop(); 
         buildHomeFeed();
     } catch (err) {
         showNotification("Failed to publish: " + err.message, "error");
@@ -6605,11 +6615,23 @@ async function publishPremiumPostAction() {
 window.addEventListener('flaynity-dom-ready', setupHoldToRecord, { once: true });
 __flaynityReady(function() { setupHoldToRecord(); });
 
-function openUploadManager() {
-    renderChannelUploadCards();
+function ensureLiveUploadStyles() {
+    if (document.getElementById('fl-live-upload-styles')) return;
+    const st = document.createElement('style'); st.id = 'fl-live-upload-styles';
+    st.textContent = `
+    .fl-live-upload-card{background:var(--surface,#fff);border:1px solid var(--glass-border,#e8e8e8);border-radius:16px;padding:12px;margin:0 0 12px;box-shadow:0 5px 18px rgba(0,0,0,.06);position:relative;z-index:3}
+    .fl-live-upload-head{display:flex;align-items:center;gap:10px}.fl-live-upload-thumb{width:82px;height:52px;border-radius:10px;object-fit:cover;background:#111;flex-shrink:0}.fl-live-upload-info{min-width:0;flex:1}.fl-live-upload-title{font-weight:800;font-size:.93rem;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fl-live-upload-status{font-size:.76rem;color:var(--text-muted);margin-top:4px}.fl-upload-more{background:none;border:0;color:var(--text-muted);padding:8px}.fl-live-progress{height:6px;background:var(--border-color,#eee);border-radius:99px;overflow:hidden;margin:11px 0}.fl-live-progress>div{height:100%;background:var(--primary,#ff2e55);border-radius:99px;transition:width .25s ease}.fl-live-upload-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.fl-live-upload-actions button{border:1px solid var(--glass-border,#ddd);background:var(--bg-color,#f7f7f7);color:var(--text-main);border-radius:9px;padding:7px 9px;font-size:.72rem;font-weight:800}.fl-live-upload-actions button.danger{color:#e53935}.fl-upload-published{font-size:.75rem;font-weight:800;color:#18a558}
+    `; document.head.appendChild(st);
 }
 
-function closeUploadManager() { return; }
+function openUploadManager() {
+    updateManagerUI();
+    AppNavigation.pushModal('upload-manager-screen');
+}
+
+function closeUploadManager() {
+    AppNavigation.pop();
+}
 
 
 // =========================================================

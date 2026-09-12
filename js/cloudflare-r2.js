@@ -334,25 +334,44 @@ async function flaynityGetHlsStatus(jobId) {
     return flaynityHlsRequest(`/v1/media/transcode/status/${encodeURIComponent(jobId)}`, { method: "GET" });
 }
 
-async function flaynityWaitForHlsReady(jobId, onStatus) {
+async function flaynityWaitForHlsPlayable(jobId, onStatus) {
     const started = Date.now();
     let lastError = null;
     while (Date.now() - started < FLAYNITY_HLS_STATUS_TIMEOUT) {
         try {
             const data = await flaynityGetHlsStatus(jobId);
             if (typeof onStatus === "function") onStatus(data);
-            if (data.status === "ready" && data.hlsUrl) return data;
+            // The first 144p rendition is enough to publish/play. Higher
+            // qualities continue rendering independently on the transcoder.
+            if ((data.status === "playable" || data.status === "ready") && data.hlsUrl) return data;
             if (data.status === "failed") throw new Error(data.message || "HLS transcoding failed.");
             lastError = null;
         } catch (e) {
             if (String(e?.message || e).toLowerCase().includes("hls transcoding failed")) throw e;
             lastError = e;
-            // A transient Render cold-start/network response should not instantly
-            // fail an upload; keep polling for a short period.
         }
         await new Promise(r => setTimeout(r, FLAYNITY_HLS_POLL_MS));
     }
-    throw lastError || new Error("HLS transcoding timed out. Please retry shortly.");
+    throw lastError || new Error("HLS startup timed out. Please retry shortly.");
+}
+
+// Keep watching after publication so the client learns about 360/480/720/1080
+// as soon as FFmpeg finishes them. The master playlist is deliberately
+// revalidated by the server, so reloading it exposes the newly available levels.
+async function flaynityMonitorHlsLadder(jobId, onStatus) {
+    const started = Date.now();
+    let lastAvailable = 0;
+    while (Date.now() - started < FLAYNITY_HLS_STATUS_TIMEOUT) {
+        try {
+            const data = await flaynityGetHlsStatus(jobId);
+            if (typeof onStatus === "function") onStatus(data);
+            const available = Array.isArray(data.availableQualities) ? data.availableQualities.length : 0;
+            if (available > lastAvailable) lastAvailable = available;
+            if (data.status === "ready" || data.status === "failed") return data;
+        } catch (e) {}
+        await new Promise(r => setTimeout(r, FLAYNITY_HLS_POLL_MS));
+    }
+    return null;
 }
 
 async function uploadVideoToFlaynityHls(file, options = {}, onProgress) {
@@ -373,14 +392,15 @@ async function uploadVideoToFlaynityHls(file, options = {}, onProgress) {
         throw new Error(`HLS transcoder is not connected: ${e.message || e}`);
     }
 
-    const ready = await flaynityWaitForHlsReady(job.jobId, options.onStatus);
-    const hlsUrl = normalizeFlaynityMediaUrl(ready.hlsUrl);
-    return {
+    const playable = await flaynityWaitForHlsPlayable(job.jobId, options.onStatus);
+    const hlsUrl = normalizeFlaynityMediaUrl(playable.hlsUrl || `https://cdn.flaynity.indevs.in/media/uploads/hls/${job.jobId}/master.m3u8`);
+    const result = {
         key: upload.key,
         videoUrl: hlsUrl,
         hlsUrl,
-        hlsKey: ready.hlsKey || "",
-        transcodeJobId: ready.jobId || job.jobId,
+        hlsKey: playable.hlsKey || `uploads/hls/${job.jobId}/master.m3u8`,
+        transcodeJobId: playable.jobId || job.jobId,
+        videoLink: hlsUrl,
         videoQualities: {
             auto: hlsUrl,
             hls: hlsUrl,
@@ -388,4 +408,7 @@ async function uploadVideoToFlaynityHls(file, options = {}, onProgress) {
         },
         provider: "r2-hls"
     };
+    // Do not block publication on the remaining ladder.
+    Promise.resolve().then(() => flaynityMonitorHlsLadder(job.jobId, options.onStatus)).catch(() => {});
+    return result;
 }

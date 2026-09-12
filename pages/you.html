@@ -1,898 +1,1105 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Flaynity</title>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Flaynity Studio & Channel</title>
+<!-- FontAwesome Icons CDN -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
-/* You Profile Card */
-        .profile-card-you {
-            background: var(--surface); 
-            border: 1px solid var(--glass-border);
-            /* ওপরের বড় গ্যাপটি রিমুভ করে 0 করে দেওয়া হয়েছে, যেন Top Bar এর ঠিক নিচেই থাকে */
-            margin: 0 8px 12px 8px !important; 
-            border-radius: 20px !important;
-            padding: 20px 16px 16px 16px !important; 
-            box-shadow: 0 12px 30px rgba(0,0,0,0.04);
-            width: calc(100% - 16px) !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        [data-theme="dark"] .profile-card-you { box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25), 0 0 15px rgba(255, 46, 85, 0.05); }
-        .profile-card-main { display: flex; align-items: center; gap: 14px; }
-        .profile-avatar-large {
-            width: 64px; height: 64px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), #FF7A00); color: white;
-            display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
-            font-weight: 800; overflow: hidden; box-shadow: 0 8px 20px var(--primary-glow);
-            transition: transform 0.3s ease;
-        }
-        .profile-avatar-large img { width: 100%; height: 100%; object-fit: cover; }
-        .profile-info-you h3 { margin: 0 0 4px 0; font-size: 1.2rem; font-weight: 800; color: var(--text-main); }
-        .profile-info-you p { margin: 0; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
-        
-        .channel-action-box { margin-top: 14px; border-top: 1px solid var(--glass-border); padding-top: 14px; }
-        .btn-create-channel {
-            background: var(--primary); color: white; border: none; width: 100%; padding: 12px;
-            border-radius: 16px; font-weight: 800; font-size: 1rem; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            box-shadow: 0 8px 20px var(--primary-glow); transition: all 0.2s ease;
-        }
-        .btn-create-channel:active { transform: scale(0.96); box-shadow: none; }
-        
-        .btn-view-channel {
-            background: var(--bg-color); color: var(--text-main); border: 1px solid var(--glass-border);
-            width: 100%; padding: 12px 16px; border-radius: 16px; font-weight: 800; font-size: 1rem;
-            cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-        }
-        .btn-view-channel:active { transform: scale(0.97); background: var(--border-color); }
-
-/* You Menu List */
-        .you-menu {
-            display: flex; flex-direction: column; background: var(--surface);
-            border: 1px solid var(--glass-border); margin: 0 8px 24px 8px !important;
-            border-radius: 24px !important; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.02);
-            width: calc(100% - 16px) !important; transition: all 0.3s ease;
-        }
-        [data-theme="dark"] .you-menu { box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
-        .you-menu-item {
-            display: flex; align-items: center; padding: 20px 24px; cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border-bottom: 1px solid var(--glass-border);
-            color: var(--text-main); position: relative; overflow: hidden;
-        }
-        .you-menu-item:last-child { border-bottom: none; }
-        .you-menu-item:active { background: var(--primary-glow); transform: scale(0.98); }
-        .you-menu-item i { font-size: 1.25rem; width: 32px; color: var(--primary); transition: transform 0.2s ease; }
-        .you-menu-item:active i { transform: scale(1.1); }
-        .you-menu-item span { font-size: 1.05rem; font-weight: 700; flex-grow: 1; }
-        .arrow-r { font-size: 0.9rem !important; color: var(--text-muted); opacity: 0.6; }
-
-
-/* Premium service menu — Floating Cards styling */
-.premium-service-menu { 
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    margin-top: 0 !important; 
-    gap: 10px; 
-    overflow: visible !important;
-}
-[data-theme="dark"] .premium-service-menu { box-shadow: none !important; }
-
-.premium-service-item { 
-    background: var(--surface) !important;
-    border: 1px solid var(--glass-border) !important;
-    border-radius: 16px !important;
-    padding: 12px 16px !important; 
-    box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important;
-    gap: 14px; 
-    margin-bottom: 0 !important;
-}
-[data-theme="dark"] .premium-service-item {
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
-}
-.premium-service-item:active {
-    transform: scale(0.97) translateY(2px) !important;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05) !important;
+/* =======================================================
+   PREMIUM STUDIO CSS
+======================================================= */
+:root {
+    --studio-safe-top: max(env(safe-area-inset-top), 36px);
+    --primary: #FF2E55;
+    --primary-glow: rgba(255, 46, 85, 0.4);
+    --surface: #1E1E1E;
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --text-main: #FFFFFF;
+    --text-muted: rgba(255, 255, 255, 0.6);
+    --bg-color: #0F0F0F;
 }
 
-.premium-icon-box {
-    width: 42px; height: 42px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.premium-icon-box i {
-    font-size: 1.35rem !important;
-    color: #ffffff !important;
-    -webkit-text-fill-color: #ffffff !important;
-    background: none !important;
-    filter: none !important;
-    display: flex; align-items: center; justify-content: center;
-    line-height: 1; 
+.studio-page {
+    background: #000;
+    color: #fff;
+    z-index: 9999;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Unique Colors for each Floating Item */
-.icon-pro { background: linear-gradient(135deg, #8B5CF6 0%, #D946EF 100%); box-shadow: 0 4px 14px rgba(139,92,246,0.3); }
-.icon-ads { background: linear-gradient(135deg, #D80E45 0%, #F97316 100%); box-shadow: 0 4px 14px rgba(244,63,94,0.3); }
-.icon-boost { background: linear-gradient(135deg, #F59E0B 0%, #EAB308 100%); box-shadow: 0 4px 14px rgba(245,158,11,0.3); }
-.icon-pay { background: linear-gradient(135deg, #10B981 0%, #14B8A6 100%); box-shadow: 0 4px 14px rgba(16,185,129,0.3); }
+.studio-btn { background: var(--primary); color: white; border: none; border-radius: 24px; padding: 16px 24px; font-size: 1.05rem; font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px var(--primary-glow); transition: 0.2s; }
+.studio-btn:active { transform: scale(0.96); }
 
-/* Verified Badge Customization */
-.icon-verified { background: #F0F7FF; border: 1px solid #D6EBFF; box-shadow: none; }
-[data-theme="dark"] .icon-verified { background: rgba(51, 144, 236, 0.1); border-color: rgba(51, 144, 236, 0.2); }
-.icon-verified svg { width: 24px !important; height: 24px !important; display: block; margin: auto; }
+/* YouTube Mode Slider - Perfect Centered */
+.mode-slider-wrap { position: absolute; bottom: 0; left: 0; right: 0; height: 90px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); z-index: 100; touch-action: none; }
+.mode-slider { display: flex; gap: 20px; transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); align-items: center; white-space: nowrap; position: absolute; left: 0; }
+.mode-item { padding: 8px 18px; border-radius: 30px; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: 0.3s; color: rgba(255,255,255,0.6); }
+.mode-item.active { background: rgba(255,255,255,0.15); color: #FFFFFF; backdrop-filter: blur(8px); }
 
-.premium-service-item > span { min-width: 0; font-weight: 800; font-size: 1.05rem; }
+/* Camera Controls */
+.camera-ctrl-btn { background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 44px; height: 44px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); margin-bottom: 16px; transition: 0.2s; flex-direction: column; }
+.camera-ctrl-btn:active { transform: scale(0.9); }
+.camera-ctrl-btn.active-state { color: #FFCC00; }
 
-/* View Channel */
-        .channel-banner-container { width: 100%; aspect-ratio: 16 / 9; height: auto; min-height: 0; position: relative; background: #E2E8F0; overflow: hidden; }
-        .channel-banner-img { display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; object-fit: cover; }
-        .banner-gradient { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 80%); }
-        
-        .channel-profile-section { padding: 16px 20px; background: var(--surface); border-bottom: 1px solid var(--glass-border); margin-top: -32px; border-radius: 32px 32px 0 0; position: relative; z-index: 2; }
-        .profile-row-main { display: flex; gap: 16px; align-items: center; }
-        .view-avatar-img { width: 80px; height: 80px; border-radius: 50%; border: 4px solid var(--surface); object-fit: cover; box-shadow: 0 6px 15px rgba(0,0,0,0.08); background: var(--bg-color); }
-        .channel-main-meta h2 { margin: 0 0 4px; font-size: 1.35rem; font-weight: 900; color: var(--text-main); }
-        .channel-main-meta p { margin: 0; }
-        #view-channel-handle-txt { font-size: 0.9rem; color: var(--text-muted); font-weight: 700; }
-        .channel-stats-txt { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-top: 4px !important; }
-        .dot-separator { margin: 0 4px; }
-        
-        .channel-description-box { margin: 12px 0; background: var(--bg-color); padding: 12px 14px; border-radius: 12px; border: 1px solid var(--glass-border); }
-        .channel-desc-text { margin: 0; font-size: 0.88rem; color: var(--text-muted); line-height: 1.4; }
-        .channel-desc-text.line-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
-        .btn-more-desc { background: none; border: none; color: var(--primary); font-size: 0.82rem; font-weight: 800; cursor: pointer; padding: 4px 0 0; display: flex; align-items: center; gap: 4px; }
-        
-        .channel-action-row { display: flex; gap: 10px; margin-top: 14px; }
-        .btn-channel-action { flex: 1; background: var(--primary-glow); color: var(--primary); border: 1px solid transparent; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
-        .btn-channel-action:active { transform: scale(0.96); }
-        .btn-channel-action.btn-edit { background: var(--bg-color); border-color: var(--glass-border); color: var(--text-main); }
-        .btn-channel-action.btn-edit:active { background: var(--border-color); }
+/* 
+   PREVIEW WRAPPERS 
+   1. Absolute Center (For Video, Short Preview, Post Preview)
+   2. Top Aligned (For Camera)
+*/
+.preview-wrapper-center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10; pointer-events: none; }
+.preview-wrapper-center > * { pointer-events: auto; }
 
-/* Content Tabs */
-        .channel-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--glass-border); position: relative; top: auto; z-index: 10; }
-        .channel-tab-item { flex: 1; text-align: center; padding: 16px 0; font-size: 0.95rem; font-weight: 800; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; }
-        .channel-tab-item.active { color: var(--primary); border-bottom-color: var(--primary); }
-        .channel-tab-content { display: none; padding: 16px; }
-        .channel-tab-content.active { display: block; }
-        
-        .channel-videos-container { display: flex; flex-direction: column; gap: 16px; }
-        .channel-feels-container { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px; width: 100%; box-sizing: border-box; align-items: start; }
-        /* Live uploads occupy the full Feels grid width so normal Feels cards keep their original 3-column design. */
-        .channel-feels-container > .fl-live-upload-card { grid-column: 1 / -1; width: 100%; box-sizing: border-box; }
-        .channel-posts-container { display: flex; flex-direction: column; gap: 16px; }
-        
-        .channel-video-card-long { display: flex; gap: 12px; cursor: pointer; }
-        .video-card-thumb-wrap { width: 120px; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; background: #E2E8F0; flex-shrink: 0; position: relative; }
-        .video-card-thumb-wrap img { width: 100%; height: 100%; object-fit: cover; }
-        .video-card-duration { position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,0.8); color: white; font-size: 0.65rem; padding: 2px 4px; border-radius: 4px; font-weight: 800; }
-        .video-card-meta-long { display: flex; flex-direction: column; justify-content: center; }
-        .video-card-meta-long h4 { margin: 0 0 4px; font-size: 0.9rem; font-weight: 800; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.25; }
-        .video-card-meta-long p { margin: 0; font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
-        
-        .feels-grid-card { display: block; width: 100%; min-width: 0; aspect-ratio: 9 / 16; height: auto; border-radius: 12px; overflow: hidden; background: #E2E8F0; position: relative; cursor: pointer; box-sizing: border-box; }
-        .feels-grid-card img { display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; object-fit: cover; }
-        .feels-grid-views { position: absolute; bottom: 8px; left: 8px; color: white; font-size: 0.75rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.8); display: flex; align-items: center; gap: 4px; }
+.preview-wrapper-top { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding-top: var(--studio-safe-top); position: relative; z-index: 10; }
 
-/* Account Switching */
-        .account-row { display: flex; align-items: center; gap: 14px; padding: 16px; background: var(--bg-color); border: 1px solid var(--glass-border); border-radius: 20px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
-        .account-row:active { transform: scale(0.97); background: var(--primary-glow); }
-        .account-row.active { border-color: var(--primary); background: var(--primary-glow); }
-        .account-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #FF7A00); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; overflow: hidden; flex-shrink: 0; }
-        .account-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .account-meta h4 { margin: 0 0 4px; font-size: 1rem; font-weight: 800; color: var(--text-main); }
-        .account-meta p { margin: 0; font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
-        .check-active { position: absolute; right: 20px; color: var(--primary); font-size: 1.3rem; display: none; }
-        .account-row.active .check-active { display: block; }
-        .account-row.add-acc { border-style: dashed; background: transparent; }
-        .account-avatar-add { width: 48px; height: 48px; border-radius: 50%; background: var(--surface); border: 1.5px dashed var(--primary); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
-        
-        .edit-banner-section { width: 100%; height: 140px; background: #E2E8F0; position: relative; overflow: hidden; cursor: pointer; }
-        .edit-banner-preview { width: 100%; height: 100%; object-fit: cover; }
-        .edit-banner-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 0.85rem; gap: 6px; opacity: 0.8; transition: 0.2s; }
-        .edit-banner-section:hover .edit-banner-overlay { opacity: 1; }
-        
-        .edit-avatar-section { display: flex; justify-content: center; margin-top: -45px; position: relative; z-index: 5; }
-        .edit-avatar-section .avatar-preview-container { border-color: var(--surface); box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
-        .avatar-overlay-camera { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; opacity: 0; transition: 0.2s; }
-        .edit-avatar-section .avatar-preview-container:hover .avatar-overlay-camera { opacity: 1; }
+/* Full Width Previews (No Gaps) */
+.full-width-media { width: 100vw; height: 100vh; object-fit: contain; }
+.camera-media { width: 100vw; aspect-ratio: 9/16; max-height: calc(100vh - 140px); object-fit: cover; background: #111; border-radius: 0 0 16px 16px; }
 
-/* Analytics */
-        .analytics-overview-card { background: var(--surface); border: 1px solid var(--glass-border); border-radius: 24px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.01); margin-bottom: 24px; }
-        .analytics-header-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
-        .analytics-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: var(--bg-color); }
-        .analytics-header-row h3 { margin: 0 0 2px; font-size: 1.15rem; font-weight: 850; color: var(--text-main); }
-        .analytics-header-row p { margin: 0; font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
-        .revenue-box { background: var(--primary-glow); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
-        .revenue-label { font-size: 0.72rem; font-weight: 800; color: var(--primary); letter-spacing: 0.8px; }
-        .revenue-val { font-size: 1.6rem; font-weight: 900; color: var(--text-main); }
-        
-        .analytics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; }
-        .analytics-card { background: var(--surface); border: 1px solid var(--glass-border); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; min-height: 110px; }
-        .stat-lbl { font-size: 0.82rem; font-weight: 750; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
-        .stat-lbl i { color: var(--primary); }
-        .stat-num { font-size: 1.5rem; font-weight: 900; color: var(--text-main); margin: 8px 0 4px; }
-        .stat-trend { font-size: 0.75rem; font-weight: 800; display: flex; align-items: center; gap: 4px; }
-        .trend-up { color: var(--success); }
-        .stat-sub-text { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
-        
-        .chart-container-mock { background: var(--surface); border: 1px solid var(--glass-border); border-radius: 24px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.01); margin-bottom: 40px; }
-        .chart-bars { display: flex; align-items: flex-end; justify-content: space-between; height: 160px; padding: 10px 10px 24px; border-bottom: 2px solid var(--glass-border); position: relative; }
-        .chart-bar { flex: 1; margin: 0 6px; background: linear-gradient(to top, var(--primary), #FF7A00); border-radius: 6px 6px 0 0; position: relative; cursor: pointer; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-        .chart-bar::after { content: attr(data-lbl); position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); font-size: 0.72rem; font-weight: 800; color: var(--text-muted); }
-        .bar-val { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 0.75rem; font-weight: 800; color: var(--text-main); opacity: 0; transition: 0.2s; }
-        .chart-bar:hover { filter: brightness(1.1); transform: scaleY(1.05); }
-        .chart-bar:hover .bar-val { opacity: 1; }
-        .chart-footer-label { font-size: 0.75rem; color: var(--text-muted); text-align: center; margin: 14px 0 0; font-weight: 700; }
-        
-        .nav-avatar-wrap { width: 22px; height: 22px; border-radius: 50%; overflow: hidden; border: 2px solid transparent; transition: border-color 0.1s ease; display: flex; align-items: center; justify-content: center; }
-        .nav-item.active .nav-avatar-wrap { border-color: var(--text-main); }
-        .nav-avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
+/* Trimmer / Timeline (Shorts Only) - Gap on Sides Fix */
+.trimmer-wrap { position: absolute; bottom: 100px; left: 40px; right: 40px; height: 44px; border-radius: 6px; background: rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px); z-index: 30; display: flex; align-items: center; }
+.trimmer-frames { position: absolute; inset: 0; display: flex; overflow: hidden; opacity: 0.4; border-radius: 4px; background: repeating-linear-gradient(45deg, #222, #222 10px, #333 10px, #333 20px); }
+.trimmer-handle { position: absolute; top: -4px; bottom: -4px; width: 14px; background: var(--primary); z-index: 35; border-radius: 4px; cursor: ew-resize; display: flex; align-items: center; justify-content: center; }
+.trimmer-handle::after { content: ''; width: 2px; height: 12px; background: white; border-radius: 2px; }
+.trim-start { left: 0; transform: translateX(-50%); }
+.trim-end { right: 0; transform: translateX(50%); }
+.trim-playhead { position: absolute; top: -8px; bottom: -8px; width: 3px; background: #fff; z-index: 40; border-radius: 2px; pointer-events: none; box-shadow: 0 0 8px rgba(0,0,0,0.8); }
+.trimmer-time-display { position: absolute; bottom: 160px; left: 0; right: 0; text-align: center; font-size: 0.85rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.8); z-index: 30;}
 
-/* You page: safe-area + channel form repair (scoped to this page only) */
-.fullscreen-page#you-tab,
-.fullscreen-page#create-channel-page,
-.fullscreen-page#view-channel-page,
-.fullscreen-page#analytics-page,
-.fullscreen-page#edit-channel-page,
-.fullscreen-page#monetization-page {
-    padding-top: env(safe-area-inset-top, 0px);
-    height: 100dvh;
+.form-group { margin-bottom: 20px; width: 100%; }
+.form-label { display: block; font-size: 0.85rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+.form-input, .form-textarea { width: 100%; background: var(--surface); border: 1.5px solid var(--glass-border); padding: 16px; border-radius: 16px; font-size: 1rem; font-weight: 600; color: var(--text-main); outline: none; transition: 0.2s; box-sizing: border-box; font-family: inherit;}
+.form-textarea { height: 120px; resize: none; }
+.form-input:focus, .form-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-glow); }
+
+.topbar-nav { display: flex; justify-content: space-between; padding: 12px 16px; padding-top: var(--studio-safe-top); align-items: center; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); z-index: 50; position: absolute; top: 0; left: 0; right: 0;}
+.topbar-nav.solid { background: var(--surface); border-bottom: 1px solid var(--border-color); position: relative; padding-top: var(--studio-safe-top); }
+
+.preview-play-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3.5rem; color: rgba(255,255,255,0.9); z-index: 15; pointer-events: none; opacity: 0; transition: 0.2s; background: rgba(0,0,0,0.4); width: 90px; height: 90px; border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.preview-play-icon.show { opacity: 1; }
+
+.floating-next-btn { position: absolute; bottom: 30px; right: 16px; background: #fff; color: #000; padding: 12px 28px; border-radius: 24px; font-weight: 800; font-size: 0.95rem; z-index: 100; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+/* Custom Popups for Timer, Duration, Speed */
+.studio-popup-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10005; display: none; align-items: flex-end; }
+.studio-popup-content { background: var(--surface); width: 100%; border-radius: 24px 24px 0 0; padding: 24px; box-sizing: border-box; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15); }
+.studio-popup-option { display: flex; align-items: center; justify-content: space-between; padding: 16px; border-radius: 12px; cursor: pointer; transition: 0.2s; color: var(--text-main); font-weight: 800; margin-bottom: 8px;}
+.studio-popup-option:active { background: var(--border-color); }
+.studio-popup-option.selected { color: var(--primary); }
+
+#big-countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 8rem; font-weight: 900; color: #fff; text-shadow: 0 4px 20px rgba(0,0,0,0.8); z-index: 100; display: none; pointer-events: none;}
+
+/* =======================================================
+   9. VIEW CHANNEL PAGE & FEELS TAB CSS
+======================================================= */
+.channel-page {
+    background: var(--bg-color);
+    color: var(--text-main);
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
     overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+    padding-bottom: 40px;
 }
-#create-channel-page > .appbar,
-#view-channel-page > .appbar,
-#analytics-page > .appbar,
-#edit-channel-page > .appbar,
-#monetization-page > .appbar {
-    flex: 0 0 60px;
-    height: 60px;
+
+/* User Channel Banner - 16:9 Aspect Ratio with Phone Status Bar */
+.channel-banner-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #1a1a1a;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.channel-banner-container .banner-media {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Top Nav over Status Bar and 16:9 Banner */
+.channel-top-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding-top: var(--studio-safe-top);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.25) 60%, transparent 100%);
+    z-index: 50;
+    pointer-events: none;
+}
+
+.channel-top-bar > * {
+    pointer-events: auto;
+}
+
+.channel-icon-btn {
+    background: rgba(0, 0, 0, 0.45);
+    color: #ffffff;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: transform 0.2s, background 0.2s;
+}
+
+.channel-icon-btn:active {
+    transform: scale(0.92);
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Channel Profile Section */
+.channel-info-section {
+    padding: 16px;
+    background: var(--bg-color);
+}
+
+.channel-header-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.channel-avatar-img {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    flex-shrink: 0;
+}
+
+.channel-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.channel-title-text {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 0 0 4px;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.channel-handle-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin: 0 0 4px;
+}
+
+.channel-stats-text {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.channel-action-btn {
+    width: 100%;
+    background: #ffffff;
+    color: #000000;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 24px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: 0.2s;
+}
+
+.channel-action-btn:active {
+    transform: scale(0.98);
+    background: #e0e0e0;
+}
+
+/* Channel Navigation Tabs */
+.channel-nav-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-color);
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 40;
+    overflow-x: auto;
+    scrollbar-width: none;
 }
 
-/* Keep You-page sub-page titles optically centered while the back button stays left. */
-#create-channel-page > .appbar .centered-page-title,
-#view-channel-page > .appbar .centered-page-title,
-#analytics-page > .appbar .centered-page-title,
-#edit-channel-page > .appbar .centered-page-title {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    margin: 0;
+.channel-nav-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.channel-nav-tab {
+    padding: 14px 20px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    cursor: pointer;
     white-space: nowrap;
-    text-align: center;
+    border-bottom: 3px solid transparent;
+    transition: 0.2s;
 }
 
-/* Status-bar-safe top edge: the appbar begins immediately below the phone status bar. */
-.fullscreen-page#you-tab,
-.fullscreen-page#create-channel-page,
-.fullscreen-page#view-channel-page,
-.fullscreen-page#analytics-page,
-.fullscreen-page#edit-channel-page,
-.fullscreen-page#monetization-page {
-    box-sizing: border-box;
-}
-#create-channel-page .page-content,
-#edit-channel-page .page-content,
-#view-channel-page .page-content,
-#analytics-page .page-content,
-#monetization-page .page-content {
-    min-height: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+.channel-nav-tab.active {
+    color: #ffffff;
+    border-bottom-color: #ffffff;
 }
 
-/* Create Channel */
-#create-channel-page .page-content {
-    padding: 28px 20px 48px !important;
-}
-#create-channel-page .avatar-selector-wrap {
-    display: flex; flex-direction: column; align-items: center;
-    margin: 4px 0 30px;
-}
-#create-channel-page .avatar-preview-container,
-#edit-channel-page .avatar-preview-container {
-    width: 104px; height: 104px; border-radius: 50%; overflow: hidden;
-    position: relative; display: flex; align-items: center; justify-content: center;
-    background: var(--surface); border: 4px solid var(--primary-glow);
-    box-shadow: 0 8px 24px rgba(0,0,0,.10); cursor: pointer;
-}
-#create-channel-page .avatar-placeholder {
-    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-    color: var(--primary); background: var(--primary-glow); font-size: 1.7rem;
-}
-#create-channel-page .selector-help {
-    margin: 10px 0 0; color: var(--text-muted); font-size: .78rem; font-weight: 700;
-}
-#you-tab .form-group,
-#create-channel-page .form-group,
-#edit-channel-page .form-group { width: 100%; }
-#create-channel-page .form-label,
-#edit-channel-page .form-label {
-    display: block; margin: 0 0 9px; color: var(--text-main); font-size: .84rem; font-weight: 800;
-}
-#create-channel-page .form-input,
-#create-channel-page .form-select,
-#create-channel-page .form-textarea,
-#edit-channel-page .form-input,
-#edit-channel-page .form-select,
-#edit-channel-page .form-textarea {
-    width: 100%; border: 1px solid var(--glass-border); background: var(--surface);
-    color: var(--text-main); border-radius: 14px; padding: 14px 15px;
-    font-size: .92rem; font-weight: 600; outline: none; box-shadow: none;
-    transition: border-color .2s, box-shadow .2s;
-}
-#create-channel-page .form-input:focus,
-#create-channel-page .form-select:focus,
-#create-channel-page .form-textarea:focus,
-#edit-channel-page .form-input:focus,
-#edit-channel-page .form-select:focus,
-#edit-channel-page .form-textarea:focus {
-    border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow);
-}
-#create-channel-page .form-textarea,
-#edit-channel-page .form-textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
-#create-channel-page .input-counter,
-#edit-channel-page .input-counter { margin-top: 6px; text-align: right; color: var(--text-muted); font-size: .7rem; font-weight: 700; }
-#create-channel-page .handle-input-wrap,
-#edit-channel-page .handle-input-wrap { position: relative; display: flex; align-items: center; }
-#create-channel-page .handle-prefix,
-#edit-channel-page .handle-prefix {
-    position: absolute; left: 15px; z-index: 2; color: var(--text-muted); font-weight: 800;
-}
-#create-channel-page .handle-input-wrap .form-input,
-#edit-channel-page .handle-input-wrap .form-input { padding-left: 32px; }
-#create-channel-page .handle-feedback-txt,
-#edit-channel-page .handle-feedback-txt { min-height: 18px; margin-top: 6px; font-size: .72rem; font-weight: 700; }
-#create-channel-page .btn-primary-action,
-#edit-channel-page .btn-primary-action {
-    min-height: 54px; border: 0; border-radius: 16px; background: var(--primary); color: #fff;
-    font-size: .96rem; font-weight: 800; box-shadow: 0 8px 20px var(--primary-glow); cursor: pointer;
-}
-#create-channel-page .btn-primary-action:disabled,
-#edit-channel-page .btn-primary-action:disabled { opacity: .45; box-shadow: none; cursor: not-allowed; }
-
-/* Edit Channel */
-#edit-channel-page .page-content { padding-bottom: 50px !important; }
-#edit-channel-page .edit-banner-section { height: 170px; }
-#edit-channel-page .edit-avatar-section { margin-top: -52px; margin-bottom: 4px; }
-#edit-channel-page .edit-avatar-section .avatar-preview-container {
-    width: 104px; height: 104px; border-width: 4px;
-}
-#edit-channel-page .edit-form-container { padding: 22px 20px 44px !important; }
-#edit-channel-page .avatar-overlay-camera { opacity: .9; }
-
-/* FINAL: View Channel Feels grid — locked to 3 columns / 9:16 and no page-side scrolling */
-#view-channel-page,
-#view-channel-page .page-content,
-#view-channel-page .channel-tab-content,
-#view-channel-page #channel-content-feels,
-#view-channel-page #channel-feels-grid {
+/* =======================================================
+   FEELS TAB: 3-COLUMN GRID & 9:16 ASPECT RATIO CARD BOX
+======================================================= */
+.feels-tab-view {
+    padding: 6px;
     width: 100%;
-    max-width: 100%;
-    min-width: 0;
     box-sizing: border-box;
-    overflow-x: hidden !important;
-}
-#view-channel-page #channel-feels-grid {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    grid-auto-flow: row;
-    gap: 8px !important;
-    align-items: start;
-    justify-items: stretch;
-    padding: 0 !important;
-}
-#view-channel-page #channel-feels-grid > .feels-grid-card {
-    display: block !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    height: auto !important;
-    aspect-ratio: 9 / 16 !important;
-    box-sizing: border-box !important;
-    overflow: hidden !important;
-    position: relative;
-}
-#view-channel-page #channel-feels-grid > .feels-grid-card > img {
-    display: block !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    max-width: none !important;
-    object-fit: cover !important;
-}
-#view-channel-page #channel-feels-grid > .fl-live-upload-card {
-    grid-column: 1 / -1 !important;
-    width: 100% !important;
-    max-width: 100% !important;
 }
 
-/* FINAL HARD FIX: Channel Feels cards for Android WebView. */
-html, body { overflow-x: hidden !important; max-width: 100vw !important; }
-#view-channel-page, #view-channel-page * { box-sizing: border-box; }
-#view-channel-page .channel-tab-content { width: 100% !important; max-width: 100% !important; min-width: 0 !important; overflow-x: hidden !important; }
-#view-channel-page #channel-content-feels { padding: 8px 16px 24px !important; overflow-x: hidden !important; }
-#view-channel-page #channel-feels-grid {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    grid-auto-flow: row !important;
-    grid-auto-columns: auto !important;
-    column-gap: 8px !important;
-    row-gap: 8px !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow-x: hidden !important;
-    overflow-y: visible !important;
-    justify-items: stretch !important;
-    align-items: start !important;
+.feels-grid-container {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+    box-sizing: border-box;
 }
-#view-channel-page #channel-feels-grid > .feels-grid-card {
-    grid-column: auto !important;
-    grid-row: auto !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    aspect-ratio: 9 / 16 !important;
-    overflow: hidden !important;
-    position: relative !important;
-    box-sizing: border-box !important;
+
+.feels-card-box {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 9 / 16;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #1a1a1a;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+    transition: transform 0.15s ease, filter 0.15s ease;
 }
-#view-channel-page #channel-feels-grid > .feels-grid-card img {
-    display: block !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    max-width: none !important;
-    object-fit: cover !important;
+
+.feels-card-box:active {
+    transform: scale(0.96);
+    filter: brightness(0.9);
 }
-#view-channel-page #channel-feels-grid > .fl-live-upload-card {
-    grid-column: 1 / -1 !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
+
+.feels-thumbnail {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    z-index: 1;
 }
-</style></head><body>
-<div class="tab-content" id="you-tab">
-<div class="profile-card-you">
-<div class="profile-card-main">
-<div class="profile-avatar-large" id="you-avatar-large">U</div>
-<div class="profile-info-you">
-<h3 id="you-fullname-txt">Loading Session...</h3>
-<p id="you-email-txt">...</p>
-</div>
-</div>
-<div class="channel-action-box" id="channel-action-box"></div>
-</div>
-<div class="you-menu premium-service-menu">
-<div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('upgrade-pro')">
-<div class="premium-icon-box icon-pro"><i class="fas fa-crown"></i></div>
-<span>Upgrade Pro</span>
-<i class="fas fa-chevron-right arrow-r"></i>
-</div>
-<div class="you-menu-item premium-service-item" onclick="handleFlayVerifiedBadgeFromYou()">
-<div class="premium-icon-box icon-verified">
-<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M11.96 1.171a2.316 2.316 0 0 0-1.63.784L8.76 3.65 6.64 3.96a2.315 2.315 0 0 0-1.928 1.928L4.4 8.01 2.705 9.576a2.316 2.316 0 0 0 0 3.328l1.696 1.566.312 2.122a2.315 2.315 0 0 0 1.928 1.928l2.122.312 1.57 1.696c.866.935 2.392.935 3.258 0l1.57-1.696 2.122-.312a2.315 2.315 0 0 0 1.928-1.928l.312-2.122 1.696-1.566a2.316 2.316 0 0 0 0-3.328L19.6 8.01l-.312-2.122a2.315 2.315 0 0 0-1.928-1.928L15.24 3.65l-1.57-1.695a2.316 2.316 0 0 0-1.63-.784z" fill="#3390ec"></path>
-<path d="M10.15 14.88 7.37 12.1l1.41-1.41 1.37 1.37 4.96-4.96 1.41 1.42-6.37 6.36z" fill="#ffffff"></path>
-</svg>
-</div>
-<span>Flay Verified Badge</span>
-<i class="fas fa-chevron-right arrow-r"></i>
-</div>
-<div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('flay-ads')">
-<div class="premium-icon-box icon-ads"><i class="fas fa-rectangle-ad"></i></div>
-<span>Flay Ads</span>
-<i class="fas fa-chevron-right arrow-r"></i>
-</div>
-<div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('boost-content')">
-<div class="premium-icon-box icon-boost"><i class="fas fa-rocket"></i></div>
-<span>Boost Content</span>
-<i class="fas fa-chevron-right arrow-r"></i>
-</div>
-<div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('flay-pay')">
-<div class="premium-icon-box icon-pay"><i class="fas fa-wallet"></i></div>
-<span>Flay Pay</span>
-<i class="fas fa-chevron-right arrow-r"></i>
-</div>
-</div>
-</div>
-<div class="fullscreen-page" id="create-channel-page">
-<header class="appbar">
-<button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
-<h3 class="appbar-title centered-page-title">Enter Your Information</h3>
-</header>
-<div class="page-content" style="padding-bottom: 40px;">
-<div class="avatar-selector-wrap">
-<div class="avatar-preview-container" onclick="triggerAvatarSelection('create')">
-<img id="create-avatar-img" src="" style="display:none; width: 100%; height: 100%; object-fit: cover;"/>
-<div class="avatar-placeholder" id="create-avatar-placeholder"><i class="fas fa-camera"></i></div>
-</div>
-<p class="selector-help">Upload profile picture</p>
-<input accept="image/*" id="create-avatar-input" onchange="handleChannelAvatarSelect(event, 'create')" style="display:none;" type="file"/>
-</div>
-<div class="form-group">
-<label class="form-label">Channel Name</label>
-<input class="form-input" id="create-channel-name" maxlength="100" oninput="document.getElementById('create-name-counter').innerText = this.value.length" placeholder="Enter channel name..." required="" type="text"/>
-<div class="input-counter"><span id="create-name-counter">0</span>/100</div>
-</div>
-<div class="form-group">
-<label class="form-label">Handle</label>
-<div class="handle-input-wrap">
-<span class="handle-prefix">@</span>
-<input class="form-input" id="create-channel-handle" onkeyup="checkHandleAvailability(this.value, 'create-handle-feedback', 'btn-submit-create')" placeholder="yourhandle" required="" type="text"/>
-</div>
-<div class="handle-feedback-txt" id="create-handle-feedback"></div>
-</div>
-<div class="form-group">
-<label class="form-label">Category</label>
-<select class="form-select" id="create-channel-category">
-<option value="Entertainment">Entertainment</option>
-<option value="Gaming">Gaming</option>
-<option value="Education">Education</option>
-<option value="Music">Music</option>
-<option value="Comedy">Comedy</option>
-<option value="Sports">Sports</option>
-<option value="News">News</option>
-<option value="Technology">Technology</option>
-<option value="Travel">Travel</option>
-<option value="Lifestyle">Lifestyle</option>
-<option value="Food">Food</option>
-<option value="Science">Science</option>
-<option value="Pets">Pets</option>
-<option value="Movies">Movies</option>
-<option value="Animation">Animation</option>
-<option value="Kids">Kids</option>
-<option value="Fashion">Fashion</option>
-<option value="Business">Business</option>
-<option value="Health">Health</option>
-<option value="Beauty">Beauty</option>
-<option value="Vlogs">Vlogs</option>
-<option value="Others">Others</option>
-</select>
-</div>
-<button class="btn-primary-action" id="btn-submit-create" onclick="submitCreateChannel()">Create Channel</button>
-</div>
-</div>
-<div class="fullscreen-page" id="view-channel-page" style="z-index: 1510;">
-<header class="appbar">
-<button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
-<h3 class="appbar-title centered-page-title" id="view-appbar-title">Your Channel</h3>
-</header>
-<div class="page-content" style="padding: 0;">
-<div class="channel-banner-container">
-<img class="channel-banner-img" id="view-channel-banner" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&amp;w=2000&amp;auto=format&amp;fit=crop"/>
-<div class="banner-gradient"></div>
-</div>
-<div class="channel-profile-section">
-<div class="profile-row-main">
-<img class="view-avatar-img" id="view-channel-avatar" src=""/>
-<div class="channel-main-meta">
-<h2 id="view-channel-name-txt">Channel Name</h2>
-<p id="view-channel-handle-txt">@handle</p>
-<p class="channel-stats-txt">
-<span id="view-sub-count">0 Subscribers</span>
-<span class="dot-separator">•</span>
-<span id="view-vid-count">0 Videos</span>
-</p>
-</div>
-</div>
-<div class="channel-description-box">
-<p class="channel-desc-text line-clamp" id="view-channel-desc">No description provided yet.</p>
-<button class="btn-more-desc" id="view-channel-desc-btn" onclick="toggleFullDescription()">More <i class="fas fa-chevron-down"></i></button>
-</div>
-<div class="channel-action-row">
-<button class="btn-channel-action" onclick="openAnalyticsPage()"><i class="fas fa-chart-bar"></i> Analytics</button>
-<button class="btn-channel-action btn-edit" onclick="openEditChannelPage()"><i class="fas fa-edit"></i> Edit Channel</button>
-</div>
-</div>
-<div class="channel-tabs">
-<div class="channel-tab-item active" id="tab-channel-videos" onclick="switchChannelTab('videos')">Videos</div>
-<div class="channel-tab-item" id="tab-channel-feels" onclick="switchChannelTab('feels')">Feels</div>
-<div class="channel-tab-item" id="tab-channel-posts" onclick="switchChannelTab('posts')">Posts</div>
-</div>
-<div class="channel-tab-content active" id="channel-content-videos">
-<div class="channel-videos-container" id="channel-videos-grid"></div>
-</div>
-<div class="channel-tab-content" id="channel-content-feels">
-<div class="channel-feels-container" id="channel-feels-grid"></div>
-</div>
-<div class="channel-tab-content" id="channel-content-posts">
-<div class="channel-posts-container" id="channel-posts-feed"></div>
-</div>
-</div>
-</div>
-<div class="fullscreen-page" id="analytics-page" style="z-index: 1520;">
-<header class="appbar">
-<button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
-<h3 class="appbar-title centered-page-title">Analytics</h3>
-</header>
-<div class="page-content" style="padding-bottom: 40px;">
-<div class="analytics-overview-card">
-<div class="analytics-header-row">
-<img class="analytics-avatar" id="analytics-channel-avatar" src=""/>
-<div>
-<h3 id="analytics-channel-name">Channel Name</h3>
-<p id="analytics-channel-subscribers">0 Subscribers</p>
-</div>
-</div>
-<div class="revenue-box" style="display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
-<div style="display: flex; flex-direction: column; gap: 4px;">
-<span class="revenue-label">ESTIMATED REVENUE</span>
-<span class="revenue-val" id="estimated-revenue-val">$0.00 USDT</span>
-</div>
-<button id="btn-view-monetization" onclick="openMonetizationPage()" style="background: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                        View <i class="fas fa-chevron-right" style="font-size: 0.75rem;"></i>
-</button>
-</div>
-</div>
-<h4 class="section-title">Performance (Last 28 Days)</h4>
-<div class="analytics-grid">
-<div class="analytics-card">
-<span class="stat-lbl"><i class="fas fa-eye"></i> Views</span>
-<h2 class="stat-num" id="anal-views">0</h2>
-<span class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 100% Growth</span>
-</div>
-<div class="analytics-card">
-<span class="stat-lbl"><i class="fas fa-users"></i> Subscribers</span>
-<h2 class="stat-num" id="anal-subs">0</h2>
-<span class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 100% Growth</span>
-</div>
-<div class="analytics-card">
-<span class="stat-lbl"><i class="fas fa-clock"></i> Watch Time (min)</span>
-<h2 class="stat-num" id="anal-watchtime">0.0</h2>
-<span class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 100% Growth</span>
-</div>
-<div class="analytics-card">
-<span class="stat-lbl"><i class="fas fa-thumbs-up"></i> Likes</span>
-<h2 class="stat-num" id="anal-likes">0</h2>
-<span class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 100% Growth</span>
-</div>
-<div class="analytics-card">
-<span class="stat-lbl"><i class="fas fa-comments"></i> Comments</span>
-<h2 class="stat-num" id="anal-comments">0</h2>
-<span class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 100% Growth</span>
-</div>
-<div class="analytics-card">
-<span class="stat-lbl"><i class="fas fa-video"></i> Created Items</span>
-<h2 class="stat-num" id="anal-content">0</h2>
-<span class="stat-sub-text">Videos, Feels, Posts</span>
-</div>
-</div>
-<h4 class="section-title">Monthly Growth Channel</h4>
-<div class="chart-container-mock">
-<div class="chart-bars">
-<div class="chart-bar" data-lbl="Jan" style="height: 15%;"><span class="bar-val">15</span></div>
-<div class="chart-bar" data-lbl="Feb" style="height: 30%;"><span class="bar-val">30</span></div>
-<div class="chart-bar" data-lbl="Mar" style="height: 45%;"><span class="bar-val">45</span></div>
-<div class="chart-bar" data-lbl="Apr" style="height: 60%;"><span class="bar-val">60</span></div>
-<div class="chart-bar" data-lbl="May" style="height: 85%;"><span class="bar-val">85</span></div>
-<div class="chart-bar" data-lbl="Jun" style="height: 100%;"><span class="bar-val">100</span></div>
-</div>
-<p class="chart-footer-label">Metrics distributed based on channel totals</p>
-</div>
-</div>
-</div>
-<div class="fullscreen-page" id="edit-channel-page" style="z-index: 1520;">
-<header class="appbar">
-<button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
-<h3 class="appbar-title centered-page-title">Edit Channel</h3>
-</header>
-<div class="page-content" style="padding: 0; padding-bottom: 40px;">
-<div class="edit-banner-section" onclick="triggerBannerSelection()">
-<img class="edit-banner-preview" id="edit-channel-banner-img" src=""/>
-<div class="edit-banner-overlay">
-<i class="fas fa-camera"></i>
-<span>Change Banner</span>
-</div>
-<input accept="image/*" id="edit-banner-input" onchange="handleChannelBannerSelect(event)" style="display:none;" type="file"/>
-</div>
-<div class="edit-avatar-section">
-<div class="avatar-preview-container" onclick="triggerAvatarSelection('edit')">
-<img id="edit-avatar-img" src=""/>
-<div class="avatar-overlay-camera"><i class="fas fa-camera"></i></div>
-</div>
-<input accept="image/*" id="edit-avatar-input" onchange="handleChannelAvatarSelect(event, 'edit')" style="display:none;" type="file"/>
-</div>
-<div class="edit-form-container" style="padding: 20px;">
-<div class="form-group" style="margin: 0 0 20px 0;">
-<label class="form-label">Channel Name</label>
-<input class="form-input" id="edit-channel-name" maxlength="100" placeholder="Enter channel name..." required="" type="text"/>
-</div>
-<div class="form-group" style="margin: 0 0 20px 0;">
-<label class="form-label">Handle</label>
-<div class="handle-input-wrap">
-<span class="handle-prefix">@</span>
-<input class="form-input" id="edit-channel-handle" onkeyup="checkHandleAvailability(this.value, 'edit-handle-feedback', 'btn-save-edit', currentChannelData ? currentChannelData.handle : '')" placeholder="yourhandle" required="" type="text"/>
-</div>
-<div class="handle-feedback-txt" id="edit-handle-feedback"></div>
-</div>
-<div class="form-group" style="margin: 0 0 20px 0;">
-<label class="form-label">Description</label>
-<textarea class="form-textarea" id="edit-channel-desc" maxlength="500" oninput="updateDescCounter(this.value)" placeholder="Add description..."></textarea>
-<div class="input-counter"><span id="edit-desc-counter">0</span>/500 characters</div>
-</div>
-<div class="form-group" style="margin: 0 0 20px 0;">
-<label class="form-label">Category</label>
-<select class="form-select" id="edit-channel-category">
-<option value="Entertainment">Entertainment</option>
-<option value="Gaming">Gaming</option>
-<option value="Education">Education</option>
-<option value="Music">Music</option>
-<option value="Comedy">Comedy</option>
-<option value="Sports">Sports</option>
-<option value="News">News</option>
-<option value="Technology">Technology</option>
-<option value="Travel">Travel</option>
-<option value="Lifestyle">Lifestyle</option>
-<option value="Food">Food</option>
-<option value="Science">Science</option>
-<option value="Pets">Pets</option>
-<option value="Movies">Movies</option>
-<option value="Animation">Animation</option>
-<option value="Kids">Kids</option>
-<option value="Fashion">Fashion</option>
-<option value="Business">Business</option>
-<option value="Health">Health</option>
-<option value="Beauty">Beauty</option>
-<option value="Vlogs">Vlogs</option>
-<option value="Others">Others</option>
-</select>
-</div>
-<button class="btn-primary-action" id="btn-save-edit" onclick="saveChannelEdits()" style="margin: 30px 0 0 0; width: 100%;">Save Changes</button>
-</div>
-</div>
-</div>
-<div class="fullscreen-page" id="monetization-page" style="z-index: 1530; background: var(--bg-color);">
-<header class="appbar" style="height: 56px; background: var(--surface); display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; justify-content: space-between;">
-<button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
-<h3 class="appbar-title" style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); position: absolute; left: 50%; transform: translateX(-50%); margin: 0; font-family: 'Plus Jakarta Sans', sans-serif;">Monetization</h3>
-<div style="width: 40px;"></div>
-</header>
-<div class="page-content" style="padding: 24px 20px 60px 20px; overflow-y: auto;">
-<div class="monetization-header" style="margin-bottom: 28px;">
-<h1 style="font-size: 34px; font-weight: 900; line-height: 1.2; color: var(--text-main); margin: 0 0 16px 0; font-family: 'Plus Jakarta Sans', sans-serif;">Become a Flaynity Partner</h1>
-<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
-<span style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted);">Next milestone</span>
-<div style="width: 24px; height: 24px; border-radius: 50%; background: var(--border-color); display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
-<i class="fas fa-lock" style="font-size: 0.75rem;"></i>
-</div>
-</div>
-<h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0;">Flayt your earning journey</h3>
-<p style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.5; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Earn income by showing ads and connecting with your fans, and gain access to creator tools and support.</p>
-</div>
-<div class="slider-outer-container">
-<div id="premium-features-slider">
-<div class="slider-card">
-<div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-<svg fill="none" height="80" viewbox="0 0 80 80" width="80" xmlns="http://www.w3.org/2000/svg">
-<rect fill="var(--primary-glow)" height="80" rx="20" width="80"></rect>
-<rect fill="none" height="28" rx="6" stroke="var(--primary)" stroke-width="3" width="44" x="18" y="22"></rect>
-<path d="M36 31L47 36L36 41V31Z" fill="var(--primary)"></path>
-<path d="M28 58H52" stroke="var(--primary)" stroke-linecap="round" stroke-width="3"></path>
-<path d="M40 50V58" stroke="var(--primary)" stroke-width="3"></path>
-</svg>
-</div>
-<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Watch Page Ads</h4>
-<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Earn from ads and premium subscribers on long videos.</p>
-</div>
-<div class="slider-card">
-<div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-<svg fill="none" height="80" viewbox="0 0 80 80" width="80" xmlns="http://www.w3.org/2000/svg">
-<rect fill="rgba(16, 185, 129, 0.1)" height="80" rx="20" width="80"></rect>
-<rect fill="none" height="48" rx="8" stroke="#10B981" stroke-width="3" width="28" x="26" y="16"></rect>
-<path d="M40 28L43 33H37L40 28Z" fill="#10B981"></path>
-<path d="M40 40V50M36 45H44" stroke="#10B981" stroke-linecap="round" stroke-width="3"></path>
-</svg>
-</div>
-<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Feels Feed Ads</h4>
-<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Earn from ads shown in the Feels Feed.</p>
-</div>
-<div class="slider-card">
-<div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-<svg fill="none" height="80" viewbox="0 0 80 80" width="80" xmlns="http://www.w3.org/2000/svg">
-<rect fill="rgba(59, 130, 246, 0.1)" height="80" rx="20" width="80"></rect>
-<path d="M24 50L28 30L40 38L52 30L56 50H24Z" fill="#3B82F6" stroke="#3B82F6" stroke-linejoin="round" stroke-width="2"></path>
-<circle cx="28" cy="26" fill="#3B82F6" r="3"></circle>
-<circle cx="40" cy="34" fill="#3B82F6" r="3"></circle>
-<circle cx="52" cy="26" fill="#3B82F6" r="3"></circle>
-</svg>
-</div>
-<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Memberships</h4>
-<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Create exclusive memberships for your biggest supporters.</p>
-</div>
-<div class="slider-card">
-<div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-<svg fill="none" height="80" viewbox="0 0 80 80" width="80" xmlns="http://www.w3.org/2000/svg">
-<rect fill="rgba(245, 158, 11, 0.1)" height="80" rx="20" width="80"></rect>
-<path d="M40 54L36.5 50.8C24.2 39.7 16 32.2 16 23C16 15.5 21.8 9.7 29.3 9.7C33.5 9.7 37.5 11.7 40 14.8C42.5 11.7 46.5 9.7 50.7 9.7C58.2 9.7 64 15.5 64 23C64 32.2 55.8 39.7 43.5 50.8L40 54Z" fill="#F59E0B"></path>
-<path d="M40 22L42.5 27L48 27.8L44 31.7L45 37L40 34.5L35 37L36 31.7L32 27.8L37.5 27L40 22Z" fill="#FFFFFF"></path>
-</svg>
-</div>
-<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Supers</h4>
-<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Receive fan support through one-time purchases.</p>
-</div>
-<div class="slider-card">
-<div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-<svg fill="none" height="80" viewbox="0 0 80 80" width="80" xmlns="http://www.w3.org/2000/svg">
-<rect fill="rgba(236, 72, 153, 0.1)" height="80" rx="20" width="80"></rect>
-<path d="M26 28H54L58 56H22L26 28Z" fill="#D80E45" stroke="#D80E45" stroke-linejoin="round" stroke-width="2"></path>
-<path d="M34 28V22C34 18.7 36.7 16 40 16C43.3 16 46 18.7 46 22V28" stroke="#D80E45" stroke-linecap="round" stroke-width="3"></path>
-</svg>
-</div>
-<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Shopping</h4>
-<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Recommend products and earn from shopping.</p>
-</div>
-</div>
-<div class="slider-dots">
-<span class="slider-dot active"></span>
-<span class="slider-dot"></span>
-<span class="slider-dot"></span>
-<span class="slider-dot"></span>
-<span class="slider-dot"></span>
-</div>
-</div>
-<div class="eligibility-section" style="margin-bottom: 32px;">
-<h2 style="font-size: 1.6rem; font-weight: 850; color: var(--text-main); margin: 0 0 16px 0;">Eligibility</h2>
-<div style="background: var(--border-color); border-radius: 20px; padding: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
-<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px; font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">
-<i class="fas fa-lock" style="color: var(--primary);"></i>
-<span>Showing data as of <span id="eligibility-date-val">July 16, 2026</span></span>
-</div>
-<div style="margin-bottom: 18px;">
-<div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem; margin-bottom: 6px;">
-<span style="color: var(--text-main);">Subscribers</span>
-<span id="req-subs-txt" style="color: var(--text-muted);">0 / 500</span>
-</div>
-<div style="width: 100%; height: 10px; background: #CBD5E1; border-radius: 5px; overflow: hidden;">
-<div id="req-subs-bar" style="width: 0%; height: 100%; background: var(--primary); border-radius: 5px; transition: width 0.5s ease-out;"></div>
-</div>
-</div>
-<div style="margin-bottom: 18px;">
-<div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem; margin-bottom: 4px;">
-<span style="color: var(--text-main);">Valid Public Watch Hours</span>
-<span id="req-hours-txt" style="color: var(--text-muted);">0 / 50 Hours</span>
-</div>
-<div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px;">Last 365 Days</div>
-<div style="width: 100%; height: 10px; background: #CBD5E1; border-radius: 5px; overflow: hidden;">
-<div id="req-hours-bar" style="width: 0%; height: 100%; background: var(--primary); border-radius: 5px; transition: width 0.5s ease-out;"></div>
-</div>
-</div>
-<div style="margin-bottom: 8px;">
-<div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem; margin-bottom: 4px;">
-<span style="color: var(--text-main);">Public Views (Feels &amp; Videos)</span>
-<span id="req-views-txt" style="color: var(--text-muted);">0 / 10K</span>
-</div>
-<div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px;">Last 365 Days</div>
-<div style="width: 100%; height: 10px; background: #CBD5E1; border-radius: 5px; overflow: hidden;">
-<div id="req-views-bar" style="width: 0%; height: 100%; background: var(--primary); border-radius: 5px; transition: width 0.5s ease-out;"></div>
-</div>
-</div>
-</div>
-<p style="text-align: center; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-top: 16px; padding: 0 10px;">Some monetization features may have additional eligibility requirements.</p>
-</div>
-<div class="next-steps-section" style="margin-bottom: 24px;">
-<h2 style="font-size: 1.6rem; font-weight: 850; color: var(--text-main); margin: 0 0 16px 0;">Next Steps</h2>
-<button class="btn-primary-action" disabled="" id="btn-monetization-apply" onclick="handleMonetizationApply()" style="margin: 0; width: 100%; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 1.05rem;">
-                    Apply Now
+
+.feels-card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.3) 45%, transparent 70%);
+    z-index: 2;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 8px 6px;
+    box-sizing: border-box;
+}
+
+.feels-title-text {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+.feels-views-count {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.88);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.feels-views-count i {
+    font-size: 0.65rem;
+}
+
+/* Floating Studio Launch Button on Channel Page */
+.floating-create-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    background: var(--primary);
+    color: white;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 6px 20px var(--primary-glow);
+    border: none;
+    cursor: pointer;
+    z-index: 99;
+    transition: transform 0.2s;
+}
+.floating-create-btn:active {
+    transform: scale(0.92);
+}
+</style>
+</head>
+<body>
+
+<input accept="video/mp4, video/quicktime, video/x-matroska, video/webm" id="video-file-input" onchange="handlePremiumFileSelected(event, 'video-long')" style="display:none;" type="file"/>
+<input accept="video/mp4, video/quicktime, video/x-matroska, video/webm" id="short-file-input" onchange="handlePremiumFileSelected(event, 'video-short')" style="display:none;" type="file"/>
+<input accept="image/jpeg, image/png, image/webp, image/gif" id="post-image-input" multiple="" onchange="handlePremiumImagesSelected(event)" style="display:none;" type="file"/>
+<input accept="image/jpeg, image/png, image/webp" id="custom-thumb-input" onchange="handleCustomThumbSelected(event)" style="display:none;" type="file"/>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━
+   1. PREMIUM BLACK UPLOAD STUDIO
+━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="premium-upload-studio" class="fullscreen-page studio-page" style="display: none; position: fixed; inset: 0;">
+    
+    <!-- Top Close Button (Common) -->
+    <div style="position: absolute; top: var(--studio-safe-top); left: 16px; z-index: 110;">
+        <button id="btn-close-studio" onclick="closePremiumUploadStudio()" style="background: rgba(0,0,0,0.5); color: white; width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer; backdrop-filter: blur(4px);"><i class="fas fa-times" style="font-size: 1.2rem;"></i></button>
+    </div>
+
+    <!-- VIDEO UPLOAD BOX (Center) -->
+    <div id="upload-video-view" class="preview-wrapper-center" style="display: none;">
+        <div style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
+            <i class="fas fa-upload" style="font-size: 3.5rem; color: rgba(255,255,255,0.4); margin-bottom: 24px;"></i>
+            <p style="color: #ccc; font-size: 0.95rem; font-weight: 600; margin-bottom: 30px;">Select a Long Video</p>
+            <button class="studio-btn" onclick="document.getElementById('video-file-input').click()">Browse Device</button>
+        </div>
+    </div>
+
+    <!-- SHORT CAMERA BOX (Top Aligned) -->
+    <div id="upload-short-view" class="preview-wrapper-top" style="display: none;">
+        <video id="short-camera-preview" class="camera-media" autoplay muted playsinline></video>
+        
+        <div id="big-countdown">3</div>
+
+        <div style="position: absolute; top: calc(var(--studio-safe-top) + 16px); right: 16px; left: 16px; display: flex; justify-content: center; pointer-events: none; z-index: 110;">
+            <div id="recording-timer" style="background: rgba(255,46,85,0.9); color: white; padding: 6px 14px; border-radius: 8px; font-weight: 800; font-size: 1rem; display: none; pointer-events: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">00:00</div>
+        </div>
+
+        <div id="short-right-controls" style="position: absolute; right: 16px; top: calc(var(--studio-safe-top) + 60px); display: flex; flex-direction: column; align-items: center; z-index: 110;">
+            <button onclick="toggleShortCamera()" class="camera-ctrl-btn"><i class="fas fa-sync-alt"></i></button>
+            <button onclick="openStudioPopup('speed-popup')" class="camera-ctrl-btn">
+                <span id="cam-speed-val" style="font-size:0.85rem; font-weight:800;">1x</span>
+            </button>
+            <button onclick="openStudioPopup('timer-popup')" class="camera-ctrl-btn"><i class="fas fa-stopwatch"></i></button>
+            <button onclick="openStudioPopup('duration-popup')" class="camera-ctrl-btn">
+                <span id="cam-duration-val" style="font-size:0.85rem; font-weight:800;">15s</span>
+            </button>
+            <button onclick="toggleShortFlash()" id="btn-cam-flash" class="camera-ctrl-btn"><i class="fas fa-bolt"></i></button>
+        </div>
+
+        <!-- Bottom Record Controls (Shifted Upwards) -->
+        <div id="camera-bottom-bar" style="position: absolute; bottom: 130px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; z-index: 110;">
+            <button id="btn-cam-gallery" onclick="document.getElementById('short-file-input').click()" style="position: absolute; left: 30px; background: rgba(0,0,0,0.5); color: white; border: none; width: 48px; height: 48px; border-radius: 12px; font-size: 1.2rem; cursor: pointer; backdrop-filter: blur(4px);"><i class="fas fa-image"></i></button>
+            
+            <!-- Robust Tap and Hold Record Button -->
+            <div id="record-btn-outer" style="width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; display: flex; align-items: center; justify-content: center; cursor: pointer; touch-action: none; background: rgba(0,0,0,0.2);">
+                <div id="record-btn-inner" style="width: 66px; height: 66px; border-radius: 50%; background: #FF2E55; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); pointer-events: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POST SELECTOR VIEW (Center) -->
+    <div id="upload-post-view" class="preview-wrapper-center" style="display: none;">
+        <div style="text-align: center; width: 100%;">
+            <i class="fas fa-pen-square" style="font-size: 3.5rem; color: rgba(255,255,255,0.4); margin-bottom: 24px;"></i>
+            <p style="color: #ccc; font-size: 0.95rem; font-weight: 600; margin-bottom: 30px;">Create a Community Post</p>
+            <button class="studio-btn" onclick="document.getElementById('post-image-input').click()"><i class="fas fa-image"></i> Pick Image</button>
+        </div>
+    </div>
+
+    <!-- Mode Slider - Auto Centered -->
+    <div class="mode-slider-wrap" id="upload-mode-slider-wrap">
+        <div id="mode-slider" class="mode-slider">
+            <div class="mode-item" data-mode="video">Video</div>
+            <div class="mode-item active" data-mode="short">Short</div>
+            <div class="mode-item" data-mode="post">Post</div>
+        </div>
+    </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━
+   2. VIDEO PREVIEW PAGE
+━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="video-preview-page" class="fullscreen-page studio-page" style="display: none; position: fixed; inset: 0;">
+    <div class="topbar-nav">
+        <button onclick="closeAndPausePreview()" style="background: rgba(0,0,0,0.5); color: white; border: none; font-size: 1.4rem; cursor: pointer; width: 44px; height: 44px; border-radius: 50%; backdrop-filter: blur(4px);"><i class="fas fa-arrow-left"></i></button>
+    </div>
+    
+    <div class="preview-wrapper-center">
+        <video id="video-preview-el" class="full-width-media" playsinline loop onclick="togglePremiumPreviewPlay('video-preview-el', 'vp-play-icon')"></video>
+        <div class="preview-play-icon" id="vp-play-icon"><i class="fas fa-play"></i></div>
+    </div>
+
+    <button class="floating-next-btn" onclick="gotoPremiumUploadDetails('video')">Next</button>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━
+   3. SHORT PREVIEW PAGE (WITH TIMELINE)
+━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="short-preview-page" class="fullscreen-page studio-page" style="display: none; position: fixed; inset: 0;">
+    <div class="topbar-nav">
+        <button onclick="closeAndPausePreview()" style="background: rgba(0,0,0,0.5); color: white; border: none; font-size: 1.4rem; cursor: pointer; width: 44px; height: 44px; border-radius: 50%; backdrop-filter: blur(4px);"><i class="fas fa-arrow-left"></i></button>
+        <button class="camera-ctrl-btn" id="short-preview-download-btn" style="margin:0; width: 44px; height: 44px;" onclick="triggerShortDownloadLocal()"><i class="fas fa-download"></i></button>
+    </div>
+
+    <div class="preview-wrapper-center">
+        <video id="short-preview-el" class="full-width-media" playsinline loop onclick="togglePremiumPreviewPlay('short-preview-el', 'sp-play-icon')"></video>
+        <div class="preview-play-icon" id="sp-play-icon"><i class="fas fa-play"></i></div>
+    </div>
+
+    <!-- Short Trimmer UI -->
+    <div class="trimmer-time-display" id="sp-time-display">00:00 / 00:00</div>
+    <div class="trimmer-wrap" id="sp-trimmer-container">
+        <div class="trimmer-frames"></div>
+        <div class="trimmer-handle trim-start" id="sp-trim-start"></div>
+        <div class="trimmer-handle trim-end" id="sp-trim-end"></div>
+        <div class="trim-playhead" id="sp-trim-playhead"></div>
+    </div>
+
+    <button class="floating-next-btn" style="bottom: 30px;" onclick="gotoPremiumUploadDetails('short')">Next</button>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━
+   4. POST PREVIEW PAGE
+━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="post-preview-page" class="fullscreen-page studio-page" style="display: none; position: fixed; inset: 0;">
+    <div class="topbar-nav">
+        <button onclick="closeAndPausePreview()" style="background: rgba(0,0,0,0.5); color: white; border: none; font-size: 1.4rem; cursor: pointer; width: 44px; height: 44px; border-radius: 50%; backdrop-filter: blur(4px);"><i class="fas fa-arrow-left"></i></button>
+    </div>
+    <div class="preview-wrapper-center">
+        <img id="post-preview-img" class="full-width-media" src="" />
+    </div>
+    <button class="floating-next-btn" onclick="gotoPremiumUploadDetails('post')">Next</button>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━
+   5. VIDEO DETAILS PAGE
+━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="video-details-page" class="fullscreen-page studio-page" style="display: none; background: var(--bg-color); position: fixed; inset: 0; z-index: 10001;">
+    <div class="topbar-nav solid">
+        <button onclick="AppNavigation.pop()" style="background: none; color: var(--text-main); border: none; font-size: 1.4rem; cursor: pointer;"><i class="fas fa-arrow-left"></i></button>
+        <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--text-main);">Add Details</h3>
+        <div style="width: 24px;"></div>
+    </div>
+    <div style="flex: 1; overflow-y: auto; padding: 20px;">
+        <div style="width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; position: relative; overflow: hidden; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <img id="vd-thumb" src="" style="width: 100%; height: 100%; object-fit: cover;" />
+            <button onclick="document.getElementById('custom-thumb-input').click()" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 8px 16px; border-radius: 12px; border: none; font-size: 0.85rem; font-weight: 800; cursor: pointer; backdrop-filter: blur(4px);"><i class="fas fa-image"></i> Custom Thumbnail</button>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Title (required)</label>
+            <input type="text" id="vd-title" class="form-input" placeholder="Create a title" maxlength="100" oninput="updatePremiumCharCount(this, 'vd-title-count')">
+            <div class="input-counter" id="vd-title-count" style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; font-weight: 700;">0/100</div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Description (required)</label>
+            <textarea id="vd-desc" class="form-textarea" placeholder="Add a description" maxlength="5000" oninput="updatePremiumCharCount(this, 'vd-desc-count')"></textarea>
+            <div class="input-counter" id="vd-desc-count" style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; font-weight: 700;">0/5000</div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Visibility</label>
+            <div class="form-input" style="display: flex; justify-content: space-between; cursor: pointer;" onclick="openVisibilityPicker('vd-visibility')">
+                <span id="vd-visibility-display"><i class="fas fa-globe"></i> Publish</span>
+                <i class="fas fa-chevron-down text-muted"></i>
+            </div>
+            <input type="hidden" id="vd-visibility" value="Public">
+        </div>
+        
+        <div class="form-group" id="vd-schedule-container" style="display: none;">
+            <label class="form-label">Schedule Date & Time</label>
+            <input type="datetime-local" id="vd-schedule-date" class="form-input">
+        </div>
+
+        <button class="studio-btn" style="margin: 20px 0 40px; width: 100%; padding: 18px;" onclick="publishPremiumVideoOrShort('video-long')">PUBLISH VIDEO</button>
+    </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━
+   6. SHORT DETAILS PAGE
+━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="short-details-page" class="fullscreen-page studio-page" style="display: none; background: var(--bg-color); position: fixed; inset: 0; z-index: 10001;">
+    <div class="topbar-nav solid">
+        <button onclick="AppNavigation.pop()" style="background: none; color: var(--text-main); border: none; font-size: 1.4rem; cursor: pointer;"><i class="fas fa-arrow-left"></i></button>
+        <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--text-main);">Add Details</h3>
+        <div style="width: 24px;"></div>
+    </div>
+    <div style="flex: 1; overflow-y: auto; padding: 20px;">
+        <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+            <div style="width: 100px; aspect-ratio: 9/16; background: #000; border-radius: 12px; position: relative; overflow: hidden; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <img id="sd-thumb" src="" style="width: 100%; height: 100%; object-fit: cover;" />
+                <button onclick="document.getElementById('custom-thumb-input').click()" style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.6); color: white; padding: 6px 8px; border-radius: 8px; border: none; font-size: 0.75rem; cursor: pointer;"><i class="fas fa-image"></i> Custom</button>
+            </div>
+            
+            <div style="flex: 1; position: relative;">
+                <label class="form-label">Caption (required)</label>
+                <textarea id="sd-title" class="form-textarea" placeholder="Write a catchy caption..." maxlength="100" style="height: 90px;" oninput="updatePremiumCharCount(this, 'sd-title-count')"></textarea>
+                <div class="input-counter" id="sd-title-count" style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; font-weight: 700;">0/100</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Description (optional)</label>
+            <textarea id="sd-desc" class="form-textarea" placeholder="Add a description" maxlength="5000" oninput="updatePremiumCharCount(this, 'sd-desc-count')"></textarea>
+            <div class="input-counter" id="sd-desc-count" style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; font-weight: 700;">0/5000</div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Visibility</label>
+            <div class="form-input" style="display: flex; justify-content: space-between; cursor: pointer;" onclick="openVisibilityPicker('sd-visibility')">
+                <span id="sd-visibility-display"><i class="fas fa-globe"></i> Publish</span>
+                <i class="fas fa-chevron-down text-muted"></i>
+            </div>
+            <input type="hidden" id="sd-visibility" value="Public">
+        </div>
+        
+        <div class="form-group" id="sd-schedule-container" style="display: none;">
+            <label class="form-label">Schedule Date & Time</label>
+            <input type="datetime-local" id="sd-schedule-date" class="form-input">
+        </div>
+
+        <button class="studio-btn" style="margin: 20px 0 40px; width: 100%; padding: 18px;" onclick="publishPremiumVideoOrShort('video-short')">PUBLISH SHORT</button>
+    </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━
+   7. POST DETAILS PAGE
+━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="post-details-page" class="fullscreen-page studio-page" style="display: none; background: var(--bg-color); position: fixed; inset: 0; z-index: 10001;">
+    <div class="topbar-nav solid">
+        <button onclick="AppNavigation.pop()" style="background: none; color: var(--text-main); border: none; font-size: 1.4rem; cursor: pointer;"><i class="fas fa-arrow-left"></i></button>
+        <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--text-main);">Create Post</h3>
+        <div style="width: 24px;"></div>
+    </div>
+    <div style="flex: 1; overflow-y: auto; padding: 20px;">
+        <div class="form-group">
+            <label class="form-label">Title / Caption (required)</label>
+            <textarea id="pd-title" class="form-textarea" placeholder="Write something about this post..." maxlength="1000" oninput="updatePremiumCharCount(this, 'pd-title-count')"></textarea>
+            <div class="input-counter" id="pd-title-count" style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; font-weight: 700;">0/1000</div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Visibility</label>
+            <div class="form-input" style="display: flex; justify-content: space-between; cursor: pointer;" onclick="openVisibilityPicker('pd-visibility')">
+                <span id="pd-visibility-display"><i class="fas fa-globe"></i> Publish</span>
+                <i class="fas fa-chevron-down text-muted"></i>
+            </div>
+            <input type="hidden" id="pd-visibility" value="Public">
+        </div>
+        
+        <div class="form-group" id="pd-schedule-container" style="display: none;">
+            <label class="form-label">Schedule Date & Time</label>
+            <input type="datetime-local" id="pd-schedule-date" class="form-input">
+        </div>
+
+        <button class="studio-btn" style="margin: 20px 0 40px; width: 100%; padding: 18px;" id="premium-post-publish-btn" onclick="publishPremiumPostAction()">PUBLISH POST</button>
+    </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━
+   8. VISIBILITY & CAMERA POPUPS
+━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="visibility-picker-modal" class="studio-popup-modal">
+    <div class="studio-popup-content" id="visibility-picker-content">
+        <h3 style="margin: 0 0 20px 0; font-size: 1.1rem; color: var(--text-main); font-weight: 800;">Set Visibility</h3>
+        <div class="studio-popup-option selected" onclick="selectVisibilityOption('Public', 'Publish', 'fa-globe')">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <i class="fas fa-globe" style="color: var(--text-muted); width: 24px;"></i>
+                <div>
+                    <div style="font-size: 1rem;">Publish</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Anyone can search for and view</div>
+                </div>
+            </div>
+        </div>
+        <div class="studio-popup-option" onclick="selectVisibilityOption('Private', 'Private', 'fa-lock')">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <i class="fas fa-lock" style="color: var(--text-muted); width: 24px;"></i>
+                <div>
+                    <div style="font-size: 1rem;">Private</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Only you can view</div>
+                </div>
+            </div>
+        </div>
+        <div class="studio-popup-option" onclick="selectVisibilityOption('Schedule', 'Schedule Publish', 'fa-calendar')">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <i class="fas fa-calendar" style="color: var(--text-muted); width: 24px;"></i>
+                <div>
+                    <div style="font-size: 1rem;">Schedule Publish</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Select a date to make public</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Timer Popup -->
+<div id="timer-popup-modal" class="studio-popup-modal">
+    <div class="studio-popup-content" id="timer-popup-content">
+        <h3 style="margin: 0 0 20px 0; font-size: 1.1rem; color: var(--text-main); font-weight: 800;">Countdown Timer</h3>
+        <div class="studio-popup-option selected" onclick="setCameraSetting('timer', 0)">Off <i class="fas fa-check" style="display: block;"></i></div>
+        <div class="studio-popup-option" onclick="setCameraSetting('timer', 3)">3s <i class="fas fa-check" style="display: none;"></i></div>
+        <div class="studio-popup-option" onclick="setCameraSetting('timer', 10)">10s <i class="fas fa-check" style="display: none;"></i></div>
+        <div class="studio-popup-option" onclick="setCameraSetting('timer', 20)">20s <i class="fas fa-check" style="display: none;"></i></div>
+    </div>
+</div>
+
+<!-- Duration Popup -->
+<div id="duration-popup-modal" class="studio-popup-modal">
+    <div class="studio-popup-content" id="duration-popup-content">
+        <h3 style="margin: 0 0 20px 0; font-size: 1.1rem; color: var(--text-main); font-weight: 800;">Recording Duration</h3>
+        <div class="studio-popup-option selected" onclick="setCameraSetting('duration', 15)">15s <i class="fas fa-check" style="display: block;"></i></div>
+        <div class="studio-popup-option" onclick="setCameraSetting('duration', 30)">30s <i class="fas fa-check" style="display: none;"></i></div>
+        <div class="studio-popup-option" onclick="setCameraSetting('duration', 60)">60s <i class="fas fa-check" style="display: none;"></i></div>
+        <div class="studio-popup-option" onclick="setCameraSetting('duration', 180)">3m <i class="fas fa-check" style="display: none;"></i></div>
+    </div>
+</div>
+
+<!-- Speed Popup -->
+<div id="speed-popup-modal" class="studio-popup-modal">
+    <div class="studio-popup-content" id="speed-popup-content">
+        <h3 style="margin: 0 0 20px 0; font-size: 1.1rem; color: var(--text-main); font-weight: 800;">Playback Speed</h3>
+        <div class="studio-popup-option" onclick="setCameraSetting('speed', 0.3)">0.3x <i class="fas fa-check" style="display: none;"></i></div>
+        <div class="studio-popup-option" onclick="setCameraSetting('speed', 0.5)">0.5x <i class="fas fa-check" style="display: none;"></i></div>
+        <div class="studio-popup-option selected" onclick="setCameraSetting('speed', 1)">1x <i class="fas fa-check" style="display: block;"></i></div>
+        <div class="studio-popup-option" onclick="setCameraSetting('speed', 2)">2x <i class="fas fa-check" style="display: none;"></i></div>
+        <div class="studio-popup-option" onclick="setCameraSetting('speed', 3)">3x <i class="fas fa-check" style="display: none;"></i></div>
+    </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━
+   9. VIEW CHANNEL PAGE (BANNER 16:9 WITH STATUS BAR & FEELS 3-COL 9:16 GRID)
+━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="view-channel-page" class="channel-page">
+    
+    <!-- User Channel Banner (Phone Status bar সহ 16:9 Size) -->
+    <div class="channel-banner-container">
+        <img id="channel-banner-img" class="banner-media" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80" alt="Channel Banner">
+        
+        <!-- Status Bar & Top Floating Navigation Overlay -->
+        <div class="channel-top-bar">
+            <button onclick="alert('Back to previous screen')" class="channel-icon-btn" aria-label="Go Back">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div style="display: flex; gap: 10px;">
+                <button class="channel-icon-btn" aria-label="Search">
+                    <i class="fas fa-search"></i>
                 </button>
+                <button class="channel-icon-btn" aria-label="More Options">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Channel Profile / Info Section -->
+    <div class="channel-info-section">
+        <div class="channel-header-row">
+            <img id="channel-avatar-img" class="channel-avatar-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80" alt="Channel Avatar">
+            <div class="channel-details">
+                <h2 id="channel-title-display" class="channel-title-text">Creative Studio</h2>
+                <div id="channel-handle-display" class="channel-handle-text">@creativestudio</div>
+                <div id="channel-meta-display" class="channel-stats-text">145K subscribers • 320 Feels</div>
+            </div>
+        </div>
+        <button id="channel-subscribe-btn" class="channel-action-btn" onclick="this.innerText = this.innerText === 'Subscribe' ? 'Subscribed ✓' : 'Subscribe'">Subscribe</button>
+    </div>
+
+    <!-- Channel Navigation Tabs -->
+    <div class="channel-nav-tabs">
+        <div class="channel-nav-tab" onclick="switchChannelViewTab('home')">Home</div>
+        <div class="channel-nav-tab" onclick="switchChannelViewTab('videos')">Videos</div>
+        <div class="channel-nav-tab active" onclick="switchChannelViewTab('feels')">Feels</div>
+        <div class="channel-nav-tab" onclick="switchChannelViewTab('posts')">Posts</div>
+    </div>
+
+    <!-- FEELS TAB CONTENT (3-COLUMN GRID & 9:16 ASPECT RATIO CARDS) -->
+    <div id="channel-tab-feels" class="feels-tab-view">
+        <div class="feels-grid-container" id="channel-feels-grid">
+            
+            <!-- Feels Card Box 1 -->
+            <div class="feels-card-box" onclick="openFeelsPlayer(1)">
+                <img class="feels-thumbnail" src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80" alt="Feels 1">
+                <div class="feels-card-overlay">
+                    <div class="feels-title-text">Amazing Sunset Vibes & Chill Music</div>
+                    <div class="feels-views-count"><i class="fas fa-play"></i> 124K</div>
+                </div>
+            </div>
+
+            <!-- Feels Card Box 2 -->
+            <div class="feels-card-box" onclick="openFeelsPlayer(2)">
+                <img class="feels-thumbnail" src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500&auto=format&fit=crop&q=80" alt="Feels 2">
+                <div class="feels-card-overlay">
+                    <div class="feels-title-text">Top 5 Coding Hacks You Need To Know!</div>
+                    <div class="feels-views-count"><i class="fas fa-play"></i> 89K</div>
+                </div>
+            </div>
+
+            <!-- Feels Card Box 3 -->
+            <div class="feels-card-box" onclick="openFeelsPlayer(3)">
+                <img class="feels-thumbnail" src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop&q=80" alt="Feels 3">
+                <div class="feels-card-overlay">
+                    <div class="feels-title-text">Urban Street Photography Moments</div>
+                    <div class="feels-views-count"><i class="fas fa-play"></i> 450K</div>
+                </div>
+            </div>
+
+            <!-- Feels Card Box 4 -->
+            <div class="feels-card-box" onclick="openFeelsPlayer(4)">
+                <img class="feels-thumbnail" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80" alt="Feels 4">
+                <div class="feels-card-overlay">
+                    <div class="feels-title-text">Morning Coffee Routine ☕</div>
+                    <div class="feels-views-count"><i class="fas fa-play"></i> 32K</div>
+                </div>
+            </div>
+
+            <!-- Feels Card Box 5 -->
+            <div class="feels-card-box" onclick="openFeelsPlayer(5)">
+                <img class="feels-thumbnail" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&auto=format&fit=crop&q=80" alt="Feels 5">
+                <div class="feels-card-overlay">
+                    <div class="feels-title-text">Exploring Cyberpunk City Lights</div>
+                    <div class="feels-views-count"><i class="fas fa-play"></i> 2.1M</div>
+                </div>
+            </div>
+
+            <!-- Feels Card Box 6 -->
+            <div class="feels-card-box" onclick="openFeelsPlayer(6)">
+                <img class="feels-thumbnail" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=80" alt="Feels 6">
+                <div class="feels-card-overlay">
+                    <div class="feels-title-text">Quick Workout Motivation 🔥</div>
+                    <div class="feels-views-count"><i class="fas fa-play"></i> 54K</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Floating Create/Upload Button to Launch Studio -->
+    <button class="floating-create-btn" onclick="openPremiumUploadStudio('short')" title="Create / Upload">
+        <i class="fas fa-plus"></i>
+    </button>
 </div>
-</div>
-</div>
-<div class="upcoming-modal" id="eligibility-success-modal" style="display: none; z-index: 100000;">
-<div class="upcoming-content" style="background: var(--surface); border-radius: 28px; padding: 32px 24px; text-align: center;">
-<div class="success-checkmark-container" style="width: 80px; height: 80px; background: rgba(0, 200, 83, 0.1); border-radius: 50%; color: var(--success); font-size: 2.5rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; animation: md3ScaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;">
-<i class="fas fa-check"></i>
-</div>
-<h2 style="font-size: 1.5rem; font-weight: 850; margin: 0 0 10px; color: var(--text-main);">Application Submitted!</h2>
-<p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin: 0;">Congratulations! Your partner application is now under review. We will notify you soon.</p>
-</div>
-</div>
-</body></html>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━
+   JAVASCRIPT CONTROLLERS
+━━━━━━━━━━━━━━━━━━━━━━ -->
+<script>
+// --- Navigation Stack & Controllers ---
+const AppNavigation = {
+    stack: [],
+    push: function(pageId) {
+        this.stack.push(pageId);
+        document.querySelectorAll('.fullscreen-page').forEach(el => {
+            if (el.id !== 'view-channel-page') el.style.display = 'none';
+        });
+        const target = document.getElementById(pageId);
+        if (target) target.style.display = 'flex';
+    },
+    pop: function() {
+        if (this.stack.length > 0) {
+            const currentPageId = this.stack.pop();
+            const currentEl = document.getElementById(currentPageId);
+            if (currentEl) currentEl.style.display = 'none';
+            
+            if (this.stack.length > 0) {
+                const prevPageId = this.stack[this.stack.length - 1];
+                const prevEl = document.getElementById(prevPageId);
+                if (prevEl) prevEl.style.display = 'flex';
+            }
+        }
+    }
+};
+
+// Studio Open & Close
+function openPremiumUploadStudio(mode = 'short') {
+    const studio = document.getElementById('premium-upload-studio');
+    studio.style.display = 'flex';
+    setUploadMode(mode);
+}
+
+function closePremiumUploadStudio() {
+    stopCameraStream();
+    document.getElementById('premium-upload-studio').style.display = 'none';
+}
+
+function closeAndPausePreview() {
+    const vp = document.getElementById('video-preview-el');
+    const sp = document.getElementById('short-preview-el');
+    if (vp) { vp.pause(); }
+    if (sp) { sp.pause(); }
+    document.querySelectorAll('#video-preview-page, #short-preview-page, #post-preview-page').forEach(p => p.style.display = 'none');
+    document.getElementById('premium-upload-studio').style.display = 'flex';
+}
+
+// Mode Slider Control
+let currentMode = 'short';
+function setUploadMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.mode === mode);
+    });
+
+    document.getElementById('upload-video-view').style.display = (mode === 'video') ? 'flex' : 'none';
+    document.getElementById('upload-short-view').style.display = (mode === 'short') ? 'flex' : 'none';
+    document.getElementById('upload-post-view').style.display = (mode === 'post') ? 'flex' : 'none';
+
+    if (mode === 'short') {
+        startCameraStream();
+    } else {
+        stopCameraStream();
+    }
+}
+
+document.querySelectorAll('.mode-item').forEach(item => {
+    item.addEventListener('click', () => {
+        setUploadMode(item.dataset.mode);
+    });
+});
+
+// Camera Handlers (Safe WebRTC)
+let mediaStream = null;
+let isFrontCam = false;
+let isFlashOn = false;
+
+async function startCameraStream() {
+    try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            if (mediaStream) stopCameraStream();
+            mediaStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: isFrontCam ? 'user' : 'environment' },
+                audio: false
+            });
+            const videoEl = document.getElementById('short-camera-preview');
+            if (videoEl) videoEl.srcObject = mediaStream;
+        }
+    } catch (err) {
+        console.warn('Camera access unavailable or simulated:', err);
+    }
+}
+
+function stopCameraStream() {
+    if (mediaStream) {
+        mediaStream.getTracks().forEach(t => t.stop());
+        mediaStream = null;
+    }
+}
+
+function toggleShortCamera() {
+    isFrontCam = !isFrontCam;
+    startCameraStream();
+}
+
+function toggleShortFlash() {
+    isFlashOn = !isFlashOn;
+    const btn = document.getElementById('btn-cam-flash');
+    if (btn) btn.classList.toggle('active-state', isFlashOn);
+}
+
+// Popups Handler (Timer, Speed, Duration)
+function openStudioPopup(popupId) {
+    const modal = document.getElementById(popupId + '-modal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    setTimeout(() => {
+        const content = modal.querySelector('.studio-popup-content');
+        if (content) content.style.transform = 'translateY(0)';
+    }, 10);
+}
+
+function closeAllStudioPopups() {
+    document.querySelectorAll('.studio-popup-modal').forEach(modal => {
+        const content = modal.querySelector('.studio-popup-content');
+        if (content) content.style.transform = 'translateY(100%)';
+        setTimeout(() => modal.style.display = 'none', 300);
+    });
+}
+
+document.querySelectorAll('.studio-popup-modal').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeAllStudioPopups();
+    });
+});
+
+function setCameraSetting(type, val) {
+    if (type === 'speed') {
+        document.getElementById('cam-speed-val').innerText = val + 'x';
+    } else if (type === 'duration') {
+        document.getElementById('cam-duration-val').innerText = val >= 60 ? (val/60) + 'm' : val + 's';
+    }
+    closeAllStudioPopups();
+}
+
+// Visibility Picker
+let currentVisibilityTarget = 'vd-visibility';
+function openVisibilityPicker(targetId) {
+    currentVisibilityTarget = targetId;
+    openStudioPopup('visibility-picker');
+}
+
+function selectVisibilityOption(value, label, icon) {
+    const input = document.getElementById(currentVisibilityTarget);
+    if (input) input.value = value;
+    const display = document.getElementById(currentVisibilityTarget + '-display');
+    if (display) display.innerHTML = `<i class="fas ${icon}"></i> ${label}`;
+    
+    // Check schedule container
+    const prefix = currentVisibilityTarget.split('-')[0];
+    const sched = document.getElementById(prefix + '-schedule-container');
+    if (sched) sched.style.display = (value === 'Schedule') ? 'block' : 'none';
+
+    closeAllStudioPopups();
+}
+
+// File Selection & Previews
+let currentSelectedFile = null;
+function handlePremiumFileSelected(event, type) {
+    const file = event.target.files[0];
+    if (!file) return;
+    currentSelectedFile = file;
+    const url = URL.createObjectURL(file);
+
+    if (type === 'video-long') {
+        const v = document.getElementById('video-preview-el');
+        v.src = url;
+        v.play();
+        document.getElementById('premium-upload-studio').style.display = 'none';
+        document.getElementById('video-preview-page').style.display = 'flex';
+    } else if (type === 'video-short') {
+        stopCameraStream();
+        const s = document.getElementById('short-preview-el');
+        s.src = url;
+        s.play();
+        document.getElementById('premium-upload-studio').style.display = 'none';
+        document.getElementById('short-preview-page').style.display = 'flex';
+    }
+}
+
+function handlePremiumImagesSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    document.getElementById('post-preview-img').src = url;
+    document.getElementById('premium-upload-studio').style.display = 'none';
+    document.getElementById('post-preview-page').style.display = 'flex';
+}
+
+function handleCustomThumbSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const vdThumb = document.getElementById('vd-thumb');
+    const sdThumb = document.getElementById('sd-thumb');
+    if (vdThumb) vdThumb.src = url;
+    if (sdThumb) sdThumb.src = url;
+}
+
+function togglePremiumPreviewPlay(elId, iconId) {
+    const video = document.getElementById(elId);
+    const icon = document.getElementById(iconId);
+    if (video.paused) {
+        video.play();
+        icon.classList.remove('show');
+    } else {
+        video.pause();
+        icon.classList.add('show');
+    }
+}
+
+function gotoPremiumUploadDetails(type) {
+    if (type === 'video') {
+        AppNavigation.push('video-details-page');
+    } else if (type === 'short') {
+        AppNavigation.push('short-details-page');
+    } else if (type === 'post') {
+        AppNavigation.push('post-details-page');
+    }
+}
+
+function updatePremiumCharCount(input, countId) {
+    const counter = document.getElementById(countId);
+    if (counter) counter.innerText = `${input.value.length}/${input.maxLength}`;
+}
+
+function triggerShortDownloadLocal() {
+    alert('Short video downloaded locally.');
+}
+
+function publishPremiumVideoOrShort(type) {
+    alert((type === 'video-long' ? 'Video' : 'Short') + ' Published Successfully!');
+    AppNavigation.stack = [];
+    document.querySelectorAll('.fullscreen-page').forEach(p => {
+        if (p.id !== 'view-channel-page') p.style.display = 'none';
+    });
+}
+
+function publishPremiumPostAction() {
+    alert('Community Post Published Successfully!');
+    AppNavigation.stack = [];
+    document.querySelectorAll('.fullscreen-page').forEach(p => {
+        if (p.id !== 'view-channel-page') p.style.display = 'none';
+    });
+}
+
+// Channel View Tabs Switcher
+function switchChannelViewTab(tabName) {
+    document.querySelectorAll('.channel-nav-tab').forEach(t => t.classList.remove('active'));
+    const activeTab = Array.from(document.querySelectorAll('.channel-nav-tab')).find(t => t.innerText.toLowerCase() === tabName);
+    if (activeTab) activeTab.classList.add('active');
+
+    const feelsContent = document.getElementById('channel-tab-feels');
+    if (feelsContent) {
+        feelsContent.style.display = (tabName === 'feels') ? 'block' : 'none';
+    }
+}
+
+function openFeelsPlayer(id) {
+    console.log('Opened Feels video item #', id);
+}
+</script>
+</body>
+</html>

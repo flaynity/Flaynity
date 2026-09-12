@@ -4612,9 +4612,9 @@ function buildChannelVideoCard(v) {
 
 function buildChannelShortCard(s) {
     return `
-        <div class="short-grid-card" onclick="openMoviePage('${s.id}', false)">
+        <div class="feels-grid-card" onclick="openMoviePage('${s.id}', false)">
             <img src="${s.poster}">
-            <div class="short-grid-views">
+            <div class="feels-grid-views">
                 <i class="fas fa-play"></i>
                 <span id="chan-short-views-${s.id}">${formatCount(s.views || 0)}</span>
             </div>

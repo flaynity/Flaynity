@@ -69,25 +69,23 @@ async function flaynityCreateUpload(file, folder = "images", options = {}) {
     return { key: data.key || key, uploadUrl: data.uploadUrl, publicUrl: data.publicUrl || flaynityMediaUrl(data.key || key) };
 }
 
-function flaynityPutWithProgress(uploadUrl, file, onProgress, timeoutMs = 25000) {
+function flaynityPutWithProgress(uploadUrl, file, onProgress, timeoutMs = 12000) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         let settled = false;
-        const fail = err => { if (!settled) { settled = true; reject(err); } };
-        const done = () => { if (!settled) { settled = true; resolve(); } };
+        const finish = (fn, value) => { if (!settled) { settled = true; fn(value); } };
         xhr.open("PUT", uploadUrl, true);
-        xhr.timeout = Math.max(5000, Number(timeoutMs) || 25000);
+        xhr.timeout = Math.max(5000, Number(timeoutMs) || 12000);
         xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
         xhr.upload.onprogress = (e) => {
             if (e.lengthComputable && typeof onProgress === "function") onProgress(e.loaded, e.total);
         };
-        xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) done();
-            else fail(new Error(`Upload failed (${xhr.status}).`));
-        };
-        xhr.onerror = () => fail(new Error("Network error while uploading media."));
-        xhr.ontimeout = () => fail(new Error("Direct R2 upload timed out."));
-        xhr.onabort = () => fail(new Error("Upload aborted."));
+        xhr.onload = () => xhr.status >= 200 && xhr.status < 300
+            ? finish(resolve)
+            : finish(reject, new Error(`Upload failed (${xhr.status}).`));
+        xhr.onerror = () => finish(reject, new Error("Network error while uploading media."));
+        xhr.ontimeout = () => finish(reject, new Error("Direct R2 upload timed out."));
+        xhr.onabort = () => finish(reject, new Error("Upload aborted."));
         xhr.send(file);
     });
 }
@@ -321,7 +319,6 @@ function dataURLtoBlob(dataurl) {
 // No Cloudflare Stream dependency.
 // =========================================================
 const FLAYNITY_HLS_STATUS_TIMEOUT = 30 * 60 * 1000;
-const FLAYNITY_HLS_INITIAL_TIMEOUT = 10 * 60 * 1000;
 const FLAYNITY_HLS_POLL_MS = 1800;
 
 async function flaynityHlsRequest(path, options = {}) {
@@ -357,40 +354,26 @@ async function flaynityGetHlsStatus(jobId) {
 
 async function flaynityWaitForHlsInitial(jobId, onStatus) {
     const started = Date.now();
-    let lastError = null;
-    while (Date.now() - started < FLAYNITY_HLS_INITIAL_TIMEOUT) {
-        try {
-            const data = await flaynityGetHlsStatus(jobId);
-            if (typeof onStatus === "function") onStatus(data);
-            if ((data.status === "ready" || data.status === "processing") && data.initialReady && data.hlsUrl) return data;
-            if (data.status === "failed") throw new Error(data.message || "HLS transcoding failed.");
-            lastError = null;
-        } catch (e) {
-            if (String(e?.message || e).toLowerCase().includes("hls transcoding failed")) throw e;
-            lastError = e;
-        }
+    while (Date.now() - started < 10 * 60 * 1000) {
+        const data = await flaynityGetHlsStatus(jobId);
+        if (typeof onStatus === "function") onStatus(data);
+        if ((data.status === "processing" || data.status === "ready") && data.initialReady && data.hlsUrl) return data;
+        if (data.status === "failed") throw new Error(data.message || "HLS transcoding failed.");
         await new Promise(r => setTimeout(r, FLAYNITY_HLS_POLL_MS));
     }
-    throw lastError || new Error("Initial 144p HLS preparation timed out. Please retry shortly.");
+    throw new Error("Initial 144p HLS preparation timed out.");
 }
 
 async function flaynityMonitorHlsLadder(jobId, onStatus) {
     const started = Date.now();
-    let lastError = null;
     while (Date.now() - started < FLAYNITY_HLS_STATUS_TIMEOUT) {
-        try {
-            const data = await flaynityGetHlsStatus(jobId);
-            if (typeof onStatus === "function") onStatus(data);
-            if (data.status === "ready") return data;
-            if (data.status === "failed") throw new Error(data.message || "HLS transcoding failed.");
-            lastError = null;
-        } catch (e) {
-            if (String(e?.message || e).toLowerCase().includes("hls transcoding failed")) throw e;
-            lastError = e;
-        }
+        const data = await flaynityGetHlsStatus(jobId);
+        if (typeof onStatus === "function") onStatus(data);
+        if (data.status === "ready") return data;
+        if (data.status === "failed") throw new Error(data.message || "HLS transcoding failed.");
         await new Promise(r => setTimeout(r, FLAYNITY_HLS_POLL_MS));
     }
-    throw lastError || new Error("HLS background processing timed out.");
+    throw new Error("HLS background processing timed out.");
 }
 
 async function flaynityWaitForHlsReady(jobId, onStatus) {
@@ -418,21 +401,25 @@ async function uploadVideoToFlaynityHls(file, options = {}, onProgress) {
     if (!file) throw new Error("No video selected.");
     const folder = options.folder === "feels" ? "feels" : "videos";
 
-    // 1) Secure direct upload of the original MP4 to R2.
     const upload = await flaynityCreateUpload(file, folder, {
         contentType: file.type || "video/mp4"
     });
-    // Prefer direct R2 PUT for speed. If browser/WebView CORS or the network
-    // hangs, abort quickly and transparently retry through the Worker. This
-    // prevents tiny uploads from appearing stuck for 10-20 minutes.
-    try {
-        await flaynityPutWithProgress(upload.uploadUrl, file, onProgress, 12000);
-    } catch (directError) {
-        console.warn("Direct R2 upload failed; using Worker upload fallback:", directError);
+
+    // Android WebView/R2 CORS is the common failure point for tiny uploads.
+    // For small media, upload through the authenticated Worker directly so a
+    // 20 KB Feel does not wait on a browser preflight/CORS failure.
+    const SMALL_UPLOAD_LIMIT = 10 * 1024 * 1024;
+    if (file.size <= SMALL_UPLOAD_LIMIT) {
         await flaynityPutViaWorker(file, upload.key, onProgress);
+    } else {
+        try {
+            await flaynityPutWithProgress(upload.uploadUrl, file, onProgress, 30000);
+        } catch (directError) {
+            console.warn("Direct R2 upload failed; using Worker upload fallback:", directError);
+            await flaynityPutViaWorker(file, upload.key, onProgress);
+        }
     }
 
-    // 2) Ask the Worker to enqueue FFmpeg transcoding on the Render service.
     let job;
     try {
         job = await flaynityStartHlsTranscode(upload.key, { type: folder });
@@ -440,9 +427,6 @@ async function uploadVideoToFlaynityHls(file, options = {}, onProgress) {
         throw new Error(`HLS transcoder is not connected: ${e.message || e}`);
     }
 
-    // IMPORTANT: do not keep the mobile upload queue blocked while Render wakes
-    // up or FFmpeg renders 144p. The original MP4 upload is already complete.
-    // Polling continues in the background and calls onStatus as each quality lands.
     const hlsUrl = normalizeFlaynityMediaUrl(
         `${FLAYNITY_MEDIA_BASE}/uploads/hls/${encodeURIComponent(job.jobId)}/master.m3u8`
     );
@@ -454,19 +438,14 @@ async function uploadVideoToFlaynityHls(file, options = {}, onProgress) {
         transcodeJobId: job.jobId,
         initialReady: false,
         processing: true,
-        videoQualities: {
-            auto: hlsUrl,
-            hls: hlsUrl,
-            preferred: [144, 360, 480, 720, 1080]
-        },
+        videoQualities: { auto: hlsUrl, hls: hlsUrl, preferred: [144, 360, 480, 720, 1080] },
         provider: "r2-hls"
     };
 
-    // Never await this. A slow/cold Render instance must not make a 20 KB upload
-    // look like a 20-minute upload. The app publishes only when initialReady=true.
     if (typeof options.onStatus === "function") {
         Promise.resolve().then(async () => {
             try {
+                await flaynityWaitForHlsInitial(job.jobId, options.onStatus);
                 await flaynityMonitorHlsLadder(job.jobId, options.onStatus);
             } catch (e) {
                 options.onStatus({ status: "failed", message: e?.message || "HLS background processing failed." });
@@ -475,3 +454,4 @@ async function uploadVideoToFlaynityHls(file, options = {}, onProgress) {
     }
     return result;
 }
+

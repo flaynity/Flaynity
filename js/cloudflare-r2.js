@@ -69,22 +69,42 @@ async function flaynityCreateUpload(file, folder = "images", options = {}) {
     return { key: data.key || key, uploadUrl: data.uploadUrl, publicUrl: data.publicUrl || flaynityMediaUrl(data.key || key) };
 }
 
-function flaynityPutWithProgress(uploadUrl, file, onProgress) {
+function flaynityPutWithProgress(uploadUrl, file, onProgress, timeoutMs = 25000) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+        let settled = false;
+        const fail = err => { if (!settled) { settled = true; reject(err); } };
+        const done = () => { if (!settled) { settled = true; resolve(); } };
         xhr.open("PUT", uploadUrl, true);
+        xhr.timeout = Math.max(5000, Number(timeoutMs) || 25000);
         xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
         xhr.upload.onprogress = (e) => {
             if (e.lengthComputable && typeof onProgress === "function") onProgress(e.loaded, e.total);
         };
         xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) resolve();
-            else reject(new Error(`Upload failed (${xhr.status}).`));
+            if (xhr.status >= 200 && xhr.status < 300) done();
+            else fail(new Error(`Upload failed (${xhr.status}).`));
         };
-        xhr.onerror = () => reject(new Error("Network error while uploading media."));
-        xhr.onabort = () => reject(new Error("Upload aborted."));
+        xhr.onerror = () => fail(new Error("Network error while uploading media."));
+        xhr.ontimeout = () => fail(new Error("Direct R2 upload timed out."));
+        xhr.onabort = () => fail(new Error("Upload aborted."));
         xhr.send(file);
     });
+}
+
+async function flaynityPutViaWorker(file, key, onProgress) {
+    if (!key) throw new Error("Missing R2 upload key.");
+    const headers = await flaynityAuthHeaders();
+    const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/upload?key=${encodeURIComponent(key)}`, {
+        method: "PUT",
+        headers: { ...headers, "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+        cache: "no-store"
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok) throw new Error(data.error || `Worker upload failed (HTTP ${response.status}).`);
+    if (typeof onProgress === "function") onProgress(file.size, file.size);
+    return data;
 }
 
 async function uploadImageToR2(file, folder = "images", retries = 3) {
@@ -402,7 +422,15 @@ async function uploadVideoToFlaynityHls(file, options = {}, onProgress) {
     const upload = await flaynityCreateUpload(file, folder, {
         contentType: file.type || "video/mp4"
     });
-    await flaynityPutWithProgress(upload.uploadUrl, file, onProgress);
+    // Prefer direct R2 PUT for speed. If browser/WebView CORS or the network
+    // hangs, abort quickly and transparently retry through the Worker. This
+    // prevents tiny uploads from appearing stuck for 10-20 minutes.
+    try {
+        await flaynityPutWithProgress(upload.uploadUrl, file, onProgress, 12000);
+    } catch (directError) {
+        console.warn("Direct R2 upload failed; using Worker upload fallback:", directError);
+        await flaynityPutViaWorker(file, upload.key, onProgress);
+    }
 
     // 2) Ask the Worker to enqueue FFmpeg transcoding on the Render service.
     let job;

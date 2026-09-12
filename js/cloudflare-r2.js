@@ -69,11 +69,12 @@ async function flaynityCreateUpload(file, folder = "images", options = {}) {
     return { key: data.key || key, uploadUrl: data.uploadUrl, publicUrl: data.publicUrl || flaynityMediaUrl(data.key || key) };
 }
 
-function flaynityPutWithProgress(uploadUrl, file, onProgress) {
+function flaynityPutWithProgress(uploadUrl, file, onProgress, onXhr) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("PUT", uploadUrl, true);
         xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+        if (typeof onXhr === "function") onXhr(xhr);
         xhr.upload.onprogress = (e) => {
             if (e.lengthComputable && typeof onProgress === "function") onProgress(e.loaded, e.total);
         };
@@ -102,9 +103,9 @@ async function uploadImageToR2(file, folder = "images", retries = 3) {
     throw lastError || new Error("Image upload failed.");
 }
 
-async function uploadMediaToFlaynity(file, folder = "videos", onProgress) {
+async function uploadMediaToFlaynity(file, folder = "videos", onProgress, onXhr) {
     const upload = await flaynityCreateUpload(file, folder, { contentType: file.type || "video/mp4" });
-    await flaynityPutWithProgress(upload.uploadUrl, file, onProgress);
+    await flaynityPutWithProgress(upload.uploadUrl, file, onProgress, onXhr);
     return upload;
 }
 
@@ -150,10 +151,11 @@ async function flaynityStreamRequest(path, options = {}) {
     return data;
 }
 
-function flaynityXhrPostForm(uploadUrl, file, onProgress) {
+function flaynityXhrPostForm(uploadUrl, file, onProgress, onXhr) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", uploadUrl, true);
+        if (typeof onXhr === "function") onXhr(xhr);
         xhr.upload.onprogress = e => {
             if (e.lengthComputable && typeof onProgress === "function") onProgress(e.loaded, e.total);
         };
@@ -245,7 +247,7 @@ async function uploadVideoToFlaynityStream(file, options = {}, onProgress) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ maxDurationSeconds, name })
         });
-        await flaynityXhrPostForm(data.uploadUrl, file, onProgress);
+        await flaynityXhrPostForm(data.uploadUrl, file, onProgress, options.onXhr);
         const ready = await waitForFlaynityStreamReady(data.uid, options.onStatus);
         return {
             uid: data.uid,

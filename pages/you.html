@@ -360,6 +360,53 @@
 }
 #edit-channel-page .edit-form-container { padding: 22px 20px 44px !important; }
 #edit-channel-page .avatar-overlay-camera { opacity: .9; }
+
+/* FINAL: View Channel Feels grid — locked to 3 columns / 9:16 and no page-side scrolling */
+#view-channel-page,
+#view-channel-page .page-content,
+#view-channel-page .channel-tab-content,
+#view-channel-page #channel-content-feels,
+#view-channel-page #channel-feels-grid {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow-x: hidden !important;
+}
+#view-channel-page #channel-feels-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-auto-flow: row;
+    gap: 8px !important;
+    align-items: start;
+    justify-items: stretch;
+    padding: 0 !important;
+}
+#view-channel-page #channel-feels-grid > .feels-grid-card {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 9 / 16 !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    position: relative;
+}
+#view-channel-page #channel-feels-grid > .feels-grid-card > img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    object-fit: cover !important;
+}
+#view-channel-page #channel-feels-grid > .fl-live-upload-card {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
 </style></head><body>
 <div class="tab-content" id="you-tab">
 <div class="profile-card-you">

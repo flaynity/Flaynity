@@ -1253,7 +1253,7 @@ function logout() {
 // =========================================================
 let uploadQueue = [];
 let activeUploadsCount = 0;
-const MAX_CONCURRENT_UPLOADS = 3;
+const MAX_CONCURRENT_UPLOADS = 1;
 
 setInterval(() => {
     if (!navigator.onLine) return;
@@ -1295,9 +1295,13 @@ async function startS3DirectUpload(item) {
             folder: uploadFolder,
             onStatus: status => {
                 const p = Number(status?.progress);
+                const available = Array.isArray(status?.availableQualities) ? status.availableQualities : [];
+                const previousAvailable = Array.isArray(item.availableQualities) ? item.availableQualities.length : 0;
+                item.availableQualities = available;
                 item.processingMsg = status?.message || (status?.status === 'processing' ? 'Encoding adaptive qualities...' : 'Preparing adaptive playback...');
                 if (Number.isFinite(p)) item.progress = Math.max(0, Math.min(99, Math.round(p)));
                 updateManagerUI();
+                if (available.length > previousAvailable) refreshHlsMasterForUploadItem(item);
             }
         }, (loaded, total) => {
             if (item.status !== 'uploading') return;
@@ -1309,8 +1313,9 @@ async function startS3DirectUpload(item) {
 
         item.key = upload.key;
         item.videoProvider = 'r2-hls';
-        item.videoUrl = normalizeFlaynityMediaUrl(upload.hlsUrl || upload.videoUrl);
-        item.hlsUrl = normalizeFlaynityMediaUrl(upload.hlsUrl || upload.videoUrl);
+        item.videoLink = normalizeFlaynityMediaUrl(upload.videoLink || upload.hlsUrl || upload.videoUrl);
+        item.videoUrl = item.videoLink;
+        item.hlsUrl = item.videoLink;
         item.dashUrl = '';
         item.hlsKey = upload.hlsKey || '';
         item.transcodeJobId = upload.transcodeJobId || '';
@@ -1389,6 +1394,19 @@ async function pushVideoMetadataToDatabase(item) {
     const user = auth.currentUser;
     if (!user) return;
 
+    // Never publish a progressive MP4 as a video/Feels record. R2-HLS is the
+    // only supported video provider for new uploads.
+    const hlsLink = normalizeFlaynityMediaUrl(item.videoLink || item.hlsUrl || item.videoUrl || '');
+    if (item.type === 'video-short' || item.type === 'video' || item.type === 'video-long') {
+        if (String(item.videoProvider || '').toLowerCase() !== 'r2-hls' || !/\/uploads\/hls\/[^/]+\/master\.m3u8(?:[?#].*)?$/i.test(hlsLink) || /\.mp4(?:$|[?#])/i.test(hlsLink)) {
+            throw new Error('Video cannot be published until the R2-HLS master.m3u8 is ready.');
+        }
+        item.videoProvider = 'r2-hls';
+        item.videoLink = hlsLink;
+        item.videoUrl = hlsLink;
+        item.hlsUrl = hlsLink;
+    }
+
     const userSnap = await db.ref(`users/${user.uid}`).once('value');
     const uData = userSnap.val() || {};
     const username = uData.username || user.email.split('@')[0];
@@ -1410,7 +1428,7 @@ async function pushVideoMetadataToDatabase(item) {
         resolution: resolution,
         poster: item.thumbUrl || item.thumbDataUrl || "",
         banner: item.thumbUrl || item.thumbDataUrl || "",
-        videoLink: item.videoUrl,
+        videoLink: item.videoLink || item.videoUrl,
         videoProvider: item.videoProvider || 'r2',
         streamUid: item.streamUid || '',
         hlsUrl: item.hlsUrl || '',
@@ -1504,6 +1522,10 @@ function saveQueueStateToLocalStorage() {
             thumbKey: item.thumbKey,
             thumbUrl: item.thumbUrl,
             videoUrl: item.videoUrl,
+            videoLink: item.videoLink || item.hlsUrl || item.videoUrl || '',
+            hlsUrl: item.hlsUrl || item.videoUrl || '',
+            videoProvider: item.videoProvider || '',
+            transcodeJobId: item.transcodeJobId || '',
             retryCount: item.retryCount,
             createdAt: item.createdAt,
             scheduledTime: item.scheduledTime
@@ -2986,6 +3008,28 @@ function chooseClosestHlsLevel(levels, targetHeight = FLAYNITY_STREAM_START_HEIG
     const pool = atOrBelow.length ? atOrBelow : usable;
     pool.sort((a, b) => Math.abs(a.height - targetHeight) - Math.abs(b.height - targetHeight) || a.bitrate - b.bitrate);
     return pool[0]?.index ?? -1;
+}
+
+function refreshHlsMasterForUploadItem(item) {
+    if (!item || !item.videoLink) return;
+    const isActiveMovie = currentActiveMovie && String(currentActiveMovie.id) === String(item.id);
+    const shortHls = hlsInstances[item.id];
+    const mainHls = isActiveMovie ? hlsInstances['fly_main'] : null;
+    const hls = shortHls || mainHls;
+    if (!hls || !hls.loadSource) return;
+    const video = hls.media;
+    if (!video) return;
+    const pos = Number(video.currentTime) || 0;
+    const wasPaused = video.paused;
+    try {
+        hls.loadSource(normalizeFlaynityMediaUrl(item.videoLink));
+        const restore = () => {
+            try { if (Number.isFinite(pos) && pos > 0) video.currentTime = pos; } catch (e) {}
+            if (!wasPaused) video.play().catch(() => {});
+        };
+        if (typeof hls.once === 'function' && typeof Hls !== 'undefined') hls.once(Hls.Events.MANIFEST_PARSED, restore);
+        else setTimeout(restore, 250);
+    } catch (e) {}
 }
 
 function attachSmartAdaptiveSource(videoElement, url, shortId) {

@@ -1288,59 +1288,40 @@ async function startS3DirectUpload(item) {
     item.status = "uploading"; item.progress = item.progress || 0; ensureLiveUploadStyles(); updateManagerUI();
     const startTime = Date.now();
     try {
-        // B version: use R2 directly while Stream is not subscribed. Once the
-        // Worker has a Stream API token, capability detection automatically
-        // switches new uploads to Stream without requiring a frontend rebuild.
-        let upload;
-        const streamReady = typeof flaynityStreamAvailable === 'function'
-            ? await flaynityStreamAvailable()
-            : false;
+        // Upload the original MP4/WebM to R2, then queue FFmpeg HLS processing.
+        // The app never downloads/transcodes the video itself and never uses
+        // the original MP4 as the published playback URL.
+        const uploadFolder = item.type === 'video-short' ? 'feels' : 'videos';
+        const upload = await uploadMediaToFlaynity(item.file, uploadFolder, (loaded, total) => {
+            if (item.status !== 'uploading') return;
+            item.progress = Math.round((loaded / total) * 100);
+            const elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
+            updateManagerUI();
+        }, item.control);
+        item.key = upload.key;
 
-        if (streamReady) {
-            try {
-                upload = await uploadVideoToFlaynityStream(item.file, {
-                    maxDurationSeconds: Math.min(Math.max(Number(item.duration) || 3600, 1), 36000),
-                    onStatus: status => {
-                        item.processingMsg = status?.status?.state === 'inprogress' ? 'Encoding video qualities...' : 'Preparing adaptive playback...';
-                        updateManagerUI();
-                    }
-                }, (loaded, total) => {
-                    if (item.status !== 'uploading') return;
-                    item.progress = Math.round((loaded / total) * 100);
-                    const elapsed = (Date.now() - startTime) / 1000;
-                    if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
-                    updateManagerUI();
-                });
-                item.streamUid = upload.uid;
-                item.videoProvider = upload.provider;
-                item.videoUrl = upload.hlsUrl || upload.videoUrl;
-                item.hlsUrl = upload.hlsUrl || upload.videoUrl;
-                item.dashUrl = upload.dashUrl || '';
-                item.streamThumbnail = upload.thumbnail || '';
-                item.streamQualityLadder = [144, 360, 480, 720, 1080];
-                if (upload.width && upload.height) item.resolution = `${upload.width}x${upload.height}`;
-            } catch (streamErr) {
-                console.warn('[Flaynity] Stream is configured but upload failed; falling back to R2:', streamErr);
-                upload = null;
-            }
-        }
+        item.status = "processing";
+        item.progress = 0;
+        item.processingMsg = "Creating 144p HLS...";
+        updateManagerUI();
 
-        if (!upload) {
-            const uploadFolder = item.type === 'video-short' ? 'feels' : 'videos';
-            upload = await uploadMediaToFlaynity(item.file, uploadFolder, (loaded, total) => {
-                if (item.status !== 'uploading') return;
-                item.progress = Math.round((loaded / total) * 100);
-                const elapsed = (Date.now() - startTime) / 1000;
-                if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
-                updateManagerUI();
-            }, item.control);
-            item.key = upload.key;
-            item.videoProvider = 'r2';
-            item.videoUrl = normalizeFlaynityMediaUrl(upload.publicUrl);
-            item.hlsUrl = '';
-            item.dashUrl = '';
-            item.videoQualities = { auto: item.videoUrl, original: item.videoUrl };
-        }
+        const hls = await flaynityTranscodeToHls(item.key, item.file.type || 'video/mp4', status => {
+            const current = status?.currentQuality || '';
+            const available = Array.isArray(status?.available) ? status.available : [];
+            item.processingMsg = current ? `FFmpeg: ${current}` : (available.length ? `HLS ready: ${available.join(', ')}` : 'Preparing adaptive HLS...');
+            item.progress = Math.max(0, Math.min(100, Number(status?.progress) || 0));
+            updateManagerUI();
+        });
+
+        item.videoProvider = 'r2-hls';
+        item.videoUrl = hls.videoUrl;
+        item.hlsUrl = hls.hlsUrl;
+        item.dashUrl = '';
+        item.streamUid = '';
+        item.streamThumbnail = '';
+        item.streamQualityLadder = [144, 360, 480, 720, 1080];
+        item.videoQualities = { auto: hls.hlsUrl, hls: hls.hlsUrl, preferred: [144, 360, 480, 720, 1080] };
         item.status = "processing"; item.retryCount = 0; updateManagerUI();
         await runPostUploadProcessingSequence(item);
     } catch (err) {
@@ -1439,10 +1420,9 @@ async function pushVideoMetadataToDatabase(item) {
         streamUid: item.streamUid || '',
         hlsUrl: item.hlsUrl || '',
         dashUrl: item.dashUrl || '',
-        videoQualities: item.videoProvider === 'cloudflare-stream' ? {
-            auto: item.hlsUrl || item.videoUrl,
-            hls: item.hlsUrl || item.videoUrl,
-            dash: item.dashUrl || '',
+        videoQualities: item.videoProvider === 'r2-hls' ? {
+            auto: item.hlsUrl,
+            hls: item.hlsUrl,
             preferred: [144, 360, 480, 720, 1080]
         } : (item.videoQualities || null),
         streamQualityLadder: item.streamQualityLadder || [144, 360, 480, 720, 1080],
@@ -3083,7 +3063,7 @@ function toggleClipSubscribe(channelId, buttonEl) {
 let currentActiveFeelsIdx = -1;
 
 const FLAYNITY_STREAM_PREFERRED_QUALITY_LADDER = [144, 360, 480, 720, 1080];
-const FLAYNITY_STREAM_START_HEIGHT = 360;
+const FLAYNITY_STREAM_START_HEIGHT = 144;
 
 function chooseClosestHlsLevel(levels, targetHeight = FLAYNITY_STREAM_START_HEIGHT) {
     if (!Array.isArray(levels) || !levels.length) return -1;
@@ -3206,11 +3186,12 @@ const feelsWarmCache = new Map();
 
 function warmFeelRange(url, key, generation) {
     if (!url || generation !== feelsWarmGeneration || feelsWarmCache.has(key)) return;
-    if (!/^https?:\/\//i.test(url) || /\.m3u8(?:$|[?#])/i.test(url)) return;
+    if (!/^https?:\/\//i.test(url)) return;
     feelsWarmCache.set(key, 'pending');
+    const isHls = /\.m3u8(?:$|[?#])/i.test(url);
     fetch(normalizeFlaynityMediaUrl(url), {
         method: 'GET',
-        headers: { Range: 'bytes=0-262143' },
+        ...(isHls ? {} : { headers: { Range: 'bytes=0-262143' } }),
         cache: 'force-cache',
         credentials: 'omit'
     }).then(r => {
@@ -5245,42 +5226,6 @@ function closeFullScreenImagePreview() {
 let reactionActivePostId = null;
 let reactionTimer = null;
 
-// POST-ONLY REACTION SOUND ENGINE
-// These IDs are intentionally separate from the global UI sound engine.
-// Feels and Video interactions never call these sounds.
-const POST_REACTION_SOUND_IDS = {
-    tap: 'post-reaction-sound-like-tap',
-    hold: 'post-reaction-sound-like-hold',
-    emoji: 'post-reaction-sound-emoji-tap',
-    cancel: 'post-reaction-sound-like-cancel'
-};
-const postReactionSounds = {};
-
-function initPostReactionSounds() {
-    Object.entries(POST_REACTION_SOUND_IDS).forEach(([key, id]) => {
-        if (postReactionSounds[key]) return;
-        const audio = new Audio(`sound/${key === 'tap' ? 'like.tap' : key === 'hold' ? 'like.hold' : key === 'emoji' ? 'emoji.tap' : 'like.cancel'}.mp3`);
-        audio.id = id;
-        audio.preload = 'auto';
-        audio.volume = 0.38;
-        audio.style.display = 'none';
-        audio.setAttribute('aria-hidden', 'true');
-        if (document.body && !document.getElementById(id)) document.body.appendChild(audio);
-        postReactionSounds[key] = audio;
-    });
-}
-
-function playPostReactionSound(type) {
-    try {
-        initPostReactionSounds();
-        const audio = postReactionSounds[type];
-        if (!audio) return;
-        audio.currentTime = 0;
-        const promise = audio.play();
-        if (promise && typeof promise.catch === 'function') promise.catch(() => {});
-    } catch (e) {}
-}
-
 function startReactionTimer(postId, e) {
     reactionActivePostId = postId;
     clearTimeout(reactionTimer);
@@ -5294,7 +5239,7 @@ function clearReactionTimer(postId, e) {
 }
 
 function showReactionPicker(postId, e) {
-    playPostReactionSound('hold');
+    playUI('click');
     const picker = document.getElementById('fb-reaction-picker');
     if (!picker) return;
 
@@ -5343,7 +5288,6 @@ const reactionColors = {
 function selectPostReaction(type) {
     const picker = document.getElementById('fb-reaction-picker');
     if (!picker) return;
-    playPostReactionSound('emoji');
     const postId = picker.dataset.postId;
     if (!postId) return;
 
@@ -5363,10 +5307,8 @@ function handleLoveSingleClick(postId) {
     const userId = auth.currentUser.uid;
     db.ref(`post_reactions/${postId}/${userId}`).once('value', (snap) => {
         if (snap.exists() && snap.val().type === 'love') {
-            playPostReactionSound('cancel');
             db.ref(`post_reactions/${postId}/${userId}`).remove();
         } else {
-            playPostReactionSound('tap');
             submitPostReaction(postId, 'love');
         }
     });
@@ -6934,7 +6876,7 @@ function flyBuildQualityMenu(){
     // R2 has no transcoded quality ladder; expose the actual progressive source
     // instead of leaving the menu stuck at "Loading quality...".
     const provider=currentActiveMovie?.videoProvider || 'r2';
-    if(provider !== 'cloudflare-stream'){
+    if(provider !== 'cloudflare-stream' && provider !== 'r2-hls'){
         list.innerHTML=`<div class="fly-menu-item active"><span>Auto · Original</span><i class="fas fa-check"></i></div>`;
         return;
     }

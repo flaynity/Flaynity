@@ -358,6 +358,139 @@
 }
 #edit-channel-page .edit-form-container { padding: 22px 20px 44px !important; }
 #edit-channel-page .avatar-overlay-camera { opacity: .9; }
+
+/* =========================================================
+   VIEW CHANNEL — FULL-BLEED BANNER + LIVE UPLOAD UI
+   ========================================================= */
+#view-channel-page{
+    padding-top:0 !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+}
+#view-channel-page > .appbar{
+    position:absolute !important;
+    top:0 !important;
+    left:0 !important;
+    right:0 !important;
+    width:100% !important;
+    height:60px !important;
+    min-height:60px !important;
+    background:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+    z-index:1000 !important;
+    pointer-events:none !important;
+}
+#view-channel-page > .appbar .appbar-back-btn{
+    pointer-events:auto !important;
+    position:absolute !important;
+    top:max(10px, env(safe-area-inset-top, 0px)) !important;
+    left:12px !important;
+    width:44px !important;
+    height:44px !important;
+    border:0 !important;
+    background:transparent !important;
+    box-shadow:none !important;
+    color:#111 !important;
+    z-index:1001 !important;
+    padding:0 !important;
+}
+#view-channel-page > .appbar .appbar-back-btn i{
+    font-size:1.55rem !important;
+    text-shadow:0 1px 3px rgba(255,255,255,.8) !important;
+}
+#view-channel-page > .appbar .centered-page-title,
+#view-channel-page > .appbar #view-appbar-title{
+    display:none !important;
+}
+#view-channel-page > .page-content{
+    height:100% !important;
+    min-height:0 !important;
+    padding:0 !important;
+    margin:0 !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    -webkit-overflow-scrolling:touch !important;
+    box-sizing:border-box !important;
+}
+#view-channel-page .channel-banner-container{
+    width:100% !important;
+    height:auto !important;
+    aspect-ratio:16 / 9 !important;
+    margin:0 !important;
+    padding:0 !important;
+    border:0 !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+    overflow:hidden !important;
+    position:relative !important;
+    background:#E2E8F0 !important;
+    flex:none !important;
+}
+#view-channel-page .channel-banner-img{
+    display:block !important;
+    width:100% !important;
+    height:100% !important;
+    margin:0 !important;
+    padding:0 !important;
+    border:0 !important;
+    border-radius:0 !important;
+    object-fit:cover !important;
+}
+#view-channel-page .banner-gradient{
+    display:none !important;
+}
+#view-channel-page .channel-tabs{
+    position:static !important;
+    top:auto !important;
+    z-index:2 !important;
+}
+#view-channel-page .channel-feels-container{
+    display:grid !important;
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    gap:8px !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+    overflow:visible !important;
+}
+#view-channel-page .channel-feels-container .feels-grid-card,
+#view-channel-page .channel-feels-container .short-grid-card{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    aspect-ratio:9 / 16 !important;
+    height:auto !important;
+    margin:0 !important;
+    box-sizing:border-box !important;
+    overflow:hidden !important;
+    border-radius:12px !important;
+}
+#view-channel-page .channel-feels-container .feels-grid-card img,
+#view-channel-page .channel-feels-container .short-grid-card img{
+    display:block !important;
+    width:100% !important;
+    height:100% !important;
+    min-width:0 !important;
+    object-fit:cover !important;
+}
+#view-channel-page .channel-tab-content{
+    min-width:0 !important;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+    overflow-x:hidden !important;
+}
+#view-channel-page .fl-live-upload-card{
+    grid-column:1 / -1 !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+}
+
 </style></head><body>
 <div class="tab-content" id="you-tab">
 <div class="profile-card-you">

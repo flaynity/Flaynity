@@ -854,11 +854,13 @@ Object.values(postReactionSounds).forEach(audio => {
 
 function playPostReactionSound(type, postId = null) {
     try {
-        // These sounds are strictly for normal Post reaction controls.
-        // Never allow the Post sound engine to fire from Feels/Video controls.
-        if (!postId || !document.getElementById(`post-card-${postId}`)) return;
+        // HARD SCOPE: these sounds belong ONLY to a rendered Post card.
+        // Feels and Video elements are intentionally excluded even if they
+        // happen to use the same reaction/ID handlers elsewhere.
+        if (!postId) return;
         const postCard = document.getElementById(`post-card-${postId}`);
-        if (!postCard || !postCard.closest('.post-card')) return;
+        if (!postCard || postCard.dataset.contentType !== 'post') return;
+        if (!postCard.querySelector('.post-action-btn-fb')) return;
 
         const audio = postReactionSounds[type];
         if (!audio) return;
@@ -2188,7 +2190,7 @@ function renderSinglePostSegmentUI(post) {
     const loveBtnId = `post-love-btn-${post.id}`;
 
     return `
-        <div class="post-card" id="post-card-${post.id}" style="margin-bottom: 24px; background: transparent; border: none; border-radius: 0; padding: 12px 0; box-shadow: none; overflow: visible; border-bottom: 1px solid var(--border-color);">
+        <div class="post-card" data-content-type="post" id="post-card-${post.id}" style="margin-bottom: 24px; background: transparent; border: none; border-radius: 0; padding: 12px 0; box-shadow: none; overflow: visible; border-bottom: 1px solid var(--border-color);">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 4px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     ${avatarHtml}

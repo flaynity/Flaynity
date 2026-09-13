@@ -109,7 +109,7 @@
 
 /* Unique Colors for each Floating Item */
 .icon-pro { background: linear-gradient(135deg, #8B5CF6 0%, #D946EF 100%); box-shadow: 0 4px 14px rgba(139,92,246,0.3); }
-.icon-ads { background: linear-gradient(135deg, #D80E45 0%, #F97316 100%); box-shadow: 0 4px 14px rgba(244,63,94,0.3); }
+.icon-ads { background: linear-gradient(135deg, #F43F5E 0%, #F97316 100%); box-shadow: 0 4px 14px rgba(244,63,94,0.3); }
 .icon-boost { background: linear-gradient(135deg, #F59E0B 0%, #EAB308 100%); box-shadow: 0 4px 14px rgba(245,158,11,0.3); }
 .icon-pay { background: linear-gradient(135deg, #10B981 0%, #14B8A6 100%); box-shadow: 0 4px 14px rgba(16,185,129,0.3); }
 
@@ -121,9 +121,9 @@
 .premium-service-item > span { min-width: 0; font-weight: 800; font-size: 1.05rem; }
 
 /* View Channel */
-        .channel-banner-container { width: 100%; aspect-ratio: 16 / 9; height: auto; min-height: 0; position: relative; background: #E2E8F0; overflow: hidden; }
-        .channel-banner-img { display: block; width: 100%; height: 100%; object-fit: cover; }
-        
+        .channel-banner-container { width: 100%; height: 120px; position: relative; background: #E2E8F0; overflow: hidden; }
+        .channel-banner-img { width: 100%; height: 100%; object-fit: cover; }
+        .banner-gradient { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 80%); }
         
         .channel-profile-section { padding: 16px 20px; background: var(--surface); border-bottom: 1px solid var(--glass-border); margin-top: -32px; border-radius: 32px 32px 0 0; position: relative; z-index: 2; }
         .profile-row-main { display: flex; gap: 16px; align-items: center; }
@@ -146,16 +146,14 @@
         .btn-channel-action.btn-edit:active { background: var(--border-color); }
 
 /* Content Tabs */
-        .channel-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--glass-border); position: relative; top: auto; z-index: 10; }
+        .channel-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--glass-border); position: sticky; top: 64px; z-index: 10; }
         .channel-tab-item { flex: 1; text-align: center; padding: 16px 0; font-size: 0.95rem; font-weight: 800; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; }
         .channel-tab-item.active { color: var(--primary); border-bottom-color: var(--primary); }
         .channel-tab-content { display: none; padding: 16px; }
         .channel-tab-content.active { display: block; }
         
         .channel-videos-container { display: flex; flex-direction: column; gap: 16px; }
-        .channel-feels-container { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px; width: 100%; box-sizing: border-box; align-items: start; }
-        /* Live uploads occupy the full Feels grid width so normal Feels cards keep their original 3-column design. */
-        .channel-feels-container > .fl-live-upload-card { grid-column: 1 / -1; width: 100%; box-sizing: border-box; }
+        .channel-shorts-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .channel-posts-container { display: flex; flex-direction: column; gap: 16px; }
         
         .channel-video-card-long { display: flex; gap: 12px; cursor: pointer; }
@@ -166,9 +164,9 @@
         .video-card-meta-long h4 { margin: 0 0 4px; font-size: 0.9rem; font-weight: 800; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.25; }
         .video-card-meta-long p { margin: 0; font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
         
-        .feels-grid-card { display: block; width: 100%; min-width: 0; aspect-ratio: 9 / 16; height: auto; border-radius: 12px; overflow: hidden; background: #E2E8F0; position: relative; cursor: pointer; box-sizing: border-box; }
-        .feels-grid-card img { display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; object-fit: cover; }
-        .feels-grid-views { position: absolute; bottom: 8px; left: 8px; color: white; font-size: 0.75rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.8); display: flex; align-items: center; gap: 4px; }
+        .short-grid-card { aspect-ratio: 9/16; border-radius: 12px; overflow: hidden; background: #E2E8F0; position: relative; cursor: pointer; }
+        .short-grid-card img { width: 100%; height: 100%; object-fit: cover; }
+        .short-grid-views { position: absolute; bottom: 8px; left: 8px; color: white; font-size: 0.75rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.8); display: flex; align-items: center; gap: 4px; }
 
 /* Account Switching */
         .account-row { display: flex; align-items: center; gap: 14px; padding: 16px; background: var(--bg-color); border: 1px solid var(--glass-border); border-radius: 20px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
@@ -360,90 +358,6 @@
 }
 #edit-channel-page .edit-form-container { padding: 22px 20px 44px !important; }
 #edit-channel-page .avatar-overlay-camera { opacity: .9; }
-
-/* FINAL: View Channel — exact 3-column / 9:16 Feels cards + 16:9 banner */
-#view-channel-page,
-#view-channel-page .page-content,
-#view-channel-page .channel-tab-content,
-#view-channel-page #channel-content-feels,
-#view-channel-page #channel-feels-grid {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    overflow-x: hidden !important;
-}
-
-#view-channel-page .channel-banner-container {
-    width: 100% !important;
-    height: auto !important;
-    aspect-ratio: 16 / 9 !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    position: relative !important;
-    overflow: hidden !important;
-}
-#view-channel-page .channel-banner-img {
-    display: block !important;
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
-}
-#view-channel-page #channel-content-feels {
-    padding: 8px 16px 24px !important;
-    overflow-x: hidden !important;
-}
-#view-channel-page #channel-feels-grid {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    grid-auto-rows: auto !important;
-    grid-auto-flow: row !important;
-    gap: 8px !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow-x: hidden !important;
-    overflow-y: visible !important;
-    align-items: start !important;
-    justify-items: stretch !important;
-}
-#view-channel-page #channel-feels-grid > .feels-grid-card {
-    display: block !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    aspect-ratio: 9 / 16 !important;
-    grid-column: auto !important;
-    grid-row: auto !important;
-    overflow: hidden !important;
-    position: relative !important;
-    box-sizing: border-box !important;
-}
-#view-channel-page #channel-feels-grid > .feels-grid-card > img,
-#view-channel-page #channel-feels-grid > .feels-grid-card img {
-    display: block !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    max-width: none !important;
-    max-height: none !important;
-    object-fit: cover !important;
-}
-#view-channel-page #channel-feels-grid > .fl-live-upload-card {
-    grid-column: 1 / -1 !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-}
 </style></head><body>
 <div class="tab-content" id="you-tab">
 <div class="profile-card-you">
@@ -554,6 +468,7 @@
 <div class="page-content" style="padding: 0;">
 <div class="channel-banner-container">
 <img class="channel-banner-img" id="view-channel-banner" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&amp;w=2000&amp;auto=format&amp;fit=crop"/>
+<div class="banner-gradient"></div>
 </div>
 <div class="channel-profile-section">
 <div class="profile-row-main">
@@ -579,14 +494,14 @@
 </div>
 <div class="channel-tabs">
 <div class="channel-tab-item active" id="tab-channel-videos" onclick="switchChannelTab('videos')">Videos</div>
-<div class="channel-tab-item" id="tab-channel-feels" onclick="switchChannelTab('feels')">Feels</div>
+<div class="channel-tab-item" id="tab-channel-shorts" onclick="switchChannelTab('shorts')">Shorts</div>
 <div class="channel-tab-item" id="tab-channel-posts" onclick="switchChannelTab('posts')">Posts</div>
 </div>
 <div class="channel-tab-content active" id="channel-content-videos">
 <div class="channel-videos-container" id="channel-videos-grid"></div>
 </div>
-<div class="channel-tab-content" id="channel-content-feels">
-<div class="channel-feels-container" id="channel-feels-grid"></div>
+<div class="channel-tab-content" id="channel-content-shorts">
+<div class="channel-shorts-container" id="channel-shorts-grid"></div>
 </div>
 <div class="channel-tab-content" id="channel-content-posts">
 <div class="channel-posts-container" id="channel-posts-feed"></div>
@@ -647,7 +562,7 @@
 <div class="analytics-card">
 <span class="stat-lbl"><i class="fas fa-video"></i> Created Items</span>
 <h2 class="stat-num" id="anal-content">0</h2>
-<span class="stat-sub-text">Videos, Feels, Posts</span>
+<span class="stat-sub-text">Videos, Shorts, Posts</span>
 </div>
 </div>
 <h4 class="section-title">Monthly Growth Channel</h4>
@@ -776,8 +691,8 @@
 <path d="M40 40V50M36 45H44" stroke="#10B981" stroke-linecap="round" stroke-width="3"></path>
 </svg>
 </div>
-<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Feels Feed Ads</h4>
-<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Earn from ads shown in the Feels Feed.</p>
+<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Shorts Feed Ads</h4>
+<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Earn from ads shown in the Shorts Feed.</p>
 </div>
 <div class="slider-card">
 <div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
@@ -807,8 +722,8 @@
 <div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
 <svg fill="none" height="80" viewbox="0 0 80 80" width="80" xmlns="http://www.w3.org/2000/svg">
 <rect fill="rgba(236, 72, 153, 0.1)" height="80" rx="20" width="80"></rect>
-<path d="M26 28H54L58 56H22L26 28Z" fill="#D80E45" stroke="#D80E45" stroke-linejoin="round" stroke-width="2"></path>
-<path d="M34 28V22C34 18.7 36.7 16 40 16C43.3 16 46 18.7 46 22V28" stroke="#D80E45" stroke-linecap="round" stroke-width="3"></path>
+<path d="M26 28H54L58 56H22L26 28Z" fill="#EC4899" stroke="#EC4899" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M34 28V22C34 18.7 36.7 16 40 16C43.3 16 46 18.7 46 22V28" stroke="#EC4899" stroke-linecap="round" stroke-width="3"></path>
 </svg>
 </div>
 <h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Shopping</h4>
@@ -851,7 +766,7 @@
 </div>
 <div style="margin-bottom: 8px;">
 <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem; margin-bottom: 4px;">
-<span style="color: var(--text-main);">Public Views (Feels &amp; Videos)</span>
+<span style="color: var(--text-main);">Public Views (Shorts &amp; Videos)</span>
 <span id="req-views-txt" style="color: var(--text-muted);">0 / 10K</span>
 </div>
 <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px;">Last 365 Days</div>

@@ -1363,6 +1363,15 @@ async function runPostUploadProcessingSequence(item) {
             item.thumbUrl = item.thumbDataUrl || item.streamThumbnail || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
         }
 
+        // Never publish an original R2 MP4. Feed metadata must point only to the HLS master playlist.
+        if (item.videoProvider !== "r2-hls" ||
+            !item.hlsUrl ||
+            !/\.m3u8(?:$|[?#])/i.test(String(item.hlsUrl))) {
+            throw new Error("HLS processing did not produce a valid master.m3u8 playlist.");
+        }
+        item.videoLink = item.hlsUrl;
+        item.videoUrl = item.hlsUrl;
+
         item.processingMsg = "Publishing Feed...";
         item.progress = 100;
         updateManagerUI();
@@ -3186,11 +3195,13 @@ const feelsWarmCache = new Map();
 
 function warmFeelRange(url, key, generation) {
     if (!url || generation !== feelsWarmGeneration || feelsWarmCache.has(key)) return;
-    if (!/^https?:\/\//i.test(url) || /\.m3u8(?:$|[?#])/i.test(url)) return;
+    if (!/^https?:\/\//i.test(url)) return;
     feelsWarmCache.set(key, 'pending');
-    fetch(normalizeFlaynityMediaUrl(url), {
+    const normalizedUrl = normalizeFlaynityMediaUrl(url);
+    const isHls = /\.m3u8(?:$|[?#])/i.test(normalizedUrl);
+    fetch(normalizedUrl, {
         method: 'GET',
-        headers: { Range: 'bytes=0-262143' },
+        headers: isHls ? {} : { Range: 'bytes=0-262143' },
         cache: 'force-cache',
         credentials: 'omit'
     }).then(r => {

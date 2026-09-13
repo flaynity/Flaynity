@@ -852,14 +852,14 @@ Object.values(postReactionSounds).forEach(audio => {
     try { audio.preload = 'auto'; audio.volume = 0.55; } catch(e) {}
 });
 
-function playPostReactionSound(type, postId = null) {
+function playPostReactionSound(type, postId = null, sourceEl = null) {
     try {
-        // HARD SCOPE: these sounds belong ONLY to a rendered Post card.
-        // Feels and Video elements are intentionally excluded even if they
-        // happen to use the same reaction/ID handlers elsewhere.
-        if (!postId) return;
-        const postCard = document.getElementById(`post-card-${postId}`);
-        if (!postCard || postCard.dataset.contentType !== 'post') return;
+        // STRICT SCOPE: sound is allowed ONLY when the actual reaction
+        // control belongs to a rendered Post card. Never infer this from an
+        // ID alone because a Feels item can have the same ID as a Post.
+        if (!postId || !sourceEl) return;
+        const postCard = sourceEl.closest ? sourceEl.closest('.post-card[data-content-type=\"post\"]') : null;
+        if (!postCard || postCard.id !== `post-card-${postId}`) return;
         if (!postCard.querySelector('.post-action-btn-fb')) return;
 
         const audio = postReactionSounds[type];
@@ -2218,11 +2218,11 @@ function renderSinglePostSegmentUI(post) {
                 <button id="${loveBtnId}" 
                         class="post-action-btn-fb ripple" 
                         style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--border-color); border: none; padding: 12px; border-radius: 12px; font-size: 0.9rem; font-weight: 800; color: var(--text-main); cursor: pointer; transition: all 0.2s;"
-                        onmousedown="startReactionTimer('${post.id}', event)"
-                        ontouchstart="startReactionTimer('${post.id}', event)"
+                        onmousedown="startReactionTimer('${post.id}', event, this)"
+                        ontouchstart="startReactionTimer('${post.id}', event, this)"
                         onmouseup="clearReactionTimer('${post.id}', event)"
                         ontouchend="clearReactionTimer('${post.id}', event)"
-                        onclick="handleLoveSingleClick('${post.id}')">
+                        onclick="handleLoveSingleClick('${post.id}', this)">
                     <i class="far fa-heart love-icon-element" id="love-icon-${post.id}"></i> <span id="love-text-${post.id}" style="display: inline-flex; align-items: center; line-height: 1;">Love</span>
                 </button>
                 
@@ -5275,11 +5275,11 @@ function closeFullScreenImagePreview() {
 let reactionActivePostId = null;
 let reactionTimer = null;
 
-function startReactionTimer(postId, e) {
+function startReactionTimer(postId, e, sourceEl) {
     reactionActivePostId = postId;
     clearTimeout(reactionTimer);
     reactionTimer = setTimeout(() => {
-        playPostReactionSound('hold', postId);
+        playPostReactionSound('hold', postId, sourceEl);
         showReactionPicker(postId, e);
     }, 500); 
 }
@@ -5304,6 +5304,7 @@ function showReactionPicker(postId, e) {
     picker.style.left = `${Math.max(16, Math.min(window.innerWidth - 320, clientX - 140))}px`; 
     picker.style.top = `${clientY - 75}px`;
     picker.dataset.postId = postId;
+    picker._reactionSourceEl = e && e.currentTarget ? e.currentTarget : (e && e.target ? e.target : null);
     
     picker.classList.remove('picker-pop-active');
     void picker.offsetWidth; 
@@ -5341,11 +5342,11 @@ function selectPostReaction(type) {
     if (!postId) return;
 
     AppNavigation.pop(); 
-    playPostReactionSound('emoji', postId);
+    playPostReactionSound('emoji', postId, picker._reactionSourceEl);
     submitPostReaction(postId, type);
 }
 
-function handleLoveSingleClick(postId) {
+function handleLoveSingleClick(postId, sourceEl) {
     if (!auth.currentUser) {
         showNotification("Please sign in to react", "error");
         return;
@@ -5357,10 +5358,10 @@ function handleLoveSingleClick(postId) {
     const userId = auth.currentUser.uid;
     db.ref(`post_reactions/${postId}/${userId}`).once('value', (snap) => {
         if (snap.exists() && snap.val().type === 'love') {
-            playPostReactionSound('cancel', postId);
+            playPostReactionSound('cancel', postId, sourceEl);
             db.ref(`post_reactions/${postId}/${userId}`).remove();
         } else {
-            playPostReactionSound('tap', postId);
+            playPostReactionSound('tap', postId, sourceEl);
             submitPostReaction(postId, 'love');
         }
     });

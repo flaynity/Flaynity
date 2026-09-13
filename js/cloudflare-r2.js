@@ -133,7 +133,9 @@ async function flaynityTranscodeToHls(sourceKey, contentType = "video/mp4", onSt
     const jobId = data.jobId;
     if (!jobId) throw new Error("FFmpeg did not return a job ID.");
     const hls = data.hlsUrl || data.videoUrl || data.videoLink;
-    if (!hls) throw new Error("FFmpeg did not return an HLS URL.");
+    if (!hls || !/\.m3u8(?:$|[?#])/i.test(String(hls))) {
+        throw new Error("FFmpeg did not return a valid HLS master playlist.");
+    }
     if (typeof onStatus === "function") onStatus({ status: "queued", jobId, available: [] });
 
     const deadline = Date.now() + 15 * 60 * 1000;
@@ -171,7 +173,7 @@ async function flaynityTranscodeToHls(sourceKey, contentType = "video/mp4", onSt
 // =========================================================
 // CLOUDFLARE STREAM: ADAPTIVE VIDEO UPLOAD / HLS PLAYBACK
 // =========================================================
-const FLAYNITY_STREAM_ENABLED = true;
+const FLAYNITY_STREAM_ENABLED = false;
 const FLAYNITY_STREAM_CAPABILITY_TTL = 5 * 60 * 1000;
 let flaynityStreamCapabilityCache = { checkedAt: 0, enabled: false };
 

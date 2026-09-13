@@ -136,39 +136,50 @@ async function flaynityTranscodeToHls(sourceKey, contentType = "video/mp4", onSt
     if (!hls || !/\.m3u8(?:$|[?#])/i.test(String(hls))) {
         throw new Error("FFmpeg did not return a valid HLS master playlist.");
     }
-    if (typeof onStatus === "function") onStatus({ status: "queued", jobId, available: [] });
 
-    const deadline = Date.now() + 15 * 60 * 1000;
-    let delay = 2500;
-    while (Date.now() < deadline) {
-        await new Promise(resolve => setTimeout(resolve, delay));
-        const freshToken = await user.getIdToken(true);
-        const statusResponse = await fetch(`${FLAYNITY_API_BASE}/v1/media/transcode/${encodeURIComponent(jobId)}`, {
-            method: "GET", headers: { "Authorization": `Bearer ${freshToken}` }, cache: "no-store"
-        });
-        const statusData = await statusResponse.json().catch(() => ({}));
-        if (!statusResponse.ok) throw new Error(statusData.error || `FFmpeg status failed (${statusResponse.status}).`);
-        if (typeof onStatus === "function") onStatus(statusData);
-
-        const available = Array.isArray(statusData.available) ? statusData.available : [];
-        const has144 = available.some(v => Number(v) === 144 || String(v).includes("144"));
-        if (statusData.status === "failed") throw new Error(statusData.error || "FFmpeg processing failed.");
-        if (has144 || statusData.status === "completed") {
-            return {
-                jobId,
-                provider: "r2-hls",
-                videoProvider: "r2-hls",
-                videoUrl: hls,
-                videoLink: hls,
-                hlsUrl: hls,
-                sourceKey
-            };
-        }
-        delay = Math.min(5000, delay + 500);
+    // IMPORTANT: Do not make the user wait for FFmpeg encoding.
+    // The Worker/Render processor continues the HLS job in the background.
+    // Publish as soon as the transcode job is accepted; 144p and the remaining
+    // renditions become available progressively at the same master.m3u8 URL.
+    if (typeof onStatus === "function") {
+        onStatus({ status: "queued", jobId, available: [], hlsUrl: hls });
     }
-    throw new Error("FFmpeg processing timed out before 144p HLS became available.");
-}
 
+    // Best-effort background status monitoring. This never blocks publishing.
+    (async () => {
+        let delay = 2500;
+        const deadline = Date.now() + 15 * 60 * 1000;
+        while (Date.now() < deadline) {
+            try {
+                await new Promise(resolve => setTimeout(resolve, delay));
+                if (!navigator.onLine) return;
+                const freshToken = await user.getIdToken(true);
+                const statusResponse = await fetch(`${FLAYNITY_API_BASE}/v1/media/transcode/${encodeURIComponent(jobId)}`, {
+                    method: "GET",
+                    headers: { "Authorization": `Bearer ${freshToken}` },
+                    cache: "no-store"
+                });
+                const statusData = await statusResponse.json().catch(() => ({}));
+                if (!statusResponse.ok) return;
+                if (typeof onStatus === "function") onStatus(statusData);
+                if (statusData.status === "failed" || statusData.status === "completed") return;
+                delay = Math.min(5000, delay + 500);
+            } catch (e) {
+                return;
+            }
+        }
+    })();
+
+    return {
+        jobId,
+        provider: "r2-hls",
+        videoProvider: "r2-hls",
+        videoUrl: hls,
+        videoLink: hls,
+        hlsUrl: hls,
+        sourceKey
+    };
+}
 
 // =========================================================
 // CLOUDFLARE STREAM: ADAPTIVE VIDEO UPLOAD / HLS PLAYBACK

@@ -111,75 +111,60 @@ async function uploadMediaToFlaynity(file, folder = "videos", onProgress, contro
 }
 
 // =========================================================
-// R2 -> Flaynity Server -> FFmpeg -> HLS
+// FLAYNITY SERVER: R2 -> FFmpeg -> HLS
 // =========================================================
-const FLAYNITY_HLS_STATUS_TIMEOUT = 15 * 60 * 1000;
-
 async function flaynityTranscodeToHls(sourceKey, contentType = "video/mp4", onStatus) {
-    if (!sourceKey) throw new Error("Video upload completed, but source key is missing.");
-    const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
+    if (!sourceKey) throw new Error("Missing uploaded video key.");
+    const user = (typeof auth !== "undefined" && auth.currentUser) ? auth.currentUser : null;
     if (!user) throw new Error("Please sign in first.");
 
-    async function request(path, options = {}, forceFreshToken = false) {
-        const token = await user.getIdToken(!!forceFreshToken);
-        const headers = { ...(options.headers || {}), "Authorization": `Bearer ${token}` };
-        if (options.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
-        const response = await fetch(`${FLAYNITY_API_BASE}${path}`, { ...options, headers, cache: "no-store" });
-        const data = await response.json().catch(() => ({}));
-        return { response, data };
-    }
+    const token = await user.getIdToken(true);
+    const headers = {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+    };
+    const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/transcode`, {
+        method: "POST", headers, cache: "no-store",
+        body: JSON.stringify({ sourceKey, contentType: contentType || "video/mp4" })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `FFmpeg transcode request failed (${response.status}).`);
 
-    let queued = await request("/v1/media/transcode", {
-        method: "POST",
-        body: JSON.stringify({ sourceKey, contentType })
-    }, false);
-    if (queued.response.status === 401) {
-        queued = await request("/v1/media/transcode", {
-            method: "POST",
-            body: JSON.stringify({ sourceKey, contentType })
-        }, true);
-    }
-    if (!queued.response.ok || !queued.data.jobId) {
-        throw new Error(queued.data?.error || `Could not start HLS transcoding (HTTP ${queued.response.status}).`);
-    }
+    const jobId = data.jobId;
+    if (!jobId) throw new Error("FFmpeg did not return a job ID.");
+    const hls = data.hlsUrl || data.videoUrl || data.videoLink;
+    if (!hls) throw new Error("FFmpeg did not return an HLS URL.");
+    if (typeof onStatus === "function") onStatus({ status: "queued", jobId, available: [] });
 
-    const jobId = queued.data.jobId;
-    const hlsUrl = queued.data.hlsUrl || queued.data.videoUrl || queued.data.videoLink;
-    const started = Date.now();
-    let lastStatus = queued.data;
+    const deadline = Date.now() + 15 * 60 * 1000;
+    let delay = 2500;
+    while (Date.now() < deadline) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+        const freshToken = await user.getIdToken(true);
+        const statusResponse = await fetch(`${FLAYNITY_API_BASE}/v1/media/transcode/${encodeURIComponent(jobId)}`, {
+            method: "GET", headers: { "Authorization": `Bearer ${freshToken}` }, cache: "no-store"
+        });
+        const statusData = await statusResponse.json().catch(() => ({}));
+        if (!statusResponse.ok) throw new Error(statusData.error || `FFmpeg status failed (${statusResponse.status}).`);
+        if (typeof onStatus === "function") onStatus(statusData);
 
-    while (Date.now() - started < FLAYNITY_HLS_STATUS_TIMEOUT) {
-        await new Promise(r => setTimeout(r, 1500));
-        let result = await request(`/v1/media/transcode/${encodeURIComponent(jobId)}`);
-        if (result.response.status === 401) {
-            result = await request(`/v1/media/transcode/${encodeURIComponent(jobId)}`, {}, true);
-        }
-        if (!result.response.ok) {
-            throw new Error(result.data?.error || `Could not read HLS processing status (HTTP ${result.response.status}).`);
-        }
-        lastStatus = result.data || {};
-        if (typeof onStatus === "function") onStatus(lastStatus);
-
-        if (lastStatus.status === "failed") {
-            throw new Error(lastStatus.error || "FFmpeg HLS processing failed.");
-        }
-
-        const available = Array.isArray(lastStatus.available) ? lastStatus.available.map(String) : [];
-        const ready144 = available.includes("144p");
-        const returnedHls = lastStatus.hlsUrl || lastStatus.videoUrl || lastStatus.videoLink || hlsUrl;
-        if (ready144 && returnedHls) {
+        const available = Array.isArray(statusData.available) ? statusData.available : [];
+        const has144 = available.some(v => Number(v) === 144 || String(v).includes("144"));
+        if (statusData.status === "failed") throw new Error(statusData.error || "FFmpeg processing failed.");
+        if (has144 || statusData.status === "completed") {
             return {
                 jobId,
+                provider: "r2-hls",
                 videoProvider: "r2-hls",
-                videoLink: returnedHls,
-                videoUrl: returnedHls,
-                hlsUrl: returnedHls,
+                videoUrl: hls,
+                videoLink: hls,
+                hlsUrl: hls,
                 sourceKey
             };
         }
+        delay = Math.min(5000, delay + 500);
     }
-
-    throw new Error("Video uploaded, but FFmpeg HLS processing is taking too long. Please try again shortly.");
+    throw new Error("FFmpeg processing timed out before 144p HLS became available.");
 }
 
 

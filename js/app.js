@@ -839,11 +839,33 @@ async function triggerUniversalPullToRefresh() {
 // =========================================
 const soundClick = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
 const soundSuccess = new Audio('https://assets.mixkit.co/active_storage/sfx/1114/1114-preview.mp3');
-soundClick.volume = 0.3; soundSuccess.volume = 0.4;
+
+// Post reaction sounds are bundled locally so they work reliably inside the
+// Sketchware WebView without depending on an external audio host.
+const postReactionSounds = {
+    tap: new Audio('sound/like.tap.mp3'),
+    hold: new Audio('sound/like.hold.mp3'),
+    emoji: new Audio('sound/emoji.tap.mp3'),
+    cancel: new Audio('sound/like.cancel.mp3')
+};
+Object.values(postReactionSounds).forEach(audio => {
+    try { audio.preload = 'auto'; audio.volume = 0.55; } catch(e) {}
+});
+
+function playPostReactionSound(type) {
+    try {
+        const audio = postReactionSounds[type];
+        if (!audio) return;
+        audio.currentTime = 0;
+        const promise = audio.play();
+        if (promise && typeof promise.catch === 'function') promise.catch(() => {});
+    } catch(e) {}
+}
+
 function playUI(type) { 
     try { 
-        if(type === 'click' && soundClick) { soundClick.currentTime = 0; soundClick.play(); } 
-        if(type === 'success' && soundSuccess) { soundSuccess.currentTime = 0; soundSuccess.play(); } 
+        if(type === 'click' && soundClick) { soundClick.currentTime = 0; soundClick.play().catch(() => {}); } 
+        if(type === 'success' && soundSuccess) { soundSuccess.currentTime = 0; soundSuccess.play().catch(() => {}); } 
     } catch(e) {} 
 }
 
@@ -5249,6 +5271,7 @@ function startReactionTimer(postId, e) {
     reactionActivePostId = postId;
     clearTimeout(reactionTimer);
     reactionTimer = setTimeout(() => {
+        playPostReactionSound('hold');
         showReactionPicker(postId, e);
     }, 500); 
 }
@@ -5258,7 +5281,6 @@ function clearReactionTimer(postId, e) {
 }
 
 function showReactionPicker(postId, e) {
-    playUI('click');
     const picker = document.getElementById('fb-reaction-picker');
     if (!picker) return;
 
@@ -5311,6 +5333,7 @@ function selectPostReaction(type) {
     if (!postId) return;
 
     AppNavigation.pop(); 
+    playPostReactionSound('emoji');
     submitPostReaction(postId, type);
 }
 
@@ -5326,8 +5349,10 @@ function handleLoveSingleClick(postId) {
     const userId = auth.currentUser.uid;
     db.ref(`post_reactions/${postId}/${userId}`).once('value', (snap) => {
         if (snap.exists() && snap.val().type === 'love') {
+            playPostReactionSound('cancel');
             db.ref(`post_reactions/${postId}/${userId}`).remove();
         } else {
+            playPostReactionSound('tap');
             submitPostReaction(postId, 'love');
         }
     });

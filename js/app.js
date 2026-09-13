@@ -839,41 +839,11 @@ async function triggerUniversalPullToRefresh() {
 // =========================================
 const soundClick = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
 const soundSuccess = new Audio('https://assets.mixkit.co/active_storage/sfx/1114/1114-preview.mp3');
-
-// Post reaction sounds are bundled locally so they work reliably inside the
-// Sketchware WebView without depending on an external audio host.
-const postReactionSounds = {
-    tap: new Audio('sound/like.tap.mp3'),
-    hold: new Audio('sound/like.hold.mp3'),
-    emoji: new Audio('sound/emoji.tap.mp3'),
-    cancel: new Audio('sound/like.cancel.mp3')
-};
-Object.values(postReactionSounds).forEach(audio => {
-    try { audio.preload = 'auto'; audio.volume = 0.55; } catch(e) {}
-});
-
-function playPostReactionSound(type, postId = null, sourceEl = null) {
-    try {
-        // STRICT SCOPE: sound is allowed ONLY when the actual reaction
-        // control belongs to a rendered Post card. Never infer this from an
-        // ID alone because a Feels item can have the same ID as a Post.
-        if (!postId || !sourceEl) return;
-        const postCard = sourceEl.closest ? sourceEl.closest('.post-card[data-content-type=\"post\"]') : null;
-        if (!postCard || postCard.id !== `post-card-${postId}`) return;
-        if (!postCard.querySelector('.post-action-btn-fb')) return;
-
-        const audio = postReactionSounds[type];
-        if (!audio) return;
-        audio.currentTime = 0;
-        const promise = audio.play();
-        if (promise && typeof promise.catch === 'function') promise.catch(() => {});
-    } catch(e) {}
-}
-
+soundClick.volume = 0.3; soundSuccess.volume = 0.4;
 function playUI(type) { 
     try { 
-        if(type === 'click' && soundClick) { soundClick.currentTime = 0; soundClick.play().catch(() => {}); } 
-        if(type === 'success' && soundSuccess) { soundSuccess.currentTime = 0; soundSuccess.play().catch(() => {}); } 
+        if(type === 'click' && soundClick) { soundClick.currentTime = 0; soundClick.play(); } 
+        if(type === 'success' && soundSuccess) { soundSuccess.currentTime = 0; soundSuccess.play(); } 
     } catch(e) {} 
 }
 
@@ -2190,7 +2160,7 @@ function renderSinglePostSegmentUI(post) {
     const loveBtnId = `post-love-btn-${post.id}`;
 
     return `
-        <div class="post-card" data-content-type="post" id="post-card-${post.id}" style="margin-bottom: 24px; background: transparent; border: none; border-radius: 0; padding: 12px 0; box-shadow: none; overflow: visible; border-bottom: 1px solid var(--border-color);">
+        <div class="post-card" id="post-card-${post.id}" style="margin-bottom: 24px; background: transparent; border: none; border-radius: 0; padding: 12px 0; box-shadow: none; overflow: visible; border-bottom: 1px solid var(--border-color);">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 4px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     ${avatarHtml}
@@ -2218,11 +2188,11 @@ function renderSinglePostSegmentUI(post) {
                 <button id="${loveBtnId}" 
                         class="post-action-btn-fb ripple" 
                         style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--border-color); border: none; padding: 12px; border-radius: 12px; font-size: 0.9rem; font-weight: 800; color: var(--text-main); cursor: pointer; transition: all 0.2s;"
-                        onmousedown="startReactionTimer('${post.id}', event, this)"
-                        ontouchstart="startReactionTimer('${post.id}', event, this)"
+                        onmousedown="startReactionTimer('${post.id}', event)"
+                        ontouchstart="startReactionTimer('${post.id}', event)"
                         onmouseup="clearReactionTimer('${post.id}', event)"
                         ontouchend="clearReactionTimer('${post.id}', event)"
-                        onclick="handleLoveSingleClick('${post.id}', this)">
+                        onclick="handleLoveSingleClick('${post.id}')">
                     <i class="far fa-heart love-icon-element" id="love-icon-${post.id}"></i> <span id="love-text-${post.id}" style="display: inline-flex; align-items: center; line-height: 1;">Love</span>
                 </button>
                 
@@ -5275,11 +5245,46 @@ function closeFullScreenImagePreview() {
 let reactionActivePostId = null;
 let reactionTimer = null;
 
-function startReactionTimer(postId, e, sourceEl) {
+// POST-ONLY REACTION SOUND ENGINE
+// These IDs are intentionally separate from the global UI sound engine.
+// Feels and Video interactions never call these sounds.
+const POST_REACTION_SOUND_IDS = {
+    tap: 'post-reaction-sound-like-tap',
+    hold: 'post-reaction-sound-like-hold',
+    emoji: 'post-reaction-sound-emoji-tap',
+    cancel: 'post-reaction-sound-like-cancel'
+};
+const postReactionSounds = {};
+
+function initPostReactionSounds() {
+    Object.entries(POST_REACTION_SOUND_IDS).forEach(([key, id]) => {
+        if (postReactionSounds[key]) return;
+        const audio = new Audio(`sound/${key === 'tap' ? 'like.tap' : key === 'hold' ? 'like.hold' : key === 'emoji' ? 'emoji.tap' : 'like.cancel'}.mp3`);
+        audio.id = id;
+        audio.preload = 'auto';
+        audio.volume = 0.38;
+        audio.style.display = 'none';
+        audio.setAttribute('aria-hidden', 'true');
+        if (document.body && !document.getElementById(id)) document.body.appendChild(audio);
+        postReactionSounds[key] = audio;
+    });
+}
+
+function playPostReactionSound(type) {
+    try {
+        initPostReactionSounds();
+        const audio = postReactionSounds[type];
+        if (!audio) return;
+        audio.currentTime = 0;
+        const promise = audio.play();
+        if (promise && typeof promise.catch === 'function') promise.catch(() => {});
+    } catch (e) {}
+}
+
+function startReactionTimer(postId, e) {
     reactionActivePostId = postId;
     clearTimeout(reactionTimer);
     reactionTimer = setTimeout(() => {
-        playPostReactionSound('hold', postId, sourceEl);
         showReactionPicker(postId, e);
     }, 500); 
 }
@@ -5289,6 +5294,7 @@ function clearReactionTimer(postId, e) {
 }
 
 function showReactionPicker(postId, e) {
+    playPostReactionSound('hold');
     const picker = document.getElementById('fb-reaction-picker');
     if (!picker) return;
 
@@ -5304,7 +5310,6 @@ function showReactionPicker(postId, e) {
     picker.style.left = `${Math.max(16, Math.min(window.innerWidth - 320, clientX - 140))}px`; 
     picker.style.top = `${clientY - 75}px`;
     picker.dataset.postId = postId;
-    picker._reactionSourceEl = e && e.currentTarget ? e.currentTarget : (e && e.target ? e.target : null);
     
     picker.classList.remove('picker-pop-active');
     void picker.offsetWidth; 
@@ -5338,15 +5343,15 @@ const reactionColors = {
 function selectPostReaction(type) {
     const picker = document.getElementById('fb-reaction-picker');
     if (!picker) return;
+    playPostReactionSound('emoji');
     const postId = picker.dataset.postId;
     if (!postId) return;
 
     AppNavigation.pop(); 
-    playPostReactionSound('emoji', postId, picker._reactionSourceEl);
     submitPostReaction(postId, type);
 }
 
-function handleLoveSingleClick(postId, sourceEl) {
+function handleLoveSingleClick(postId) {
     if (!auth.currentUser) {
         showNotification("Please sign in to react", "error");
         return;
@@ -5358,10 +5363,10 @@ function handleLoveSingleClick(postId, sourceEl) {
     const userId = auth.currentUser.uid;
     db.ref(`post_reactions/${postId}/${userId}`).once('value', (snap) => {
         if (snap.exists() && snap.val().type === 'love') {
-            playPostReactionSound('cancel', postId, sourceEl);
+            playPostReactionSound('cancel');
             db.ref(`post_reactions/${postId}/${userId}`).remove();
         } else {
-            playPostReactionSound('tap', postId, sourceEl);
+            playPostReactionSound('tap');
             submitPostReaction(postId, 'love');
         }
     });

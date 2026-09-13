@@ -852,8 +852,14 @@ Object.values(postReactionSounds).forEach(audio => {
     try { audio.preload = 'auto'; audio.volume = 0.55; } catch(e) {}
 });
 
-function playPostReactionSound(type) {
+function playPostReactionSound(type, postId = null) {
     try {
+        // These sounds are strictly for normal Post reaction controls.
+        // Never allow the Post sound engine to fire from Feels/Video controls.
+        if (!postId || !document.getElementById(`post-card-${postId}`)) return;
+        const postCard = document.getElementById(`post-card-${postId}`);
+        if (!postCard || !postCard.closest('.post-card')) return;
+
         const audio = postReactionSounds[type];
         if (!audio) return;
         audio.currentTime = 0;
@@ -5271,7 +5277,7 @@ function startReactionTimer(postId, e) {
     reactionActivePostId = postId;
     clearTimeout(reactionTimer);
     reactionTimer = setTimeout(() => {
-        playPostReactionSound('hold');
+        playPostReactionSound('hold', postId);
         showReactionPicker(postId, e);
     }, 500); 
 }
@@ -5333,7 +5339,7 @@ function selectPostReaction(type) {
     if (!postId) return;
 
     AppNavigation.pop(); 
-    playPostReactionSound('emoji');
+    playPostReactionSound('emoji', postId);
     submitPostReaction(postId, type);
 }
 
@@ -5349,10 +5355,10 @@ function handleLoveSingleClick(postId) {
     const userId = auth.currentUser.uid;
     db.ref(`post_reactions/${postId}/${userId}`).once('value', (snap) => {
         if (snap.exists() && snap.val().type === 'love') {
-            playPostReactionSound('cancel');
+            playPostReactionSound('cancel', postId);
             db.ref(`post_reactions/${postId}/${userId}`).remove();
         } else {
-            playPostReactionSound('tap');
+            playPostReactionSound('tap', postId);
             submitPostReaction(postId, 'love');
         }
     });

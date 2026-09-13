@@ -1543,12 +1543,12 @@ function buildLiveUploadCard(item) {
 
 function renderChannelUploadQueue(type) {
     const grid = document.getElementById(type === 'feels' ? 'channel-feels-grid' : 'channel-videos-grid');
-    if (!grid) return;
-    const items = uploadQueue.filter(i => uploadQueueTypeForChannel(i) === type && i.status !== 'completed');
-    const old = grid.querySelectorAll('.fl-live-upload-card');
-    old.forEach(el => el.remove());
+    if (!grid || typeof uploadQueue === 'undefined') return;
+    const items = uploadQueue.filter(i => uploadQueueTypeForChannel(i) === type && i.status !== 'completed' && i.status !== 'cancelled');
+    grid.querySelectorAll('.fl-live-upload-card').forEach(el => el.remove());
     if (!items.length) return;
-    grid.insertAdjacentHTML('afterbegin', items.map(buildLiveUploadCard).join(''));
+    const html = items.map(buildLiveUploadCard).join('');
+    grid.insertAdjacentHTML('afterbegin', html);
 }
 
 function findUploadItem(id) { return uploadQueue.find(i => i.id === id); }
@@ -4568,11 +4568,27 @@ function openViewChannelPage() {
 
     switchChannelTab('videos');
     AppNavigation.pushPage('view-channel-page');
+    startLiveChannelUploadRefresh();
+    setTimeout(() => renderChannelUploadQueue('videos'), 120);
+    setTimeout(() => renderChannelUploadQueue('feels'), 120);
 }
 
 let activeChannelVideosListener = null;
 let activeChannelFeelsListener = null;
 let activeChannelPostsListener = null;
+
+let liveChannelUploadRefreshTimer = null;
+function startLiveChannelUploadRefresh(){
+    if (liveChannelUploadRefreshTimer) clearInterval(liveChannelUploadRefreshTimer);
+    liveChannelUploadRefreshTimer = setInterval(() => {
+        const page = document.getElementById('view-channel-page');
+        if (!page || page.style.display === 'none' || page.hidden) return;
+        if (typeof renderChannelUploadQueue === 'function') {
+            renderChannelUploadQueue('videos');
+            renderChannelUploadQueue('feels');
+        }
+    }, 600);
+}
 
 let activeChannelTab = 'videos';
 function switchChannelTab(type) {
@@ -4587,7 +4603,7 @@ function switchChannelTab(type) {
 
     let targetId = auth.currentUser.uid;
     if (type === 'videos') renderChannelVideos(targetId);
-    else if (type === 'feels') { renderChannelFeels(targetId); requestAnimationFrame(lockChannelFeelsGridLayout); }
+    else if (type === 'feels') renderChannelFeels(targetId);
     else if (type === 'posts') renderChannelPosts(targetId);
 }
 
@@ -4693,67 +4709,6 @@ function renderChannelVideos(userId) {
     });
 }
 
-function lockChannelFeelsGridLayout() {
-    const grid = document.getElementById('channel-feels-grid');
-    if (!grid) return;
-
-    grid.style.display = 'grid';
-    grid.style.gridTemplateColumns = 'repeat(3, minmax(0, 1fr))';
-    grid.style.columnGap = '8px';
-    grid.style.rowGap = '8px';
-    grid.style.width = '100%';
-    grid.style.maxWidth = '100%';
-    grid.style.minWidth = '0';
-    grid.style.overflowX = 'hidden';
-    grid.style.boxSizing = 'border-box';
-
-    // Use the actual rendered grid width instead of relying only on CSS
-    // aspect-ratio. This keeps 3 columns and an exact 9:16 card in Android WebView.
-    const gridWidth = grid.getBoundingClientRect().width || grid.clientWidth;
-    if (!gridWidth) return;
-    const cardWidth = (gridWidth - 16) / 3;
-    const cardHeight = cardWidth * 16 / 9;
-
-    grid.querySelectorAll('.feels-grid-card').forEach(card => {
-        card.style.width = cardWidth + 'px';
-        card.style.minWidth = cardWidth + 'px';
-        card.style.maxWidth = cardWidth + 'px';
-        card.style.height = cardHeight + 'px';
-        card.style.minHeight = cardHeight + 'px';
-        card.style.maxHeight = cardHeight + 'px';
-        card.style.aspectRatio = '9 / 16';
-        card.style.boxSizing = 'border-box';
-        card.style.overflow = 'hidden';
-        card.style.position = 'relative';
-
-        const img = card.querySelector('img');
-        if (img) {
-            img.style.width = '100%';
-            img.style.height = '100%';
-            img.style.minWidth = '0';
-            img.style.minHeight = '0';
-            img.style.maxWidth = 'none';
-            img.style.maxHeight = 'none';
-            img.style.objectFit = 'cover';
-            img.style.display = 'block';
-        }
-    });
-
-    grid.querySelectorAll('.fl-live-upload-card').forEach(card => {
-        card.style.gridColumn = '1 / -1';
-        card.style.width = '100%';
-        card.style.maxWidth = '100%';
-        card.style.minWidth = '0';
-        card.style.boxSizing = 'border-box';
-    });
-}
-
-window.addEventListener('resize', () => {
-    if (document.getElementById('channel-feels-grid')) {
-        requestAnimationFrame(lockChannelFeelsGridLayout);
-    }
-});
-
 function renderChannelFeels(userId) {
     const grid = document.getElementById('channel-feels-grid');
     if (!grid) return;
@@ -4781,9 +4736,7 @@ function renderChannelFeels(userId) {
             views: 0
         })).join('');
 
-        lockChannelFeelsGridLayout();
         renderChannelUploadQueue('feels');
-        lockChannelFeelsGridLayout();
 
         if(navigator.onLine) {
             list.forEach(m => {

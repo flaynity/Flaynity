@@ -113,7 +113,7 @@ async function uploadMediaToFlaynity(file, folder = "videos", onProgress, contro
 // =========================================================
 // FLAYNITY SERVER: R2 -> FFmpeg -> HLS
 // =========================================================
-async function flaynityTranscodeToHls(sourceKey, contentType = "video/mp4", onStatus) {
+async function flaynityTranscodeToHls(sourceKey, contentType = "video/mp4", onStatus, options = {}) {
     if (!sourceKey) throw new Error("Missing uploaded video key.");
     const user = (typeof auth !== "undefined" && auth.currentUser) ? auth.currentUser : null;
     if (!user) throw new Error("Please sign in first.");
@@ -125,7 +125,7 @@ async function flaynityTranscodeToHls(sourceKey, contentType = "video/mp4", onSt
     };
     const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/transcode`, {
         method: "POST", headers, cache: "no-store",
-        body: JSON.stringify({ sourceKey, contentType: contentType || "video/mp4" })
+        body: JSON.stringify({ sourceKey, contentType: contentType.split(";")[0] || "video/mp4", contentId: options.contentId, type: options.type })
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || `FFmpeg transcode request failed (${response.status}).`);
@@ -137,48 +137,54 @@ async function flaynityTranscodeToHls(sourceKey, contentType = "video/mp4", onSt
         throw new Error("FFmpeg did not return a valid HLS master playlist.");
     }
 
-    // IMPORTANT: Do not make the user wait for FFmpeg encoding.
-    // The Worker/Render processor continues the HLS job in the background.
-    // Publish as soon as the transcode job is accepted; 144p and the remaining
-    // renditions become available progressively at the same master.m3u8 URL.
-    if (typeof onStatus === "function") {
-        onStatus({ status: "queued", jobId, available: [], hlsUrl: hls });
-    }
-
-    // Best-effort background status monitoring. This never blocks publishing.
-    (async () => {
-        let delay = 2500;
-        const deadline = Date.now() + 15 * 60 * 1000;
-        while (Date.now() < deadline) {
-            try {
-                await new Promise(resolve => setTimeout(resolve, delay));
-                if (!navigator.onLine) return;
-                const freshToken = await user.getIdToken(true);
-                const statusResponse = await fetch(`${FLAYNITY_API_BASE}/v1/media/transcode/${encodeURIComponent(jobId)}`, {
-                    method: "GET",
-                    headers: { "Authorization": `Bearer ${freshToken}` },
-                    cache: "no-store"
-                });
-                const statusData = await statusResponse.json().catch(() => ({}));
-                if (!statusResponse.ok) return;
-                if (typeof onStatus === "function") onStatus(statusData);
-                if (statusData.status === "failed" || statusData.status === "completed") return;
-                delay = Math.min(5000, delay + 500);
-            } catch (e) {
-                return;
-            }
+    // Publication barrier: queued/processing is NEVER a playable result.
+    const deadline = Date.now() + 60 * 60 * 1000;
+    let statusData = data, failures = 0;
+    while (Date.now() < deadline) {
+        if (options.isCancelled?.()) throw new Error("Upload cancelled.");
+        if (auth.currentUser?.uid !== user.uid) throw new Error("The uploading account has signed out.");
+        if (typeof onStatus === "function") onStatus(statusData);
+        if (statusData.status === "failed") { const error = new Error(statusData.error || "144p encoding failed."); error.encodingFailed = true; throw error; }
+        if (Array.isArray(statusData.available) && statusData.available.includes("144p")) {
+            return { ...statusData, jobId, provider: "r2-hls", videoProvider: "r2-hls", videoUrl: hls, videoLink: hls, hlsUrl: hls, sourceKey };
         }
-    })();
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+            statusData = await flaynityJobRequest(`/${encodeURIComponent(jobId)}`);
+            failures = 0;
+        } catch (error) {
+            if ([400, 401, 403, 404].includes(error.status) || ++failures >= 10) throw error;
+        }
+    }
+    throw new Error("144p is still processing. Retry to resume without uploading the source again.");
+}
 
-    return {
-        jobId,
-        provider: "r2-hls",
-        videoProvider: "r2-hls",
-        videoUrl: hls,
-        videoLink: hls,
-        hlsUrl: hls,
-        sourceKey
-    };
+async function flaynityJobRequest(route, body) {
+    const user = typeof auth !== "undefined" ? auth.currentUser : null;
+    if (!user) throw new Error("Please sign in first.");
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000);
+    try {
+        const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/transcode${route}`, {
+            method: body ? "POST" : "GET",
+            headers: { "Authorization": `Bearer ${await user.getIdToken()}`, "Content-Type": "application/json" },
+            ...(body ? { body: JSON.stringify(body) } : {}),
+            cache: "no-store", signal: controller.signal
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) { const error = new Error(data.error || `Transcode request failed (${response.status}).`); error.status = response.status; throw error; }
+        return data;
+    } finally { clearTimeout(timeout); }
+}
+
+async function flaynityConfirmHlsPublished(jobId) {
+    let lastError;
+    for (let attempt = 0; attempt < 4; attempt++) {
+        try { return await flaynityJobRequest(`/${encodeURIComponent(jobId)}/published`, {}); }
+        catch (error) { lastError = error; await new Promise(resolve => setTimeout(resolve, 1500 * (attempt + 1))); }
+    }
+    // Worker cron retries this confirmation even if the app closes.
+    throw lastError;
 }
 
 // =========================================================

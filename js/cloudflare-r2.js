@@ -144,8 +144,8 @@ async function flaynityTranscodeToHls(sourceKey, contentType = "video/mp4", onSt
         if (options.isCancelled?.()) throw new Error("Upload cancelled.");
         if (auth.currentUser?.uid !== user.uid) throw new Error("The uploading account has signed out.");
         if (typeof onStatus === "function") onStatus(statusData);
-        if (statusData.status === "failed") { const error = new Error(statusData.error || "144p encoding failed."); error.encodingFailed = true; throw error; }
-        if (Array.isArray(statusData.available) && statusData.available.includes("144p")) {
+        if (statusData.status === "failed") { const error = new Error(statusData.error || "360p encoding failed."); error.encodingFailed = true; throw error; }
+        if (Array.isArray(statusData.available) && statusData.available.includes("360p")) {
             return { ...statusData, jobId, provider: "r2-hls", videoProvider: "r2-hls", videoUrl: hls, videoLink: hls, hlsUrl: hls, sourceKey };
         }
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -156,7 +156,7 @@ async function flaynityTranscodeToHls(sourceKey, contentType = "video/mp4", onSt
             if ([400, 401, 403, 404].includes(error.status) || ++failures >= 90) throw error;
         }
     }
-    throw new Error("144p is still processing. Retry to resume without uploading the source again.");
+    throw new Error("360p is still processing. Retry to resume without uploading the source again.");
 }
 
 async function flaynityJobRequest(route, body) {

@@ -1301,7 +1301,7 @@ async function startS3DirectUpload(item) {
         if (item.status === 'cancelled') return;
         item.key = upload.key;
         item.status = "processing";
-        item.processingMsg = "Preparing 144p HLS...";
+        item.processingMsg = "Preparing 360p HLS...";
         item.progress = 100;
         updateManagerUI();
 
@@ -1323,8 +1323,8 @@ async function startS3DirectUpload(item) {
         item.hlsJobId = hls.jobId;
         item.sourceKey = hls.sourceKey;
 
-        // Render waits at ready-144p until Firebase confirms publication.
-        item.status = "processing"; item.retryCount = 0; item.processingMsg = "144p ready · Publishing..."; updateManagerUI();
+        // Render waits at ready-360p until Firebase confirms publication.
+        item.status = "processing"; item.retryCount = 0; item.processingMsg = "360p ready · Publishing..."; updateManagerUI();
         await runPostUploadProcessingSequence(item);
     } catch (err) {
         if (item.status === 'cancelled') return;
@@ -1380,12 +1380,12 @@ async function runPostUploadProcessingSequence(item) {
         // A successful Firebase write, not a local queued write, opens the gate.
         flaynityConfirmHlsPublished(item.hlsJobId).catch(error => {
             console.warn('Background quality confirmation pending:', error.message);
-            showNotification('144p published. Higher qualities await server confirmation.', 'success');
+            showNotification('360p published. Higher qualities process in background.', 'success');
         });
         item.status = "completed";
         updateManagerUI();
         saveQueueStateToLocalStorage();
-        showNotification(`"${item.title}" published in 144p. Higher qualities process in background.`, "success");
+        showNotification(`"${item.title}" published in 360p. Higher qualities process in background.`, "success");
 
     } catch (err) {
         item.status = "failed";
@@ -1428,8 +1428,8 @@ async function pushVideoMetadataToDatabase(item) {
         aspectRatio: item.hlsMetadata?.aspectRatio || 0,
         hlsManifestUrl: item.hlsMetadata?.hlsManifestUrl || item.hlsUrl,
         hlsManifestVersion: item.hlsMetadata?.hlsManifestVersion || 1,
-        hlsStatus: item.hlsMetadata?.hlsStatus || 'ready-144p',
-        availableQualities: item.hlsMetadata?.availableQualities || ['144p'],
+        hlsStatus: item.hlsMetadata?.hlsStatus || 'ready-360p',
+        availableQualities: item.hlsMetadata?.availableQualities || ['360p'],
         poster: item.thumbUrl || item.thumbDataUrl || "",
         banner: item.thumbUrl || item.thumbDataUrl || "",
         videoLink: item.hlsUrl || item.videoUrl,
@@ -1443,9 +1443,9 @@ async function pushVideoMetadataToDatabase(item) {
             auto: item.hlsUrl || item.videoUrl,
             hls: item.hlsUrl || item.videoUrl,
             dash: item.dashUrl || '',
-            preferred: [144, 360, 480, 720, 1080]
+            preferred: [360, 480, 720, 1080]
         } : (item.videoQualities || null),
-        streamQualityLadder: item.hlsMetadata?.streamQualityLadder || [144],
+        streamQualityLadder: item.hlsMetadata?.streamQualityLadder || [360, 480, 720, 1080],
         uploadTime: Date.now(),
         updateTime: Date.now(),
         visibility: item.visibility,
@@ -3089,8 +3089,8 @@ function toggleClipSubscribe(channelId, buttonEl) {
 // =========================================================
 let currentActiveFeelsIdx = -1;
 
-const FLAYNITY_STREAM_PREFERRED_QUALITY_LADDER = [144, 360, 480, 720, 1080];
-const FLAYNITY_STREAM_START_HEIGHT = 144;
+const FLAYNITY_STREAM_PREFERRED_QUALITY_LADDER = [360, 480, 720, 1080];
+const FLAYNITY_STREAM_START_HEIGHT = 360;
 
 function hlsQualityHeight(level) {
     const url = Array.isArray(level.url) ? level.url[0] : level.url;
@@ -3203,7 +3203,7 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
         return;
     }
 
-    // Start with 144p, then let ABR use only the published renditions.
+    // Start with 360p, then let ABR use only the published renditions.
     if (typeof Hls !== 'undefined' && Hls.isSupported()) {
         const hls = new Hls({
             enableWorker: true,

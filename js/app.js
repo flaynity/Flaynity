@@ -1289,7 +1289,7 @@ async function startS3DirectUpload(item) {
     const startTime = Date.now();
     try {
         const uploadFolder = item.type === 'video-short' ? 'feels' : 'videos';
-        const upload = await uploadMediaToFlaynity(item.file, uploadFolder, (loaded, total) => {
+        const upload = item.upload || await uploadMediaToFlaynity(item.file, uploadFolder, (loaded, total) => {
             if (item.status !== 'uploading') return;
             item.progress = Math.round((loaded / total) * 100);
             const elapsed = (Date.now() - startTime) / 1000;
@@ -1297,6 +1297,8 @@ async function startS3DirectUpload(item) {
             updateManagerUI();
         }, item.control);
 
+        item.upload = upload;
+        if (item.status === 'cancelled') return;
         item.key = upload.key;
         item.status = "processing";
         item.processingMsg = "Preparing 144p HLS...";
@@ -1306,25 +1308,28 @@ async function startS3DirectUpload(item) {
         const hls = await flaynityTranscodeToHls(upload.key, item.file?.type || "video/mp4", status => {
             if (status?.status === "queued") item.processingMsg = "FFmpeg queueing video...";
             else if (status?.status === "processing" || status?.status === "inprogress") item.processingMsg = `FFmpeg HLS encoding${status.currentQuality ? ` · ${status.currentQuality}` : "..."}`;
-            else if (Array.isArray(status?.available) && status.available.length) item.processingMsg = `HLS ready · ${status.available.join(", ")}p`;
+            else if (Array.isArray(status?.available) && status.available.length) item.processingMsg = `HLS ready · ${status.available.join(", ")}`;
             updateManagerUI();
-        });
+        }, { contentId: item.id, type: item.type, isCancelled: () => item.status === 'cancelled' });
+        if (item.status === 'cancelled') return;
+        item.hlsMetadata = hls;
 
         item.videoProvider = "r2-hls";
         item.videoUrl = hls.videoUrl;
         item.videoLink = hls.videoLink;
         item.hlsUrl = hls.hlsUrl;
         item.dashUrl = "";
-        item.videoQualities = { auto: hls.hlsUrl, hls: hls.hlsUrl, preferred: [144, 360, 480, 720, 1080] };
+        item.videoQualities = hls.videoQualities;
         item.hlsJobId = hls.jobId;
         item.sourceKey = hls.sourceKey;
 
-        // HLS encoding continues in the background. Publish immediately using
-        // the stable master.m3u8 URL returned by the server.
-        item.status = "processing"; item.retryCount = 0; item.processingMsg = "Publishing while HLS encodes in background..."; updateManagerUI();
+        // Render waits at ready-144p until Firebase confirms publication.
+        item.status = "processing"; item.retryCount = 0; item.processingMsg = "144p ready · Publishing..."; updateManagerUI();
         await runPostUploadProcessingSequence(item);
     } catch (err) {
-        if (item.status === 'paused') { console.log("Upload paused safely."); }
+        if (item.status === 'cancelled') return;
+        if (err.encodingFailed) { item.status = 'failed'; updateManagerUI(); showNotification(err.message, 'error'); }
+        else if (item.status === 'paused') { console.log("Upload paused safely."); }
         else if (!navigator.onLine) {
             item.status = "paused"; updateManagerUI();
             showNotification("Connection lost. Upload paused.", "error");
@@ -1369,12 +1374,18 @@ async function runPostUploadProcessingSequence(item) {
         item.progress = 100;
         updateManagerUI();
 
+        if (item.status === 'cancelled') return;
         await pushVideoMetadataToDatabase(item);
 
+        // A successful Firebase write, not a local queued write, opens the gate.
+        flaynityConfirmHlsPublished(item.hlsJobId).catch(error => {
+            console.warn('Background quality confirmation pending:', error.message);
+            showNotification('144p published. Higher qualities await server confirmation.', 'success');
+        });
         item.status = "completed";
         updateManagerUI();
         saveQueueStateToLocalStorage();
-        showNotification(`"${item.title}" is published instantly!`, "success");
+        showNotification(`"${item.title}" published in 144p. Higher qualities process in background.`, "success");
 
     } catch (err) {
         item.status = "failed";
@@ -1391,13 +1402,13 @@ function extractHashtags(text) {
 
 async function pushVideoMetadataToDatabase(item) {
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user || user.uid !== item.ownerId) throw new Error('Sign in with the uploading account to publish.');
 
     const userSnap = await db.ref(`users/${user.uid}`).once('value');
     const uData = userSnap.val() || {};
     const username = uData.username || user.email.split('@')[0];
 
-    const resolution = item.type === 'video-short' ? "1080x1920" : "1920x1080";
+    const resolution = item.hlsMetadata?.resolution || '';
     const hashtags = extractHashtags(item.description);
 
     const isScheduled = item.scheduledTime && item.scheduledTime > Date.now();
@@ -1412,6 +1423,13 @@ async function pushVideoMetadataToDatabase(item) {
         category: currentChannelData?.category || "Entertainment",
         duration: formatDuration(item.duration),
         resolution: resolution,
+        sourceWidth: item.hlsMetadata?.sourceWidth || 0,
+        sourceHeight: item.hlsMetadata?.sourceHeight || 0,
+        aspectRatio: item.hlsMetadata?.aspectRatio || 0,
+        hlsManifestUrl: item.hlsMetadata?.hlsManifestUrl || item.hlsUrl,
+        hlsManifestVersion: item.hlsMetadata?.hlsManifestVersion || 1,
+        hlsStatus: item.hlsMetadata?.hlsStatus || 'ready-144p',
+        availableQualities: item.hlsMetadata?.availableQualities || ['144p'],
         poster: item.thumbUrl || item.thumbDataUrl || "",
         banner: item.thumbUrl || item.thumbDataUrl || "",
         videoLink: item.hlsUrl || item.videoUrl,
@@ -1427,7 +1445,7 @@ async function pushVideoMetadataToDatabase(item) {
             dash: item.dashUrl || '',
             preferred: [144, 360, 480, 720, 1080]
         } : (item.videoQualities || null),
-        streamQualityLadder: item.streamQualityLadder || [144, 360, 480, 720, 1080],
+        streamQualityLadder: item.hlsMetadata?.streamQualityLadder || [144],
         uploadTime: Date.now(),
         updateTime: Date.now(),
         visibility: item.visibility,
@@ -1543,13 +1561,13 @@ function pauseUploadItem(id) {
 }
 
 function resumeUploadItem(id) {
-    const item = findUploadItem(id); if (!item || item.status === 'completed') return;
+    const item = findUploadItem(id); if (!item || !['paused', 'failed', 'waiting'].includes(item.status)) return;
     item.status = 'waiting'; item.retryCount = 0;
     updateManagerUI(); saveQueueStateToLocalStorage(); triggerNextActiveUpload();
 }
 
 function retryUploadItem(id) {
-    const item = findUploadItem(id); if (!item || item.status === 'completed') return;
+    const item = findUploadItem(id); if (!item || !['paused', 'failed', 'waiting'].includes(item.status)) return;
     item.status = 'waiting'; item.retryCount = 0; item.progress = 0;
     item.control = { xhr: null, uploadUrl: "" };
     updateManagerUI(); saveQueueStateToLocalStorage(); triggerNextActiveUpload();
@@ -1652,6 +1670,7 @@ function startRealtimeFeedsListener() {
                 const data = snap.val();
                 allLongVideos = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'video') : [];
                 allLongVideos.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                refreshPublishedSources(allLongVideos);
                 
                 allLongVideos.forEach(m => {
                     if (m && m.id && !allAdminMovies.find(x => x.id === m.id)) {
@@ -1676,6 +1695,7 @@ function startRealtimeFeedsListener() {
                 const data = snap.val();
                 allFeels = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'short') : [];
                 allFeels.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                refreshPublishedSources(allFeels);
                 
                 if(allFeels.length !== previousFeelsCount) {
                     previousFeelsCount = allFeels.length;
@@ -2480,7 +2500,7 @@ function buildFeelsPage() {
                 <div class="short-buffer-spinner" id="short-spinner-${s.id}"></div>
                 <div class="short-play-pause-overlay" id="short-pp-overlay-${s.id}"></div>
 
-                <video class="short-video-el" loop playsinline webkit-playsinline poster="${s.poster || ''}" preload="metadata"></video>
+                <video class="short-video-el" style="object-fit:contain!important;object-position:center!important;transform:none!important;" loop playsinline webkit-playsinline poster="${s.poster || ''}" preload="metadata"></video>
 
                 <div class="short-progress-container">
                     <div class="short-progress-bar" id="short-progress-bar-${s.id}"></div>
@@ -2517,6 +2537,10 @@ function buildFeelsPage() {
                         <div class="short-action-label-tiktok">Save</div>
                     </div>
 
+                    <div class="short-action-container">
+                        <select id="short-quality-${s.id}" aria-label="Video quality" onchange="setFeelsQuality('${s.id}', this.value)" style="max-width:72px;background:#111;color:white;border:1px solid #888;border-radius:8px;padding:6px;"><option value="0">Auto</option></select>
+                        <div class="short-action-label-tiktok">Quality</div>
+                    </div>
                     <div class="music-disc-container">
                         <div class="music-disc-inner live-disc-avatar-${s.userId || s.channelId}" id="music-disc-${s.id}">
                             <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
@@ -2585,6 +2609,7 @@ function buildFeelsPage() {
 
     });
 
+    Object.keys(hlsInstances).filter(id => id !== 'fly_main').forEach(id => { hlsInstances[id].destroy(); delete hlsInstances[id]; });
     container.innerHTML = `<div class="feels-swiper">${html}</div>`;
 
     // Bind subscription state AFTER the Feels DOM exists. This is required
@@ -3065,13 +3090,86 @@ function toggleClipSubscribe(channelId, buttonEl) {
 let currentActiveFeelsIdx = -1;
 
 const FLAYNITY_STREAM_PREFERRED_QUALITY_LADDER = [144, 360, 480, 720, 1080];
-const FLAYNITY_STREAM_START_HEIGHT = 360;
+const FLAYNITY_STREAM_START_HEIGHT = 144;
+
+function hlsQualityHeight(level) {
+    const url = Array.isArray(level.url) ? level.url[0] : level.url;
+    return Number(String(url || '').match(/\/(\d+)p\/index\.m3u8(?:$|[?#])/)?.[1]) || Number(level.height) || 0;
+}
+
+function preserveVideoFrame(video) {
+    video.style.setProperty('object-fit', 'contain', 'important');
+    video.style.setProperty('object-position', 'center', 'important');
+    video.style.setProperty('transform', 'none', 'important');
+}
+
+function replaceNativeHlsSource(video, url) {
+    const position = video.currentTime || 0;
+    const playing = !video.paused, muted = video.muted, rate = video.playbackRate;
+    const restore = () => {
+        video.currentTime = Math.min(position, Number.isFinite(video.duration) ? Math.max(0, video.duration - 0.05) : position);
+        video.muted = muted; video.playbackRate = rate;
+        if (playing) video.play().catch(() => {}); else video.pause();
+    };
+    video.addEventListener('loadedmetadata', restore, { once: true });
+    video.src = url; video.load();
+}
+
+function refreshFeelsQualityMenu(shortId, video) {
+    const select = document.getElementById(`short-quality-${shortId}`);
+    if (!select) return;
+    const hls = hlsInstances[shortId];
+    const available = hls ? hls.levels.map(hlsQualityHeight) : (video?._flaynityItem?.availableQualities || []).map(q => parseInt(q, 10));
+    const values = [...new Set(available.filter(q => q > 0))].sort((a, b) => a - b);
+    const selected = hls ? (hls.autoLevelEnabled ? 0 : hlsQualityHeight(hls.levels[hls.loadLevel] || {})) : (video?._flaynityNativeQuality || 0);
+    select.innerHTML = '<option value="0">Auto</option>' + values.map(q => `<option value="${q}">${q}p</option>`).join('');
+    select.value = String(selected);
+}
+
+function setFeelsQuality(shortId, value) {
+    const video = document.getElementById(`slide-short-${shortId}`)?.querySelector('video');
+    if (!video) return;
+    const height = Number(value), hls = hlsInstances[shortId];
+    if (hls) {
+        hls.currentLevel = height ? hls.levels.findIndex(lv => hlsQualityHeight(lv) === height) : -1;
+    } else {
+        const item = video._flaynityItem;
+        const url = height ? item?.videoQualities?.[`${height}p`] : item?.hlsManifestUrl || item?.hlsUrl;
+        if (url) { video._flaynityNativeQuality = height; replaceNativeHlsSource(video, url); }
+    }
+    refreshFeelsQualityMenu(shortId, video);
+}
+
+function refreshPublishedSources(items) {
+    const byId = new Map(items.map(item => [String(item.id), item]));
+    if (currentActiveMovie && byId.has(String(currentActiveMovie.id))) Object.assign(currentActiveMovie, byId.get(String(currentActiveMovie.id)));
+    document.querySelectorAll('.short-video-el, #fly-video').forEach(video => {
+        const item = byId.get(video._flaynityContentId);
+        if (!item || !item.hlsManifestUrl) return;
+        const previous = video._flaynityItem;
+        video._flaynityItem = { ...item };
+        const id = video.id === 'fly-video' ? 'fly_main' : video.closest('.short-slide')?.dataset.shortid;
+        const hls = hlsInstances[id];
+        if (Number(item.hlsManifestVersion) > Number(previous?.hlsManifestVersion || 0)) {
+            if (hls) {
+                // HLS.js does not automatically refresh a VOD master playlist.
+                // Preserve the original position/manual choice across reloads.
+                hls._flaynityRestore ||= { position: video.currentTime || 0, playing: !video.paused, muted: video.muted, rate: video.playbackRate, quality: hls.autoLevelEnabled ? 0 : hlsQualityHeight(hls.levels[hls.loadLevel] || {}) };
+                hls.loadSource(item.hlsManifestUrl);
+            } else if (!video._flaynityNativeQuality) {
+                replaceNativeHlsSource(video, item.hlsManifestUrl);
+            }
+        }
+        if (id === 'fly_main') flyBuildQualityMenu();
+        else refreshFeelsQualityMenu(id, video);
+    });
+}
 
 function chooseClosestHlsLevel(levels, targetHeight = FLAYNITY_STREAM_START_HEIGHT) {
     if (!Array.isArray(levels) || !levels.length) return -1;
     const usable = levels.map((lv, i) => ({
         index: i,
-        height: Number(lv.height) || 0,
+        height: hlsQualityHeight(lv),
         bitrate: Number(lv.bitrate) || 0
     })).filter(x => x.height > 0);
     if (!usable.length) return -1;
@@ -3089,7 +3187,11 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
         delete hlsInstances[shortId];
     }
 
-    const normalizedUrl = normalizeFlaynityMediaUrl(url);
+    const item = shortId === 'fly_main' ? currentActiveMovie : allFeels.find(s => String(s.id) === String(shortId));
+    videoElement._flaynityContentId = item ? String(item.id) : '';
+    videoElement._flaynityItem = item ? { ...item } : null;
+    preserveVideoFrame(videoElement);
+    const normalizedUrl = normalizeFlaynityMediaUrl(item?.hlsManifestUrl || url);
     const isHls = /\.m3u8(?:$|[?#])/i.test(normalizedUrl);
     if (!isHls) {
         // R2 B-version: progressive MP4. Range support is provided by the
@@ -3101,16 +3203,14 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
         return;
     }
 
-    // Future Stream path: HLS.js ABR is kept ready. Stream currently advertises
-    // 360p–1080p; if a 144p rendition ever appears in the manifest, the ladder
-    // and quality menu will automatically include it.
+    // Start with 144p, then let ABR use only the published renditions.
     if (typeof Hls !== 'undefined' && Hls.isSupported()) {
         const hls = new Hls({
             enableWorker: true,
             lowLatencyMode: false,
             capLevelToPlayerSize: true,
-            startLevel: -1,
-            autoStartLoad: true,
+            startLevel: 0,
+            autoStartLoad: false,
             capLevelOnFPSDrop: true,
             maxBufferLength: shortId === 'fly_main' ? 18 : 8,
             maxMaxBufferLength: shortId === 'fly_main' ? 45 : 18,
@@ -3131,21 +3231,29 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
 
         const refreshMainQuality = () => {
             if (shortId === 'fly_main') flyBuildQualityMenu();
+            else refreshFeelsQualityMenu(shortId, videoElement);
         };
 
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            // Start around 360p for fast first-frame playback, then return to
-            // normal ABR immediately so quality can rise/fall with bandwidth.
-            const startIndex = chooseClosestHlsLevel(hls.levels, FLAYNITY_STREAM_START_HEIGHT);
-            if (startIndex >= 0) {
-                try { hls.nextAutoLevel = startIndex; } catch (e) {}
+            const restore = hls._flaynityRestore;
+            hls._flaynityRestore = null;
+            const startIndex = chooseClosestHlsLevel(hls.levels, restore?.quality || FLAYNITY_STREAM_START_HEIGHT);
+            hls.startLevel = Math.max(0, startIndex);
+            hls.loadLevel = restore?.quality ? startIndex : -1;
+            const activeSlide = document.querySelectorAll('.short-slide')[currentActiveFeelsIdx];
+            const shouldPlay = restore ? restore.playing : shortId === 'fly_main' || videoElement.closest('.short-slide') === activeSlide;
+            if (restore) {
+                videoElement.addEventListener('loadedmetadata', () => {
+                    videoElement.currentTime = Math.min(restore.position, Number.isFinite(videoElement.duration) ? Math.max(0, videoElement.duration - 0.05) : restore.position);
+                    videoElement.muted = restore.muted; videoElement.playbackRate = restore.rate;
+                    if (shouldPlay) videoElement.play().catch(() => {}); else videoElement.pause();
+                }, { once: true });
             }
-            try { hls.currentLevel = -1; } catch (e) {}
+            hls.startLoad(restore?.position || 0);
             refreshMainQuality();
-            if (videoElement.paused) {
-                const playPromise = videoElement.play();
-                if (playPromise && playPromise.catch) playPromise.catch(() => {});
-            }
+            if (shouldPlay) videoElement.play().catch(() => {
+                if (!restore) { videoElement.muted = true; videoElement.play().catch(() => {}); }
+            });
         });
         hls.on(Hls.Events.LEVELS_UPDATED, refreshMainQuality);
         hls.on(Hls.Events.LEVEL_SWITCHED, refreshMainQuality);
@@ -3170,7 +3278,10 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
     if (videoElement.canPlayType && videoElement.canPlayType('application/vnd.apple.mpegurl')) {
         videoElement.src = normalizedUrl;
         videoElement.load();
+        const shouldPlay = shortId === 'fly_main' || videoElement.closest('.short-slide') === document.querySelectorAll('.short-slide')[currentActiveFeelsIdx];
+        if (shouldPlay) videoElement.play().catch(() => { videoElement.muted = true; videoElement.play().catch(() => {}); });
         if (shortId === 'fly_main') flyBuildQualityMenu();
+        else refreshFeelsQualityMenu(shortId, videoElement);
     } else {
         videoElement.src = normalizedUrl;
     }
@@ -6511,6 +6622,7 @@ async function publishPremiumVideoOrShort(modeType) {
 
     const queueItem = {
         id: uniqueId,
+        ownerId: auth.currentUser.uid,
         file: currentUploadFile,
         key: fileKey,
         type: modeType,
@@ -6705,7 +6817,7 @@ function flyInitPlayer(link){
     if(!v) return;
     flyCurrentSpeed=1; flySeekAccumRight=0; flySeekAccumLeft=0;
 
-    if(poster && currentActiveMovie){ poster.src=currentActiveMovie.poster||currentActiveMovie.banner||''; poster.style.display='block'; }
+    if(poster && currentActiveMovie){ poster.src=currentActiveMovie.poster||currentActiveMovie.banner||''; poster.style.display='block'; poster.style.objectFit='contain'; }
 
     attachSmartAdaptiveSource(v, link, 'fly_main');
     v.playbackRate=flyCurrentSpeed;
@@ -6722,7 +6834,7 @@ function flyInitPlayer(link){
     v.onplay=flyUpdatePlayIcon;
     v.onpause=()=>{flyUpdatePlayIcon(); flyShowControls();};
     v.ontimeupdate=flyUpdateProgress;
-    v.onloadedmetadata=flyUpdateProgress;
+    v.onloadedmetadata=()=>{ flyUpdateProgress(); flyBuildQualityMenu(); };
     v.onprogress=flyUpdateProgress;
     v.onended=()=>playNextRecommendedVideo();
 
@@ -6847,7 +6959,7 @@ function flyGetHlsQualityLevels(){
     try{
         const hls=hlsInstances['fly_main'];
         if(!hls || !Array.isArray(hls.levels)) return [];
-        return hls.levels.map((lv,i)=>({index:i,height:Number(lv.height)||0,width:Number(lv.width)||0,bitrate:Number(lv.bitrate)||0})).filter(x=>x.height>0);
+        return hls.levels.map((lv,i)=>({index:i,height:hlsQualityHeight(lv),width:Number(lv.width)||0,bitrate:Number(lv.bitrate)||0})).filter(x=>x.height>0);
     }catch(e){ return []; }
 }
 
@@ -6868,7 +6980,7 @@ function flyBuildQualityMenu(){
         });
         const items=[{label:'Auto',height:0,index:-1}].concat(unique.map(l=>({label:`${l.height}p`,height:l.height,index:l.index})));
         list.innerHTML=items.map(q=>{
-            const active=q.height===0 ? current===-1 : current===q.index;
+            const active=q.height===0 ? hls.autoLevelEnabled : !hls.autoLevelEnabled && hls.loadLevel===q.index;
             return `<div class="fly-menu-item ${active?'active':''}" onclick="flySetQuality(${q.height},'${q.label}',event)"><span>${q.label}</span>${active?'<i class="fas fa-check"></i>':''}</div>`;
         }).join('');
         return;
@@ -6881,7 +6993,13 @@ function flyBuildQualityMenu(){
         list.innerHTML=`<div class="fly-menu-item active"><span>Auto · Original</span><i class="fas fa-check"></i></div>`;
         return;
     }
-    list.innerHTML='<div class="fly-menu-item locked"><span>Loading quality...</span></div>';
+    const video=document.getElementById('fly-video');
+    const item=video?._flaynityItem || currentActiveMovie;
+    const available=(item?.availableQualities || []).map(q=>parseInt(q,10)).filter(q=>q>0);
+    if(available.length && !hls){
+        const selected=video?._flaynityNativeQuality || 0;
+        list.innerHTML=[0,...available].map(q=>`<div class="fly-menu-item ${q===selected?'active':''}" onclick="flySetQuality(${q},'${q?q+'p':'Auto'}',event)"><span>${q?q+'p':'Auto'}</span></div>`).join('');
+    }else list.innerHTML='<div class="fly-menu-item locked"><span>Loading quality...</span></div>';
 }
 
 function flySetQuality(height,label,e){
@@ -6892,20 +7010,13 @@ function flySetQuality(height,label,e){
             if(height===0){
                 hls.currentLevel=-1;
             }else{
-                let candidates=hls.levels.map((lv,i)=>({i,h:Number(lv.height)||0})).filter(x=>x.h>0);
-                let best=candidates.filter(x=>x.h===height);
-                if(!best.length){
-                    const range=height===1080?[900,9999]:height===720?[600,899]:height===360?[300,599]:[0,299];
-                    best=candidates.filter(x=>x.h>=range[0]&&x.h<=range[1]);
-                }
-                if(best.length){
-                    best.sort((a,b)=>Math.abs(a.h-height)-Math.abs(b.h-height));
-                    hls.currentLevel=best[0].i;
-                }
+                const index=hls.levels.findIndex(lv=>hlsQualityHeight(lv)===height);
+                if(index>=0) hls.currentLevel=index;
             }
-        }else if(currentActiveMovie && currentActiveMovie.videoQualities){
-            const q=currentActiveMovie.videoQualities[height===0?'auto':`${height}p`];
-            if(q){ const v=document.getElementById('fly-video'); const wasPlaying=v&&!v.paused; const pos=v?v.currentTime:0; if(v){v.src=q;v.load();v.addEventListener('loadedmetadata',function once(){v.currentTime=Math.min(pos,v.duration||pos);if(wasPlaying)v.play().catch(()=>{});},{once:true});} }
+        }else{
+            const v=document.getElementById('fly-video'), item=v?._flaynityItem || currentActiveMovie;
+            const q=height===0 ? item?.hlsManifestUrl || item?.hlsUrl : item?.videoQualities?.[`${height}p`];
+            if(v && q){ v._flaynityNativeQuality=height; replaceNativeHlsSource(v,q); }
         }
     }catch(err){ console.warn('[Flaynity] Quality switch:',err); }
     const lbl=document.getElementById('fly-quality-label'); if(lbl) lbl.innerText=label;

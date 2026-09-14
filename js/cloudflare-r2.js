@@ -153,7 +153,7 @@ async function flaynityTranscodeToHls(sourceKey, contentType = "video/mp4", onSt
             statusData = await flaynityJobRequest(`/${encodeURIComponent(jobId)}`);
             failures = 0;
         } catch (error) {
-            if ([400, 401, 403, 404].includes(error.status) || ++failures >= 10) throw error;
+            if ([400, 401, 403, 404].includes(error.status) || ++failures >= 90) throw error;
         }
     }
     throw new Error("144p is still processing. Retry to resume without uploading the source again.");

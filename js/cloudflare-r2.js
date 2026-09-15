@@ -187,6 +187,157 @@ async function flaynityConfirmHlsPublished(jobId) {
     throw lastError;
 }
 
+
+// =========================================================
+// MUX VIDEO: DIRECT UPLOAD + ASSET READY / HLS
+// =========================================================
+async function flaynityCreateMuxUpload(file, options = {}) {
+    if (!file) throw new Error("No video selected.");
+    const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
+    if (!user) throw new Error("Please sign in first.");
+    const token = await user.getIdToken(true);
+    const response = await fetch(`${FLAYNITY_API_BASE}/v1/mux/upload-url`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+            contentId: options.contentId,
+            type: options.type,
+            title: options.title || "",
+            contentType: (file.type || "video/mp4").split(";")[0],
+            timeout: Math.min(Math.max(Number(options.timeout || 604800), 60), 604800)
+        }),
+        cache: "no-store"
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.uploadUrl || !data.uploadId) {
+        throw new Error(data.error || `Could not create Mux upload (${response.status}).`);
+    }
+    return data;
+}
+
+function flaynityPutMuxWithProgress(uploadUrl, file, onProgress, control) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", uploadUrl, true);
+        if (control) control.xhr = xhr;
+        xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
+        xhr.upload.onprogress = e => {
+            if (e.lengthComputable && typeof onProgress === "function") onProgress(e.loaded, e.total);
+        };
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve();
+            else reject(new Error(`Mux upload failed (${xhr.status}).`));
+        };
+        xhr.onerror = () => reject(new Error("Network error while uploading video to Mux."));
+        xhr.onabort = () => reject(new Error("Upload paused or cancelled."));
+        xhr.send(file);
+    });
+}
+
+async function flaynityMuxUploadStatus(uploadId) {
+    const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
+    if (!user) throw new Error("Please sign in first.");
+    const response = await fetch(`${FLAYNITY_API_BASE}/v1/mux/uploads/${encodeURIComponent(uploadId)}`, {
+        headers: { "Authorization": `Bearer ${await user.getIdToken()}` },
+        cache: "no-store"
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        const error = new Error(data.error || `Mux upload status failed (${response.status}).`);
+        error.status = response.status;
+        throw error;
+    }
+    return data;
+}
+
+async function flaynityMuxAssetStatus(assetId) {
+    const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
+    if (!user) throw new Error("Please sign in first.");
+    const response = await fetch(`${FLAYNITY_API_BASE}/v1/mux/assets/${encodeURIComponent(assetId)}`, {
+        headers: { "Authorization": `Bearer ${await user.getIdToken()}` },
+        cache: "no-store"
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        const error = new Error(data.error || `Mux asset status failed (${response.status}).`);
+        error.status = response.status;
+        throw error;
+    }
+    return data;
+}
+
+async function flaynityCancelMuxUpload(uploadId) {
+    const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
+    if (!user) throw new Error("Please sign in first.");
+    const response = await fetch(`${FLAYNITY_API_BASE}/v1/mux/uploads/${encodeURIComponent(uploadId)}/cancel`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${await user.getIdToken(true)}` },
+        cache: "no-store"
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `Could not cancel Mux upload (${response.status}).`);
+    return data;
+}
+
+async function flaynityUploadVideoToMux(file, options = {}, onProgress, onStatus) {
+    const upload = await flaynityCreateMuxUpload(file, options);
+    if (options.control) {
+        options.control.uploadUrl = upload.uploadUrl;
+        options.control.muxUploadId = upload.uploadId;
+    }
+    await flaynityPutMuxWithProgress(upload.uploadUrl, file, onProgress, options.control);
+
+    const deadline = Date.now() + 60 * 60 * 1000;
+    let failures = 0;
+    let status = null;
+    while (Date.now() < deadline) {
+        if (options.isCancelled?.()) throw new Error("Upload cancelled.");
+        if (typeof onStatus === "function" && status) onStatus(status);
+        try {
+            status = await flaynityMuxUploadStatus(upload.uploadId);
+            failures = 0;
+        } catch (error) {
+            if ([400, 401, 403, 404].includes(error.status) || ++failures >= 30) throw error;
+        }
+        if (typeof onStatus === "function") onStatus(status);
+        if (status?.status === "errored" || status?.error) throw new Error(status.error?.message || status.error || "Mux upload failed.");
+        if (status?.assetId) break;
+        await new Promise(r => setTimeout(r, 2000));
+    }
+    if (!status?.assetId) throw new Error("Mux upload finished, but the video asset was not created yet.");
+
+    const assetDeadline = Date.now() + 60 * 60 * 1000;
+    failures = 0;
+    while (Date.now() < assetDeadline) {
+        if (options.isCancelled?.()) throw new Error("Upload cancelled.");
+        try {
+            const asset = await flaynityMuxAssetStatus(status.assetId);
+            if (typeof onStatus === "function") onStatus(asset);
+            if (asset.status === "errored") throw new Error(asset.error || "Mux video processing failed.");
+            if (asset.status === "ready" && asset.hlsUrl) {
+                return {
+                    ...asset,
+                    uploadId: upload.uploadId,
+                    assetId: asset.assetId || status.assetId,
+                    provider: "mux",
+                    videoProvider: "mux",
+                    videoUrl: asset.hlsUrl,
+                    videoLink: asset.hlsUrl,
+                    hlsUrl: asset.hlsUrl,
+                    hlsManifestUrl: asset.hlsUrl,
+                    availableQualities: ["360p", "480p", "720p", "1080p"],
+                    streamQualityLadder: [360, 480, 720, 1080]
+                };
+            }
+            failures = 0;
+        } catch (error) {
+            if ([400, 401, 403, 404].includes(error.status) || ++failures >= 30) throw error;
+        }
+        await new Promise(r => setTimeout(r, 2500));
+    }
+    throw new Error("Mux is still processing this video. Retry shortly.");
+}
+
 // =========================================================
 // CLOUDFLARE STREAM: ADAPTIVE VIDEO UPLOAD / HLS PLAYBACK
 // =========================================================

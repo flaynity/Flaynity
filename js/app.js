@@ -1288,53 +1288,52 @@ async function startS3DirectUpload(item) {
     item.status = "uploading"; item.progress = item.progress || 0; ensureLiveUploadStyles(); updateManagerUI();
     const startTime = Date.now();
     try {
-        const uploadFolder = item.type === 'video-short' ? 'feels' : 'videos';
-        const upload = item.upload || await uploadMediaToFlaynity(item.file, uploadFolder, (loaded, total) => {
+        const mux = await flaynityUploadVideoToMux(item.file, {
+            contentId: item.id,
+            type: item.type === 'video-short' ? 'video-short' : 'video-long',
+            title: item.title,
+            control: item.control,
+            isCancelled: () => item.status === 'cancelled'
+        }, (loaded, total) => {
             if (item.status !== 'uploading') return;
             item.progress = Math.round((loaded / total) * 100);
             const elapsed = (Date.now() - startTime) / 1000;
             if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
             updateManagerUI();
-        }, item.control);
-
-        item.upload = upload;
+        }, status => {
+            if (!status) return;
+            if (status.status === 'waiting' || status.status === 'asset_created') item.processingMsg = 'Upload complete · preparing video...';
+            else if (status.status === 'preparing') item.processingMsg = 'Mux is processing video...';
+            else if (status.status === 'ready') item.processingMsg = 'Video ready · Publishing...';
+            updateManagerUI();
+        });
         if (item.status === 'cancelled') return;
-        item.key = upload.key;
-        item.status = "processing";
-        item.processingMsg = "Preparing 360p HLS...";
+
         item.progress = 100;
+        item.status = "processing";
+        item.processingMsg = "Video ready · Publishing...";
+        item.hlsMetadata = mux;
+        item.videoProvider = "mux";
+        item.videoUrl = mux.hlsUrl;
+        item.videoLink = mux.hlsUrl;
+        item.hlsUrl = mux.hlsUrl;
+        item.dashUrl = "";
+        item.videoQualities = { auto: mux.hlsUrl, hls: mux.hlsUrl, preferred: [360, 480, 720, 1080] };
+        item.muxUploadId = mux.uploadId;
+        item.muxAssetId = mux.assetId;
+        item.muxPlaybackId = mux.playbackId;
+        item.sourceKey = "";
         updateManagerUI();
 
-        const hls = await flaynityTranscodeToHls(upload.key, item.file?.type || "video/mp4", status => {
-            if (status?.status === "queued") item.processingMsg = "FFmpeg queueing video...";
-            else if (status?.status === "processing" || status?.status === "inprogress") item.processingMsg = `FFmpeg HLS encoding${status.currentQuality ? ` · ${status.currentQuality}` : "..."}`;
-            else if (Array.isArray(status?.available) && status.available.length) item.processingMsg = `HLS ready · ${status.available.join(", ")}`;
-            updateManagerUI();
-        }, { contentId: item.id, type: item.type, isCancelled: () => item.status === 'cancelled' });
-        if (item.status === 'cancelled') return;
-        item.hlsMetadata = hls;
-
-        item.videoProvider = "r2-hls";
-        item.videoUrl = hls.videoUrl;
-        item.videoLink = hls.videoLink;
-        item.hlsUrl = hls.hlsUrl;
-        item.dashUrl = "";
-        item.videoQualities = hls.videoQualities;
-        item.hlsJobId = hls.jobId;
-        item.sourceKey = hls.sourceKey;
-
-        // Render waits at ready-360p until Firebase confirms publication.
-        item.status = "processing"; item.retryCount = 0; item.processingMsg = "360p ready · Publishing..."; updateManagerUI();
         await runPostUploadProcessingSequence(item);
     } catch (err) {
         if (item.status === 'cancelled') return;
-        if (err.encodingFailed) { item.status = 'failed'; updateManagerUI(); showNotification(err.message, 'error'); }
-        else if (item.status === 'paused') { console.log("Upload paused safely."); }
+        if (item.status === 'paused') { console.log("Upload paused safely."); }
         else if (!navigator.onLine) {
             item.status = "paused"; updateManagerUI();
             showNotification("Connection lost. Upload paused.", "error");
         } else {
-            console.error("Upload error: ", err);
+            console.error("Mux upload error: ", err);
             item.retryCount = (item.retryCount || 0) + 1;
             if (item.retryCount <= 5) {
                 item.status = "waiting"; updateManagerUI();
@@ -1433,12 +1432,15 @@ async function pushVideoMetadataToDatabase(item) {
         poster: item.thumbUrl || item.thumbDataUrl || "",
         banner: item.thumbUrl || item.thumbDataUrl || "",
         videoLink: item.hlsUrl || item.videoUrl,
-        videoProvider: item.videoProvider || 'r2-hls',
+        videoProvider: item.videoProvider || 'mux',
         streamUid: item.streamUid || '',
         hlsUrl: item.hlsUrl || item.videoUrl,
         dashUrl: '',
         hlsJobId: item.hlsJobId || '',
-        sourceKey: item.sourceKey || item.key || '',
+        sourceKey: item.sourceKey || '',
+        muxUploadId: item.muxUploadId || '',
+        muxAssetId: item.muxAssetId || '',
+        muxPlaybackId: item.muxPlaybackId || '',
         videoQualities: item.videoProvider === 'cloudflare-stream' ? {
             auto: item.hlsUrl || item.videoUrl,
             hls: item.hlsUrl || item.videoUrl,
@@ -1557,25 +1559,37 @@ function pauseUploadItem(id) {
     const item = findUploadItem(id); if (!item || item.status !== 'uploading') return;
     item.status = 'paused';
     try { if (item.control && item.control.xhr) item.control.xhr.abort(); } catch(e) {}
+    // Mux Direct Upload uses a single PUT URL. Aborting pauses the UI safely;
+    // on Resume we start a fresh direct upload rather than pretending a partial
+    // PUT can continue from the old byte offset.
+    if (item.control?.muxUploadId) {
+        flaynityCancelMuxUpload(item.control.muxUploadId).catch(() => {});
+    }
     updateManagerUI(); saveQueueStateToLocalStorage();
 }
 
 function resumeUploadItem(id) {
     const item = findUploadItem(id); if (!item || !['paused', 'failed', 'waiting'].includes(item.status)) return;
-    item.status = 'waiting'; item.retryCount = 0;
+    item.status = 'waiting'; item.retryCount = 0; item.progress = 0;
+    item.upload = null;
+    item.control = { xhr: null, uploadUrl: '', muxUploadId: '' };
     updateManagerUI(); saveQueueStateToLocalStorage(); triggerNextActiveUpload();
 }
 
 function retryUploadItem(id) {
     const item = findUploadItem(id); if (!item || !['paused', 'failed', 'waiting'].includes(item.status)) return;
     item.status = 'waiting'; item.retryCount = 0; item.progress = 0;
-    item.control = { xhr: null, uploadUrl: "" };
+    item.upload = null;
+    item.control = { xhr: null, uploadUrl: '', muxUploadId: '' };
     updateManagerUI(); saveQueueStateToLocalStorage(); triggerNextActiveUpload();
 }
 
 function cancelUploadItem(id) {
     const item = findUploadItem(id); if (!item) return;
     try { if (item.control && item.control.xhr) item.control.xhr.abort(); } catch(e) {}
+    if (item.control?.muxUploadId) {
+        flaynityCancelMuxUpload(item.control.muxUploadId).catch(() => {});
+    }
     item.status = 'cancelled';
     uploadQueue = uploadQueue.filter(i => i.id !== id);
     updateManagerUI(); saveQueueStateToLocalStorage();

@@ -3775,7 +3775,21 @@ async function openMoviePage(id, isTMDB = false) {
 }
 
 function startVideoPlayer() {
-    if (!currentActiveMovie || !currentActiveMovie.videoLink) { showNotification("No playable links found.", "error"); return; }
+    if (!currentActiveMovie || !currentActiveMovie.videoLink) {
+        const processing = currentActiveMovie && (
+            currentActiveMovie.hlsStatus === "processing" ||
+            currentActiveMovie.status === "processing" ||
+            currentActiveMovie.videoProvider === "mux" && currentActiveMovie.muxAssetId
+        );
+        if (processing) {
+            showNotification("Video is still processing on Mux. 1080p is running in background.", "info");
+            const skeleton = document.getElementById('video-player-skeleton');
+            if (skeleton) { skeleton.style.display = 'flex'; skeleton.innerText = 'Mux processing… 1080p in background'; }
+        } else {
+            showNotification("No playable links found.", "error");
+        }
+        return;
+    }
     const link = currentActiveMovie.videoLink;
     const container = document.getElementById('video-player-container');
     const skeleton = document.getElementById('video-player-skeleton');

@@ -111,136 +111,80 @@ async function uploadMediaToFlaynity(file, folder = "videos", onProgress, contro
 }
 
 // =========================================================
-// MUX VIDEO: DIRECT UPLOAD + FAST HLS PLAYBACK
+// FLAYNITY SERVER: R2 -> FFmpeg -> HLS
 // =========================================================
-async function flaynityCreateMuxUpload(file, options = {}) {
-    if (!file) throw new Error("No video selected.");
-    const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
+async function flaynityTranscodeToHls(sourceKey, contentType = "video/mp4", onStatus, options = {}) {
+    if (!sourceKey) throw new Error("Missing uploaded video key.");
+    const user = (typeof auth !== "undefined" && auth.currentUser) ? auth.currentUser : null;
     if (!user) throw new Error("Please sign in first.");
+
     const token = await user.getIdToken(true);
-    const response = await fetch(`${FLAYNITY_API_BASE}/v1/mux/upload-url`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-            contentId: options.contentId,
-            type: options.type || "video-long",
-            title: options.title || "",
-            contentType: file.type || "video/mp4",
-            timeout: 604800
-        }),
-        cache: "no-store"
+    const headers = {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+    };
+    const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/transcode`, {
+        method: "POST", headers, cache: "no-store",
+        body: JSON.stringify({ sourceKey, contentType: contentType.split(";")[0] || "video/mp4", contentId: options.contentId, type: options.type })
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok || !data.uploadUrl || !data.uploadId) {
-        throw new Error(data.error || `Could not create Mux upload (${response.status}).`);
+    if (!response.ok) throw new Error(data.error || `FFmpeg transcode request failed (${response.status}).`);
+
+    const jobId = data.jobId;
+    if (!jobId) throw new Error("FFmpeg did not return a job ID.");
+    const hls = data.hlsUrl || data.videoUrl || data.videoLink;
+    if (!hls || !/\.m3u8(?:$|[?#])/i.test(String(hls))) {
+        throw new Error("FFmpeg did not return a valid HLS master playlist.");
     }
-    return data;
-}
 
-function flaynityMuxPutWithProgress(uploadUrl, file, onProgress, control) {
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("PUT", uploadUrl, true);
-        if (control) {
-            control.xhr = xhr;
-            control.uploadUrl = uploadUrl;
-        }
-        xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
-        xhr.upload.onprogress = e => {
-            if (e.lengthComputable && typeof onProgress === "function") onProgress(e.loaded, e.total);
-        };
-        xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) resolve();
-            else reject(new Error(`Mux upload failed (${xhr.status}).`));
-        };
-        xhr.onerror = () => reject(new Error("Network error while uploading to Mux."));
-        xhr.onabort = () => reject(new Error("Mux upload aborted."));
-        xhr.send(file);
-    });
-}
-
-async function flaynityMuxRequest(path, method = "GET") {
-    const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
-    if (!user) throw new Error("Please sign in first.");
-    const token = await user.getIdToken();
-    const response = await fetch(`${FLAYNITY_API_BASE}${path}`, {
-        method,
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-        cache: "no-store"
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-        const error = new Error(data.error || `Mux request failed (${response.status}).`);
-        error.status = response.status;
-        throw error;
-    }
-    return data;
-}
-
-async function flaynityWaitForMuxReady(uploadId, onStatus, options = {}) {
-    const deadline = Date.now() + (options.timeoutMs || 60 * 60 * 1000);
-    let assetId = options.assetId || "";
-    let lastAssetStatus = "preparing";
-    let failures = 0;
+    // Publication barrier: queued/processing is NEVER a playable result.
+    const deadline = Date.now() + 60 * 60 * 1000;
+    let statusData = data, failures = 0;
     while (Date.now() < deadline) {
         if (options.isCancelled?.()) throw new Error("Upload cancelled.");
-        if (auth.currentUser?.uid !== options.ownerId) throw new Error("The uploading account has signed out.");
-        try {
-            const uploadData = await flaynityMuxRequest(`/v1/mux/uploads/${encodeURIComponent(uploadId)}`);
-            failures = 0;
-            if (typeof onStatus === "function") onStatus({ phase: "upload", ...uploadData });
-            if (uploadData.error) throw new Error(uploadData.error.message || uploadData.error);
-            assetId = uploadData.assetId || assetId;
-            if (uploadData.status === "cancelled") throw new Error("Mux upload was cancelled.");
-            if (assetId) {
-                const assetData = await flaynityMuxRequest(`/v1/mux/assets/${encodeURIComponent(assetId)}`);
-                lastAssetStatus = assetData.status || lastAssetStatus;
-                if (typeof onStatus === "function") onStatus({ phase: "processing", ...assetData });
-                if (assetData.status === "errored" || assetData.status === "error") {
-                    const error = new Error(assetData.error || "Mux video processing failed.");
-                    error.encodingFailed = true;
-                    throw error;
-                }
-                if (assetData.status === "ready" && assetData.hlsUrl) {
-                    return {
-                        ...assetData,
-                        provider: "mux",
-                        videoProvider: "mux",
-                        videoUrl: assetData.hlsUrl,
-                        videoLink: assetData.hlsUrl,
-                        hlsUrl: assetData.hlsUrl,
-                        hlsManifestUrl: assetData.hlsUrl,
-                        hlsManifestVersion: Date.now(),
-                        hlsStatus: "ready",
-                        availableQualities: ["360p", "480p", "720p", "1080p"],
-                        streamQualityLadder: [360, 480, 720, 1080],
-                        videoQualities: { auto: assetData.hlsUrl, hls: assetData.hlsUrl, preferred: [360, 480, 720, 1080] },
-                        muxUploadId: uploadId,
-                        muxAssetId: assetId
-                    };
-                }
-            }
-        } catch (error) {
-            if ([400, 401, 403, 404].includes(error.status) || ++failures >= 30) throw error;
+        if (auth.currentUser?.uid !== user.uid) throw new Error("The uploading account has signed out.");
+        if (typeof onStatus === "function") onStatus(statusData);
+        if (statusData.status === "failed") { const error = new Error(statusData.error || "360p encoding failed."); error.encodingFailed = true; throw error; }
+        if (Array.isArray(statusData.available) && statusData.available.includes("360p")) {
+            return { ...statusData, jobId, provider: "r2-hls", videoProvider: "r2-hls", videoUrl: hls, videoLink: hls, hlsUrl: hls, sourceKey };
         }
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+            statusData = await flaynityJobRequest(`/${encodeURIComponent(jobId)}`);
+            failures = 0;
+        } catch (error) {
+            if ([400, 401, 403, 404].includes(error.status) || ++failures >= 90) throw error;
+        }
     }
-    throw new Error(`Mux processing is still preparing (${lastAssetStatus}). Retry to check again.`);
+    throw new Error("360p is still processing. Retry to resume without uploading the source again.");
 }
 
-async function uploadVideoToMux(file, options = {}, onProgress, control) {
-    const upload = await flaynityCreateMuxUpload(file, options);
-    if (control) {
-        control.muxUploadId = upload.uploadId;
-        control.uploadUrl = upload.uploadUrl;
-    }
-    await flaynityMuxPutWithProgress(upload.uploadUrl, file, onProgress, control);
-    return upload;
+async function flaynityJobRequest(route, body) {
+    const user = typeof auth !== "undefined" ? auth.currentUser : null;
+    if (!user) throw new Error("Please sign in first.");
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000);
+    try {
+        const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/transcode${route}`, {
+            method: body ? "POST" : "GET",
+            headers: { "Authorization": `Bearer ${await user.getIdToken()}`, "Content-Type": "application/json" },
+            ...(body ? { body: JSON.stringify(body) } : {}),
+            cache: "no-store", signal: controller.signal
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) { const error = new Error(data.error || `Transcode request failed (${response.status}).`); error.status = response.status; throw error; }
+        return data;
+    } finally { clearTimeout(timeout); }
 }
 
-async function cancelMuxUpload(uploadId) {
-    if (!uploadId) return;
-    return flaynityMuxRequest(`/v1/mux/uploads/${encodeURIComponent(uploadId)}/cancel`, "POST");
+async function flaynityConfirmHlsPublished(jobId) {
+    let lastError;
+    for (let attempt = 0; attempt < 4; attempt++) {
+        try { return await flaynityJobRequest(`/${encodeURIComponent(jobId)}/published`, {}); }
+        catch (error) { lastError = error; await new Promise(resolve => setTimeout(resolve, 1500 * (attempt + 1))); }
+    }
+    // Worker cron retries this confirmation even if the app closes.
+    throw lastError;
 }
 
 // =========================================================

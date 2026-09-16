@@ -1288,12 +1288,8 @@ async function startS3DirectUpload(item) {
     item.status = "uploading"; item.progress = item.progress || 0; ensureLiveUploadStyles(); updateManagerUI();
     const startTime = Date.now();
     try {
-        const muxType = item.type === 'video-short' ? 'video-short' : 'video-long';
-        const upload = item.upload || await uploadVideoToMux(item.file, {
-            contentId: item.id,
-            type: muxType,
-            title: item.title || ""
-        }, (loaded, total) => {
+        const uploadFolder = item.type === 'video-short' ? 'feels' : 'videos';
+        const upload = item.upload || await uploadMediaToFlaynity(item.file, uploadFolder, (loaded, total) => {
             if (item.status !== 'uploading') return;
             item.progress = Math.round((loaded / total) * 100);
             const elapsed = (Date.now() - startTime) / 1000;
@@ -1302,50 +1298,34 @@ async function startS3DirectUpload(item) {
         }, item.control);
 
         item.upload = upload;
-        item.muxUploadId = upload.uploadId;
-        if (item.status === 'cancelled') { try { await cancelMuxUpload(upload.uploadId); } catch (_) {} return; }
+        if (item.status === 'cancelled') return;
+        item.key = upload.key;
         item.status = "processing";
-        item.processingMsg = "Preparing HLS...";
+        item.processingMsg = "Preparing 360p HLS...";
         item.progress = 100;
         updateManagerUI();
 
-        // Publish a pending Mux record immediately. Mux continues 360/480/720/1080p
-        // processing in the background; the upload manager must NOT wait for 1080p.
-        item.videoProvider = "mux";
-        item.hlsStatus = "processing";
-        item.muxUploadId = upload.uploadId;
-        item.status = "processing"; item.retryCount = 0;
-        item.processingMsg = "Mux processing · 1080p in background...";
-        updateManagerUI();
-        await runPostUploadProcessingSequence(item, { pendingMux: true });
+        const hls = await flaynityTranscodeToHls(upload.key, item.file?.type || "video/mp4", status => {
+            if (status?.status === "queued") item.processingMsg = "FFmpeg queueing video...";
+            else if (status?.status === "processing" || status?.status === "inprogress") item.processingMsg = `FFmpeg HLS encoding${status.currentQuality ? ` · ${status.currentQuality}` : "..."}`;
+            else if (Array.isArray(status?.available) && status.available.length) item.processingMsg = `HLS ready · ${status.available.join(", ")}`;
+            updateManagerUI();
+        }, { contentId: item.id, type: item.type, isCancelled: () => item.status === 'cancelled' });
+        if (item.status === 'cancelled') return;
+        item.hlsMetadata = hls;
 
-        // Keep Mux processing detached from the upload completion path. The webhook
-        // on the server will publish the final HLS/playback URL when the asset is ready.
-        flaynityWaitForMuxReady(upload.uploadId, status => {
-            if (item.status === 'cancelled') return;
-            if (status?.phase === "processing") {
-                item.processingMsg = status.status === "ready" ? "Mux HLS ready · Publishing..." : "Mux processing · 1080p in background...";
-                updateManagerUI();
-                saveQueueStateToLocalStorage();
-            }
-        }, { ownerId: item.ownerId, isCancelled: () => item.status === 'cancelled' })
-        .then(hls => {
-            if (item.status === 'cancelled') return;
-            item.hlsMetadata = hls;
-            item.videoProvider = "mux";
-            item.videoUrl = hls.videoUrl; item.videoLink = hls.videoLink; item.hlsUrl = hls.hlsUrl;
-            item.hlsManifestUrl = hls.hlsManifestUrl; item.hlsManifestVersion = hls.hlsManifestVersion;
-            item.dashUrl = ""; item.videoQualities = hls.videoQualities;
-            item.muxAssetId = hls.muxAssetId; item.muxUploadId = hls.muxUploadId; item.hlsStatus = "ready";
-            item.status = "completed"; item.processingMsg = "HLS ready · Published"; item.progress = 100;
-            updateManagerUI(); saveQueueStateToLocalStorage();
-        })
-        .catch(err => {
-            if (item.status === 'cancelled') return;
-            console.warn("Background Mux processing:", err.message);
-            item.processingMsg = "Mux processing continues in background...";
-            updateManagerUI(); saveQueueStateToLocalStorage();
-        });
+        item.videoProvider = "r2-hls";
+        item.videoUrl = hls.videoUrl;
+        item.videoLink = hls.videoLink;
+        item.hlsUrl = hls.hlsUrl;
+        item.dashUrl = "";
+        item.videoQualities = hls.videoQualities;
+        item.hlsJobId = hls.jobId;
+        item.sourceKey = hls.sourceKey;
+
+        // Render waits at ready-360p until Firebase confirms publication.
+        item.status = "processing"; item.retryCount = 0; item.processingMsg = "360p ready · Publishing..."; updateManagerUI();
+        await runPostUploadProcessingSequence(item);
     } catch (err) {
         if (item.status === 'cancelled') return;
         if (err.encodingFailed) { item.status = 'failed'; updateManagerUI(); showNotification(err.message, 'error'); }
@@ -1370,7 +1350,7 @@ async function startS3DirectUpload(item) {
     }
 }
 
-async function runPostUploadProcessingSequence(item, options = {}) {
+async function runPostUploadProcessingSequence(item) {
     item.status = "processing";
     item.progress = 0;
     updateManagerUI();
@@ -1395,21 +1375,17 @@ async function runPostUploadProcessingSequence(item, options = {}) {
         updateManagerUI();
 
         if (item.status === 'cancelled') return;
-        await pushVideoMetadataToDatabase(item, !!options.pendingMux);
+        await pushVideoMetadataToDatabase(item);
 
-        if (options.pendingMux) {
-            item.status = "processing";
-            item.progress = 100;
-            item.processingMsg = "Mux processing · 1080p in background...";
-            updateManagerUI();
-            saveQueueStateToLocalStorage();
-            showNotification(`"${item.title}" uploaded. 1080p is processing in background.`, "success");
-        } else {
-            item.status = "completed";
-            updateManagerUI();
-            saveQueueStateToLocalStorage();
-            showNotification(`"${item.title}" published with Mux HLS.`, "success");
-        }
+        // A successful Firebase write, not a local queued write, opens the gate.
+        flaynityConfirmHlsPublished(item.hlsJobId).catch(error => {
+            console.warn('Background quality confirmation pending:', error.message);
+            showNotification('360p published. Higher qualities process in background.', 'success');
+        });
+        item.status = "completed";
+        updateManagerUI();
+        saveQueueStateToLocalStorage();
+        showNotification(`"${item.title}" published in 360p. Higher qualities process in background.`, "success");
 
     } catch (err) {
         item.status = "failed";
@@ -1424,7 +1400,7 @@ function extractHashtags(text) {
     return match ? match.join(' ') : "";
 }
 
-async function pushVideoMetadataToDatabase(item, pendingMux = false) {
+async function pushVideoMetadataToDatabase(item) {
     const user = auth.currentUser;
     if (!user || user.uid !== item.ownerId) throw new Error('Sign in with the uploading account to publish.');
 
@@ -1450,27 +1426,25 @@ async function pushVideoMetadataToDatabase(item, pendingMux = false) {
         sourceWidth: item.hlsMetadata?.sourceWidth || 0,
         sourceHeight: item.hlsMetadata?.sourceHeight || 0,
         aspectRatio: item.hlsMetadata?.aspectRatio || 0,
-        hlsManifestUrl: pendingMux ? '' : (item.hlsMetadata?.hlsManifestUrl || item.hlsUrl),
-        hlsManifestVersion: pendingMux ? 0 : (item.hlsMetadata?.hlsManifestVersion || 1),
-        hlsStatus: pendingMux ? 'processing' : (item.hlsMetadata?.hlsStatus || 'ready'),
-        availableQualities: pendingMux ? [] : (item.hlsMetadata?.availableQualities || ['360p','480p','720p','1080p']),
+        hlsManifestUrl: item.hlsMetadata?.hlsManifestUrl || item.hlsUrl,
+        hlsManifestVersion: item.hlsMetadata?.hlsManifestVersion || 1,
+        hlsStatus: item.hlsMetadata?.hlsStatus || 'ready-360p',
+        availableQualities: item.hlsMetadata?.availableQualities || ['360p'],
         poster: item.thumbUrl || item.thumbDataUrl || "",
         banner: item.thumbUrl || item.thumbDataUrl || "",
-        videoLink: pendingMux ? '' : (item.hlsUrl || item.videoUrl),
-        videoProvider: item.videoProvider || 'mux',
+        videoLink: item.hlsUrl || item.videoUrl,
+        videoProvider: item.videoProvider || 'r2-hls',
         streamUid: item.streamUid || '',
-        hlsUrl: pendingMux ? '' : (item.hlsUrl || item.videoUrl),
+        hlsUrl: item.hlsUrl || item.videoUrl,
         dashUrl: '',
         hlsJobId: item.hlsJobId || '',
-        muxUploadId: item.muxUploadId || '',
-        muxAssetId: item.muxAssetId || '',
         sourceKey: item.sourceKey || item.key || '',
-        videoQualities: pendingMux ? null : (item.videoProvider === 'cloudflare-stream' ? {
+        videoQualities: item.videoProvider === 'cloudflare-stream' ? {
             auto: item.hlsUrl || item.videoUrl,
             hls: item.hlsUrl || item.videoUrl,
             dash: item.dashUrl || '',
             preferred: [360, 480, 720, 1080]
-        } : (item.videoQualities || null)),
+        } : (item.videoQualities || null),
         streamQualityLadder: item.hlsMetadata?.streamQualityLadder || [360, 480, 720, 1080],
         uploadTime: Date.now(),
         updateTime: Date.now(),
@@ -3775,21 +3749,7 @@ async function openMoviePage(id, isTMDB = false) {
 }
 
 function startVideoPlayer() {
-    if (!currentActiveMovie || !currentActiveMovie.videoLink) {
-        const processing = currentActiveMovie && (
-            currentActiveMovie.hlsStatus === "processing" ||
-            currentActiveMovie.status === "processing" ||
-            currentActiveMovie.videoProvider === "mux" && currentActiveMovie.muxAssetId
-        );
-        if (processing) {
-            showNotification("Video is still processing on Mux. 1080p is running in background.", "info");
-            const skeleton = document.getElementById('video-player-skeleton');
-            if (skeleton) { skeleton.style.display = 'flex'; skeleton.innerText = 'Mux processing… 1080p in background'; }
-        } else {
-            showNotification("No playable links found.", "error");
-        }
-        return;
-    }
+    if (!currentActiveMovie || !currentActiveMovie.videoLink) { showNotification("No playable links found.", "error"); return; }
     const link = currentActiveMovie.videoLink;
     const container = document.getElementById('video-player-container');
     const skeleton = document.getElementById('video-player-skeleton');

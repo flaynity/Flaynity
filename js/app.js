@@ -3715,9 +3715,8 @@ async function openMoviePage(id, isTMDB = false) {
     if (banner) banner.style.display = 'block';
 
     if (isTMDB) {
-        const res = await fetch(`${BASE_URL}/movie/${id}?append_to_response=videos&api_key=${API_KEY}`);
+        const res = await fetch(`${BASE_URL}/movie/${id}?api_key=${API_KEY}`);
         const data = await res.json();
-        let trailerKey = data.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube')?.key;
         currentActiveMovie = { 
             id: data.id, 
             title: data.title, 
@@ -3725,7 +3724,7 @@ async function openMoviePage(id, isTMDB = false) {
             releaseDate: data.release_date?.split('-')[0] || "N/A", 
             poster: IMG_URL + data.poster_path, 
             banner: BG_URL + (data.backdrop_path || data.poster_path), 
-            videoLink: trailerKey ? `https://www.youtube.com/watch?v=${trailerKey}` : null, 
+            videoLink: null,
             isTMDB: true 
         };
     } else {
@@ -3765,10 +3764,9 @@ function startVideoPlayer() {
 
     container.style.display = 'block';
 
-    // YouTube/TMDB trailers → iframe (আগের মতোই, unchanged)
+    // YouTube links are intentionally disabled. Only Flaynity/Cloudflare media is playable here.
     if (link.includes('youtube.com') || link.includes('youtu.be')) {
-        const ytId = extractVideoID(link);
-        container.innerHTML = `<iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1&modestbranding=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+        showNotification("YouTube videos are not supported.", "error");
         return;
     }
 

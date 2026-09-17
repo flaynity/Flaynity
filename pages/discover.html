@@ -1,128 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Discover • Flaynity</title>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Flaynity</title>
 <style>
-#search-tab{padding:0 16px 90px!important;margin:0!important;min-height:100vh;background:var(--bg-color,#fff);box-sizing:border-box}
-.discover-shell{padding-top:max(14px,env(safe-area-inset-top));}
-.discover-hero{padding:18px 0 12px}
-.discover-kicker{font-size:.72rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--primary);margin-bottom:6px}
-.discover-title{margin:0;color:var(--text-main);font-size:1.85rem;line-height:1.08;font-weight:900;letter-spacing:-.04em}
-.discover-subtitle{margin:7px 0 0;color:var(--text-muted);font-size:.82rem;font-weight:600;line-height:1.45}
-.discover-search{position:relative;margin-top:18px}
-.search-bar{width:100%;height:56px;padding:0 92px 0 48px;background:var(--surface);border:1px solid var(--glass-border);border-radius:18px;color:var(--text-main);font-size:.96rem;font-weight:700;outline:none;box-sizing:border-box;box-shadow:0 8px 24px rgba(0,0,0,.05);transition:.2s}
-.search-bar:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(255,46,85,.09)}
-.search-icon{position:absolute;left:17px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:1rem;pointer-events:none}
-.search-actions{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:4px}
-.discover-action{width:40px;height:40px;border:0;border-radius:13px;background:transparent;color:var(--text-muted);display:grid;place-items:center;font-size:1rem;cursor:pointer}
-.discover-action:active{transform:scale(.94)}
-.filters{display:flex;gap:8px;overflow-x:auto;padding:3px 2px 12px;margin:4px -16px 0;padding-left:18px;padding-right:18px;scrollbar-width:none}
-.filters::-webkit-scrollbar{display:none}
-.filter-chip{padding:9px 15px;background:var(--surface);border-radius:999px;cursor:pointer;white-space:nowrap;font-size:.78rem;font-weight:800;border:1px solid var(--glass-border);color:var(--text-muted);transition:.2s}
-.filter-chip.active{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 7px 16px rgba(255,46,85,.18)}
-.discover-feels-section{margin:8px 0 18px}
-.discover-feels-heading{display:flex;align-items:center;gap:8px;margin:0 0 10px;color:var(--text-main);font-size:1.02rem;font-weight:900}
-.discover-feels-heading i{color:var(--primary)}
-.discover-feels-grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(3,minmax(0,1fr));grid-auto-columns:minmax(112px,34vw);gap:10px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 10px;scrollbar-width:none}.discover-feels-grid::-webkit-scrollbar{display:none}
-.discover-feels-card{position:relative;min-width:0;width:100%;aspect-ratio:9/16;border-radius:16px;overflow:hidden;background:#0f0f0f;border:1px solid var(--glass-border);box-shadow:0 8px 20px rgba(0,0,0,.08);cursor:pointer}
-.discover-feels-card:active{transform:scale(.975)}
-.discover-feels-card img{display:block;width:100%;height:100%;object-fit:cover}
-.discover-feels-card::after{content:"";position:absolute;inset:38% 0 0;background:linear-gradient(to top,rgba(0,0,0,.9),rgba(0,0,0,0));pointer-events:none}
-.discover-feels-meta{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:12px;color:#fff}
-.discover-feels-title{margin:0 0 4px;font-size:.78rem;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.discover-feels-views{font-size:.65rem;font-weight:800;opacity:.88}
-.discover-feels-empty{padding:18px 4px;color:var(--text-muted);font-size:.76rem;font-weight:700}
-.discover-status{display:flex;align-items:center;justify-content:space-between;margin:10px 0 12px;color:var(--text-muted);font-size:.75rem;font-weight:800}
-.discover-status span:last-child{opacity:.7}
-.discover-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
-.discover-card{min-width:0;overflow:hidden;border-radius:18px;background:var(--surface);border:1px solid var(--glass-border);box-shadow:0 8px 22px rgba(0,0,0,.045);cursor:pointer;transition:transform .18s,box-shadow .18s}
-.discover-card:active{transform:scale(.975)}
-.discover-poster{display:block;width:100%;aspect-ratio:2/3;object-fit:cover;background:var(--border-color)}
-.discover-card-body{padding:10px 10px 12px}
-.discover-card-title{margin:0;color:var(--text-main);font-size:.82rem;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.discover-card-meta{display:flex;align-items:center;gap:6px;margin-top:5px;color:var(--text-muted);font-size:.68rem;font-weight:700}
-.discover-rating{color:#f59e0b}
-.discover-empty{grid-column:1/-1;text-align:center;padding:58px 20px;color:var(--text-muted);font-weight:700}
-.discover-empty i{display:block;font-size:2rem;margin-bottom:12px;opacity:.35}
-@media(min-width:620px){.discover-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
-
-body.discover-search-open{overflow:hidden}
-#discover-search-page{position:fixed;inset:0;z-index:20000;background:var(--bg-color,#fff);display:none;flex-direction:column;padding-top:env(safe-area-inset-top);box-sizing:border-box}
-#discover-search-page.open{display:flex}
-.discover-search-topbar{height:64px;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--glass-border);background:var(--surface)}
-.discover-search-back,.discover-search-tool{width:42px;height:42px;border:0;background:transparent;color:var(--text-main);border-radius:12px;display:grid;place-items:center;font-size:1.05rem;flex:0 0 42px}
-.discover-full-search-wrap{position:relative;flex:1;min-width:0}
-.discover-full-search-input{width:100%;height:46px;border:1px solid var(--glass-border);background:var(--bg-color,#fff);color:var(--text-main);border-radius:15px;padding:0 48px 0 16px;outline:none;font-size:.95rem;font-weight:700;box-sizing:border-box}
-.discover-full-search-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(255,46,85,.08)}
-.discover-full-search-actions{position:absolute;right:3px;top:3px;height:40px;display:flex}
-.discover-full-search-actions button{width:40px;height:40px;border:0;background:transparent;color:var(--text-muted);display:grid;place-items:center}
-.discover-search-body{flex:1;overflow-y:auto;padding:14px 16px 90px;box-sizing:border-box;-webkit-overflow-scrolling:touch}
-.discover-keyword{width:100%;display:flex;align-items:center;gap:12px;padding:14px 4px;border:0;border-bottom:1px solid var(--glass-border);background:transparent;color:var(--text-main);text-align:left;font-size:.92rem;font-weight:800}
-.discover-keyword i:first-child{color:var(--text-muted);width:22px}.discover-keyword i:last-child{margin-left:auto;color:var(--text-muted);font-size:.75rem}
-.discover-search-hint,.discover-search-empty{padding:36px 8px;text-align:center;color:var(--text-muted);font-size:.82rem;font-weight:700}.discover-search-hint i{display:block;font-size:1.7rem;margin-bottom:10px;opacity:.5}
-.discover-result-heading{margin:18px 0 10px;font-size:1rem;color:var(--text-main);font-weight:900}.discover-result-heading i{color:var(--primary);margin-right:5px}
-.discover-result-feels{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:6px}.discover-result-feels::-webkit-scrollbar{display:none}
-.discover-result-feel{position:relative;flex:0 0 118px;aspect-ratio:9/16;border-radius:14px;overflow:hidden;background:#111}.discover-result-feel img,.discover-result-video img{width:100%;height:100%;object-fit:cover;display:block}.discover-result-overlay{position:absolute;left:0;right:0;bottom:0;padding:28px 8px 8px;background:linear-gradient(transparent,rgba(0,0,0,.9));color:#fff;font-size:.72rem}
-.discover-result-videos{display:grid;gap:12px}.discover-result-video{display:flex;aspect-ratio:16/9;min-height:0;border-radius:14px;overflow:hidden;background:var(--surface);border:1px solid var(--glass-border);position:relative}.discover-result-video img{width:46%;height:100%}.discover-result-video-body{padding:12px;display:flex;flex-direction:column;gap:7px;justify-content:center;color:var(--text-main)}.discover-result-video-body b{font-size:.85rem}.discover-result-video-body span{font-size:.68rem;color:var(--text-muted);font-weight:700}
-</style>
-</head>
-<body>
+/* Search UI */
+        .discover-page-title { margin-top: 0 !important; padding-top: 0; }
+        .search-container { position: relative; margin-bottom: 15px; }
+        .search-bar { width: 100%; padding: 16px 50px 16px 18px; background: var(--surface); border: 1px solid var(--glass-border); border-radius: 16px; color: var(--text-main); font-size: 1.05rem; outline:none; transition: 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.02); }
+        .search-bar:focus { border-color: var(--primary); background: var(--surface); box-shadow: 0 0 0 4px rgba(255, 46, 85, 0.08); }
+        .mic-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
+        
+        .filters { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 10px; margin-right: -20px; padding-right: 20px;}
+        .filter-chip { padding: 8px 18px; background: var(--surface); border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 0.9rem; font-weight: 700; transition: 0.3s; border: 1px solid var(--glass-border); color: var(--text-muted); }
+        .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .discover-status { color: var(--text-muted); grid-column: 1/-1; text-align:center; padding: 45px 10px; font-weight: 600; }
+        .discover-card { background: var(--surface); border-radius: 14px; overflow: hidden; cursor: pointer; border: 1px solid var(--glass-border); min-width: 0; }
+        .discover-card img { width:100%; aspect-ratio:2/3; object-fit:cover; display:block; background:#111; }
+        .discover-card-info { padding:10px 10px 12px; }
+        .discover-card-title { margin:0; color:var(--text-main); font-size:.88rem; line-height:1.25; font-weight:800; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+        .discover-card-meta { margin-top:5px; color:var(--text-muted); font-size:.74rem; font-weight:600; }
+        .movie-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+</style></head><body>
 <div class="tab-content" id="search-tab">
-  <div class="discover-shell">
-    <section class="discover-hero">
-      <div class="discover-kicker">Explore</div>
-      <h1 class="discover-title">Discover</h1>
-      <p class="discover-subtitle">Find movies and TV shows, then open any title for full details.</p>
-      <div class="discover-search">
-        <i class="fas fa-search search-icon"></i>
-        <input class="search-bar" id="search-input" placeholder="Search movies & TV shows" type="search" autocomplete="off" enterkeyhint="search" readonly/>
-        <div class="search-actions">
-          <button class="discover-action" id="clear-search-btn" type="button" onclick="clearDiscoverSearch()" aria-label="Clear search" style="display:none"><i class="fas fa-xmark"></i></button>
-          <button class="discover-action" type="button" onclick="startVoiceSearch(); playUI('click')" aria-label="Voice search"><i class="fas fa-microphone"></i></button>
-        </div>
-      </div>
-    </section>
-    <div class="filters" id="discover-filters">
-      <div class="filter-chip active" data-genre="" onclick="applyFilter('', this); playUI('click')">All</div>
-      <div class="filter-chip" data-genre="28" onclick="applyFilter(28, this); playUI('click')">Action</div>
-      <div class="filter-chip" data-genre="878" onclick="applyFilter(878, this); playUI('click')">Sci-Fi</div>
-      <div class="filter-chip" data-genre="27" onclick="applyFilter(27, this); playUI('click')">Horror</div>
-      <div class="filter-chip" data-genre="35" onclick="applyFilter(35, this); playUI('click')">Comedy</div>
-      <div class="filter-chip" data-genre="10749" onclick="applyFilter(10749, this); playUI('click')">Romance</div>
-      <div class="filter-chip" data-genre="16" onclick="applyFilter(16, this); playUI('click')">Animation</div>
-      <div class="filter-chip" data-genre="12" onclick="applyFilter(12, this); playUI('click')">Adventure</div>
-    </div>
-    <section class="discover-feels-section" id="discover-feels-section">
-      <div class="discover-feels-heading"><i class="fas fa-bolt"></i><span>Feels</span></div>
-      <div class="discover-feels-grid" id="discover-feels-grid"></div>
-    </section>
-    <div class="discover-status"><span id="discover-status-text">Popular right now</span><span id="discover-count"></span></div>
-    <div class="discover-grid" id="search-results">
-      <div class="discover-empty"><i class="fas fa-compass"></i>Loading discoveries…</div>
-    </div>
-  </div>
+<div class="section-title discover-page-title">Discover</div>
+<div class="search-container">
+<input class="search-bar" id="search-input" placeholder="Search movies, TV shows..." type="text"/>
+<button class="mic-btn" onclick="startVoiceSearch()"><i class="fas fa-microphone"></i></button>
 </div>
-
-<div id="discover-search-page" aria-hidden="true">
-  <div class="discover-search-topbar">
-    <button class="discover-search-back" type="button" onclick="closeDiscoverSearchPage(); playUI('click')" aria-label="Back"><i class="fas fa-arrow-left"></i></button>
-    <div class="discover-full-search-wrap">
-      <input id="discover-full-search-input" class="discover-full-search-input" type="search" autocomplete="off" placeholder="Search Feels, Videos..." enterkeyhint="search">
-      <div class="discover-full-search-actions">
-        <button id="discover-full-search-clear" type="button" onclick="clearDiscoverFullSearch(); playUI('click')" aria-label="Clear" style="display:none"><i class="fas fa-xmark"></i></button>
-      </div>
-    </div>
-    <button id="discover-full-search-voice" class="discover-search-tool" type="button" onclick="startDiscoverFullVoiceSearch(); playUI('click')" aria-label="Voice search"><i class="fas fa-microphone"></i></button>
-  </div>
-  <div class="discover-search-body">
-    <div id="discover-keyword-list"></div>
-    <div id="discover-related-results"></div>
-  </div>
+<div class="filters">
+<div class="filter-chip" onclick="applyFilter(28, this); playUI('click')">Action</div>
+<div class="filter-chip" onclick="applyFilter(878, this); playUI('click')">Sci-Fi</div>
+<div class="filter-chip" onclick="applyFilter(27, this); playUI('click')">Horror</div>
+<div class="filter-chip" onclick="applyFilter(35, this); playUI('click')">Comedy</div>
+<div class="filter-chip" onclick="applyFilter(10749, this); playUI('click')">Romance</div>
+<div class="filter-chip" onclick="applyFilter(16, this); playUI('click')">Animation</div>
 </div>
-<script>
-/* Discover owns the global bottom navigation visually while this tab is active. */
-</script>
-</body>
-</html>
+<div class="movie-grid" id="search-results">
+<p class="discover-status" id="discover-status">Search for movies or choose a genre.</p>
+</div>
+</div>
+</body></html>

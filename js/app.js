@@ -4234,10 +4234,20 @@ function adjustHeaderForActiveTab(tabId) {
         document.body.style.paddingTop = '0px';
         document.body.style.paddingBottom = '0px';
         if (chips) chips.style.display = 'none';
+        document.querySelectorAll('.bottom-nav').forEach(nav => nav.style.display = 'none');
+        return;
+    } else if (tabId === 'search') {
+        // Discover is a dedicated full-screen search experience.
+        header.style.display = 'none';
+        document.body.style.paddingTop = '0px';
+        document.body.style.paddingBottom = '0px';
+        if (chips) chips.style.display = 'none';
+        document.querySelectorAll('.bottom-nav').forEach(nav => nav.style.display = 'none');
         return;
     } else {
         header.style.display = 'flex';
         document.body.style.paddingBottom = '50px';
+        document.querySelectorAll('.bottom-nav').forEach(nav => nav.style.display = '');
     }
 
     // Home feed: keep the header/category bar at their original on-screen

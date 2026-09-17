@@ -1699,9 +1699,9 @@ function startRealtimeFeedsListener() {
                 
                 if(allFeels.length !== previousFeelsCount) {
                     previousFeelsCount = allFeels.length;
-                    if (document.getElementById('search-tab')?.classList.contains('active')) renderDiscoverFeels();
+                    if (document.getElementById('search-tab')?.classList.contains('active')) { renderDiscoverFeels(); const q=document.getElementById('discover-full-search-input')?.value.trim(); if(q) { renderDiscoverKeywordSuggestions(q); renderDiscoverSearchResults(q); } }
                     buildHomeFeed();
-                    if (document.getElementById('search-tab')?.classList.contains('active')) renderDiscoverFeels();
+                    if (document.getElementById('search-tab')?.classList.contains('active')) { renderDiscoverFeels(); const q=document.getElementById('discover-full-search-input')?.value.trim(); if(q) { renderDiscoverKeywordSuggestions(q); renderDiscoverSearchResults(q); } }
                     const feelsTab = document.getElementById('feels-tab');
                     if (feelsTab && feelsTab.classList.contains('active')) {
                         const activeShortId = document.querySelector('.short-slide video[src]')?.closest('.short-slide')?.getAttribute('data-shortid');
@@ -4223,9 +4223,25 @@ function switchTab(tabId) {
     AppNavigation.pushTab(tabId);
 }
 
+function forceBottomNavigationVisible(tabId) {
+    const nav = document.querySelector('#app-screen .bottom-nav') || document.querySelector('.bottom-nav');
+    if (!nav) return;
+    const shouldShow = ['home','feels','search','you'].includes(tabId);
+    nav.style.display = shouldShow ? 'flex' : 'flex';
+    nav.style.visibility = 'visible';
+    nav.style.opacity = '1';
+    nav.style.pointerEvents = 'auto';
+    nav.style.zIndex = '10000';
+    if (tabId === 'feels' || tabId === 'search' || tabId === 'you') {
+        nav.style.transform = 'translate3d(0,0,0)';
+        nav.style.webkitTransform = 'translate3d(0,0,0)';
+    }
+}
+
 function adjustHeaderForActiveTab(tabId) {
     const header = document.querySelector('header');
     if (!header) return;
+    forceBottomNavigationVisible(tabId);
 
     const brand = header.querySelector('.brand');
     const actions = header.querySelector('.header-actions');
@@ -4309,77 +4325,217 @@ let discoverInitialized = false;
 let discoverTimer = null;
 let discoverGenre = '';
 let discoverRequestId = 0;
+let discoverSearchPageOpen = false;
+let discoverKeywordTimer = null;
 
 function initDiscoverPage() {
     const input = document.getElementById('search-input');
     const results = document.getElementById('search-results');
     if (!input || !results) return;
     renderDiscoverFeels();
-    const bottomNav = document.querySelector('#app-screen .bottom-nav') || document.querySelector('.bottom-nav');
-    if (bottomNav) {
-        bottomNav.style.display = 'flex';
-        bottomNav.style.visibility = 'visible';
-        bottomNav.style.opacity = '1';
-        bottomNav.style.zIndex = '10000';
-    }
+    forceBottomNavigationVisible('search');
+    initDiscoverSearchPage();
     if (discoverInitialized) return;
     discoverInitialized = true;
 
-    let debounceTimer = null;
-    input.addEventListener('input', function () {
-        const clearBtn = document.getElementById('clear-search-btn');
-        if (clearBtn) clearBtn.style.display = this.value.trim() ? 'grid' : 'none';
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            if (this.value.trim()) searchDiscoverMovies(this.value.trim());
-            else loadDiscoverMovies(discoverGenre);
-        }, 350);
-    });
-    input.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            const q = this.value.trim();
-            if (q) searchDiscoverMovies(q);
-        }
-    });
+    // The Discover search field is a launcher for the dedicated full-screen search page.
+    input.readOnly = true;
+    input.addEventListener('click', openDiscoverSearchPage);
+    input.addEventListener('focus', function(){ this.blur(); openDiscoverSearchPage(); });
     loadDiscoverMovies('');
+}
+
+function openDiscoverSearchPage() {
+    const page = document.getElementById('discover-search-page');
+    const input = document.getElementById('discover-full-search-input');
+    if (!page) return;
+    discoverSearchPageOpen = true;
+    page.classList.add('open');
+    page.setAttribute('aria-hidden','false');
+    document.body.classList.add('discover-search-open');
+    forceBottomNavigationVisible('search');
+    setTimeout(() => { if (input) input.focus(); }, 50);
+}
+
+function closeDiscoverSearchPage() {
+    const page = document.getElementById('discover-search-page');
+    if (!page) return;
+    discoverSearchPageOpen = false;
+    page.classList.remove('open');
+    page.setAttribute('aria-hidden','true');
+    document.body.classList.remove('discover-search-open');
+    const input = document.getElementById('discover-full-search-input');
+    if (input) { input.value=''; input.blur(); }
+    const clear = document.getElementById('discover-full-search-clear');
+    if (clear) clear.style.display='none';
+    renderDiscoverKeywordSuggestions('');
+    renderDiscoverSearchResults('');
+    forceBottomNavigationVisible('search');
+}
+
+function updateDiscoverSearchControls() {
+    const input = document.getElementById('discover-full-search-input');
+    const voice = document.getElementById('discover-full-search-voice');
+    const clear = document.getElementById('discover-full-search-clear');
+    const hasText = !!(input && input.value.trim());
+    if (voice) voice.style.display = hasText ? 'none' : 'grid';
+    if (clear) clear.style.display = hasText ? 'grid' : 'none';
+}
+
+function getSearchableValue(item) {
+    if (!item) return '';
+    return [item.title,item.name,item.description,item.desc,item.synopsis,item.overview,item.caption,item.tags,item.genre,item.genres]
+        .flatMap(v => Array.isArray(v) ? v : [v])
+        .filter(v => v !== undefined && v !== null)
+        .join(' ')
+        .toLowerCase();
+}
+
+function getDiscoverFirebaseItems() {
+    const feels = (typeof allFeels !== 'undefined' ? allFeels : []).map(x => ({...x, __kind:'feels'}));
+    const videos = (typeof allLongVideos !== 'undefined' ? allLongVideos : []).map(x => ({...x, __kind:'video'}));
+    return [...feels, ...videos];
+}
+
+function extractDiscoverKeywords(query) {
+    const q = String(query || '').trim().toLowerCase();
+    if (!q) return [];
+    const items = getDiscoverFirebaseItems();
+    const candidates = [];
+    items.forEach(item => {
+        const fields = [item.title,item.name,item.description,item.desc,item.synopsis,item.overview,item.caption]
+            .filter(Boolean).join(' ');
+        const words = fields.match(/[A-Za-z0-9][A-Za-z0-9'_-]{1,}/g) || [];
+        words.forEach(word => {
+            const w = word.replace(/^[-_]+|[-_]+$/g,'');
+            if (w.toLowerCase().includes(q) && w.length > 1) candidates.push(w);
+        });
+    });
+    const exactPhraseItems = items.filter(item => getSearchableValue(item).includes(q)).map(item => item.title || item.name).filter(Boolean);
+    const unique = [];
+    [...candidates, ...exactPhraseItems].forEach(v => {
+        const clean = String(v).trim();
+        const key = clean.toLowerCase();
+        if (!clean || unique.some(x => x.toLowerCase() === key)) return;
+        unique.push(clean);
+    });
+    return unique.sort((a,b) => {
+        const al=a.toLowerCase(), bl=b.toLowerCase();
+        return (al === q ? -100 : al.startsWith(q) ? -10 : 0) - (bl === q ? -100 : bl.startsWith(q) ? -10 : 0) || a.localeCompare(b);
+    }).slice(0,12);
+}
+
+function renderDiscoverKeywordSuggestions(query) {
+    const box = document.getElementById('discover-keyword-list');
+    if (!box) return;
+    const q = String(query || '').trim();
+    if (!q) {
+        box.innerHTML = '<div class="discover-search-hint"><i class="fas fa-magnifying-glass"></i><span>Search Feels, Videos, titles and descriptions</span></div>';
+        return;
+    }
+    const keywords = extractDiscoverKeywords(q);
+    if (!keywords.length) {
+        box.innerHTML = '<div class="discover-search-empty">No matching Firebase content found.</div>';
+        return;
+    }
+    box.innerHTML = keywords.map(keyword => `<button class="discover-keyword" type="button" onclick="selectDiscoverKeyword(${JSON.stringify(keyword).replace(/</g,'\\u003c')})"><i class="fas fa-magnifying-glass"></i><span>${escapeHTML(keyword)}</span><i class="fas fa-chevron-right"></i></button>`).join('');
+}
+
+function selectDiscoverKeyword(keyword) {
+    const input = document.getElementById('discover-full-search-input');
+    if (input) input.value = keyword;
+    updateDiscoverSearchControls();
+    renderDiscoverKeywordSuggestions('');
+    renderDiscoverSearchResults(keyword);
+}
+
+function discoverPoster(item) {
+    return item.poster || item.posterUrl || item.thumbnail || item.thumbnailUrl || item.image || item.cover || item.backdrop || '';
+}
+
+function renderDiscoverSearchResults(query) {
+    const box = document.getElementById('discover-related-results');
+    if (!box) return;
+    const q = String(query || '').trim().toLowerCase();
+    if (!q) { box.innerHTML=''; return; }
+    const items = getDiscoverFirebaseItems().filter(item => getSearchableValue(item).includes(q));
+    if (!items.length) { box.innerHTML='<div class="discover-search-empty">No related Feels or Videos found.</div>'; return; }
+    const feels = items.filter(x=>x.__kind==='feels').slice(0,30);
+    const videos = items.filter(x=>x.__kind==='video').slice(0,20);
+    let html='';
+    if (feels.length) {
+        html += '<h3 class="discover-result-heading"><i class="fas fa-bolt"></i> Feels</h3><div class="discover-result-feels">';
+        html += feels.map(item => {
+            const id=String(item.id).replace(/'/g,"\\'"); const poster=discoverPoster(item); const title=escapeHTML(item.title||item.name||'Untitled');
+            return `<article class="discover-result-feel" onclick="openShortFromHome('${id}'); playUI('click')"><img src="${poster}" alt="${title}" loading="lazy"><div class="discover-result-overlay"><b>${title}</b></div></article>`;
+        }).join('')+'</div>';
+    }
+    if (videos.length) {
+        html += '<h3 class="discover-result-heading"><i class="fas fa-video"></i> Videos</h3><div class="discover-result-videos">';
+        html += videos.map(item => {
+            const id=String(item.id).replace(/'/g,"\\'"); const poster=discoverPoster(item); const title=escapeHTML(item.title||item.name||'Untitled');
+            return `<article class="discover-result-video" onclick="openMoviePage('${id}', true); playUI('click')"><img src="${poster}" alt="${title}" loading="lazy"><div class="discover-result-video-body"><b>${title}</b><span>Long Video</span></div></article>`;
+        }).join('')+'</div>';
+    }
+    box.innerHTML=html;
+}
+
+function initDiscoverSearchPage() {
+    const input=document.getElementById('discover-full-search-input');
+    if(!input || input.dataset.bound) return;
+    input.dataset.bound='1';
+    input.addEventListener('input', function(){
+        updateDiscoverSearchControls();
+        clearTimeout(discoverKeywordTimer);
+        const q=this.value.trim();
+        discoverKeywordTimer=setTimeout(()=>{
+            renderDiscoverKeywordSuggestions(q);
+            if (q) renderDiscoverSearchResults(q); else renderDiscoverSearchResults('');
+        },120);
+    });
+    input.addEventListener('keydown', e=>{
+        if(e.key==='Escape') closeDiscoverSearchPage();
+        if(e.key==='Enter') { e.preventDefault(); selectDiscoverKeyword(input.value.trim()); }
+    });
+    updateDiscoverSearchControls();
+    renderDiscoverKeywordSuggestions('');
+}
+
+function clearDiscoverFullSearch() {
+    const input=document.getElementById('discover-full-search-input');
+    if(input) { input.value=''; input.focus(); }
+    updateDiscoverSearchControls();
+    renderDiscoverKeywordSuggestions('');
+    renderDiscoverSearchResults('');
+}
+
+function startDiscoverFullVoiceSearch() {
+    startVoiceSearch();
+    const input=document.getElementById('discover-full-search-input');
+    if (!input) return;
+    const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!Recognition) return;
+    try {
+        const recognition=new Recognition();
+        recognition.lang=navigator.language||'en-US'; recognition.interimResults=false; recognition.maxAlternatives=1;
+        recognition.onresult=e=>{ input.value=e.results?.[0]?.[0]?.transcript||''; input.dispatchEvent(new Event('input',{bubbles:true})); };
+        recognition.start();
+    } catch(e) {}
 }
 
 function renderDiscoverFeels() {
     const section = document.getElementById('discover-feels-section');
     const grid = document.getElementById('discover-feels-grid');
     if (!section || !grid) return;
-
     const feels = (typeof allFeels !== 'undefined' ? [...allFeels] : [])
         .filter(item => item && item.poster && item.id)
-        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-    if (!feels.length) {
-        section.style.display = 'none';
-        return;
-    }
-
-    section.style.display = '';
-    grid.innerHTML = feels.slice(0, 6).map(item => {
-        const id = String(item.id).replace(/'/g, "\\'");
-        const title = escapeHTML(item.title || 'Untitled');
-        return `<article class="discover-feels-card" onclick="openShortFromHome('${id}'); playUI('click')">
-            <img src="${item.poster}" alt="${title}" loading="lazy" onerror="this.style.visibility='hidden'">
-            <div class="discover-feels-meta">
-                <h3 class="discover-feels-title">${title}</h3>
-                <div class="discover-feels-views"><i class="fas fa-play"></i> <span id="discover-feels-views-${id}">0</span></div>
-            </div>
-        </article>`;
+        .sort((a,b) => (b.createdAt||0)-(a.createdAt||0));
+    if (!feels.length) { section.style.display='none'; return; }
+    section.style.display='';
+    grid.innerHTML=feels.map(item=>{
+        const id=String(item.id).replace(/'/g,"\\'"); const title=escapeHTML(item.title||'Untitled');
+        return `<article class="discover-feels-card" onclick="openShortFromHome('${id}'); playUI('click')"><img src="${item.poster}" alt="${title}" loading="lazy"><div class="discover-feels-meta"><h3 class="discover-feels-title">${title}</h3></div></article>`;
     }).join('');
-
-    feels.slice(0, 6).forEach(item => {
-        if (!navigator.onLine) return;
-        db.ref(`movie_stats/${item.id}/views`).once('value', snap => {
-            const count = Object.keys(snap.val() || {}).length;
-            const label = document.getElementById(`discover-feels-views-${String(item.id)}`);
-            if (label) label.textContent = formatCount(count);
-        });
-    });
 }
 
 async function fetchDiscoverTMDB(url) {

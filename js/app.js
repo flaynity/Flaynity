@@ -4275,7 +4275,7 @@ function adjustHeaderForActiveTab(tabId) {
         if (chips) chips.style.display = 'none';
         const discoverTab = document.getElementById('search-tab');
         if (discoverTab) {
-            discoverTab.style.paddingTop = '10px';
+            discoverTab.style.paddingTop = '24px';
             discoverTab.style.marginTop = '0px';
         }
         initDiscoverSystem();
@@ -4327,7 +4327,7 @@ function renderDiscoverResults(items) {
         const poster = IMG_URL + m.poster_path;
         const year = (m.release_date || '').slice(0,4) || 'N/A';
         const rating = Number.isFinite(Number(m.vote_average)) ? Number(m.vote_average).toFixed(1) : 'N/A';
-        return `<article class="discover-card" onclick="openMoviePage('${m.id}', true)">
+        return `<article class="discover-card">
             <img src="${poster}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
             <div class="discover-card-info">
                 <h3 class="discover-card-title">${escapeHTML(m.title || 'Untitled')}</h3>

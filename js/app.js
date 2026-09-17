@@ -1699,7 +1699,9 @@ function startRealtimeFeedsListener() {
                 
                 if(allFeels.length !== previousFeelsCount) {
                     previousFeelsCount = allFeels.length;
+                    if (document.getElementById('search-tab')?.classList.contains('active')) renderDiscoverFeels();
                     buildHomeFeed();
+                    if (document.getElementById('search-tab')?.classList.contains('active')) renderDiscoverFeels();
                     const feelsTab = document.getElementById('feels-tab');
                     if (feelsTab && feelsTab.classList.contains('active')) {
                         const activeShortId = document.querySelector('.short-slide video[src]')?.closest('.short-slide')?.getAttribute('data-shortid');
@@ -4234,6 +4236,15 @@ function adjustHeaderForActiveTab(tabId) {
         document.body.style.paddingTop = '0px';
         document.body.style.paddingBottom = '50px';
         if (chips) chips.style.display = 'none';
+        const bottomNav = document.querySelector('#app-screen .bottom-nav') || document.querySelector('.bottom-nav');
+        if (bottomNav) {
+            bottomNav.style.display = 'flex';
+            bottomNav.style.visibility = 'visible';
+            bottomNav.style.opacity = '1';
+            bottomNav.style.zIndex = '10000';
+            bottomNav.style.transform = 'translate3d(0,0,0)';
+            bottomNav.style.webkitTransform = 'translate3d(0,0,0)';
+        }
         if (tabId === 'search') initDiscoverPage();
         return;
     } else {
@@ -4303,6 +4314,14 @@ function initDiscoverPage() {
     const input = document.getElementById('search-input');
     const results = document.getElementById('search-results');
     if (!input || !results) return;
+    renderDiscoverFeels();
+    const bottomNav = document.querySelector('#app-screen .bottom-nav') || document.querySelector('.bottom-nav');
+    if (bottomNav) {
+        bottomNav.style.display = 'flex';
+        bottomNav.style.visibility = 'visible';
+        bottomNav.style.opacity = '1';
+        bottomNav.style.zIndex = '10000';
+    }
     if (discoverInitialized) return;
     discoverInitialized = true;
 
@@ -4324,6 +4343,43 @@ function initDiscoverPage() {
         }
     });
     loadDiscoverMovies('');
+}
+
+function renderDiscoverFeels() {
+    const section = document.getElementById('discover-feels-section');
+    const grid = document.getElementById('discover-feels-grid');
+    if (!section || !grid) return;
+
+    const feels = (typeof allFeels !== 'undefined' ? [...allFeels] : [])
+        .filter(item => item && item.poster && item.id)
+        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+    if (!feels.length) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = '';
+    grid.innerHTML = feels.slice(0, 6).map(item => {
+        const id = String(item.id).replace(/'/g, "\\'");
+        const title = escapeHTML(item.title || 'Untitled');
+        return `<article class="discover-feels-card" onclick="openShortFromHome('${id}'); playUI('click')">
+            <img src="${item.poster}" alt="${title}" loading="lazy" onerror="this.style.visibility='hidden'">
+            <div class="discover-feels-meta">
+                <h3 class="discover-feels-title">${title}</h3>
+                <div class="discover-feels-views"><i class="fas fa-play"></i> <span id="discover-feels-views-${id}">0</span></div>
+            </div>
+        </article>`;
+    }).join('');
+
+    feels.slice(0, 6).forEach(item => {
+        if (!navigator.onLine) return;
+        db.ref(`movie_stats/${item.id}/views`).once('value', snap => {
+            const count = Object.keys(snap.val() || {}).length;
+            const label = document.getElementById(`discover-feels-views-${String(item.id)}`);
+            if (label) label.textContent = formatCount(count);
+        });
+    });
 }
 
 async function fetchDiscoverTMDB(url) {

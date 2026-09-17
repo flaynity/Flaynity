@@ -22,6 +22,18 @@
 .filters::-webkit-scrollbar{display:none}
 .filter-chip{padding:9px 15px;background:var(--surface);border-radius:999px;cursor:pointer;white-space:nowrap;font-size:.78rem;font-weight:800;border:1px solid var(--glass-border);color:var(--text-muted);transition:.2s}
 .filter-chip.active{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 7px 16px rgba(255,46,85,.18)}
+.discover-feels-section{margin:8px 0 18px}
+.discover-feels-heading{display:flex;align-items:center;gap:8px;margin:0 0 10px;color:var(--text-main);font-size:1.02rem;font-weight:900}
+.discover-feels-heading i{color:var(--primary)}
+.discover-feels-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.discover-feels-card{position:relative;min-width:0;aspect-ratio:9/16;border-radius:16px;overflow:hidden;background:#0f0f0f;border:1px solid var(--glass-border);box-shadow:0 8px 20px rgba(0,0,0,.08);cursor:pointer}
+.discover-feels-card:active{transform:scale(.975)}
+.discover-feels-card img{display:block;width:100%;height:100%;object-fit:cover}
+.discover-feels-card::after{content:"";position:absolute;inset:38% 0 0;background:linear-gradient(to top,rgba(0,0,0,.9),rgba(0,0,0,0));pointer-events:none}
+.discover-feels-meta{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:12px;color:#fff}
+.discover-feels-title{margin:0 0 4px;font-size:.78rem;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.discover-feels-views{font-size:.65rem;font-weight:800;opacity:.88}
+.discover-feels-empty{padding:18px 4px;color:var(--text-muted);font-size:.76rem;font-weight:700}
 .discover-status{display:flex;align-items:center;justify-content:space-between;margin:10px 0 12px;color:var(--text-muted);font-size:.75rem;font-weight:800}
 .discover-status span:last-child{opacity:.7}
 .discover-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
@@ -63,11 +75,18 @@
       <div class="filter-chip" data-genre="16" onclick="applyFilter(16, this); playUI('click')">Animation</div>
       <div class="filter-chip" data-genre="12" onclick="applyFilter(12, this); playUI('click')">Adventure</div>
     </div>
+    <section class="discover-feels-section" id="discover-feels-section">
+      <div class="discover-feels-heading"><i class="fas fa-bolt"></i><span>Feels</span></div>
+      <div class="discover-feels-grid" id="discover-feels-grid"></div>
+    </section>
     <div class="discover-status"><span id="discover-status-text">Popular right now</span><span id="discover-count"></span></div>
     <div class="discover-grid" id="search-results">
       <div class="discover-empty"><i class="fas fa-compass"></i>Loading discoveries…</div>
     </div>
   </div>
 </div>
+<script>
+/* Discover owns the global bottom navigation visually while this tab is active. */
+</script>
 </body>
 </html>

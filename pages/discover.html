@@ -1,33 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Flaynity</title>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Discover</title>
 <style>
-/* Search UI */
-        .search-container { position: relative; margin-bottom: 15px; }
-        .search-bar { width: 100%; padding: 16px 50px 16px 18px; background: var(--surface); border: 1px solid var(--glass-border); border-radius: 16px; color: var(--text-main); font-size: 1.05rem; outline:none; transition: 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.02); }
-        .search-bar:focus { border-color: var(--primary); background: var(--surface); box-shadow: 0 0 0 4px rgba(255, 46, 85, 0.08); }
-        .mic-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
-        
-        .filters { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 10px; margin-right: -20px; padding-right: 20px;}
-        .filter-chip { padding: 8px 18px; background: var(--surface); border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 0.9rem; font-weight: 700; transition: 0.3s; border: 1px solid var(--glass-border); color: var(--text-muted); }
-        .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
-</style></head><body>
+:root{--d-bg:#fff;--d-surface:#fff;--d-text:#111;--d-muted:#777;--d-border:rgba(0,0,0,.09);--d-primary:#d80e45;--d-chip:#f5f5f7;}
+[data-theme="dark"]{--d-bg:#0f0f0f;--d-surface:#0f0f0f;--d-text:#fff;--d-muted:#aaa;--d-border:rgba(255,255,255,.14);--d-chip:#1b1b1b;}
+#search-tab{position:fixed!important;inset:0!important;z-index:100000!important;background:var(--d-bg)!important;color:var(--d-text);padding:0!important;margin:0!important;overflow:hidden!important;display:none;}
+#search-tab.active{display:block!important;}
+.discover-search-screen{width:100%;height:100%;display:flex;flex-direction:column;background:var(--d-bg);}
+.discover-search-top{height:64px;min-height:64px;display:flex;align-items:center;gap:9px;padding:8px 12px;border-bottom:1px solid var(--d-border);background:var(--d-surface);}
+.discover-back{width:42px;height:42px;border:0;background:transparent;color:var(--d-text);font-size:20px;border-radius:50%;flex:none;}
+.discover-search-box{height:44px;flex:1;min-width:0;display:flex;align-items:center;background:var(--d-chip);border:1px solid transparent;border-radius:22px;padding:0 13px;transition:.2s;}
+.discover-search-box:focus-within{border-color:var(--d-primary);background:var(--d-surface);box-shadow:0 0 0 3px rgba(216,14,69,.08);}
+.discover-search-icon{color:var(--d-muted);font-size:15px;margin-right:9px;}
+#discover-keyword-input{width:100%;border:0;outline:0;background:transparent;color:var(--d-text);font-size:15px;font-weight:600;min-width:0;}
+#discover-keyword-input::placeholder{color:var(--d-muted);}
+.discover-voice,.discover-clear{width:42px;height:42px;border:0;background:transparent;color:var(--d-text);font-size:18px;border-radius:50%;flex:none;}
+.discover-clear{display:none;color:var(--d-muted);}
+.discover-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 14px 32px;}
+.discover-heading{font-size:20px;font-weight:900;margin:0 0 5px;letter-spacing:-.3px;}
+.discover-sub{font-size:12px;color:var(--d-muted);font-weight:600;margin:0 0 18px;}
+.discover-keywords{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:22px;}
+.discover-keyword{border:1px solid var(--d-border);background:var(--d-chip);color:var(--d-text);border-radius:18px;padding:9px 13px;font-size:12px;font-weight:800;cursor:pointer;max-width:100%;}
+.discover-keyword strong{color:var(--d-primary);}
+.discover-section-title{font-size:15px;font-weight:900;margin:10px 0 12px;}
+.discover-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.discover-card{background:var(--d-surface);border:1px solid var(--d-border);border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.045);cursor:pointer;min-width:0;}
+.discover-thumb{position:relative;width:100%;aspect-ratio:16/10;background:#111;overflow:hidden;}
+.discover-thumb.feel{aspect-ratio:9/13;}
+.discover-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.discover-play{position:absolute;right:8px;bottom:8px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.72);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;}
+.discover-card-meta{padding:10px;}
+.discover-card-type{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:var(--d-primary);font-weight:900;margin-bottom:4px;}
+.discover-card-title{font-size:12px;line-height:1.35;font-weight:800;color:var(--d-text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.discover-card-info{font-size:10px;color:var(--d-muted);font-weight:600;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.discover-empty{text-align:center;padding:55px 18px;color:var(--d-muted);font-weight:700;font-size:13px;}
+.discover-empty i{font-size:32px;display:block;margin-bottom:12px;color:var(--d-primary);}
+@media(min-width:700px){.discover-results{grid-template-columns:repeat(4,minmax(0,1fr));}.discover-body{padding-left:24px;padding-right:24px;}}
+</style>
+</head>
+<body>
 <div class="tab-content" id="search-tab">
-<div class="section-title" style="margin-top:20px;">Discover</div>
-<div class="search-container">
-<input class="search-bar" id="search-input" placeholder="Search movies, TV shows..." type="text"/>
-<button class="mic-btn" onclick="startVoiceSearch(); playUI('click')"><i class="fas fa-microphone"></i></button>
+  <div class="discover-search-screen">
+    <div class="discover-search-top">
+      <button class="discover-back" type="button" onclick="discoverCloseSearch()" aria-label="Back"><i class="fas fa-arrow-left"></i></button>
+      <div class="discover-search-box">
+        <i class="fas fa-search discover-search-icon"></i>
+        <input id="discover-keyword-input" type="search" autocomplete="off" spellcheck="false" placeholder="Search Feels, videos, titles...">
+      </div>
+      <button id="discover-voice-btn" class="discover-voice" type="button" onclick="discoverStartVoice()" aria-label="Voice search"><i class="fas fa-microphone"></i></button>
+      <button id="discover-clear-btn" class="discover-clear" type="button" onclick="discoverClearSearch()" aria-label="Clear search"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="discover-body" id="discover-search-body">
+      <h1 class="discover-heading">Discover</h1>
+      <p class="discover-sub">Search the Flaynity library by keywords from Feels and videos.</p>
+      <div id="discover-keywords" class="discover-keywords"></div>
+      <div id="discover-results-title" class="discover-section-title" style="display:none;">Related content</div>
+      <div id="discover-results" class="discover-results"></div>
+    </div>
+  </div>
 </div>
-<div class="filters">
-<div class="filter-chip" onclick="applyFilter(28, this); playUI('click')">Action</div>
-<div class="filter-chip" onclick="applyFilter(878, this); playUI('click')">Sci-Fi</div>
-<div class="filter-chip" onclick="applyFilter(27, this); playUI('click')">Horror</div>
-<div class="filter-chip" onclick="applyFilter(35, this); playUI('click')">Comedy</div>
-<div class="filter-chip" onclick="applyFilter(10749, this); playUI('click')">Romance</div>
-<div class="filter-chip" onclick="applyFilter(16, this); playUI('click')">Animation</div>
-</div>
-<div class="movie-grid" id="search-results">
-<p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding: 60px 0; font-weight: 500;">Search or use the mic to find movies.</p>
-</div>
-</div>
+<script>
+(function(){
+'use strict';
+const input=document.getElementById('discover-keyword-input');
+const voice=document.getElementById('discover-voice-btn');
+const clear=document.getElementById('discover-clear-btn');
+const keywords=document.getElementById('discover-keywords');
+const results=document.getElementById('discover-results');
+const resultTitle=document.getElementById('discover-results-title');
+let searchTimer=null, searchGeneration=0, recognition=null;
+let localIndex=[];
+
+function esc(v){return typeof escapeHTML==='function'?escapeHTML(String(v||'')):String(v||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+function norm(v){return String(v||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'');}
+function tokens(v){return norm(v).replace(/[#@]/g,' ').split(/[^\p{L}\p{N}_]+/u).filter(x=>x.length>=2).slice(0,80);}
+function searchable(item,type){
+  const source=[item.title,item.description,item.caption,item.feel,item.tags, item.hashtags, item.category, item.username, item.channelName].flat().join(' ');
+  return {item,type,text:norm(source),words:tokens(source)};
+}
+function rebuildLocalIndex(){
+  const out=[];
+  const feels=Array.isArray(window.allFeels)?window.allFeels:[];
+  const videos=Array.isArray(window.allLongVideos)?window.allLongVideos:[];
+  feels.forEach(x=>out.push(searchable(x,'feel')));
+  videos.forEach(x=>out.push(searchable(x,'video')));
+  localIndex=out;
+}
+function uniqueKeywords(q){
+  const freq=new Map(); const nq=norm(q);
+  localIndex.forEach(entry=>entry.words.forEach(w=>{if(!nq||w.includes(nq)||nq.includes(w))freq.set(w,(freq.get(w)||0)+1);}));
+  return [...freq.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,18).map(x=>x[0]);
+}
+function showKeywords(q){
+  const list=uniqueKeywords(q); keywords.innerHTML='';
+  if(!list.length){keywords.style.display='none';return;}
+  keywords.style.display='flex';
+  list.forEach(word=>{
+    const b=document.createElement('button'); b.className='discover-keyword'; b.type='button';
+    b.innerHTML='<strong>#</strong>'+esc(word); b.onclick=()=>discoverSelectKeyword(word); keywords.appendChild(b);
+  });
+}
+function matches(entry,q){
+  if(!q)return false;
+  const nq=norm(q);
+  return entry.text.includes(nq)||entry.words.some(w=>w.includes(nq));
+}
+function renderResults(q){
+  rebuildLocalIndex();
+  const nq=norm(q).trim();
+  if(!nq){resultTitle.style.display='none';results.innerHTML='<div class="discover-empty" style="grid-column:1/-1"><i class="fas fa-magnifying-glass"></i>Type a keyword to discover Feels and videos.</div>';showKeywords('');return;}
+  const ranked=localIndex.filter(x=>matches(x,nq)).sort((a,b)=>{
+    const aTitle=norm(a.item.title||'').includes(nq)?1:0, bTitle=norm(b.item.title||'').includes(nq)?1:0;
+    return bTitle-aTitle;
+  }).slice(0,40);
+  showKeywords(nq); resultTitle.style.display='block';
+  if(!ranked.length){results.innerHTML='<div class="discover-empty" style="grid-column:1/-1"><i class="fas fa-face-frown"></i>No related Feels or videos found.</div>';return;}
+  results.innerHTML=ranked.map(entry=>card(entry)).join('');
+}
+function card(entry){
+  const x=entry.item||{}; const id=String(x.id||x.movieId||'');
+  const poster=x.poster||x.thumbnail||x.posterUrl||x.cover||'';
+  const title=x.title||x.name||'Untitled';
+  const user=x.channelName||x.username||'Flaynity User';
+  const type=entry.type==='feel'?'Feel':'Video';
+  const safeId=id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const onclick=entry.type==='feel'?`discoverPlayFeel('${safeId}')`:`discoverPlayVideo('${safeId}')`;
+  return `<div class="discover-card" onclick="${onclick}"><div class="discover-thumb ${entry.type==='feel'?'feel':''}">${poster?`<img src="${esc(poster)}" loading="lazy" alt="">`:''}<span class="discover-play"><i class="fas fa-play"></i></span></div><div class="discover-card-meta"><div class="discover-card-type">${type}</div><div class="discover-card-title">${esc(title)}</div><div class="discover-card-info">${esc(user)}</div></div></div>`;
+}
+window.discoverSelectKeyword=function(word){input.value=word;syncControls();renderResults(word);input.focus();};
+window.discoverClearSearch=function(){input.value='';syncControls();renderResults('');input.focus();};
+window.discoverCloseSearch=function(){
+  if(recognition){try{recognition.stop();}catch(e){}recognition=null;}
+  if(window.AppNavigation&&typeof AppNavigation.pop==='function') AppNavigation.pop(); else if(typeof switchTab==='function') switchTab('home');
+};
+window.discoverPlayFeel=function(id){if(typeof openShortFromHome==='function')openShortFromHome(id);};
+window.discoverPlayVideo=function(id){if(typeof openMoviePage==='function')openMoviePage(id,false);};
+window.discoverStartVoice=function(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){if(typeof showNotification==='function')showNotification('Voice search is not supported on this device.','error');return;}
+  try{
+    if(recognition){recognition.stop();recognition=null;return;}
+    recognition=new SR(); recognition.lang=navigator.language||'en-US'; recognition.interimResults=false; recognition.maxAlternatives=1;
+    recognition.onresult=e=>{const text=e.results&&e.results[0]&&e.results[0][0]?e.results[0][0].transcript:'';if(text){input.value=text;syncControls();renderResults(text);}};
+    recognition.onerror=()=>{}; recognition.onend=()=>{recognition=null;}; recognition.start();
+  }catch(e){recognition=null;}
+};
+function syncControls(){const has=!!input.value.trim();voice.style.display=has?'none':'block';clear.style.display=has?'block':'none';}
+input.addEventListener('input',()=>{syncControls();clearTimeout(searchTimer);const q=input.value.trim();searchTimer=setTimeout(()=>renderResults(q),90);});
+input.addEventListener('keydown',e=>{if(e.key==='Escape')discoverClearSearch();});
+
+// Pull the current published library directly from Firebase so Discover remains
+// accurate even when Home's feed has not been rendered yet.
+async function loadDiscoverData(){
+  rebuildLocalIndex();
+  if(typeof db==='undefined'||!navigator.onLine)return;
+  const generation=++searchGeneration;
+  try{
+    const [feelsSnap,videosSnap]=await Promise.all([db.ref('admin_panel/movies/feels').once('value'),db.ref('admin_panel/movies/user_uploads').once('value')]);
+    if(generation!==searchGeneration)return;
+    const now=Date.now();
+    const feels=feelsSnap.val()?Object.values(feelsSnap.val()).filter(x=>!x.scheduledTime||x.scheduledTime<=now):[];
+    const videos=videosSnap.val()?Object.values(videosSnap.val()).filter(x=>!x.scheduledTime||x.scheduledTime<=now):[];
+    window.allFeels=feels; window.allLongVideos=videos; rebuildLocalIndex(); renderResults(input.value.trim());
+  }catch(e){rebuildLocalIndex();renderResults(input.value.trim());}
+}
+function onOpen(){
+  document.body.classList.add('discover-fullscreen');
+  setTimeout(()=>{syncControls();loadDiscoverData();input.focus();},60);
+}
+window.addEventListener('flaynity-tab-changed',()=>{
+  const tab=document.getElementById('search-tab');
+  if(tab&&tab.classList.contains('active'))onOpen();
+});
+// The page may be activated before its listener is attached.
+setTimeout(()=>{const tab=document.getElementById('search-tab');if(tab&&tab.classList.contains('active'))onOpen();},20);
+})();
+</script>
 </body></html>

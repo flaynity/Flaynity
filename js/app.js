@@ -4218,6 +4218,14 @@ function escapeHTML(str) {
 function switchTab(tabId) {
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
+
+    // If the signed-in user already owns a channel, the You navigation item
+    // opens that channel directly instead of showing the old You menu.
+    if (tabId === 'you' && auth && auth.currentUser && currentChannelData) {
+        openViewChannelPage();
+        return;
+    }
+
     AppNavigation.pushTab(tabId);
 }
 
@@ -4635,6 +4643,12 @@ async function submitCreateChannel() {
             submitBtn.innerHTML = "Create Channel";
         }
     }
+}
+
+function openChannelSettingsPage() {
+    playUI('click');
+    if (!currentChannelData) return;
+    AppNavigation.pushPage('channel-settings-page');
 }
 
 function openViewChannelPage() {

@@ -399,6 +399,29 @@
     font-size:1.55rem !important;
     text-shadow:0 1px 3px rgba(255,255,255,.8) !important;
 }
+#view-channel-page > .appbar .view-channel-settings-btn{
+    pointer-events:auto !important;
+    position:absolute !important;
+    top:max(10px, env(safe-area-inset-top, 0px)) !important;
+    left:60px !important;
+    width:44px !important;
+    height:44px !important;
+    z-index:1001 !important;
+    border:0 !important;
+    background:transparent !important;
+    color:#111 !important;
+    box-shadow:none !important;
+    border-radius:50% !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    padding:0 !important;
+    cursor:pointer !important;
+}
+#view-channel-page > .appbar .view-channel-settings-btn i{
+    font-size:1.35rem !important;
+    text-shadow:0 1px 3px rgba(255,255,255,.8) !important;
+}
 #view-channel-page > .appbar .centered-page-title,
 #view-channel-page > .appbar #view-appbar-title{
     display:none !important;
@@ -625,13 +648,13 @@
 <div class="fullscreen-page" id="view-channel-page" style="z-index: 1510;">
 <header class="appbar">
 <button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
+<button class="view-channel-settings-btn" type="button" onclick="openChannelSettingsPage()" aria-label="Settings"><i class="fas fa-gear"></i></button>
 <h3 class="appbar-title centered-page-title" id="view-appbar-title">Your Channel</h3>
 </header>
 <div class="page-content" style="padding: 0;">
 <div class="channel-banner-container">
 <img class="channel-banner-img" id="view-channel-banner" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&amp;w=2000&amp;auto=format&amp;fit=crop"/>
 <div class="banner-gradient"></div>
-<button class="view-channel-settings-btn" type="button" onclick="openChannelSettingsPage()" aria-label="Settings"><i class="fas fa-gear"></i></button>
 </div>
 <div class="channel-profile-section">
 <div class="profile-row-main">

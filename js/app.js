@@ -3582,6 +3582,17 @@ const AppNavigation = {
     },
 
     syncUI: function() {
+        // You page navigation opens sub-pages directly without the default
+        // right-to-left slide animation. Other app pages keep their existing animation.
+        if (!document.getElementById('flaynity-you-direct-page-style')) {
+            const style = document.createElement('style');
+            style.id = 'flaynity-you-direct-page-style';
+            style.textContent = '.fullscreen-page.you-direct-page { animation: none !important; transform: none !important; }';
+            document.head.appendChild(style);
+        }
+        document.querySelectorAll('.fullscreen-page').forEach(el => {
+            el.classList.remove('you-direct-page');
+        });
         document.querySelectorAll('.fullscreen-page, .premium-download-modal').forEach(el => {
             el.style.display = 'none';
         });
@@ -3613,6 +3624,12 @@ const AppNavigation = {
                 activeModals.push(item.id);
             }
         });
+
+        // Any page opened from You should appear instantly instead of sliding in.
+        if (activeTab === 'you' && activePage) {
+            const directPage = document.getElementById(activePage);
+            if (directPage) directPage.classList.add('you-direct-page');
+        }
 
         document.querySelectorAll('.tab-content, .nav-item').forEach(el => el.classList.remove('active'));
         const tabEl = document.getElementById(`${activeTab}-tab`);

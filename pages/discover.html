@@ -3,7 +3,6 @@
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Flaynity</title>
 <style>
 /* Search UI */
-        .discover-page-title { margin-top: 0 !important; padding-top: 44px; }
         .search-container { position: relative; margin-bottom: 15px; }
         .search-bar { width: 100%; padding: 16px 50px 16px 18px; background: var(--surface); border: 1px solid var(--glass-border); border-radius: 16px; color: var(--text-main); font-size: 1.05rem; outline:none; transition: 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.02); }
         .search-bar:focus { border-color: var(--primary); background: var(--surface); box-shadow: 0 0 0 4px rgba(255, 46, 85, 0.08); }
@@ -12,19 +11,12 @@
         .filters { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 10px; margin-right: -20px; padding-right: 20px;}
         .filter-chip { padding: 8px 18px; background: var(--surface); border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 0.9rem; font-weight: 700; transition: 0.3s; border: 1px solid var(--glass-border); color: var(--text-muted); }
         .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .discover-status { color: var(--text-muted); grid-column: 1/-1; text-align:center; padding: 45px 10px; font-weight: 600; }
-        .discover-card { background: var(--surface); border-radius: 14px; overflow: hidden; cursor: pointer; border: 1px solid var(--glass-border); min-width: 0; }
-        .discover-card img { width:100%; aspect-ratio:2/3; object-fit:cover; display:block; background:#111; }
-        .discover-card-info { padding:10px 10px 12px; }
-        .discover-card-title { margin:0; color:var(--text-main); font-size:.88rem; line-height:1.25; font-weight:800; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-        .discover-card-meta { margin-top:5px; color:var(--text-muted); font-size:.74rem; font-weight:600; }
-        .movie-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
 </style></head><body>
 <div class="tab-content" id="search-tab">
-<div class="section-title discover-page-title">Discover</div>
+<div class="section-title" style="margin-top:20px;">Discover</div>
 <div class="search-container">
 <input class="search-bar" id="search-input" placeholder="Search movies, TV shows..." type="text"/>
-<button class="mic-btn" onclick="startVoiceSearch()"><i class="fas fa-microphone"></i></button>
+<button class="mic-btn" onclick="startVoiceSearch(); playUI('click')"><i class="fas fa-microphone"></i></button>
 </div>
 <div class="filters">
 <div class="filter-chip" onclick="applyFilter(28, this); playUI('click')">Action</div>
@@ -35,7 +27,7 @@
 <div class="filter-chip" onclick="applyFilter(16, this); playUI('click')">Animation</div>
 </div>
 <div class="movie-grid" id="search-results">
-<p class="discover-status" id="discover-status">Search for movies or choose a genre.</p>
+<p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding: 60px 0; font-weight: 500;">Search or use the mic to find movies.</p>
 </div>
 </div>
 </body></html>

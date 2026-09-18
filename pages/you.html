@@ -494,7 +494,7 @@
 
 /* Channel Settings */
 .view-channel-settings-btn{
-    position:absolute !important; top:max(48px, calc(env(safe-area-inset-top, 0px) + 36px)) !important; right:12px !important;
+    position:absolute !important; top:50px !important; right:12px !important;
     width:44px !important; height:44px !important; border:0 !important; border-radius:50% !important;
     background:rgba(255,255,255,.9) !important; color:#111 !important; display:flex !important;
     align-items:center !important; justify-content:center !important; z-index:1002 !important;
@@ -503,12 +503,23 @@
 }
 .view-channel-settings-btn i{font-size:1.15rem !important;}
 .view-channel-settings-btn:active{transform:scale(.93);}
-#channel-settings-page{z-index:1530 !important; background:var(--bg-color) !important; animation:none !important; transform:none !important;}
+#channel-settings-page{z-index:1530 !important; background:var(--bg-color) !important;}
 #channel-settings-page .appbar{position:relative !important;}
+#channel-settings-page > .appbar .centered-page-title{
+    position:absolute !important;
+    left:50% !important;
+    transform:translateX(-50%) !important;
+    margin:0 !important;
+    white-space:nowrap !important;
+    text-align:center !important;
+}
 #channel-settings-page .page-content{padding:18px 12px 40px !important;}
 #channel-settings-page .you-menu{margin:18px 8px 24px 8px !important;}
-/* Setting items open their pages instantly without the right-side slide animation. */
-.premium-service-page{animation:none !important; transform:none !important;}
+/* Do not slide premium/service pages in from the right when opened from User > Setting. */
+.fullscreen-page.flaynity-no-entry-animation{
+    animation:none !important;
+    transform:none !important;
+}
 
 </style></head><body>
 <div class="tab-content" id="you-tab">

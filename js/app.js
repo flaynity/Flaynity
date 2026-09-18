@@ -4638,10 +4638,15 @@ async function submitCreateChannel() {
 }
 
 function openChannelSettingsPage(event) {
-    if (event) event.stopPropagation();
+    if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
     playUI('click');
-    if (!currentChannelData) return;
     AppNavigation.pushPage('channel-settings-page');
+}
+
+function openChannelSettingService(serviceId) {
+    playUI('click');
+    if (!serviceId) return;
+    AppNavigation.pushPremiumService(serviceId);
 }
 
 function openViewChannelPage() {

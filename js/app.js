@@ -4219,11 +4219,33 @@ function switchTab(tabId) {
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
 
-    // If the signed-in user already owns a channel, the You navigation item
-    // opens that channel directly instead of showing the old You menu.
-    if (tabId === 'you' && auth && auth.currentUser && currentChannelData) {
-        openViewChannelPage();
-        return;
+    // You is a direct channel entry once the signed-in user owns a channel.
+    // Read Firebase when the local channel cache is not ready yet, so the
+    // You tab cannot briefly open the old You page or show a View Channel card.
+    if (tabId === 'you' && auth && auth.currentUser) {
+        const uid = auth.currentUser.uid;
+        if (currentChannelData) {
+            openViewChannelPage();
+            return;
+        }
+
+        if (navigator.onLine && typeof db !== 'undefined') {
+            db.ref(`channels/${uid}`).once('value').then((snapshot) => {
+                const channel = snapshot.val();
+                if (channel) {
+                    currentChannelData = channel;
+                    try {
+                        localStorage.setItem('flaynity_user_session_cache', JSON.stringify(channel));
+                    } catch (e) {}
+                    openViewChannelPage();
+                } else {
+                    AppNavigation.pushTab('you');
+                }
+            }).catch(() => {
+                AppNavigation.pushTab('you');
+            });
+            return;
+        }
     }
 
     AppNavigation.pushTab(tabId);
@@ -4364,12 +4386,9 @@ function renderYouTabWithData(data, user, wrap) {
             }
         }
 
-        wrap.innerHTML = `
-            <button class="btn-view-channel" onclick="openViewChannelPage()">
-                <i class="fas fa-tv"></i> View Channel 
-                <i class="fas fa-chevron-right" style="margin-left: auto;"></i>
-            </button>
-        `;
+        // A channel owner never sees a View Channel card here.
+        // The bottom You navigation opens the channel directly.
+        wrap.innerHTML = '';
     } else {
         const displayName = user.displayName || user.email.split('@')[0];
         if (youFullNameTxt) youFullNameTxt.innerText = displayName;
@@ -4647,8 +4666,28 @@ async function submitCreateChannel() {
 
 function openChannelSettingsPage() {
     playUI('click');
-    if (!currentChannelData) return;
-    AppNavigation.pushPage('channel-settings-page');
+    const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
+    if (!user) return;
+
+    if (currentChannelData) {
+        AppNavigation.pushPage('channel-settings-page');
+        return;
+    }
+
+    if (!navigator.onLine || typeof db === 'undefined') return;
+
+    db.ref(`channels/${user.uid}`).once('value').then((snapshot) => {
+        const channel = snapshot.val();
+        if (!channel) return;
+        currentChannelData = channel;
+        try {
+            localStorage.setItem('flaynity_user_session_cache', JSON.stringify(channel));
+        } catch (e) {}
+        AppNavigation.pushPage('channel-settings-page');
+    }).catch((error) => {
+        console.error('Failed to open Channel Settings:', error);
+        showNotification('Unable to open Settings. Please try again.', 'error');
+    });
 }
 
 function openViewChannelPage() {

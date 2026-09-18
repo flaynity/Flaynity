@@ -4637,16 +4637,18 @@ async function submitCreateChannel() {
     }
 }
 
-function openChannelSettingsPage(event) {
-    if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
+function openChannelSettingsPage() {
     playUI('click');
+    const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
+    if (!user) return;
+    if (!currentChannelData) {
+        db.ref(`channels/${user.uid}`).once('value').then((snap) => {
+            currentChannelData = snap.val();
+            if (currentChannelData) AppNavigation.pushPage('channel-settings-page');
+        }).catch((error) => console.error('Failed to load channel settings:', error));
+        return;
+    }
     AppNavigation.pushPage('channel-settings-page');
-}
-
-function openChannelSettingService(serviceId) {
-    playUI('click');
-    if (!serviceId) return;
-    AppNavigation.pushPremiumService(serviceId);
 }
 
 function openViewChannelPage() {

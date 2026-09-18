@@ -4307,17 +4307,17 @@ function applyFilter(genreId, chipEl) {
 // YOU & CHANNEL WORKFLOW
 // =========================================
 function initYouTabUI() {
-    const wrap = document.getElementById('channel-action-box');
-    if (!wrap) return;
-
     const user = auth.currentUser;
+    const createCard = document.getElementById('you-create-only-card');
     if (!user) return;
 
+    // The You tab itself is intentionally create-only. Once a channel exists,
+    // open the View Channel page directly instead of showing a View Channel card.
     if (!navigator.onLine) {
         if (currentChannelData) {
-            renderYouTabWithData(currentChannelData, user, wrap);
-        } else {
-            wrap.innerHTML = `<div class="skel-box" style="width: 100%; height: 48px; border-radius: 20px;"></div>`;
+            renderYouTabWithData(currentChannelData, user, createCard);
+        } else if (createCard) {
+            createCard.style.display = 'block';
         }
         return;
     }
@@ -4327,66 +4327,30 @@ function initYouTabUI() {
         if (currentChannelData) {
             localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
         }
-        renderYouTabWithData(currentChannelData, user, wrap);
+        renderYouTabWithData(currentChannelData, user, createCard);
     });
 }
 
 function renderYouTabWithData(data, user, wrap) {
-    const youAvatarLarge = document.getElementById('you-avatar-large');
-    const youFullNameTxt = document.getElementById('you-fullname-txt');
-    const youEmailTxt = document.getElementById('you-email-txt');
+    const createCard = document.getElementById('you-create-only-card');
 
     if (data) {
-        const channelName = data.channelName;
-        const channelHandle = "@" + data.handle;
-        const channelAvatar = data.avatarUrl || user.photoURL || '';
-
-        if (youFullNameTxt) youFullNameTxt.innerText = channelName;
-        if (youEmailTxt) {
-            youEmailTxt.innerText = channelHandle;
-            youEmailTxt.style.color = "var(--primary)";
-            youEmailTxt.style.fontWeight = "800";
+        // A channel owner never sees a View Channel card on You. The tab opens
+        // the existing channel page directly.
+        if (createCard) createCard.style.display = 'none';
+        if (AppNavigation.current()?.type === 'tab' && AppNavigation.current()?.id === 'you') {
+            openViewChannelPage();
         }
-
-        if (youAvatarLarge) {
-            if (channelAvatar) {
-                youAvatarLarge.innerHTML = `<img src="${channelAvatar}" style="width:100%; height:100%; object-fit:cover;">`;
-            } else {
-                youAvatarLarge.innerHTML = channelName.charAt(0).toUpperCase();
-            }
-        }
-
-        wrap.innerHTML = `
-            <button class="btn-view-channel" onclick="openViewChannelPage()">
-                <i class="fas fa-tv"></i> View Channel 
-                <i class="fas fa-chevron-right" style="margin-left: auto;"></i>
-            </button>
-        `;
     } else {
-        const displayName = user.displayName || user.email.split('@')[0];
-        if (youFullNameTxt) youFullNameTxt.innerText = displayName;
-        if (youEmailTxt) {
-            youEmailTxt.innerText = user.email;
-            youEmailTxt.style.color = "var(--text-muted)";
-            youEmailTxt.style.fontWeight = "600";
-        }
-
-        if (youAvatarLarge) {
-            const photoURL = user.photoURL || '';
-            if (photoURL) {
-                youAvatarLarge.innerHTML = `<img src="${photoURL}" style="width:100%; height:100%; object-fit:cover;">`;
-            } else {
-                youAvatarLarge.innerHTML = displayName.charAt(0).toUpperCase();
-            }
-        }
-
-        wrap.innerHTML = `
-            <button class="btn-create-channel" onclick="openCreateChannelPage()">
-                <i class="fas fa-plus"></i> Create a Channel
-            </button>
-        `;
+        if (createCard) createCard.style.display = 'block';
     }
     updateBottomNavAvatar();
+}
+
+function openChannelSettingsPage() {
+    playUI('click');
+    if (!currentChannelData) return;
+    AppNavigation.pushPage('channel-settings-page');
 }
 
 function handleFlayVerifiedBadgeFromYou() {
@@ -4635,26 +4599,6 @@ async function submitCreateChannel() {
             submitBtn.innerHTML = "Create Channel";
         }
     }
-}
-
-function openChannelSettingsPage(event) {
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
-    playUI('click');
-    const page = document.getElementById('channel-settings-page');
-    if (!page) {
-        showNotification('Settings page is unavailable.', 'error');
-        return;
-    }
-    AppNavigation.pushPage('channel-settings-page');
-}
-
-function openChannelService(serviceId) {
-    playUI('click');
-    if (!serviceId) return;
-    AppNavigation.pushPremiumService(serviceId);
 }
 
 function openViewChannelPage() {

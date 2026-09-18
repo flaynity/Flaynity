@@ -491,6 +491,35 @@
     margin-right:0 !important;
 }
 
+
+/* Channel settings entry and service page */
+.channel-banner-container { position: relative; }
+.view-channel-settings-btn {
+    position: absolute; top: 12px; right: 12px; z-index: 4;
+    width: 42px; height: 42px; border: 1px solid rgba(255,255,255,.28);
+    border-radius: 50%; background: rgba(0,0,0,.48); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.05rem; cursor: pointer; backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+.view-channel-settings-btn:active { transform: scale(.94); }
+.channel-settings-content { padding: 18px 16px 40px !important; }
+.channel-settings-item {
+    width: 100%; min-height: 58px; margin-bottom: 10px; padding: 0 18px;
+    border: 1px solid var(--glass-border); border-radius: 16px;
+    background: var(--surface); color: var(--text-main);
+    display: flex; align-items: center; justify-content: space-between;
+    text-align: left; font: inherit; font-weight: 800; font-size: 1rem; cursor: pointer;
+}
+.channel-settings-item i { color: var(--text-muted); font-size: .85rem; }
+.channel-settings-item:active { transform: scale(.98); background: var(--primary-glow); }
+#channel-settings-page > .appbar {
+    flex: 0 0 60px; height: 60px; position: sticky; top: 0; z-index: 100;
+}
+#channel-settings-page > .appbar .centered-page-title {
+    position: absolute; left: 50%; transform: translateX(-50%); margin: 0;
+    white-space: nowrap; text-align: center;
+}
 </style></head><body>
 <div class="tab-content" id="you-tab">
 <div class="profile-card-you">
@@ -503,7 +532,7 @@
 </div>
 <div class="channel-action-box" id="channel-action-box"></div>
 </div>
-<div class="you-menu premium-service-menu">
+<div class="you-menu premium-service-menu" id="you-premium-service-menu" style="display:none !important;">
 <div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('upgrade-pro')">
 <div class="premium-icon-box icon-pro"><i class="fas fa-crown"></i></div>
 <span>Upgrade Pro</span>
@@ -602,6 +631,7 @@
 <div class="channel-banner-container">
 <img class="channel-banner-img" id="view-channel-banner" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&amp;w=2000&amp;auto=format&amp;fit=crop"/>
 <div class="banner-gradient"></div>
+<button class="view-channel-settings-btn" type="button" onclick="openChannelSettingsPage()" aria-label="Settings"><i class="fas fa-gear"></i></button>
 </div>
 <div class="channel-profile-section">
 <div class="profile-row-main">
@@ -639,6 +669,19 @@
 <div class="channel-tab-content" id="channel-content-posts">
 <div class="channel-posts-container" id="channel-posts-feed"></div>
 </div>
+</div>
+</div>
+<div class="fullscreen-page" id="channel-settings-page" style="z-index: 1520;">
+<header class="appbar">
+<button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
+<h3 class="appbar-title centered-page-title">Setting</h3>
+</header>
+<div class="page-content channel-settings-content" style="padding-bottom: 40px;">
+<button class="channel-settings-item" onclick="AppNavigation.pushPremiumService('upgrade-pro')"><span>Upgrade Pro</span><i class="fas fa-chevron-right"></i></button>
+<button class="channel-settings-item" onclick="handleFlayVerifiedBadgeFromYou()"><span>Flay Verified Badge</span><i class="fas fa-chevron-right"></i></button>
+<button class="channel-settings-item" onclick="AppNavigation.pushPremiumService('flay-ads')"><span>Flay Ads</span><i class="fas fa-chevron-right"></i></button>
+<button class="channel-settings-item" onclick="AppNavigation.pushPremiumService('boost-content')"><span>Boost Content</span><i class="fas fa-chevron-right"></i></button>
+<button class="channel-settings-item" onclick="AppNavigation.pushPremiumService('flay-pay')"><span>Flay Pay</span><i class="fas fa-chevron-right"></i></button>
 </div>
 </div>
 <div class="fullscreen-page" id="analytics-page" style="z-index: 1520;">

@@ -492,13 +492,14 @@
 }
 
 
-/* Channel settings button + settings page */
-.view-channel-settings-btn{pointer-events:auto!important;position:absolute!important;top:max(18px,calc(env(safe-area-inset-top,0px) + 8px))!important;right:12px!important;width:44px!important;height:44px!important;border:0!important;background:transparent!important;box-shadow:none!important;color:#111!important;z-index:1001!important;padding:0!important;font-size:1.45rem!important;text-shadow:0 1px 3px rgba(255,255,255,.8)!important;cursor:pointer!important}
-#channel-settings-page{padding-top:env(safe-area-inset-top,0px);height:100dvh;min-height:100vh;overflow:hidden;box-sizing:border-box}
-#channel-settings-page>.channel-settings-appbar{flex:0 0 60px;height:60px;position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--glass-border)}
-#channel-settings-page>.channel-settings-appbar .centered-page-title{position:absolute;left:50%;transform:translateX(-50%);margin:0;white-space:nowrap;text-align:center}
-#channel-settings-page .channel-settings-content{min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:34px 8px 48px!important;box-sizing:border-box}
-#channel-settings-page .channel-settings-menu{margin-top:0!important}
+/* Channel setting controls */
+.view-channel-settings-btn{position:absolute;right:12px;bottom:10px;width:42px;height:42px;border:1px solid rgba(255,255,255,.28);border-radius:50%;background:rgba(0,0,0,.42);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.15rem;z-index:4;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.view-channel-settings-btn:active{transform:scale(.94)}
+.channel-settings-appbar{position:relative}
+.channel-settings-appbar .centered-page-title{position:absolute;left:50%;transform:translateX(-50%);margin:0;white-space:nowrap}
+.channel-settings-content{padding-top:34px!important;padding-bottom:40px!important}
+.channel-settings-menu{margin-top:0!important}
+.channel-settings-menu .premium-service-item{min-height:66px}
 </style></head><body>
 <div class="tab-content" id="you-tab">
 <div class="profile-card-you">
@@ -510,6 +511,7 @@
 </div>
 </div>
 <div class="channel-action-box" id="channel-action-box"></div>
+</div>
 </div>
 </div>
 <div class="fullscreen-page" id="create-channel-page">
@@ -573,12 +575,12 @@
 <header class="appbar">
 <button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
 <h3 class="appbar-title centered-page-title" id="view-appbar-title">Your Channel</h3>
-<button class="view-channel-settings-btn" onclick="openChannelSettingsPage()" aria-label="Setting"><i class="fas fa-gear"></i></button>
 </header>
 <div class="page-content" style="padding: 0;">
 <div class="channel-banner-container">
 <img class="channel-banner-img" id="view-channel-banner" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&amp;w=2000&amp;auto=format&amp;fit=crop"/>
 <div class="banner-gradient"></div>
+<button class="view-channel-settings-btn" onclick="openChannelSettingsPage()" aria-label="Setting"><i class="fas fa-gear"></i></button>
 </div>
 <div class="channel-profile-section">
 <div class="profile-row-main">
@@ -618,22 +620,20 @@
 </div>
 </div>
 </div>
-<div class="fullscreen-page" id="channel-settings-page" style="z-index: 1530;">
+<div class="fullscreen-page" id="channel-settings-page" style="z-index: 1525;">
 <header class="appbar channel-settings-appbar">
 <button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
 <h3 class="appbar-title centered-page-title">Setting</h3>
 </header>
 <div class="page-content channel-settings-content">
 <div class="you-menu premium-service-menu channel-settings-menu">
-<div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('upgrade-pro')">
-<div class="premium-icon-box icon-pro"><i class="fas fa-crown"></i></div><span>Upgrade Pro</span><i class="fas fa-chevron-right arrow-r"></i>
-</div>
-<div class="you-menu-item premium-service-item" onclick="handleFlayVerifiedBadgeFromYou()">
-<div class="premium-icon-box icon-verified"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11.96 1.171a2.316 2.316 0 0 0-1.63.784L8.76 3.65 6.64 3.96a2.315 2.315 0 0 0-1.928 1.928L4.4 8.01 2.705 9.576a2.316 2.316 0 0 0 0 3.328l1.696 1.566.312 2.122a2.315 2.315 0 0 0 1.928 1.928l2.122.312 1.57 1.696c.866.935 2.392.935 3.258 0l1.57-1.696 2.122-.312a2.315 2.315 0 0 0 1.928-1.928l.312-2.122 1.696-1.566a2.316 2.316 0 0 0 0-3.328L19.6 8.01l-.312-2.122a2.315 2.315 0 0 0-1.928-1.928L15.24 3.65l-1.57-1.695a2.316 2.316 0 0 0-1.63-.784z" fill="#3390ec"></path><path d="M10.15 14.88 7.37 12.1l1.41-1.41 1.37 1.37 4.96-4.96 1.41 1.42-6.37 6.36z" fill="#ffffff"></path></svg></div><span>Flay Verified Badge</span><i class="fas fa-chevron-right arrow-r"></i>
-</div>
+<div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('upgrade-pro')"><div class="premium-icon-box icon-pro"><i class="fas fa-crown"></i></div><span>Upgrade Pro</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item" onclick="handleFlayVerifiedBadgeFromYou()"><div class="premium-icon-box icon-verified"><i class="fas fa-circle-check" style="color:#3390ec!important"></i></div><span>Flay Verified Badge</span><i class="fas fa-chevron-right arrow-r"></i></div>
 <div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('flay-ads')"><div class="premium-icon-box icon-ads"><i class="fas fa-rectangle-ad"></i></div><span>Flay Ads</span><i class="fas fa-chevron-right arrow-r"></i></div>
 <div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('boost-content')"><div class="premium-icon-box icon-boost"><i class="fas fa-rocket"></i></div><span>Boost Content</span><i class="fas fa-chevron-right arrow-r"></i></div>
 <div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('flay-pay')"><div class="premium-icon-box icon-pay"><i class="fas fa-wallet"></i></div><span>Flay Pay</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item" onclick="openThemePopupMenu()"><div class="premium-icon-box" style="background:linear-gradient(135deg,#0EA5E9,#6366F1);box-shadow:0 4px 14px rgba(14,165,233,.25)"><i class="fas fa-palette"></i></div><span>Theme Switch</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item" onclick="openAccountSwitcher()"><div class="premium-icon-box" style="background:linear-gradient(135deg,#F59E0B,#F97316);box-shadow:0 4px 14px rgba(245,158,11,.25)"><i class="fas fa-user-gear"></i></div><span>Switch Account</span><i class="fas fa-chevron-right arrow-r"></i></div>
 </div>
 </div>
 </div>

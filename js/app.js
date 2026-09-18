@@ -4218,7 +4218,6 @@ function escapeHTML(str) {
 function switchTab(tabId) {
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
-    if (tabId === 'you') window.__flaynityOpenChannelFromYouNav = true;
     AppNavigation.pushTab(tabId);
 }
 
@@ -4314,17 +4313,11 @@ function initYouTabUI() {
     const user = auth.currentUser;
     if (!user) return;
 
-    // The You tab is only the Create Channel card until a channel exists.
-    // When the user explicitly taps the You navigation item after creating a
-    // channel, open the Channel page directly instead of showing a View Channel card.
-    const openChannelDirectly = window.__flaynityOpenChannelFromYouNav === true;
-    window.__flaynityOpenChannelFromYouNav = false;
-
     if (!navigator.onLine) {
         if (currentChannelData) {
-            renderYouTabWithData(currentChannelData, user, wrap, openChannelDirectly);
+            renderYouTabWithData(currentChannelData, user, wrap);
         } else {
-            renderYouTabWithData(null, user, wrap, false);
+            wrap.innerHTML = `<div class="skel-box" style="width: 100%; height: 48px; border-radius: 20px;"></div>`;
         }
         return;
     }
@@ -4334,26 +4327,59 @@ function initYouTabUI() {
         if (currentChannelData) {
             localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
         }
-        renderYouTabWithData(currentChannelData, user, wrap, openChannelDirectly);
+        renderYouTabWithData(currentChannelData, user, wrap);
     });
 }
 
-function renderYouTabWithData(data, user, wrap, openChannelDirectly = false) {
+function renderYouTabWithData(data, user, wrap) {
     const youAvatarLarge = document.getElementById('you-avatar-large');
     const youFullNameTxt = document.getElementById('you-fullname-txt');
     const youEmailTxt = document.getElementById('you-email-txt');
 
-    // The profile identity is intentionally hidden on the new You page.
-    if (youAvatarLarge) youAvatarLarge.innerHTML = '';
-    if (youFullNameTxt) youFullNameTxt.innerText = '';
-    if (youEmailTxt) youEmailTxt.innerText = '';
-
     if (data) {
-        wrap.innerHTML = '';
-        if (openChannelDirectly) {
-            openViewChannelPage(true);
+        const channelName = data.channelName;
+        const channelHandle = "@" + data.handle;
+        const channelAvatar = data.avatarUrl || user.photoURL || '';
+
+        if (youFullNameTxt) youFullNameTxt.innerText = channelName;
+        if (youEmailTxt) {
+            youEmailTxt.innerText = channelHandle;
+            youEmailTxt.style.color = "var(--primary)";
+            youEmailTxt.style.fontWeight = "800";
         }
+
+        if (youAvatarLarge) {
+            if (channelAvatar) {
+                youAvatarLarge.innerHTML = `<img src="${channelAvatar}" style="width:100%; height:100%; object-fit:cover;">`;
+            } else {
+                youAvatarLarge.innerHTML = channelName.charAt(0).toUpperCase();
+            }
+        }
+
+        wrap.innerHTML = `
+            <button class="btn-view-channel" onclick="openViewChannelPage()">
+                <i class="fas fa-tv"></i> View Channel 
+                <i class="fas fa-chevron-right" style="margin-left: auto;"></i>
+            </button>
+        `;
     } else {
+        const displayName = user.displayName || user.email.split('@')[0];
+        if (youFullNameTxt) youFullNameTxt.innerText = displayName;
+        if (youEmailTxt) {
+            youEmailTxt.innerText = user.email;
+            youEmailTxt.style.color = "var(--text-muted)";
+            youEmailTxt.style.fontWeight = "600";
+        }
+
+        if (youAvatarLarge) {
+            const photoURL = user.photoURL || '';
+            if (photoURL) {
+                youAvatarLarge.innerHTML = `<img src="${photoURL}" style="width:100%; height:100%; object-fit:cover;">`;
+            } else {
+                youAvatarLarge.innerHTML = displayName.charAt(0).toUpperCase();
+            }
+        }
+
         wrap.innerHTML = `
             <button class="btn-create-channel" onclick="openCreateChannelPage()">
                 <i class="fas fa-plus"></i> Create a Channel
@@ -4611,23 +4637,16 @@ async function submitCreateChannel() {
     }
 }
 
-function openChannelSettingsPage() {
+function openChannelSettingsPage(event) {
+    if (event) event.stopPropagation();
     playUI('click');
-    if (!currentChannelData && auth.currentUser) {
-        db.ref(`channels/${auth.currentUser.uid}`).once('value').then((snapshot) => {
-            currentChannelData = snapshot.val();
-            if (currentChannelData) AppNavigation.pushPage('channel-settings-page');
-            else showNotification('Create a Channel first.', 'error');
-        }).catch(() => showNotification('Unable to load Channel.', 'error'));
-        return;
-    }
-    if (currentChannelData) AppNavigation.pushPage('channel-settings-page');
-    else showNotification('Create a Channel first.', 'error');
+    if (!currentChannelData) return;
+    AppNavigation.pushPage('channel-settings-page');
 }
 
-function openViewChannelPage(silent = false) {
+function openViewChannelPage() {
     ensureLiveUploadStyles();
-    if (!silent) playUI('click');
+    playUI('click');
     let data = currentChannelData;
     if (!data) return;
 

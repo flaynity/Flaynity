@@ -3715,8 +3715,9 @@ async function openMoviePage(id, isTMDB = false) {
     if (banner) banner.style.display = 'block';
 
     if (isTMDB) {
-        const res = await fetch(`${BASE_URL}/movie/${id}?api_key=${API_KEY}`);
+        const res = await fetch(`${BASE_URL}/movie/${id}?append_to_response=videos&api_key=${API_KEY}`);
         const data = await res.json();
+        let trailerKey = data.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube')?.key;
         currentActiveMovie = { 
             id: data.id, 
             title: data.title, 
@@ -3724,7 +3725,7 @@ async function openMoviePage(id, isTMDB = false) {
             releaseDate: data.release_date?.split('-')[0] || "N/A", 
             poster: IMG_URL + data.poster_path, 
             banner: BG_URL + (data.backdrop_path || data.poster_path), 
-            videoLink: null,
+            videoLink: trailerKey ? `https://www.youtube.com/watch?v=${trailerKey}` : null, 
             isTMDB: true 
         };
     } else {
@@ -3764,9 +3765,10 @@ function startVideoPlayer() {
 
     container.style.display = 'block';
 
-    // YouTube links are intentionally disabled. Only Flaynity/Cloudflare media is playable here.
+    // YouTube/TMDB trailers → iframe (আগের মতোই, unchanged)
     if (link.includes('youtube.com') || link.includes('youtu.be')) {
-        showNotification("YouTube videos are not supported.", "error");
+        const ytId = extractVideoID(link);
+        container.innerHTML = `<iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1&modestbranding=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
         return;
     }
 
@@ -4265,21 +4267,6 @@ function adjustHeaderForActiveTab(tabId) {
         }
     }
 
-    if (tabId === 'search') {
-        // Discover has its own content header. Keep the shared app bar completely hidden.
-        header.style.display = 'none';
-        document.body.style.paddingTop = '0px';
-        document.body.style.paddingBottom = '50px';
-        if (chips) chips.style.display = 'none';
-        const discoverTab = document.getElementById('search-tab');
-        if (discoverTab) {
-            discoverTab.style.paddingTop = '24px';
-            discoverTab.style.marginTop = '0px';
-        }
-        initDiscoverSystem();
-        return;
-    }
-
     if (tabId === 'you') {
         if (brand) brand.style.display = 'none';
         if (actions) {
@@ -4306,115 +4293,14 @@ function adjustHeaderForActiveTab(tabId) {
     applyTheme();
 }
 
-// =========================================
-// DISCOVER SEARCH & FILTER SYSTEM
-// =========================================
-let discoverSearchTimer = null;
-let discoverSystemReady = false;
-
-function setDiscoverStatus(message) {
-    const grid = document.getElementById('search-results');
-    if (grid) grid.innerHTML = `<p class="discover-status">${escapeHTML(message)}</p>`;
-}
-
-function renderDiscoverResults(items) {
-    const grid = document.getElementById('search-results');
-    if (!grid) return;
-    if (!items || !items.length) { setDiscoverStatus('No movies found. Try another search.'); return; }
-    grid.innerHTML = items.filter(m => m.poster_path).map(m => {
-        const poster = IMG_URL + m.poster_path;
-        const year = (m.release_date || '').slice(0,4) || 'N/A';
-        const rating = Number.isFinite(Number(m.vote_average)) ? Number(m.vote_average).toFixed(1) : 'N/A';
-        return `<article class="discover-card">
-            <img src="${poster}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
-            <div class="discover-card-info">
-                <h3 class="discover-card-title">${escapeHTML(m.title || 'Untitled')}</h3>
-                <div class="discover-card-meta">${year} · ★ ${rating}</div>
-            </div>
-        </article>`;
-    }).join('');
-}
-
-async function fetchDiscoverMovies(params) {
-    if (!navigator.onLine) { setDiscoverStatus('Connect to the internet to use Discover.'); return; }
-    const grid = document.getElementById('search-results');
-    if (grid) grid.innerHTML = '<p class="discover-status">Loading...</p>';
-    try {
-        const url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=en-US&sort_by=popularity.desc&include_adult=false&page=1${params || ''}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('TMDB request failed');
-        const data = await res.json();
-        renderDiscoverResults(data.results || []);
-    } catch (e) {
-        console.error('Discover error:', e);
-        setDiscoverStatus('Unable to load Discover right now.');
-    }
-}
-
-async function searchDiscoverMovies(query) {
-    const q = String(query || '').trim();
-    if (!q) { setDiscoverStatus('Search for movies or choose a genre.'); return; }
-    if (!navigator.onLine) { setDiscoverStatus('Connect to the internet to search.'); return; }
-    const grid = document.getElementById('search-results');
-    if (grid) grid.innerHTML = '<p class="discover-status">Searching...</p>';
-    try {
-        const res = await fetch(`${BASE_URL}/search/movie?api_key=${API_KEY}&language=en-US&query=${encodeURIComponent(q)}&include_adult=false&page=1`);
-        if (!res.ok) throw new Error('TMDB request failed');
-        const data = await res.json();
-        renderDiscoverResults(data.results || []);
-    } catch (e) {
-        console.error('Discover search error:', e);
-        setDiscoverStatus('Search failed. Please try again.');
-    }
-}
-
-function initDiscoverSystem() {
-    const input = document.getElementById('search-input');
-    if (!input || discoverSystemReady) return;
-    discoverSystemReady = true;
-    fetchDiscoverMovies('');
-    input.addEventListener('input', function () {
-        clearTimeout(discoverSearchTimer);
-        const value = this.value.trim();
-        if (!value) { setDiscoverStatus('Search for movies or choose a genre.'); return; }
-        discoverSearchTimer = setTimeout(() => searchDiscoverMovies(value), 350);
-    });
-    input.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            clearTimeout(discoverSearchTimer);
-            searchDiscoverMovies(this.value);
-        }
-    });
-}
-
 function startVoiceSearch() {
-    playUI('click');
-    const input = document.getElementById('search-input');
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        showNotification('Voice search is not supported on this device.', 'error');
-        return;
-    }
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.onresult = event => {
-        const text = event.results?.[0]?.[0]?.transcript || '';
-        if (input) { input.value = text; searchDiscoverMovies(text); }
-    };
-    recognition.onerror = () => showNotification('Voice search could not be started.', 'error');
-    recognition.start();
+    showUpcomingModal();
 }
 
 function applyFilter(genreId, chipEl) {
-    playUI('click');
     document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('active'));
-    if (chipEl) chipEl.classList.add('active');
-    const input = document.getElementById('search-input');
-    if (input) input.value = '';
-    fetchDiscoverMovies(`&with_genres=${encodeURIComponent(genreId)}`);
+    chipEl.classList.add('active');
+    showUpcomingModal();
 }
 
 // =========================================
@@ -5779,6 +5665,18 @@ function startDownloadAdRequest() {
     const format = document.querySelector('input[name="download-format"]:checked')?.value || "video-720";
     const filename = `${currentActiveMovie.title.replace(/\s+/g, '_')}_${format}.mp4`;
     triggerFileDownload(currentActiveMovie.videoLink, filename);
+}
+
+// =========================================
+// UPCOMING FEATURE POPUP HELPERS
+// =========================================
+function showUpcomingModal() {
+    playUI('click');
+    AppNavigation.pushModal('upcoming-modal');
+}
+
+function hideUpcomingModal() {
+    AppNavigation.pop();
 }
 
 // =========================================================

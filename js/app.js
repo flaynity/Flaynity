@@ -4218,6 +4218,7 @@ function escapeHTML(str) {
 function switchTab(tabId) {
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
+    if (tabId === 'you') window.__flaynityOpenChannelFromYouNav = true;
     AppNavigation.pushTab(tabId);
 }
 
@@ -4307,17 +4308,23 @@ function applyFilter(genreId, chipEl) {
 // YOU & CHANNEL WORKFLOW
 // =========================================
 function initYouTabUI() {
+    const wrap = document.getElementById('channel-action-box');
+    if (!wrap) return;
+
     const user = auth.currentUser;
-    const createCard = document.getElementById('you-create-only-card');
     if (!user) return;
 
-    // The You tab itself is intentionally create-only. Once a channel exists,
-    // open the View Channel page directly instead of showing a View Channel card.
+    // The You tab is only the Create Channel card until a channel exists.
+    // When the user explicitly taps the You navigation item after creating a
+    // channel, open the Channel page directly instead of showing a View Channel card.
+    const openChannelDirectly = window.__flaynityOpenChannelFromYouNav === true;
+    window.__flaynityOpenChannelFromYouNav = false;
+
     if (!navigator.onLine) {
         if (currentChannelData) {
-            renderYouTabWithData(currentChannelData, user, createCard);
-        } else if (createCard) {
-            createCard.style.display = 'block';
+            renderYouTabWithData(currentChannelData, user, wrap, openChannelDirectly);
+        } else {
+            renderYouTabWithData(null, user, wrap, false);
         }
         return;
     }
@@ -4327,30 +4334,33 @@ function initYouTabUI() {
         if (currentChannelData) {
             localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
         }
-        renderYouTabWithData(currentChannelData, user, createCard);
+        renderYouTabWithData(currentChannelData, user, wrap, openChannelDirectly);
     });
 }
 
-function renderYouTabWithData(data, user, wrap) {
-    const createCard = document.getElementById('you-create-only-card');
+function renderYouTabWithData(data, user, wrap, openChannelDirectly = false) {
+    const youAvatarLarge = document.getElementById('you-avatar-large');
+    const youFullNameTxt = document.getElementById('you-fullname-txt');
+    const youEmailTxt = document.getElementById('you-email-txt');
+
+    // The profile identity is intentionally hidden on the new You page.
+    if (youAvatarLarge) youAvatarLarge.innerHTML = '';
+    if (youFullNameTxt) youFullNameTxt.innerText = '';
+    if (youEmailTxt) youEmailTxt.innerText = '';
 
     if (data) {
-        // A channel owner never sees a View Channel card on You. The tab opens
-        // the existing channel page directly.
-        if (createCard) createCard.style.display = 'none';
-        if (AppNavigation.current()?.type === 'tab' && AppNavigation.current()?.id === 'you') {
-            openViewChannelPage();
+        wrap.innerHTML = '';
+        if (openChannelDirectly) {
+            openViewChannelPage(true);
         }
     } else {
-        if (createCard) createCard.style.display = 'block';
+        wrap.innerHTML = `
+            <button class="btn-create-channel" onclick="openCreateChannelPage()">
+                <i class="fas fa-plus"></i> Create a Channel
+            </button>
+        `;
     }
     updateBottomNavAvatar();
-}
-
-function openChannelSettingsPage() {
-    playUI('click');
-    if (!currentChannelData) return;
-    AppNavigation.pushPage('channel-settings-page');
 }
 
 function handleFlayVerifiedBadgeFromYou() {
@@ -4601,9 +4611,23 @@ async function submitCreateChannel() {
     }
 }
 
-function openViewChannelPage() {
-    ensureLiveUploadStyles();
+function openChannelSettingsPage() {
     playUI('click');
+    if (!currentChannelData && auth.currentUser) {
+        db.ref(`channels/${auth.currentUser.uid}`).once('value').then((snapshot) => {
+            currentChannelData = snapshot.val();
+            if (currentChannelData) AppNavigation.pushPage('channel-settings-page');
+            else showNotification('Create a Channel first.', 'error');
+        }).catch(() => showNotification('Unable to load Channel.', 'error'));
+        return;
+    }
+    if (currentChannelData) AppNavigation.pushPage('channel-settings-page');
+    else showNotification('Create a Channel first.', 'error');
+}
+
+function openViewChannelPage(silent = false) {
+    ensureLiveUploadStyles();
+    if (!silent) playUI('click');
     let data = currentChannelData;
     if (!data) return;
 

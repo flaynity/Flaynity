@@ -1652,12 +1652,24 @@ function selectGenericOption(element, sheetId) {
 }
 
 function selectThemeOption(element, sheetId) {
-    const theme = element.getAttribute('data-value');
-    if (theme === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
-        document.documentElement.removeAttribute('data-theme');
-    }
+    const theme = element.getAttribute('data-value') === 'dark' ? 'dark' : 'light';
+
+    // Persist the selected theme so it remains active across pages/reloads.
+    localStorage.setItem('flaynity-theme-pref', theme);
+
+    // Apply immediately to the whole app.
+    document.documentElement.setAttribute('data-theme', theme);
+
+    // Keep browser/WebView theme color in sync with the selected theme.
+    const themeColor = theme === 'dark' ? '#0F0F0F' : '#FFFFFF';
+    const themeMeta = document.getElementById('flaynity-theme-color');
+    const msThemeMeta = document.getElementById('flaynity-ms-theme-color');
+    if (themeMeta) themeMeta.setAttribute('content', themeColor);
+    if (msThemeMeta) msThemeMeta.setAttribute('content', themeColor);
+
+    // Refresh the common theme engine when available.
+    if (typeof applyTheme === 'function') applyTheme();
+
     selectGenericOption(element, sheetId);
 }
 

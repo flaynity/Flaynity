@@ -231,8 +231,7 @@
 .fullscreen-page#view-channel-page,
 .fullscreen-page#analytics-page,
 .fullscreen-page#edit-channel-page,
-.fullscreen-page#monetization-page,
-.fullscreen-page#channel-settings-page {
+.fullscreen-page#monetization-page {
     padding-top: env(safe-area-inset-top, 0px);
     height: 100dvh;
     min-height: 100vh;
@@ -242,8 +241,7 @@
 #view-channel-page > .appbar,
 #analytics-page > .appbar,
 #edit-channel-page > .appbar,
-#monetization-page > .appbar,
-#channel-settings-page > .appbar {
+#monetization-page > .appbar {
     flex: 0 0 60px;
     height: 60px;
     position: sticky;
@@ -270,16 +268,14 @@
 .fullscreen-page#view-channel-page,
 .fullscreen-page#analytics-page,
 .fullscreen-page#edit-channel-page,
-.fullscreen-page#monetization-page,
-.fullscreen-page#channel-settings-page {
+.fullscreen-page#monetization-page {
     box-sizing: border-box;
 }
 #create-channel-page .page-content,
 #edit-channel-page .page-content,
 #view-channel-page .page-content,
 #analytics-page .page-content,
-#monetization-page .page-content,
-#channel-settings-page .page-content {
+#monetization-page .page-content {
     min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -515,6 +511,17 @@
 #channel-settings-page .page-content{padding:18px 12px 40px !important;}
 #channel-settings-page .you-menu{margin:18px 8px 24px 8px !important;}
 
+
+/* Settings cards */
+#channel-settings-page .page-content{padding:18px 12px 40px !important;}
+#channel-settings-page .settings-card-box{background:var(--card-bg, rgba(128,128,128,.10));border:1px solid rgba(128,128,128,.16);border-radius:18px;padding:12px;margin:0 0 16px 0;box-shadow:0 4px 18px rgba(0,0,0,.05);}
+#channel-settings-page .settings-card-title{font-size:1rem;font-weight:800;color:var(--text-main);padding:4px 6px 10px;}
+#channel-settings-page .settings-card-items{overflow:hidden;border-radius:13px;}
+#channel-settings-page .settings-card-items .you-menu-item{margin:0 !important;border-radius:0 !important;border-bottom:1px solid rgba(128,128,128,.12) !important;}
+#channel-settings-page .settings-card-items .you-menu-item:last-child{border-bottom:0 !important;}
+#channel-settings-page .premium-icon-box{width:38px !important;height:38px !important;min-width:38px !important;border-radius:11px !important;display:flex !important;align-items:center !important;justify-content:center !important;}
+#channel-settings-page .premium-icon-box i{font-size:.95rem !important;}
+#channel-settings-page .premium-icon-box svg{width:22px !important;height:22px !important;}
 </style></head><body>
 <div class="tab-content" id="you-tab">
 <div class="profile-card-you">
@@ -672,23 +679,67 @@
 <h3 class="appbar-title centered-page-title">Setting</h3>
 </header>
 <div class="page-content">
-<div class="you-menu premium-service-menu">
-<div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('upgrade-pro')">
-<div class="premium-icon-box icon-pro"><i class="fas fa-crown"></i></div><span>Upgrade Pro</span><i class="fas fa-chevron-right arrow-r"></i>
-</div>
-<div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('flay-verified-badge')">
-<div class="premium-icon-box icon-verified"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11.96 1.171a2.316 2.316 0 0 0-1.63.784L8.76 3.65 6.64 3.96a2.315 2.315 0 0 0-1.928 1.928L4.4 8.01 2.705 9.576a2.316 2.316 0 0 0 0 3.328l1.696 1.566.312 2.122a2.315 2.315 0 0 0 1.928 1.928l2.122.312 1.57 1.696c.866.935 2.392.935 3.258 0l1.57-1.696 2.122-.312a2.315 2.315 0 0 0 1.928-1.928l.312-2.122 1.696-1.566a2.316 2.316 0 0 0 0-3.328L19.6 8.01l-.312-2.122a2.315 2.315 0 0 0-1.928-1.928L15.24 3.65l-1.57-1.695a2.316 2.316 0 0 0-1.63-.784z" fill="#3390ec"></path><path d="M10.15 14.88 7.37 12.1l1.41-1.41 1.37 1.37 4.96-4.96 1.41 1.42-6.37 6.36z" fill="#ffffff"></path></svg></div><span>Flay Verified Badge</span><i class="fas fa-chevron-right arrow-r"></i>
-</div>
+
+<div class="settings-card-box">
+<div class="settings-card-title">Account</div>
+<div class="settings-card-items">
+<div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('flay-earning')"><div class="premium-icon-box icon-earning"><i class="fas fa-coins"></i></div><span>Flay Earning</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item" onclick="openEditProfilePage ? openEditProfilePage() : null"><div class="premium-icon-box icon-profile"><i class="fas fa-user-pen"></i></div><span>Edit Profile</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item" onclick="openAccountSwitcher()"><div class="premium-icon-box icon-account"><i class="fas fa-exchange-alt"></i></div><span>Switch Account</span><i class="fas fa-chevron-right arrow-r"></i></div>
+</div></div>
+
+<div class="settings-card-box">
+<div class="settings-card-title">Appearance</div>
+<div class="settings-card-items">
+<div class="you-menu-item premium-service-item" onclick="openThemePopupMenu()"><div class="premium-icon-box icon-theme"><i class="fas fa-palette"></i></div><span>Switch Theme</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-language"><i class="fas fa-language"></i></div><span>App Language</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-data"><i class="fas fa-chart-line"></i></div><span>Data Saver</span><i class="fas fa-chevron-right arrow-r"></i></div>
+</div></div>
+
+<div class="settings-card-box">
+<div class="settings-card-title">Flaynity Features</div>
+<div class="settings-card-items">
+<div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('upgrade-pro')"><div class="premium-icon-box icon-pro"><i class="fas fa-crown"></i></div><span>Upgrade Pro</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('flay-verified-badge')"><div class="premium-icon-box icon-verified"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11.96 1.171a2.316 2.316 0 0 0-1.63.784L8.76 3.65 6.64 3.96a2.315 2.315 0 0 0-1.928 1.928L4.4 8.01 2.705 9.576a2.316 2.316 0 0 0 0 3.328l1.696 1.566.312 2.122a2.315 2.315 0 0 0 1.928 1.928l2.122.312 1.57 1.696c.866.935 2.392.935 3.258 0l1.57-1.696 2.122-.312a2.315 2.315 0 0 0 1.928-1.928l.312-2.122 1.696-1.566a2.316 2.316 0 0 0 0-3.328L19.6 8.01l-.312-2.122a2.315 2.315 0 0 0-1.928-1.928L15.24 3.65l-1.57-1.695a2.316 2.316 0 0 0-1.63-.784z" fill="#3390ec"></path><path d="M10.15 14.88 7.37 12.1l1.41-1.41 1.37 1.37 4.96-4.96 1.41 1.42 1.41-1.41-6.37 6.36z" fill="#ffffff"></path></svg></div><span>Flay Verified Badge</span><i class="fas fa-chevron-right arrow-r"></i></div>
 <div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('flay-ads')"><div class="premium-icon-box icon-ads"><i class="fas fa-rectangle-ad"></i></div><span>Flay Ads</span><i class="fas fa-chevron-right arrow-r"></i></div>
 <div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('boost-content')"><div class="premium-icon-box icon-boost"><i class="fas fa-rocket"></i></div><span>Boost Content</span><i class="fas fa-chevron-right arrow-r"></i></div>
 <div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('flay-pay')"><div class="premium-icon-box icon-pay"><i class="fas fa-wallet"></i></div><span>Flay Pay</span><i class="fas fa-chevron-right arrow-r"></i></div>
-<div class="you-menu-item premium-service-item" onclick="openThemePopupMenu()">
-<div class="premium-icon-box icon-theme"><i class="fas fa-palette"></i></div><span>Theme Switch</span><i class="fas fa-chevron-right arrow-r"></i>
-</div>
-<div class="you-menu-item premium-service-item" onclick="openAccountSwitcher()">
-<div class="premium-icon-box icon-account"><i class="fas fa-exchange-alt"></i></div><span>Switch Account</span><i class="fas fa-chevron-right arrow-r"></i>
-</div>
-</div>
+</div></div>
+
+<div class="settings-card-box">
+<div class="settings-card-title">Privacy</div>
+<div class="settings-card-items">
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-privacy"><i class="fas fa-lock"></i></div><span>Private Account</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-privacy"><i class="fas fa-eye"></i></div><span>Who Can See My Content</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-privacy"><i class="fas fa-comment"></i></div><span>Who Can Comment</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-privacy"><i class="fas fa-user-check"></i></div><span>Who Can Subscribe Me</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-privacy"><i class="fas fa-heart"></i></div><span>Who Can Like Me</span><i class="fas fa-chevron-right arrow-r"></i></div>
+</div></div>
+
+<div class="settings-card-box">
+<div class="settings-card-title">Content &amp; Playback</div>
+<div class="settings-card-items">
+<div class="you-menu-item premium-service-item" onclick="openDownloadModal()"><div class="premium-icon-box icon-download"><i class="fas fa-download"></i></div><span>Download Settings</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-quality"><i class="fas fa-sliders"></i></div><span>Content Quality</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-autoplay"><i class="fas fa-play"></i></div><span>Autoplay</span><i class="fas fa-chevron-right arrow-r"></i></div>
+</div></div>
+
+<div class="settings-card-box">
+<div class="settings-card-title">Support</div>
+<div class="settings-card-items">
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-support"><i class="fas fa-circle-question"></i></div><span>Help Center</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-support"><i class="fas fa-bug"></i></div><span>Report a Problem</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-support"><i class="fas fa-file-contract"></i></div><span>Terms of Service</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-support"><i class="fas fa-shield-halved"></i></div><span>Privacy Policy</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-support"><i class="fas fa-cookie-bite"></i></div><span>Cookie Policy</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-support"><i class="fas fa-copyright"></i></div><span>Copyright &amp; DMCA</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-support"><i class="fas fa-money-bill-trend-up"></i></div><span>Monetization Policy</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-support"><i class="fas fa-users"></i></div><span>Community Guidelines</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-support"><i class="fas fa-user-pen"></i></div><span>Creator Policy</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-support"><i class="fas fa-code"></i></div><span>Third-Party Technologies</span><i class="fas fa-chevron-right arrow-r"></i></div>
+<div class="you-menu-item premium-service-item"><div class="premium-icon-box icon-support"><i class="fas fa-circle-info"></i></div><span>About Flaynity</span><i class="fas fa-chevron-right arrow-r"></i></div>
+</div></div>
+
 </div>
 </div>
 <div class="fullscreen-page" id="analytics-page" style="z-index: 1520;">

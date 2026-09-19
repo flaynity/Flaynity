@@ -444,75 +444,6 @@ function stabilizeInitialOfflineHomeSkeleton() {
 window.addEventListener('flaynity-dom-ready', stabilizeInitialOfflineHomeSkeleton, { once: true });
 
 // =========================================
-// YOU PAGE SETTINGS BOTTOM-SHEET POPUPS
-// =========================================
-// pages/*.html are injected into the WebView dynamically, so inline <script>
-// blocks inside those page files are not guaranteed to execute. Keep these
-// handlers in the shared app.js so the Settings buttons always work.
-function openBottomSheet(sheetId) {
-    try {
-        const overlay = document.getElementById(sheetId);
-        if (!overlay) return false;
-        overlay.style.display = 'flex';
-        requestAnimationFrame(function () {
-            requestAnimationFrame(function () {
-                overlay.classList.add('active');
-            });
-        });
-        return true;
-    } catch (e) {
-        console.warn('[Flaynity] Open settings popup:', e);
-        return false;
-    }
-}
-
-function closeBottomSheet(sheetId) {
-    try {
-        const overlay = document.getElementById(sheetId);
-        if (!overlay) return;
-        overlay.classList.remove('active');
-        setTimeout(function () {
-            if (!overlay.classList.contains('active')) overlay.style.display = 'none';
-        }, 280);
-    } catch (e) {
-        console.warn('[Flaynity] Close settings popup:', e);
-    }
-}
-
-function handleOverlayClick(event, sheetId) {
-    if (event && event.target && event.target.classList && event.target.classList.contains('bottom-sheet-overlay')) {
-        closeBottomSheet(sheetId);
-    }
-}
-
-function selectGenericOption(element, sheetId) {
-    try {
-        if (!element) return;
-        const parentList = element.parentElement;
-        if (parentList) {
-            parentList.querySelectorAll('.sheet-option-item').forEach(function (item) {
-                item.classList.remove('selected');
-            });
-        }
-        element.classList.add('selected');
-        setTimeout(function () { closeBottomSheet(sheetId); }, 220);
-    } catch (e) {
-        console.warn('[Flaynity] Settings option:', e);
-    }
-}
-
-function selectThemeOption(element, sheetId) {
-    try {
-        const theme = element && element.getAttribute('data-value') === 'dark' ? 'dark' : 'light';
-        localStorage.setItem('flaynity-theme-pref', theme);
-        applyTheme();
-        selectGenericOption(element, sheetId);
-    } catch (e) {
-        console.warn('[Flaynity] Settings theme:', e);
-    }
-}
-
-// =========================================
 // AUTOMATIC & MANUAL THEME ENGINE
 // =========================================
 function applyTheme() {
@@ -4721,6 +4652,51 @@ async function submitCreateChannel() {
             submitBtn.innerHTML = "Create Channel";
         }
     }
+}
+
+/* Settings bottom-sheet handlers for dynamically loaded You page. */
+function openBottomSheet(sheetId) {
+    const overlay = document.getElementById(sheetId);
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+    requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('active')));
+}
+
+function closeBottomSheet(sheetId) {
+    const overlay = document.getElementById(sheetId);
+    if (!overlay) return;
+    overlay.classList.remove('active');
+    setTimeout(() => {
+        if (!overlay.classList.contains('active')) overlay.style.display = 'none';
+    }, 260);
+}
+
+function handleOverlayClick(event, sheetId) {
+    if (event.target && event.target.classList.contains('bottom-sheet-overlay')) {
+        closeBottomSheet(sheetId);
+    }
+}
+
+function selectGenericOption(element, sheetId) {
+    if (!element) return;
+    const parentList = element.parentElement;
+    if (parentList) {
+        parentList.querySelectorAll('.sheet-option-item').forEach(el => el.classList.remove('selected'));
+    }
+    element.classList.add('selected');
+    setTimeout(() => closeBottomSheet(sheetId), 220);
+}
+
+function selectThemeOption(element, sheetId) {
+    const theme = element ? element.getAttribute('data-value') : null;
+    if (theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        try { localStorage.setItem('flaynity-theme', 'dark'); } catch (e) {}
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+        try { localStorage.setItem('flaynity-theme', 'light'); } catch (e) {}
+    }
+    selectGenericOption(element, sheetId);
 }
 
 function openChannelSettingsPage() {

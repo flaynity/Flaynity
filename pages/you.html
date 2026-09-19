@@ -1,16 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Flaynity</title>
-<!-- Font Awesome CDN for Icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Flaynity</title>
 <style>
 /* You Profile Card */
         .profile-card-you {
             background: var(--surface); 
             border: 1px solid var(--glass-border);
+            /* ওপরের বড় গ্যাপটি রিমুভ করে 0 করে দেওয়া হয়েছে, যেন Top Bar এর ঠিক নিচেই থাকে */
             margin: 0 8px 12px 8px !important; 
             border-radius: 20px !important;
             padding: 20px 16px 16px 16px !important; 
@@ -68,14 +64,42 @@
         .you-menu-item span { font-size: 1.05rem; font-weight: 700; flex-grow: 1; }
         .arrow-r { font-size: 0.9rem !important; color: var(--text-muted); opacity: 0.6; margin-left: auto; }
 
-/* Premium icon base styles */
+
+/* Premium service menu — Floating Cards styling */
+.premium-service-menu { 
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin-top: 0 !important; 
+    gap: 10px; 
+    overflow: visible !important;
+}
+[data-theme="dark"] .premium-service-menu { box-shadow: none !important; }
+
+.premium-service-item { 
+    background: var(--surface) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 16px !important;
+    padding: 12px 16px !important; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important;
+    gap: 14px; 
+    margin-bottom: 0 !important;
+}
+[data-theme="dark"] .premium-service-item {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+}
+.premium-service-item:active {
+    transform: scale(0.97) translateY(2px) !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05) !important;
+}
+
 .premium-icon-box {
     width: 40px; height: 40px; border-radius: 12px;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     transition: transform 0.2s ease;
 }
 .premium-icon-box i {
-    font-size: 1.2rem !important;
+    font-size: 1.25rem !important;
     color: #ffffff !important;
     -webkit-text-fill-color: #ffffff !important;
     background: none !important;
@@ -84,118 +108,43 @@
     line-height: 1; 
 }
 
-/* Specific Premium Gradients */
-.icon-pro { background: linear-gradient(135deg, #8B5CF6 0%, #D946EF 100%); box-shadow: 0 4px 14px rgba(139,92,246,0.35); }
-.icon-ads { background: linear-gradient(135deg, #D80E45 0%, #F97316 100%); box-shadow: 0 4px 14px rgba(244,63,94,0.35); }
-.icon-boost { background: linear-gradient(135deg, #F59E0B 0%, #EAB308 100%); box-shadow: 0 4px 14px rgba(245,158,11,0.35); }
-.icon-pay { background: linear-gradient(135deg, #10B981 0%, #14B8A6 100%); box-shadow: 0 4px 14px rgba(16,185,129,0.35); }
-.icon-theme { background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%); box-shadow: 0 4px 14px rgba(99,102,241,0.35); }
-.icon-account { background: linear-gradient(135deg, #0EA5E9 0%, #06B6D4 100%); box-shadow: 0 4px 14px rgba(14,165,233,0.35); }
-.icon-earning { background: linear-gradient(135deg, #059669 0%, #10B981 100%); box-shadow: 0 4px 14px rgba(16,185,129,0.35); }
-.icon-profile { background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%); box-shadow: 0 4px 14px rgba(37,99,235,0.35); }
-.icon-lang { background: linear-gradient(135deg, #EC4899 0%, #F43F5E 100%); box-shadow: 0 4px 14px rgba(236,72,153,0.35); }
-.icon-data { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); box-shadow: 0 4px 14px rgba(245,158,11,0.35); }
-.icon-priv-lock { background: linear-gradient(135deg, #E11D48 0%, #F43F5E 100%); box-shadow: 0 4px 14px rgba(225,29,72,0.35); }
-.icon-priv-eye { background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%); box-shadow: 0 4px 14px rgba(59,130,246,0.35); }
-.icon-priv-comment { background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%); box-shadow: 0 4px 14px rgba(139,92,246,0.35); }
-.icon-priv-sub { background: linear-gradient(135deg, #D946EF 0%, #EC4899 100%); box-shadow: 0 4px 14px rgba(217,70,239,0.35); }
-.icon-priv-like { background: linear-gradient(135deg, #EF4444 0%, #F87171 100%); box-shadow: 0 4px 14px rgba(239,68,68,0.35); }
-.icon-download { background: linear-gradient(135deg, #0284C7 0%, #38BDF8 100%); box-shadow: 0 4px 14px rgba(2,132,199,0.35); }
-.icon-quality { background: linear-gradient(135deg, #7C3AED 0%, #A855F7 100%); box-shadow: 0 4px 14px rgba(124,58,237,0.35); }
-.icon-autoplay { background: linear-gradient(135deg, #EA580C 0%, #FB923C 100%); box-shadow: 0 4px 14px rgba(234,88,12,0.35); }
-.icon-help { background: linear-gradient(135deg, #2563EB 0%, #60A5FA 100%); box-shadow: 0 4px 14px rgba(37,99,235,0.35); }
-.icon-report { background: linear-gradient(135deg, #DC2626 0%, #F87171 100%); box-shadow: 0 4px 14px rgba(220,38,38,0.35); }
-.icon-terms { background: linear-gradient(135deg, #475569 0%, #64748B 100%); box-shadow: 0 4px 14px rgba(71,85,105,0.35); }
-.icon-privacy-pol { background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%); box-shadow: 0 4px 14px rgba(13,148,136,0.35); }
-.icon-cookie { background: linear-gradient(135deg, #B45309 0%, #F59E0B 100%); box-shadow: 0 4px 14px rgba(180,83,9,0.35); }
-.icon-copyright { background: linear-gradient(135deg, #9333EA 0%, #C084FC 100%); box-shadow: 0 4px 14px rgba(147,51,234,0.35); }
-.icon-monetize-pol { background: linear-gradient(135deg, #15803D 0%, #22C55E 100%); box-shadow: 0 4px 14px rgba(21,128,61,0.35); }
-.icon-community { background: linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%); box-shadow: 0 4px 14px rgba(29,78,216,0.35); }
-.icon-creator-pol { background: linear-gradient(135deg, #C2410C 0%, #F97316 100%); box-shadow: 0 4px 14px rgba(194,65,12,0.35); }
-.icon-third-party { background: linear-gradient(135deg, #4338CA 0%, #6366F1 100%); box-shadow: 0 4px 14px rgba(67,56,202,0.35); }
-.icon-about { background: linear-gradient(135deg, #D80E45 0%, #FF2E55 100%); box-shadow: 0 4px 14px rgba(216,14,69,0.35); }
+/* Unique Colors for Floating & Settings Premium Items */
+.icon-pro { background: linear-gradient(135deg, #8B5CF6 0%, #D946EF 100%); box-shadow: 0 4px 14px rgba(139,92,246,0.3); }
+.icon-ads { background: linear-gradient(135deg, #D80E45 0%, #F97316 100%); box-shadow: 0 4px 14px rgba(244,63,94,0.3); }
+.icon-boost { background: linear-gradient(135deg, #F59E0B 0%, #EAB308 100%); box-shadow: 0 4px 14px rgba(245,158,11,0.3); }
+.icon-pay { background: linear-gradient(135deg, #10B981 0%, #14B8A6 100%); box-shadow: 0 4px 14px rgba(16,185,129,0.3); }
+.icon-theme { background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%); box-shadow: 0 4px 14px rgba(99,102,241,0.3); }
+.icon-account { background: linear-gradient(135deg, #0EA5E9 0%, #06B6D4 100%); box-shadow: 0 4px 14px rgba(14,165,233,0.3); }
+.icon-earning { background: linear-gradient(135deg, #059669 0%, #10B981 100%); box-shadow: 0 4px 14px rgba(16,185,129,0.3); }
+.icon-edit-prof { background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%); box-shadow: 0 4px 14px rgba(37,99,235,0.3); }
+.icon-lang { background: linear-gradient(135deg, #EC4899 0%, #F43F5E 100%); box-shadow: 0 4px 14px rgba(236,72,153,0.3); }
+.icon-datasaver { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); box-shadow: 0 4px 14px rgba(245,158,11,0.3); }
+.icon-priv-acc { background: linear-gradient(135deg, #E11D48 0%, #F43F5E 100%); box-shadow: 0 4px 14px rgba(225,29,72,0.3); }
+.icon-priv-see { background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%); box-shadow: 0 4px 14px rgba(59,130,246,0.3); }
+.icon-priv-comm { background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%); box-shadow: 0 4px 14px rgba(139,92,246,0.3); }
+.icon-priv-sub { background: linear-gradient(135deg, #D946EF 0%, #EC4899 100%); box-shadow: 0 4px 14px rgba(217,70,239,0.3); }
+.icon-priv-like { background: linear-gradient(135deg, #EF4444 0%, #F87171 100%); box-shadow: 0 4px 14px rgba(239,68,68,0.3); }
+.icon-download { background: linear-gradient(135deg, #0284C7 0%, #38BDF8 100%); box-shadow: 0 4px 14px rgba(2,132,199,0.3); }
+.icon-quality { background: linear-gradient(135deg, #7C3AED 0%, #A855F7 100%); box-shadow: 0 4px 14px rgba(124,58,237,0.3); }
+.icon-autoplay { background: linear-gradient(135deg, #EA580C 0%, #FB923C 100%); box-shadow: 0 4px 14px rgba(234,88,12,0.3); }
+.icon-help { background: linear-gradient(135deg, #2563EB 0%, #60A5FA 100%); box-shadow: 0 4px 14px rgba(37,99,235,0.3); }
+.icon-report { background: linear-gradient(135deg, #DC2626 0%, #F87171 100%); box-shadow: 0 4px 14px rgba(220,38,38,0.3); }
+.icon-terms { background: linear-gradient(135deg, #475569 0%, #64748B 100%); box-shadow: 0 4px 14px rgba(71,85,105,0.3); }
+.icon-privacy-pol { background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%); box-shadow: 0 4px 14px rgba(13,148,136,0.3); }
+.icon-cookie { background: linear-gradient(135deg, #B45309 0%, #F59E0B 100%); box-shadow: 0 4px 14px rgba(180,83,9,0.3); }
+.icon-copyright { background: linear-gradient(135deg, #9333EA 0%, #C084FC 100%); box-shadow: 0 4px 14px rgba(147,51,234,0.3); }
+.icon-monetize-pol { background: linear-gradient(135deg, #15803D 0%, #22C55E 100%); box-shadow: 0 4px 14px rgba(21,128,61,0.3); }
+.icon-community { background: linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%); box-shadow: 0 4px 14px rgba(29,78,216,0.3); }
+.icon-creator-pol { background: linear-gradient(135deg, #C2410C 0%, #F97316 100%); box-shadow: 0 4px 14px rgba(194,65,12,0.3); }
+.icon-thirdparty { background: linear-gradient(135deg, #4338CA 0%, #6366F1 100%); box-shadow: 0 4px 14px rgba(67,56,202,0.3); }
+.icon-about { background: linear-gradient(135deg, #D80E45 0%, #FF2E55 100%); box-shadow: 0 4px 14px rgba(216,14,69,0.3); }
 
 /* Verified Badge Customization */
 .icon-verified { background: #F0F7FF; border: 1px solid #D6EBFF; box-shadow: none; }
 [data-theme="dark"] .icon-verified { background: rgba(51, 144, 236, 0.1); border-color: rgba(51, 144, 236, 0.2); }
 .icon-verified svg { width: 22px !important; height: 22px !important; display: block; margin: auto; }
 
-/* =========================================================
-   SETTINGS PAGE CARDS STYLING
-   ========================================================= */
-#channel-settings-page { 
-    z-index: 1530 !important; 
-    background: var(--bg-color) !important; 
-}
-#channel-settings-page .appbar { 
-    position: relative !important; 
-    border-bottom: 1px solid var(--glass-border);
-}
-#channel-settings-page .appbar .centered-page-title { 
-    position: absolute !important; 
-    left: 50% !important; 
-    transform: translateX(-50%) !important; 
-    margin: 0 !important; 
-    text-align: center !important; 
-    white-space: nowrap !important; 
-}
-#channel-settings-page .page-content { 
-    padding: 16px 12px 60px !important; 
-    overflow-y: auto !important;
-}
-
-/* Settings Group & Box */
-.settings-group {
-    margin-bottom: 22px;
-}
-.settings-group-title {
-    font-size: 0.85rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: var(--text-muted);
-    margin: 0 0 10px 10px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.settings-card-box {
-    background: var(--surface);
-    border: 1px solid var(--glass-border);
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.03);
-}
-[data-theme="dark"] .settings-card-box {
-    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-}
-.settings-item {
-    display: flex;
-    align-items: center;
-    padding: 13px 16px;
-    gap: 14px;
-    cursor: pointer;
-    border-bottom: 1px solid var(--glass-border);
-    transition: all 0.2s ease;
-    user-select: none;
-}
-.settings-item:last-child {
-    border-bottom: none;
-}
-.settings-item:active {
-    background: var(--border-color);
-    transform: scale(0.985);
-}
-.settings-item:active .premium-icon-box {
-    transform: scale(1.06);
-}
-.settings-item-text {
-    font-size: 0.98rem;
-    font-weight: 750;
-    color: var(--text-main);
-    flex: 1;
-    letter-spacing: -0.2px;
-}
+.premium-service-item > span { min-width: 0; font-weight: 800; font-size: 1.05rem; }
 
 /* View Channel */
         .channel-banner-container { width: 100%; height: 120px; position: relative; background: #E2E8F0; overflow: hidden; }
@@ -245,7 +194,62 @@
         .short-grid-card img { width: 100%; height: 100%; object-fit: cover; }
         .short-grid-views { position: absolute; bottom: 8px; left: 8px; color: white; font-size: 0.75rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.8); display: flex; align-items: center; gap: 4px; }
 
-/* Safe Area Layout */
+/* Account Switching */
+        .account-row { display: flex; align-items: center; gap: 14px; padding: 16px; background: var(--bg-color); border: 1px solid var(--glass-border); border-radius: 20px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
+        .account-row:active { transform: scale(0.97); background: var(--primary-glow); }
+        .account-row.active { border-color: var(--primary); background: var(--primary-glow); }
+        .account-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #FF7A00); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; overflow: hidden; flex-shrink: 0; }
+        .account-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .account-meta h4 { margin: 0 0 4px; font-size: 1rem; font-weight: 800; color: var(--text-main); }
+        .account-meta p { margin: 0; font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
+        .check-active { position: absolute; right: 20px; color: var(--primary); font-size: 1.3rem; display: none; }
+        .account-row.active .check-active { display: block; }
+        .account-row.add-acc { border-style: dashed; background: transparent; }
+        .account-avatar-add { width: 48px; height: 48px; border-radius: 50%; background: var(--surface); border: 1.5px dashed var(--primary); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+        
+        .edit-banner-section { width: 100%; height: 140px; background: #E2E8F0; position: relative; overflow: hidden; cursor: pointer; }
+        .edit-banner-preview { width: 100%; height: 100%; object-fit: cover; }
+        .edit-banner-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 0.85rem; gap: 6px; opacity: 0.8; transition: 0.2s; }
+        .edit-banner-section:hover .edit-banner-overlay { opacity: 1; }
+        
+        .edit-avatar-section { display: flex; justify-content: center; margin-top: -45px; position: relative; z-index: 5; }
+        .edit-avatar-section .avatar-preview-container { border-color: var(--surface); box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+        .avatar-overlay-camera { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; opacity: 0; transition: 0.2s; }
+        .edit-avatar-section .avatar-preview-container:hover .avatar-overlay-camera { opacity: 1; }
+
+/* Analytics */
+        .analytics-overview-card { background: var(--surface); border: 1px solid var(--glass-border); border-radius: 24px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.01); margin-bottom: 24px; }
+        .analytics-header-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+        .analytics-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: var(--bg-color); }
+        .analytics-header-row h3 { margin: 0 0 2px; font-size: 1.15rem; font-weight: 850; color: var(--text-main); }
+        .analytics-header-row p { margin: 0; font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
+        .revenue-box { background: var(--primary-glow); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+        .revenue-label { font-size: 0.72rem; font-weight: 800; color: var(--primary); letter-spacing: 0.8px; }
+        .revenue-val { font-size: 1.6rem; font-weight: 900; color: var(--text-main); }
+        
+        .analytics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; }
+        .analytics-card { background: var(--surface); border: 1px solid var(--glass-border); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; min-height: 110px; }
+        .stat-lbl { font-size: 0.82rem; font-weight: 750; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+        .stat-lbl i { color: var(--primary); }
+        .stat-num { font-size: 1.5rem; font-weight: 900; color: var(--text-main); margin: 8px 0 4px; }
+        .stat-trend { font-size: 0.75rem; font-weight: 800; display: flex; align-items: center; gap: 4px; }
+        .trend-up { color: var(--success); }
+        .stat-sub-text { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+        
+        .chart-container-mock { background: var(--surface); border: 1px solid var(--glass-border); border-radius: 24px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.01); margin-bottom: 40px; }
+        .chart-bars { display: flex; align-items: flex-end; justify-content: space-between; height: 160px; padding: 10px 10px 24px; border-bottom: 2px solid var(--glass-border); position: relative; }
+        .chart-bar { flex: 1; margin: 0 6px; background: linear-gradient(to top, var(--primary), #FF7A00); border-radius: 6px 6px 0 0; position: relative; cursor: pointer; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .chart-bar::after { content: attr(data-lbl); position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); font-size: 0.72rem; font-weight: 800; color: var(--text-muted); }
+        .bar-val { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 0.75rem; font-weight: 800; color: var(--text-main); opacity: 0; transition: 0.2s; }
+        .chart-bar:hover { filter: brightness(1.1); transform: scaleY(1.05); }
+        .chart-bar:hover .bar-val { opacity: 1; }
+        .chart-footer-label { font-size: 0.75rem; color: var(--text-muted); text-align: center; margin: 14px 0 0; font-weight: 700; }
+        
+        .nav-avatar-wrap { width: 22px; height: 22px; border-radius: 50%; overflow: hidden; border: 2px solid transparent; transition: border-color 0.1s ease; display: flex; align-items: center; justify-content: center; }
+        .nav-item.active .nav-avatar-wrap { border-color: var(--text-main); }
+        .nav-avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
+
+/* You page: safe-area + channel form repair */
 .fullscreen-page#you-tab,
 .fullscreen-page#create-channel-page,
 .fullscreen-page#view-channel-page,
@@ -257,7 +261,6 @@
     height: 100dvh;
     min-height: 100vh;
     overflow-x: hidden;
-    box-sizing: border-box;
 }
 #create-channel-page > .appbar,
 #view-channel-page > .appbar,
@@ -284,6 +287,15 @@
     text-align: center;
 }
 
+.fullscreen-page#you-tab,
+.fullscreen-page#create-channel-page,
+.fullscreen-page#view-channel-page,
+.fullscreen-page#analytics-page,
+.fullscreen-page#edit-channel-page,
+.fullscreen-page#monetization-page,
+.fullscreen-page#channel-settings-page {
+    box-sizing: border-box;
+}
 #create-channel-page .page-content,
 #edit-channel-page .page-content,
 #view-channel-page .page-content,
@@ -295,7 +307,89 @@
     -webkit-overflow-scrolling: touch;
 }
 
-/* View Channel Full-Bleed */
+/* Create Channel */
+#create-channel-page .page-content {
+    padding: 28px 20px 48px !important;
+}
+#create-channel-page .avatar-selector-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    margin: 4px 0 30px;
+}
+#create-channel-page .avatar-preview-container,
+#edit-channel-page .avatar-preview-container {
+    width: 104px; height: 104px; border-radius: 50%; overflow: hidden;
+    position: relative; display: flex; align-items: center; justify-content: center;
+    background: var(--surface); border: 4px solid var(--primary-glow);
+    box-shadow: 0 8px 24px rgba(0,0,0,.10); cursor: pointer;
+}
+#create-channel-page .avatar-placeholder {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    color: var(--primary); background: var(--primary-glow); font-size: 1.7rem;
+}
+#create-channel-page .selector-help {
+    margin: 10px 0 0; color: var(--text-muted); font-size: .78rem; font-weight: 700;
+}
+#you-tab .form-group,
+#create-channel-page .form-group,
+#edit-channel-page .form-group { width: 100%; }
+#create-channel-page .form-label,
+#edit-channel-page .form-label {
+    display: block; margin: 0 0 9px; color: var(--text-main); font-size: .84rem; font-weight: 800;
+}
+#create-channel-page .form-input,
+#create-channel-page .form-select,
+#create-channel-page .form-textarea,
+#edit-channel-page .form-input,
+#edit-channel-page .form-select,
+#edit-channel-page .form-textarea {
+    width: 100%; border: 1px solid var(--glass-border); background: var(--surface);
+    color: var(--text-main); border-radius: 14px; padding: 14px 15px;
+    font-size: .92rem; font-weight: 600; outline: none; box-shadow: none;
+    transition: border-color .2s, box-shadow .2s;
+}
+#create-channel-page .form-input:focus,
+#create-channel-page .form-select:focus,
+#create-channel-page .form-textarea:focus,
+#edit-channel-page .form-input:focus,
+#edit-channel-page .form-select:focus,
+#edit-channel-page .form-textarea:focus {
+    border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow);
+}
+#create-channel-page .form-textarea,
+#edit-channel-page .form-textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
+#create-channel-page .input-counter,
+#edit-channel-page .input-counter { margin-top: 6px; text-align: right; color: var(--text-muted); font-size: .7rem; font-weight: 700; }
+#create-channel-page .handle-input-wrap,
+#edit-channel-page .handle-input-wrap { position: relative; display: flex; align-items: center; }
+#create-channel-page .handle-prefix,
+#edit-channel-page .handle-prefix {
+    position: absolute; left: 15px; z-index: 2; color: var(--text-muted); font-weight: 800;
+}
+#create-channel-page .handle-input-wrap .form-input,
+#edit-channel-page .handle-input-wrap .form-input { padding-left: 32px; }
+#create-channel-page .handle-feedback-txt,
+#edit-channel-page .handle-feedback-txt { min-height: 18px; margin-top: 6px; font-size: .72rem; font-weight: 700; }
+#create-channel-page .btn-primary-action,
+#edit-channel-page .btn-primary-action {
+    min-height: 54px; border: 0; border-radius: 16px; background: var(--primary); color: #fff;
+    font-size: .96rem; font-weight: 800; box-shadow: 0 8px 20px var(--primary-glow); cursor: pointer;
+}
+#create-channel-page .btn-primary-action:disabled,
+#edit-channel-page .btn-primary-action:disabled { opacity: .45; box-shadow: none; cursor: not-allowed; }
+
+/* Edit Channel */
+#edit-channel-page .page-content { padding-bottom: 50px !important; }
+#edit-channel-page .edit-banner-section { height: 170px; }
+#edit-channel-page .edit-avatar-section { margin-top: -52px; margin-bottom: 4px; }
+#edit-channel-page .edit-avatar-section .avatar-preview-container {
+    width: 104px; height: 104px; border-width: 4px;
+}
+#edit-channel-page .edit-form-container { padding: 22px 20px 44px !important; }
+#edit-channel-page .avatar-overlay-camera { opacity: .9; }
+
+/* =========================================================
+   VIEW CHANNEL — FULL-BLEED BANNER + LIVE UPLOAD UI
+   ========================================================= */
 #view-channel-page{
     padding-top:0 !important;
     overflow:hidden !important;
@@ -374,8 +468,59 @@
 #view-channel-page .banner-gradient{
     display:none !important;
 }
+#view-channel-page .channel-tabs{
+    position:static !important;
+    top:auto !important;
+    z-index:2 !important;
+}
+#view-channel-page .channel-feels-container{
+    display:grid !important;
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    gap:8px !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+    overflow:visible !important;
+}
+#view-channel-page .channel-feels-container .feels-grid-card,
+#view-channel-page .channel-feels-container .short-grid-card{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    aspect-ratio:9 / 16 !important;
+    height:auto !important;
+    margin:0 !important;
+    box-sizing:border-box !important;
+    overflow:hidden !important;
+    border-radius:12px !important;
+}
+#view-channel-page .channel-feels-container .feels-grid-card img,
+#view-channel-page .channel-feels-container .short-grid-card img{
+    display:block !important;
+    width:100% !important;
+    height:100% !important;
+    min-width:0 !important;
+    object-fit:cover !important;
+}
+#view-channel-page .channel-tab-content{
+    min-width:0 !important;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+    overflow-x:hidden !important;
+}
+#view-channel-page .fl-live-upload-card{
+    grid-column:1 / -1 !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+}
 
-/* Channel Settings Launch Button */
+
+/* Channel Settings */
 .view-channel-settings-btn{
     position:absolute !important; top:26px !important; right:12px !important;
     width:44px !important; height:44px !important; border:0 !important; border-radius:50% !important;
@@ -386,242 +531,710 @@
 }
 .view-channel-settings-btn i{font-size:1.15rem !important;}
 .view-channel-settings-btn:active{transform:scale(.93);}
-</style>
-</head>
-<body>
+#channel-settings-page{z-index:1530 !important; background:var(--bg-color) !important;}
+#channel-settings-page .appbar{position:relative !important;}
+#channel-settings-page .appbar .centered-page-title{position:absolute !important; left:50% !important; transform:translateX(-50%) !important; margin:0 !important; text-align:center !important; white-space:nowrap !important;}
+#channel-settings-page .page-content{padding:18px 12px 60px !important;}
 
-<!-- SETTINGS PAGE (FULLY UPDATED WITH 6 PREMIUM CARD BOXES) -->
-<div class="fullscreen-page" id="channel-settings-page" style="z-index: 1530;">
-    <header class="appbar">
-        <button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
-        <h3 class="appbar-title centered-page-title">Settings</h3>
-    </header>
-    
-    <div class="page-content">
-        <!-- 1. ACCOUNT CARD BOX -->
-        <div class="settings-group">
-            <div class="settings-group-title">Account</div>
-            <div class="settings-card-box">
-                <div class="settings-item" onclick="openMonetizationPage()">
-                    <div class="premium-icon-box icon-earning"><i class="fas fa-sack-dollar"></i></div>
-                    <span class="settings-item-text">Flay Earning</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openEditChannelPage()">
-                    <div class="premium-icon-box icon-profile"><i class="fas fa-user-pen"></i></div>
-                    <span class="settings-item-text">Edit Profile</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openAccountSwitcher()">
-                    <div class="premium-icon-box icon-account"><i class="fas fa-arrow-right-arrow-left"></i></div>
-                    <span class="settings-item-text">Switch Account</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-            </div>
-        </div>
+/* Settings Card Boxes Styling */
+.settings-card-group {
+    margin-bottom: 22px;
+}
+.settings-card-group-title {
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    margin: 0 0 10px 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.settings-card-box {
+    background: var(--surface);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.025);
+}
+[data-theme="dark"] .settings-card-box {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+.settings-item {
+    display: flex;
+    align-items: center;
+    padding: 13px 16px;
+    gap: 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--glass-border);
+    transition: all 0.2s ease;
+    user-select: none;
+    color: var(--text-main);
+}
+.settings-item:last-child {
+    border-bottom: none;
+}
+.settings-item:active {
+    background: var(--border-color);
+    transform: scale(0.985);
+}
+.settings-item:active .premium-icon-box {
+    transform: scale(1.06);
+}
+.settings-item span {
+    font-size: 0.98rem;
+    font-weight: 750;
+    color: var(--text-main);
+    flex-grow: 1;
+}
 
-        <!-- 2. APPEARANCE CARD BOX -->
-        <div class="settings-group">
-            <div class="settings-group-title">Appearance</div>
-            <div class="settings-card-box">
-                <div class="settings-item" onclick="openThemePopupMenu()">
-                    <div class="premium-icon-box icon-theme"><i class="fas fa-palette"></i></div>
-                    <span class="settings-item-text">Switch Theme</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openAppLanguageModal()">
-                    <div class="premium-icon-box icon-lang"><i class="fas fa-language"></i></div>
-                    <span class="settings-item-text">App Language</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="toggleDataSaver()">
-                    <div class="premium-icon-box icon-data"><i class="fas fa-chart-pie"></i></div>
-                    <span class="settings-item-text">Data Saver</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- 3. FLAYNITY FEATURES CARD BOX -->
-        <div class="settings-group">
-            <div class="settings-group-title">Flaynity Features</div>
-            <div class="settings-card-box">
-                <div class="settings-item" onclick="AppNavigation.pushPremiumService('upgrade-pro')">
-                    <div class="premium-icon-box icon-pro"><i class="fas fa-crown"></i></div>
-                    <span class="settings-item-text">Upgrade Pro</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="AppNavigation.pushPremiumService('flay-verified-badge')">
-                    <div class="premium-icon-box icon-verified">
-                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M11.96 1.171a2.316 2.316 0 0 0-1.63.784L8.76 3.65 6.64 3.96a2.315 2.315 0 0 0-1.928 1.928L4.4 8.01 2.705 9.576a2.316 2.316 0 0 0 0 3.328l1.696 1.566.312 2.122a2.315 2.315 0 0 0 1.928 1.928l2.122.312 1.57 1.696c.866.935 2.392.935 3.258 0l1.57-1.696 2.122-.312a2.315 2.315 0 0 0 1.928-1.928l.312-2.122 1.696-1.566a2.316 2.316 0 0 0 0-3.328L19.6 8.01l-.312-2.122a2.315 2.315 0 0 0-1.928-1.928L15.24 3.65l-1.57-1.695a2.316 2.316 0 0 0-1.63-.784z" fill="#3390ec"></path>
-                            <path d="M10.15 14.88 7.37 12.1l1.41-1.41 1.37 1.37 4.96-4.96 1.41 1.42-6.37 6.36z" fill="#ffffff"></path>
-                        </svg>
-                    </div>
-                    <span class="settings-item-text">Flay Verified Badge</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="AppNavigation.pushPremiumService('flay-ads')">
-                    <div class="premium-icon-box icon-ads"><i class="fas fa-rectangle-ad"></i></div>
-                    <span class="settings-item-text">Flay Ads</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="AppNavigation.pushPremiumService('boost-content')">
-                    <div class="premium-icon-box icon-boost"><i class="fas fa-rocket"></i></div>
-                    <span class="settings-item-text">Boost Content</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="AppNavigation.pushPremiumService('flay-pay')">
-                    <div class="premium-icon-box icon-pay"><i class="fas fa-wallet"></i></div>
-                    <span class="settings-item-text">Flay Pay</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- 4. PRIVACY CARD BOX -->
-        <div class="settings-group">
-            <div class="settings-group-title">Privacy</div>
-            <div class="settings-card-box">
-                <div class="settings-item" onclick="openPrivacySubMenu('private-account')">
-                    <div class="premium-icon-box icon-priv-lock"><i class="fas fa-lock"></i></div>
-                    <span class="settings-item-text">Private Account</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openPrivacySubMenu('content-visibility')">
-                    <div class="premium-icon-box icon-priv-eye"><i class="fas fa-eye"></i></div>
-                    <span class="settings-item-text">Who Can See My Content</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openPrivacySubMenu('comment-permission')">
-                    <div class="premium-icon-box icon-priv-comment"><i class="fas fa-comment-dots"></i></div>
-                    <span class="settings-item-text">Who Can Comment</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openPrivacySubMenu('subscribe-permission')">
-                    <div class="premium-icon-box icon-priv-sub"><i class="fas fa-user-plus"></i></div>
-                    <span class="settings-item-text">Who Can Subscribe Me</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openPrivacySubMenu('like-permission')">
-                    <div class="premium-icon-box icon-priv-like"><i class="fas fa-heart"></i></div>
-                    <span class="settings-item-text">Who Can Like Me</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- 5. CONTENT & PLAYBACK CARD BOX -->
-        <div class="settings-group">
-            <div class="settings-group-title">Content & Playback</div>
-            <div class="settings-card-box">
-                <div class="settings-item" onclick="openPlaybackSetting('download-settings')">
-                    <div class="premium-icon-box icon-download"><i class="fas fa-cloud-arrow-down"></i></div>
-                    <span class="settings-item-text">Download Settings</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openPlaybackSetting('content-quality')">
-                    <div class="premium-icon-box icon-quality"><i class="fas fa-sliders"></i></div>
-                    <span class="settings-item-text">Content Quality</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openPlaybackSetting('autoplay')">
-                    <div class="premium-icon-box icon-autoplay"><i class="fas fa-circle-play"></i></div>
-                    <span class="settings-item-text">Autoplay</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- 6. SUPPORT CARD BOX -->
-        <div class="settings-group">
-            <div class="settings-group-title">Support</div>
-            <div class="settings-card-box">
-                <div class="settings-item" onclick="openSupportLink('help-center')">
-                    <div class="premium-icon-box icon-help"><i class="fas fa-circle-question"></i></div>
-                    <span class="settings-item-text">Help Center</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openSupportLink('report-problem')">
-                    <div class="premium-icon-box icon-report"><i class="fas fa-triangle-exclamation"></i></div>
-                    <span class="settings-item-text">Report a Problem</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openSupportLink('terms-of-service')">
-                    <div class="premium-icon-box icon-terms"><i class="fas fa-file-contract"></i></div>
-                    <span class="settings-item-text">Terms of Service</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openSupportLink('privacy-policy')">
-                    <div class="premium-icon-box icon-privacy-pol"><i class="fas fa-shield-halved"></i></div>
-                    <span class="settings-item-text">Privacy Policy</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openSupportLink('cookie-policy')">
-                    <div class="premium-icon-box icon-cookie"><i class="fas fa-cookie-bite"></i></div>
-                    <span class="settings-item-text">Cookie Policy</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openSupportLink('copyright-dmca')">
-                    <div class="premium-icon-box icon-copyright"><i class="fas fa-copyright"></i></div>
-                    <span class="settings-item-text">Copyright & DMCA</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openSupportLink('monetization-policy')">
-                    <div class="premium-icon-box icon-monetize-pol"><i class="fas fa-file-invoice-dollar"></i></div>
-                    <span class="settings-item-text">Monetization Policy</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openSupportLink('community-guidelines')">
-                    <div class="premium-icon-box icon-community"><i class="fas fa-users"></i></div>
-                    <span class="settings-item-text">Community Guidelines</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openSupportLink('creator-policy')">
-                    <div class="premium-icon-box icon-creator-pol"><i class="fas fa-lightbulb"></i></div>
-                    <span class="settings-item-text">Creator Policy</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openSupportLink('third-party-technologies')">
-                    <div class="premium-icon-box icon-third-party"><i class="fas fa-cubes"></i></div>
-                    <span class="settings-item-text">Third-Party Technologies</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-                <div class="settings-item" onclick="openSupportLink('about-flaynity')">
-                    <div class="premium-icon-box icon-about"><i class="fas fa-circle-info"></i></div>
-                    <span class="settings-item-text">About Flaynity</span>
-                    <i class="fas fa-chevron-right arrow-r"></i>
-                </div>
-            </div>
-        </div>
-    </div>
+</style></head><body>
+<div class="tab-content" id="you-tab">
+<div class="profile-card-you">
+<div class="profile-card-main">
+<div class="profile-avatar-large" id="you-avatar-large">U</div>
+<div class="profile-info-you">
+<h3 id="you-fullname-txt">Loading Session...</h3>
+<p id="you-email-txt">...</p>
+</div>
+</div>
+<div class="channel-action-box" id="channel-action-box"></div>
+</div>
+<div class="you-menu premium-service-menu" id="you-premium-service-menu" style="display:none !important;">
+<div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('upgrade-pro')">
+<div class="premium-icon-box icon-pro"><i class="fas fa-crown"></i></div>
+<span>Upgrade Pro</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="you-menu-item premium-service-item" onclick="handleFlayVerifiedBadgeFromYou()">
+<div class="premium-icon-box icon-verified">
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M11.96 1.171a2.316 2.316 0 0 0-1.63.784L8.76 3.65 6.64 3.96a2.315 2.315 0 0 0-1.928 1.928L4.4 8.01 2.705 9.576a2.316 2.316 0 0 0 0 3.328l1.696 1.566.312 2.122a2.315 2.315 0 0 0 1.928 1.928l2.122.312 1.57 1.696c.866.935 2.392.935 3.258 0l1.57-1.696 2.122-.312a2.315 2.315 0 0 0 1.928-1.928l.312-2.122 1.696-1.566a2.316 2.316 0 0 0 0-3.328L19.6 8.01l-.312-2.122a2.315 2.315 0 0 0-1.928-1.928L15.24 3.65l-1.57-1.695a2.316 2.316 0 0 0-1.63-.784z" fill="#3390ec"></path>
+<path d="M10.15 14.88 7.37 12.1l1.41-1.41 1.37 1.37 4.96-4.96 1.41 1.42-6.37 6.36z" fill="#ffffff"></path>
+</svg>
+</div>
+<span>Flay Verified Badge</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('flay-ads')">
+<div class="premium-icon-box icon-ads"><i class="fas fa-rectangle-ad"></i></div>
+<span>Flay Ads</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('boost-content')">
+<div class="premium-icon-box icon-boost"><i class="fas fa-rocket"></i></div>
+<span>Boost Content</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('flay-pay')">
+<div class="premium-icon-box icon-pay"><i class="fas fa-wallet"></i></div>
+<span>Flay Pay</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+</div>
+</div>
+<div class="fullscreen-page" id="create-channel-page">
+<header class="appbar">
+<button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
+<h3 class="appbar-title centered-page-title">Enter Your Information</h3>
+</header>
+<div class="page-content" style="padding-bottom: 40px;">
+<div class="avatar-selector-wrap">
+<div class="avatar-preview-container" onclick="triggerAvatarSelection('create')">
+<img id="create-avatar-img" src="" style="display:none; width: 100%; height: 100%; object-fit: cover;"/>
+<div class="avatar-placeholder" id="create-avatar-placeholder"><i class="fas fa-camera"></i></div>
+</div>
+<p class="selector-help">Upload profile picture</p>
+<input accept="image/*" id="create-avatar-input" onchange="handleChannelAvatarSelect(event, 'create')" style="display:none;" type="file"/>
+</div>
+<div class="form-group">
+<label class="form-label">Channel Name</label>
+<input class="form-input" id="create-channel-name" maxlength="100" oninput="document.getElementById('create-name-counter').innerText = this.value.length" placeholder="Enter channel name..." required="" type="text"/>
+<div class="input-counter"><span id="create-name-counter">0</span>/100</div>
+</div>
+<div class="form-group">
+<label class="form-label">Handle</label>
+<div class="handle-input-wrap">
+<span class="handle-prefix">@</span>
+<input class="form-input" id="create-channel-handle" onkeyup="checkHandleAvailability(this.value, 'create-handle-feedback', 'btn-submit-create')" placeholder="yourhandle" required="" type="text"/>
+</div>
+<div class="handle-feedback-txt" id="create-handle-feedback"></div>
+</div>
+<div class="form-group">
+<label class="form-label">Category</label>
+<select class="form-select" id="create-channel-category">
+<option value="Entertainment">Entertainment</option>
+<option value="Gaming">Gaming</option>
+<option value="Education">Education</option>
+<option value="Music">Music</option>
+<option value="Comedy">Comedy</option>
+<option value="Sports">Sports</option>
+<option value="News">News</option>
+<option value="Technology">Technology</option>
+<option value="Travel">Travel</option>
+<option value="Lifestyle">Lifestyle</option>
+<option value="Food">Food</option>
+<option value="Science">Science</option>
+<option value="Pets">Pets</option>
+<option value="Movies">Movies</option>
+<option value="Animation">Animation</option>
+<option value="Kids">Kids</option>
+<option value="Fashion">Fashion</option>
+<option value="Business">Business</option>
+<option value="Health">Health</option>
+<option value="Beauty">Beauty</option>
+<option value="Vlogs">Vlogs</option>
+<option value="Others">Others</option>
+</select>
+</div>
+<button class="btn-primary-action" id="btn-submit-create" onclick="submitCreateChannel()">Create Channel</button>
+</div>
+</div>
+<div class="fullscreen-page" id="view-channel-page" style="z-index: 1510;">
+<header class="appbar">
+<button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
+<h3 class="appbar-title centered-page-title" id="view-appbar-title">Your Channel</h3>
+</header>
+<div class="page-content" style="padding: 0;">
+<div class="channel-banner-container">
+<button class="view-channel-settings-btn" type="button" onclick="openChannelSettingsPage()" aria-label="Setting" title="Setting"><i class="fas fa-gear"></i></button>
+<img class="channel-banner-img" id="view-channel-banner" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&amp;w=2000&amp;auto=format&amp;fit=crop"/>
+<div class="banner-gradient"></div>
+</div>
+<div class="channel-profile-section">
+<div class="profile-row-main">
+<img class="view-avatar-img" id="view-channel-avatar" src=""/>
+<div class="channel-main-meta">
+<h2 id="view-channel-name-txt">Channel Name</h2>
+<p id="view-channel-handle-txt">@handle</p>
+<p class="channel-stats-txt">
+<span id="view-sub-count">0 Subscribers</span>
+<span class="dot-separator">•</span>
+<span id="view-vid-count">0 Videos</span>
+</p>
+</div>
+</div>
+<div class="channel-description-box">
+<p class="channel-desc-text line-clamp" id="view-channel-desc">No description provided yet.</p>
+<button class="btn-more-desc" id="view-channel-desc-btn" onclick="toggleFullDescription()">More <i class="fas fa-chevron-down"></i></button>
+</div>
+<div class="channel-action-row">
+<button class="btn-channel-action" onclick="openAnalyticsPage()"><i class="fas fa-chart-bar"></i> Analytics</button>
+<button class="btn-channel-action btn-edit" onclick="openEditChannelPage()"><i class="fas fa-edit"></i> Edit Channel</button>
+</div>
+</div>
+<div class="channel-tabs">
+<div class="channel-tab-item active" id="tab-channel-videos" onclick="switchChannelTab('videos')">Videos</div>
+<div class="channel-tab-item" id="tab-channel-feels" onclick="switchChannelTab('feels')">Feels</div>
+<div class="channel-tab-item" id="tab-channel-posts" onclick="switchChannelTab('posts')">Posts</div>
+</div>
+<div class="channel-tab-content active" id="channel-content-videos">
+<div class="channel-videos-container" id="channel-videos-grid"></div>
+</div>
+<div class="channel-tab-content" id="channel-content-feels">
+<div class="channel-feels-container" id="channel-feels-grid"></div>
+</div>
+<div class="channel-tab-content" id="channel-content-posts">
+<div class="channel-posts-container" id="channel-posts-feed"></div>
+</div>
+</div>
 </div>
 
-<script>
-/* Mock navigation and fallback handlers for new settings items */
-function openPrivacySubMenu(type) {
-    console.log("Opening privacy menu:", type);
-}
-function openPlaybackSetting(type) {
-    console.log("Opening playback setting:", type);
-}
-function openSupportLink(type) {
-    console.log("Opening support link:", type);
-}
-function openAppLanguageModal() {
-    console.log("Opening language modal");
-}
-function toggleDataSaver() {
-    console.log("Toggling data saver mode");
-}
-function openChannelSettingsPage() {
-    const page = document.getElementById('channel-settings-page');
-    if(page) page.style.display = 'block';
-}
-function executeBackAction() {
-    const page = document.getElementById('channel-settings-page');
-    if(page) page.style.display = 'none';
-}
-</script>
-</body>
-</html>
+<!-- ========================================== -->
+<!-- UPDATED SETTINGS PAGE (6 PREMIUM CARD BOXES) -->
+<!-- ========================================== -->
+<div class="fullscreen-page" id="channel-settings-page" style="z-index: 1530;">
+<header class="appbar">
+<button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
+<h3 class="appbar-title centered-page-title">Setting</h3>
+</header>
+<div class="page-content">
+
+<!-- Card Box 1: Account -->
+<div class="settings-card-group">
+<div class="settings-card-group-title">Account</div>
+<div class="settings-card-box">
+<div class="settings-item" onclick="openMonetizationPage()">
+<div class="premium-icon-box icon-earning"><i class="fas fa-sack-dollar"></i></div>
+<span>Flay Earning</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openEditChannelPage()">
+<div class="premium-icon-box icon-edit-prof"><i class="fas fa-user-pen"></i></div>
+<span>Edit Profile</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openAccountSwitcher()">
+<div class="premium-icon-box icon-account"><i class="fas fa-exchange-alt"></i></div>
+<span>Switch Account</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+</div>
+</div>
+
+<!-- Card Box 2: Appearance -->
+<div class="settings-card-group">
+<div class="settings-card-group-title">Appearance</div>
+<div class="settings-card-box">
+<div class="settings-item" onclick="openThemePopupMenu()">
+<div class="premium-icon-box icon-theme"><i class="fas fa-palette"></i></div>
+<span>Switch Theme</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openAppLanguageModal()">
+<div class="premium-icon-box icon-lang"><i class="fas fa-language"></i></div>
+<span>App Language</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="toggleDataSaver()">
+<div class="premium-icon-box icon-datasaver"><i class="fas fa-chart-pie"></i></div>
+<span>Data Saver</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+</div>
+</div>
+
+<!-- Card Box 3: Flaynity Features -->
+<div class="settings-card-group">
+<div class="settings-card-group-title">Flaynity Features</div>
+<div class="settings-card-box">
+<div class="settings-item" onclick="AppNavigation.pushPremiumService('upgrade-pro')">
+<div class="premium-icon-box icon-pro"><i class="fas fa-crown"></i></div>
+<span>Upgrade Pro</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="AppNavigation.pushPremiumService('flay-verified-badge')">
+<div class="premium-icon-box icon-verified">
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M11.96 1.171a2.316 2.316 0 0 0-1.63.784L8.76 3.65 6.64 3.96a2.315 2.315 0 0 0-1.928 1.928L4.4 8.01 2.705 9.576a2.316 2.316 0 0 0 0 3.328l1.696 1.566.312 2.122a2.315 2.315 0 0 0 1.928 1.928l2.122.312 1.57 1.696c.866.935 2.392.935 3.258 0l1.57-1.696 2.122-.312a2.315 2.315 0 0 0 1.928-1.928l.312-2.122 1.696-1.566a2.316 2.316 0 0 0 0-3.328L19.6 8.01l-.312-2.122a2.315 2.315 0 0 0-1.928-1.928L15.24 3.65l-1.57-1.695a2.316 2.316 0 0 0-1.63-.784z" fill="#3390ec"></path>
+<path d="M10.15 14.88 7.37 12.1l1.41-1.41 1.37 1.37 4.96-4.96 1.41 1.42-6.37 6.36z" fill="#ffffff"></path>
+</svg>
+</div>
+<span>Flay Verified Badge</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="AppNavigation.pushPremiumService('flay-ads')">
+<div class="premium-icon-box icon-ads"><i class="fas fa-rectangle-ad"></i></div>
+<span>Flay Ads</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="AppNavigation.pushPremiumService('boost-content')">
+<div class="premium-icon-box icon-boost"><i class="fas fa-rocket"></i></div>
+<span>Boost Content</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="AppNavigation.pushPremiumService('flay-pay')">
+<div class="premium-icon-box icon-pay"><i class="fas fa-wallet"></i></div>
+<span>Flay Pay</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+</div>
+</div>
+
+<!-- Card Box 4: Privacy -->
+<div class="settings-card-group">
+<div class="settings-card-group-title">Privacy</div>
+<div class="settings-card-box">
+<div class="settings-item" onclick="openPrivacySubMenu('private-account')">
+<div class="premium-icon-box icon-priv-acc"><i class="fas fa-lock"></i></div>
+<span>Private Account</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openPrivacySubMenu('content-visibility')">
+<div class="premium-icon-box icon-priv-see"><i class="fas fa-eye"></i></div>
+<span>Who Can See My Content</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openPrivacySubMenu('comment-permission')">
+<div class="premium-icon-box icon-priv-comm"><i class="fas fa-comment-dots"></i></div>
+<span>Who Can Comment</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openPrivacySubMenu('subscribe-permission')">
+<div class="premium-icon-box icon-priv-sub"><i class="fas fa-user-plus"></i></div>
+<span>Who Can Subscribe Me</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openPrivacySubMenu('like-permission')">
+<div class="premium-icon-box icon-priv-like"><i class="fas fa-heart"></i></div>
+<span>Who Can Like Me</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+</div>
+</div>
+
+<!-- Card Box 5: Content & Playback -->
+<div class="settings-card-group">
+<div class="settings-card-group-title">Content & Playback</div>
+<div class="settings-card-box">
+<div class="settings-item" onclick="openPlaybackSetting('download-settings')">
+<div class="premium-icon-box icon-download"><i class="fas fa-cloud-arrow-down"></i></div>
+<span>Download Settings</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openPlaybackSetting('content-quality')">
+<div class="premium-icon-box icon-quality"><i class="fas fa-sliders"></i></div>
+<span>Content Quality</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openPlaybackSetting('autoplay')">
+<div class="premium-icon-box icon-autoplay"><i class="fas fa-circle-play"></i></div>
+<span>Autoplay</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+</div>
+</div>
+
+<!-- Card Box 6: Support -->
+<div class="settings-card-group">
+<div class="settings-card-group-title">Support</div>
+<div class="settings-card-box">
+<div class="settings-item" onclick="openSupportLink('help-center')">
+<div class="premium-icon-box icon-help"><i class="fas fa-circle-question"></i></div>
+<span>Help Center</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openSupportLink('report-problem')">
+<div class="premium-icon-box icon-report"><i class="fas fa-triangle-exclamation"></i></div>
+<span>Report a Problem</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openSupportLink('terms-of-service')">
+<div class="premium-icon-box icon-terms"><i class="fas fa-file-contract"></i></div>
+<span>Terms of Service</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openSupportLink('privacy-policy')">
+<div class="premium-icon-box icon-privacy-pol"><i class="fas fa-shield-halved"></i></div>
+<span>Privacy Policy</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openSupportLink('cookie-policy')">
+<div class="premium-icon-box icon-cookie"><i class="fas fa-cookie-bite"></i></div>
+<span>Cookie Policy</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openSupportLink('copyright-dmca')">
+<div class="premium-icon-box icon-copyright"><i class="fas fa-copyright"></i></div>
+<span>Copyright & DMCA</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openSupportLink('monetization-policy')">
+<div class="premium-icon-box icon-monetize-pol"><i class="fas fa-file-invoice-dollar"></i></div>
+<span>Monetization Policy</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openSupportLink('community-guidelines')">
+<div class="premium-icon-box icon-community"><i class="fas fa-users"></i></div>
+<span>Community Guidelines</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openSupportLink('creator-policy')">
+<div class="premium-icon-box icon-creator-pol"><i class="fas fa-lightbulb"></i></div>
+<span>Creator Policy</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openSupportLink('third-party-technologies')">
+<div class="premium-icon-box icon-thirdparty"><i class="fas fa-cubes"></i></div>
+<span>Third-Party Technologies</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+<div class="settings-item" onclick="openSupportLink('about-flaynity')">
+<div class="premium-icon-box icon-about"><i class="fas fa-circle-info"></i></div>
+<span>About Flaynity</span>
+<i class="fas fa-chevron-right arrow-r"></i>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="fullscreen-page" id="analytics-page" style="z-index: 1520;">
+<header class="appbar">
+<button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
+<h3 class="appbar-title centered-page-title">Analytics</h3>
+</header>
+<div class="page-content" style="padding-bottom: 40px;">
+<div class="analytics-overview-card">
+<div class="analytics-header-row">
+<img class="analytics-avatar" id="analytics-channel-avatar" src=""/>
+<div>
+<h3 id="analytics-channel-name">Channel Name</h3>
+<p id="analytics-channel-subscribers">0 Subscribers</p>
+</div>
+</div>
+<div class="revenue-box" style="display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<span class="revenue-label">ESTIMATED REVENUE</span>
+<span class="revenue-val" id="estimated-revenue-val">$0.00 USDT</span>
+</div>
+<button id="btn-view-monetization" onclick="openMonetizationPage()" style="background: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        View <i class="fas fa-chevron-right" style="font-size: 0.75rem;"></i>
+</button>
+</div>
+</div>
+<h4 class="section-title">Performance (Last 28 Days)</h4>
+<div class="analytics-grid">
+<div class="analytics-card">
+<span class="stat-lbl"><i class="fas fa-eye"></i> Views</span>
+<h2 class="stat-num" id="anal-views">0</h2>
+<span class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 100% Growth</span>
+</div>
+<div class="analytics-card">
+<span class="stat-lbl"><i class="fas fa-users"></i> Subscribers</span>
+<h2 class="stat-num" id="anal-subs">0</h2>
+<span class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 100% Growth</span>
+</div>
+<div class="analytics-card">
+<span class="stat-lbl"><i class="fas fa-clock"></i> Watch Time (min)</span>
+<h2 class="stat-num" id="anal-watchtime">0.0</h2>
+<span class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 100% Growth</span>
+</div>
+<div class="analytics-card">
+<span class="stat-lbl"><i class="fas fa-thumbs-up"></i> Likes</span>
+<h2 class="stat-num" id="anal-likes">0</h2>
+<span class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 100% Growth</span>
+</div>
+<div class="analytics-card">
+<span class="stat-lbl"><i class="fas fa-comments"></i> Comments</span>
+<h2 class="stat-num" id="anal-comments">0</h2>
+<span class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 100% Growth</span>
+</div>
+<div class="analytics-card">
+<span class="stat-lbl"><i class="fas fa-video"></i> Created Items</span>
+<h2 class="stat-num" id="anal-content">0</h2>
+<span class="stat-sub-text">Videos, Feels, Posts</span>
+</div>
+</div>
+<h4 class="section-title">Monthly Growth Channel</h4>
+<div class="chart-container-mock">
+<div class="chart-bars">
+<div class="chart-bar" data-lbl="Jan" style="height: 15%;"><span class="bar-val">15</span></div>
+<div class="chart-bar" data-lbl="Feb" style="height: 30%;"><span class="bar-val">30</span></div>
+<div class="chart-bar" data-lbl="Mar" style="height: 45%;"><span class="bar-val">45</span></div>
+<div class="chart-bar" data-lbl="Apr" style="height: 60%;"><span class="bar-val">60</span></div>
+<div class="chart-bar" data-lbl="May" style="height: 85%;"><span class="bar-val">85</span></div>
+<div class="chart-bar" data-lbl="Jun" style="height: 100%;"><span class="bar-val">100</span></div>
+</div>
+<p class="chart-footer-label">Metrics distributed based on channel totals</p>
+</div>
+</div>
+</div>
+<div class="fullscreen-page" id="edit-channel-page" style="z-index: 1520;">
+<header class="appbar">
+<button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
+<h3 class="appbar-title centered-page-title">Edit Channel</h3>
+</header>
+<div class="page-content" style="padding: 0; padding-bottom: 40px;">
+<div class="edit-banner-section" onclick="triggerBannerSelection()">
+<img class="edit-banner-preview" id="edit-channel-banner-img" src=""/>
+<div class="edit-banner-overlay">
+<i class="fas fa-camera"></i>
+<span>Change Banner</span>
+</div>
+<input accept="image/*" id="edit-banner-input" onchange="handleChannelBannerSelect(event)" style="display:none;" type="file"/>
+</div>
+<div class="edit-avatar-section">
+<div class="avatar-preview-container" onclick="triggerAvatarSelection('edit')">
+<img id="edit-avatar-img" src=""/>
+<div class="avatar-overlay-camera"><i class="fas fa-camera"></i></div>
+</div>
+<input accept="image/*" id="edit-avatar-input" onchange="handleChannelAvatarSelect(event, 'edit')" style="display:none;" type="file"/>
+</div>
+<div class="edit-form-container" style="padding: 20px;">
+<div class="form-group" style="margin: 0 0 20px 0;">
+<label class="form-label">Channel Name</label>
+<input class="form-input" id="edit-channel-name" maxlength="100" placeholder="Enter channel name..." required="" type="text"/>
+</div>
+<div class="form-group" style="margin: 0 0 20px 0;">
+<label class="form-label">Handle</label>
+<div class="handle-input-wrap">
+<span class="handle-prefix">@</span>
+<input class="form-input" id="edit-channel-handle" onkeyup="checkHandleAvailability(this.value, 'edit-handle-feedback', 'btn-save-edit', currentChannelData ? currentChannelData.handle : '')" placeholder="yourhandle" required="" type="text"/>
+</div>
+<div class="handle-feedback-txt" id="edit-handle-feedback"></div>
+</div>
+<div class="form-group" style="margin: 0 0 20px 0;">
+<label class="form-label">Description</label>
+<textarea class="form-textarea" id="edit-channel-desc" maxlength="500" oninput="updateDescCounter(this.value)" placeholder="Add description..."></textarea>
+<div class="input-counter"><span id="edit-desc-counter">0</span>/500 characters</div>
+</div>
+<div class="form-group" style="margin: 0 0 20px 0;">
+<label class="form-label">Category</label>
+<select class="form-select" id="edit-channel-category">
+<option value="Entertainment">Entertainment</option>
+<option value="Gaming">Gaming</option>
+<option value="Education">Education</option>
+<option value="Music">Music</option>
+<option value="Comedy">Comedy</option>
+<option value="Sports">Sports</option>
+<option value="News">News</option>
+<option value="Technology">Technology</option>
+<option value="Travel">Travel</option>
+<option value="Lifestyle">Lifestyle</option>
+<option value="Food">Food</option>
+<option value="Science">Science</option>
+<option value="Pets">Pets</option>
+<option value="Movies">Movies</option>
+<option value="Animation">Animation</option>
+<option value="Kids">Kids</option>
+<option value="Fashion">Fashion</option>
+<option value="Business">Business</option>
+<option value="Health">Health</option>
+<option value="Beauty">Beauty</option>
+<option value="Vlogs">Vlogs</option>
+<option value="Others">Others</option>
+</select>
+</div>
+<button class="btn-primary-action" id="btn-save-edit" onclick="saveChannelEdits()" style="margin: 30px 0 0 0; width: 100%;">Save Changes</button>
+</div>
+</div>
+</div>
+<div class="fullscreen-page" id="monetization-page" style="z-index: 1530; background: var(--bg-color);">
+<header class="appbar" style="height: 56px; background: var(--surface); display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; justify-content: space-between;">
+<button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
+<h3 class="appbar-title" style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); position: absolute; left: 50%; transform: translateX(-50%); margin: 0; font-family: 'Plus Jakarta Sans', sans-serif;">Monetization</h3>
+<div style="width: 40px;"></div>
+</header>
+<div class="page-content" style="padding: 24px 20px 60px 20px; overflow-y: auto;">
+<div class="monetization-header" style="margin-bottom: 28px;">
+<h1 style="font-size: 34px; font-weight: 900; line-height: 1.2; color: var(--text-main); margin: 0 0 16px 0; font-family: 'Plus Jakarta Sans', sans-serif;">Become a Flaynity Partner</h1>
+<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+<span style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted);">Next milestone</span>
+<div style="width: 24px; height: 24px; border-radius: 50%; background: var(--border-color); display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+<i class="fas fa-lock" style="font-size: 0.75rem;"></i>
+</div>
+</div>
+<h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0;">Flayt your earning journey</h3>
+<p style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.5; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Earn income by showing ads and connecting with your fans, and gain access to creator tools and support.</p>
+</div>
+<div class="slider-outer-container">
+<div id="premium-features-slider">
+<div class="slider-card">
+<div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+<svg fill="none" height="80" viewbox="0 0 80 80" width="80" xmlns="http://www.w3.org/2000/svg">
+<rect fill="var(--primary-glow)" height="80" rx="20" width="80"></rect>
+<rect fill="none" height="28" rx="6" stroke="var(--primary)" stroke-width="3" width="44" x="18" y="22"></rect>
+<path d="M36 31L47 36L36 41V31Z" fill="var(--primary)"></path>
+<path d="M28 58H52" stroke="var(--primary)" stroke-linecap="round" stroke-width="3"></path>
+<path d="M40 50V58" stroke="var(--primary)" stroke-width="3"></path>
+</svg>
+</div>
+<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Watch Page Ads</h4>
+<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Earn from ads and premium subscribers on long videos.</p>
+</div>
+<div class="slider-card">
+<div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+<svg fill="none" height="80" viewbox="0 0 80 80" width="80" xmlns="http://www.w3.org/2000/svg">
+<rect fill="rgba(16, 185, 129, 0.1)" height="80" rx="20" width="80"></rect>
+<rect fill="none" height="48" rx="8" stroke="#10B981" stroke-width="3" width="28" x="26" y="16"></rect>
+<path d="M40 28L43 33H37L40 28Z" fill="#10B981"></path>
+<path d="M40 40V50M36 45H44" stroke="#10B981" stroke-linecap="round" stroke-width="3"></path>
+</svg>
+</div>
+<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Feels Feed Ads</h4>
+<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Earn from ads shown in the Feels Feed.</p>
+</div>
+<div class="slider-card">
+<div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+<svg fill="none" height="80" viewbox="0 0 80 80" width="80" xmlns="http://www.w3.org/2000/svg">
+<rect fill="rgba(59, 130, 246, 0.1)" height="80" rx="20" width="80"></rect>
+<path d="M24 50L28 30L40 38L52 30L56 50H24Z" fill="#3B82F6" stroke="#3B82F6" stroke-linejoin="round" stroke-width="2"></path>
+<circle cx="28" cy="26" fill="#3B82F6" r="3"></circle>
+<circle cx="40" cy="34" fill="#3B82F6" r="3"></circle>
+<circle cx="52" cy="26" fill="#3B82F6" r="3"></circle>
+</svg>
+</div>
+<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Memberships</h4>
+<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Create exclusive memberships for your biggest supporters.</p>
+</div>
+<div class="slider-card">
+<div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+<svg fill="none" height="80" viewbox="0 0 80 80" width="80" xmlns="http://www.w3.org/2000/svg">
+<rect fill="rgba(245, 158, 11, 0.1)" height="80" rx="20" width="80"></rect>
+<path d="M40 54L36.5 50.8C24.2 39.7 16 32.2 16 23C16 15.5 21.8 9.7 29.3 9.7C33.5 9.7 37.5 11.7 40 14.8C42.5 11.7 46.5 9.7 50.7 9.7C58.2 9.7 64 15.5 64 23C64 32.2 55.8 39.7 43.5 50.8L40 54Z" fill="#F59E0B"></path>
+<path d="M40 22L42.5 27L48 27.8L44 31.7L45 37L40 34.5L35 37L36 31.7L32 27.8L37.5 27L40 22Z" fill="#FFFFFF"></path>
+</svg>
+</div>
+<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Supers</h4>
+<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Receive fan support through one-time purchases.</p>
+</div>
+<div class="slider-card">
+<div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+<svg fill="none" height="80" viewbox="0 0 80 80" width="80" xmlns="http://www.w3.org/2000/svg">
+<rect fill="rgba(236, 72, 153, 0.1)" height="80" rx="20" width="80"></rect>
+<path d="M26 28H54L58 56H22L26 28Z" fill="#D80E45" stroke="#D80E45" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M34 28V22C34 18.7 36.7 16 40 16C43.3 16 46 18.7 46 22V28" stroke="#D80E45" stroke-linecap="round" stroke-width="3"></path>
+</svg>
+</div>
+<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Shopping</h4>
+<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Recommend products and earn from shopping.</p>
+</div>
+</div>
+<div class="slider-dots">
+<span class="slider-dot active"></span>
+<span class="slider-dot"></span>
+<span class="slider-dot"></span>
+<span class="slider-dot"></span>
+<span class="slider-dot"></span>
+</div>
+</div>
+<div class="eligibility-section" style="margin-bottom: 32px;">
+<h2 style="font-size: 1.6rem; font-weight: 850; color: var(--text-main); margin: 0 0 16px 0;">Eligibility</h2>
+<div style="background: var(--border-color); border-radius: 20px; padding: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px; font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">
+<i class="fas fa-lock" style="color: var(--primary);"></i>
+<span>Showing data as of <span id="eligibility-date-val">July 16, 2026</span></span>
+</div>
+<div style="margin-bottom: 18px;">
+<div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem; margin-bottom: 6px;">
+<span style="color: var(--text-main);">Subscribers</span>
+<span id="req-subs-txt" style="color: var(--text-muted);">0 / 500</span>
+</div>
+<div style="width: 100%; height: 10px; background: #CBD5E1; border-radius: 5px; overflow: hidden;">
+<div id="req-subs-bar" style="width: 0%; height: 100%; background: var(--primary); border-radius: 5px; transition: width 0.5s ease-out;"></div>
+</div>
+</div>
+<div style="margin-bottom: 18px;">
+<div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem; margin-bottom: 4px;">
+<span style="color: var(--text-main);">Valid Public Watch Hours</span>
+<span id="req-hours-txt" style="color: var(--text-muted);">0 / 50 Hours</span>
+</div>
+<div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px;">Last 365 Days</div>
+<div style="width: 100%; height: 10px; background: #CBD5E1; border-radius: 5px; overflow: hidden;">
+<div id="req-hours-bar" style="width: 0%; height: 100%; background: var(--primary); border-radius: 5px; transition: width 0.5s ease-out;"></div>
+</div>
+</div>
+<div style="margin-bottom: 8px;">
+<div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem; margin-bottom: 4px;">
+<span style="color: var(--text-main);">Public Views (Feels &amp; Videos)</span>
+<span id="req-views-txt" style="color: var(--text-muted);">0 / 10K</span>
+</div>
+<div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px;">Last 365 Days</div>
+<div style="width: 100%; height: 10px; background: #CBD5E1; border-radius: 5px; overflow: hidden;">
+<div id="req-views-bar" style="width: 0%; height: 100%; background: var(--primary); border-radius: 5px; transition: width 0.5s ease-out;"></div>
+</div>
+</div>
+</div>
+<p style="text-align: center; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-top: 16px; padding: 0 10px;">Some monetization features may have additional eligibility requirements.</p>
+</div>
+<div class="next-steps-section" style="margin-bottom: 24px;">
+<h2 style="font-size: 1.6rem; font-weight: 850; color: var(--text-main); margin: 0 0 16px 0;">Next Steps</h2>
+<button class="btn-primary-action" disabled="" id="btn-monetization-apply" onclick="handleMonetizationApply()" style="margin: 0; width: 100%; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 1.05rem;">
+                    Apply Now
+                </button>
+</div>
+</div>
+</div>
+<div class="upcoming-modal" id="eligibility-success-modal" style="display: none; z-index: 100000;">
+<div class="upcoming-content" style="background: var(--surface); border-radius: 28px; padding: 32px 24px; text-align: center;">
+<div class="success-checkmark-container" style="width: 80px; height: 80px; background: rgba(0, 200, 83, 0.1); border-radius: 50%; color: var(--success); font-size: 2.5rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; animation: md3ScaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;">
+<i class="fas fa-check"></i>
+</div>
+<h2 style="font-size: 1.5rem; font-weight: 850; margin: 0 0 10px; color: var(--text-main);">Application Submitted!</h2>
+<p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin: 0;">Congratulations! Your partner application is now under review. We will notify you soon.</p>
+</div>
+</div>
+</body></html>

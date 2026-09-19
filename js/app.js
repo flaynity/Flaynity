@@ -245,7 +245,6 @@ function __flaynityReady(fn) {
         window.addEventListener("hashchange", resetForPage);
         // Tab changes must immediately unlock/lock the navigation state.
         window.addEventListener("flaynity-tab-changed", resetForPage);
-        window.addEventListener("flaynity-theme-changed", function() { applyTheme(); });
 
         var observer = new MutationObserver(function() {
             if (!state.nav || !document.documentElement.contains(state.nav)) resetForPage();
@@ -445,19 +444,80 @@ function stabilizeInitialOfflineHomeSkeleton() {
 window.addEventListener('flaynity-dom-ready', stabilizeInitialOfflineHomeSkeleton, { once: true });
 
 // =========================================
+// YOU PAGE SETTINGS BOTTOM-SHEET POPUPS
+// =========================================
+// pages/*.html are injected into the WebView dynamically, so inline <script>
+// blocks inside those page files are not guaranteed to execute. Keep these
+// handlers in the shared app.js so the Settings buttons always work.
+function openBottomSheet(sheetId) {
+    try {
+        const overlay = document.getElementById(sheetId);
+        if (!overlay) return false;
+        overlay.style.display = 'flex';
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                overlay.classList.add('active');
+            });
+        });
+        return true;
+    } catch (e) {
+        console.warn('[Flaynity] Open settings popup:', e);
+        return false;
+    }
+}
+
+function closeBottomSheet(sheetId) {
+    try {
+        const overlay = document.getElementById(sheetId);
+        if (!overlay) return;
+        overlay.classList.remove('active');
+        setTimeout(function () {
+            if (!overlay.classList.contains('active')) overlay.style.display = 'none';
+        }, 280);
+    } catch (e) {
+        console.warn('[Flaynity] Close settings popup:', e);
+    }
+}
+
+function handleOverlayClick(event, sheetId) {
+    if (event && event.target && event.target.classList && event.target.classList.contains('bottom-sheet-overlay')) {
+        closeBottomSheet(sheetId);
+    }
+}
+
+function selectGenericOption(element, sheetId) {
+    try {
+        if (!element) return;
+        const parentList = element.parentElement;
+        if (parentList) {
+            parentList.querySelectorAll('.sheet-option-item').forEach(function (item) {
+                item.classList.remove('selected');
+            });
+        }
+        element.classList.add('selected');
+        setTimeout(function () { closeBottomSheet(sheetId); }, 220);
+    } catch (e) {
+        console.warn('[Flaynity] Settings option:', e);
+    }
+}
+
+function selectThemeOption(element, sheetId) {
+    try {
+        const theme = element && element.getAttribute('data-value') === 'dark' ? 'dark' : 'light';
+        localStorage.setItem('flaynity-theme-pref', theme);
+        applyTheme();
+        selectGenericOption(element, sheetId);
+    } catch (e) {
+        console.warn('[Flaynity] Settings theme:', e);
+    }
+}
+
+// =========================================
 // AUTOMATIC & MANUAL THEME ENGINE
 // =========================================
 function applyTheme() {
     let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
-    pref = pref === 'dark' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', pref);
-    document.documentElement.style.colorScheme = pref;
-    if (document.body) document.body.setAttribute('data-theme', pref);
-    const themeColor = pref === 'dark' ? '#0F0F0F' : '#FFFFFF';
-    const meta = document.getElementById('flaynity-theme-color');
-    const msMeta = document.getElementById('flaynity-ms-theme-color');
-    if (meta) meta.setAttribute('content', themeColor);
-    if (msMeta) msMeta.setAttribute('content', themeColor);
     
     const themeBtns = document.querySelectorAll('.appbar-theme-btn');
     themeBtns.forEach(btn => {

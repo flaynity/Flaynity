@@ -1652,31 +1652,12 @@ function selectGenericOption(element, sheetId) {
 }
 
 function selectThemeOption(element, sheetId) {
-    const theme = element.getAttribute('data-value') === 'dark' ? 'dark' : 'light';
-
-    // Apply the selected theme to the whole WebView app, not only this Settings page.
-    // Keep the preference persistent so the app uses the same theme after navigation/reload.
-    try {
-        localStorage.setItem('flaynity-theme-pref', theme);
-    } catch (e) {}
-
-    document.documentElement.setAttribute('data-theme', theme);
-    document.body.setAttribute('data-theme', theme);
-    document.documentElement.style.colorScheme = theme;
-
-    // Notify any app/page code that listens for theme changes.
-    try {
-        window.dispatchEvent(new CustomEvent('flaynity-theme-changed', { detail: { theme: theme } }));
-    } catch (e) {
-        try { window.dispatchEvent(new Event('flaynity-theme-changed')); } catch (_) {}
+    const theme = element.getAttribute('data-value');
+    if (theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+        document.documentElement.removeAttribute('data-theme');
     }
-
-    // Reuse the existing global theme engine when available, without changing
-    // any of the existing Settings UI or other app logic.
-    if (typeof applyTheme === 'function') {
-        try { applyTheme(); } catch (e) {}
-    }
-
     selectGenericOption(element, sheetId);
 }
 

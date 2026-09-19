@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Flaynity</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 /* You Profile Card */
         .profile-card-you {
             background: var(--surface); 
             border: 1px solid var(--glass-border);
-            /* ওপরের বড় গ্যাপটি রিমুভ করে 0 করে দেওয়া হয়েছে, যেন Top Bar এর ঠিক নিচেই থাকে */
             margin: 0 8px 12px 8px !important; 
             border-radius: 20px !important;
             padding: 20px 16px 16px 16px !important; 
@@ -63,7 +63,6 @@
         .you-menu-item:active i { transform: scale(1.1); }
         .you-menu-item span { font-size: 1.05rem; font-weight: 700; flex-grow: 1; }
         .arrow-r { font-size: 0.9rem !important; color: var(--text-muted); opacity: 0.6; margin-left: auto; }
-
 
 /* Premium service menu — Floating Cards styling */
 .premium-service-menu { 
@@ -519,7 +518,6 @@
     margin-right:0 !important;
 }
 
-
 /* Channel Settings */
 .view-channel-settings-btn{
     position:absolute !important; top:26px !important; right:12px !important;
@@ -587,6 +585,142 @@
     font-weight: 750;
     color: var(--text-main);
     flex-grow: 1;
+}
+
+/* =========================================================
+   BOTTOM SHEET POP-UP (DRAWER) STYLING
+   ========================================================= */
+.bottom-sheet-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 9999;
+    display: none;
+    align-items: flex-end;
+    opacity: 0;
+    transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.bottom-sheet-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+.bottom-sheet {
+    width: 100%;
+    background: var(--surface);
+    border-radius: 28px 28px 0 0;
+    border: 1px solid var(--glass-border);
+    border-bottom: none;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.18);
+    padding: 12px 18px calc(24px + env(safe-area-inset-bottom, 0px)) 18px;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 82vh;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+.bottom-sheet-overlay.active .bottom-sheet {
+    transform: translateY(0);
+}
+.sheet-drag-handle {
+    width: 40px;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--text-muted);
+    opacity: 0.4;
+    margin: 2px auto 14px auto;
+}
+.sheet-title {
+    font-size: 1.15rem;
+    font-weight: 850;
+    color: var(--text-main);
+    margin: 0 0 16px 0;
+    text-align: center;
+}
+.sheet-info-box {
+    background: var(--bg-color);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+}
+.sheet-info-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 0 0 4px 0;
+}
+.sheet-info-desc {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.45;
+}
+.sheet-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.sheet-option-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: var(--bg-color);
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+.sheet-option-item:active {
+    transform: scale(0.985);
+    background: var(--border-color);
+}
+.sheet-option-item.selected {
+    border-color: var(--primary);
+    background: var(--primary-glow);
+}
+.sheet-option-label {
+    font-size: 0.96rem;
+    font-weight: 750;
+    color: var(--text-main);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.sheet-option-sub {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+.sheet-radio-indicator {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+.sheet-option-item.selected .sheet-radio-indicator {
+    border-color: var(--primary);
+    background: var(--primary);
+}
+.sheet-radio-indicator::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ffffff;
+    display: none;
+}
+.sheet-option-item.selected .sheet-radio-indicator::after {
+    display: block;
 }
 
 </style></head><body>
@@ -742,7 +876,7 @@
 </div>
 
 <!-- ========================================== -->
-<!-- UPDATED SETTINGS PAGE (6 PREMIUM CARD BOXES) -->
+<!-- UPDATED SETTINGS PAGE (CONNECTED TO BOTTOM SHEETS) -->
 <!-- ========================================== -->
 <div class="fullscreen-page" id="channel-settings-page" style="z-index: 1530;">
 <header class="appbar">
@@ -777,17 +911,17 @@
 <div class="settings-card-group">
 <div class="settings-card-group-title">Appearance</div>
 <div class="settings-card-box">
-<div class="settings-item" onclick="openThemePopupMenu()">
+<div class="settings-item" onclick="openBottomSheet('sheet-theme')">
 <div class="premium-icon-box icon-theme"><i class="fas fa-palette"></i></div>
 <span>Switch Theme</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
-<div class="settings-item" onclick="openAppLanguageModal()">
+<div class="settings-item" onclick="openBottomSheet('sheet-language')">
 <div class="premium-icon-box icon-lang"><i class="fas fa-language"></i></div>
 <span>App Language</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
-<div class="settings-item" onclick="toggleDataSaver()">
+<div class="settings-item" onclick="openBottomSheet('sheet-datasaver')">
 <div class="premium-icon-box icon-datasaver"><i class="fas fa-chart-pie"></i></div>
 <span>Data Saver</span>
 <i class="fas fa-chevron-right arrow-r"></i>
@@ -836,27 +970,27 @@
 <div class="settings-card-group">
 <div class="settings-card-group-title">Privacy</div>
 <div class="settings-card-box">
-<div class="settings-item" onclick="openPrivacySubMenu('private-account')">
+<div class="settings-item" onclick="openBottomSheet('sheet-private-account')">
 <div class="premium-icon-box icon-priv-acc"><i class="fas fa-lock"></i></div>
 <span>Private Account</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
-<div class="settings-item" onclick="openPrivacySubMenu('content-visibility')">
+<div class="settings-item" onclick="openBottomSheet('sheet-content-visibility')">
 <div class="premium-icon-box icon-priv-see"><i class="fas fa-eye"></i></div>
 <span>Who Can See My Content</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
-<div class="settings-item" onclick="openPrivacySubMenu('comment-permission')">
+<div class="settings-item" onclick="openBottomSheet('sheet-comment-permission')">
 <div class="premium-icon-box icon-priv-comm"><i class="fas fa-comment-dots"></i></div>
 <span>Who Can Comment</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
-<div class="settings-item" onclick="openPrivacySubMenu('subscribe-permission')">
+<div class="settings-item" onclick="openBottomSheet('sheet-subscribe-permission')">
 <div class="premium-icon-box icon-priv-sub"><i class="fas fa-user-plus"></i></div>
 <span>Who Can Subscribe Me</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
-<div class="settings-item" onclick="openPrivacySubMenu('like-permission')">
+<div class="settings-item" onclick="openBottomSheet('sheet-like-permission')">
 <div class="premium-icon-box icon-priv-like"><i class="fas fa-heart"></i></div>
 <span>Who Can Like Me</span>
 <i class="fas fa-chevron-right arrow-r"></i>
@@ -868,17 +1002,17 @@
 <div class="settings-card-group">
 <div class="settings-card-group-title">Content & Playback</div>
 <div class="settings-card-box">
-<div class="settings-item" onclick="openPlaybackSetting('download-settings')">
+<div class="settings-item" onclick="openBottomSheet('sheet-download-settings')">
 <div class="premium-icon-box icon-download"><i class="fas fa-cloud-arrow-down"></i></div>
 <span>Download Settings</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
-<div class="settings-item" onclick="openPlaybackSetting('content-quality')">
+<div class="settings-item" onclick="openBottomSheet('sheet-content-quality')">
 <div class="premium-icon-box icon-quality"><i class="fas fa-sliders"></i></div>
 <span>Content Quality</span>
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
-<div class="settings-item" onclick="openPlaybackSetting('autoplay')">
+<div class="settings-item" onclick="openBottomSheet('sheet-autoplay')">
 <div class="premium-icon-box icon-autoplay"><i class="fas fa-circle-play"></i></div>
 <span>Autoplay</span>
 <i class="fas fa-chevron-right arrow-r"></i>
@@ -1237,4 +1371,303 @@
 <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin: 0;">Congratulations! Your partner application is now under review. We will notify you soon.</p>
 </div>
 </div>
+
+<!-- ========================================================= -->
+<!-- 11 BOTTOM-SHEET POP-UP DRAWERS                            -->
+<!-- ========================================================= -->
+
+<!-- 1. Switch Theme -->
+<div class="bottom-sheet-overlay" id="sheet-theme" onclick="handleOverlayClick(event, 'sheet-theme')">
+    <div class="bottom-sheet">
+        <div class="sheet-drag-handle"></div>
+        <h3 class="sheet-title">Switch Theme</h3>
+        <div class="sheet-options-list">
+            <div class="sheet-option-item selected" data-value="light" onclick="selectThemeOption(this, 'sheet-theme')">
+                <span class="sheet-option-label">Light Theme</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" data-value="dark" onclick="selectThemeOption(this, 'sheet-theme')">
+                <span class="sheet-option-label">Dark Theme</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. App Language -->
+<div class="bottom-sheet-overlay" id="sheet-language" onclick="handleOverlayClick(event, 'sheet-language')">
+    <div class="bottom-sheet">
+        <div class="sheet-drag-handle"></div>
+        <h3 class="sheet-title">App Language</h3>
+        <div class="sheet-options-list">
+            <div class="sheet-option-item selected" onclick="selectGenericOption(this, 'sheet-language')">
+                <span class="sheet-option-label">🇧🇩 বাংলা</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-language')">
+                <span class="sheet-option-label">🇱🇷 English</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-language')">
+                <span class="sheet-option-label">العربية 🇸🇦</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-language')">
+                <span class="sheet-option-label">🇪🇸 Español</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-language')">
+                <span class="sheet-option-label">🇨🇵 Français</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-language')">
+                <span class="sheet-option-label">🇮🇳 हिन्दी</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-language')">
+                <span class="sheet-option-label">اردو 🇵🇰</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Data Saver -->
+<div class="bottom-sheet-overlay" id="sheet-datasaver" onclick="handleOverlayClick(event, 'sheet-datasaver')">
+    <div class="bottom-sheet">
+        <div class="sheet-drag-handle"></div>
+        <h3 class="sheet-title">Data Saver</h3>
+        <div class="sheet-info-box">
+            <h4 class="sheet-info-title">Video quality</h4>
+            <p class="sheet-info-desc">Manage your default video quality and the amount of cellular data you use with the following options.</p>
+        </div>
+        <div class="sheet-options-list">
+            <div class="sheet-option-item selected" onclick="selectGenericOption(this, 'sheet-datasaver')">
+                <div class="sheet-option-label">
+                    <span>Optimized</span>
+                    <span class="sheet-option-sub">Adjust videos to network conditions</span>
+                </div>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-datasaver')">
+                <div class="sheet-option-label">
+                    <span>Data saver</span>
+                    <span class="sheet-option-sub">Use up to 50% less data by reducing video quality</span>
+                </div>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 4. Private Account -->
+<div class="bottom-sheet-overlay" id="sheet-private-account" onclick="handleOverlayClick(event, 'sheet-private-account')">
+    <div class="bottom-sheet">
+        <div class="sheet-drag-handle"></div>
+        <h3 class="sheet-title">Private Account</h3>
+        <div class="sheet-options-list">
+            <div class="sheet-option-item selected" onclick="selectGenericOption(this, 'sheet-private-account')">
+                <span class="sheet-option-label">Public</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-private-account')">
+                <span class="sheet-option-label">Private</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 5. Who Can See My Content -->
+<div class="bottom-sheet-overlay" id="sheet-content-visibility" onclick="handleOverlayClick(event, 'sheet-content-visibility')">
+    <div class="bottom-sheet">
+        <div class="sheet-drag-handle"></div>
+        <h3 class="sheet-title">Who Can See My Content</h3>
+        <div class="sheet-options-list">
+            <div class="sheet-option-item selected" onclick="selectGenericOption(this, 'sheet-content-visibility')">
+                <span class="sheet-option-label">Public</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-content-visibility')">
+                <span class="sheet-option-label">Only me</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 6. Who Can Comment -->
+<div class="bottom-sheet-overlay" id="sheet-comment-permission" onclick="handleOverlayClick(event, 'sheet-comment-permission')">
+    <div class="bottom-sheet">
+        <div class="sheet-drag-handle"></div>
+        <h3 class="sheet-title">Who Can Comment</h3>
+        <div class="sheet-options-list">
+            <div class="sheet-option-item selected" onclick="selectGenericOption(this, 'sheet-comment-permission')">
+                <span class="sheet-option-label">Public</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-comment-permission')">
+                <span class="sheet-option-label">Only me</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 7. Who Can Subscribe Me -->
+<div class="bottom-sheet-overlay" id="sheet-subscribe-permission" onclick="handleOverlayClick(event, 'sheet-subscribe-permission')">
+    <div class="bottom-sheet">
+        <div class="sheet-drag-handle"></div>
+        <h3 class="sheet-title">Who Can Subscribe Me</h3>
+        <div class="sheet-options-list">
+            <div class="sheet-option-item selected" onclick="selectGenericOption(this, 'sheet-subscribe-permission')">
+                <span class="sheet-option-label">Public</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-subscribe-permission')">
+                <span class="sheet-option-label">Only me</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 8. Who Can Like Me -->
+<div class="bottom-sheet-overlay" id="sheet-like-permission" onclick="handleOverlayClick(event, 'sheet-like-permission')">
+    <div class="bottom-sheet">
+        <div class="sheet-drag-handle"></div>
+        <h3 class="sheet-title">Who Can Like Me</h3>
+        <div class="sheet-options-list">
+            <div class="sheet-option-item selected" onclick="selectGenericOption(this, 'sheet-like-permission')">
+                <span class="sheet-option-label">Public</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-like-permission')">
+                <span class="sheet-option-label">Only me</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 9. Download Settings -->
+<div class="bottom-sheet-overlay" id="sheet-download-settings" onclick="handleOverlayClick(event, 'sheet-download-settings')">
+    <div class="bottom-sheet">
+        <div class="sheet-drag-handle"></div>
+        <h3 class="sheet-title">Download Settings</h3>
+        <div class="sheet-options-list">
+            <div class="sheet-option-item selected" onclick="selectGenericOption(this, 'sheet-download-settings')">
+                <span class="sheet-option-label">Public</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-download-settings')">
+                <span class="sheet-option-label">OF</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 10. Content Quality -->
+<div class="bottom-sheet-overlay" id="sheet-content-quality" onclick="handleOverlayClick(event, 'sheet-content-quality')">
+    <div class="bottom-sheet">
+        <div class="sheet-drag-handle"></div>
+        <h3 class="sheet-title">Content Quality</h3>
+        <div class="sheet-options-list">
+            <div class="sheet-option-item selected" onclick="selectGenericOption(this, 'sheet-content-quality')">
+                <span class="sheet-option-label">Auto</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-content-quality')">
+                <span class="sheet-option-label">360p</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-content-quality')">
+                <span class="sheet-option-label">480p</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-content-quality')">
+                <span class="sheet-option-label">720p</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-content-quality')">
+                <span class="sheet-option-label">1080p</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 11. Autoplay -->
+<div class="bottom-sheet-overlay" id="sheet-autoplay" onclick="handleOverlayClick(event, 'sheet-autoplay')">
+    <div class="bottom-sheet">
+        <div class="sheet-drag-handle"></div>
+        <h3 class="sheet-title">Autoplay</h3>
+        <div class="sheet-options-list">
+            <div class="sheet-option-item selected" onclick="selectGenericOption(this, 'sheet-autoplay')">
+                <span class="sheet-option-label">ON</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-autoplay')">
+                <span class="sheet-option-label">OF</span>
+                <div class="sheet-radio-indicator"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/* =========================================================
+   BOTTOM SHEET LOGIC & SELECTION HANDLERS
+   ========================================================= */
+function openBottomSheet(sheetId) {
+    const overlay = document.getElementById(sheetId);
+    if (overlay) {
+        overlay.style.display = 'flex';
+        setTimeout(() => overlay.classList.add('active'), 15);
+    }
+}
+
+function closeBottomSheet(sheetId) {
+    const overlay = document.getElementById(sheetId);
+    if (overlay) {
+        overlay.classList.remove('active');
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 260);
+    }
+}
+
+function handleOverlayClick(event, sheetId) {
+    if (event.target.classList.contains('bottom-sheet-overlay')) {
+        closeBottomSheet(sheetId);
+    }
+}
+
+function selectGenericOption(element, sheetId) {
+    const parentList = element.parentElement;
+    parentList.querySelectorAll('.sheet-option-item').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
+    setTimeout(() => closeBottomSheet(sheetId), 220);
+}
+
+function selectThemeOption(element, sheetId) {
+    const theme = element.getAttribute('data-value');
+    if (theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+    }
+    selectGenericOption(element, sheetId);
+}
+
+function openChannelSettingsPage() {
+    const page = document.getElementById('channel-settings-page');
+    if (page) page.style.display = 'block';
+}
+
+function openSupportLink(type) {
+    console.log("Opening support link:", type);
+}
+</script>
 </body></html>

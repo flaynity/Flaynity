@@ -245,6 +245,7 @@ function __flaynityReady(fn) {
         window.addEventListener("hashchange", resetForPage);
         // Tab changes must immediately unlock/lock the navigation state.
         window.addEventListener("flaynity-tab-changed", resetForPage);
+        window.addEventListener("flaynity-theme-changed", function() { applyTheme(); });
 
         var observer = new MutationObserver(function() {
             if (!state.nav || !document.documentElement.contains(state.nav)) resetForPage();
@@ -448,7 +449,15 @@ window.addEventListener('flaynity-dom-ready', stabilizeInitialOfflineHomeSkeleto
 // =========================================
 function applyTheme() {
     let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
+    pref = pref === 'dark' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', pref);
+    document.documentElement.style.colorScheme = pref;
+    if (document.body) document.body.setAttribute('data-theme', pref);
+    const themeColor = pref === 'dark' ? '#0F0F0F' : '#FFFFFF';
+    const meta = document.getElementById('flaynity-theme-color');
+    const msMeta = document.getElementById('flaynity-ms-theme-color');
+    if (meta) meta.setAttribute('content', themeColor);
+    if (msMeta) msMeta.setAttribute('content', themeColor);
     
     const themeBtns = document.querySelectorAll('.appbar-theme-btn');
     themeBtns.forEach(btn => {
@@ -4652,51 +4661,6 @@ async function submitCreateChannel() {
             submitBtn.innerHTML = "Create Channel";
         }
     }
-}
-
-/* Settings bottom-sheet handlers for dynamically loaded You page. */
-function openBottomSheet(sheetId) {
-    const overlay = document.getElementById(sheetId);
-    if (!overlay) return;
-    overlay.style.display = 'flex';
-    requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('active')));
-}
-
-function closeBottomSheet(sheetId) {
-    const overlay = document.getElementById(sheetId);
-    if (!overlay) return;
-    overlay.classList.remove('active');
-    setTimeout(() => {
-        if (!overlay.classList.contains('active')) overlay.style.display = 'none';
-    }, 260);
-}
-
-function handleOverlayClick(event, sheetId) {
-    if (event.target && event.target.classList.contains('bottom-sheet-overlay')) {
-        closeBottomSheet(sheetId);
-    }
-}
-
-function selectGenericOption(element, sheetId) {
-    if (!element) return;
-    const parentList = element.parentElement;
-    if (parentList) {
-        parentList.querySelectorAll('.sheet-option-item').forEach(el => el.classList.remove('selected'));
-    }
-    element.classList.add('selected');
-    setTimeout(() => closeBottomSheet(sheetId), 220);
-}
-
-function selectThemeOption(element, sheetId) {
-    const theme = element ? element.getAttribute('data-value') : null;
-    if (theme === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        try { localStorage.setItem('flaynity-theme', 'dark'); } catch (e) {}
-    } else {
-        document.documentElement.removeAttribute('data-theme');
-        try { localStorage.setItem('flaynity-theme', 'light'); } catch (e) {}
-    }
-    selectGenericOption(element, sheetId);
 }
 
 function openChannelSettingsPage() {

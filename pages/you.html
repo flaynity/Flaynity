@@ -1654,29 +1654,29 @@ function selectGenericOption(element, sheetId) {
 function selectThemeOption(element, sheetId) {
     const theme = element.getAttribute('data-value') === 'dark' ? 'dark' : 'light';
 
-    // Save the selected theme globally so every page uses the same theme.
+    // Apply the selected theme to the whole WebView app, not only this Settings page.
+    // Keep the preference persistent so the app uses the same theme after navigation/reload.
     try {
         localStorage.setItem('flaynity-theme-pref', theme);
     } catch (e) {}
 
-    // Apply the theme to the whole WebView document, not only the Settings page.
     document.documentElement.setAttribute('data-theme', theme);
-    document.documentElement.style.colorScheme = theme;
     document.body.setAttribute('data-theme', theme);
+    document.documentElement.style.colorScheme = theme;
 
-    // Keep the app's global theme engine in sync when available.
+    // Notify any app/page code that listens for theme changes.
+    try {
+        window.dispatchEvent(new CustomEvent('flaynity-theme-changed', { detail: { theme: theme } }));
+    } catch (e) {
+        try { window.dispatchEvent(new Event('flaynity-theme-changed')); } catch (_) {}
+    }
+
+    // Reuse the existing global theme engine when available, without changing
+    // any of the existing Settings UI or other app logic.
     if (typeof applyTheme === 'function') {
         try { applyTheme(); } catch (e) {}
     }
 
-    // Update Android/WebView browser chrome theme color.
-    const themeColor = theme === 'dark' ? '#0F0F0F' : '#FFFFFF';
-    const meta = document.getElementById('flaynity-theme-color');
-    const msMeta = document.getElementById('flaynity-ms-theme-color');
-    if (meta) meta.setAttribute('content', themeColor);
-    if (msMeta) msMeta.setAttribute('content', themeColor);
-
-    window.dispatchEvent(new CustomEvent('flaynity-theme-changed', { detail: { theme } }));
     selectGenericOption(element, sheetId);
 }
 

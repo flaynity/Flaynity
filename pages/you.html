@@ -1667,7 +1667,22 @@ function openChannelSettingsPage() {
 }
 
 function openSupportLink(type) {
-    console.log("Opening support link:", type);
+    const supportMap = {
+        'terms-of-service': ['support-terms-of-service-page', 'support/Flaynity-Terms-of-Service.html'],
+        'privacy-policy': ['support-privacy-policy-page', 'support/Flaynity-Privacy-Policy.html'],
+        'cookie-policy': ['support-cookie-policy-page', 'support/Flaynity-Cookie-Policy.html'],
+        'copyright-dmca': ['support-copyright-dmca-page', 'support/Flaynity-Copyright-&-DMCA-Policy.html'],
+        'monetization-policy': ['support-monetization-policy-page', 'support/Flaynity-Monetization-Policy.html'],
+        'community-guidelines': ['support-community-guidelines-page', 'support/Flaynity-Community-Guidelines.html'],
+        'creator-policy': ['support-creator-policy-page', 'support/Creator-Policy.html'],
+        'third-party-technologies': ['support-third-party-technologies-page', 'support/Third-Party-Technologies.html'],
+        'about-flaynity': ['support-about-flaynity-page', 'support/About-Flaynity.html']
+    };
+    const item = supportMap[type];
+    if (!item || typeof AppNavigation === 'undefined') return;
+    const pageId = item[0];
+    AppNavigation.pushPage(pageId);
+    window.dispatchEvent(new CustomEvent('flaynity-open-support-page', { detail: { pageId: pageId, url: item[1] } }));
 }
 </script>
 </body>

@@ -3519,6 +3519,80 @@ function __flaynityOpenPremiumService(serviceId) {
 }
 
 // =========================================================
+// OFFLINE SUPPORT POLICY PAGES
+// =========================================================
+(function () {
+    "use strict";
+    const SUPPORT_CACHE_PREFIX = "flaynity-support-cache-v2:";
+    const supportPages = {
+        "support-terms-of-service-page": "support/Flaynity-Terms-of-Service.html",
+        "support-privacy-policy-page": "support/Flaynity-Privacy-Policy.html",
+        "support-cookie-policy-page": "support/Flaynity-Cookie-Policy.html",
+        "support-copyright-dmca-page": "support/Flaynity-Copyright-&-DMCA-Policy.html",
+        "support-monetization-policy-page": "support/Flaynity-Monetization-Policy.html",
+        "support-community-guidelines-page": "support/Flaynity-Community-Guidelines.html",
+        "support-creator-policy-page": "support/Creator-Policy.html",
+        "support-third-party-technologies-page": "support/Third-Party-Technologies.html",
+        "support-about-flaynity-page": "support/About-Flaynity.html"
+    };
+    function ensureContainer() {
+        let host = document.getElementById("flaynity-support-pages-host");
+        if (!host) { host = document.createElement("div"); host.id = "flaynity-support-pages-host"; document.body.appendChild(host); }
+        return host;
+    }
+    async function loadSupportPage(pageId, url) {
+        if (document.getElementById(pageId)) return true;
+        let html = null;
+        try {
+            const response = await fetch(url, { cache: "no-store" });
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            html = await response.text();
+            try { localStorage.setItem(SUPPORT_CACHE_PREFIX + pageId, html); } catch (e) {}
+        } catch (e) {
+            try { html = localStorage.getItem(SUPPORT_CACHE_PREFIX + pageId); } catch (ignore) {}
+        }
+        if (!html) return false;
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const page = document.createElement("section");
+        page.id = pageId;
+        page.className = "fullscreen-page flaynity-support-page";
+        page.style.cssText = "display:none;position:fixed;inset:0;z-index:1600;background:var(--bg-color,#0f0f0f);overflow:auto;";
+        const back = document.createElement("button");
+        back.type = "button";
+        back.className = "flaynity-support-back";
+        back.setAttribute("aria-label", "Back");
+        back.innerHTML = '<i class="fas fa-arrow-left"></i>';
+        back.onclick = function () { executeBackAction(); };
+        back.style.cssText = "position:fixed;top:calc(12px + env(safe-area-inset-top));left:14px;z-index:999999;width:42px;height:42px;border:0;border-radius:50%;background:rgba(0,0,0,.78);color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 6px 20px rgba(0,0,0,.22);cursor:pointer;-webkit-tap-highlight-color:transparent;";
+        page.appendChild(back);
+        Array.from(doc.head.querySelectorAll("style")).forEach(style => { const copy = document.createElement("style"); copy.textContent = style.textContent; page.appendChild(copy); });
+        Array.from(doc.body.childNodes).forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "SCRIPT") return;
+            const clone = node.cloneNode(true);
+            if (clone.nodeType === Node.ELEMENT_NODE && clone.querySelectorAll) {
+                clone.querySelectorAll("img[src^='../assets/']").forEach(img => img.setAttribute("src", img.getAttribute("src").replace(/^\.\.\/assets\//, "assets/")));
+            }
+            page.appendChild(clone);
+        });
+        Array.from(doc.body.querySelectorAll("script")).forEach(sourceScript => {
+            const script = document.createElement("script");
+            if (sourceScript.src) script.src = sourceScript.src;
+            else script.textContent = "(function(){\n" + (sourceScript.textContent || "") + "\n})();";
+            page.appendChild(script);
+        });
+        ensureContainer().appendChild(page);
+        return true;
+    }
+    window.addEventListener("flaynity-open-support-page", async function (event) {
+        const detail = event.detail || {};
+        const pageId = detail.pageId, url = detail.url || supportPages[pageId];
+        if (!pageId || !url) return;
+        if (!await loadSupportPage(pageId, url)) { AppNavigation.pop(); if (typeof showNotification === "function") showNotification("This support page is unavailable offline.", "error", 3000); return; }
+        AppNavigation.syncUI();
+    });
+})();
+
+// =========================================================
 // HIGH PERFORMANCE UNIVERSAL BACK NAVIGATION ENGINE
 // =========================================================
 const AppNavigation = {
@@ -3575,6 +3649,10 @@ const AppNavigation = {
         if (this.stack.length > 1) {
             const popped = this.stack.pop();
             this.syncUI();
+            if (popped && popped.type === 'page' && popped.id && popped.id.indexOf('support-') === 0) {
+                const supportEl = document.getElementById(popped.id);
+                if (supportEl) supportEl.remove();
+            }
             this.updateBridge();
             return popped;
         }

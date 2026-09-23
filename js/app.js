@@ -4246,6 +4246,21 @@ function adjustHeaderForActiveTab(tabId) {
     const actions = header.querySelector('.header-actions');
     const chips = document.getElementById('global-category-chips');
 
+    // Discover page uses its own search UI, so remove the global app top bar
+    // (Logo, Flaynity name, header search button and theme switch) from Discover.
+    if (tabId === 'search') {
+        header.style.display = 'none';
+        document.body.style.paddingTop = '0px';
+        document.body.style.paddingBottom = '50px';
+        if (chips) chips.style.display = 'none';
+        const searchTab = document.getElementById('search-tab');
+        if (searchTab) {
+            searchTab.style.marginTop = '0px';
+            searchTab.style.paddingTop = '12px';
+        }
+        return;
+    }
+
     if (tabId === 'feels') {
         header.style.display = 'none';
         document.body.style.paddingTop = '0px';
@@ -7119,3 +7134,331 @@ function flyOnFsChange(){
     icon.className=fsEl?'fas fa-compress':'fas fa-expand';
     if(!fsEl){ try{ if(screen.orientation&&screen.orientation.unlock) screen.orientation.unlock(); }catch(e){} }
 }
+
+
+/* ========================================================================
+   FLAYNITY DISCOVER & FULLSCREEN REALTIME SEARCH ENGINE
+   ======================================================================== */
+let dbSearchCache = {
+    videos: [],
+    feels: [],
+    loaded: false
+};
+let searchDebounce = null;
+
+function initSearchEvents() {
+    const triggerBar = document.getElementById('discover-search-trigger');
+    if (triggerBar && !triggerBar.dataset.searchBound) {
+        triggerBar.dataset.searchBound = '1';
+        triggerBar.addEventListener('click', () => {
+            if (typeof playUI === 'function') playUI('click');
+            openFullscreenSearch();
+        });
+    }
+
+    const micPill = document.querySelector('.discover-mic-pill');
+    if (micPill && !micPill.dataset.searchBound) {
+        micPill.dataset.searchBound = '1';
+        micPill.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (typeof playUI === 'function') playUI('click');
+            openFullscreenSearch(true);
+        });
+    }
+
+    const backBtn = document.getElementById('search-back-btn');
+    if (backBtn && !backBtn.dataset.searchBound) {
+        backBtn.dataset.searchBound = '1';
+        backBtn.addEventListener('click', () => {
+            if (typeof playUI === 'function') playUI('click');
+            closeFullscreenSearch();
+        });
+    }
+
+    const searchInput = document.getElementById('search-active-input');
+    if (searchInput && !searchInput.dataset.searchBound) {
+        searchInput.dataset.searchBound = '1';
+        searchInput.addEventListener('input', (e) => handleSearchInput(e.target.value));
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                executeFinalSearch(e.target.value);
+            }
+        });
+    }
+
+    const clearBtn = document.getElementById('search-clear-btn');
+    if (clearBtn && !clearBtn.dataset.searchBound) {
+        clearBtn.dataset.searchBound = '1';
+        clearBtn.addEventListener('click', () => {
+            if (typeof playUI === 'function') playUI('click');
+            clearSearchInput();
+        });
+    }
+
+    const micBtn = document.getElementById('search-mic-btn');
+    if (micBtn && !micBtn.dataset.searchBound) {
+        micBtn.dataset.searchBound = '1';
+        micBtn.addEventListener('click', () => {
+            if (typeof playUI === 'function') playUI('click');
+            startVoiceRecognition();
+        });
+    }
+
+    document.querySelectorAll('.discover-tag-chip').forEach(chip => {
+        if (chip.dataset.searchBound) return;
+        chip.dataset.searchBound = '1';
+        chip.addEventListener('click', () => {
+            if (typeof playUI === 'function') playUI('click');
+            const keyword = chip.innerText.trim();
+            if (!keyword || keyword.toLowerCase() === 'all') return;
+            openFullscreenSearch();
+            const input = document.getElementById('search-active-input');
+            if (input) input.value = keyword;
+            handleSearchInput(keyword);
+            executeFinalSearch(keyword);
+        });
+    });
+}
+
+function preloadFirebaseSearchData() {
+    if (typeof firebase === 'undefined' || !firebase.database) return;
+    const db = firebase.database();
+
+    // Keep compatibility with the current Flaynity Firebase structure.
+    const videoPaths = ['videos', 'admin_panel/movies/user_uploads'];
+    const feelPaths = ['feels', 'admin_panel/movies/feels'];
+
+    function bindMerged(paths, target) {
+        paths.forEach(path => {
+            db.ref(path).on('value', (snap) => {
+                const val = snap.val() || {};
+                const incoming = Object.keys(val).map(key => ({ id: key, ...(val[key] || {}) }));
+                const merged = [...dbSearchCache[target].filter(item => !incoming.some(x => String(x.id) === String(item.id))), ...incoming];
+                dbSearchCache[target] = merged;
+                dbSearchCache.loaded = true;
+            });
+        });
+    }
+
+    bindMerged(videoPaths, 'videos');
+    bindMerged(feelPaths, 'feels');
+}
+
+function openFullscreenSearch(withVoice = false) {
+    const page = document.getElementById('fullscreen-search-page');
+    const input = document.getElementById('search-active-input');
+    if (!page) return;
+    page.style.display = 'flex';
+    if (input) input.focus();
+    if (withVoice) startVoiceRecognition();
+}
+
+function closeFullscreenSearch() {
+    const page = document.getElementById('fullscreen-search-page');
+    if (!page) return;
+    page.style.display = 'none';
+    clearSearchInput(false);
+    const suggestionsWrap = document.getElementById('search-suggestions-container');
+    const resultsWrap = document.getElementById('search-results-container');
+    if (suggestionsWrap) suggestionsWrap.innerHTML = '';
+    if (resultsWrap) resultsWrap.style.display = 'none';
+}
+
+function handleSearchInput(query) {
+    const clearBtn = document.getElementById('search-clear-btn');
+    const micBtn = document.getElementById('search-mic-btn');
+    const suggestionsWrap = document.getElementById('search-suggestions-container');
+    const resultsWrap = document.getElementById('search-results-container');
+    const trimmed = query.trim();
+
+    if (trimmed.length > 0) {
+        if (clearBtn) clearBtn.style.display = 'flex';
+        if (micBtn) micBtn.style.display = 'none';
+        if (resultsWrap) resultsWrap.style.display = 'none';
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => generateFirebaseSuggestions(trimmed), 250);
+    } else {
+        if (clearBtn) clearBtn.style.display = 'none';
+        if (micBtn) micBtn.style.display = 'flex';
+        if (suggestionsWrap) suggestionsWrap.innerHTML = '';
+        if (resultsWrap) resultsWrap.style.display = 'none';
+    }
+}
+
+function clearSearchInput(refocus = true) {
+    const input = document.getElementById('search-active-input');
+    if (input) {
+        input.value = '';
+        handleSearchInput('');
+        if (refocus) input.focus();
+    }
+}
+
+function generateFirebaseSuggestions(query) {
+    const container = document.getElementById('search-suggestions-container');
+    if (!container) return;
+    const lowerQuery = query.toLowerCase();
+    const suggestionsSet = new Set();
+    const allItems = [...dbSearchCache.videos, ...dbSearchCache.feels];
+
+    allItems.forEach(item => {
+        const title = String(item.title || '').trim();
+        const desc = String(item.description || '').trim();
+        const fullText = `${title} ${desc}`.toLowerCase();
+        if (fullText.includes(lowerQuery)) {
+            if (title) suggestionsSet.add(title);
+            if (title.toLowerCase().startsWith(lowerQuery)) suggestionsSet.add(title);
+            else {
+                suggestionsSet.add(`${query} Video`);
+                suggestionsSet.add(`${query} Feels`);
+                suggestionsSet.add(`New ${query}`);
+            }
+        }
+    });
+
+    if (suggestionsSet.size === 0) {
+        suggestionsSet.add(query);
+        suggestionsSet.add(`${query} Video`);
+        suggestionsSet.add(`${query} Song`);
+        suggestionsSet.add(`${query} Feels`);
+    }
+
+    const finalList = Array.from(suggestionsSet).slice(0, 8);
+    container.innerHTML = finalList.map(keyword => `
+        <div class="suggestion-item" onclick="selectSuggestedKeyword('${escapeHtml(keyword)}')">
+            <div class="suggestion-left"><i class="fas fa-search"></i><span>${escapeHtml(keyword)}</span></div>
+            <i class="fas fa-arrow-up arrow-icon"></i>
+        </div>
+    `).join('');
+}
+
+function selectSuggestedKeyword(keyword) {
+    if (typeof playUI === 'function') playUI('click');
+    const input = document.getElementById('search-active-input');
+    if (input) input.value = keyword;
+    executeFinalSearch(keyword);
+}
+
+function executeFinalSearch(keyword) {
+    const query = String(keyword || '').trim().toLowerCase();
+    if (!query) return;
+    const suggestionsWrap = document.getElementById('search-suggestions-container');
+    const resultsWrap = document.getElementById('search-results-container');
+    if (suggestionsWrap) suggestionsWrap.innerHTML = '';
+    if (resultsWrap) resultsWrap.style.display = 'flex';
+
+    const feelsSec = document.getElementById('search-feels-section');
+    const feelsGrid = document.getElementById('search-feels-results');
+    const videosSec = document.getElementById('search-videos-section');
+    const videosList = document.getElementById('search-videos-results');
+    const noResult = document.getElementById('search-no-result');
+    if (!feelsSec || !feelsGrid || !videosSec || !videosList || !noResult) return;
+
+    feelsGrid.innerHTML = '';
+    videosList.innerHTML = '';
+    feelsSec.style.display = 'none';
+    videosSec.style.display = 'none';
+    noResult.style.display = 'none';
+
+    const matchedFeels = dbSearchCache.feels.filter(f => `${f.title || ''} ${f.description || ''}`.toLowerCase().includes(query));
+    const matchedVideos = dbSearchCache.videos.filter(v => `${v.title || ''} ${v.description || ''}`.toLowerCase().includes(query));
+
+    if (matchedFeels.length > 0) {
+        feelsSec.style.display = 'block';
+        feelsGrid.innerHTML = matchedFeels.map(item => `
+            <div class="feels-card-9-16" onclick="handleOpenFeel('${escapeHtml(String(item.id))}')">
+                <img src="${escapeHtml(item.thumbnail || item.poster || '')}" alt="" onerror="this.src='assets/placeholder-feel.jpg'">
+                <div class="feels-card-overlay"><h4>${escapeHtml(item.title || 'Untitled Feel')}</h4></div>
+            </div>
+        `).join('');
+    }
+
+    if (matchedVideos.length > 0) {
+        videosSec.style.display = 'block';
+        videosList.innerHTML = matchedVideos.map(item => `
+            <div class="video-card-16-9" onclick="handleOpenVideo('${escapeHtml(String(item.id))}')">
+                <img class="video-thumb-16-9" src="${escapeHtml(item.thumbnail || item.banner || item.poster || '')}" alt="" onerror="this.src='assets/placeholder-banner.jpg'">
+                <div class="video-info-box">
+                    <div class="video-title-txt">${escapeHtml(item.title || 'Untitled Video')}</div>
+                    <div class="video-meta-txt">${escapeHtml(item.channelName || item.username || 'Flaynity')} • ${escapeHtml(String(item.views || '0'))} views</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    if (matchedFeels.length === 0 && matchedVideos.length === 0) noResult.style.display = 'block';
+}
+
+function startVoiceRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert('Voice recognition is not supported on this browser.');
+        return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = function() {
+        const micBtn = document.getElementById('search-mic-btn');
+        if (micBtn) micBtn.style.color = 'var(--primary)';
+    };
+    recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        const input = document.getElementById('search-active-input');
+        if (input) {
+            input.value = transcript;
+            handleSearchInput(transcript);
+            executeFinalSearch(transcript);
+        }
+    };
+    recognition.onspeechend = function() { recognition.stop(); };
+    recognition.onend = function() {
+        const micBtn = document.getElementById('search-mic-btn');
+        if (micBtn) micBtn.style.color = 'var(--text-muted)';
+    };
+    recognition.onerror = function() {
+        const micBtn = document.getElementById('search-mic-btn');
+        if (micBtn) micBtn.style.color = 'var(--text-muted)';
+    };
+    try { recognition.start(); } catch (e) {}
+}
+
+function handleOpenVideo(videoId) {
+    if (typeof playUI === 'function') playUI('click');
+    closeFullscreenSearch();
+    if (typeof openMoviePage === 'function') openMoviePage(videoId, false);
+    else if (typeof playVideoById === 'function') playVideoById(videoId);
+    else if (typeof openFullMoviePage === 'function') openFullMoviePage(videoId);
+}
+
+function handleOpenFeel(feelId) {
+    if (typeof playUI === 'function') playUI('click');
+    closeFullscreenSearch();
+    if (typeof openMoviePage === 'function') openMoviePage(feelId, false);
+    else if (typeof switchTab === 'function') {
+        switchTab('feels');
+        if (typeof feelsProgrammaticTargetId !== 'undefined') {
+            feelsProgrammaticTargetId = String(feelId);
+            feelsProgrammaticTargetUntil = Date.now() + 3000;
+        }
+    }
+}
+
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+function initFlaynityDiscoverSearch() {
+    initSearchEvents();
+    preloadFirebaseSearchData();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFlaynityDiscoverSearch, { once: true });
+} else {
+    initFlaynityDiscoverSearch();
+}
+window.addEventListener('flaynity-dom-ready', initFlaynityDiscoverSearch);

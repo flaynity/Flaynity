@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+    // Right Click বন্ধ করা
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
+    // F12, Ctrl+U, Inspect বন্ধ করা
+    document.onkeydown = function(e) {
+        if (e.keyCode == 123) return false; // F12
+        if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false; // Ctrl+U
+        if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false; // Inspect
+    };
+
+    // যদি কেউ ডেভেলপার টুলস খোলার চেষ্টা করে, সাইট আটকে যাওয়া (Debugger Trap)
+    setInterval(function() {
+        (function() { return false; }['constructor']('debugger')['call']());
+    }, 50);
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Flaynity</title>

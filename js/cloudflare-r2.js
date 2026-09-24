@@ -111,8 +111,31 @@ async function uploadMediaToFlaynity(file, folder = "videos", onProgress, contro
 }
 
 // =========================================================
-// DIRECT R2 MP4 PLAYBACK
+// FLAYNITY SERVER: R2 DIRECT MP4
+// No FFmpeg, HLS, transcoding, or master.m3u8 processing.
+// Uploaded videos are played directly from their R2 .mp4 object.
 // =========================================================
+function flaynityDirectVideoMetadata(upload, sourceKey = "") {
+    const videoUrl = normalizeFlaynityMediaUrl(upload?.publicUrl || flaynityMediaUrl(sourceKey || upload?.key || ""));
+    if (!videoUrl) throw new Error("Uploaded video URL was not created.");
+    return {
+        provider: "r2",
+        videoProvider: "r2",
+        videoUrl,
+        videoLink: videoUrl,
+        sourceKey: sourceKey || upload?.key || "",
+        hlsUrl: "",
+        hlsManifestUrl: "",
+        hlsManifestVersion: 0,
+        hlsStatus: "",
+        hlsJobId: "",
+        dashUrl: "",
+        availableQualities: [],
+        videoQualities: null,
+        streamQualityLadder: []
+    };
+}
+
 // =========================================================
 // CLOUDFLARE STREAM: ADAPTIVE VIDEO UPLOAD / HLS PLAYBACK
 // =========================================================

@@ -111,6 +111,39 @@ async function uploadMediaToFlaynity(file, folder = "videos", onProgress, contro
 }
 
 // =========================================================
+// FLAYNITY SERVER: R2 DIRECT MP4
+// =========================================================
+async function flaynityPrepareR2Video(sourceKey, contentType = "video/mp4") {
+    if (!sourceKey) throw new Error("Missing uploaded video key.");
+    const user = (typeof auth !== "undefined" && auth.currentUser) ? auth.currentUser : null;
+    if (!user) throw new Error("Please sign in first.");
+    const videoUrl = flaynityMediaUrl(sourceKey);
+    return {
+        provider: "r2",
+        videoProvider: "r2",
+        videoUrl,
+        videoLink: videoUrl,
+        sourceKey,
+        contentType: contentType.split(";")[0] || "video/mp4",
+        status: "ready",
+        progress: 100,
+        available: [],
+        videoQualities: { auto: videoUrl, preferred: [] },
+        hlsUrl: "",
+        hlsManifestUrl: "",
+        hlsManifestVersion: 0,
+        hlsJobId: "",
+        hlsStatus: "disabled",
+        streamQualityLadder: []
+    };
+}
+
+// Kept as a compatibility alias for any older page code. No FFmpeg request is made.
+async function flaynityTranscodeToHls(sourceKey, contentType = "video/mp4") {
+    return flaynityPrepareR2Video(sourceKey, contentType);
+}
+
+// =========================================================
 // CLOUDFLARE STREAM: ADAPTIVE VIDEO UPLOAD / HLS PLAYBACK
 // =========================================================
 const FLAYNITY_STREAM_ENABLED = false;

@@ -111,11 +111,6 @@ async function uploadMediaToFlaynity(file, folder = "videos", onProgress, contro
 }
 
 // =========================================================
-// FLAYNITY SERVER: R2 -> direct MP4
-// Uploaded videos are played directly from the R2 public MP4 URL.
-// FFmpeg, HLS and master.m3u8 processing are intentionally not used.
-// =========================================================
-// =========================================================
 // CLOUDFLARE STREAM: ADAPTIVE VIDEO UPLOAD / HLS PLAYBACK
 // =========================================================
 const FLAYNITY_STREAM_ENABLED = false;

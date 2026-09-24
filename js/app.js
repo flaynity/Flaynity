@@ -1300,24 +1300,17 @@ async function startS3DirectUpload(item) {
         item.upload = upload;
         if (item.status === 'cancelled') return;
         item.key = upload.key;
+        item.sourceKey = upload.key;
+        item.videoProvider = "r2";
+        item.videoUrl = upload.publicUrl;
+        item.videoLink = upload.publicUrl;
+        item.dashUrl = "";
         item.status = "processing";
-        item.processingMsg = "Preparing MP4...";
+        item.processingMsg = "Publishing MP4...";
         item.progress = 100;
         updateManagerUI();
 
-        const direct = await flaynityPrepareR2Video(upload.key, item.file?.type || "video/mp4");
         if (item.status === 'cancelled') return;
-        item.hlsMetadata = direct;
-        item.videoProvider = "r2";
-        item.videoUrl = direct.videoUrl;
-        item.videoLink = direct.videoLink;
-        item.hlsUrl = "";
-        item.dashUrl = "";
-        item.videoQualities = direct.videoQualities;
-        item.hlsJobId = "";
-        item.sourceKey = direct.sourceKey;
-
-        item.status = "processing"; item.retryCount = 0; item.processingMsg = "Publishing..."; updateManagerUI();
         await runPostUploadProcessingSequence(item);
     } catch (err) {
         if (item.status === 'cancelled') return;
@@ -1373,7 +1366,7 @@ async function runPostUploadProcessingSequence(item) {
         item.status = "completed";
         updateManagerUI();
         saveQueueStateToLocalStorage();
-        showNotification(`"${item.title}" published successfully.`, "success");
+        showNotification(`"${item.title}" published as MP4.`, "success");
 
     } catch (err) {
         item.status = "failed";
@@ -1411,24 +1404,17 @@ async function pushVideoMetadataToDatabase(item) {
         category: currentChannelData?.category || "Entertainment",
         duration: formatDuration(item.duration),
         resolution: resolution,
-        sourceWidth: item.hlsMetadata?.sourceWidth || 0,
-        sourceHeight: item.hlsMetadata?.sourceHeight || 0,
-        aspectRatio: item.hlsMetadata?.aspectRatio || 0,
-        hlsManifestUrl: "",
-        hlsManifestVersion: 0,
-        hlsStatus: "disabled",
-        availableQualities: [],
+        sourceWidth: item.sourceWidth || 0,
+        sourceHeight: item.sourceHeight || 0,
+        aspectRatio: item.aspectRatio || 0,
         poster: item.thumbUrl || item.thumbDataUrl || "",
         banner: item.thumbUrl || item.thumbDataUrl || "",
         videoLink: item.videoUrl,
-        videoProvider: item.videoProvider || 'r2',
-        streamUid: item.streamUid || '',
-        hlsUrl: "",
-        dashUrl: '',
-        hlsJobId: item.hlsJobId || '',
+        videoUrl: item.videoUrl,
+        videoProvider: "r2",
+        streamUid: "",
+        dashUrl: "",
         sourceKey: item.sourceKey || item.key || '',
-        videoQualities: item.videoQualities || { auto: item.videoUrl, preferred: [] },
-        streamQualityLadder: [],
         uploadTime: Date.now(),
         updateTime: Date.now(),
         visibility: item.visibility,

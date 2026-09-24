@@ -1279,16 +1279,13 @@ async function triggerNextActiveUpload() {
 }
 
 async function startS3DirectUpload(item) {
-    if (!navigator.onLine) {
-        item.status = "paused"; updateManagerUI();
-        showNotification("Offline: Upload paused.", "error");
-        activeUploadsCount = Math.max(0, activeUploadsCount - 1);
-        return;
-    }
+    if (!navigator.onLine) { item.status = "paused"; updateManagerUI(); showNotification("Offline: Upload paused.", "error"); activeUploadsCount = Math.max(0, activeUploadsCount - 1); return; }
     item.status = "uploading"; item.progress = item.progress || 0; ensureLiveUploadStyles(); updateManagerUI();
     const startTime = Date.now();
     try {
         const uploadFolder = item.type === 'video-short' ? 'feels' : 'videos';
+        const fileType = String(item.file?.type || '').toLowerCase();
+        if (!fileType.includes('mp4') && !/\.mp4$/i.test(String(item.file?.name || ''))) throw new Error("Only MP4 video files are supported.");
         const upload = item.upload || await uploadMediaToFlaynity(item.file, uploadFolder, (loaded, total) => {
             if (item.status !== 'uploading') return;
             item.progress = Math.round((loaded / total) * 100);
@@ -1296,87 +1293,36 @@ async function startS3DirectUpload(item) {
             if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
             updateManagerUI();
         }, item.control);
-
         item.upload = upload;
         if (item.status === 'cancelled') return;
-        item.key = upload.key;
-        item.status = "processing";
-        item.processingMsg = "Publishing MP4...";
-        item.progress = 100;
-        item.videoProvider = "r2";
-        item.videoUrl = upload.publicUrl;
-        item.videoLink = upload.publicUrl;
-        item.sourceKey = upload.key;
-        item.hlsUrl = "";
-        item.dashUrl = "";
-        item.videoQualities = null;
-        item.hlsJobId = "";
-        item.hlsMetadata = null;
-        item.status = "processing";
-        item.retryCount = 0;
-        updateManagerUI();
+        item.key = upload.key; item.sourceKey = upload.key;
+        item.videoProvider = "r2"; item.videoUrl = upload.publicUrl; item.videoLink = upload.publicUrl;
+        item.hlsUrl = ""; item.hlsManifestUrl = ""; item.hlsJobId = ""; item.hlsMetadata = null; item.videoQualities = null; item.dashUrl = "";
+        item.status = "processing"; item.processingMsg = "Publishing MP4..."; item.progress = 100; updateManagerUI();
         await runPostUploadProcessingSequence(item);
     } catch (err) {
         if (item.status === 'cancelled') return;
-        if (err.encodingFailed) { item.status = 'failed'; updateManagerUI(); showNotification(err.message, 'error'); }
-        else if (item.status === 'paused') { console.log("Upload paused safely."); }
-        else if (!navigator.onLine) {
-            item.status = "paused"; updateManagerUI();
-            showNotification("Connection lost. Upload paused.", "error");
-        } else {
-            console.error("Upload error: ", err);
-            item.retryCount = (item.retryCount || 0) + 1;
-            if (item.retryCount <= 5) {
-                item.status = "waiting"; updateManagerUI();
-                showNotification(`Network hiccup. Retrying (${item.retryCount}/5)...`, "error");
-            } else {
-                item.status = "failed"; updateManagerUI();
-                showNotification(`Upload failed: ${err.message}`, "error");
-            }
-        }
-    } finally {
-        activeUploadsCount = Math.max(0, activeUploadsCount - 1);
-        triggerNextActiveUpload();
-    }
+        if (item.status === 'paused') console.log("Upload paused safely.");
+        else if (!navigator.onLine) { item.status = "paused"; updateManagerUI(); showNotification("Connection lost. Upload paused.", "error"); }
+        else { console.error("Upload error: ", err); item.status = "failed"; updateManagerUI(); showNotification(`Upload failed: ${err.message}`, "error"); }
+    } finally { activeUploadsCount = Math.max(0, activeUploadsCount - 1); triggerNextActiveUpload(); }
 }
 
 async function runPostUploadProcessingSequence(item) {
-    item.status = "processing";
-    item.progress = 0;
-    updateManagerUI();
-
+    item.status = "processing"; item.progress = 100; updateManagerUI();
     try {
         let finalThumbBlob = item.thumbBlob;
-        if (!finalThumbBlob && item.thumbDataUrl && item.thumbDataUrl.startsWith('data:')) {
-            try { finalThumbBlob = dataURLtoBlob(item.thumbDataUrl); } catch (e) {}
-        }
-
+        if (!finalThumbBlob && item.thumbDataUrl && item.thumbDataUrl.startsWith('data:')) { try { finalThumbBlob = dataURLtoBlob(item.thumbDataUrl); } catch (e) {} }
         if (finalThumbBlob) {
             const thumbFile = new File([finalThumbBlob], `thumb_${item.id}.jpg`, { type: "image/jpeg" });
             const thumbUpload = await uploadMediaToFlaynity(thumbFile, "thumbnails");
-            item.thumbKey = thumbUpload.key;
-            item.thumbUrl = thumbUpload.publicUrl;
-        } else {
-            item.thumbUrl = item.thumbDataUrl || item.streamThumbnail || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
-        }
-
-        item.processingMsg = "Publishing Feed...";
-        item.progress = 100;
-        updateManagerUI();
-
+            item.thumbKey = thumbUpload.key; item.thumbUrl = thumbUpload.publicUrl;
+        } else item.thumbUrl = item.thumbDataUrl || item.streamThumbnail || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=500&auto=format&fit=crop";
+        item.processingMsg = "Publishing Feed..."; item.progress = 100; updateManagerUI();
         if (item.status === 'cancelled') return;
         await pushVideoMetadataToDatabase(item);
-
-        item.status = "completed";
-        updateManagerUI();
-        saveQueueStateToLocalStorage();
-        showNotification(`"${item.title}" published successfully.`, "success");
-
-    } catch (err) {
-        item.status = "failed";
-        updateManagerUI();
-        showNotification("Post-processing error: " + err.message, "error");
-    }
+        item.status = "completed"; updateManagerUI(); saveQueueStateToLocalStorage(); showNotification(`"${item.title}" published successfully.`, "success");
+    } catch (err) { item.status = "failed"; updateManagerUI(); showNotification("Post-processing error: " + err.message, "error"); }
 }
 
 function extractHashtags(text) {
@@ -1408,29 +1354,17 @@ async function pushVideoMetadataToDatabase(item) {
         category: currentChannelData?.category || "Entertainment",
         duration: formatDuration(item.duration),
         resolution: resolution,
-        sourceWidth: item.hlsMetadata?.sourceWidth || 0,
-        sourceHeight: item.hlsMetadata?.sourceHeight || 0,
-        aspectRatio: item.hlsMetadata?.aspectRatio || 0,
-        hlsManifestUrl: item.hlsMetadata?.hlsManifestUrl || item.hlsUrl,
-        hlsManifestVersion: item.hlsMetadata?.hlsManifestVersion || 1,
-        hlsStatus: item.hlsMetadata?.hlsStatus || 'ready-360p',
-        availableQualities: item.hlsMetadata?.availableQualities || ['360p'],
+        sourceWidth: 0,
+        sourceHeight: 0,
+        aspectRatio: 0,
         poster: item.thumbUrl || item.thumbDataUrl || "",
         banner: item.thumbUrl || item.thumbDataUrl || "",
-        videoLink: item.videoUrl || item.hlsUrl,
-        videoProvider: item.videoProvider || 'r2',
-        streamUid: item.streamUid || '',
-        hlsUrl: '',
-        dashUrl: '',
-        hlsJobId: item.hlsJobId || '',
-        sourceKey: item.sourceKey || item.key || '',
-        videoQualities: item.videoProvider === 'cloudflare-stream' ? {
-            auto: item.hlsUrl || item.videoUrl,
-            hls: item.hlsUrl || item.videoUrl,
-            dash: item.dashUrl || '',
-            preferred: [360, 480, 720, 1080]
-        } : (item.videoQualities || null),
-        streamQualityLadder: [],
+        videoLink: item.videoUrl,
+        videoProvider: "r2",
+        streamUid: "",
+        dashUrl: "",
+        sourceKey: item.sourceKey || item.key || "",
+        videoQualities: null,
         uploadTime: Date.now(),
         updateTime: Date.now(),
         visibility: item.visibility,

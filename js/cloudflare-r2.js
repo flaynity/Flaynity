@@ -111,6 +111,9 @@ async function uploadMediaToFlaynity(file, folder = "videos", onProgress, contro
 }
 
 // =========================================================
+// DIRECT R2 MP4 PLAYBACK
+// =========================================================
+// =========================================================
 // CLOUDFLARE STREAM: ADAPTIVE VIDEO UPLOAD / HLS PLAYBACK
 // =========================================================
 const FLAYNITY_STREAM_ENABLED = false;

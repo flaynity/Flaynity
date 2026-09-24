@@ -1300,17 +1300,22 @@ async function startS3DirectUpload(item) {
         item.upload = upload;
         if (item.status === 'cancelled') return;
         item.key = upload.key;
-        // R2 direct MP4: the uploaded source is the final playable video.
-        // No FFmpeg/transcoding or publication-confirmation job is required.
+        item.status = "processing";
+        item.processingMsg = "Preparing MP4...";
+        item.progress = 100;
+        updateManagerUI();
+
+        const direct = await flaynityPrepareR2Video(upload.key, item.file?.type || "video/mp4");
+        if (item.status === 'cancelled') return;
+        item.hlsMetadata = direct;
         item.videoProvider = "r2";
-        item.videoUrl = upload.publicUrl;
-        item.videoLink = upload.publicUrl;
+        item.videoUrl = direct.videoUrl;
+        item.videoLink = direct.videoLink;
         item.hlsUrl = "";
-        item.hlsMetadata = null;
-        item.hlsJobId = "";
         item.dashUrl = "";
-        item.videoQualities = null;
-        item.sourceKey = upload.key;
+        item.videoQualities = direct.videoQualities;
+        item.hlsJobId = "";
+        item.sourceKey = direct.sourceKey;
 
         item.status = "processing"; item.retryCount = 0; item.processingMsg = "Publishing..."; updateManagerUI();
         await runPostUploadProcessingSequence(item);
@@ -1409,20 +1414,20 @@ async function pushVideoMetadataToDatabase(item) {
         sourceWidth: item.hlsMetadata?.sourceWidth || 0,
         sourceHeight: item.hlsMetadata?.sourceHeight || 0,
         aspectRatio: item.hlsMetadata?.aspectRatio || 0,
-        hlsManifestUrl: '',
+        hlsManifestUrl: "",
         hlsManifestVersion: 0,
-        hlsStatus: '',
+        hlsStatus: "disabled",
         availableQualities: [],
         poster: item.thumbUrl || item.thumbDataUrl || "",
         banner: item.thumbUrl || item.thumbDataUrl || "",
         videoLink: item.videoUrl,
-        videoProvider: "r2",
-        streamUid: '',
-        hlsUrl: '',
+        videoProvider: item.videoProvider || 'r2',
+        streamUid: item.streamUid || '',
+        hlsUrl: "",
         dashUrl: '',
-        hlsJobId: '',
+        hlsJobId: item.hlsJobId || '',
         sourceKey: item.sourceKey || item.key || '',
-        videoQualities: null,
+        videoQualities: item.videoQualities || { auto: item.videoUrl, preferred: [] },
         streamQualityLadder: [],
         uploadTime: Date.now(),
         updateTime: Date.now(),

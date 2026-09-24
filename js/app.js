@@ -1300,31 +1300,19 @@ async function startS3DirectUpload(item) {
         item.upload = upload;
         if (item.status === 'cancelled') return;
         item.key = upload.key;
-        item.status = "processing";
-        item.processingMsg = "Preparing 360p HLS...";
-        item.progress = 100;
-        updateManagerUI();
-
-        const hls = await flaynityTranscodeToHls(upload.key, item.file?.type || "video/mp4", status => {
-            if (status?.status === "queued") item.processingMsg = "FFmpeg queueing video...";
-            else if (status?.status === "processing" || status?.status === "inprogress") item.processingMsg = `FFmpeg HLS encoding${status.currentQuality ? ` · ${status.currentQuality}` : "..."}`;
-            else if (Array.isArray(status?.available) && status.available.length) item.processingMsg = `HLS ready · ${status.available.join(", ")}`;
-            updateManagerUI();
-        }, { contentId: item.id, type: item.type, isCancelled: () => item.status === 'cancelled' });
-        if (item.status === 'cancelled') return;
-        item.hlsMetadata = hls;
-
-        item.videoProvider = "r2-hls";
-        item.videoUrl = hls.videoUrl;
-        item.videoLink = hls.videoLink;
-        item.hlsUrl = hls.hlsUrl;
+        // R2 direct MP4: the uploaded source is the final playable video.
+        // No FFmpeg/transcoding or publication-confirmation job is required.
+        item.videoProvider = "r2";
+        item.videoUrl = upload.publicUrl;
+        item.videoLink = upload.publicUrl;
+        item.hlsUrl = "";
+        item.hlsMetadata = null;
+        item.hlsJobId = "";
         item.dashUrl = "";
-        item.videoQualities = hls.videoQualities;
-        item.hlsJobId = hls.jobId;
-        item.sourceKey = hls.sourceKey;
+        item.videoQualities = null;
+        item.sourceKey = upload.key;
 
-        // Render waits at ready-360p until Firebase confirms publication.
-        item.status = "processing"; item.retryCount = 0; item.processingMsg = "360p ready · Publishing..."; updateManagerUI();
+        item.status = "processing"; item.retryCount = 0; item.processingMsg = "Publishing..."; updateManagerUI();
         await runPostUploadProcessingSequence(item);
     } catch (err) {
         if (item.status === 'cancelled') return;
@@ -1377,15 +1365,10 @@ async function runPostUploadProcessingSequence(item) {
         if (item.status === 'cancelled') return;
         await pushVideoMetadataToDatabase(item);
 
-        // A successful Firebase write, not a local queued write, opens the gate.
-        flaynityConfirmHlsPublished(item.hlsJobId).catch(error => {
-            console.warn('Background quality confirmation pending:', error.message);
-            showNotification('360p published. Higher qualities process in background.', 'success');
-        });
         item.status = "completed";
         updateManagerUI();
         saveQueueStateToLocalStorage();
-        showNotification(`"${item.title}" published in 360p. Higher qualities process in background.`, "success");
+        showNotification(`"${item.title}" published successfully.`, "success");
 
     } catch (err) {
         item.status = "failed";
@@ -1426,26 +1409,21 @@ async function pushVideoMetadataToDatabase(item) {
         sourceWidth: item.hlsMetadata?.sourceWidth || 0,
         sourceHeight: item.hlsMetadata?.sourceHeight || 0,
         aspectRatio: item.hlsMetadata?.aspectRatio || 0,
-        hlsManifestUrl: item.hlsMetadata?.hlsManifestUrl || item.hlsUrl,
-        hlsManifestVersion: item.hlsMetadata?.hlsManifestVersion || 1,
-        hlsStatus: item.hlsMetadata?.hlsStatus || 'ready-360p',
-        availableQualities: item.hlsMetadata?.availableQualities || ['360p'],
+        hlsManifestUrl: '',
+        hlsManifestVersion: 0,
+        hlsStatus: '',
+        availableQualities: [],
         poster: item.thumbUrl || item.thumbDataUrl || "",
         banner: item.thumbUrl || item.thumbDataUrl || "",
-        videoLink: item.hlsUrl || item.videoUrl,
-        videoProvider: item.videoProvider || 'r2-hls',
-        streamUid: item.streamUid || '',
-        hlsUrl: item.hlsUrl || item.videoUrl,
+        videoLink: item.videoUrl,
+        videoProvider: "r2",
+        streamUid: '',
+        hlsUrl: '',
         dashUrl: '',
-        hlsJobId: item.hlsJobId || '',
+        hlsJobId: '',
         sourceKey: item.sourceKey || item.key || '',
-        videoQualities: item.videoProvider === 'cloudflare-stream' ? {
-            auto: item.hlsUrl || item.videoUrl,
-            hls: item.hlsUrl || item.videoUrl,
-            dash: item.dashUrl || '',
-            preferred: [360, 480, 720, 1080]
-        } : (item.videoQualities || null),
-        streamQualityLadder: item.hlsMetadata?.streamQualityLadder || [360, 480, 720, 1080],
+        videoQualities: null,
+        streamQualityLadder: [],
         uploadTime: Date.now(),
         updateTime: Date.now(),
         visibility: item.visibility,

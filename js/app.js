@@ -1300,17 +1300,21 @@ async function startS3DirectUpload(item) {
         item.upload = upload;
         if (item.status === 'cancelled') return;
         item.key = upload.key;
-        item.sourceKey = upload.key;
-        item.videoProvider = "r2";
-        item.videoUrl = upload.publicUrl;
-        item.videoLink = upload.publicUrl;
-        item.dashUrl = "";
         item.status = "processing";
         item.processingMsg = "Publishing MP4...";
         item.progress = 100;
+        item.videoProvider = "r2";
+        item.videoUrl = upload.publicUrl;
+        item.videoLink = upload.publicUrl;
+        item.sourceKey = upload.key;
+        item.hlsUrl = "";
+        item.dashUrl = "";
+        item.videoQualities = null;
+        item.hlsJobId = "";
+        item.hlsMetadata = null;
+        item.status = "processing";
+        item.retryCount = 0;
         updateManagerUI();
-
-        if (item.status === 'cancelled') return;
         await runPostUploadProcessingSequence(item);
     } catch (err) {
         if (item.status === 'cancelled') return;
@@ -1366,7 +1370,7 @@ async function runPostUploadProcessingSequence(item) {
         item.status = "completed";
         updateManagerUI();
         saveQueueStateToLocalStorage();
-        showNotification(`"${item.title}" published as MP4.`, "success");
+        showNotification(`"${item.title}" published successfully.`, "success");
 
     } catch (err) {
         item.status = "failed";
@@ -1404,17 +1408,29 @@ async function pushVideoMetadataToDatabase(item) {
         category: currentChannelData?.category || "Entertainment",
         duration: formatDuration(item.duration),
         resolution: resolution,
-        sourceWidth: item.sourceWidth || 0,
-        sourceHeight: item.sourceHeight || 0,
-        aspectRatio: item.aspectRatio || 0,
+        sourceWidth: item.hlsMetadata?.sourceWidth || 0,
+        sourceHeight: item.hlsMetadata?.sourceHeight || 0,
+        aspectRatio: item.hlsMetadata?.aspectRatio || 0,
+        hlsManifestUrl: item.hlsMetadata?.hlsManifestUrl || item.hlsUrl,
+        hlsManifestVersion: item.hlsMetadata?.hlsManifestVersion || 1,
+        hlsStatus: item.hlsMetadata?.hlsStatus || 'ready-360p',
+        availableQualities: item.hlsMetadata?.availableQualities || ['360p'],
         poster: item.thumbUrl || item.thumbDataUrl || "",
         banner: item.thumbUrl || item.thumbDataUrl || "",
-        videoLink: item.videoUrl,
-        videoUrl: item.videoUrl,
-        videoProvider: "r2",
-        streamUid: "",
-        dashUrl: "",
+        videoLink: item.videoUrl || item.hlsUrl,
+        videoProvider: item.videoProvider || 'r2',
+        streamUid: item.streamUid || '',
+        hlsUrl: '',
+        dashUrl: '',
+        hlsJobId: item.hlsJobId || '',
         sourceKey: item.sourceKey || item.key || '',
+        videoQualities: item.videoProvider === 'cloudflare-stream' ? {
+            auto: item.hlsUrl || item.videoUrl,
+            hls: item.hlsUrl || item.videoUrl,
+            dash: item.dashUrl || '',
+            preferred: [360, 480, 720, 1080]
+        } : (item.videoQualities || null),
+        streamQualityLadder: [],
         uploadTime: Date.now(),
         updateTime: Date.now(),
         visibility: item.visibility,

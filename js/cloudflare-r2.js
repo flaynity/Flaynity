@@ -112,8 +112,7 @@ async function uploadMediaToFlaynity(file, folder = "videos", onProgress, contro
 
 // =========================================================
 // FLAYNITY SERVER: R2 DIRECT MP4
-// No FFmpeg, HLS, transcoding, or master.m3u8 processing.
-// Uploaded videos are played directly from their R2 .mp4 object.
+// Uploaded videos are stored and played directly as R2 .mp4 objects.
 // =========================================================
 function flaynityDirectVideoMetadata(upload, sourceKey = "") {
     const videoUrl = normalizeFlaynityMediaUrl(upload?.publicUrl || flaynityMediaUrl(sourceKey || upload?.key || ""));
@@ -123,15 +122,6 @@ function flaynityDirectVideoMetadata(upload, sourceKey = "") {
         videoProvider: "r2",
         videoUrl,
         videoLink: videoUrl,
-        sourceKey: sourceKey || upload?.key || "",
-        hlsUrl: "",
-        hlsManifestUrl: "",
-        hlsManifestVersion: 0,
-        hlsStatus: "",
-        hlsJobId: "",
-        dashUrl: "",
-        availableQualities: [],
-        videoQualities: null,
-        streamQualityLadder: []
+        sourceKey: sourceKey || upload?.key || ""
     };
 }

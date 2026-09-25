@@ -6726,7 +6726,6 @@ function flyInitPlayer(link){
     v.playbackRate=flyCurrentSpeed;
 
     flyBuildSpeedMenu();
-    flySetQualityLoading();
 
     // Use property handlers so reopening the player never stacks duplicate
     // waiting/playing/progress listeners.

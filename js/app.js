@@ -3581,11 +3581,13 @@ async function openMoviePage(id, isTMDB = false) {
     if (titleEl) titleEl.innerText = currentActiveMovie.title;
     if (handleEl) handleEl.innerText = currentActiveMovie.username ? "@" + currentActiveMovie.username : "@flaynity";
 
+    // Show the watch page before starting playback. Android WebView can reject
+    // autoplay/play() when the video element is still inside a display:none page.
+    AppNavigation.pushPage('full-movie-page');
+    
     startVideoPlayer();
     registerViewAndListen(currentActiveMovie.id);
     loadChannelMetaForWatchPage(currentActiveMovie.userId || currentActiveMovie.channelId);
-    
-    AppNavigation.pushPage('full-movie-page');
 }
 
 function startVideoPlayer() {

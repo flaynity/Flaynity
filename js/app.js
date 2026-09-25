@@ -3126,7 +3126,7 @@ const feelsWarmCache = new Map();
 
 function warmFeelRange(url, key, generation) {
     if (!url || generation !== feelsWarmGeneration || feelsWarmCache.has(key)) return;
-    if (!/^https?:\/\//i.test(url) || /\.m3u8(?:$|[?#])/i.test(url)) return;
+    if (!/^https?:\/\//i.test(url)) return;
     feelsWarmCache.set(key, 'pending');
     fetch(normalizeFlaynityMediaUrl(url), {
         method: 'GET',
@@ -3614,7 +3614,7 @@ function startVideoPlayer() {
         return;
     }
 
-    // Cloudflare CDN / direct / HLS → custom YouTube-style player
+    // Flaynity CDN direct MP4 → custom YouTube-style player
     container.innerHTML = flyBuildPlayerHTML();
     flyInitPlayer(link);
 }
@@ -3726,11 +3726,21 @@ function registerViewAndListen(movieId) {
 
 function loadChannelMetaForWatchPage(channelId) {
     if (!channelId || !navigator.onLine) return;
+    const avatarImg = document.getElementById('movie-channel-avatar');
+    const handleEl = document.getElementById('movie-detail-channel-handle');
+    const fallbackAvatar = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop";
+
     db.ref(`channels/${channelId}`).on('value', (snap) => {
         const data = snap.val() || {};
-        const avatarImg = document.getElementById('movie-channel-avatar');
-
-        if (avatarImg) avatarImg.src = data.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop";
+        const apply = (profile) => {
+            const p = profile || {};
+            if (avatarImg) avatarImg.src = p.avatarUrl || p.photoURL || p.photoUrl || fallbackAvatar;
+            if (handleEl && p.username) handleEl.innerText = "@" + String(p.username).replace(/^@/, "");
+        };
+        apply(data);
+        if (!data.avatarUrl && !data.photoURL && !data.photoUrl) {
+            db.ref(`users/${channelId}`).once('value').then(s => apply(s.val() || {})).catch(()=>{});
+        }
     });
 
     if (auth.currentUser) {
@@ -3789,12 +3799,10 @@ function toggleMovieLike() {
     const dislikeRef = db.ref(`movie_stats/${movieId}/dislikes/${userId}`);
     
     likeRef.once('value', (snap) => {
-        if (snap.exists()) {
-            likeRef.remove();
-        } else {
-            likeRef.set(true);
-            dislikeRef.remove();
-        }
+        const op = snap.exists()
+            ? likeRef.remove()
+            : Promise.all([likeRef.set(true), dislikeRef.remove()]);
+        op.catch(() => showNotification("Like update failed. Please try again.", "error"));
     });
 }
 
@@ -3809,12 +3817,10 @@ function toggleMovieDislike() {
     const dislikeRef = db.ref(`movie_stats/${movieId}/dislikes/${userId}`);
     
     dislikeRef.once('value', (snap) => {
-        if (snap.exists()) {
-            dislikeRef.remove();
-        } else {
-            dislikeRef.set(true);
-            likeRef.remove();
-        }
+        const op = snap.exists()
+            ? dislikeRef.remove()
+            : Promise.all([dislikeRef.set(true), likeRef.remove()]);
+        op.catch(() => showNotification("Dislike update failed. Please try again.", "error"));
     });
 }
 
@@ -3854,7 +3860,7 @@ function submitComment() {
     db.ref(`users/${userId}`).once('value', (snap) => {
         const uData = snap.val() || {};
         const username = uData.username || auth.currentUser.email.split('@')[0];
-        const avatar = currentChannelData?.avatarUrl || auth.currentUser.photoURL || "";
+        const avatar = currentChannelData?.avatarUrl || currentChannelData?.photoURL || auth.currentUser.photoURL || "";
 
         const commentData = {
             uid: userId,
@@ -6758,8 +6764,7 @@ function flyInitPlayer(link){
     // stalls after the initial range request. HLS has its own recovery logic.
     v.dataset.r2RecoveryCount='0';
     const recoverR2=()=>{
-        if(/\.m3u8(?:$|[?#])/i.test(link)) return;
-        if(v.dataset.r2RecoveryCount==='1') return;
+            if(v.dataset.r2RecoveryCount==='1') return;
         const pos=v.currentTime||0;
         v.dataset.r2RecoveryCount='1';
         setTimeout(()=>{
@@ -6779,8 +6784,7 @@ function flyInitPlayer(link){
     document.addEventListener('webkitfullscreenchange',flyOnFsChange);
 
     flyShowBuffering(true);
-    if (!/\.m3u8(?:$|[?#])/i.test(link)) {
-        const p=v.play();
+    { const p=v.play();
         if(p!==undefined){ p.catch(()=>{ v.muted=true; v.play().catch(()=>{}); }); }
     }
     flyShowControls();

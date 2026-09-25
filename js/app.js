@@ -2576,7 +2576,6 @@ function buildFeelsPage() {
 
     });
 
-    Object.keys(hlsInstances).filter(id => id !== 'fly_main').forEach(id => { hlsInstances[id].destroy(); delete hlsInstances[id]; });
     container.innerHTML = `<div class="feels-swiper">${html}</div>`;
 
     // Bind subscription state AFTER the Feels DOM exists. This is required

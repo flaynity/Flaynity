@@ -1308,15 +1308,6 @@ async function startS3DirectUpload(item) {
         item.videoUrl = normalizeFlaynityMediaUrl(upload.publicUrl || flaynityMediaUrl(upload.key));
         item.videoLink = item.videoUrl;
         item.sourceKey = upload.key;
-        item.hlsUrl = "";
-        item.hlsManifestUrl = "";
-        item.hlsManifestVersion = 0;
-        item.hlsStatus = "";
-        item.hlsJobId = "";
-        item.dashUrl = "";
-        item.videoQualities = null;
-        item.availableQualities = [];
-        item.streamQualityLadder = [];
 
         item.status = "processing"; item.retryCount = 0; item.processingMsg = "Publishing Feed..."; item.progress = 100; updateManagerUI();
         await runPostUploadProcessingSequence(item);
@@ -1415,22 +1406,13 @@ async function pushVideoMetadataToDatabase(item) {
         resolution: resolution,
         sourceWidth: item.hlsMetadata?.sourceWidth || 0,
         sourceHeight: item.hlsMetadata?.sourceHeight || 0,
-        aspectRatio: item.hlsMetadata?.aspectRatio || 0,
-        hlsManifestUrl: '',
-        hlsManifestVersion: 0,
-        hlsStatus: '',
-        availableQualities: [],
+        aspectRatio: 0,
         poster: item.thumbUrl || item.thumbDataUrl || "",
         banner: item.thumbUrl || item.thumbDataUrl || "",
         videoLink: item.videoUrl,
         videoProvider: 'r2',
         streamUid: '',
-        hlsUrl: '',
-        dashUrl: '',
-        hlsJobId: '',
         sourceKey: item.sourceKey || item.key || '',
-        videoQualities: null,
-        streamQualityLadder: [],
         uploadTime: Date.now(),
         updateTime: Date.now(),
         visibility: item.visibility,
@@ -2282,7 +2264,7 @@ function spawnDoubleTapHeart(e, slideElement) {
 // =========================================================
 // HIGH PERFORMANCE FEELS BUILDER
 // =========================================================
-let hlsInstances = {}; // retained as an empty compatibility object; no HLS is created.
+
 
 let feelsFeedMode = 'for-you';
 const feelsSubscribedChannels = {};
@@ -6874,14 +6856,6 @@ function flyBuildSpeedMenu(){
 function flySetSpeed(val,e){ if(e) e.stopPropagation(); const v=document.getElementById('fly-video'); if(v) v.playbackRate=val; flyCurrentSpeed=val;
     const lbl=document.getElementById('fly-speed-label'); if(lbl) lbl.innerText=val+'x';
     flyBuildSpeedMenu(); flyCloseAllMenus(); flyResetHideTimer(); }
-
-function flyGetHlsQualityLevels(){
-    try{
-        const hls=hlsInstances['fly_main'];
-        if(!hls || !Array.isArray(hls.levels)) return [];
-        return hls.levels.map((lv,i)=>({index:i,height:hlsQualityHeight(lv),width:Number(lv.width)||0,bitrate:Number(lv.bitrate)||0})).filter(x=>x.height>0);
-    }catch(e){ return []; }
-}
 
 function flyBuildQualityMenu(){
     const list=document.getElementById('fly-quality-list');

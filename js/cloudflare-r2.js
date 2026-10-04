@@ -108,7 +108,7 @@ async function flaynityStartTranscode(upload) {
     const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
     if (!user) throw new Error("Please sign in first.");
     const token = await user.getIdToken(true);
-    const jobId = String(upload?.key || "").split("/").pop().replace(/\.[^.]+$/, "").slice(0, 100);
+    const jobId = String(upload?.key || "").split("/").pop().replace(/\.[^.]+$/, "").replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 100);
     if (!jobId) throw new Error("Could not create transcoding job id.");
     const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/transcode`, {
         method: "POST",

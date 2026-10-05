@@ -116,9 +116,20 @@ async function flaynityStartTranscode(upload) {
         body: JSON.stringify({ sourceKey: upload.key, jobId }),
         cache: "no-store"
     });
-    const data = await response.json().catch(() => ({}));
+    const raw = await response.text();
+    let data = {};
+    try { data = raw ? JSON.parse(raw) : {}; } catch (_) {}
     if (!response.ok || !data.jobId) {
-        throw new Error(data.error || `Could not start GPU transcoding (HTTP ${response.status}).`);
+        const detail = data.error || data.message || raw.trim() || `HTTP ${response.status}`;
+        const error = new Error(`GPU transcoder returned HTTP ${response.status}: ${detail}`);
+        error.gpuResponse = raw;
+        error.httpStatus = response.status;
+        console.error("Flaynity GPU transcoder start failed:", {
+            status: response.status,
+            response: raw,
+            url: response.url
+        });
+        throw error;
     }
 
     const startedAt = Date.now();

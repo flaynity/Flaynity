@@ -106,7 +106,7 @@ async function uploadImageToR2(file, folder = "images", retries = 3) {
 async function flaynityStartVideoTranscode(sourceKey, jobId = "") {
     const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
     if (!user) throw new Error("Please sign in first.");
-    if (!/^uploads\\/(?:videos|feels)\\/[a-zA-Z0-9_-]+\\/[a-zA-Z0-9][a-zA-Z0-9._-]*$/i.test(String(sourceKey || ""))) {
+    if (!/^uploads\\/(?:videos|feels)\\/(?:[a-zA-Z0-9_-]+\\/)?[a-zA-Z0-9][a-zA-Z0-9._-]*$/i.test(String(sourceKey || ""))) {
         throw new Error("Invalid video source key.");
     }
 

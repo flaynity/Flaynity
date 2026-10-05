@@ -103,58 +103,10 @@ async function uploadImageToR2(file, folder = "images", retries = 3) {
     throw lastError || new Error("Image upload failed.");
 }
 
-
-async function flaynityStartTranscode(upload) {
-    const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
-    if (!user) throw new Error("Please sign in first.");
-    const token = await user.getIdToken(true);
-    const jobId = String(upload?.key || "").split("/").pop().replace(/\.[^.]+$/, "").replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 100);
-    if (!jobId) throw new Error("Could not create transcoding job id.");
-    const response = await fetch(`${FLAYNITY_API_BASE}/v1/media/transcode`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ sourceKey: upload.key, jobId }),
-        cache: "no-store"
-    });
-    const raw = await response.text();
-    let data = {};
-    try { data = raw ? JSON.parse(raw) : {}; } catch (_) {}
-    if (!response.ok || !data.jobId) {
-        const detail = data.error || data.message || raw.trim() || `HTTP ${response.status}`;
-        const error = new Error(`GPU transcoder returned HTTP ${response.status}: ${detail}`);
-        error.gpuResponse = raw;
-        error.httpStatus = response.status;
-        console.error("Flaynity GPU transcoder start failed:", {
-            status: response.status,
-            response: raw,
-            url: response.url
-        });
-        throw error;
-    }
-
-    const startedAt = Date.now();
-    while (Date.now() - startedAt < 10 * 60 * 1000) {
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        const statusResponse = await fetch(`${FLAYNITY_API_BASE}/v1/media/transcode/${encodeURIComponent(data.jobId)}`, {
-            headers: { "Authorization": `Bearer ${await user.getIdToken(false)}` },
-            cache: "no-store"
-        });
-        const status = await statusResponse.json().catch(() => ({}));
-        if (!statusResponse.ok) throw new Error(status.error || `Could not read transcoding status (HTTP ${statusResponse.status}).`);
-        if (status.status === "completed") return status;
-        if (status.status === "failed") throw new Error(status.error || "GPU transcoding failed.");
-    }
-    throw new Error("GPU transcoding timed out. Please retry.");
-}
-
 async function uploadMediaToFlaynity(file, folder = "videos", onProgress, control) {
     const upload = await flaynityCreateUpload(file, folder, { contentType: file.type || "video/mp4" });
     if (control) control.uploadUrl = upload.uploadUrl;
     await flaynityPutWithProgress(upload.uploadUrl, file, onProgress, control);
-    if ((folder === "videos" || folder === "feels") && String(file.type || "").startsWith("video/")) {
-        const hls = await flaynityStartTranscode(upload);
-        return { ...upload, ...hls, sourceKey: upload.key };
-    }
     return upload;
 }
 

@@ -428,6 +428,8 @@
             border-color: var(--primary) !important;
         }
 
+        [data-theme="light"] .nav-upload-icon { content: url("assets/upload-light-icon.png"); }
+
         .nav-label {
             display: none !important;
         }
@@ -1389,7 +1391,7 @@
 
 <div class="nav-item" id="nav-create" onclick="openCreateBottomSheet(); playUI('click')" style="height: 100%; display: flex; align-items: center; justify-content: center;">
 <div class="nav-create-circle">
-<img src="assets/upload-icon.png" alt="Upload">
+<img class="nav-upload-icon" src="assets/upload-icon.png" data-dark-src="assets/upload-icon.png" data-light-src="assets/upload-light-icon.png" alt="Upload">
 </div>
 </div>
 

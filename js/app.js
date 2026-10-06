@@ -796,17 +796,20 @@ function ensurePTRIndicator() {
 }
 
 function resetPTRIndicator() {
-    // Clean up every PTR overlay/spinner in case an older mounted Home page
-    // left a duplicate element behind.
-    document.querySelectorAll('#ptr-indicator').forEach((ptrIndicator) => {
-        ptrIndicator.style.setProperty('transform', 'translate3d(-50%, -90px, 0)', 'important');
-        ptrIndicator.style.setProperty('opacity', '0', 'important');
-        ptrIndicator.style.setProperty('visibility', 'hidden', 'important');
-        ptrIndicator.style.setProperty('display', 'none', 'important');
+    const indicators = document.querySelectorAll('#ptr-indicator');
+    const spinners = document.querySelectorAll('#ptr-spinner');
+
+    // Smoothly stop the spinner and fade/slide the indicator away.
+    indicators.forEach((ptrIndicator) => {
+        ptrIndicator.style.setProperty('display', 'flex', 'important');
+        ptrIndicator.style.setProperty('visibility', 'visible', 'important');
         ptrIndicator.style.setProperty('pointer-events', 'none', 'important');
+        ptrIndicator.style.setProperty('transition', 'transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease', 'important');
+        ptrIndicator.style.setProperty('transform', 'translate3d(-50%, -12px, 0) scale(0.72)', 'important');
+        ptrIndicator.style.setProperty('opacity', '0', 'important');
     });
 
-    document.querySelectorAll('#ptr-spinner').forEach((ptrSpinner) => {
+    spinners.forEach((ptrSpinner) => {
         ptrSpinner.classList.remove('ptr-spinning');
         ptrSpinner.style.setProperty('animation', 'none', 'important');
         ptrSpinner.style.setProperty('animation-name', 'none', 'important');
@@ -814,8 +817,18 @@ function resetPTRIndicator() {
         ptrSpinner.style.setProperty('-webkit-animation-name', 'none', 'important');
         ptrSpinner.style.setProperty('fill', 'var(--primary, #FF1744)', 'important');
         ptrSpinner.style.setProperty('stroke', 'none', 'important');
-        ptrSpinner.style.setProperty('transform', 'none', 'important');
+        ptrSpinner.style.setProperty('transform', 'rotate(0deg)', 'important');
+        ptrSpinner.style.setProperty('transition', 'transform 0.32s cubic-bezier(0.22, 1, 0.36, 1)', 'important');
     });
+
+    setTimeout(() => {
+        document.querySelectorAll('#ptr-indicator').forEach((ptrIndicator) => {
+            ptrIndicator.style.setProperty('visibility', 'hidden', 'important');
+            ptrIndicator.style.setProperty('display', 'none', 'important');
+            ptrIndicator.style.setProperty('opacity', '0', 'important');
+            ptrIndicator.style.setProperty('transform', 'translate3d(-50%, -90px, 0) scale(0.72)', 'important');
+        });
+    }, 340);
 }
 function initPullToRefresh() {
     if (window.__flaynityPTRInitialized) return;

@@ -1959,10 +1959,10 @@ function renderFeelsSegmentUI(segmentFeels) {
     let html = `
         <div class="feels-section-container" style="margin-bottom: 24px;">
             <div class="section-title">
-                <svg width="18" height="18" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:var(--primary);">
-                    <rect x="5" y="4" width="22" height="24" rx="6" stroke="currentColor" stroke-width="2.35"/>
-                    <path d="M12 4v4h8V4" stroke="currentColor" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M13 13l7 4-7 4z" fill="currentColor"/>
+                <svg class="nav-icon-svg" width="26" height="26" viewBox="0 0 32 32" aria-hidden="true" style="color:var(--primary) !important;">
+                    <rect x="5" y="4" width="22" height="24" rx="6"></rect>
+                    <path d="M12 4v4h8V4"></path>
+                    <path d="M13 13l7 4-7 4z" fill="currentColor" stroke="none"></path>
                 </svg>
                 Feels
             </div>

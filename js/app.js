@@ -5737,18 +5737,65 @@ window.handleCustomThumbSelected = function(e) {
 // ---------------------------------------------------------
 // CAMERA LOGICS & POPUPS (Timer, Duration, Speed)
 // ---------------------------------------------------------
-async function startShortCamera() {
+let shortCameraStartInProgress = false;
+let shortCameraRetryTimer = null;
+let shortCameraRetryCount = 0;
+
+async function startShortCamera(retryAttempt = 0) {
     const video = document.getElementById('short-camera-preview');
-    if (video && video.srcObject) return; 
+    if (video && video.srcObject) return;
+    if (shortCameraStartInProgress) return;
+
+    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+        showNotification("Camera is not supported in this WebView.", "error");
+        return;
+    }
+
+    shortCameraStartInProgress = true;
+    shortCameraRetryCount = retryAttempt;
+
     try {
         const constraints = {
             video: { facingMode: isFrontCamera ? 'user' : 'environment' },
             audio: true
         };
-        shortCameraStream = await navigator.mediaDevices.getUserMedia(constraints);
-        if (video) video.srcObject = shortCameraStream;
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        shortCameraStream = stream;
+
+        if (video) {
+            video.srcObject = stream;
+            video.muted = true;
+            video.setAttribute('playsinline', '');
+            try {
+                await video.play();
+            } catch (_) {
+                // Android WebView may need one more event cycle after permission is granted.
+            }
+        }
+
+        shortCameraStartInProgress = false;
+        shortCameraRetryCount = 0;
+        if (shortCameraRetryTimer) {
+            clearTimeout(shortCameraRetryTimer);
+            shortCameraRetryTimer = null;
+        }
     } catch (err) {
-        showNotification("Camera permission required", "error");
+        shortCameraStartInProgress = false;
+
+        // Android WebView can finish the runtime permission grant just after
+        // the first getUserMedia() call fails. Retry automatically so the user
+        // does not need to restart Flaynity.
+        const retryable = retryAttempt < 5;
+        if (retryable) {
+            const delay = 350 + (retryAttempt * 500);
+            shortCameraRetryTimer = setTimeout(() => {
+                shortCameraRetryTimer = null;
+                startShortCamera(retryAttempt + 1);
+            }, delay);
+        } else {
+            showNotification("Camera permission required", "error");
+        }
     }
 }
 

@@ -749,25 +749,32 @@ function ensurePTRHomeAnimationStyles() {
     const style = document.createElement('style');
     style.id = 'ptr-home-animation-styles';
     style.textContent = `
+        #ptr-spinner.ptr-home-icon {
+            overflow: visible !important;
+            fill: none !important;
+            stroke: var(--primary, #FF1744) !important;
+            stroke-width: 1.9 !important;
+            stroke-linecap: round !important;
+            stroke-linejoin: round !important;
+            transform-origin: 50% 50% !important;
+        }
         #ptr-spinner.ptr-home-icon path {
             fill: none !important;
             stroke: var(--primary, #FF1744) !important;
             stroke-width: 1.9 !important;
             stroke-linecap: round !important;
             stroke-linejoin: round !important;
-            stroke-dasharray: 1 !important;
-            stroke-dashoffset: 1 !important;
-            vector-effect: non-scaling-stroke;
         }
         #ptr-spinner.ptr-home-icon.ptr-home-building path {
-            animation: ptrHomePathBuild 0.72s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+            animation: ptrHomePathBuild 0.72s cubic-bezier(0.22, 1, 0.36, 1) both !important;
         }
         #ptr-spinner.ptr-home-icon.ptr-home-building {
             animation: ptrHomeGlow 1.15s ease-in-out 0.68s infinite alternate !important;
         }
         @keyframes ptrHomePathBuild {
-            0% { stroke-dashoffset: 1; opacity: .15; }
-            100% { stroke-dashoffset: 0; opacity: 1; }
+            0% { opacity: .15; transform: scale(.78); }
+            55% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 1; transform: scale(1); }
         }
         @keyframes ptrHomeGlow {
             0% { filter: drop-shadow(0 0 1px rgba(255,23,68,.25)); }
@@ -783,7 +790,7 @@ function ensurePTRIndicator() {
         ptrIndicator = document.createElement('div');
         ptrIndicator.id = 'ptr-indicator';
         ptrIndicator.setAttribute('aria-hidden', 'true');
-        ptrIndicator.innerHTML = '<svg id="ptr-spinner" class="ptr-spinner ptr-home-icon" viewBox="0 0 32 32" aria-hidden="true"><path pathLength="1" d="M7 14.5 16 7l9 7.5"></path><path pathLength="1" d="M7 14.5V23c0 1.7 1.3 3 3 3h12c1.7 0 3-1.3 3-3v-8.5"></path><path pathLength="1" d="M13 26v-7h6v7"></path></svg>';
+        ptrIndicator.innerHTML = '<svg id="ptr-spinner" class="ptr-spinner ptr-home-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M7 14.5 16 7l9 7.5"></path><path d="M7 14.5V23c0 1.7 1.3 3 3 3h12c1.7 0 3-1.3 3-3v-8.5"></path><path d="M13 26v-7h6v7"></path></svg>';
         document.body.appendChild(ptrIndicator);
     }
     let ptrSpinner = document.getElementById('ptr-spinner');

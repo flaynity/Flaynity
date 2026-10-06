@@ -4099,7 +4099,7 @@ function adjustHeaderForActiveTab(tabId) {
             chips.style.top = '82px';
         }
         const homeTab = document.getElementById('home-tab');
-        if (homeTab) homeTab.style.paddingTop = '114px';
+        if (homeTab) homeTab.style.paddingTop = '126px';
     } else {
         document.body.style.paddingTop = '126px';
         const homeTab = document.getElementById('home-tab');

@@ -555,6 +555,10 @@ __flaynityReady(function() {
     initPullToRefresh();
 });
 
+// Home is loaded dynamically, so initialize Pull-to-Refresh again immediately
+// after the Home DOM is mounted if the first DOM-ready attempt ran too early.
+window.addEventListener('flaynity-dom-ready', initPullToRefresh);
+
 // =========================================================
 // OFFLINE -> ONLINE AUTO SYNC & NETWORK MONITORING
 // =========================================================
@@ -756,10 +760,15 @@ function resetPTRIndicator() {
 
 function initPullToRefresh() {
     if (window.__flaynityPTRInitialized) return;
-    window.__flaynityPTRInitialized = true;
 
     let ptrIndicator = document.getElementById('ptr-indicator');
     let ptrSpinner = document.getElementById('ptr-spinner');
+
+    // Home is mounted asynchronously by the modular page loader. If the
+    // indicator is not mounted yet, wait for flaynity-dom-ready and retry.
+    if (!ptrIndicator || !ptrSpinner) return;
+
+    window.__flaynityPTRInitialized = true;
 
     // The modular page loader mounts Home inside #app-screen. Move the
     // fixed PTR overlay to <body> so it is never hidden by a page stacking context.

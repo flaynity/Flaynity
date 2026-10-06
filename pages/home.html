@@ -51,7 +51,7 @@
             color: var(--text-main); 
             overflow-x: hidden; 
             padding-top: 126px; 
-            padding-bottom: 48px; 
+            padding-bottom: 58px; 
             touch-action: pan-y; overscroll-behavior-y: contain; 
         }
         body.auth-active { overflow: hidden; height: 100vh; }
@@ -351,14 +351,14 @@
             padding: 12px; color: #fff; z-index: 2;
         }
 
-/* PREMIUM BOTTOM NAVIGATION DESIGN */
+/* PREMIUM BOTTOM NAVIGATION — REFERENCE ICON DESIGN */
         .bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
             width: 100%;
-            height: 48px; 
+            height: 58px;
             background: var(--surface) !important;
             border-top: 1px solid var(--border-color);
             display: flex;
@@ -366,7 +366,7 @@
             align-items: center;
             z-index: 1000;
             box-shadow: none !important;
-            padding-bottom: env(safe-area-inset-bottom);
+            padding: 5px 8px env(safe-area-inset-bottom);
             box-sizing: border-box;
         }
 
@@ -377,18 +377,21 @@
             justify-content: center;
             flex: 1;
             height: 100%;
+            min-width: 0;
             position: relative;
             cursor: pointer;
             user-select: none;
             -webkit-tap-highlight-color: transparent !important;
-            transition: color 0.15s ease-in-out !important; 
+            transition: transform 0.15s ease !important;
         }
-        
+
+        .nav-item:active {
+            transform: scale(0.92);
+        }
+
         .nav-item.active {
-            background-color: transparent !important;
             background: transparent !important;
-            border-radius: 0px !important;
-            transform: none !important;
+            border-radius: 0 !important;
             outline: none !important;
             box-shadow: none !important;
         }
@@ -397,82 +400,82 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 26px; 
-            height: 26px;
+            width: 34px;
+            height: 34px;
             position: relative;
-            transition: none !important;
         }
 
         .nav-icon-svg {
-            width: 26px !important; 
-            height: 26px !important;
+            width: 31px !important;
+            height: 31px !important;
             fill: none;
-            color: var(--text-main) !important; 
-            opacity: 1 !important; 
-            transition: color 0.15s ease-in-out;
+            color: var(--text-main) !important;
+            opacity: 1 !important;
+            stroke: currentColor;
+            stroke-width: 2.2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
 
         .nav-item.active .nav-icon-svg {
-            color: #D80E45 !important;
+            color: var(--text-main) !important;
         }
 
         .nav-label {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 11px; 
-            font-weight: 700;
-            color: var(--text-main) !important; 
-            opacity: 1 !important; 
-            margin-top: 2px;
-            letter-spacing: -0.15px;
-            transition: color 0.15s ease-in-out;
-        }
-
-        .nav-item.active .nav-label {
-            color: #D80E45 !important;
-            font-weight: 800;
+            display: none !important;
         }
 
         .nav-create-circle {
-            background: transparent !important;
-            color: var(--text-main);
-            width: 44px;
-            height: 30px;
-            border-radius: 0 !important;
+            width: 58px;
+            height: 42px;
+            padding: 5px;
+            border-radius: 18px;
+            background: #EC0A68 !important;
+            color: #222326;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
-            overflow: visible !important;
-            transition: none !important;
+            overflow: hidden !important;
+            transition: transform 0.15s ease !important;
+            box-shadow: none !important;
         }
 
         .nav-create-circle:active {
-            transform: none !important;
-            background: transparent !important;
-        }        
-        .nav-create-circle img {
-            width: 44px !important;
-            height: 30px !important;
-            display: block;
-            object-fit: fill !important;
-            border-radius: 10px !important;
-            max-width: none !important;
+            transform: scale(0.92) !important;
+            background: #EC0A68 !important;
         }
 
-        .nav-avatar-circle {
-            width: 26px;
-            height: 26px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 2px solid transparent;
-            transition: border-color 0.15s ease-in-out;
+        .nav-create-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 14px;
+            background: #FFFFFF;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        
+
+        .nav-create-plus {
+            width: 29px;
+            height: 29px;
+            display: block;
+        }
+
+        .nav-avatar-circle {
+            width: 31px;
+            height: 31px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+        }
+
         .nav-item.active .nav-avatar-circle {
-            border-color: #D80E45 !important;
+            border-color: transparent !important;
         }
 
         .nav-item .icon-selected { display: none !important; }
@@ -1321,38 +1324,60 @@
 <div class="bottom-nav">
 <div class="nav-item active" id="nav-home" onclick="switchTab('home')">
 <div class="nav-icon-container">
-<svg class="nav-icon-svg icon-unselected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M12 5.69l5 4.5v7.81h-2v-6H9v6H7v-7.81l5-4.5M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z" fill="currentColor"></path>
+<svg class="nav-icon-svg icon-unselected" viewBox="0 0 32 32" aria-hidden="true">
+<path d="M6 14.5 16 6l10 8.5"></path>
+<path d="M8.5 13.5V25h15V13.5"></path>
+<path d="M13 25v-7h6v7"></path>
 </svg>
-<svg class="nav-icon-svg icon-selected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="currentColor"></path>
+<svg class="nav-icon-svg icon-selected" viewBox="0 0 32 32" aria-hidden="true">
+<path d="M6 14.5 16 6l10 8.5"></path>
+<path d="M8.5 13.5V25h15V13.5"></path>
+<path d="M13 25v-7h6v7"></path>
 </svg>
 </div>
 <span class="nav-label">Home</span>
 </div>
 <div class="nav-item" id="nav-feels" onclick="switchTab('feels')">
 <div class="nav-icon-container">
-<svg class="nav-icon-svg icon-unselected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M17.77 10.32c-.77-.32-1.2-.5-1.2-.5L18 8.64a2.53 2.53 0 0 0-1.12-3.37 2.45 2.45 0 0 0-3.3.12L7 10.14a2.53 2.53 0 0 0-.27 3.54s1.2.5 1.2.5l-1.43 1.18a2.53 2.53 0 0 0 1.12 3.37 2.45 2.45 0 0 0 3.3-.12l6.57-4.75a2.53 2.53 0 0 0 .28-3.54z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2.2"></path>
+<svg class="nav-icon-svg icon-unselected" viewBox="0 0 32 32" aria-hidden="true">
+<rect x="5" y="4" width="22" height="24" rx="6"></rect>
+<path d="M12 4v4h8V4"></path>
+<path d="m13 13 7 4-7 4z" fill="currentColor" stroke="none"></path>
 </svg>
-<svg class="nav-icon-svg icon-selected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M17.77 10.32c-.77-.32-1.2-.5-1.2-.5L18 8.64a2.53 2.53 0 0 0-1.12-3.37 2.45 2.45 0 0 0-3.3.12L7 10.14a2.53 2.53 0 0 0-.27 3.54s1.2.5 1.2.5l-1.43 1.18a2.53 2.53 0 0 0 1.12 3.37 2.45 2.45 0 0 0 3.3-.12l6.57-4.75a2.53 2.53 0 0 0 .28-3.54z" fill="currentColor"></path>
+<svg class="nav-icon-svg icon-selected" viewBox="0 0 32 32" aria-hidden="true">
+<rect x="5" y="4" width="22" height="24" rx="6"></rect>
+<path d="M12 4v4h8V4"></path>
+<path d="m13 13 7 4-7 4z" fill="currentColor" stroke="none"></path>
 </svg>
 </div>
 <span class="nav-label">Feels</span>
 </div>
 <div class="nav-item" id="nav-create" onclick="openCreateBottomSheet(); playUI('click')" style="height: 100%; display: flex; align-items: center; justify-content: center;">
 <div class="nav-create-circle">
-<img src="assets/upload-icon.png" alt="Upload">
+<div class="nav-create-inner">
+<svg class="nav-create-plus" viewBox="0 0 32 32" aria-hidden="true">
+<path d="M16 7v18M7 16h18" fill="none" stroke="#222326" stroke-width="5" stroke-linecap="round"></path>
+</svg>
+</div>
 </div>
 </div>
 <div class="nav-item" id="nav-search" onclick="switchTab('search')">
 <div class="nav-icon-container">
-<svg class="nav-icon-svg icon-unselected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.5l-4 1.5 1.5-4 4-1.5-1.5 4zm-1-3.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="currentColor"></path>
+<svg class="nav-icon-svg icon-unselected" viewBox="0 0 32 32" aria-hidden="true">
+<rect x="5" y="5" width="8" height="8" rx="1"></rect>
+<rect x="19" y="5" width="8" height="8" rx="1"></rect>
+<rect x="5" y="19" width="8" height="8" rx="1"></rect>
+<rect x="19" y="19" width="8" height="8" rx="1"></rect>
+<circle cx="24" cy="24" r="4.5"></circle>
+<path d="m27.3 27.3 3 3"></path>
 </svg>
-<svg class="nav-icon-svg icon-selected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.5l-4 1.5 1.5-4 4-1.5-1.5 4zm-1-3.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="currentColor"></path>
+<svg class="nav-icon-svg icon-selected" viewBox="0 0 32 32" aria-hidden="true">
+<rect x="5" y="5" width="8" height="8" rx="1"></rect>
+<rect x="19" y="5" width="8" height="8" rx="1"></rect>
+<rect x="5" y="19" width="8" height="8" rx="1"></rect>
+<rect x="19" y="19" width="8" height="8" rx="1"></rect>
+<circle cx="24" cy="24" r="4.5"></circle>
+<path d="m27.3 27.3 3 3"></path>
 </svg>
 </div>
 <span class="nav-label">Discover</span>
@@ -1360,8 +1385,10 @@
 <div class="nav-item" id="nav-you" onclick="switchTab('you')">
 <div class="nav-icon-container">
 <div class="nav-avatar-circle" id="nav-avatar-img">
-<svg class="nav-icon-svg icon-unselected" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="currentColor"></path>
+<svg class="nav-icon-svg icon-unselected" viewBox="0 0 32 32" aria-hidden="true">
+<circle cx="16" cy="16" r="12"></circle>
+<circle cx="16" cy="12" r="3.2"></circle>
+<path d="M10 23c1.3-3.2 3.2-4.7 6-4.7s4.7 1.5 6 4.7"></path>
 </svg>
 </div>
 </div>

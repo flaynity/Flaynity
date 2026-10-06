@@ -743,13 +743,46 @@ function isPTRAllowedOnCurrentView() {
     return activeTabId === 'home' && getMainScrollTop() <= 0;
 }
 
+
+function ensurePTRHomeAnimationStyles() {
+    if (document.getElementById('ptr-home-animation-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'ptr-home-animation-styles';
+    style.textContent = `
+        #ptr-spinner.ptr-home-icon {
+            fill: none !important;
+            stroke: var(--primary, #FF1744) !important;
+            stroke-width: 1.9 !important;
+            stroke-linecap: round !important;
+            stroke-linejoin: round !important;
+            stroke-dasharray: 48 !important;
+            stroke-dashoffset: 48 !important;
+        }
+        #ptr-spinner.ptr-home-icon.ptr-home-building {
+            animation: ptrHomeBuild 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+                       ptrHomeGlow 1.15s ease-in-out 0.82s infinite alternate !important;
+        }
+        @keyframes ptrHomeBuild {
+            0% { stroke-dashoffset: 48; transform: scale(.78) rotate(-7deg); opacity: .25; }
+            55% { stroke-dashoffset: 16; transform: scale(1.05) rotate(2deg); opacity: 1; }
+            100% { stroke-dashoffset: 0; transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes ptrHomeGlow {
+            0% { filter: drop-shadow(0 0 1px rgba(255,23,68,.25)); }
+            100% { filter: drop-shadow(0 0 8px rgba(255,23,68,.95)) drop-shadow(0 0 16px rgba(255,23,68,.45)); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 function ensurePTRIndicator() {
+    ensurePTRHomeAnimationStyles();
     let ptrIndicator = document.getElementById('ptr-indicator');
     if (!ptrIndicator) {
         ptrIndicator = document.createElement('div');
         ptrIndicator.id = 'ptr-indicator';
         ptrIndicator.setAttribute('aria-hidden', 'true');
-        ptrIndicator.innerHTML = '<svg id="ptr-spinner" class="ptr-spinner" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6 0-1.66.69-3.14 1.78-4.22L13 11h7V4l-2.35 2.35z"></path></svg>';
+        ptrIndicator.innerHTML = '<svg id="ptr-spinner" class="ptr-spinner ptr-home-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.8 12 4l8.5 6.8M5.5 10v9.5h13V10M9.2 19.5v-6h5.6v6"></path></svg>';
         document.body.appendChild(ptrIndicator);
     }
     let ptrSpinner = document.getElementById('ptr-spinner');
@@ -760,7 +793,7 @@ function ensurePTRIndicator() {
         ptrSpinner.setAttribute('viewBox', '0 0 24 24');
         ptrSpinner.setAttribute('aria-hidden', 'true');
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', 'M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6 0-1.66.69-3.14 1.78-4.22L13 11h7V4l-2.35 2.35z');
+        path.setAttribute('d', 'M3.5 10.8 12 4l8.5 6.8M5.5 10v9.5h13V10M9.2 19.5v-6h5.6v6');
         ptrSpinner.appendChild(path);
         ptrIndicator.appendChild(ptrSpinner);
     }
@@ -810,7 +843,7 @@ function resetPTRIndicator() {
     });
 
     spinners.forEach((ptrSpinner) => {
-        ptrSpinner.classList.remove('ptr-spinning');
+        ptrSpinner.classList.remove('ptr-spinning', 'ptr-home-building');
         ptrSpinner.style.setProperty('animation', 'none', 'important');
         ptrSpinner.style.setProperty('animation-name', 'none', 'important');
         ptrSpinner.style.setProperty('-webkit-animation', 'none', 'important');
@@ -933,7 +966,7 @@ function initPullToRefresh() {
                 ptrSpinner.style.setProperty('fill', 'var(--primary, #FF1744)', 'important');
                 ptrSpinner.style.setProperty('stroke', 'none', 'important');
                 ptrSpinner.style.transform = '';
-                ptrSpinner.classList.add('ptr-spinning');
+                ptrSpinner.classList.add('ptr-home-building');
             }
 
             triggerUniversalPullToRefresh().finally(() => {

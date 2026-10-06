@@ -69,6 +69,7 @@ public class MainActivity extends Activity {
     private static final String PREF_NAME = "FlaynityAppPref";
     private static final String KEY_CACHED_URL = "cached_website_url";
     private static final String KEY_CACHED_SECRET = "cached_secret_key";
+    private static final String KEY_NOTIFICATION_REQUESTED = "notification_permission_requested";
 
     private String websiteUrl = null; 
     private String secretKey = null;
@@ -142,6 +143,11 @@ public class MainActivity extends Activity {
         public void retryConnection() {
             runOnUiThread(() -> MainActivity.this.retryConnection());
         }
+
+        @JavascriptInterface
+        public void requestNotificationPermission() {
+            runOnUiThread(() -> MainActivity.this.requestNotificationPermission());
+        }
     }
 
     @Override
@@ -178,7 +184,6 @@ public class MainActivity extends Activity {
         
         setupWebView();
         startLoadingApp();
-        checkAndRequestPermissions();
         fetchFcmToken();
         registerNetworkCallback();
     }
@@ -813,6 +818,64 @@ public class MainActivity extends Activity {
             if (!permissions.isEmpty()) {
                 requestPermissions(permissions.toArray(new String[0]), 101);
             }
+        }
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT < 33) return;
+
+        SharedPreferences prefs = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        if (prefs.getBoolean(KEY_NOTIFICATION_REQUESTED, false)) return;
+
+        if (checkSelfPermission("android.permission.POST_NOTIFICATIONS")
+                == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            prefs.edit().putBoolean(KEY_NOTIFICATION_REQUESTED, true).apply();
+            return;
+        }
+
+        prefs.edit().putBoolean(KEY_NOTIFICATION_REQUESTED, true).apply();
+        requestPermissions(
+            new String[]{"android.permission.POST_NOTIFICATIONS"},
+            103
+        );
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == 102 && pendingPermissionRequest != null) {
+            PermissionRequest request = pendingPermissionRequest;
+            pendingPermissionRequest = null;
+
+            boolean cameraGranted = true;
+            boolean audioGranted = true;
+
+            for (int i = 0; i < permissions.length; i++) {
+                if (android.Manifest.permission.CAMERA.equals(permissions[i])) {
+                    cameraGranted = grantResults[i] == android.content.pm.PackageManager.PERMISSION_GRANTED;
+                } else if (android.Manifest.permission.RECORD_AUDIO.equals(permissions[i])) {
+                    audioGranted = grantResults[i] == android.content.pm.PackageManager.PERMISSION_GRANTED;
+                }
+            }
+
+            if (cameraGranted && audioGranted) {
+                try {
+                    request.grant(request.getResources());
+                } catch (Exception e) {
+                    android.util.Log.e("WEBVIEW_PERMISSION", "Grant failed: " + e.getMessage());
+                }
+            } else {
+                try {
+                    request.deny();
+                } catch (Exception ignored) {}
+            }
+            return;
+        }
+
+        if (requestCode == 103) {
+            // Notification permission is requested only after the Home page is reached.
+            return;
         }
     }
 

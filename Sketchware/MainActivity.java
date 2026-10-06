@@ -736,6 +736,149 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void setupHomePullToRefresh() {
+        if (webview1 == null || pullRefreshContainer != null) return;
+
+        final ViewGroup parent = (ViewGroup) webview1.getParent();
+        if (parent == null) return;
+
+        final int index = parent.indexOfChild(webview1);
+        final ViewGroup.LayoutParams webViewParams = webview1.getLayoutParams();
+
+        parent.removeView(webview1);
+
+        pullRefreshContainer = new FrameLayout(this);
+        pullRefreshContainer.setLayoutParams(webViewParams);
+        pullRefreshContainer.setClipChildren(false);
+        pullRefreshContainer.setClipToPadding(false);
+
+        parent.addView(pullRefreshContainer, index);
+        pullRefreshContainer.addView(webview1, new FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        ));
+
+        pullRefreshIndicator = new ProgressBar(
+            this,
+            null,
+            android.R.attr.progressBarStyleSmall
+        );
+        pullRefreshIndicator.setIndeterminate(true);
+        pullRefreshIndicator.setVisibility(View.GONE);
+
+        int indicatorSize = dpToPx(28);
+        FrameLayout.LayoutParams indicatorParams = new FrameLayout.LayoutParams(
+            indicatorSize,
+            indicatorSize,
+            Gravity.TOP | Gravity.CENTER_HORIZONTAL
+        );
+        indicatorParams.topMargin = dpToPx(12);
+        pullRefreshContainer.addView(pullRefreshIndicator, indicatorParams);
+
+        webview1.setOnTouchListener((v, event) -> {
+            if (!isHomePageForPullRefresh() || pullRefreshing) return false;
+
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    if (webview1.getScrollY() <= 0) {
+                        pullStartY = event.getY();
+                        pullTracking = true;
+                    } else {
+                        pullTracking = false;
+                    }
+                    break;
+
+                case MotionEvent.ACTION_MOVE:
+                    if (!pullTracking || webview1.getScrollY() > 0) return false;
+
+                    float distance = event.getY() - pullStartY;
+                    if (distance > 0) {
+                        float pullDistance = Math.min(distance * 0.5f, dpToPx(110));
+                        webview1.setTranslationY(pullDistance);
+                        pullRefreshIndicator.setTranslationY(pullDistance);
+                        pullRefreshIndicator.setVisibility(
+                            pullDistance >= dpToPx(18) ? View.VISIBLE : View.GONE
+                        );
+                    }
+                    break;
+
+                case MotionEvent.ACTION_CANCEL:
+                case MotionEvent.ACTION_UP:
+                    if (pullTracking) {
+                        float releaseDistance = event.getY() - pullStartY;
+                        pullTracking = false;
+
+                        if (releaseDistance >= dpToPx(PULL_REFRESH_TRIGGER_DP)) {
+                            startHomePullRefresh();
+                        } else {
+                            resetPullRefreshPosition();
+                        }
+                    }
+                    break;
+            }
+            return false;
+        });
+    }
+
+    private void startHomePullRefresh() {
+        if (pullRefreshing || webview1 == null) return;
+
+        pullRefreshing = true;
+        pullRefreshIndicator.setVisibility(View.VISIBLE);
+        pullRefreshIndicator.setTranslationY(dpToPx(48));
+
+        webview1.animate().translationY(dpToPx(48)).setDuration(160).start();
+        webview1.reload();
+    }
+
+    private void resetPullRefreshPosition() {
+        if (webview1 != null) {
+            webview1.animate().translationY(0f).setDuration(160).start();
+        }
+
+        if (pullRefreshIndicator != null) {
+            pullRefreshIndicator.animate()
+                .translationY(0f)
+                .setDuration(160)
+                .withEndAction(() -> {
+                    if (!pullRefreshing) {
+                        pullRefreshIndicator.setVisibility(View.GONE);
+                    }
+                })
+                .start();
+        }
+    }
+
+    private void finishHomePullRefresh() {
+        if (!pullRefreshing) return;
+        pullRefreshing = false;
+        resetPullRefreshPosition();
+    }
+
+    private boolean isHomePageForPullRefresh() {
+        if (webview1 == null) return false;
+
+        String url = webview1.getUrl();
+        if (url == null || url.trim().isEmpty()) return false;
+
+        String cleanUrl = url.split("#", 2)[0].split("\\?", 2)[0];
+
+        if (websiteUrl != null && !websiteUrl.trim().isEmpty()) {
+            String base = websiteUrl.trim().split("#", 2)[0].split("\\?", 2)[0];
+            if (cleanUrl.equals(base) || cleanUrl.equals(base + "/") ||
+                cleanUrl.endsWith("/index.html")) {
+                return true;
+            }
+        }
+
+        return cleanUrl.endsWith("/pages/home.html") ||
+               cleanUrl.endsWith("/home.html");
+    }
+
+    private int dpToPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
+    }
+
     private boolean handleUrlRouting(String url) {
         if (url == null) return false;
 

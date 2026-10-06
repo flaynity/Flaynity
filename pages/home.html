@@ -475,6 +475,19 @@
         .nav-item.active .icon-selected { display: block !important; }
         .nav-item.active .icon-unselected { display: none !important; }
 
+
+        /* Home and You use the slightly larger reference-icon scale. */
+        #nav-home .nav-icon-svg,
+        #nav-you .nav-icon-svg {
+            width: 30px !important;
+            height: 30px !important;
+        }
+
+        #nav-you .nav-avatar-circle {
+            width: 30px !important;
+            height: 30px !important;
+        }
+
 /* Full Screen Movie Page */
         #full-movie-page { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--bg-color); z-index: 2000; display: none; overflow-y: auto; animation: slideUpFade 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes slideUpFade { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -1317,14 +1330,14 @@
 <div class="nav-item active" id="nav-home" onclick="switchTab('home')">
 <div class="nav-icon-container">
 <svg class="nav-icon-svg icon-unselected" viewBox="0 0 32 32" aria-hidden="true">
-<path d="M5 14.5 16 5.5l11 9"></path>
-<path d="M7.5 13.5V26h17V13.5"></path>
-<path d="M12.5 26v-8h7v8"></path>
+<path d="M7 14.5 16 7l9 7.5"></path>
+<path d="M7 14.5V23c0 1.7 1.3 3 3 3h12c1.7 0 3-1.3 3-3v-8.5"></path>
+<path d="M13 26v-7h6v7"></path>
 </svg>
 <svg class="nav-icon-svg icon-selected" viewBox="0 0 32 32" aria-hidden="true">
-<path d="M5 14.5 16 5.5l11 9"></path>
-<path d="M7.5 13.5V26h17V13.5"></path>
-<path d="M12.5 26v-8h7v8"></path>
+<path d="M7 14.5 16 7l9 7.5"></path>
+<path d="M7 14.5V23c0 1.7 1.3 3 3 3h12c1.7 0 3-1.3 3-3v-8.5"></path>
+<path d="M13 26v-7h6v7"></path>
 </svg>
 </div>
 <span class="nav-label">Home</span>

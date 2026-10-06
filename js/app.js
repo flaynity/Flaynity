@@ -948,7 +948,7 @@ function initPullToRefresh() {
                 ptrIndicator.style.setProperty('display', 'flex', 'important');
                 ptrIndicator.style.setProperty('visibility', 'visible', 'important');
                 ptrIndicator.style.setProperty('opacity', String(Math.min(1, pullDistance / 52)), 'important');
-                ptrIndicator.style.setProperty('transform', `translate3d(-50%, ${Math.min(100, pullDistance)}px, 0)`, 'important');
+                ptrIndicator.style.setProperty('transform', `translate3d(-50%, ${Math.min(115, pullDistance)}px, 0)`, 'important');
             }
             if (ptrSpinner) {
                 ptrSpinner.style.transform = `rotate(${pullDistance * 3.2}deg)`;
@@ -975,7 +975,7 @@ function initPullToRefresh() {
             if (ptrIndicator) {
                 ptrIndicator.style.setProperty('display', 'flex', 'important');
                 ptrIndicator.style.setProperty('visibility', 'visible', 'important');
-                ptrIndicator.style.setProperty('transform', 'translate3d(-50%, 48px, 0)', 'important');
+                ptrIndicator.style.setProperty('transform', 'translate3d(-50%, 55px, 0)', 'important');
                 ptrIndicator.style.setProperty('opacity', '1', 'important');
             }
             if (ptrSpinner) {

@@ -749,7 +749,7 @@ function ensurePTRHomeAnimationStyles() {
     const style = document.createElement('style');
     style.id = 'ptr-home-animation-styles';
     style.textContent = `
-        #ptr-spinner.ptr-home-icon {
+        #ptr-spinner.ptr-home-icon,\n        #ptr-spinner.ptr-home-icon path {
             fill: none !important;
             stroke: var(--primary, #FF1744) !important;
             stroke-width: 1.9 !important;
@@ -782,7 +782,7 @@ function ensurePTRIndicator() {
         ptrIndicator = document.createElement('div');
         ptrIndicator.id = 'ptr-indicator';
         ptrIndicator.setAttribute('aria-hidden', 'true');
-        ptrIndicator.innerHTML = '<svg id="ptr-spinner" class="ptr-spinner ptr-home-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.8 12 4l8.5 6.8M5.5 10v9.5h13V10M9.2 19.5v-6h5.6v6"></path></svg>';
+        ptrIndicator.innerHTML = '<svg id="ptr-spinner" class="ptr-spinner ptr-home-icon" viewBox="0 0 32 32" aria-hidden="true"><path pathLength="1" d="M7 14.5 16 7l9 7.5"></path><path pathLength="1" d="M7 14.5V23c0 1.7 1.3 3 3 3h12c1.7 0 3-1.3 3-3v-8.5"></path><path pathLength="1" d="M13 26v-7h6v7"></path></svg>';
         document.body.appendChild(ptrIndicator);
     }
     let ptrSpinner = document.getElementById('ptr-spinner');
@@ -793,8 +793,16 @@ function ensurePTRIndicator() {
         ptrSpinner.setAttribute('viewBox', '0 0 24 24');
         ptrSpinner.setAttribute('aria-hidden', 'true');
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', 'M3.5 10.8 12 4l8.5 6.8M5.5 10v9.5h13V10M9.2 19.5v-6h5.6v6');
+        path.setAttribute('pathLength', '1'); path.setAttribute('d', 'M7 14.5 16 7l9 7.5');
         ptrSpinner.appendChild(path);
+        const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path2.setAttribute('pathLength', '1');
+        path2.setAttribute('d', 'M7 14.5V23c0 1.7 1.3 3 3 3h12c1.7 0 3-1.3 3-3v-8.5');
+        ptrSpinner.appendChild(path2);
+        const path3 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path3.setAttribute('pathLength', '1');
+        path3.setAttribute('d', 'M13 26v-7h6v7');
+        ptrSpinner.appendChild(path3);
         ptrIndicator.appendChild(ptrSpinner);
     }
     if (ptrIndicator) {

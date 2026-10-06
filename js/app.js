@@ -52,29 +52,50 @@
     try {
         const app = document.getElementById("app");
         if (!app) throw new Error("#app not found");
-        const loaded = [];
-        for (const [name, url] of pageFiles) {
-            loaded.push([name, await loadPage(name, url)]);
-        }
+
+        // Load Home first so the first app screen becomes visible immediately.
+        // The remaining pages are loaded in the background after Home is mounted.
+        const homeNodes = await loadPage(pageFiles[0][0], pageFiles[0][1]);
 
         const appScreen = document.createElement("div");
         appScreen.id = "app-screen";
         const startupIds = new Set(["startupSound","toast-container","network-spinner-overlay","auth-screen"]);
 
-        for (const node of loaded[0][1]) {
+        for (const node of homeNodes) {
             if (node.id && startupIds.has(node.id)) app.appendChild(node);
             else appScreen.appendChild(node);
         }
-        for (let i = 1; i < loaded.length; i++) {
-            for (const node of loaded[i][1]) appScreen.appendChild(node);
-        }
         app.appendChild(appScreen);
+
         document.querySelectorAll(".tab-content").forEach(el => el.classList.toggle("active", el.id === "home-tab"));
         const homeTab = document.getElementById("home-tab");
         if (homeTab) homeTab.classList.add("active");
 
         showOfflineCachedApp();
+
+        // Let Home render before any permission dialog can appear.
         window.dispatchEvent(new Event('flaynity-dom-ready'));
+
+        setTimeout(() => {
+            if (window.AndroidBridge && typeof window.AndroidBridge.requestNotificationPermission === 'function') {
+                window.AndroidBridge.requestNotificationPermission();
+            }
+        }, 1800);
+
+        // Load the other tabs without blocking the initial Home screen.
+        (async function loadRemainingPagesInBackground() {
+            try {
+                const remaining = await Promise.all(
+                    pageFiles.slice(1).map(async ([name, url]) => [name, await loadPage(name, url)])
+                );
+                for (const [, nodes] of remaining) {
+                    for (const node of nodes) appScreen.appendChild(node);
+                }
+                window.dispatchEvent(new Event('flaynity-pages-ready'));
+            } catch (e) {
+                console.error("Flaynity background page loading error:", e);
+            }
+        })();
     } catch (e) {
         console.error("Flaynity page loader error:", e);
         const app = document.getElementById("app");
@@ -4090,9 +4111,6 @@ function adjustHeaderForActiveTab(tabId) {
     // coordinates, but make them normal document-flow elements so native
     // scrolling moves them with the feed at exactly the user's scroll speed.
     if (tabId === 'home') {
-        if (window.AndroidBridge && typeof window.AndroidBridge.requestNotificationPermission === 'function') {
-            setTimeout(() => window.AndroidBridge.requestNotificationPermission(), 250);
-        }
         document.body.style.paddingTop = '0px';
         header.style.position = 'absolute';
         header.style.top = '0px';

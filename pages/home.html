@@ -123,17 +123,16 @@
         .offline-feels-info { position:absolute; bottom:60px; left:16px; right:80px; display:flex; flex-direction:column; gap:10px; }
         .offline-feels-user { display:flex; gap:10px; align-items:center; }
 
-/* OFFICIAL-STYLE PULL TO REFRESH INDICATOR */
+/* OFFICIAL MATERIAL-STYLE PULL TO REFRESH INDICATOR */
         .ptr-container {
             position: fixed;
             top: 86px;
             left: 50%;
-            width: 42px;
-            height: 42px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            background: var(--surface);
-            border: 1px solid var(--border-color);
-            box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+            background: #FFFFFF;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.28), 0 0 0 0.5px rgba(0,0,0,0.06);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -144,25 +143,31 @@
             pointer-events: none;
             will-change: transform, opacity;
         }
+        [data-theme="dark"] .ptr-container {
+            background: #2B2B2B;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.12);
+        }
         .ptr-spinner {
             width: 24px;
             height: 24px;
             display: block;
-            fill: none;
-            stroke: var(--text-muted);
-            stroke-width: 2.4;
-            stroke-linecap: round;
-            stroke-linejoin: round;
             transform-origin: 50% 50%;
-            transition: transform 0.08s linear, stroke 0.15s ease;
+            transition: transform 0.08s linear;
         }
-        .ptr-spinning {
+        .ptr-arc {
+            fill: none;
             stroke: var(--primary);
-            animation: ptrOfficialSpin 0.75s linear infinite;
+            stroke-width: 2.5;
+            stroke-linecap: round;
         }
-        @keyframes ptrOfficialSpin {
-            to { transform: rotate(360deg); }
+        .ptr-arrow {
+            fill: var(--primary);
+            stroke: var(--primary);
+            stroke-width: 1;
+            stroke-linejoin: round;
         }
+        .ptr-spinning { animation: ptrOfficialSpin 0.8s linear infinite; }
+        @keyframes ptrOfficialSpin { to { transform: rotate(360deg); } }
 
         /* Keep the browser/WebView from starting its own page-level pull gesture. */
         html { overscroll-behavior-y: contain; }
@@ -1118,8 +1123,8 @@
 <div class="toast-container" id="toast-container"></div>
 <div class="ptr-container" id="ptr-indicator" aria-hidden="true">
     <svg id="ptr-spinner" class="ptr-spinner" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M20 11a8 8 0 1 0 1 4.2"></path>
-        <path d="M20 5v6h-6"></path>
+        <path class="ptr-arc" d="M12 4.5A7.5 7.5 0 1 1 4.5 12"></path>
+        <path class="ptr-arrow" d="M1.5 12h6L4.5 7.5z"></path>
     </svg>
 </div>
 

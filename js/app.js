@@ -1302,14 +1302,12 @@ async function startS3DirectUpload(item) {
         item.key = upload.key;
         if (item.status === 'cancelled') return;
 
-        // Video/Feels are transcoded server-side and played through the R2-backed HLS master playlist.
-        const videoMetadata = flaynityDirectVideoMetadata(upload, upload.key);
-        item.videoProvider = videoMetadata.videoProvider;
-        item.videoUrl = videoMetadata.videoUrl;
-        item.videoLink = videoMetadata.videoLink;
-        item.hlsUrl = videoMetadata.hlsUrl || "";
-        item.jobId = videoMetadata.jobId || "";
-        item.sourceKey = videoMetadata.sourceKey || upload.key;
+        // Direct R2 MP4: the object uploaded above is already the final playable
+        // video. There is intentionally no FFmpeg/transcode/HLS step here.
+        item.videoProvider = "r2";
+        item.videoUrl = normalizeFlaynityMediaUrl(upload.publicUrl || flaynityMediaUrl(upload.key));
+        item.videoLink = item.videoUrl;
+        item.sourceKey = upload.key;
 
         item.status = "processing"; item.retryCount = 0; item.processingMsg = "Publishing Feed..."; item.progress = 100; updateManagerUI();
         await runPostUploadProcessingSequence(item);

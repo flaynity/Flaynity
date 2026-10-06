@@ -749,23 +749,25 @@ function ensurePTRHomeAnimationStyles() {
     const style = document.createElement('style');
     style.id = 'ptr-home-animation-styles';
     style.textContent = `
-        #ptr-spinner.ptr-home-icon, #ptr-spinner.ptr-home-icon path {
+        #ptr-spinner.ptr-home-icon path {
             fill: none !important;
             stroke: var(--primary, #FF1744) !important;
             stroke-width: 1.9 !important;
             stroke-linecap: round !important;
             stroke-linejoin: round !important;
-            stroke-dasharray: 48 !important;
-            stroke-dashoffset: 48 !important;
+            stroke-dasharray: 1 !important;
+            stroke-dashoffset: 1 !important;
+            vector-effect: non-scaling-stroke;
+        }
+        #ptr-spinner.ptr-home-icon.ptr-home-building path {
+            animation: ptrHomePathBuild 0.72s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
         }
         #ptr-spinner.ptr-home-icon.ptr-home-building {
-            animation: ptrHomeBuild 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards,
-                       ptrHomeGlow 1.15s ease-in-out 0.82s infinite alternate !important;
+            animation: ptrHomeGlow 1.15s ease-in-out 0.68s infinite alternate !important;
         }
-        @keyframes ptrHomeBuild {
-            0% { stroke-dashoffset: 48; transform: scale(.78) rotate(-7deg); opacity: .25; }
-            55% { stroke-dashoffset: 16; transform: scale(1.05) rotate(2deg); opacity: 1; }
-            100% { stroke-dashoffset: 0; transform: scale(1) rotate(0deg); opacity: 1; }
+        @keyframes ptrHomePathBuild {
+            0% { stroke-dashoffset: 1; opacity: .15; }
+            100% { stroke-dashoffset: 0; opacity: 1; }
         }
         @keyframes ptrHomeGlow {
             0% { filter: drop-shadow(0 0 1px rgba(255,23,68,.25)); }
@@ -774,7 +776,6 @@ function ensurePTRHomeAnimationStyles() {
     `;
     document.head.appendChild(style);
 }
-
 function ensurePTRIndicator() {
     ensurePTRHomeAnimationStyles();
     let ptrIndicator = document.getElementById('ptr-indicator');
@@ -793,15 +794,15 @@ function ensurePTRIndicator() {
         ptrSpinner.setAttribute('viewBox', '0 0 32 32');
         ptrSpinner.setAttribute('aria-hidden', 'true');
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('pathLength', '1'); path.setAttribute('d', 'M7 14.5 16 7l9 7.5');
+        path.setAttribute('pathLength', '1'); path.setAttribute('d', 'M7 14.5 16 7l9 7.5'); path.style.stroke = 'var(--primary, #FF1744)'; path.style.strokeWidth = '1.9'; path.style.fill = 'none';
         ptrSpinner.appendChild(path);
         const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path2.setAttribute('pathLength', '1');
-        path2.setAttribute('d', 'M7 14.5V23c0 1.7 1.3 3 3 3h12c1.7 0 3-1.3 3-3v-8.5');
+        path2.setAttribute('d', 'M7 14.5V23c0 1.7 1.3 3 3 3h12c1.7 0 3-1.3 3-3v-8.5'); path2.style.stroke = 'var(--primary, #FF1744)'; path2.style.strokeWidth = '1.9'; path2.style.fill = 'none';
         ptrSpinner.appendChild(path2);
         const path3 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path3.setAttribute('pathLength', '1');
-        path3.setAttribute('d', 'M13 26v-7h6v7');
+        path3.setAttribute('d', 'M13 26v-7h6v7'); path3.style.stroke = 'var(--primary, #FF1744)'; path3.style.strokeWidth = '1.9'; path3.style.fill = 'none';
         ptrSpinner.appendChild(path3);
         ptrIndicator.appendChild(ptrSpinner);
     }
@@ -827,7 +828,7 @@ function ensurePTRIndicator() {
         ptrSpinner.style.setProperty('height', '24px', 'important');
         ptrSpinner.style.setProperty('display', 'block', 'important');
         ptrSpinner.style.setProperty('fill', 'var(--primary, #FF1744)', 'important');
-        ptrSpinner.style.setProperty('stroke', 'none', 'important');
+        ptrSpinner.style.setProperty('stroke', 'var(--primary, #FF1744)', 'important');
         ptrSpinner.style.setProperty('stroke-width', '2.4', 'important');
         ptrSpinner.style.setProperty('stroke-linecap', 'round', 'important');
         ptrSpinner.style.setProperty('stroke-linejoin', 'round', 'important');

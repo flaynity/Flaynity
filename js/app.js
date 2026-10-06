@@ -743,8 +743,8 @@ function resetPTRIndicator() {
     const ptrIndicator = document.getElementById('ptr-indicator');
     const ptrSpinner = document.getElementById('ptr-spinner');
     if (ptrIndicator) {
-        ptrIndicator.style.transform = 'translate3d(-50%, -70px, 0)';
-        ptrIndicator.style.opacity = '0';
+        ptrIndicator.style.setProperty('transform', 'translate3d(-50%, -90px, 0)', 'important');
+        ptrIndicator.style.setProperty('opacity', '0', 'important');
     }
     if (ptrSpinner) ptrSpinner.classList.remove('ptr-spinning');
 }
@@ -763,11 +763,15 @@ function initPullToRefresh() {
     }
 
     if (ptrIndicator) {
-        ptrIndicator.style.position = 'fixed';
-        ptrIndicator.style.top = '94px';
-        ptrIndicator.style.left = '50%';
-        ptrIndicator.style.zIndex = '2147483647';
-        ptrIndicator.style.visibility = 'visible';
+        ptrIndicator.style.setProperty('position', 'fixed', 'important');
+        ptrIndicator.style.setProperty('top', '76px', 'important');
+        ptrIndicator.style.setProperty('left', '50%', 'important');
+        ptrIndicator.style.setProperty('width', '42px', 'important');
+        ptrIndicator.style.setProperty('height', '42px', 'important');
+        ptrIndicator.style.setProperty('display', 'flex', 'important');
+        ptrIndicator.style.setProperty('visibility', 'visible', 'important');
+        ptrIndicator.style.setProperty('opacity', '0', 'important');
+        ptrIndicator.style.setProperty('z-index', '2147483647', 'important');
     }
 
     const PTR_TRIGGER_DISTANCE = 110;
@@ -804,8 +808,8 @@ function initPullToRefresh() {
             if (e.cancelable) e.preventDefault();
 
             if (ptrIndicator) {
-                ptrIndicator.style.opacity = String(Math.min(1, pullDistance / 52));
-                ptrIndicator.style.transform = `translate3d(-50%, ${pullDistance - 70}px, 0)`;
+                ptrIndicator.style.setProperty('opacity', String(Math.min(1, pullDistance / 52)), 'important');
+                ptrIndicator.style.setProperty('transform', `translate3d(-50%, ${pullDistance - 42}px, 0)`, 'important');
             }
             if (ptrSpinner) {
                 ptrSpinner.style.transform = `rotate(${pullDistance * 3.2}deg)`;
@@ -829,8 +833,8 @@ function initPullToRefresh() {
         if (deltaY >= PTR_TRIGGER_DISTANCE && getMainScrollTop() <= 0 && isPTRAllowedOnCurrentView()) {
             isRefreshingNow = true;
             if (ptrIndicator) {
-                ptrIndicator.style.transform = 'translate3d(-50%, 18px, 0)';
-                ptrIndicator.style.opacity = '1';
+                ptrIndicator.style.setProperty('transform', 'translate3d(-50%, 18px, 0)', 'important');
+                ptrIndicator.style.setProperty('opacity', '1', 'important');
             }
             if (ptrSpinner) {
                 ptrSpinner.style.stroke = 'var(--primary)';

@@ -785,8 +785,8 @@ function ensurePTRIndicator() {
         ptrSpinner.style.setProperty('width', '24px', 'important');
         ptrSpinner.style.setProperty('height', '24px', 'important');
         ptrSpinner.style.setProperty('display', 'block', 'important');
-        ptrSpinner.style.setProperty('fill', 'none', 'important');
-        ptrSpinner.style.setProperty('stroke', 'var(--text-muted, #888)', 'important');
+        ptrSpinner.style.setProperty('fill', 'var(--primary, #FF1744)', 'important');
+        ptrSpinner.style.setProperty('stroke', 'none', 'important');
         ptrSpinner.style.setProperty('stroke-width', '2.4', 'important');
         ptrSpinner.style.setProperty('stroke-linecap', 'round', 'important');
         ptrSpinner.style.setProperty('stroke-linejoin', 'round', 'important');
@@ -807,7 +807,12 @@ function resetPTRIndicator() {
         ptrIndicator.style.setProperty('border', '2px solid var(--primary)', 'important');
         ptrIndicator.style.setProperty('box-shadow', '0 4px 16px rgba(0,0,0,0.35)', 'important');
     }
-    if (ptrSpinner) ptrSpinner.classList.remove('ptr-spinning');
+    if (ptrSpinner) {
+        ptrSpinner.classList.remove('ptr-spinning');
+        ptrSpinner.style.setProperty('fill', 'var(--primary, #FF1744)', 'important');
+        ptrSpinner.style.setProperty('stroke', 'none', 'important');
+        ptrSpinner.style.removeProperty('transform');
+    }
 }
 
 function initPullToRefresh() {
@@ -880,7 +885,8 @@ function initPullToRefresh() {
             }
             if (ptrSpinner) {
                 ptrSpinner.style.transform = `rotate(${pullDistance * 3.2}deg)`;
-                ptrSpinner.style.stroke = pullDistance >= PTR_TRIGGER_DISTANCE * 0.42 ? 'var(--primary)' : 'var(--text-muted)';
+                ptrSpinner.style.setProperty('fill', pullDistance >= PTR_TRIGGER_DISTANCE * 0.42 ? 'var(--primary, #FF1744)' : 'var(--text-muted, #888)', 'important');
+                ptrSpinner.style.setProperty('stroke', 'none', 'important');
             }
         } else if (deltaY <= 0 || deltaX >= Math.abs(deltaY) * 1.35) {
             isPTRActive = false;
@@ -904,7 +910,8 @@ function initPullToRefresh() {
                 ptrIndicator.style.setProperty('opacity', '1', 'important');
             }
             if (ptrSpinner) {
-                ptrSpinner.style.stroke = 'var(--primary)';
+                ptrSpinner.style.setProperty('fill', 'var(--primary, #FF1744)', 'important');
+                ptrSpinner.style.setProperty('stroke', 'none', 'important');
                 ptrSpinner.style.transform = '';
                 ptrSpinner.classList.add('ptr-spinning');
             }

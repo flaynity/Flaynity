@@ -753,8 +753,23 @@ function initPullToRefresh() {
     if (window.__flaynityPTRInitialized) return;
     window.__flaynityPTRInitialized = true;
 
-    const ptrIndicator = document.getElementById('ptr-indicator');
-    const ptrSpinner = document.getElementById('ptr-spinner');
+    let ptrIndicator = document.getElementById('ptr-indicator');
+    let ptrSpinner = document.getElementById('ptr-spinner');
+
+    // The modular page loader mounts Home inside #app-screen. Move the
+    // fixed PTR overlay to <body> so it is never hidden by a page stacking context.
+    if (ptrIndicator && ptrIndicator.parentElement !== document.body) {
+        document.body.appendChild(ptrIndicator);
+    }
+
+    if (ptrIndicator) {
+        ptrIndicator.style.position = 'fixed';
+        ptrIndicator.style.top = '94px';
+        ptrIndicator.style.left = '50%';
+        ptrIndicator.style.zIndex = '2147483647';
+        ptrIndicator.style.visibility = 'visible';
+    }
+
     const PTR_TRIGGER_DISTANCE = 110;
 
     document.addEventListener('touchstart', (e) => {

@@ -21,6 +21,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.MotionEvent;
+import android.view.Gravity;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
@@ -38,6 +41,8 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -89,6 +94,14 @@ public class MainActivity extends Activity {
 
     private Handler handler = new Handler(Looper.getMainLooper());
     private boolean hasWebBackStack = false;
+
+    // Native Home pull-to-refresh state.
+    private FrameLayout pullRefreshContainer;
+    private ProgressBar pullRefreshIndicator;
+    private float pullStartY = 0f;
+    private boolean pullTracking = false;
+    private boolean pullRefreshing = false;
+    private static final int PULL_REFRESH_TRIGGER_DP = 96;
 
     public class WebAppInterface {
         Context mContext;
@@ -183,6 +196,7 @@ public class MainActivity extends Activity {
         }
         
         setupWebView();
+        setupHomePullToRefresh();
         startLoadingApp();
         fetchFcmToken();
         registerNetworkCallback();
@@ -593,12 +607,15 @@ public class MainActivity extends Activity {
             @Override
             public void onPageStarted(WebView v, String url, Bitmap fav) {
                 super.onPageStarted(v, url, fav);
-                isError = false; 
+                isError = false;
             }
 
             @Override
             public void onPageFinished(WebView v, String url) {
                 super.onPageFinished(v, url);
+                if (pullRefreshing) {
+                    finishHomePullRefresh();
+                }
                 if (!isError && !url.equals("about:blank") && !url.equals(OFFLINE_URL)) {
                     v.evaluateJavascript("if (typeof syncFcmToken === 'function') { syncFcmToken(); }", null);
                 }
@@ -607,6 +624,9 @@ public class MainActivity extends Activity {
             @Override
             public void onReceivedError(WebView v, int code, String desc, String url) {
                 super.onReceivedError(v, code, desc, url);
+                if (pullRefreshing) {
+                    finishHomePullRefresh();
+                }
                 if (url != null && ((websiteUrl != null && url.startsWith(websiteUrl)) || url.equals("about:blank"))) {
                     isError = true;
                     if (webview1 != null) webview1.loadUrl(OFFLINE_URL);
@@ -617,6 +637,9 @@ public class MainActivity extends Activity {
             @Override
             public void onReceivedError(WebView v, WebResourceRequest r, WebResourceError e) {
                 super.onReceivedError(v, r, e);
+                if (pullRefreshing) {
+                    finishHomePullRefresh();
+                }
                 if (r.isForMainFrame()) {
                     isError = true;
                     if (webview1 != null) webview1.loadUrl(OFFLINE_URL);
@@ -949,5 +972,7 @@ public class MainActivity extends Activity {
         if (webview1 != null) {
             webview1.destroy();
         }
+        pullRefreshContainer = null;
+        pullRefreshIndicator = null;
     }
 }

@@ -477,23 +477,33 @@
 
 
         /* Home and You use the slightly larger reference-icon scale. */
-        #nav-home .nav-icon-svg,
-        #nav-you .nav-icon-svg {
-            width: 34px !important;
-            height: 34px !important;
+        #nav-home .nav-icon-svg {
+            width: 38px !important;
+            height: 38px !important;
+        }
+
+        #nav-you .nav-icon-container {
+            width: 38px !important;
+            height: 38px !important;
         }
 
         #nav-you .nav-avatar-circle {
-            width: 34px !important;
-            height: 34px !important;
+            width: 38px !important;
+            height: 38px !important;
+            min-width: 38px !important;
+            min-height: 38px !important;
             border-radius: 50% !important;
-            overflow: hidden;
+            overflow: hidden !important;
+            flex: 0 0 38px !important;
+            aspect-ratio: 1 / 1 !important;
         }
 
         #nav-you .nav-avatar-circle .nav-icon-svg {
-            width: 34px !important;
-            height: 34px !important;
-            border-radius: 50%;
+            width: 38px !important;
+            height: 38px !important;
+            min-width: 38px !important;
+            min-height: 38px !important;
+            border-radius: 50% !important;
         }
 
 /* Full Screen Movie Page */

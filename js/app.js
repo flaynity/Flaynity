@@ -801,7 +801,8 @@ function resetPTRIndicator() {
     if (ptrIndicator) {
         ptrIndicator.style.setProperty('transform', 'translate3d(-50%, -90px, 0)', 'important');
         ptrIndicator.style.setProperty('opacity', '0', 'important');
-        ptrIndicator.style.setProperty('visibility', 'visible', 'important');
+        ptrIndicator.style.setProperty('visibility', 'hidden', 'important');
+        ptrIndicator.style.setProperty('display', 'none', 'important');
         ptrIndicator.style.setProperty('pointer-events', 'none', 'important');
         ptrIndicator.style.setProperty('background', 'var(--surface)', 'important');
         ptrIndicator.style.setProperty('border', '2px solid var(--primary)', 'important');
@@ -809,9 +810,10 @@ function resetPTRIndicator() {
     }
     if (ptrSpinner) {
         ptrSpinner.classList.remove('ptr-spinning');
+        ptrSpinner.style.setProperty('animation', 'none', 'important');
         ptrSpinner.style.setProperty('fill', 'var(--primary, #FF1744)', 'important');
         ptrSpinner.style.setProperty('stroke', 'none', 'important');
-        ptrSpinner.style.removeProperty('transform');
+        ptrSpinner.style.setProperty('transform', 'none', 'important');
     }
 }
 
@@ -841,8 +843,9 @@ function initPullToRefresh() {
         ptrIndicator.style.setProperty('width', '42px', 'important');
         ptrIndicator.style.setProperty('height', '42px', 'important');
         ptrIndicator.style.setProperty('display', 'flex', 'important');
-        ptrIndicator.style.setProperty('visibility', 'visible', 'important');
+        ptrIndicator.style.setProperty('visibility', 'hidden', 'important');
         ptrIndicator.style.setProperty('opacity', '0', 'important');
+        ptrIndicator.style.setProperty('display', 'none', 'important');
         ptrIndicator.style.setProperty('z-index', '2147483647', 'important');
     }
 
@@ -880,6 +883,8 @@ function initPullToRefresh() {
             if (e.cancelable) e.preventDefault();
 
             if (ptrIndicator) {
+                ptrIndicator.style.setProperty('display', 'flex', 'important');
+                ptrIndicator.style.setProperty('visibility', 'visible', 'important');
                 ptrIndicator.style.setProperty('opacity', String(Math.min(1, pullDistance / 52)), 'important');
                 ptrIndicator.style.setProperty('transform', `translate3d(-50%, ${Math.min(54, pullDistance)}px, 0)`, 'important');
             }
@@ -906,6 +911,8 @@ function initPullToRefresh() {
         if (deltaY >= PTR_TRIGGER_DISTANCE && getMainScrollTop() <= 0 && isPTRAllowedOnCurrentView()) {
             isRefreshingNow = true;
             if (ptrIndicator) {
+                ptrIndicator.style.setProperty('display', 'flex', 'important');
+                ptrIndicator.style.setProperty('visibility', 'visible', 'important');
                 ptrIndicator.style.setProperty('transform', 'translate3d(-50%, 18px, 0)', 'important');
                 ptrIndicator.style.setProperty('opacity', '1', 'important');
             }

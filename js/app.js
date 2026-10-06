@@ -749,7 +749,7 @@ function ensurePTRHomeAnimationStyles() {
     const style = document.createElement('style');
     style.id = 'ptr-home-animation-styles';
     style.textContent = `
-        #ptr-spinner.ptr-home-icon,\n        #ptr-spinner.ptr-home-icon path {
+        #ptr-spinner.ptr-home-icon, #ptr-spinner.ptr-home-icon path {
             fill: none !important;
             stroke: var(--primary, #FF1744) !important;
             stroke-width: 1.9 !important;
@@ -790,7 +790,7 @@ function ensurePTRIndicator() {
         ptrSpinner = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         ptrSpinner.id = 'ptr-spinner';
         ptrSpinner.setAttribute('class', 'ptr-spinner');
-        ptrSpinner.setAttribute('viewBox', '0 0 24 24');
+        ptrSpinner.setAttribute('viewBox', '0 0 32 32');
         ptrSpinner.setAttribute('aria-hidden', 'true');
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('pathLength', '1'); path.setAttribute('d', 'M7 14.5 16 7l9 7.5');

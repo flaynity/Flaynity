@@ -736,7 +736,7 @@ function isPTRAllowedOnCurrentView() {
 
     // Feels has its own vertical scroller and must never trigger page PTR.
     if (activeTabId === 'feels') return false;
-    return ['home', 'search', 'you'].includes(activeTabId) && getMainScrollTop() <= 0;
+    return activeTabId === 'home' && getMainScrollTop() <= 0;
 }
 
 function resetPTRIndicator() {

@@ -941,14 +941,14 @@ function initPullToRefresh() {
         if (deltaY > 8 && deltaY > deltaX * 1.35) {
             touchMoveY = currentY;
             // Damped movement prevents a tiny scroll from looking like a pull.
-            const pullDistance = Math.min(100, deltaY * 0.42);
+            const pullDistance = Math.min(140, deltaY * 0.58);
             if (e.cancelable) e.preventDefault();
 
             if (ptrIndicator) {
                 ptrIndicator.style.setProperty('display', 'flex', 'important');
                 ptrIndicator.style.setProperty('visibility', 'visible', 'important');
                 ptrIndicator.style.setProperty('opacity', String(Math.min(1, pullDistance / 52)), 'important');
-                ptrIndicator.style.setProperty('transform', `translate3d(-50%, ${Math.min(54, pullDistance)}px, 0)`, 'important');
+                ptrIndicator.style.setProperty('transform', `translate3d(-50%, ${Math.min(82, pullDistance)}px, 0)`, 'important');
             }
             if (ptrSpinner) {
                 ptrSpinner.style.transform = `rotate(${pullDistance * 3.2}deg)`;
@@ -975,7 +975,7 @@ function initPullToRefresh() {
             if (ptrIndicator) {
                 ptrIndicator.style.setProperty('display', 'flex', 'important');
                 ptrIndicator.style.setProperty('visibility', 'visible', 'important');
-                ptrIndicator.style.setProperty('transform', 'translate3d(-50%, 18px, 0)', 'important');
+                ptrIndicator.style.setProperty('transform', 'translate3d(-50%, 30px, 0)', 'important');
                 ptrIndicator.style.setProperty('opacity', '1', 'important');
             }
             if (ptrSpinner) {

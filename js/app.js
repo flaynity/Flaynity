@@ -4090,6 +4090,9 @@ function adjustHeaderForActiveTab(tabId) {
     // coordinates, but make them normal document-flow elements so native
     // scrolling moves them with the feed at exactly the user's scroll speed.
     if (tabId === 'home') {
+        if (window.AndroidBridge && typeof window.AndroidBridge.requestNotificationPermission === 'function') {
+            setTimeout(() => window.AndroidBridge.requestNotificationPermission(), 250);
+        }
         document.body.style.paddingTop = '0px';
         header.style.position = 'absolute';
         header.style.top = '0px';

@@ -745,6 +745,11 @@ function resetPTRIndicator() {
     if (ptrIndicator) {
         ptrIndicator.style.setProperty('transform', 'translate3d(-50%, -90px, 0)', 'important');
         ptrIndicator.style.setProperty('opacity', '0', 'important');
+        ptrIndicator.style.setProperty('visibility', 'visible', 'important');
+        ptrIndicator.style.setProperty('pointer-events', 'none', 'important');
+        ptrIndicator.style.setProperty('background', 'var(--surface)', 'important');
+        ptrIndicator.style.setProperty('border', '2px solid var(--primary)', 'important');
+        ptrIndicator.style.setProperty('box-shadow', '0 4px 16px rgba(0,0,0,0.35)', 'important');
     }
     if (ptrSpinner) ptrSpinner.classList.remove('ptr-spinning');
 }
@@ -764,7 +769,7 @@ function initPullToRefresh() {
 
     if (ptrIndicator) {
         ptrIndicator.style.setProperty('position', 'fixed', 'important');
-        ptrIndicator.style.setProperty('top', '76px', 'important');
+        ptrIndicator.style.setProperty('top', '58px', 'important');
         ptrIndicator.style.setProperty('left', '50%', 'important');
         ptrIndicator.style.setProperty('width', '42px', 'important');
         ptrIndicator.style.setProperty('height', '42px', 'important');
@@ -809,7 +814,7 @@ function initPullToRefresh() {
 
             if (ptrIndicator) {
                 ptrIndicator.style.setProperty('opacity', String(Math.min(1, pullDistance / 52)), 'important');
-                ptrIndicator.style.setProperty('transform', `translate3d(-50%, ${pullDistance - 42}px, 0)`, 'important');
+                ptrIndicator.style.setProperty('transform', `translate3d(-50%, ${Math.min(54, pullDistance)}px, 0)`, 'important');
             }
             if (ptrSpinner) {
                 ptrSpinner.style.transform = `rotate(${pullDistance * 3.2}deg)`;

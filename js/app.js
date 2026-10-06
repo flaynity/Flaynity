@@ -743,6 +743,58 @@ function isPTRAllowedOnCurrentView() {
     return activeTabId === 'home' && getMainScrollTop() <= 0;
 }
 
+function ensurePTRIndicator() {
+    let ptrIndicator = document.getElementById('ptr-indicator');
+    if (!ptrIndicator) {
+        ptrIndicator = document.createElement('div');
+        ptrIndicator.id = 'ptr-indicator';
+        ptrIndicator.setAttribute('aria-hidden', 'true');
+        ptrIndicator.innerHTML = '<svg id="ptr-spinner" class="ptr-spinner" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6 0-1.66.69-3.14 1.78-4.22L13 11h7V4l-2.35 2.35z"></path></svg>';
+        document.body.appendChild(ptrIndicator);
+    }
+    let ptrSpinner = document.getElementById('ptr-spinner');
+    if (!ptrSpinner && ptrIndicator) {
+        ptrSpinner = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        ptrSpinner.id = 'ptr-spinner';
+        ptrSpinner.setAttribute('class', 'ptr-spinner');
+        ptrSpinner.setAttribute('viewBox', '0 0 24 24');
+        ptrSpinner.setAttribute('aria-hidden', 'true');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6 0-1.66.69-3.14 1.78-4.22L13 11h7V4l-2.35 2.35z');
+        ptrSpinner.appendChild(path);
+        ptrIndicator.appendChild(ptrSpinner);
+    }
+    if (ptrIndicator) {
+        ptrIndicator.style.setProperty('position', 'fixed', 'important');
+        ptrIndicator.style.setProperty('top', '58px', 'important');
+        ptrIndicator.style.setProperty('left', '50%', 'important');
+        ptrIndicator.style.setProperty('width', '42px', 'important');
+        ptrIndicator.style.setProperty('height', '42px', 'important');
+        ptrIndicator.style.setProperty('display', 'flex', 'important');
+        ptrIndicator.style.setProperty('align-items', 'center', 'important');
+        ptrIndicator.style.setProperty('justify-content', 'center', 'important');
+        ptrIndicator.style.setProperty('visibility', 'visible', 'important');
+        ptrIndicator.style.setProperty('pointer-events', 'none', 'important');
+        ptrIndicator.style.setProperty('background', 'var(--surface, #0F0F0F)', 'important');
+        ptrIndicator.style.setProperty('border', '2px solid var(--primary, #FF1744)', 'important');
+        ptrIndicator.style.setProperty('border-radius', '50%', 'important');
+        ptrIndicator.style.setProperty('box-shadow', '0 4px 16px rgba(0,0,0,0.35)', 'important');
+        ptrIndicator.style.setProperty('z-index', '2147483647', 'important');
+    }
+    if (ptrSpinner) {
+        ptrSpinner.style.setProperty('width', '24px', 'important');
+        ptrSpinner.style.setProperty('height', '24px', 'important');
+        ptrSpinner.style.setProperty('display', 'block', 'important');
+        ptrSpinner.style.setProperty('fill', 'none', 'important');
+        ptrSpinner.style.setProperty('stroke', 'var(--text-muted, #888)', 'important');
+        ptrSpinner.style.setProperty('stroke-width', '2.4', 'important');
+        ptrSpinner.style.setProperty('stroke-linecap', 'round', 'important');
+        ptrSpinner.style.setProperty('stroke-linejoin', 'round', 'important');
+        ptrSpinner.style.setProperty('transform-origin', '50% 50%', 'important');
+    }
+    return { ptrIndicator, ptrSpinner };
+}
+
 function resetPTRIndicator() {
     const ptrIndicator = document.getElementById('ptr-indicator');
     const ptrSpinner = document.getElementById('ptr-spinner');
@@ -761,8 +813,9 @@ function resetPTRIndicator() {
 function initPullToRefresh() {
     if (window.__flaynityPTRInitialized) return;
 
-    let ptrIndicator = document.getElementById('ptr-indicator');
-    let ptrSpinner = document.getElementById('ptr-spinner');
+    const ensuredPTR = ensurePTRIndicator();
+    let ptrIndicator = ensuredPTR.ptrIndicator;
+    let ptrSpinner = ensuredPTR.ptrSpinner;
 
     // Home is mounted asynchronously by the modular page loader. If the
     // indicator is not mounted yet, wait for flaynity-dom-ready and retry.

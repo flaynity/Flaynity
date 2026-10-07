@@ -1300,26 +1300,39 @@ trackListener(REF.connected, 'value', snap => {
 });
 
 /*
- * No login screen is shown. The panel uses a silent Firebase session.
- * Anonymous Auth must be enabled in Firebase Authentication.
+ * No login screen is shown. The Admin Panel must initialize independently
+ * of authentication so the panel cannot remain stuck on "Connecting…".
+ * Existing Firebase auth is reused when available; anonymous auth is only
+ * attempted in the background and never blocks panel initialization.
  */
-async function startAdminSession(){
-  try{
-    currentUser = auth.currentUser;
-    if(!currentUser){
-      const result = await auth.signInAnonymously();
-      currentUser = result.user;
-    }
-    const avatar = document.getElementById('admin-av');
-    const email = document.getElementById('admin-email-label');
-    if(avatar) avatar.textContent = 'A';
-    if(email) email.textContent = currentUser.email || 'Admin';
-    bootApp();
-  }catch(err){
-    console.error('Admin session initialization failed:', err);
-    const email = document.getElementById('admin-email-label');
-    if(email) email.textContent = 'Authentication unavailable';
-  }
+function updateAdminIdentity(){
+  const avatar = document.getElementById('admin-av');
+  const email = document.getElementById('admin-email-label');
+  if(!avatar || !email) return;
+  avatar.textContent = 'A';
+  email.textContent = currentUser ? (currentUser.email || 'Admin') : 'Admin';
+}
+
+function startAdminSession(){
+  currentUser = auth.currentUser || null;
+  updateAdminIdentity();
+
+  /* Start every Admin Panel listener/action immediately. */
+  bootApp();
+
+  /* Reuse an existing authenticated Firebase session when available. */
+  if(currentUser) return;
+
+  /* Try to establish a silent session without blocking the panel. */
+  auth.signInAnonymously()
+    .then(result => {
+      currentUser = result.user || null;
+      updateAdminIdentity();
+    })
+    .catch(err => {
+      console.warn('Silent Firebase authentication unavailable:', err);
+      /* Panel remains initialized; database rules decide permitted actions. */
+    });
 }
 
 startAdminSession();

@@ -1286,25 +1286,29 @@ function updateListenerBadge(){
    1. ADMIN SESSION
 --------------------------------------------------------------- */
 let currentUser = null;
+let firebaseConnected = false;
+let firebaseSetupError = null;
 
-/* Firebase connection status must be registered before boot. */
-trackListener(REF.connected, 'value', snap => {
-  const isConn = snap.val() === true;
+/* ---------------------------------------------------------------
+   FIREBASE SETUP
+   - Keep the Admin Panel usable even if Auth is unavailable.
+   - Never leave the status permanently stuck at "Connecting…".
+   - Reuse an existing Firebase user session when available.
+   - Anonymous Auth is only a fallback and does not weaken database rules.
+--------------------------------------------------------------- */
+function setFirebaseStatus(state, message){
+  const connected = state === 'connected';
+  const offline = state === 'disconnected' || state === 'error';
+  firebaseConnected = connected;
   ['conn','sys-conn'].forEach(prefix => {
     const pill = document.getElementById(prefix+'-pill');
     const label = document.getElementById(prefix+'-label');
-    if(!pill) return;
-    pill.classList.toggle('off', !isConn);
-    label.textContent = isConn ? 'Firebase Connected' : 'Firebase Disconnected';
+    if(!pill || !label) return;
+    pill.classList.toggle('off', !connected);
+    label.textContent = message || (connected ? 'Firebase Connected' : offline ? 'Firebase Disconnected' : 'Connecting…');
   });
-});
+}
 
-/*
- * No login screen is shown. The Admin Panel must initialize independently
- * of authentication so the panel cannot remain stuck on "Connecting…".
- * Existing Firebase auth is reused when available; anonymous auth is only
- * attempted in the background and never blocks panel initialization.
- */
 function updateAdminIdentity(){
   const avatar = document.getElementById('admin-av');
   const email = document.getElementById('admin-email-label');
@@ -1313,26 +1317,60 @@ function updateAdminIdentity(){
   email.textContent = currentUser ? (currentUser.email || 'Admin') : 'Admin';
 }
 
+/* Firebase Realtime Database connection monitor with an explicit error path. */
+REF.connected.on('value', snap => {
+  setFirebaseStatus(snap.val() === true ? 'connected' : 'disconnected',
+    snap.val() === true ? 'Firebase Connected' : 'Firebase Disconnected');
+}, err => {
+  firebaseSetupError = err || new Error('Firebase connection error');
+  setFirebaseStatus('error', 'Firebase Connection Error');
+  console.error('Firebase Realtime Database connection error:', err);
+});
+
+setFirebaseStatus('checking', 'Checking Firebase…');
+
+/* Do not allow a WebView/network problem to leave "Connecting…" forever. */
+setTimeout(() => {
+  if(!firebaseConnected){
+    setFirebaseStatus('error', 'Firebase Connection Error');
+    console.error('Firebase connection timeout. Check Firebase Database, WebView internet access and databaseURL.');
+  }
+}, 8000);
+
 function startAdminSession(){
+  try {
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => {
+      console.warn('Firebase Auth persistence unavailable:', err);
+    });
+  } catch(e) {
+    console.warn('Firebase Auth persistence setup failed:', e);
+  }
+
+  auth.onAuthStateChanged(user => {
+    currentUser = user || null;
+    updateAdminIdentity();
+  }, err => {
+    firebaseSetupError = err || new Error('Firebase Auth error');
+    console.error('Firebase Auth state error:', err);
+    updateAdminIdentity();
+  });
+
   currentUser = auth.currentUser || null;
   updateAdminIdentity();
 
-  /* Start every Admin Panel listener/action immediately. */
+  /* Start the Admin Panel immediately; Firebase data listeners can connect asynchronously. */
   bootApp();
 
-  /* Reuse an existing authenticated Firebase session when available. */
-  if(currentUser) return;
-
-  /* Try to establish a silent session without blocking the panel. */
-  auth.signInAnonymously()
-    .then(result => {
+  /* Existing authenticated session is preferred. Otherwise use anonymous Auth as fallback. */
+  if(!currentUser){
+    auth.signInAnonymously().then(result => {
       currentUser = result.user || null;
       updateAdminIdentity();
-    })
-    .catch(err => {
-      console.warn('Silent Firebase authentication unavailable:', err);
-      /* Panel remains initialized; database rules decide permitted actions. */
+    }).catch(err => {
+      console.warn('Firebase Anonymous Auth unavailable:', err);
+      /* Do not block the Admin Panel. Existing RTDB rules still apply. */
     });
+  }
 }
 
 startAdminSession();

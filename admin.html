@@ -1133,13 +1133,9 @@ function updateListenerBadge(){
 /* ---------------------------------------------------------------
    1. ADMIN SESSION
 --------------------------------------------------------------- */
-let currentUser = { uid: 'admin', email: 'Admin' };
+let currentUser = null;
 
-bootApp();
-
-/* ---------------------------------------------------------------
-   2. CONNECTION STATUS
---------------------------------------------------------------- */
+/* Firebase connection status must be registered before boot. */
 trackListener(REF.connected, 'value', snap => {
   const isConn = snap.val() === true;
   ['conn','sys-conn'].forEach(prefix => {
@@ -1150,6 +1146,31 @@ trackListener(REF.connected, 'value', snap => {
     label.textContent = isConn ? 'Firebase Connected' : 'Firebase Disconnected';
   });
 });
+
+/*
+ * No login screen is shown. The panel uses a silent Firebase session.
+ * Anonymous Auth must be enabled in Firebase Authentication.
+ */
+async function startAdminSession(){
+  try{
+    currentUser = auth.currentUser;
+    if(!currentUser){
+      const result = await auth.signInAnonymously();
+      currentUser = result.user;
+    }
+    const avatar = document.getElementById('admin-av');
+    const email = document.getElementById('admin-email-label');
+    if(avatar) avatar.textContent = 'A';
+    if(email) email.textContent = currentUser.email || 'Admin';
+    bootApp();
+  }catch(err){
+    console.error('Admin session initialization failed:', err);
+    const email = document.getElementById('admin-email-label');
+    if(email) email.textContent = 'Authentication unavailable';
+  }
+}
+
+startAdminSession();
 
 /* ---------------------------------------------------------------
    3. NAVIGATION

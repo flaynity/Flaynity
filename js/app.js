@@ -766,7 +766,9 @@ function ensurePTRHomeAnimationStyles() {
             stroke-linejoin: round !important;
         }
         #ptr-spinner.ptr-home-icon.ptr-home-building path {
-            animation: ptrHomePathBuild 0.72s cubic-bezier(0.22, 1, 0.36, 1) both !important;
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
         }
         #ptr-spinner.ptr-home-icon.ptr-home-building {
             animation: ptrHomeGlow 1.15s ease-in-out 0.68s infinite alternate !important;
@@ -865,7 +867,7 @@ function resetPTRIndicator() {
         ptrSpinner.style.setProperty('-webkit-animation', 'none', 'important');
         ptrSpinner.style.setProperty('-webkit-animation-name', 'none', 'important');
         ptrSpinner.style.setProperty('fill', 'var(--primary, #FF1744)', 'important');
-        ptrSpinner.style.setProperty('stroke', 'none', 'important');
+        ptrSpinner.style.setProperty('stroke', 'var(--primary, #FF1744)', 'important');
         ptrSpinner.style.setProperty('transform', 'rotate(0deg)', 'important');
         ptrSpinner.style.setProperty('transition', 'transform 0.32s cubic-bezier(0.22, 1, 0.36, 1)', 'important');
     });
@@ -951,7 +953,7 @@ function initPullToRefresh() {
                 ptrIndicator.style.setProperty('transform', `translate3d(-50%, ${Math.min(115, pullDistance)}px, 0)`, 'important');
             }
             if (ptrSpinner) {
-                ptrSpinner.style.transform = `rotate(${pullDistance * 3.2}deg)`;
+                ptrSpinner.style.transform = 'rotate(0deg)';
                 ptrSpinner.style.setProperty('fill', pullDistance >= PTR_TRIGGER_DISTANCE * 0.42 ? 'var(--primary, #FF1744)' : 'var(--text-muted, #888)', 'important');
                 ptrSpinner.style.setProperty('stroke', 'none', 'important');
             }

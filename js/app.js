@@ -2189,7 +2189,7 @@ function renderLongVideosSegmentUI(segmentLongs) {
         const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px;height:36px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></div>`;
         html += `
             <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin:0 -16px 8px -16px;width:calc(100% + 32px);cursor:pointer;background:var(--surface);border-radius:0;overflow:hidden;">
-                <div class="long-video-thumb-container" style="position:relative;width:100%;aspect-ratio:16/9;background:#0F0F0F;overflow:hidden;border-radius:8px;">
+                <div class="long-video-thumb-container" style="position:relative;width:100%;aspect-ratio:16/9;background:#0F0F0F;overflow:hidden;border-radius:0;">
                     <img src="${v.poster}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;">
                     <span style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.85);color:#fff;font-size:0.72rem;padding:2px 6px;border-radius:4px;font-weight:800;">${v.duration || '10:00'}</span>
                 </div>

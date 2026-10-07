@@ -411,158 +411,6 @@ body{font-weight:600;}
 @media(max-width:420px){.settings-row{gap:10px}.settings-row .t{font-size:13px}.settings-row .d{font-size:10.8px}.toggle{width:70px;height:34px;flex-basis:70px}.toggle .slider::before{width:26px;height:26px}.toggle input:checked + .slider::before{transform:translateX(34px)}.admin-chip{max-width:140px}}
 
 </style>
-<style id="fx-premium">
-/* Flaynity Admin - premium dark presentation layer (UI only, no logic) */
-:root{--bg:#08090B;--bg-soft:#0D0F12;--panel:#111318;--panel-solid:#111318;--elev:#15181D;--panel-hover:#15181D;--panel-border:rgba(255,255,255,.07);--line:rgba(255,255,255,.07);--text:#fff;--text-dim:#A1A7B3;--text-faint:#6F7683;--accent:#FF1744;--accent-2:#FF3157;--accent-grad:#FF1744;--ok:#22C55E;--warn:#F59E0B;--danger:#EF4444;--info:#3B82F6;--ok-bg:rgba(34,197,94,.1);--warn-bg:rgba(245,158,11,.1);--danger-bg:rgba(239,68,68,.1);--info-bg:rgba(59,130,246,.1);--neutral-bg:rgba(255,255,255,.05);--radius-sm:8px;--radius-md:12px;--radius-lg:16px;--shadow-sm:0 1px 2px rgba(0,0,0,.5);--shadow-lg:0 24px 64px rgba(0,0,0,.65);--sidebar-w:248px;--topbar-h:60px;--font-display:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--ease:.18s cubic-bezier(.2,.7,.3,1)}
-html body{background:var(--bg);color:var(--text);font-weight:400;font-size:13.5px;line-height:1.5}
-html body #main{overflow-x:clip}
-html body :focus-visible{outline:2px solid var(--accent-2);outline-offset:2px}
-.fx-ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-/* sidebar */
-html body #sidebar{background:var(--bg-soft);border-right:1px solid var(--line);padding:16px 10px 96px}
-html body #sidebar .brand{padding:6px 10px 14px;gap:11px}
-html body #sidebar .brand .mark{width:34px;height:34px;border-radius:10px;background:var(--accent);font-weight:800;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),0 6px 20px rgba(255,23,68,.35)!important}
-html body #sidebar .brand .name{color:#fff;font-weight:800;font-size:13.5px;letter-spacing:.16em;text-transform:uppercase;line-height:1.1}
-html body #sidebar .brand .sub{color:var(--accent-2);font-weight:700;font-size:10px;letter-spacing:.28em;margin-top:3px}
-html body .nav-group-label{color:var(--text-faint);font-weight:600;font-size:10.5px;letter-spacing:.1em;padding:16px 12px 6px}
-html body .nav-item{position:relative;gap:11px;padding:9px 12px;min-height:38px;border-radius:10px;color:var(--text-dim);font-weight:500;transition:background var(--ease),color var(--ease)}
-html body .nav-item .dot{display:none}
-html body .nav-item .ic{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:0;color:var(--text-faint);transition:color var(--ease)}
-html body .nav-item:hover{background:rgba(255,255,255,.04);color:#fff}
-html body .nav-item:hover .ic{color:var(--text-dim)}
-html body .nav-item.active{background:var(--elev);color:#fff;font-weight:600}
-html body .nav-item.active .ic{color:#fff}
-.nav-item.active::before{content:"";position:absolute;left:-10px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--accent)}
-/* topbar */
-html body #topbar{background:rgba(8,9,11,.85);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:0 24px}
-html body #topbar .page-title{display:block!important;font-size:16px;font-weight:700;letter-spacing:-.01em;color:#fff;line-height:1.2}
-html body #topbar .page-desc{display:block!important;font-size:11.5px;font-weight:400;color:var(--text-faint)}
-html body #hamburger{width:40px;height:40px;border-radius:10px;background:var(--panel);border:1px solid var(--line);color:#fff;transition:background var(--ease)}
-html body #hamburger:hover{background:var(--elev)}
-html body .status-pill{background:var(--ok-bg);color:var(--ok);border:1px solid rgba(34,197,94,.22);font-weight:600}
-html body .status-pill.off{background:var(--danger-bg);color:var(--danger);border-color:rgba(239,68,68,.28)}
-html body .admin-chip{background:var(--panel);border:1px solid var(--line);color:#fff;font-weight:500;transition:background var(--ease),border-color var(--ease)}
-html body .admin-chip:hover{background:var(--elev);border-color:rgba(255,255,255,.14)}
-html body .admin-chip .av,html body .avatar-sm{background:#23272F;color:#fff;border:1px solid rgba(255,255,255,.1)}
-/* content, cards */
-html body #content{max-width:1280px;padding:24px 28px 96px;background:transparent}
-html body .section-head{margin:28px 0 14px;padding:0;border:0}
-html body .section-head h2{font-size:18px;font-weight:650;letter-spacing:-.015em;color:#fff}
-html body .section-head p{font-size:12.5px;font-weight:400;color:var(--text-faint)}
-html body .grid-4,html body .grid-3,html body .grid-2{gap:14px}
-html body .card,html body .card.tight,html body .panel,html body .modal-card{background:var(--panel)!important;border:1px solid var(--line)!important;border-radius:var(--radius-lg)!important;padding:18px!important;box-shadow:var(--shadow-sm)!important;transition:border-color var(--ease),transform var(--ease)}
-html body .card.tight{padding:14px 16px!important}
-html body .stat-card:nth-child(n){border:1px solid var(--line)!important;min-height:0;padding:16px 18px!important}
-html body .stat-card:hover{border-color:rgba(255,255,255,.15)!important;transform:translateY(-2px)}
-html body .stat-card .label{font-size:12px;font-weight:500;color:var(--text-dim);text-transform:none;letter-spacing:0}
-html body .stat-card .value{font-size:28px;font-weight:700;letter-spacing:-.02em;color:#fff;margin-top:8px;font-variant-numeric:tabular-nums}
-html body .hairline{background:var(--line)}
-html body .muted,html body .id-mono,html body .pager{color:var(--text-faint)}
-/* buttons */
-html body .btn{background:var(--elev);border:1px solid var(--line);color:#fff;font-weight:600;border-radius:10px;min-height:36px;padding:8px 14px;font-size:12.5px;transition:background var(--ease),border-color var(--ease),transform .1s}
-html body .btn:hover{background:#1C2027;border-color:rgba(255,255,255,.14)}
-html body .btn:active{transform:scale(.97)}
-html body .btn.primary{background:var(--accent);border-color:transparent;color:#fff}
-html body .btn.primary:hover{background:var(--accent-2)}
-html body .btn.ok{background:var(--ok-bg);color:var(--ok);border-color:rgba(34,197,94,.3)}
-html body .btn.warn{background:var(--warn-bg);color:var(--warn);border-color:rgba(245,158,11,.3)}
-html body .btn.danger{background:var(--danger-bg);color:#FF6B6B;border-color:rgba(239,68,68,.32)}
-html body .btn.danger:hover{background:rgba(239,68,68,.2)}
-html body .btn.sm{min-height:30px;padding:5px 11px;font-size:11.5px;border-radius:8px}
-html body .btn[disabled]{opacity:.45;cursor:not-allowed;transform:none}
-.btn.loading,.btn[aria-busy="true"]{pointer-events:none;opacity:.75}
-.btn.loading::before,.btn[aria-busy="true"]::before{content:"";width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:fxspin .7s linear infinite}
-@keyframes fxspin{to{transform:rotate(360deg)}}
-/* inputs */
-html body .field label{color:var(--text-dim);font-weight:500;font-size:12px}
-html body .input,html body select.input,html body textarea.input{background:var(--bg-soft);color:#fff;border:1px solid var(--line);border-radius:10px;min-height:38px;padding:9px 12px;font-weight:400;transition:border-color var(--ease)}
-html body .input::placeholder{color:var(--text-faint)}
-html body .input:focus{border-color:var(--accent);outline:0;box-shadow:0 0 0 3px rgba(255,23,68,.18)!important}
-html body select.input{-webkit-appearance:none;appearance:none;padding-right:34px;background:var(--bg-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236F7683' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 10px center/16px no-repeat}
-.fx-search{position:relative;flex:1;min-width:180px;display:block}
-html body .fx-search .input{width:100%;padding:9px 38px;background:var(--bg-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236F7683' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") 12px 50%/16px no-repeat}
-.fx-clear{display:none;position:absolute;right:4px;top:50%;transform:translateY(-50%);width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:var(--text-faint);cursor:pointer;align-items:center;justify-content:center}
-.fx-clear:hover{color:#fff;background:rgba(255,255,255,.06)}
-.fx-search.has .fx-clear{display:inline-flex}
-.fx-clear .fx-ic{width:16px;height:16px}
-/* toggle */
-html body .toggle{width:40px;height:22px;flex:0 0 40px}
-html body .toggle .slider{background:#2A2F38;border:0;transition:background var(--ease)}
-html body .toggle .slider::before{width:16px;height:16px;left:3px;top:3px;background:#fff}
-html body .toggle .slider::after{display:none!important}
-html body .toggle input:checked + .slider{background:var(--accent);border:0}
-html body .toggle input:checked + .slider::before{transform:translateX(18px)}
-html body .toggle input:focus-visible + .slider{outline:2px solid #fff;outline-offset:2px}
-/* tables */
-html body .table-wrap{background:var(--panel)!important;border:1px solid var(--line)!important;border-radius:var(--radius-lg)!important;-webkit-overflow-scrolling:touch}
-html body table{font-size:13px}
-html body .table-wrap thead th{background:#0F1115;color:var(--text-faint);font-weight:600;font-size:11.5px;text-transform:none;letter-spacing:.02em;padding:12px 16px;border-bottom:1px solid var(--line)}
-html body .table-wrap tbody td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);color:var(--text-dim);font-weight:400}
-html body tbody tr{transition:background var(--ease)}
-html body tbody tr:hover{background:rgba(255,255,255,.03)}
-html body tbody tr.selected{background:rgba(255,23,68,.06)}
-html body .cell-main{color:#fff;font-weight:600}
-html body .cell-sub{color:var(--text-faint);font-weight:400}
-/* badges */
-html body .badge{gap:6px;padding:3px 10px 3px 8px;border-radius:999px;font-size:10.5px;font-weight:600;letter-spacing:.05em;border:1px solid transparent}
-.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
-html body .badge.ok{background:var(--ok-bg);color:var(--ok);border-color:rgba(34,197,94,.22)}
-html body .badge.warn{background:var(--warn-bg);color:var(--warn);border-color:rgba(245,158,11,.22)}
-html body .badge.danger{background:var(--danger-bg);color:#FF6B6B;border-color:rgba(239,68,68,.25)}
-html body .badge.info{background:var(--info-bg);color:#60A5FA;border-color:rgba(59,130,246,.25)}
-html body .badge.neutral{background:var(--neutral-bg);color:var(--text-dim);border-color:var(--line)}
-/* tabs */
-html body .tabs{border-bottom:1px solid var(--line)}
-html body .tab-btn{color:var(--text-faint);font-weight:500;padding:10px 2px;transition:color var(--ease),border-color var(--ease)}
-html body .tab-btn:hover{color:#fff}
-html body .tab-btn.active{color:#fff;border-color:var(--accent)}
-.tab-pane.active{animation:fxin .2s ease}
-@keyframes fxin{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-/* settings, audit, empty */
-html body .settings-row:nth-child(n){border-left:0;background:transparent;padding:16px 2px;min-height:0;border-bottom:1px solid var(--line)}
-html body .settings-row .t{color:#fff;font-size:13.5px;font-weight:600}
-html body .settings-row .d{color:var(--text-faint);font-weight:400}
-html body .audit-item{padding:14px 0 14px 16px;border-left:1px solid var(--line);border-bottom:0}
-html body .audit-item .act{color:#fff;font-weight:600}
-html body .audit-item .detail{color:var(--text-dim)}
-html body .empty-state{color:var(--text-faint);padding:56px 20px}
-html body .empty-state .big{display:none}
-.empty-state::before{content:"";display:block;width:44px;height:44px;margin:0 auto 14px;border-radius:12px;border:1px solid var(--line);background:var(--elev) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%236F7683' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 12h-6l-2 3h-4l-2-3H2'/%3E%3Cpath d='M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.7 4H7.3a2 2 0 0 0-1.8 1.1z'/%3E%3C/svg%3E") center/20px no-repeat}
-/* modal */
-html body #modal-backdrop{background:rgba(3,4,6,.7);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
-html body .modal-sheet{background:var(--panel);border:1px solid rgba(255,255,255,.09);border-radius:18px 18px 0 0;padding:22px;box-shadow:var(--shadow-lg)!important}
-html body .modal-sheet .handle{background:rgba(255,255,255,.16)}
-html body .modal-sheet h3{font-size:17px;font-weight:650;color:#fff;letter-spacing:-.01em}
-html body .modal-sheet .modal-sub{color:var(--text-dim);font-size:12.5px;line-height:1.5}
-html body .modal-sheet .kv .k{color:var(--text-faint)}
-html body .modal-sheet .kv .v{color:#fff}
-@media(min-width:680px){html body .modal-sheet{border-radius:18px}.modal-sheet .handle{display:none}}
-/* toasts */
-html body #toast-wrap{top:auto;bottom:20px;right:20px;left:auto;max-width:360px}
-html body .toast{background:var(--elev);border:1px solid rgba(255,255,255,.09);border-radius:12px;color:#fff;box-shadow:var(--shadow-lg)!important;animation:fxtoast .22s ease}
-html body .toast.ok{border-left:3px solid var(--ok)}
-html body .toast.err{border-left:3px solid var(--danger)}
-html body .toast .msg span{color:var(--text-dim)}
-@keyframes fxtoast{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-/* responsive */
-@media(max-width:900px){html body #hamburger{display:inline-flex!important;align-items:center;justify-content:center}html body #sidebar.open{box-shadow:24px 0 60px rgba(0,0,0,.6)!important}html body #sidebar-overlay.show{background:rgba(3,4,6,.62)!important;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}}
-@media(min-width:901px){html body #hamburger{display:none!important}}
-@media(max-width:760px){
-html body #content{padding:16px 14px 88px}
-html body #topbar{padding:0 12px}
-html body #topbar .page-desc{display:none!important}
-html body #topbar .page-title{max-width:34vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px}
-html body .nav-item{min-height:44px}
-html body .btn{min-height:44px}
-html body .btn.sm{min-height:40px}
-html body .input,html body select.input,html body textarea.input{min-height:44px}
-html body .toggle{width:44px;flex-basis:44px;height:26px}
-html body .toggle .slider::before{width:20px;height:20px}
-html body .toggle input:checked + .slider::before{transform:translateX(18px)}
-html body #toast-wrap{left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:none}
-}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
-</style>
 </head>
 <body>
 
@@ -1286,90 +1134,39 @@ function updateListenerBadge(){
    1. ADMIN SESSION
 --------------------------------------------------------------- */
 let currentUser = null;
-let firebaseConnected = false;
-let firebaseSetupError = null;
 
-/* ---------------------------------------------------------------
-   FIREBASE SETUP
-   - Keep the Admin Panel usable even if Auth is unavailable.
-   - Never leave the status permanently stuck at "Connecting…".
-   - Reuse an existing Firebase user session when available.
-   - Anonymous Auth is only a fallback and does not weaken database rules.
---------------------------------------------------------------- */
-function setFirebaseStatus(state, message){
-  const connected = state === 'connected';
-  const offline = state === 'disconnected' || state === 'error';
-  firebaseConnected = connected;
+/* Firebase connection status must be registered before boot. */
+trackListener(REF.connected, 'value', snap => {
+  const isConn = snap.val() === true;
   ['conn','sys-conn'].forEach(prefix => {
     const pill = document.getElementById(prefix+'-pill');
     const label = document.getElementById(prefix+'-label');
-    if(!pill || !label) return;
-    pill.classList.toggle('off', !connected);
-    label.textContent = message || (connected ? 'Firebase Connected' : offline ? 'Firebase Disconnected' : 'Connecting…');
+    if(!pill) return;
+    pill.classList.toggle('off', !isConn);
+    label.textContent = isConn ? 'Firebase Connected' : 'Firebase Disconnected';
   });
-}
-
-function updateAdminIdentity(){
-  const avatar = document.getElementById('admin-av');
-  const email = document.getElementById('admin-email-label');
-  if(!avatar || !email) return;
-  avatar.textContent = 'A';
-  email.textContent = currentUser ? (currentUser.email || 'Admin') : 'Admin';
-}
-
-/* Firebase Realtime Database connection monitor with an explicit error path. */
-REF.connected.on('value', snap => {
-  setFirebaseStatus(snap.val() === true ? 'connected' : 'disconnected',
-    snap.val() === true ? 'Firebase Connected' : 'Firebase Disconnected');
-}, err => {
-  firebaseSetupError = err || new Error('Firebase connection error');
-  setFirebaseStatus('error', 'Firebase Connection Error');
-  console.error('Firebase Realtime Database connection error:', err);
 });
 
-setFirebaseStatus('checking', 'Checking Firebase…');
-
-/* Do not allow a WebView/network problem to leave "Connecting…" forever. */
-setTimeout(() => {
-  if(!firebaseConnected){
-    setFirebaseStatus('error', 'Firebase Connection Error');
-    console.error('Firebase connection timeout. Check Firebase Database, WebView internet access and databaseURL.');
-  }
-}, 8000);
-
-function startAdminSession(){
-  try {
-    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => {
-      console.warn('Firebase Auth persistence unavailable:', err);
-    });
-  } catch(e) {
-    console.warn('Firebase Auth persistence setup failed:', e);
-  }
-
-  auth.onAuthStateChanged(user => {
-    currentUser = user || null;
-    updateAdminIdentity();
-  }, err => {
-    firebaseSetupError = err || new Error('Firebase Auth error');
-    console.error('Firebase Auth state error:', err);
-    updateAdminIdentity();
-  });
-
-  currentUser = auth.currentUser || null;
-  updateAdminIdentity();
-
-  /* Start the Admin Panel immediately; Firebase data listeners can connect asynchronously. */
-  bootApp();
-
-  /* Existing authenticated session is preferred. Otherwise use anonymous Auth as fallback. */
-  if(!currentUser){
-    auth.signInAnonymously().then(result => {
-      currentUser = result.user || null;
-      updateAdminIdentity();
-    }).catch(err => {
-      console.warn('Firebase Anonymous Auth unavailable:', err);
-      /* Do not block the Admin Panel. Existing RTDB rules still apply. */
-    });
+/*
+ * No login screen is shown. The panel uses a silent Firebase session.
+ * Anonymous Auth must be enabled in Firebase Authentication.
+ */
+async function startAdminSession(){
+  try{
+    currentUser = auth.currentUser;
+    if(!currentUser){
+      const result = await auth.signInAnonymously();
+      currentUser = result.user;
+    }
+    const avatar = document.getElementById('admin-av');
+    const email = document.getElementById('admin-email-label');
+    if(avatar) avatar.textContent = 'A';
+    if(email) email.textContent = currentUser.email || 'Admin';
+    bootApp();
+  }catch(err){
+    console.error('Admin session initialization failed:', err);
+    const email = document.getElementById('admin-email-label');
+    if(email) email.textContent = 'Authentication unavailable';
   }
 }
 
@@ -1542,40 +1339,28 @@ function mapFirebaseError(err){
 let booted = false;
 function bootApp(){
   if(booted) return; booted = true;
-  const dump = document.getElementById('sys-config-dump');
-  if(dump) dump.textContent =
+  document.getElementById('sys-config-dump').textContent =
     'projectId: ' + firebaseConfig.projectId + ' · databaseURL: ' + firebaseConfig.databaseURL;
 
-  /* One broken optional initializer must never disable the entire Admin Panel. */
-  const initializers = [
-    ['dashboard', initDashboard],
-    ['users/channels', initUsersAndChannels],
-    ['videos', initVideos],
-    ['feels', initFeels],
-    ['posts', initPosts],
-    ['scheduled', initScheduled],
-    ['subscribers', initSubscribers],
-    ['feature flags', initFeatureFlags],
-    ['max uploads', initMaxUploads],
-    ['flay pay', initFlayPayControl],
-    ['flay ads', initFlayAdsControl],
-    ['monetization', initMonetization],
-    ['monetization control', initMonetizationControl],
-    ['monetization approvals', initMonetizationApprovals],
-    ['platform analytics', initPlatformAnalytics],
-    ['channel analytics', initChannelAnalytics],
-    ['theme', initTheme],
-    ['admin access', initAdminAccess],
-    ['audit logs', initAuditLogs]
-  ];
-
-  initializers.forEach(([name, fn]) => {
-    try {
-      fn();
-    } catch(err) {
-      console.error('Admin initializer failed: ' + name, err);
-    }
-  });
+  initDashboard();
+  initUsersAndChannels();
+  initVideos();
+  initFeels();
+  initPosts();
+  initScheduled();
+  initSubscribers();
+  initFeatureFlags();
+  initMaxUploads();
+  initFlayPayControl();
+  initFlayAdsControl();
+  initMonetization();
+  initMonetizationControl();
+  initMonetizationApprovals();
+  initPlatformAnalytics();
+  initChannelAnalytics();
+  initTheme();
+  initAdminAccess();
+  initAuditLogs();
 
   goToSection('dashboard');
 }
@@ -1771,4 +1556,698 @@ function renderChannelsTable(){
           ? `<button class="btn sm ok" data-enable-ch="${id}">Enable</button>`
           : `<button class="btn sm danger" data-disable-ch="${id}">Disable</button>`}
       </td>`;
-    tbo
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-hide-ch]').forEach(b => b.addEventListener('click', () => channelVisibility(b.dataset.hideCh,'hidden')));
+  tbody.querySelectorAll('[data-restore-ch]').forEach(b => b.addEventListener('click', () => channelVisibility(b.dataset.restoreCh,'visible')));
+  tbody.querySelectorAll('[data-disable-ch]').forEach(b => b.addEventListener('click', () => channelStatus(b.dataset.disableCh,'disabled')));
+  tbody.querySelectorAll('[data-enable-ch]').forEach(b => b.addEventListener('click', () => channelStatus(b.dataset.enableCh,'active')));
+}
+function channelVisibility(id, next){
+  const name = rawChannels[id]?.channelName || id;
+  confirmAction({title: next==='hidden'?'Hide Channel':'Restore Channel', target:name, current: rawChannels[id]?.visibility||'visible', next, dangerLabel:'Confirm', reasonRequired: next==='hidden',
+    onConfirm: reason => safeUpdate(REF.channels.child(id), {visibility:next}).then(ok => { if(ok) logAction('Channel Visibility','channel',id,rawChannels[id]?.visibility||'visible',next,reason); })});
+}
+function channelStatus(id, next){
+  const name = rawChannels[id]?.channelName || id;
+  confirmAction({title: next==='disabled'?'Disable Channel':'Enable Channel', target:name, current: rawChannels[id]?.status||'active', next, dangerLabel:'Confirm', reasonRequired: next==='disabled',
+    onConfirm: reason => safeUpdate(REF.channels.child(id), {status:next}).then(ok => { if(ok) logAction('Channel Status','channel',id,rawChannels[id]?.status||'active',next,reason); })});
+}
+
+/* =========================================================
+   CONTENT SHARED RENDERING
+   ========================================================= */
+function initVideos(){ document.getElementById('videos-search').addEventListener('input', renderVideosTable); document.getElementById('videos-filter').addEventListener('change', renderVideosTable); }
+function renderVideosTable(){ renderContentTable({ dataMap: rawVideos, ref: REF.videos, searchId:'videos-search', filterId:'videos-filter', tbodyId:'videos-tbody', emptyId:'videos-empty', titleField:'title', targetType:'video' }); }
+
+function initFeels(){ document.getElementById('feels-search').addEventListener('input', renderFeelsTable); document.getElementById('feels-filter').addEventListener('change', renderFeelsTable); }
+function renderFeelsTable(){ renderContentTable({ dataMap: rawFeels, ref: REF.feels, searchId:'feels-search', filterId:'feels-filter', tbodyId:'feels-tbody', emptyId:'feels-empty', titleField:'caption', targetType:'short' }); }
+
+function renderContentTable({dataMap, ref, searchId, filterId, tbodyId, emptyId, titleField, targetType}){
+  const q = (document.getElementById(searchId).value||'').toLowerCase();
+  const filter = document.getElementById(filterId).value;
+  const rows = Object.entries(dataMap||{}).filter(([id,v]) => {
+    const status = v.status || (v.scheduledPublishTime > Date.now() ? 'scheduled' : 'published');
+    if(filter !== 'all' && status !== filter) return false;
+    if(!q) return true;
+    return (v[titleField]||'').toLowerCase().includes(q) || id.toLowerCase().includes(q) || (v.channelId||'').toLowerCase().includes(q);
+  });
+  const tbody = document.getElementById(tbodyId);
+  tbody.innerHTML = '';
+  document.getElementById(emptyId).style.display = rows.length ? 'none' : 'block';
+  rows.forEach(([id,v]) => {
+    const status = v.status || (v.scheduledPublishTime > Date.now() ? 'scheduled' : 'published');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="cell-main">${escapeHtml(v[titleField]||'Untitled')}</span><div class="cell-sub id-mono">${escapeHtml(id)}</div></td>
+      <td class="id-mono">${escapeHtml(v.channelId||'—')}</td>
+      <td>${counterCell(id,'views',v.views||0,ref,targetType)}</td>
+      <td>${counterCell(id,'likes',v.likes||0,ref,targetType)}</td>
+      <td>${fmtNum(v.commentCount||0)}</td>
+      <td>${statusBadge(status)}</td>
+      <td class="btn-row">
+        <button class="btn sm" data-edit="${id}">Edit</button>
+        ${status==='hidden'
+          ? `<button class="btn sm ok" data-pub="${id}">Publish</button>`
+          : `<button class="btn sm warn" data-unpub="${id}">Unpublish</button>`}
+        ${status==='deleted'
+          ? `<button class="btn sm ok" data-restore="${id}">Restore</button>`
+          : `<button class="btn sm danger" data-del="${id}">Delete</button>`}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  wireContentRowActions(tbody, dataMap, ref, titleField, targetType);
+}
+
+function counterCell(id, field, val, ref, targetType){
+  return `<div class="counter-ctrl">
+      <button class="btn sm icon-only" data-counter="dec" data-id="${id}" data-field="${field}">−</button>
+      <span class="num" data-num="${id}-${field}">${fmtNum(val)}</span>
+      <button class="btn sm icon-only" data-counter="inc" data-id="${id}" data-field="${field}">+</button>
+      <button class="btn sm icon-only" data-counter="set" data-id="${id}" data-field="${field}">✎</button>
+    </div>`;
+}
+
+function wireContentRowActions(tbody, dataMap, ref, titleField, targetType){
+  tbody.querySelectorAll('[data-counter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id, field = btn.dataset.field, action = btn.dataset.counter;
+      const current = Number((dataMap[id]||{})[field]) || 0;
+      if(action === 'set'){
+        modalSheet.innerHTML = `
+          <div class="handle"></div>
+          <h3>Set ${escapeHtml(field)}</h3>
+          <div class="modal-sub">${escapeHtml((dataMap[id]||{})[titleField]||id)}</div>
+          <div class="field"><label>New Value</label><input class="input" id="set-val" type="number" min="0" value="${current}"></div>
+          <div class="field"><label>Reason (required)</label><textarea class="input" id="set-reason"></textarea></div>
+          <div class="modal-actions"><button class="btn" id="set-cancel">Cancel</button><button class="btn primary" id="set-go">Save</button></div>`;
+        modalLayer.classList.add('show');
+        document.getElementById('set-cancel').addEventListener('click', closeModal);
+        document.getElementById('set-go').addEventListener('click', () => {
+          const next = Number(document.getElementById('set-val').value);
+          const reason = document.getElementById('set-reason').value.trim();
+          if(!reason){ toast('err','Reason Required',''); return; }
+          if(isNaN(next) || next < 0){ toast('err','Invalid Data','Enter a non-negative number.'); return; }
+          closeModal();
+          const patch = field === 'subscribers' ? {subscribers: next, subscribersCount: next} : {[field]: next};
+          const extra = (field === 'views' || field === 'likes') ? { [`movie_stats/${id}/admin${field.charAt(0).toUpperCase()+field.slice(1)}`]: next, [`${ref.path.toString()}/${id}/${field}`]: next, [`${ref.path.toString()}/${id}/${field}Count`]: next } : {};
+          Promise.all([safeUpdate(ref.child(id), patch, {successMsg:`${field} set to ${next}.`}), Object.keys(extra).length ? db.ref().update(extra) : Promise.resolve(true)])
+            .then(results => { if(results[0] && results[1] !== false) logAction(`Set ${field}`, targetType, id, current, next, reason); });
+        });
+        return;
+      }
+      const delta = action === 'inc' ? 1 : -1;
+      const label = action === 'inc' ? 'Increase' : 'Decrease';
+      confirmAction({title:`${label} ${field}`, target:(dataMap[id]||{})[titleField]||id, current, next: Math.max(0,current+delta), dangerLabel:'Confirm', reasonRequired:false,
+        onConfirm: reason => {
+          safeTransaction(ref.child(id).child(field), curr => Math.max(0,(curr||0)+delta), {successMsg:`${field} ${label.toLowerCase()}d.`})
+            .then(newVal => { if(newVal !== null) {
+              if(field === 'subscribers') ref.child(id).update({subscribersCount:newVal});
+              if(field === 'views' || field === 'likes') db.ref(`movie_stats/${id}/admin${field.charAt(0).toUpperCase()+field.slice(1)}`).set(newVal);
+              logAction(`${label} ${field}`, targetType, id, current, newVal, reason);
+            } });
+        }});
+    });
+  });
+
+  tbody.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEditContent(b.dataset.edit, dataMap, ref, titleField, targetType)));
+  tbody.querySelectorAll('[data-pub]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.pub, dataMap, ref, targetType, 'published')));
+  tbody.querySelectorAll('[data-unpub]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.unpub, dataMap, ref, targetType, 'hidden')));
+  tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.del, dataMap, ref, targetType, 'deleted', true)));
+  tbody.querySelectorAll('[data-restore]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.restore, dataMap, ref, targetType, 'published')));
+}
+
+function setContentStatus(id, dataMap, ref, targetType, next, dangerous){
+  const item = dataMap[id] || {};
+  const current = item.status || 'published';
+  confirmAction({title:`${next.charAt(0).toUpperCase()+next.slice(1)} ${targetType}`, target: item.title||item.caption||item.content||id, current, next, dangerLabel:'Confirm', reasonRequired: !!dangerous,
+    onConfirm: reason => safeUpdate(ref.child(id), {status:next}).then(ok => { if(ok) logAction(`${targetType} status → ${next}`, targetType, id, current, next, reason); })});
+}
+
+function openEditContent(id, dataMap, ref, titleField, targetType){
+  const item = dataMap[id] || {};
+  modalSheet.innerHTML = `
+    <div class="handle"></div>
+    <h3>Edit ${escapeHtml(targetType)}</h3>
+    <div class="modal-sub id-mono">${escapeHtml(id)}</div>
+    <div class="field"><label>${escapeHtml(titleField)}</label><input class="input" id="edit-title" value="${escapeHtml(item[titleField]||'')}"></div>
+    <div class="field"><label>Description</label><textarea class="input" id="edit-desc">${escapeHtml(item.description||'')}</textarea></div>
+    <div class="modal-actions"><button class="btn" id="edit-cancel">Cancel</button><button class="btn primary" id="edit-save">Save</button></div>`;
+  modalLayer.classList.add('show');
+  document.getElementById('edit-cancel').addEventListener('click', closeModal);
+  document.getElementById('edit-save').addEventListener('click', () => {
+    const newTitle = document.getElementById('edit-title').value.trim();
+    const newDesc = document.getElementById('edit-desc').value.trim();
+    if(!newTitle){ toast('err','Missing Data','Title cannot be empty.'); return; }
+    closeModal();
+    safeUpdate(ref.child(id), {[titleField]:newTitle, description:newDesc}, {successMsg:'Metadata updated.'})
+      .then(ok => { if(ok) logAction('Edit Metadata', targetType, id, item[titleField], newTitle, 'Metadata edit via Admin Panel'); });
+  });
+}
+
+function initPosts(){ document.getElementById('posts-search').addEventListener('input', renderPostsTable); }
+function renderPostsTable(){
+  const q = (document.getElementById('posts-search').value||'').toLowerCase();
+  const rows = Object.entries(rawPosts).filter(([id,p]) => !q || (p.content||'').toLowerCase().includes(q) || id.toLowerCase().includes(q));
+  const tbody = document.getElementById('posts-tbody');
+  tbody.innerHTML = '';
+  document.getElementById('posts-empty').style.display = rows.length ? 'none' : 'block';
+  rows.forEach(([id,p]) => {
+    const status = p.status || 'published';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="cell-main">${escapeHtml((p.content||'').slice(0,60) || 'Untitled post')}</span><div class="cell-sub id-mono">${escapeHtml(id)}</div></td>
+      <td class="id-mono">${escapeHtml(p.channelId||'—')}</td>
+      <td>${fmtNum(p.reactionCount||0)}</td>
+      <td>${fmtNum(p.commentCount||0)}</td>
+      <td>${statusBadge(status)}</td>
+      <td class="btn-row">
+        ${status==='hidden' ? `<button class="btn sm ok" data-pub="${id}">Publish</button>` : `<button class="btn sm warn" data-hide="${id}">Hide</button>`}
+        ${status==='deleted' ? `<button class="btn sm ok" data-restore="${id}">Restore</button>` : `<button class="btn sm danger" data-del="${id}">Delete</button>`}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-pub]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.pub, rawPosts, REF.posts, 'post', 'published')));
+  tbody.querySelectorAll('[data-hide]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.hide, rawPosts, REF.posts, 'post', 'hidden')));
+  tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.del, rawPosts, REF.posts, 'post', 'deleted', true)));
+  tbody.querySelectorAll('[data-restore]').forEach(b => b.addEventListener('click', () => setContentStatus(b.dataset.restore, rawPosts, REF.posts, 'post', 'published')));
+}
+
+function initScheduled(){ }
+function renderScheduled(){
+  renderScheduledList(rawVideos, 'sched-videos-tbody', 'sched-videos-empty', 'title', REF.videos, 'video');
+  renderScheduledList(rawFeels, 'sched-feels-tbody', 'sched-feels-empty', 'caption', REF.feels, 'short');
+  renderScheduledList(rawPosts, 'sched-posts-tbody', 'sched-posts-empty', 'content', REF.posts, 'post');
+}
+function renderScheduledList(dataMap, tbodyId, emptyId, titleField, ref, targetType){
+  const rows = Object.entries(dataMap||{}).filter(([,v]) => v.scheduledPublishTime && v.scheduledPublishTime > Date.now());
+  const tbody = document.getElementById(tbodyId);
+  tbody.innerHTML = '';
+  document.getElementById(emptyId).style.display = rows.length ? 'none' : 'block';
+  rows.forEach(([id,v]) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml((v[titleField]||'').slice(0,60)||'Untitled')}</td><td class="id-mono">${escapeHtml(v.channelId||'—')}</td><td>${fmtDate(v.scheduledPublishTime)}</td>
+      <td class="btn-row"><button class="btn sm ok" data-now="${id}">Publish Now</button><button class="btn sm warn" data-cancel="${id}">Cancel Schedule</button></td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-now]').forEach(b => b.addEventListener('click', () => safeUpdate(ref.child(b.dataset.now), {status:'published', scheduledPublishTime:null}).then(ok => ok && logAction('Publish Now',targetType,b.dataset.now,'scheduled','published',''))));
+  tbody.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', () => safeUpdate(ref.child(b.dataset.cancel), {scheduledPublishTime:null}).then(ok => ok && logAction('Cancel Schedule',targetType,b.dataset.cancel,'scheduled','unscheduled',''))));
+}
+
+function initSubscribers(){ document.getElementById('subs-search').addEventListener('input', renderSubsTable); }
+function renderSubsTable(){
+  const q = (document.getElementById('subs-search').value||'').toLowerCase();
+  const rows = Object.entries(rawChannels).filter(([id,c]) => !q || (c.channelName||'').toLowerCase().includes(q));
+  const tbody = document.getElementById('subs-tbody');
+  tbody.innerHTML = '';
+  document.getElementById('subs-empty').style.display = rows.length ? 'none' : 'block';
+  rows.slice(0,200).forEach(([id,c]) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml(c.channelName||id)}</td><td>${fmtNum(c.subscribersCount ?? c.subscribers ?? 0)}</td>
+      <td>${counterCell(id,'subscribers',c.subscribersCount ?? c.subscribers ?? 0,REF.channels,'channel')}</td>`;
+    tbody.appendChild(tr);
+  });
+  wireContentRowActions(tbody, rawChannels, REF.channels, 'channelName', 'channel');
+}
+
+/* =========================================================
+   FEATURE FLAGS & SETTINGS
+   ========================================================= */
+let currentFeatures = {};
+function initFeatureFlags(){
+  document.querySelectorAll('[data-flag]').forEach(input => {
+    input.addEventListener('change', () => {
+      const flag = input.dataset.flag;
+      const next = input.checked;
+      const current = !!currentFeatures[flag];
+      safeUpdate(REF.features, {[flag]: next}, {successMsg: `${flag} ${next ? 'enabled' : 'disabled'}.`})
+        .then(ok => { if(ok) logAction(`Feature flag: ${flag}`, 'feature', flag, current, next, ''); else input.checked = current; });
+    });
+  });
+  trackListener(REF.features, 'value', snap => {
+    currentFeatures = snap.val() || {};
+    document.querySelectorAll('[data-flag]').forEach(input => { input.checked = !!currentFeatures[input.dataset.flag]; });
+    renderFlagsTable();
+  });
+}
+function renderFlagsTable(){
+  const tbody = document.getElementById('flags-tbody');
+  const entries = Object.entries(currentFeatures);
+  tbody.innerHTML = entries.length ? '' : `<tr><td colspan="3" class="muted">No data available</td></tr>`;
+  entries.forEach(([k,v]) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml(k)}</td><td class="mono id-mono">admin_control/features/${escapeHtml(k)}</td><td>${v ? '<span class="badge ok">On</span>' : '<span class="badge neutral">Off</span>'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+function initMaxUploads(){
+  trackListener(REF.settings.child('maxActiveUploads'), 'value', snap => {
+    const val = snap.val();
+    const el = document.getElementById('maxActiveUploads');
+    if(el && document.activeElement !== el) el.value = val === null ? '' : val;
+  });
+  document.getElementById('saveMaxUploads').addEventListener('click', () => {
+    const val = Number(document.getElementById('maxActiveUploads').value);
+    if(!val || val < 1){ toast('err','Invalid Data','Enter a value of 1 or more.'); return; }
+    safeUpdate(REF.settings, {maxActiveUploads: val}, {successMsg:'Maximum active uploads updated.'})
+      .then(ok => { if(ok) logAction('Set maxActiveUploads','setting','maxActiveUploads', null, val, ''); });
+  });
+}
+
+/* =========================================================
+   FLAY PAY CONTROL
+   ========================================================= */
+let rawFpRequests = {};
+
+function initFlayPayControl() {
+  trackListener(REF.flayPaySettings, 'value', snap => {
+    const s = snap.val() || {};
+    const map = {'fp-rate': 'rate', 'fp-min': 'minUsd', 'fp-max': 'maxUsd', 'fp-bkash': 'bkash', 'fp-nagad': 'nagad', 'fp-rocket': 'rocket'};
+    Object.entries(map).forEach(([id, key]) => {
+      const el = document.getElementById(id);
+      if (el && document.activeElement !== el) el.value = s[key] || '';
+    });
+  });
+
+  document.getElementById('save-fp-settings').addEventListener('click', () => {
+    const rate = Number(document.getElementById('fp-rate').value) || 120;
+    const minUsd = Number(document.getElementById('fp-min').value) || 1;
+    const maxUsd = Number(document.getElementById('fp-max').value) || 1000;
+    const bkash = document.getElementById('fp-bkash').value.trim();
+    const nagad = document.getElementById('fp-nagad').value.trim();
+    const rocket = document.getElementById('fp-rocket').value.trim();
+
+    safeUpdate(REF.flayPaySettings, {rate, minUsd, maxUsd, bkash, nagad, rocket}, {successMsg: 'Flay Pay settings updated.'})
+      .then(ok => { if(ok) logAction('Update Flay Pay Settings', 'setting', 'flay_pay', null, {rate, minUsd, maxUsd, bkash, nagad, rocket}, ''); });
+  });
+
+  document.getElementById('fp-search').addEventListener('input', renderFpRequests);
+  document.getElementById('fp-filter').addEventListener('change', renderFpRequests);
+  trackListener(REF.flayPayRequests, 'value', snap => { rawFpRequests = snap.val() || {}; renderFpRequests(); });
+}
+
+function renderFpRequests() {
+  const q = (document.getElementById('fp-search').value || '').toLowerCase();
+  const filter = document.getElementById('fp-filter').value;
+  const rows = Object.entries(rawFpRequests).filter(([id, req]) => {
+    const st = req.status || 'pending';
+    if (filter !== 'all' && st !== filter) return false;
+    if (!q) return true;
+    return (req.txId || '').toLowerCase().includes(q) || 
+           (req.senderPhone || '').toLowerCase().includes(q) || 
+           (req.userId || '').toLowerCase().includes(q);
+  }).sort((a,b) => (b[1].timestamp||0) - (a[1].timestamp||0));
+
+  const tbody = document.getElementById('fp-requests-tbody');
+  tbody.innerHTML = '';
+  document.getElementById('fp-requests-empty').style.display = rows.length ? 'none' : 'block';
+
+  rows.forEach(([id, req]) => {
+    const st = req.status || 'pending';
+    const amountUsd = Number(req.amountUsd || 0);
+    const amountBdt = Number(req.amountBdt || 0);
+    
+    const u = rawUsers[req.userId] || {};
+    const c = rawChannels[req.userId] || {};
+    const userName = c.channelName || u.displayName || req.userId.substring(0,8);
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="cell-main">${escapeHtml(userName)}</span><div class="cell-sub id-mono">${escapeHtml(req.userId)}</div></td>
+      <td style="text-transform:capitalize;">${escapeHtml(req.method)}</td>
+      <td><strong>$${amountUsd}</strong> <span class="muted" style="font-size:11px;">(৳${amountBdt})</span></td>
+      <td class="id-mono">${escapeHtml(req.txId)}</td>
+      <td>${escapeHtml(req.senderPhone)}</td>
+      <td>${statusBadge(st)}</td>
+      <td class="btn-row">
+        ${st === 'pending' ? `
+          <button class="btn sm ok" data-fp-approve="${id}">Approve</button>
+          <button class="btn sm danger" data-fp-reject="${id}">Reject</button>
+        ` : ''}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('[data-fp-approve]').forEach(b => b.addEventListener('click', () => {
+    const reqId = b.dataset.fpApprove;
+    const req = rawFpRequests[reqId];
+    confirmAction({
+      title: 'Approve Deposit',
+      target: req.txId,
+      current: 'pending',
+      next: 'approved',
+      dangerLabel: 'Approve',
+      reasonRequired: false,
+      onConfirm: reason => {
+        const updates = {};
+        updates[`flay_pay_requests/${reqId}/status`] = 'approved';
+        updates[`flay_pay_requests/${reqId}/reviewedAt`] = firebase.database.ServerValue.TIMESTAMP;
+        updates[`flay_pay_requests/${reqId}/reviewedBy`] = currentUser.uid;
+        
+        const uid = req.userId;
+        const currentBal = Number((rawUsers[uid] || {}).flayPayBalance || 0);
+        const currentRech = Number((rawUsers[uid] || {}).flayPayRecharged || 0);
+        updates[`users/${uid}/flayPayBalance`] = currentBal + Number(req.amountUsd);
+        updates[`users/${uid}/flayPayRecharged`] = currentRech + Number(req.amountUsd);
+        
+        db.ref().update(updates)
+          .then(() => { toast('ok', 'Approved', 'Deposit added to user balance.'); logAction('Approve Deposit', 'flay_pay', reqId, 'pending', 'approved', reason); })
+          .catch(err => toast('err', mapFirebaseError(err), ''));
+      }
+    });
+  }));
+
+  tbody.querySelectorAll('[data-fp-reject]').forEach(b => b.addEventListener('click', () => {
+    const reqId = b.dataset.fpReject;
+    const req = rawFpRequests[reqId];
+    confirmAction({
+      title: 'Reject Deposit',
+      target: req.txId,
+      current: 'pending',
+      next: 'rejected',
+      dangerLabel: 'Reject',
+      reasonRequired: true,
+      onConfirm: reason => {
+        const updates = {};
+        updates[`flay_pay_requests/${reqId}/status`] = 'rejected';
+        updates[`flay_pay_requests/${reqId}/reviewedAt`] = firebase.database.ServerValue.TIMESTAMP;
+        updates[`flay_pay_requests/${reqId}/reviewedBy`] = currentUser.uid;
+        updates[`flay_pay_requests/${reqId}/rejectReason`] = reason;
+        
+        db.ref().update(updates)
+          .then(() => { toast('ok', 'Rejected', 'Deposit request rejected.'); logAction('Reject Deposit', 'flay_pay', reqId, 'pending', 'rejected', reason); })
+          .catch(err => toast('err', mapFirebaseError(err), ''));
+      }
+    });
+  }));
+}
+
+/* =========================================================
+   FLAY ADS CONTROL
+   ========================================================= */
+let rawFlayAds = {};
+
+function initFlayAdsControl() {
+  document.getElementById('flayads-search').addEventListener('input', renderFlayAdsTable);
+  document.getElementById('flayads-filter').addEventListener('change', renderFlayAdsTable);
+  trackListener(REF.flayAds, 'value', snap => { rawFlayAds = snap.val() || {}; renderFlayAdsTable(); });
+}
+
+function renderFlayAdsTable() {
+  const q = (document.getElementById('flayads-search').value || '').toLowerCase();
+  const filter = document.getElementById('flayads-filter').value;
+  const rows = Object.entries(rawFlayAds).filter(([id, ad]) => {
+    const status = ad.campaignStatus || 'Draft';
+    if (filter !== 'all' && status !== filter) return false;
+    if (!q) return true;
+    return (ad.campaignName || '').toLowerCase().includes(q) || (ad.advertiserId || '').toLowerCase().includes(q);
+  }).sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
+
+  const tbody = document.getElementById('flayads-tbody');
+  tbody.innerHTML = '';
+  document.getElementById('flayads-empty').style.display = rows.length ? 'none' : 'block';
+
+  rows.forEach(([id, ad]) => {
+    const tr = document.createElement('tr');
+    const u = rawUsers[ad.advertiserId] || {};
+    const c = rawChannels[ad.advertiserId] || {};
+    const advertiserName = c.channelName || u.displayName || ad.advertiserId.substring(0,8);
+    const payStatusTxt = ad.paymentStatus === 'successful' ? '<span class="muted" style="color:var(--ok)"><i class="fas fa-check-circle" style="margin-right:3px;"></i>Paid</span>' : (ad.paymentStatus === 'pending' ? '<span class="muted" style="color:var(--warn)">Pending</span>' : '<span class="muted" style="color:var(--danger)">Failed</span>');
+    
+    tr.innerHTML = `
+      <td><span class="cell-main">${escapeHtml(ad.campaignName || 'Untitled')}</span><div class="cell-sub id-mono">${escapeHtml(id)}</div></td>
+      <td><span class="cell-main">${escapeHtml(advertiserName)}</span><div class="cell-sub id-mono">${escapeHtml(ad.advertiserId)}</div></td>
+      <td>${escapeHtml(ad.placement)}</td>
+      <td><span class="cell-main">$${ad.budget?.total || '0'}</span> <div class="cell-sub">$${ad.budget?.daily || '0'}/day (${ad.budget?.billingModel || 'CPM'})</div></td>
+      <td>${payStatusTxt}</td>
+      <td>${statusBadge(ad.campaignStatus || 'Draft')}</td>
+      <td class="btn-row">
+        <button class="btn sm" data-ad-view="${id}">View</button>
+        ${ad.campaignStatus === 'Under Review' ? `<button class="btn sm ok" data-ad-approve="${id}">Approve</button><button class="btn sm danger" data-ad-reject="${id}">Reject</button>` : ''}
+        ${ad.campaignStatus === 'Running' ? `<button class="btn sm warn" data-ad-stop="${id}">Stop</button>` : ''}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('[data-ad-view]').forEach(b => b.addEventListener('click', () => openFlayAdDetail(b.dataset.adView)));
+  tbody.querySelectorAll('[data-ad-approve]').forEach(b => b.addEventListener('click', () => setFlayAdStatus(b.dataset.adApprove, 'Running', false)));
+  tbody.querySelectorAll('[data-ad-reject]').forEach(b => b.addEventListener('click', () => setFlayAdStatus(b.dataset.adReject, 'Rejected', true)));
+  tbody.querySelectorAll('[data-ad-stop]').forEach(b => b.addEventListener('click', () => setFlayAdStatus(b.dataset.adStop, 'Completed', false)));
+}
+
+function setFlayAdStatus(id, next, requiresReason) {
+  const ad = rawFlayAds[id];
+  confirmAction({
+    title: `${next === 'Running' ? 'Approve' : (next === 'Rejected' ? 'Reject' : 'Stop')} Campaign`,
+    target: ad.campaignName || id,
+    current: ad.campaignStatus,
+    next: next,
+    dangerLabel: 'Confirm',
+    reasonRequired: requiresReason,
+    onConfirm: reason => {
+      const updates = { campaignStatus: next };
+      if (reason) updates.rejectReason = reason;
+      safeUpdate(REF.flayAds.child(id), updates, { successMsg: `Campaign status updated to ${next}.` })
+        .then(ok => { if (ok) logAction(`FlayAd Status -> ${next}`, 'flay_ad', id, ad.campaignStatus, next, reason); });
+    }
+  });
+}
+
+function openFlayAdDetail(id) {
+  const ad = rawFlayAds[id] || {};
+  modalSheet.innerHTML = `
+    <div class="handle"></div>
+    <h3>Campaign Details</h3>
+    <div class="modal-sub id-mono">${escapeHtml(id)}</div>
+    <div class="kv"><span class="k">Name</span><span class="v">${escapeHtml(ad.campaignName || '—')}</span></div>
+    <div class="kv"><span class="k">Advertiser ID</span><span class="v id-mono">${escapeHtml(ad.advertiserId || '—')}</span></div>
+    <div class="kv"><span class="k">Placement</span><span class="v">${escapeHtml(ad.placement || '—')}</span></div>
+    <div class="kv"><span class="k">Payment Status</span><span class="v">${escapeHtml(ad.paymentStatus || '—')}</span></div>
+    <div class="kv"><span class="k">Campaign Status</span><span class="v">${escapeHtml(ad.campaignStatus || '—')}</span></div>
+    
+    <h4 style="margin: 18px 0 8px; font-size: 13.5px; border-bottom: 1px solid var(--line); padding-bottom: 4px;">Budget & Targeting</h4>
+    <div class="kv"><span class="k">Budget</span><span class="v">Total: $${ad.budget?.total || 0} | Daily: $${ad.budget?.daily || 0} | ${ad.budget?.billingModel || '—'}</span></div>
+    <div class="kv"><span class="k">Targeting</span><span class="v">Device: ${ad.targeting?.device || '—'} | Age: ${ad.targeting?.age || '—'} | Gender: ${ad.targeting?.gender || '—'} | Category: ${ad.targeting?.category || '—'}</span></div>
+    
+    <h4 style="margin: 18px 0 8px; font-size: 13.5px; border-bottom: 1px solid var(--line); padding-bottom: 4px;">Creative</h4>
+    <div class="kv"><span class="k">Title</span><span class="v">${escapeHtml(ad.creative?.title || '—')}</span></div>
+    <div class="kv"><span class="k">Description</span><span class="v" style="max-width: 60%;">${escapeHtml(ad.creative?.description || '—')}</span></div>
+    <div class="kv"><span class="k">CTA & URL</span><span class="v">${escapeHtml(ad.creative?.cta || '—')} → <a href="${escapeHtml(ad.creative?.destinationUrl || '#')}" target="_blank" style="color:var(--info); text-decoration:underline;">Link</a></span></div>
+    ${ad.creative?.videoUrl ? `<div class="kv"><span class="k">Video</span><span class="v"><a href="${escapeHtml(ad.creative.videoUrl)}" target="_blank" style="color:var(--info); text-decoration:underline;">View Video</a></span></div>` : ''}
+    ${ad.creative?.imageUrl ? `<div class="kv"><span class="k">Image</span><span class="v"><a href="${escapeHtml(ad.creative.imageUrl)}" target="_blank" style="color:var(--info); text-decoration:underline;">View Image</a></span></div>` : ''}
+    ${ad.creative?.thumbnailUrl ? `<div class="kv"><span class="k">Thumbnail</span><span class="v"><a href="${escapeHtml(ad.creative.thumbnailUrl)}" target="_blank" style="color:var(--info); text-decoration:underline;">View Thumbnail</a></span></div>` : ''}
+    
+    <h4 style="margin: 18px 0 8px; font-size: 13.5px; border-bottom: 1px solid var(--line); padding-bottom: 4px;">Performance</h4>
+    <div class="kv"><span class="k">Impressions</span><span class="v">${fmtNum(ad.stats?.impressions || 0)}</span></div>
+    <div class="kv"><span class="k">Clicks</span><span class="v">${fmtNum(ad.stats?.clicks || 0)}</span></div>
+
+    <div class="modal-actions"><button class="btn" id="close-ad-detail">Close</button></div>
+  `;
+  modalLayer.classList.add('show');
+  document.getElementById('close-ad-detail').addEventListener('click', closeModal);
+}
+
+/* =========================================================
+   MONETIZATION
+   ========================================================= */
+let rawMonetization = {};
+function setUserMonetizationActive(uid, reason='Admin override') {
+  if(!uid) return;
+  const updates = {};
+  updates[`monetization_applications/${uid}/status`] = 'active';
+  updates[`monetization_applications/${uid}/userId`] = uid;
+  updates[`monetization_applications/${uid}/channelId`] = uid;
+  updates[`monetization_applications/${uid}/reviewedAt`] = firebase.database.ServerValue.TIMESTAMP;
+  updates[`monetization_applications/${uid}/reviewedBy`] = currentUser.uid;
+  updates[`channels/${uid}/monetizationStatus`] = 'active';
+  db.ref().update(updates).then(()=>{ toast('ok','Updated Successfully','Monetization activated by Admin.'); logAction('Manual Monetization Activation','monetization',uid,null,'active',reason); }).catch(err=>toast('err',mapFirebaseError(err),''));
+}
+
+function initMonetization(){
+  document.getElementById('mon-search').addEventListener('input', renderMonetizationTable);
+  document.getElementById('mon-filter').addEventListener('change', renderMonetizationTable);
+  trackListener(REF.monetization, 'value', snap => { rawMonetization = snap.val() || {}; renderMonetizationTable(); recomputePlatformAnalytics(); });
+}
+function renderMonetizationTable(){
+  const q = (document.getElementById('mon-search').value||'').toLowerCase();
+  const filter = document.getElementById('mon-filter').value;
+  const rows = Object.entries(rawMonetization).filter(([id,m]) => {
+    const status = m.status || 'pending';
+    if(filter !== 'all' && status !== filter) return false;
+    const chName = (rawChannels[m.channelId||id]||{}).channelName || '';
+    return !q || chName.toLowerCase().includes(q) || id.toLowerCase().includes(q);
+  });
+  const tbody = document.getElementById('mon-tbody');
+  tbody.innerHTML = '';
+  document.getElementById('mon-empty').style.display = rows.length ? 'none' : 'block';
+  rows.forEach(([id,m]) => {
+    const status = m.status || 'pending';
+    const chName = (rawChannels[m.channelId||id]||{}).channelName || m.channelId || id;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(chName)}</td>
+      <td>${fmtNum(m.subscribers||0)}</td>
+      <td>${fmtNum(m.watchHours||0)}</td>
+      <td>${statusBadge(status)}</td>
+      <td class="btn-row">
+        ${status!=='active' ? `<button class="btn sm ok" data-approve="${id}">Approve</button>` : ''}
+        ${status!=='rejected' ? `<button class="btn sm danger" data-reject="${id}">Reject</button>` : ''}
+        ${status!=='suspended' ? `<button class="btn sm warn" data-suspend="${id}">Suspend</button>` : `<button class="btn sm ok" data-reactivate="${id}">Reactivate</button>`}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  const setMon = (id,next) => {
+    const current = (rawMonetization[id]||{}).status || 'pending';
+    confirmAction({title:'Update Monetization Status', target: (rawChannels[(rawMonetization[id]||{}).channelId||id]||{}).channelName || id, current, next, dangerLabel:'Confirm',
+      onConfirm: reason => {
+        const rec = rawMonetization[id] || {};
+        const uid = rec.userId || rec.channelId || id;
+        const updates = {};
+        updates[`monetization_applications/${id}/status`] = next;
+        updates[`monetization_applications/${id}/reviewedAt`] = firebase.database.ServerValue.TIMESTAMP;
+        updates[`monetization_applications/${id}/reviewedBy`] = currentUser.uid;
+        updates[`channels/${uid}/monetizationStatus`] = next === 'active' ? 'active' : next;
+        return db.ref().update(updates).then(() => { toast('ok','Updated Successfully','Monetization status updated.'); logAction('Monetization status → '+next,'monetization',id,current,next,reason); return true; }).catch(err => { toast('err',mapFirebaseError(err),''); return false; });
+      }});
+  };
+  tbody.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', () => setMon(b.dataset.approve,'active')));
+  tbody.querySelectorAll('[data-reject]').forEach(b => b.addEventListener('click', () => setMon(b.dataset.reject,'rejected')));
+  tbody.querySelectorAll('[data-suspend]').forEach(b => b.addEventListener('click', () => setMon(b.dataset.suspend,'suspended')));
+  tbody.querySelectorAll('[data-reactivate]').forEach(b => b.addEventListener('click', () => setMon(b.dataset.reactivate,'active')));
+}
+function initMonetizationControl(){
+  const load=()=>trackListener(REF.eligibility,'value',snap=>{const v=snap.val()||{}; const a=document.getElementById('control-elig-subs'),b=document.getElementById('control-elig-watchhours'),c=document.getElementById('control-elig-views'); if(a&&document.activeElement!==a)a.value=v.minSubscribers??''; if(b&&document.activeElement!==b)b.value=v.validPublicWatchHours??v.minWatchHours??''; if(c&&document.activeElement!==c)c.value=v.minPublicViews??'';});
+  load();
+  document.getElementById('save-control-eligibility').addEventListener('click',()=>{const minSubscribers=Number(document.getElementById('control-elig-subs').value)||0; const minWatchHours=Number(document.getElementById('control-elig-watchhours').value)||0; const minPublicViews=Number(document.getElementById('control-elig-views').value)||0; safeUpdate(REF.eligibility,{minSubscribers,minWatchHours,validPublicWatchHours:minWatchHours,minPublicViews},{successMsg:'Valid Public Watch Hours control updated.'});});
+  document.getElementById('activate-any-user').addEventListener('click',()=>{const uid=document.getElementById('override-user-search').value.trim(); if(!uid){toast('err','Missing UID','Enter a user UID.');return;} confirmAction({title:'Activate Monetization',target:uid,current:'not active',next:'active',dangerLabel:'Activate',onConfirm:reason=>{const updates={}; updates[`monetization_applications/${uid}/userId`]=uid; updates[`monetization_applications/${uid}/channelId`]=uid; updates[`monetization_applications/${uid}/status`]='active'; updates[`monetization_applications/${uid}/adminOverride`]=true; updates[`monetization_applications/${uid}/reviewedAt`]=firebase.database.ServerValue.TIMESTAMP; updates[`monetization_applications/${uid}/reviewedBy`]=currentUser.uid; updates[`channels/${uid}/monetizationStatus`]='active'; updates[`channels/${uid}/monetizationAdminOverride`]=true; return db.ref().update(updates).then(()=>{toast('ok','Updated Successfully','Monetization activated without eligibility.');logAction('Direct Monetization Activation','monetization',uid,null,'active',reason);return true;}).catch(err=>{toast('err',mapFirebaseError(err),'');return false;});}});});
+}
+function initMonetizationApprovals(){
+  document.getElementById('approval-search').addEventListener('input',renderApprovalTable); document.getElementById('approval-filter').addEventListener('change',renderApprovalTable);
+  trackListener(REF.monetization,'value',snap=>{rawMonetization=snap.val()||{};renderApprovalTable();});
+}
+function renderApprovalTable(){const q=(document.getElementById('approval-search').value||'').toLowerCase();const f=document.getElementById('approval-filter').value;const rows=Object.entries(rawMonetization).filter(([id,m])=>{const st=m.status||'pending';const uid=(m.userId||m.channelId||id).toLowerCase();return (f==='all'||st==='pending')&&(!q||uid.includes(q)||(rawChannels[m.channelId||id]?.channelName||'').toLowerCase().includes(q));});const tb=document.getElementById('approval-tbody');tb.innerHTML='';document.getElementById('approval-empty').style.display=rows.length?'none':'block';rows.forEach(([id,m])=>{const uid=m.userId||m.channelId||id;const tr=document.createElement('tr');tr.innerHTML=`<td>${escapeHtml((rawChannels[m.channelId||id]||{}).channelName||uid)}</td><td>${fmtNum(m.subscribers||0)}</td><td>${fmtNum(m.watchHours||m.validPublicWatchHours||0)}</td><td>${fmtNum(m.publicViews||0)}</td><td>${statusBadge(m.status||'pending')}</td><td>${m.status==='pending'?`<button class="btn sm ok" data-approval="${id}">Approve</button>`:''}</td>`;tb.appendChild(tr);});tb.querySelectorAll('[data-approval]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.approval;const m=rawMonetization[id]||{};const uid=m.userId||m.channelId||id;const updates={};updates[`monetization_applications/${id}/status`]='active';updates[`monetization_applications/${id}/adminOverride`]=true;updates[`monetization_applications/${id}/reviewedAt`]=firebase.database.ServerValue.TIMESTAMP;updates[`monetization_applications/${id}/reviewedBy`]=currentUser.uid;updates[`channels/${uid}/monetizationStatus`]='active';updates[`channels/${uid}/monetizationAdminOverride`]=true;db.ref().update(updates).then(()=>toast('ok','Approved','User monetization is now active.')).catch(err=>toast('err',mapFirebaseError(err),''));}));}
+
+function initPlatformAnalytics(){
+  const render=()=>{
+    const users=Object.keys(rawUsers).length;
+    const channels=Object.values(rawChannels);
+    const videos=Object.values(rawVideos), feels=Object.values(rawFeels), posts=Object.values(rawPosts);
+    const sum=(arr,k)=>arr.reduce((a,v)=>a+Number(v?.[k]||0),0);
+    const vals={
+      'pa-users': users || channels.length,
+      'pa-videos': videos.length,
+      'pa-feels': feels.length,
+      'pa-posts': posts.length,
+      'pa-views': sum(videos,'views')+sum(feels,'views'),
+      'pa-likes': sum(videos,'likes')+sum(feels,'likes'),
+      'pa-subs': sum(channels,'subscribersCount') || sum(channels,'subscribers'),
+      'pa-monetized': channels.filter(c=>c.monetizationStatus==='active').length
+    };
+    Object.entries(vals).forEach(([id,v])=>set(id,v));
+    const tb=document.getElementById('pa-summary-tbody'); if(!tb) return;
+    tb.innerHTML=Object.entries(vals).map(([id,v])=>`<tr><td>${id.replace('pa-','').replace(/-/g,' ')}</td><td>${fmtNum(v)}</td></tr>`).join('');
+  };
+  render();
+  ['users','channels','videos','feels','posts'].forEach(k=>{ const r=REF[k]; if(r) trackListener(r,'value',render); });
+}
+
+function initChannelAnalytics(){
+  document.getElementById('ca-search').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    if(!q){ document.getElementById('ca-detail').style.display='none'; document.getElementById('ca-empty-hint').style.display='block'; return; }
+    const match = Object.entries(rawChannels).find(([id,c]) => (c.channelName||'').toLowerCase().includes(q) || id.toLowerCase()===q);
+    if(!match){ document.getElementById('ca-detail').style.display='none'; document.getElementById('ca-empty-hint').style.display='block'; document.getElementById('ca-empty-hint').innerHTML = '<div class="big">◌</div>No data available'; return; }
+    const [id,c] = match;
+    document.getElementById('ca-empty-hint').style.display='none';
+    document.getElementById('ca-detail').style.display='block';
+    const myVideos = Object.values(rawVideos).filter(v => v.channelId === id);
+    const myFeels = Object.values(rawFeels).filter(v => v.channelId === id);
+    document.getElementById('ca-views').textContent = fmtNum(myVideos.reduce((a,v)=>a+Number(v.views||0),0)+myFeels.reduce((a,v)=>a+Number(v.views||0),0));
+    document.getElementById('ca-watchtime').textContent = myVideos.some(v=>v.watchTime!=null) ? fmtNum(myVideos.reduce((a,v)=>a+Number(v.watchTime||0),0)) : 'No data available';
+    document.getElementById('ca-subs').textContent = fmtNum(c.subscribersCount ?? c.subscribers ?? 0);
+    const mon = Object.values(rawMonetization).find(m => m.channelId === id);
+    document.getElementById('ca-revenue').textContent = mon && mon.estimatedRevenue!=null ? fmtNum(mon.estimatedRevenue) : 'No data available';
+  });
+}
+
+/* =========================================================
+   THEME
+   ========================================================= */
+function initTheme(){
+  trackListener(REF.settings, 'value', snap => {
+    const s = snap.val() || {};
+    if(document.activeElement.id !== 'theme-default') document.getElementById('theme-default').value = s.defaultTheme || 'system';
+    document.getElementById('theme-allow-user').checked = s.allowUserThemeSelection !== false;
+  });
+  document.getElementById('save-theme').addEventListener('click', () => {
+    const defaultTheme = document.getElementById('theme-default').value;
+    const allowUserThemeSelection = document.getElementById('theme-allow-user').checked;
+    safeUpdate(REF.settings, {defaultTheme, allowUserThemeSelection}, {successMsg:'Theme settings saved.'})
+      .then(ok => { if(ok) logAction('Theme settings updated','setting','theme',null,{defaultTheme,allowUserThemeSelection},''); });
+  });
+}
+
+/* =========================================================
+   ADMIN ACCESS
+   ========================================================= */
+function initAdminAccess(){
+  trackListener(REF.admins, 'value', snap => {
+    const data = snap.val() || {};
+    const tbody = document.getElementById('admins-tbody');
+    const entries = Object.entries(data);
+    tbody.innerHTML = '';
+    document.getElementById('admins-empty').style.display = entries.length ? 'none' : 'block';
+    entries.forEach(([uid,v]) => {
+      const grantedAt = (v && typeof v === 'object') ? v.grantedAt : null;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="id-mono">${escapeHtml(uid)}</td><td>${fmtDate(grantedAt)}</td>
+        <td>${uid === currentUser.uid ? '<span class="muted">You</span>' : `<button class="btn sm danger" data-revoke="${uid}">Revoke</button>`}</td>`;
+      tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll('[data-revoke]').forEach(b => b.addEventListener('click', () => {
+      const uid = b.dataset.revoke;
+      confirmAction({title:'Revoke Admin Access', target:uid, current:'admin', next:'revoked', dangerLabel:'Revoke',
+        onConfirm: reason => REF.admins.child(uid).remove().then(() => { toast('ok','Updated Successfully','Admin access revoked.'); logAction('Revoke Admin','admin',uid,'admin','revoked',reason); }).catch(err => toast('err', mapFirebaseError(err),'')) });
+    }));
+  });
+  document.getElementById('grant-admin-btn').addEventListener('click', () => {
+    const uid = document.getElementById('new-admin-uid').value.trim();
+    if(!uid){ toast('err','Missing Data','Enter a Firebase Auth UID.'); return; }
+    safeSet(REF.admins.child(uid), {enabled:true, grantedAt: firebase.database.ServerValue.TIMESTAMP, grantedBy: currentUser.uid}, {successMsg:'Admin access granted.'})
+      .then(ok => { if(ok){ logAction('Grant Admin','admin',uid,null,'admin',''); document.getElementById('new-admin-uid').value=''; }});
+  });
+}
+
+/* =========================================================
+   AUDIT LOGS
+   ========================================================= */
+let rawAudit = {};
+function initAuditLogs(){
+  document.getElementById('audit-search').addEventListener('input', renderAuditLogs);
+  trackListener(REF.auditLog.limitToLast(300), 'value', snap => { rawAudit = snap.val() || {}; renderAuditLogs(); });
+}
+function renderAuditLogs(){
+  const q = (document.getElementById('audit-search').value||'').toLowerCase();
+  const entries = Object.entries(rawAudit).sort((a,b) => (b[1].timestamp||0)-(a[1].timestamp||0)).filter(([id,e]) =>
+    !q || (e.action||'').toLowerCase().includes(q) || (e.targetId||'').toLowerCase().includes(q) || (e.adminUid||'').toLowerCase().includes(q));
+  const list = document.getElementById('audit-list');
+  list.innerHTML = '';
+  document.getElementById('audit-empty').style.display = entries.length ? 'none' : 'block';
+  entries.slice(0,150).forEach(([id,e]) => {
+    const div = document.createElement('div');
+    div.className = 'audit-item';
+    div.innerHTML = `
+      <div class="top"><span class="act">${escapeHtml(e.action||'—')}</span><span class="when">${fmtDate(e.timestamp)}</span></div>
+      <div class="detail">${escapeHtml(e.targetType||'')} · <span class="id-mono">${escapeHtml(e.targetId||'')}</span>
+        ${e.oldValue!=null||e.newValue!=null ? ` · ${escapeHtml(JSON.stringify(e.oldValue))} → ${escapeHtml(JSON.stringify(e.newValue))}` : ''}
+      </div>
+      <div class="detail muted" style="margin-top:3px; font-size:11px;">by ${escapeHtml(e.adminEmail||e.adminUid||'—')}${e.reason ? ' — "'+escapeHtml(e.reason)+'"' : ''}</div>
+    `;
+    list.appendChild(div);
+  });
+}
+</script>
+</body>
+</html>

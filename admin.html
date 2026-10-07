@@ -1504,28 +1504,40 @@ function mapFirebaseError(err){
 let booted = false;
 function bootApp(){
   if(booted) return; booted = true;
-  document.getElementById('sys-config-dump').textContent =
+  const dump = document.getElementById('sys-config-dump');
+  if(dump) dump.textContent =
     'projectId: ' + firebaseConfig.projectId + ' · databaseURL: ' + firebaseConfig.databaseURL;
 
-  initDashboard();
-  initUsersAndChannels();
-  initVideos();
-  initFeels();
-  initPosts();
-  initScheduled();
-  initSubscribers();
-  initFeatureFlags();
-  initMaxUploads();
-  initFlayPayControl();
-  initFlayAdsControl();
-  initMonetization();
-  initMonetizationControl();
-  initMonetizationApprovals();
-  initPlatformAnalytics();
-  initChannelAnalytics();
-  initTheme();
-  initAdminAccess();
-  initAuditLogs();
+  /* One broken optional initializer must never disable the entire Admin Panel. */
+  const initializers = [
+    ['dashboard', initDashboard],
+    ['users/channels', initUsersAndChannels],
+    ['videos', initVideos],
+    ['feels', initFeels],
+    ['posts', initPosts],
+    ['scheduled', initScheduled],
+    ['subscribers', initSubscribers],
+    ['feature flags', initFeatureFlags],
+    ['max uploads', initMaxUploads],
+    ['flay pay', initFlayPayControl],
+    ['flay ads', initFlayAdsControl],
+    ['monetization', initMonetization],
+    ['monetization control', initMonetizationControl],
+    ['monetization approvals', initMonetizationApprovals],
+    ['platform analytics', initPlatformAnalytics],
+    ['channel analytics', initChannelAnalytics],
+    ['theme', initTheme],
+    ['admin access', initAdminAccess],
+    ['audit logs', initAuditLogs]
+  ];
+
+  initializers.forEach(([name, fn]) => {
+    try {
+      fn();
+    } catch(err) {
+      console.error('Admin initializer failed: ' + name, err);
+    }
+  });
 
   goToSection('dashboard');
 }

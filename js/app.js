@@ -771,7 +771,7 @@ function ensurePTRHomeAnimationStyles() {
             transform: none !important;
         }
         #ptr-spinner.ptr-home-icon.ptr-home-building {
-            animation: ptrHomeGlow 1.15s ease-in-out 0.68s infinite alternate !important;
+            animation: ptrHomeGlow 1.15s ease-in-out infinite alternate !important;
         }
         @keyframes ptrHomePathBuild {
             0% { opacity: .15; transform: scale(.78); }

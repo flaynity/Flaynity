@@ -311,22 +311,6 @@ tbody tr:hover{background:var(--panel-hover);}
 .toast .msg strong{display:block; margin-bottom:2px; font-size:12.8px;}
 .toast .msg span{color:var(--text-faint); font-size:11.5px;}
 
-/* ---------- Login screen ---------- */
-#login-screen{
-  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
-}
-.login-card{
-  width:100%; max-width:380px; background:var(--panel-solid); border:1px solid var(--line);
-  border-radius:22px; padding:32px 28px; box-shadow:var(--shadow-lg); text-align:center;
-}
-.login-card .mark{
-  width:52px; height:52px; border-radius:16px; background:var(--accent-grad); margin:0 auto 16px;
-  display:flex; align-items:center; justify-content:center; font-weight:800; font-size:20px; color:#fff;
-}
-.login-card h1{font-size:18px; margin:0 0 4px;}
-.login-card p{font-size:12.5px; color:var(--text-faint); margin:0 0 22px;}
-.login-card .btn{width:100%;}
-#login-error{color:var(--danger); font-size:12px; margin-top:10px; min-height:14px;}
 
 /* ---------- Misc ---------- */
 .muted{color:var(--text-faint);}
@@ -431,30 +415,9 @@ body{font-weight:600;}
 <body>
 
 <!-- ============================================================
-     LOGIN SCREEN
-     ============================================================ -->
-<div id="login-screen">
-  <div class="login-card">
-    <div class="mark">F</div>
-    <h1>Flaynity Master Control</h1>
-    <p>Sign in with an authorized admin account</p>
-    <div class="field" style="text-align:left;">
-      <label>Email</label>
-      <input id="login-email" class="input" type="email" placeholder="admin@flaynity.com" autocomplete="username">
-    </div>
-    <div class="field" style="text-align:left;">
-      <label>Password</label>
-      <input id="login-pass" class="input" type="password" placeholder="••••••••" autocomplete="current-password">
-    </div>
-    <button class="btn primary" id="login-btn" style="height:42px;">Sign In</button>
-    <div id="login-error"></div>
-  </div>
-</div>
-
-<!-- ============================================================
      APP SHELL
      ============================================================ -->
-<div id="app" style="display:none;">
+<div id="app" style="display:flex;">
 
   <div id="sidebar-overlay"></div>
   <aside id="sidebar">
@@ -526,8 +489,7 @@ body{font-weight:600;}
     <div class="nav-group">
       <div class="nav-group-label">System</div>
       <div class="nav-item" data-section="system"><span class="dot"></span><span class="ic">◉</span> Firebase Status</div>
-      <div class="nav-item" id="logout-btn"><span class="dot"></span><span class="ic">⏻</span> Logout</div>
-    </div>
+          </div>
   </aside>
 
   <div id="main">
@@ -1169,74 +1131,11 @@ function updateListenerBadge(){
 }
 
 /* ---------------------------------------------------------------
-   1. AUTH GUARD
+   1. ADMIN SESSION
 --------------------------------------------------------------- */
-let currentUser = null;
+let currentUser = { uid: 'admin', email: 'Admin' };
 
-document.getElementById('login-btn').addEventListener('click', doLogin);
-document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); });
-
-function doLogin(){
-  const email = document.getElementById('login-email').value.trim();
-  const pass  = document.getElementById('login-pass').value;
-  const errEl = document.getElementById('login-error');
-  errEl.textContent = '';
-  if(!email || !pass){ errEl.textContent = 'Enter your email and password.'; return; }
-  const btn = document.getElementById('login-btn');
-  btn.disabled = true; btn.textContent = 'Signing in…';
-  auth.signInWithEmailAndPassword(email, pass)
-    .catch(err => {
-      errEl.textContent = friendlyAuthError(err);
-      btn.disabled = false; btn.textContent = 'Sign In';
-    });
-}
-
-function friendlyAuthError(err){
-  switch(err.code){
-    case 'auth/invalid-email': return 'That email address looks invalid.';
-    case 'auth/user-not-found':
-    case 'auth/wrong-password':
-    case 'auth/invalid-credential': return 'Incorrect email or password.';
-    case 'auth/too-many-requests': return 'Too many attempts. Try again shortly.';
-    case 'auth/network-request-failed': return 'Network error — check your connection.';
-    default: return 'Authentication Error — ' + (err.message || 'sign-in failed.');
-  }
-}
-
-document.getElementById('logout-btn').addEventListener('click', () => {
-  auth.signOut();
-});
-
-auth.onAuthStateChanged(async user => {
-  if(!user){
-    currentUser = null;
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('login-btn').disabled = false;
-    document.getElementById('login-btn').textContent = 'Sign In';
-    return;
-  }
-  try{
-    const snap = await REF.admins.child(user.uid).get();
-    if(!snap.exists() || snap.val() !== true && !(snap.val() && snap.val().enabled)){
-      document.getElementById('login-error').textContent = 'This account is not authorized for Master Control.';
-      document.getElementById('login-btn').disabled = false;
-      document.getElementById('login-btn').textContent = 'Sign In';
-      await auth.signOut();
-      return;
-    }
-  }catch(e){
-    document.getElementById('login-error').textContent = 'Permission Denied — could not verify admin access.';
-    await auth.signOut();
-    return;
-  }
-  currentUser = user;
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  document.getElementById('admin-email-label').textContent = user.email || user.uid.slice(0,10);
-  document.getElementById('admin-av').textContent = (user.email || 'A').charAt(0).toUpperCase();
-  bootApp();
-});
+bootApp();
 
 /* ---------------------------------------------------------------
    2. CONNECTION STATUS

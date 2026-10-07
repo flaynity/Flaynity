@@ -868,7 +868,7 @@ function resetPTRIndicator() {
         ptrSpinner.style.setProperty('-webkit-animation-name', 'none', 'important');
         ptrSpinner.style.setProperty('fill', 'var(--primary, #FF1744)', 'important');
         ptrSpinner.style.setProperty('stroke', 'var(--primary, #FF1744)', 'important');
-        ptrSpinner.style.setProperty('transform', 'rotate(0deg)', 'important');
+        ptrSpinner.style.setProperty('transform', 'none', 'important');
         ptrSpinner.style.setProperty('transition', 'transform 0.32s cubic-bezier(0.22, 1, 0.36, 1)', 'important');
     });
 
@@ -953,7 +953,7 @@ function initPullToRefresh() {
                 ptrIndicator.style.setProperty('transform', `translate3d(-50%, ${Math.min(115, pullDistance)}px, 0)`, 'important');
             }
             if (ptrSpinner) {
-                ptrSpinner.style.transform = 'rotate(0deg)';
+                ptrSpinner.style.transform = 'none';
                 ptrSpinner.style.setProperty('fill', pullDistance >= PTR_TRIGGER_DISTANCE * 0.42 ? 'var(--primary, #FF1744)' : 'var(--text-muted, #888)', 'important');
                 ptrSpinner.style.setProperty('stroke', 'none', 'important');
             }
@@ -983,7 +983,7 @@ function initPullToRefresh() {
             if (ptrSpinner) {
                 ptrSpinner.style.setProperty('fill', 'var(--primary, #FF1744)', 'important');
                 ptrSpinner.style.setProperty('stroke', 'none', 'important');
-                ptrSpinner.style.transform = '';
+                ptrSpinner.style.transform = 'none';
                 ptrSpinner.classList.add('ptr-home-building');
             }
 

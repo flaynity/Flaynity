@@ -3614,14 +3614,32 @@ const AppNavigation = {
                     animation: flaynityPremiumPageEnter 240ms cubic-bezier(.2,.75,.25,1) both !important;
                     will-change: opacity, transform;
                 }
+                /* Premium service pages cover the tab and bottom navigation completely. */
+                body.premium-service-active .bottom-nav {
+                    visibility: hidden !important;
+                    opacity: 0 !important;
+                    pointer-events: none !important;
+                }
+                .fullscreen-page.premium-service-page {
+                    position: fixed !important;
+                    inset: 0 !important;
+                    width: 100% !important;
+                    height: 100dvh !important;
+                    min-height: 100vh !important;
+                    z-index: 2005 !important;
+                    background: var(--bg-color, var(--background, #fff));
+                    isolation: isolate;
+                }
                 .premium-service-opening {
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     flex-direction: column;
                     gap: 14px;
-                    background: var(--bg-color, var(--background, #fff));
+                    background: var(--bg-color, var(--background, #fff)) !important;
                     color: var(--text-main, #222);
+                    opacity: 1 !important;
+                    transform: none !important;
                 }
                 .premium-service-opening .premium-opening-spinner {
                     width: 28px; height: 28px; border-radius: 50%;
@@ -3671,7 +3689,12 @@ const AppNavigation = {
             }
         });
 
-        // Any page opened from You should appear instantly instead of sliding in.
+        // Hide the bottom navigation for the full duration of premium service pages,
+        // including loading and exit; syncUI restores it after returning to a tab.
+        const premiumPageActive = !!(activePage && Object.keys(PREMIUM_SERVICE_FILES).some(id => id + '-page' === activePage));
+        document.body.classList.toggle('premium-service-active', premiumPageActive);
+
+        // Any page opened from You should use the same smooth entrance animation.
         if (activeTab === 'you' && activePage) {
             const directPage = document.getElementById(activePage);
             if (directPage) directPage.classList.add('you-direct-page');

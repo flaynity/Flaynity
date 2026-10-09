@@ -139,9 +139,12 @@
 .icon-about { background: linear-gradient(135deg, #D80E45 0%, #FF2E55 100%); box-shadow: 0 4px 14px rgba(216,14,69,0.3); }
 
 /* Verified Badge Customization */
-.icon-verified { background: #F0F7FF; border: 1px solid #D6EBFF; box-shadow: none; }
-[data-theme="dark"] .icon-verified { background: rgba(51, 144, 236, 0.1); border-color: rgba(51, 144, 236, 0.2); }
-.icon-verified svg { width: 22px !important; height: 22px !important; display: block; margin: auto; }
+.icon-verified { background: rgba(216, 14, 69, 0.10); border: 1px solid rgba(216, 14, 69, 0.25); box-shadow: none; }
+[data-theme="dark"] .icon-verified { background: rgba(216, 14, 69, 0.14); border-color: rgba(216, 14, 69, 0.32); }
+.icon-verified svg { width: 22px !important; height: 22px !important; display: block; margin: auto; filter: drop-shadow(0 0 3px rgba(216, 14, 69, .45)); animation: flayVerifiedBadgeGlow 2.2s ease-in-out infinite; transform-origin: center; }
+.icon-verified svg path:first-child { fill: #D80E45; }
+@keyframes flayVerifiedBadgeGlow { 0%, 100% { filter: drop-shadow(0 0 2px rgba(216, 14, 69, .3)); } 50% { filter: drop-shadow(0 0 7px rgba(216, 14, 69, .85)); } }
+@media (prefers-reduced-motion: reduce) { .icon-verified svg { animation: none; } }
 
 .premium-service-item > span { min-width: 0; font-weight: 800; font-size: 1.05rem; }
 
@@ -761,9 +764,9 @@
 </div>
 <div class="you-menu-item premium-service-item" onclick="handleFlayVerifiedBadgeFromYou()">
 <div class="premium-icon-box icon-verified">
-<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M11.96 1.171a2.316 2.316 0 0 0-1.63.784L8.76 3.65 6.64 3.96a2.315 2.315 0 0 0-1.928 1.928L4.4 8.01 2.705 9.576a2.316 2.316 0 0 0 0 3.328l1.696 1.566.312 2.122a2.315 2.315 0 0 0 1.928 1.928l2.122.312 1.57 1.696c.866.935 2.392.935 3.258 0l1.57-1.696 2.122-.312a2.315 2.315 0 0 0 1.928-1.928l.312-2.122 1.696-1.566a2.316 2.316 0 0 0 0-3.328L19.6 8.01l-.312-2.122a2.315 2.315 0 0 0-1.928-1.928L15.24 3.65l-1.57-1.695a2.316 2.316 0 0 0-1.63-.784z" fill="#3390ec"></path>
-<path d="M10.15 14.88 7.37 12.1l1.41-1.41 1.37 1.37 4.96-4.96 1.41 1.42-6.37 6.36z" fill="#ffffff"></path>
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<path d="M12.0001 2.37877L14.1539 3.58552L16.634 3.44754L18.0699 5.56844L20.4705 6.30722L20.6724 8.78318L22.4516 10.4287L21.5794 12.7562L22.4516 15.0837L20.6724 16.7292L20.4705 19.2052L18.0699 19.9439L16.634 22.0648L14.1539 21.9269L12.0001 23.1336L9.84628 21.9269L7.36616 22.0648L5.93026 19.9439L3.52968 19.2052L3.32777 16.7292L1.54858 15.0837L2.42079 12.7562L1.54858 10.4287L3.32777 8.78318L3.52968 6.30722L5.93026 5.56844L7.36616 3.44754L9.84628 3.58552Z" fill="#D80E45"></path>
+<path d="M10.8335 15.6881L7.14515 12.0858L8.35483 10.9044L10.8335 13.3253L15.6453 8.625L16.855 9.8064L10.8335 15.6881Z" fill="#FFFFFF"></path>
 </svg>
 </div>
 <span>Flay Verified Badge</span>

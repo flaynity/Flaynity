@@ -7599,6 +7599,7 @@ window.addEventListener('flaynity-dom-ready', initFlaynityDiscoverSearch);
     };
 
     const originals = new WeakMap();
+    const lastRendered = new WeakMap();
     let currentLanguage = 'en';
     let translating = false;
 
@@ -7624,7 +7625,7 @@ window.addEventListener('flaynity-dom-ready', initFlaynityDiscoverSearch);
     }
 
     function translateTextNode(node) {
-        if (!node || node.nodeType !== 3 || translating) return;
+        if (!node || node.nodeType !== 3) return;
         const parent = node.parentElement;
         if (!parent || parent.closest('script,style,textarea,input,code,pre,[contenteditable="true"]')) return;
         rememberTextNode(node);
@@ -7636,6 +7637,7 @@ window.addEventListener('flaynity-dom-ready', initFlaynityDiscoverSearch);
         const leading = (original.match(/^\s*/) || [''])[0];
         const trailing = (original.match(/\s*$/) || [''])[0];
         const nextValue = translated ? leading + translated + trailing : original;
+        lastRendered.set(node, nextValue);
         if (node.nodeValue !== nextValue) node.nodeValue = nextValue;
     }
 
@@ -7711,9 +7713,10 @@ window.addEventListener('flaynity-dom-ready', initFlaynityDiscoverSearch);
             if (translating) return;
             mutations.forEach(mutation => {
                 if (mutation.type === 'characterData') {
-                    // Newly generated text is stored as its source before translating.
                     const node = mutation.target;
-                    if (!originals.has(node)) originals.set(node, node.nodeValue);
+                    // Detect text updated by app logic, but ignore our own translation writes.
+                    if (lastRendered.has(node) && node.nodeValue === lastRendered.get(node)) return;
+                    originals.set(node, node.nodeValue);
                     translateTextNode(node);
                 }
                 mutation.addedNodes && mutation.addedNodes.forEach(node => translateTree(node));

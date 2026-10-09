@@ -3625,7 +3625,10 @@ const AppNavigation = {
         document.querySelectorAll('.tab-content, .nav-item').forEach(el => el.classList.remove('active'));
         const tabEl = document.getElementById(`${activeTab}-tab`);
         const navEl = document.getElementById(`nav-${activeTab}`);
-        if (tabEl) tabEl.classList.add('active');
+        // A fullscreen sub-page must cover the active tab immediately, even
+        // while a premium service page is being fetched/created asynchronously.
+        // Otherwise the previous You page briefly shows behind the destination.
+        if (tabEl && !activePage) tabEl.classList.add('active');
         if (navEl) navEl.classList.add('active');
 
         adjustHeaderForActiveTab(activeTab);

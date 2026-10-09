@@ -69,8 +69,10 @@
         .fvb-wrapper .profile-mock { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); }
         .fvb-wrapper .avatar { width: 56px; height: 56px; border-radius: 50%; background-color: var(--border-color); background-position: center; background-size: cover; border: 2px solid var(--card-bg); box-shadow: 0 0 0 2px var(--telegram-blue); transition: background-image 0.3s ease; }
         
-        .fvb-wrapper .profile-info h3 { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-        .fvb-wrapper .profile-info p { color: var(--text-secondary); font-size: 14px; font-weight: 500; margin:0;}
+        .fvb-wrapper .profile-info { min-width: 0; flex: 1; display: flex; flex-direction: column; justify-content: center; transform: translateY(-4px); }
+        .fvb-wrapper .profile-info h3 { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 6px; margin: 0 0 4px; min-width: 0; }
+        .fvb-wrapper .profile-info h3 span { min-width: 0; overflow-wrap: anywhere; }
+        .fvb-wrapper .profile-info p { color: var(--text-secondary); font-size: 14px; font-weight: 500; margin: 0; line-height: 1.35; overflow-wrap: anywhere;}
         .fvb-wrapper .preview-text { font-size: 13px; color: var(--text-secondary); line-height: 1.5; display: flex; align-items: flex-start; gap: 10px; }
         .fvb-wrapper .preview-text i { color: var(--flay-pink); margin-top: 3px; }
 
@@ -188,7 +190,7 @@
                     <div class="profile-info">
                         <h3 class="skeleton-text" id="fvb-db-channel-name-container">
                             <span id="fvb-db-channel-name">Loading...</span>
-                            <svg viewBox="0 0 24 24" class="verified-svg" style="width: 18px; height: 18px; display: none;" id="fvb-db-channel-badge">
+                            <svg viewBox="0 0 24 24" class="verified-svg" style="width: 18px; height: 18px;" id="fvb-db-channel-badge">
                                 <use href="#icon-verified-telegram"></use>
                             </svg>
                         </h3>
@@ -410,17 +412,16 @@
                     }
                 }
 
+                // Always show the badge in the page's profile preview, including before purchase.
+                if (badgeEl) badgeEl.style.display = 'inline-block';
+
                 if (data.verifiedUntil && data.verifiedUntil > Date.now()) {
-                    if (badgeEl) badgeEl.style.display = 'inline-block';
-                    
                     document.getElementById('fvb-plans-section').style.display = 'none';
                     document.getElementById('fvb-bottom-cta-section').style.display = 'none';
                     document.getElementById('fvb-active-plan-section').style.display = 'block';
                     
                     fvbStartCountdown(data.verifiedUntil);
                 } else {
-                    if (badgeEl) badgeEl.style.display = 'none';
-                    
                     document.getElementById('fvb-plans-section').style.display = 'block';
                     document.getElementById('fvb-bottom-cta-section').style.display = 'flex';
                     document.getElementById('fvb-active-plan-section').style.display = 'none';

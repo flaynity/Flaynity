@@ -4701,6 +4701,10 @@ function selectGenericOption(element, sheetId) {
         parentList.querySelectorAll('.sheet-option-item').forEach(el => el.classList.remove('selected'));
     }
     element.classList.add('selected');
+    if (sheetId === 'sheet-language' && typeof window.setFlaynityLanguage === 'function') {
+        const label = element.querySelector('.sheet-option-label');
+        window.setFlaynityLanguage(label ? label.textContent : element.textContent);
+    }
     setTimeout(() => closeBottomSheet(sheetId), 220);
 }
 
@@ -7453,3 +7457,274 @@ if (document.readyState === 'loading') {
     initFlaynityDiscoverSearch();
 }
 window.addEventListener('flaynity-dom-ready', initFlaynityDiscoverSearch);
+
+
+/* FLAYNITY_APP_LANGUAGE_SYSTEM_V1
+   App-wide UI localization kept in this file (no separate language files).
+   Only interface text is translated; user-generated content and Firebase data remain untouched. */
+(function () {
+    'use strict';
+
+    const LANG_KEY = 'flaynity-app-language';
+    const LANGUAGES = {
+        bn: {
+            name: 'বাংলা', dir: 'ltr',
+            map: {
+                'Home':'হোম','Feels':'ফিলস','Shorts':'ফিলস','Upload':'আপলোড','Discover':'আবিষ্কার','You':'আপনি',
+                'Setting':'সেটিংস','Settings':'সেটিংস','App Language':'অ্যাপের ভাষা','Switch Theme':'থিম পরিবর্তন',
+                'Light Theme':'লাইট থিম','Dark Theme':'ডার্ক থিম','Data Saver':'ডেটা সেভার','Account':'অ্যাকাউন্ট',
+                'Appearance':'চেহারা','Privacy':'গোপনীয়তা','Support':'সহায়তা','Content & Playback':'কনটেন্ট ও প্লেব্যাক',
+                'Flaynity Features':'Flaynity ফিচার','Edit Profile':'প্রোফাইল সম্পাদনা','Switch Account':'অ্যাকাউন্ট পরিবর্তন',
+                'Create a Channel':'চ্যানেল তৈরি করুন','View Channel':'চ্যানেল দেখুন','Create Channel':'চ্যানেল তৈরি করুন',
+                'Upgrade Pro':'প্রো আপগ্রেড','Flay Verified Badge':'Flay ভেরিফায়েড ব্যাজ','Boost Content':'কনটেন্ট বুস্ট',
+                'Flay Pay':'Flay Pay','Private Account':'প্রাইভেট অ্যাকাউন্ট','Who Can See My Content':'আমার কনটেন্ট কে দেখতে পারবে',
+                'Who Can Comment':'কে মন্তব্য করতে পারবে','Who Can Subscribe Me':'কে সাবস্ক্রাইব করতে পারবে',
+                'Who Can Like Me':'কে লাইক দিতে পারবে','Download Settings':'ডাউনলোড সেটিংস',
+                'Content Quality':'কনটেন্টের মান','Autoplay':'স্বয়ংক্রিয় প্লে','Help Center':'সহায়তা কেন্দ্র',
+                'Report a Problem':'সমস্যা জানান','Terms of Service':'সেবার শর্তাবলি','Privacy Policy':'গোপনীয়তা নীতি',
+                'Cookie Policy':'কুকি নীতি','Copyright & DMCA':'কপিরাইট ও DMCA','About Flaynity':'Flaynity সম্পর্কে',
+                'Cancel':'বাতিল','Save':'সংরক্ষণ','Done':'সম্পন্ন','Next':'পরবর্তী','Back':'ফিরে যান',
+                'Search':'খুঁজুন','For You':'আপনার জন্য','Subscribe':'সাবস্ক্রাইব','Subscribed':'সাবস্ক্রাইব করা হয়েছে',
+                'Like':'লাইক','Comment':'মন্তব্য','Download':'ডাউনলোড','Share':'শেয়ার','Views':'ভিউ',
+                'Video quality':'ভিডিওর মান','Manage your default video quality':'আপনার ডিফল্ট ভিডিওর মান নির্ধারণ করুন',
+                'No description provided yet.':'এখনও কোনো বিবরণ দেওয়া হয়নি।','Loading...':'লোড হচ্ছে...',
+                'Retry':'আবার চেষ্টা করুন','Continue':'চালিয়ে যান','Create':'তৈরি করুন','Edit':'সম্পাদনা',
+                'Profile':'প্রোফাইল','Channel':'চ্যানেল','Posts':'পোস্ট','Videos':'ভিডিও','Comments':'মন্তব্য',
+                'Notifications':'নোটিফিকেশন','Wallet':'ওয়ালেট','Earning':'আয়','Flay Earning':'Flay আয়',
+                'Who can see your content?':'আপনার কনটেন্ট কে দেখতে পারবে?','Everyone':'সবাই','No one':'কেউ না',
+                'Public':'পাবলিক','Private':'প্রাইভেট','Language changed':'ভাষা পরিবর্তন হয়েছে'
+            }
+        },
+        en: { name:'English', dir:'ltr', map:{} },
+        hi: {
+            name:'हिन्दी', dir:'ltr',
+            map: {
+                'Home':'होम','Feels':'फील्स','Shorts':'फील्स','Upload':'अपलोड','Discover':'खोजें','You':'आप',
+                'Setting':'सेटिंग','Settings':'सेटिंग्स','App Language':'ऐप की भाषा','Switch Theme':'थीम बदलें',
+                'Light Theme':'लाइट थीम','Dark Theme':'डार्क थीम','Data Saver':'डेटा सेवर','Account':'खाता',
+                'Appearance':'दिखावट','Privacy':'गोपनीयता','Support':'सहायता','Content & Playback':'कंटेंट और प्लेबैक',
+                'Flaynity Features':'Flaynity सुविधाएँ','Edit Profile':'प्रोफ़ाइल संपादित करें','Switch Account':'खाता बदलें',
+                'Create a Channel':'चैनल बनाएँ','View Channel':'चैनल देखें','Create Channel':'चैनल बनाएँ',
+                'Upgrade Pro':'प्रो अपग्रेड','Private Account':'निजी खाता','Download Settings':'डाउनलोड सेटिंग्स',
+                'Content Quality':'कंटेंट गुणवत्ता','Autoplay':'ऑटो प्ले','Help Center':'सहायता केंद्र',
+                'Report a Problem':'समस्या रिपोर्ट करें','Terms of Service':'सेवा की शर्तें','Privacy Policy':'गोपनीयता नीति',
+                'Cookie Policy':'कुकी नीति','Cancel':'रद्द करें','Save':'सेव करें','Done':'हो गया','Next':'अगला',
+                'Back':'वापस','Search':'खोजें','For You':'आपके लिए','Subscribe':'सब्सक्राइब','Subscribed':'सब्सक्राइब किया गया',
+                'Like':'लाइक','Comment':'टिप्पणी','Download':'डाउनलोड','Share':'शेयर','Views':'व्यूज़',
+                'Video quality':'वीडियो गुणवत्ता','Loading...':'लोड हो रहा है','Retry':'फिर कोशिश करें',
+                'Continue':'जारी रखें','Create':'बनाएँ','Edit':'संपादित करें','Profile':'प्रोफ़ाइल','Channel':'चैनल',
+                'Posts':'पोस्ट','Videos':'वीडियो','Comments':'टिप्पणियाँ','Notifications':'सूचनाएँ','Wallet':'वॉलेट'
+            }
+        },
+        es: {
+            name:'Español', dir:'ltr',
+            map: {
+                'Home':'Inicio','Feels':'Feels','Shorts':'Feels','Upload':'Subir','Discover':'Descubrir','You':'Tú',
+                'Setting':'Ajustes','Settings':'Ajustes','App Language':'Idioma de la app','Switch Theme':'Cambiar tema',
+                'Light Theme':'Tema claro','Dark Theme':'Tema oscuro','Data Saver':'Ahorro de datos','Account':'Cuenta',
+                'Appearance':'Apariencia','Privacy':'Privacidad','Support':'Ayuda','Content & Playback':'Contenido y reproducción',
+                'Flaynity Features':'Funciones de Flaynity','Edit Profile':'Editar perfil','Switch Account':'Cambiar cuenta',
+                'Create a Channel':'Crear un canal','View Channel':'Ver canal','Create Channel':'Crear canal',
+                'Upgrade Pro':'Mejorar a Pro','Private Account':'Cuenta privada','Download Settings':'Ajustes de descarga',
+                'Content Quality':'Calidad del contenido','Autoplay':'Reproducción automática','Help Center':'Centro de ayuda',
+                'Report a Problem':'Informar de un problema','Terms of Service':'Términos del servicio','Privacy Policy':'Política de privacidad',
+                'Cookie Policy':'Política de cookies','Cancel':'Cancelar','Save':'Guardar','Done':'Listo','Next':'Siguiente',
+                'Back':'Atrás','Search':'Buscar','For You':'Para ti','Subscribe':'Suscribirse','Subscribed':'Suscrito',
+                'Like':'Me gusta','Comment':'Comentar','Download':'Descargar','Share':'Compartir','Views':'Visualizaciones',
+                'Video quality':'Calidad del video','Loading...':'Cargando...','Retry':'Reintentar','Continue':'Continuar',
+                'Create':'Crear','Edit':'Editar','Profile':'Perfil','Channel':'Canal','Posts':'Publicaciones',
+                'Videos':'Videos','Comments':'Comentarios','Notifications':'Notificaciones','Wallet':'Cartera'
+            }
+        },
+        fr: {
+            name:'Français', dir:'ltr',
+            map: {
+                'Home':'Accueil','Feels':'Feels','Shorts':'Feels','Upload':'Publier','Discover':'Découvrir','You':'Vous',
+                'Setting':'Paramètres','Settings':'Paramètres','App Language':'Langue de l’application','Switch Theme':'Changer de thème',
+                'Light Theme':'Thème clair','Dark Theme':'Thème sombre','Data Saver':'Économiseur de données','Account':'Compte',
+                'Appearance':'Apparence','Privacy':'Confidentialité','Support':'Assistance','Content & Playback':'Contenu et lecture',
+                'Flaynity Features':'Fonctionnalités Flaynity','Edit Profile':'Modifier le profil','Switch Account':'Changer de compte',
+                'Create a Channel':'Créer une chaîne','View Channel':'Voir la chaîne','Create Channel':'Créer une chaîne',
+                'Upgrade Pro':'Passer à Pro','Private Account':'Compte privé','Download Settings':'Paramètres de téléchargement',
+                'Content Quality':'Qualité du contenu','Autoplay':'Lecture automatique','Help Center':'Centre d’aide',
+                'Report a Problem':'Signaler un problème','Terms of Service':'Conditions d’utilisation','Privacy Policy':'Politique de confidentialité',
+                'Cookie Policy':'Politique relative aux cookies','Cancel':'Annuler','Save':'Enregistrer','Done':'Terminé',
+                'Next':'Suivant','Back':'Retour','Search':'Rechercher','For You':'Pour vous','Subscribe':'S’abonner',
+                'Subscribed':'Abonné','Like':'J’aime','Comment':'Commenter','Download':'Télécharger','Share':'Partager',
+                'Views':'Vues','Video quality':'Qualité vidéo','Loading...':'Chargement…','Retry':'Réessayer',
+                'Continue':'Continuer','Create':'Créer','Edit':'Modifier','Profile':'Profil','Channel':'Chaîne',
+                'Posts':'Publications','Videos':'Vidéos','Comments':'Commentaires','Notifications':'Notifications','Wallet':'Portefeuille'
+            }
+        },
+        ar: {
+            name:'العربية', dir:'rtl',
+            map: {
+                'Home':'الرئيسية','Feels':'فيلز','Shorts':'فيلز','Upload':'رفع','Discover':'اكتشف','You':'أنت',
+                'Setting':'الإعدادات','Settings':'الإعدادات','App Language':'لغة التطبيق','Switch Theme':'تغيير المظهر',
+                'Light Theme':'المظهر الفاتح','Dark Theme':'المظهر الداكن','Data Saver':'توفير البيانات','Account':'الحساب',
+                'Appearance':'المظهر','Privacy':'الخصوصية','Support':'الدعم','Content & Playback':'المحتوى والتشغيل',
+                'Flaynity Features':'ميزات Flaynity','Edit Profile':'تعديل الملف الشخصي','Switch Account':'تبديل الحساب',
+                'Create a Channel':'إنشاء قناة','View Channel':'عرض القناة','Create Channel':'إنشاء قناة',
+                'Upgrade Pro':'الترقية إلى Pro','Private Account':'حساب خاص','Download Settings':'إعدادات التنزيل',
+                'Content Quality':'جودة المحتوى','Autoplay':'التشغيل التلقائي','Help Center':'مركز المساعدة',
+                'Report a Problem':'الإبلاغ عن مشكلة','Terms of Service':'شروط الخدمة','Privacy Policy':'سياسة الخصوصية',
+                'Cookie Policy':'سياسة ملفات تعريف الارتباط','Cancel':'إلغاء','Save':'حفظ','Done':'تم','Next':'التالي',
+                'Back':'رجوع','Search':'بحث','For You':'لك','Subscribe':'اشتراك','Subscribed':'مشترك',
+                'Like':'إعجاب','Comment':'تعليق','Download':'تنزيل','Share':'مشاركة','Views':'مشاهدات',
+                'Video quality':'جودة الفيديو','Loading...':'جارٍ التحميل…','Retry':'إعادة المحاولة',
+                'Continue':'متابعة','Create':'إنشاء','Edit':'تعديل','Profile':'الملف الشخصي','Channel':'القناة',
+                'Posts':'المنشورات','Videos':'الفيديوهات','Comments':'التعليقات','Notifications':'الإشعارات','Wallet':'المحفظة'
+            }
+        },
+        ur: {
+            name:'اردو', dir:'rtl',
+            map: {
+                'Home':'ہوم','Feels':'فیلز','Shorts':'فیلز','Upload':'اپ لوڈ','Discover':'دریافت کریں','You':'آپ',
+                'Setting':'ترتیبات','Settings':'ترتیبات','App Language':'ایپ کی زبان','Switch Theme':'تھیم تبدیل کریں',
+                'Light Theme':'لائٹ تھیم','Dark Theme':'ڈارک تھیم','Data Saver':'ڈیٹا سیور','Account':'اکاؤنٹ',
+                'Appearance':'ظاہری شکل','Privacy':'رازداری','Support':'مدد','Content & Playback':'مواد اور پلے بیک',
+                'Flaynity Features':'Flaynity خصوصیات','Edit Profile':'پروفائل میں ترمیم','Switch Account':'اکاؤنٹ تبدیل کریں',
+                'Create a Channel':'چینل بنائیں','View Channel':'چینل دیکھیں','Create Channel':'چینل بنائیں',
+                'Upgrade Pro':'پرو اپ گریڈ','Private Account':'نجی اکاؤنٹ','Download Settings':'ڈاؤن لوڈ ترتیبات',
+                'Content Quality':'مواد کا معیار','Autoplay':'خودکار پلے','Help Center':'مدد مرکز',
+                'Report a Problem':'مسئلہ رپورٹ کریں','Terms of Service':'سروس کی شرائط','Privacy Policy':'رازداری کی پالیسی',
+                'Cookie Policy':'کوکی پالیسی','Cancel':'منسوخ','Save':'محفوظ کریں','Done':'مکمل','Next':'اگلا',
+                'Back':'واپس','Search':'تلاش','For You':'آپ کے لیے','Subscribe':'سبسکرائب','Subscribed':'سبسکرائب شدہ',
+                'Like':'پسند','Comment':'تبصرہ','Download':'ڈاؤن لوڈ','Share':'شیئر','Views':'ویوز',
+                'Video quality':'ویڈیو کا معیار','Loading...':'لوڈ ہو رہا ہے','Retry':'دوبارہ کوشش کریں',
+                'Continue':'جاری رکھیں','Create':'بنائیں','Edit':'ترمیم','Profile':'پروفائل','Channel':'چینل',
+                'Posts':'پوسٹس','Videos':'ویڈیوز','Comments':'تبصرے','Notifications':'اطلاعات','Wallet':'والٹ'
+            }
+        }
+    };
+
+    const originals = new WeakMap();
+    let currentLanguage = 'en';
+    let translating = false;
+
+    function normalize(value) {
+        return String(value || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function resolveLanguage(label) {
+        const value = normalize(label);
+        if (/বাংলা|Bangla|Bengali/i.test(value)) return 'bn';
+        if (/English/i.test(value)) return 'en';
+        if (/العربية|Arabic/i.test(value)) return 'ar';
+        if (/Español|Spanish/i.test(value)) return 'es';
+        if (/Français|French/i.test(value)) return 'fr';
+        if (/हिन्दी|Hindi/i.test(value)) return 'hi';
+        if (/اردو|Urdu/i.test(value)) return 'ur';
+        return 'en';
+    }
+
+    function rememberTextNode(node) {
+        if (!node || node.nodeType !== 3) return;
+        if (!originals.has(node)) originals.set(node, node.nodeValue);
+    }
+
+    function translateTextNode(node) {
+        if (!node || node.nodeType !== 3 || translating) return;
+        const parent = node.parentElement;
+        if (!parent || parent.closest('script,style,textarea,input,code,pre,[contenteditable="true"]')) return;
+        rememberTextNode(node);
+        const original = originals.get(node);
+        const key = normalize(original);
+        if (!key) return;
+        const lang = LANGUAGES[currentLanguage] || LANGUAGES.en;
+        const translated = lang.map[key];
+        const leading = (original.match(/^\s*/) || [''])[0];
+        const trailing = (original.match(/\s*$/) || [''])[0];
+        const nextValue = translated ? leading + translated + trailing : original;
+        if (node.nodeValue !== nextValue) node.nodeValue = nextValue;
+    }
+
+    function translateAttributes(root) {
+        if (!root || root.nodeType !== 1) return;
+        const lang = LANGUAGES[currentLanguage] || LANGUAGES.en;
+        const attrs = ['placeholder','title','aria-label','alt'];
+        const elements = [root].concat(Array.from(root.querySelectorAll ? root.querySelectorAll('*') : []));
+        elements.forEach(el => {
+            attrs.forEach(attr => {
+                const value = el.getAttribute && el.getAttribute(attr);
+                if (!value) return;
+                if (!el.hasAttribute('data-flaynity-original-' + attr)) {
+                    el.setAttribute('data-flaynity-original-' + attr, value);
+                }
+                const original = el.getAttribute('data-flaynity-original-' + attr);
+                if (lang.map[normalize(original)]) el.setAttribute(attr, lang.map[normalize(original)]);
+                else if (currentLanguage === 'en') el.setAttribute(attr, original);
+            });
+        });
+    }
+
+    function translateTree(root) {
+        if (!root) return;
+        translating = true;
+        try {
+            if (root.nodeType === 3) translateTextNode(root);
+            else {
+                const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+                let node;
+                while ((node = walker.nextNode())) translateTextNode(node);
+                if (root.nodeType === 1) translateAttributes(root);
+            }
+        } finally {
+            translating = false;
+        }
+    }
+
+    function applyLanguage(code) {
+        currentLanguage = LANGUAGES[code] ? code : 'en';
+        try { localStorage.setItem(LANG_KEY, currentLanguage); } catch (e) {}
+        document.documentElement.setAttribute('lang', currentLanguage);
+        // Keep the existing layout direction and styling unchanged.
+        translateTree(document.body);
+        const languageSheet = document.getElementById('sheet-language');
+        if (languageSheet) {
+            languageSheet.querySelectorAll('.sheet-option-item').forEach(item => {
+                const label = item.querySelector('.sheet-option-label');
+                if (label && resolveLanguage(label.textContent) === currentLanguage) item.classList.add('selected');
+                else item.classList.remove('selected');
+            });
+        }
+        window.dispatchEvent(new CustomEvent('flaynity-language-changed', { detail: { language: currentLanguage } }));
+    }
+
+    window.setFlaynityLanguage = function (labelOrCode) {
+        const code = LANGUAGES[labelOrCode] ? labelOrCode : resolveLanguage(labelOrCode);
+        applyLanguage(code);
+    };
+    window.getFlaynityLanguage = function () { return currentLanguage; };
+
+    function init() {
+        let saved = '';
+        try { saved = localStorage.getItem(LANG_KEY) || ''; } catch (e) {}
+        const sheet = document.getElementById('sheet-language');
+        if (!saved && sheet) {
+            const selected = sheet.querySelector('.sheet-option-item.selected .sheet-option-label');
+            if (selected) saved = resolveLanguage(selected.textContent);
+        }
+        applyLanguage(saved || 'en');
+
+        const observer = new MutationObserver(mutations => {
+            if (translating) return;
+            mutations.forEach(mutation => {
+                if (mutation.type === 'characterData') {
+                    // Newly generated text is stored as its source before translating.
+                    const node = mutation.target;
+                    if (!originals.has(node)) originals.set(node, node.nodeValue);
+                    translateTextNode(node);
+                }
+                mutation.addedNodes && mutation.addedNodes.forEach(node => translateTree(node));
+            });
+        });
+        if (document.body) observer.observe(document.body, { childList: true, characterData: true, subtree: true });
+        window.addEventListener('flaynity-dom-ready', () => translateTree(document.body));
+        window.addEventListener('flaynity-pages-ready', () => translateTree(document.body));
+        window.addEventListener('flaynity-tab-changed', () => translateTree(document.body));
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
+    else init();
+})();

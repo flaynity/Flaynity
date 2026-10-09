@@ -534,59 +534,77 @@
 #channel-settings-page .appbar .centered-page-title{position:absolute !important; left:50% !important; transform:translateX(-50%) !important; margin:0 !important; text-align:center !important; white-space:nowrap !important;}
 #channel-settings-page .page-content{padding:18px 12px 60px !important;}
 
-/* Settings Card Boxes Styling */
-.settings-card-group {
-    margin-bottom: 22px;
+/* Settings Page — floating icon and label layout; no card containers */
+#channel-settings-page .page-content {
+    padding: 18px 16px 60px !important;
 }
-.settings-card-group-title {
-    font-size: 0.85rem;
+#channel-settings-page .settings-card-group {
+    margin: 0 0 26px !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+}
+#channel-settings-page .settings-card-group-title {
+    font-size: 0.82rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.6px;
+    letter-spacing: 0.7px;
     color: var(--text-muted);
-    margin: 0 0 10px 10px;
+    margin: 0 0 12px 2px;
     display: flex;
     align-items: center;
     gap: 6px;
 }
-.settings-card-box {
-    background: var(--surface);
-    border: 1px solid var(--glass-border);
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.025);
+#channel-settings-page .settings-card-box {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
 }
-[data-theme="dark"] .settings-card-box {
-    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-}
-.settings-item {
+#channel-settings-page .settings-item {
     display: flex;
     align-items: center;
-    padding: 13px 16px;
+    min-height: 54px;
+    box-sizing: border-box;
+    padding: 8px 4px !important;
     gap: 14px;
     cursor: pointer;
-    border-bottom: 1px solid var(--glass-border);
-    transition: all 0.2s ease;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transition: color 0.18s ease, transform 0.18s ease;
     user-select: none;
     color: var(--text-main);
 }
-.settings-item:last-child {
-    border-bottom: none;
+#channel-settings-page .settings-item:last-child {
+    border-bottom: 0 !important;
 }
-.settings-item:active {
-    background: var(--border-color);
+#channel-settings-page .settings-item:active {
+    background: transparent !important;
     transform: scale(0.985);
 }
-.settings-item:active .premium-icon-box {
-    transform: scale(1.06);
-}
-.settings-item span {
+#channel-settings-page .settings-item span {
+    min-width: 0;
     font-size: 0.98rem;
     font-weight: 750;
     color: var(--text-main);
     flex-grow: 1;
 }
-
+#channel-settings-page .settings-item .premium-icon-box {
+    flex-shrink: 0;
+}
+#channel-settings-page .settings-item .arrow-r {
+    margin-left: auto;
+    flex-shrink: 0;
+}
 /* =========================================================
    BOTTOM SHEET POP-UP (DRAWER) STYLING
    ========================================================= */

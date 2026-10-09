@@ -3442,8 +3442,7 @@ async function __flaynityLoadPremiumService(serviceId) {
     const url = PREMIUM_SERVICE_FILES[serviceId];
     if (!url) throw new Error('Unknown premium service: ' + serviceId);
     const pageId = serviceId + '-page';
-    const existingPage = document.getElementById(pageId);
-    if (existingPage && existingPage.dataset.premiumServiceLoaded === 'true') return existingPage;
+    if (document.getElementById(pageId)) return document.getElementById(pageId);
     if (premiumServiceLoads[serviceId]) return premiumServiceLoads[serviceId];
 
     premiumServiceLoads[serviceId] = (async () => {
@@ -3469,27 +3468,20 @@ async function __flaynityLoadPremiumService(serviceId) {
             }
         });
 
-        let page = document.getElementById(pageId);
-        if (!page) {
-            page = document.createElement('div');
-            page.id = pageId;
-            page.className = 'fullscreen-page premium-service-page';
-            page.setAttribute('data-premium-service', serviceId);
-            page.style.display = 'none';
-            page.style.paddingTop = 'env(safe-area-inset-top, 0px)';
-            page.style.boxSizing = 'border-box';
-            page.style.overflowY = 'auto';
-            page.style.webkitOverflowScrolling = 'touch';
-            document.getElementById('app-screen')?.appendChild(page);
-        }
-        page.classList.remove('premium-service-opening');
-        page.innerHTML = '';
+        const page = document.createElement('div');
+        page.id = pageId;
+        page.className = 'fullscreen-page premium-service-page';
         page.setAttribute('data-premium-service', serviceId);
+        page.style.display = 'none';
+        page.style.paddingTop = 'env(safe-area-inset-top, 0px)';
+        page.style.boxSizing = 'border-box';
+        page.style.overflowY = 'auto';
+        page.style.webkitOverflowScrolling = 'touch';
 
         Array.from(doc.body.children).forEach(node => {
             if (node.tagName && node.tagName.toLowerCase() !== 'script') page.appendChild(node.cloneNode(true));
         });
-        page.dataset.premiumServiceLoaded = 'true';
+        document.getElementById('app-screen')?.appendChild(page);
 
         // Firebase/font libraries are already loaded by index.html; only execute the page's own inline logic.
         if (serviceId !== 'flay-pay') window.__flaynityPremiumPayService = null;
@@ -3512,11 +3504,6 @@ function __flaynityOpenPremiumService(serviceId) {
         return document.getElementById(serviceId + '-page');
     }).catch(error => {
         console.error('Premium service load failed:', serviceId, error);
-        const failedPage = document.getElementById(serviceId + '-page');
-        if (failedPage && failedPage.classList.contains('premium-service-opening')) {
-            failedPage.remove();
-            if (AppNavigation.current()?.id === serviceId + '-page') AppNavigation.pop();
-        }
         showNotification('This page is unavailable offline. Open it once while online to save it for offline use.', 'error', 3000);
         return null;
     });
@@ -3554,22 +3541,7 @@ const AppNavigation = {
             this.syncUI();
             return Promise.resolve(document.getElementById(serviceId + '-page'));
         }
-        const pageId = serviceId + '-page';
-        let page = document.getElementById(pageId);
-        if (!page) {
-            page = document.createElement('div');
-            page.id = pageId;
-            page.className = 'fullscreen-page premium-service-page premium-service-opening';
-            page.setAttribute('data-premium-service', serviceId);
-            page.style.display = 'none';
-            page.style.paddingTop = 'env(safe-area-inset-top, 0px)';
-            page.style.boxSizing = 'border-box';
-            page.style.overflowY = 'auto';
-            page.style.webkitOverflowScrolling = 'touch';
-            page.innerHTML = '<div class="premium-opening-spinner" aria-hidden="true"></div><div>Opening page…</div>';
-            document.getElementById('app-screen')?.appendChild(page);
-        }
-        this.stack.push({ type: 'page', id: pageId, premiumService: serviceId, paymentService: paymentService || null });
+        this.stack.push({ type: 'page', id: serviceId + '-page', premiumService: serviceId, paymentService: paymentService || null });
         if (serviceId === 'flay-pay') window.__flaynityPremiumPayService = paymentService || null;
         this.syncUI();
         this.updateBridge();
@@ -3601,57 +3573,12 @@ const AppNavigation = {
     },
 
     syncUI: function() {
-        // Smooth, lightweight entrance for pages opened from the You tab.
+        // You page navigation opens sub-pages directly without the default
+        // right-to-left slide animation. Other app pages keep their existing animation.
         if (!document.getElementById('flaynity-you-direct-page-style')) {
             const style = document.createElement('style');
             style.id = 'flaynity-you-direct-page-style';
-            style.textContent = `
-                @keyframes flaynityPremiumPageEnter {
-                    from { opacity: 0; transform: translate3d(16px, 0, 0); }
-                    to { opacity: 1; transform: translate3d(0, 0, 0); }
-                }
-                .fullscreen-page.you-direct-page {
-                    animation: flaynityPremiumPageEnter 240ms cubic-bezier(.2,.75,.25,1) both !important;
-                    will-change: opacity, transform;
-                }
-                /* Premium service pages cover the tab and bottom navigation completely. */
-                body.premium-service-active .bottom-nav {
-                    visibility: hidden !important;
-                    opacity: 0 !important;
-                    pointer-events: none !important;
-                }
-                .fullscreen-page.premium-service-page {
-                    position: fixed !important;
-                    inset: 0 !important;
-                    width: 100% !important;
-                    height: 100dvh !important;
-                    min-height: 100vh !important;
-                    z-index: 2005 !important;
-                    background: var(--bg-color, var(--background, #fff));
-                    isolation: isolate;
-                }
-                .premium-service-opening {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    flex-direction: column;
-                    gap: 14px;
-                    background: var(--bg-color, var(--background, #fff)) !important;
-                    color: var(--text-main, #222);
-                    opacity: 1 !important;
-                    transform: none !important;
-                }
-                .premium-service-opening .premium-opening-spinner {
-                    width: 28px; height: 28px; border-radius: 50%;
-                    border: 3px solid rgba(128,128,128,.22);
-                    border-top-color: var(--primary-color, #d80e45);
-                    animation: flaynityPremiumSpin .7s linear infinite;
-                }
-                @keyframes flaynityPremiumSpin { to { transform: rotate(360deg); } }
-                @media (prefers-reduced-motion: reduce) {
-                    .fullscreen-page.you-direct-page { animation-duration: 1ms !important; }
-                }
-            `;
+            style.textContent = '.fullscreen-page.you-direct-page { animation: none !important; transform: none !important; }';
             document.head.appendChild(style);
         }
         document.querySelectorAll('.fullscreen-page').forEach(el => {
@@ -3689,12 +3616,7 @@ const AppNavigation = {
             }
         });
 
-        // Hide the bottom navigation for the full duration of premium service pages,
-        // including loading and exit; syncUI restores it after returning to a tab.
-        const premiumPageActive = !!(activePage && Object.keys(PREMIUM_SERVICE_FILES).some(id => id + '-page' === activePage));
-        document.body.classList.toggle('premium-service-active', premiumPageActive);
-
-        // Any page opened from You should use the same smooth entrance animation.
+        // Any page opened from You should appear instantly instead of sliding in.
         if (activeTab === 'you' && activePage) {
             const directPage = document.getElementById(activePage);
             if (directPage) directPage.classList.add('you-direct-page');
@@ -3734,10 +3656,8 @@ const AppNavigation = {
             } else {
                 const targetId = activePage.endsWith('-page') ? activePage : (activePage + '-page');
                 const pageEl = document.getElementById(targetId);
-                if (pageEl) {
-                    pageEl.style.display = 'flex';
-                    if (activeTab === 'you') pageEl.classList.add('you-direct-page');
-                } else {
+                if (pageEl) pageEl.style.display = 'flex';
+                else {
                     const premiumId = Object.keys(PREMIUM_SERVICE_FILES).find(id => id + '-page' === targetId);
                     if (premiumId) __flaynityOpenPremiumService(premiumId);
                 }
@@ -4506,26 +4426,30 @@ function renderYouTabWithData(data, user, wrap) {
 function handleFlayVerifiedBadgeFromYou() {
     playUI('click');
 
-    // Keep authentication/channel requirements, but navigate immediately so the
-    // You page never remains visible while the Firebase channel check is pending.
+    // Never create, cache, or inject channel/demo data here.
+    // Only use the existing Firebase channel record for the signed-in user.
     const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
+
     if (!user) {
+        // Keep the existing app flow: open Create Channel first. The channel
+        // creation form itself will require an authenticated account when saved.
         openCreateChannelPage();
         return;
     }
 
-    AppNavigation.pushPremiumService('flay-verified-badge');
-
-    if (currentChannelData) return;
+    if (currentChannelData) {
+        AppNavigation.pushPremiumService('flay-verified-badge');
+        return;
+    }
 
     db.ref(`channels/${user.uid}`).once('value').then((snapshot) => {
         const channel = snapshot.val();
         if (channel) {
             currentChannelData = channel;
+            AppNavigation.pushPremiumService('flay-verified-badge');
         } else {
-            // Preserve the existing rule: channel creation is required before verification.
+            // Remember only this navigation intent; no Firebase/local channel data is created.
             window.__flaynityOpenVerifiedAfterChannelCreate = true;
-            AppNavigation.pop();
             openCreateChannelPage();
         }
     }).catch((error) => {

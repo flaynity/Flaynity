@@ -62,7 +62,10 @@
         .fvb-wrapper .hero-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
         .fvb-wrapper .hero-icon-container { width: 80px; height: 80px; background: rgba(51, 144, 236, 0.1); border-radius: 24px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; border: 1px solid rgba(51, 144, 236, 0.2); }
         
-        .fvb-wrapper .verified-svg { width: 1.2em; height: 1.2em; flex-shrink: 0; display: inline-block; }
+        .fvb-wrapper .verified-svg { width: 1.2em; height: 1.2em; flex-shrink: 0; display: inline-block; color: var(--flay-pink, #D80E45); filter: drop-shadow(0 0 3px rgba(var(--flay-pink-rgb), .55)); animation: fvbBadgeGlow 2.2s ease-in-out infinite; transform-origin: center; }
+        .fvb-wrapper .verified-svg path:first-child { fill: var(--flay-pink, #D80E45); }
+        @keyframes fvbBadgeGlow { 0%, 100% { filter: drop-shadow(0 0 2px rgba(var(--flay-pink-rgb), .35)); } 50% { filter: drop-shadow(0 0 7px rgba(var(--flay-pink-rgb), .9)); } }
+        @media (prefers-reduced-motion: reduce) { .fvb-wrapper .verified-svg { animation: none; } }
         .fvb-wrapper .hero-icon-container .verified-svg { width: 45px; height: 45px; }
 
         .fvb-wrapper .preview-card { border: 1px solid rgba(var(--flay-pink-rgb), 0.3); background: var(--mock-bg); box-shadow: 0 4px 24px rgba(var(--flay-pink-rgb), 0.08); border-radius: var(--radius-large); padding: 20px; }
@@ -141,7 +144,7 @@
     <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <g id="icon-verified-telegram">
-                <path d="M12.0001 2.37877L14.1539 3.58552L16.634 3.44754L18.0699 5.56844L20.4705 6.30722L20.6724 8.78318L22.4516 10.4287L21.5794 12.7562L22.4516 15.0837L20.6724 16.7292L20.4705 19.2052L18.0699 19.9439L16.634 22.0648L14.1539 21.9269L12.0001 23.1336L9.84628 21.9269L7.36616 22.0648L5.93026 19.9439L3.52968 19.2052L3.32777 16.7292L1.54858 15.0837L2.42079 12.7562L1.54858 10.4287L3.32777 8.78318L3.52968 6.30722L5.93026 5.56844L7.36616 3.44754L9.84628 3.58552L12.0001 2.37877Z" fill="var(--telegram-blue)"/>
+                <path d="M12.0001 2.37877L14.1539 3.58552L16.634 3.44754L18.0699 5.56844L20.4705 6.30722L20.6724 8.78318L22.4516 10.4287L21.5794 12.7562L22.4516 15.0837L20.6724 16.7292L20.4705 19.2052L18.0699 19.9439L16.634 22.0648L14.1539 21.9269L12.0001 23.1336L9.84628 21.9269L7.36616 22.0648L5.93026 19.9439L3.52968 19.2052L3.32777 16.7292L1.54858 15.0837L2.42079 12.7562L1.54858 10.4287L3.32777 8.78318L3.52968 6.30722L5.93026 5.56844L7.36616 3.44754L9.84628 3.58552L12.0001 2.37877Z" fill="var(--flay-pink, #D80E45)"/>
                 <path d="M10.8335 15.6881L7.14515 12.0858L8.35483 10.9044L10.8335 13.3253L15.6453 8.625L16.855 9.8064L10.8335 15.6881Z" fill="#FFFFFF"/>
             </g>
         </defs>

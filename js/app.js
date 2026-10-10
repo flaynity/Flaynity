@@ -3499,6 +3499,26 @@ async function __flaynityLoadPremiumService(serviceId) {
     finally { delete premiumServiceLoads[serviceId]; }
 }
 
+// Reliable entry point for the Flay Payout settings item.
+async function openFlayPayoutPage() {
+    try {
+        const page = await AppNavigation.pushPremiumService('flay-payout');
+        const payoutPage = page || document.getElementById('flay-payout-page');
+        if (!payoutPage) throw new Error('Flay Payout page was not created.');
+        AppNavigation.syncUI();
+        payoutPage.style.display = 'flex';
+        payoutPage.style.visibility = 'visible';
+        payoutPage.style.opacity = '1';
+        return payoutPage;
+    } catch (error) {
+        console.error('Flay Payout navigation failed:', error);
+        if (typeof showNotification === 'function') {
+            showNotification('Flay Payout could not open. Please reconnect and try again.', 'error', 3000);
+        }
+        return null;
+    }
+}
+
 function __flaynityOpenPremiumService(serviceId) {
     return __flaynityLoadPremiumService(serviceId).then(() => {
         AppNavigation.syncUI();

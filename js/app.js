@@ -3433,7 +3433,8 @@ const PREMIUM_SERVICE_FILES = {
     'flay-verified-badge': 'service/flay-verified-badge.html',
     'flay-ads': 'service/flay-ads.html',
     'boost-content': 'service/boost-content.html',
-    'flay-pay': 'service/flay-pay.html'
+    'flay-pay': 'service/flay-pay.html',
+    'flay-payout': 'service/flay-payout.html'
 };
 const PREMIUM_SERVICE_CACHE_PREFIX = 'flaynity-premium-service-cache-v1:';
 const premiumServiceLoads = {};

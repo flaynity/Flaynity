@@ -3458,7 +3458,7 @@ async function __flaynityLoadPremiumService(serviceId) {
                 const response = await fetch(pageUrl, { cache: 'no-store' });
                 if (!response.ok) throw new Error('HTTP ' + response.status + ' loading ' + pageUrl);
                 const source = await response.text();
-                if (!source || !/<html[\\s>]/i.test(source)) throw new Error('Invalid HTML response from ' + pageUrl);
+                if (!source || !/<html[\s>]/i.test(source)) throw new Error('Invalid HTML response from ' + pageUrl);
                 html = source;
                 break;
             } catch (error) {

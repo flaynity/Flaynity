@@ -1309,7 +1309,7 @@
                             </div>
                             <div>
                                 <div style="font-size:11px; font-weight:600; color:var(--fp-text-muted);">Reference ID</div>
-                                <div style="font-size:15px; font-weight:800; color:var(--fp-text-main);" id="succ-ref" class="fp-text-tabular">REQ-ZG6JKU</div>
+                                <div style="font-size:15px; font-weight:800; color:var(--fp-text-main);" id="succ-ref" class="fp-text-tabular">—</div>
                             </div>
                         </div>
                         <button class="fp-copy-btn" onclick="FlayPayout.copyRef()">
@@ -1412,50 +1412,90 @@
 
             const API = {
                 async fetchInitialData() {
-                    return new Promise(resolve => setTimeout(() => {
-                        resolve({
-                            revenue: 215.50,
-                            available: 120.00,
-                            pending: 15.00,
-                            paid: 80.50,
-                            history: [
-                                { id: 'REQ-ZG6JKU', date: new Date(Date.now() - 3600000).toISOString(), method: 'bkash', grossUSDT: 15.00, netBDT: 1780, status: 'pending' },
-                                { id: 'REQ-X7C4P1', date: new Date(Date.now() - 86400000 * 3).toISOString(), method: 'nagad', grossUSDT: 50.50, netBDT: 5990, status: 'paid' },
-                                { id: 'REQ-P1L9M4', date: new Date(Date.now() - 86400000 * 12).toISOString(), method: 'rocket', grossUSDT: 30.00, netBDT: 3560, status: 'paid' },
-                                { id: 'REQ-E4R4V9', date: new Date(Date.now() - 86400000 * 20).toISOString(), method: 'bkash', grossUSDT: 10.00, netBDT: 1180, status: 'rejected' }
-                            ]
-                        });
-                    }, 800));
+                    const user = firebase.auth().currentUser;
+                    if (!user) throw new Error("Please sign in to view your payout.");
+                    const database = firebase.database();
+                    const [analyticsSnap, requestsSnap] = await Promise.all([
+                        database.ref(`channel_analytics/${user.uid}`).once('value'),
+                        database.ref(`payout_requests/${user.uid}`).once('value')
+                    ]);
+                    const analytics = analyticsSnap.val() || {};
+                    const rawRequests = requestsSnap.val() || {};
+                    const history = Object.entries(rawRequests).map(([key, item]) => ({
+                        id: item.id || key,
+                        date: item.date || (item.createdAt ? new Date(item.createdAt).toISOString() : new Date().toISOString()),
+                        method: item.method || 'bkash',
+                        grossUSDT: Number(item.grossUSDT ?? item.amountUSDT ?? 0),
+                        netBDT: Number(item.netBDT || 0),
+                        status: String(item.status || 'pending').toLowerCase(),
+                        accountNo: item.accountNo || '',
+                        accountName: item.accountName || ''
+                    })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                    const revenue = Math.max(0, Number(analytics.totalRevenue || 0));
+                    const pending = history.filter(item => item.status === 'pending').reduce((sum, item) => sum + item.grossUSDT, 0);
+                    const paid = history.filter(item => item.status === 'paid').reduce((sum, item) => sum + item.grossUSDT, 0);
+                    return { revenue, available: Math.max(0, revenue - pending - paid), pending, paid, history };
                 },
                 async submitWithdrawal(data) {
-                    return new Promise((resolve, reject) => setTimeout(() => {
-                        if (data.amountUSDT > STATE.available) return reject("Insufficient balance");
-                        resolve({
-                            id: 'REQ-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
-                            date: new Date().toISOString(),
-                            method: data.method,
-                            grossUSDT: data.amountUSDT,
-                            netBDT: data.netBDT,
-                            status: 'pending'
-                        });
-                    }, 1200));
+                    const user = firebase.auth().currentUser;
+                    if (!user) throw new Error("Please sign in before requesting a payout.");
+                    if (!data || !Number.isFinite(Number(data.amountUSDT)) || Number(data.amountUSDT) <= 0) {
+                        throw new Error("Enter a valid withdrawal amount.");
+                    }
+                    if (Number(data.amountUSDT) > STATE.available) throw new Error("Insufficient available balance.");
+                    const database = firebase.database();
+                    const requestRef = database.ref(`payout_requests/${user.uid}`).push();
+                    const request = {
+                        id: requestRef.key,
+                        userId: user.uid,
+                        method: data.method,
+                        grossUSDT: Number(data.amountUSDT),
+                        amountUSDT: Number(data.amountUSDT),
+                        feeUSDT: Number(data.feeUSDT || 0),
+                        netUSDT: Number(data.netUSDT || 0),
+                        grossBDT: Number(data.grossBDT || 0),
+                        netBDT: Number(data.netBDT || 0),
+                        accountNo: String(data.accountNo || ''),
+                        accountName: String(data.accountName || ''),
+                        status: 'pending',
+                        date: new Date().toISOString(),
+                        createdAt: firebase.database.ServerValue.TIMESTAMP
+                    };
+                    await requestRef.set(request);
+                    return { id: requestRef.key, date: request.date, method: request.method, grossUSDT: request.grossUSDT, netBDT: request.netBDT, status: request.status };
                 }
             };
 
+            async function refreshDashboardFromFirebase() {
+                const data = await API.fetchInitialData();
+                Object.assign(STATE, data);
+                updateDashboard();
+                renderHistory();
+                if (el('main-skeleton')) el('main-skeleton').style.display = 'none';
+                if (el('main-content')) el('main-content').style.display = 'block';
+            }
+
             async function init() {
                 setupFilters();
-                el('main-content').style.display = 'none';
-                el('main-skeleton').style.display = 'block';
-
+                if (el('main-content')) el('main-content').style.display = 'none';
+                if (el('main-skeleton')) el('main-skeleton').style.display = 'block';
                 try {
-                    const data = await API.fetchInitialData();
-                    Object.assign(STATE, data);
-                    updateDashboard();
-                    renderHistory();
-                    el('main-skeleton').style.display = 'none';
-                    el('main-content').style.display = 'block';
-                } catch(e) {
-                    showToast("Failed to load dashboard data.");
+                    await refreshDashboardFromFirebase();
+                    const user = firebase.auth().currentUser;
+                    if (user) {
+                        const database = firebase.database();
+                        database.ref(`channel_analytics/${user.uid}`).on('value', () => {
+                            refreshDashboardFromFirebase().catch(error => console.error('Flay Payout analytics refresh failed:', error));
+                        });
+                        database.ref(`payout_requests/${user.uid}`).on('value', () => {
+                            refreshDashboardFromFirebase().catch(error => console.error('Flay Payout request refresh failed:', error));
+                        });
+                    }
+                } catch (e) {
+                    console.error('Flay Payout Firebase load failed:', e);
+                    if (el('main-skeleton')) el('main-skeleton').style.display = 'none';
+                    if (el('main-content')) el('main-content').style.display = 'block';
+                    showToast(e && e.message ? e.message : "Failed to load payout data from Firebase.");
                 }
             }
 
@@ -1603,12 +1643,7 @@
 
                 try {
                     const res = await API.submitWithdrawal(STATE.draft);
-                    STATE.available -= res.grossUSDT;
-                    STATE.pending += res.grossUSDT;
-                    STATE.history.unshift(res);
-
-                    updateDashboard();
-                    renderHistory();
+                    await refreshDashboardFromFirebase();
 
                     text('succ-ref', res.id);
                     el('modal-success').classList.add('active');
@@ -1709,7 +1744,9 @@
             };
         })();
 
-        document.addEventListener('DOMContentLoaded', FlayPayout.init);
+        // This page is injected into Flaynity's WebView SPA, so DOMContentLoaded may already have fired.
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', FlayPayout.init, { once: true });
+        else FlayPayout.init();
     </script>
 </body>
 </html>

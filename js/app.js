@@ -3448,14 +3448,29 @@ async function __flaynityLoadPremiumService(serviceId) {
 
     premiumServiceLoads[serviceId] = (async () => {
         let html = null;
-        try {
-            const response = await fetch(url, { cache: 'no-store' });
-            if (!response.ok) throw new Error('HTTP ' + response.status);
-            html = await response.text();
+        let lastLoadError = null;
+        // WebView may have a non-root base URL; retry payout from the site's absolute URL.
+        const pageUrls = serviceId === 'flay-payout'
+            ? [url, 'https://flaynity.indevs.in/service/flay-payout.html']
+            : [url];
+        for (const pageUrl of [...new Set(pageUrls)]) {
+            try {
+                const response = await fetch(pageUrl, { cache: 'no-store' });
+                if (!response.ok) throw new Error('HTTP ' + response.status + ' loading ' + pageUrl);
+                const source = await response.text();
+                if (!source || !/<html[\\s>]/i.test(source)) throw new Error('Invalid HTML response from ' + pageUrl);
+                html = source;
+                break;
+            } catch (error) {
+                lastLoadError = error;
+                console.warn('Premium page source failed:', serviceId, pageUrl, error);
+            }
+        }
+        if (html) {
             try { localStorage.setItem(PREMIUM_SERVICE_CACHE_PREFIX + serviceId, html); } catch (e) {}
-        } catch (e) {
+        } else {
             try { html = localStorage.getItem(PREMIUM_SERVICE_CACHE_PREFIX + serviceId); } catch (err) {}
-            if (!html) throw e;
+            if (!html) throw (lastLoadError || new Error('Page source unavailable: ' + serviceId));
         }
 
         const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -3505,7 +3520,11 @@ function __flaynityOpenPremiumService(serviceId) {
         return document.getElementById(serviceId + '-page');
     }).catch(error => {
         console.error('Premium service load failed:', serviceId, error);
-        showNotification('This page is unavailable offline. Open it once while online to save it for offline use.', 'error', 3000);
+        const reason = error && error.message ? error.message : 'Unknown loading error';
+        showNotification(serviceId === 'flay-payout'
+            ? 'Flay Payout could not load. Check connection or hosting path.'
+            : 'This page is unavailable offline. Open it once while online to save it for offline use.', 'error', 4000);
+        console.error('Premium page source details:', reason);
         return null;
     });
 }

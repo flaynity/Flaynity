@@ -1528,9 +1528,15 @@
             function openCryptoWithdrawal() { navigate('view-crypto'); }
 
             function closeApp() {
-                if (window.Android && window.Android.closePage) window.Android.closePage();
-                else if (window.history.length > 1) window.history.back();
-                else showToast("Navigation closed");
+                if (window.AppNavigation && typeof window.AppNavigation.pop === 'function') {
+                    window.AppNavigation.pop();
+                } else if (window.Android && window.Android.closePage) {
+                    window.Android.closePage();
+                } else if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    showToast("Navigation closed");
+                }
             }
 
             function selectMethod(id) {

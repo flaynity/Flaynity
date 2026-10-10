@@ -29,7 +29,7 @@
             --flay-pink: #D80E45; --flay-pink-rgb: 255, 79, 145; --telegram-blue: #3390EC;
             --radius-large: 28px; --radius-md: 18px; --radius-sm: 12px; --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             background-color: var(--bg-color); color: var(--text-primary); font-family: 'Plus Jakarta Sans', sans-serif;
-            min-height: 100vh; position: relative; padding-top: 35px; padding-bottom: 120px;
+            min-height: 100vh; position: relative; padding-bottom: 120px;
         }
 
         [data-theme="dark"] .fvb-wrapper {
@@ -45,7 +45,7 @@
         @keyframes fadeUpFvb { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .fvb-animate-fade-up { animation: fadeUpFvb 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
 
-        .fvb-wrapper .top-bar { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: var(--app-bar-bg); border-bottom: 1px solid var(--border-color); }
+        .fvb-wrapper .top-bar { margin-top: 35px; position: relative; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: var(--app-bar-bg); border-bottom: 1px solid var(--border-color); }
         .fvb-wrapper .back-btn { background: none; border: none; color: var(--text-primary); font-size: 20px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: flex-start; border-radius: 50%; cursor: pointer; z-index: 2; }
         .fvb-wrapper .page-title { font-size: 16px; font-weight: 700; position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; z-index: 1; margin:0;}
 

@@ -758,12 +758,14 @@
     display: block !important; opacity: 1; visibility: visible; pointer-events: auto;
 }
 #you-quick-menu-overlay .you-quick-menu-panel {
-    position: absolute !important; top: 0 !important; right: 0 !important; bottom: 0 !important;
-    width: min(88vw, 370px) !important; max-width: 370px !important;
-    height: 100% !important; height: 100dvh !important; overflow-y: auto !important; overscroll-behavior: contain;
+    position: absolute !important; top: 8px !important; right: 8px !important; bottom: 8px !important;
+    width: min(calc(88vw - 8px), 370px) !important; max-width: 370px !important;
+    height: auto !important; max-height: calc(100dvh - 16px) !important;
+    overflow-y: auto !important; overscroll-behavior: contain;
     padding: calc(16px + env(safe-area-inset-top, 0px)) 14px calc(22px + env(safe-area-inset-bottom, 0px));
     box-sizing: border-box; background: var(--bg-color); color: var(--text-main);
-    border-left: 1px solid var(--glass-border); box-shadow: -12px 0 36px rgba(0,0,0,.18);
+    border: 1px solid var(--glass-border); border-radius: 22px !important;
+    box-shadow: -12px 0 36px rgba(0,0,0,.18);
     transform: translate3d(105%,0,0); transition: transform .30s cubic-bezier(.22,.8,.25,1) !important;
     -webkit-overflow-scrolling: touch; will-change: transform;
 }

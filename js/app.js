@@ -4393,7 +4393,7 @@ function renderYouTabWithData(data, user, wrap) {
     if (data) {
         const channelName = data.channelName;
         const channelHandle = "@" + data.handle;
-        const channelAvatar = data.avatarUrl || data.channelImage || data.photoURL || user.photoURL || '';
+        const channelAvatar = data.avatarUrl || user.photoURL || '';
 
         if (youFullNameTxt) youFullNameTxt.innerText = channelName;
         if (youEmailTxt) {
@@ -4403,26 +4403,10 @@ function renderYouTabWithData(data, user, wrap) {
         }
 
         if (youAvatarLarge) {
-            const fallbackInitial = (channelName || user.displayName || "F").charAt(0).toUpperCase();
-            youAvatarLarge.innerHTML = "";
             if (channelAvatar) {
-                const avatarImg = document.createElement("img");
-                avatarImg.alt = "Channel image";
-                avatarImg.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
-                avatarImg.onerror = function () {
-                    if (user.photoURL && avatarImg.src !== user.photoURL) {
-                        avatarImg.onerror = function () {
-                            youAvatarLarge.textContent = fallbackInitial;
-                        };
-                        avatarImg.src = user.photoURL;
-                    } else {
-                        youAvatarLarge.textContent = fallbackInitial;
-                    }
-                };
-                avatarImg.src = channelAvatar;
-                youAvatarLarge.appendChild(avatarImg);
+                youAvatarLarge.innerHTML = `<img src="${channelAvatar}" style="width:100%; height:100%; object-fit:cover;">`;
             } else {
-                youAvatarLarge.textContent = fallbackInitial;
+                youAvatarLarge.innerHTML = channelName.charAt(0).toUpperCase();
             }
         }
 
@@ -4845,49 +4829,7 @@ function openViewChannelPage() {
 
     if (viewTitle) viewTitle.innerText = data.channelName;
     if (viewBanner) viewBanner.src = data.bannerUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop";
-    if (viewAvatar) {
-        const user = (typeof auth !== "undefined" && auth.currentUser) ? auth.currentUser : null;
-        const avatarCandidates = [
-            data.avatarUrl, data.channelImage, data.channelAvatar, data.profileImage,
-            data.profileImageUrl, data.imageUrl, data.photoURL, user && user.photoURL
-        ].filter((url, index, all) => typeof url === "string" && url.trim() && all.indexOf(url) === index);
-        const placeholder = document.getElementById("view-avatar-placeholder");
-        let avatarIndex = 0;
-
-        const showAvatarFallback = function () {
-            viewAvatar.onerror = null;
-            viewAvatar.onload = null;
-            viewAvatar.style.display = "none";
-            if (placeholder) {
-                placeholder.innerHTML = "";
-                const initial = document.createElement("span");
-                initial.textContent = String(data.channelName || (user && user.displayName) || "F").trim().charAt(0).toUpperCase();
-                initial.style.cssText = "display:flex;width:100%;height:100%;align-items:center;justify-content:center;font-size:64px;font-weight:800;color:#fff;";
-                placeholder.appendChild(initial);
-                placeholder.style.display = "flex";
-            }
-        };
-
-        viewAvatar.onerror = function () {
-            avatarIndex++;
-            if (avatarIndex < avatarCandidates.length) {
-                viewAvatar.src = avatarCandidates[avatarIndex];
-            } else {
-                showAvatarFallback();
-            }
-        };
-        viewAvatar.onload = function () {
-            viewAvatar.style.display = "block";
-            if (placeholder) placeholder.style.display = "none";
-        };
-        if (placeholder) placeholder.style.display = "flex";
-        viewAvatar.style.display = "none";
-        if (avatarCandidates.length) {
-            viewAvatar.src = avatarCandidates[0];
-        } else {
-            showAvatarFallback();
-        }
-    }
+    if (viewAvatar) viewAvatar.src = data.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop";
     if (viewName) viewName.innerText = data.channelName;
     if (viewHandle) viewHandle.innerText = "@" + data.handle;
     if (viewDesc) viewDesc.innerText = data.description || "No description provided yet.";
@@ -5528,8 +5470,8 @@ async function saveChannelEdits() {
             handle: handle,
             description: desc,
             category: category,
-            avatarUrl: tempEditAvatarUrl || currentChannelData.avatarUrl || (auth.currentUser && auth.currentUser.photoURL) || "",
-            bannerUrl: tempEditBannerUrl || currentChannelData.bannerUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop",
+            avatarUrl: tempEditAvatarUrl,
+            bannerUrl: tempEditBannerUrl,
             updatedDate: Date.now()
         };
 

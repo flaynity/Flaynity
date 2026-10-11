@@ -747,23 +747,27 @@
 
 /* You Page right-side quick menu */
 .view-channel-settings-btn { z-index: 1005 !important; }
-.you-quick-menu-overlay {
-    position: fixed; inset: 0; z-index: 10020;
-    background: rgba(0,0,0,.42); opacity: 0; visibility: hidden;
+#you-quick-menu-overlay.you-quick-menu-overlay {
+    position: fixed !important; inset: 0 !important; z-index: 2147483000 !important;
+    display: none; background: rgba(0,0,0,.42) !important;
+    opacity: 0; visibility: hidden; pointer-events: none;
     transition: opacity .24s ease, visibility .24s ease;
     -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
 }
-.you-quick-menu-overlay.active { opacity: 1; visibility: visible; }
-.you-quick-menu-panel {
-    position: absolute; top: 0; right: 0; width: min(88vw, 370px);
-    height: 100%; height: 100dvh; overflow-y: auto; overscroll-behavior: contain;
+#you-quick-menu-overlay.you-quick-menu-overlay.active {
+    display: block !important; opacity: 1; visibility: visible; pointer-events: auto;
+}
+#you-quick-menu-overlay .you-quick-menu-panel {
+    position: absolute !important; top: 0 !important; right: 0 !important; bottom: 0 !important;
+    width: min(88vw, 370px) !important; max-width: 370px !important;
+    height: 100% !important; height: 100dvh !important; overflow-y: auto !important; overscroll-behavior: contain;
     padding: calc(16px + env(safe-area-inset-top, 0px)) 14px calc(22px + env(safe-area-inset-bottom, 0px));
     box-sizing: border-box; background: var(--bg-color); color: var(--text-main);
     border-left: 1px solid var(--glass-border); box-shadow: -12px 0 36px rgba(0,0,0,.18);
-    transform: translate3d(102%,0,0); transition: transform .28s cubic-bezier(.22,.8,.25,1);
-    -webkit-overflow-scrolling: touch;
+    transform: translate3d(105%,0,0); transition: transform .30s cubic-bezier(.22,.8,.25,1) !important;
+    -webkit-overflow-scrolling: touch; will-change: transform;
 }
-.you-quick-menu-overlay.active .you-quick-menu-panel { transform: translate3d(0,0,0); }
+#you-quick-menu-overlay.active .you-quick-menu-panel { transform: translate3d(0,0,0) !important; }
 .you-quick-menu-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin: 2px 2px 18px; }
 .you-quick-menu-title { margin:0; font-size:1.22rem; font-weight:850; color:var(--text-main); }
 .you-quick-menu-close {
@@ -1773,10 +1777,19 @@ function selectThemeOption(element, sheetId) {
 function openYouQuickMenu() {
     const overlay = document.getElementById('you-quick-menu-overlay');
     if (!overlay) return;
-    overlay.style.display = 'block';
+    /* Keep the drawer outside hidden/transformed app pages so Android WebView can display it above every screen. */
+    if (overlay.parentElement !== document.body) document.body.appendChild(overlay);
+    overlay.style.setProperty('display', 'block', 'important');
     overlay.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
-    requestAnimationFrame(() => overlay.classList.add('active'));
+    /* Force a closed frame first; then activate the transition for WebView reliability. */
+    overlay.classList.remove('active');
+    void overlay.offsetWidth;
+    requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+            overlay.classList.add('active');
+        });
+    });
 }
 function closeYouQuickMenu() {
     const overlay = document.getElementById('you-quick-menu-overlay');
@@ -1784,7 +1797,11 @@ function closeYouQuickMenu() {
     overlay.classList.remove('active');
     overlay.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
-    setTimeout(() => { if (!overlay.classList.contains('active')) overlay.style.display = 'none'; }, 290);
+    setTimeout(function () {
+        if (!overlay.classList.contains('active')) {
+            overlay.style.setProperty('display', 'none', 'important');
+        }
+    }, 330);
 }
 function handleYouQuickMenuOverlay(event) {
     if (event.target && event.target.id === 'you-quick-menu-overlay') closeYouQuickMenu();

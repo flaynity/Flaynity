@@ -4393,7 +4393,7 @@ function renderYouTabWithData(data, user, wrap) {
     if (data) {
         const channelName = data.channelName;
         const channelHandle = "@" + data.handle;
-        const channelAvatar = data.avatarUrl || user.photoURL || '';
+        const channelAvatar = data.avatarUrl || data.channelImage || data.photoURL || user.photoURL || '';
 
         if (youFullNameTxt) youFullNameTxt.innerText = channelName;
         if (youEmailTxt) {
@@ -4403,10 +4403,26 @@ function renderYouTabWithData(data, user, wrap) {
         }
 
         if (youAvatarLarge) {
+            const fallbackInitial = (channelName || user.displayName || "F").charAt(0).toUpperCase();
+            youAvatarLarge.innerHTML = "";
             if (channelAvatar) {
-                youAvatarLarge.innerHTML = `<img src="${channelAvatar}" style="width:100%; height:100%; object-fit:cover;">`;
+                const avatarImg = document.createElement("img");
+                avatarImg.alt = "Channel image";
+                avatarImg.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
+                avatarImg.onerror = function () {
+                    if (user.photoURL && avatarImg.src !== user.photoURL) {
+                        avatarImg.onerror = function () {
+                            youAvatarLarge.textContent = fallbackInitial;
+                        };
+                        avatarImg.src = user.photoURL;
+                    } else {
+                        youAvatarLarge.textContent = fallbackInitial;
+                    }
+                };
+                avatarImg.src = channelAvatar;
+                youAvatarLarge.appendChild(avatarImg);
             } else {
-                youAvatarLarge.innerHTML = channelName.charAt(0).toUpperCase();
+                youAvatarLarge.textContent = fallbackInitial;
             }
         }
 
@@ -4829,7 +4845,27 @@ function openViewChannelPage() {
 
     if (viewTitle) viewTitle.innerText = data.channelName;
     if (viewBanner) viewBanner.src = data.bannerUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop";
-    if (viewAvatar) viewAvatar.src = data.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop";
+    if (viewAvatar) {
+        const channelAvatar = data.avatarUrl || data.channelImage || data.photoURL || (auth.currentUser && auth.currentUser.photoURL) || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop";
+        viewAvatar.onerror = function () {
+            const fallbackAvatar = (auth.currentUser && auth.currentUser.photoURL) || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop";
+            if (viewAvatar.src !== fallbackAvatar) {
+                viewAvatar.onerror = function () {
+                    viewAvatar.style.display = "none";
+                    if (viewAvatar.nextElementSibling) viewAvatar.nextElementSibling.style.display = "flex";
+                };
+                viewAvatar.src = fallbackAvatar;
+            } else {
+                viewAvatar.style.display = "none";
+                if (viewAvatar.nextElementSibling) viewAvatar.nextElementSibling.style.display = "flex";
+            }
+        };
+        viewAvatar.onload = function () {
+            viewAvatar.style.display = "block";
+            if (viewAvatar.nextElementSibling) viewAvatar.nextElementSibling.style.display = "none";
+        };
+        viewAvatar.src = channelAvatar;
+    }
     if (viewName) viewName.innerText = data.channelName;
     if (viewHandle) viewHandle.innerText = "@" + data.handle;
     if (viewDesc) viewDesc.innerText = data.description || "No description provided yet.";
@@ -5470,8 +5506,8 @@ async function saveChannelEdits() {
             handle: handle,
             description: desc,
             category: category,
-            avatarUrl: tempEditAvatarUrl,
-            bannerUrl: tempEditBannerUrl,
+            avatarUrl: tempEditAvatarUrl || currentChannelData.avatarUrl || (auth.currentUser && auth.currentUser.photoURL) || "",
+            bannerUrl: tempEditBannerUrl || currentChannelData.bannerUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop",
             updatedDate: Date.now()
         };
 

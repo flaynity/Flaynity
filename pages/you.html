@@ -148,33 +148,8 @@
 
 .premium-service-item > span { min-width: 0; font-weight: 800; font-size: 1.05rem; }
 
-/* View Channel */
-        .channel-banner-container { width: 100%; height: 120px; position: relative; background: #E2E8F0; overflow: hidden; }
-        .channel-banner-img { width: 100%; height: 100%; object-fit: cover; }
-        .banner-gradient { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 80%); }
-        
-        .channel-profile-section { padding: 16px 20px; background: var(--surface); border-bottom: 1px solid var(--glass-border); margin-top: -32px; border-radius: 32px 32px 0 0; position: relative; z-index: 2; }
-        .profile-row-main { display: flex; gap: 16px; align-items: center; }
-        .view-avatar-img { width: 80px; height: 80px; border-radius: 50%; border: 4px solid var(--surface); object-fit: cover; box-shadow: 0 6px 15px rgba(0,0,0,0.08); background: var(--bg-color); }
-        .channel-main-meta h2 { margin: 0 0 4px; font-size: 1.35rem; font-weight: 900; color: var(--text-main); }
-        .channel-main-meta p { margin: 0; }
-        #view-channel-handle-txt { font-size: 0.9rem; color: var(--text-muted); font-weight: 700; }
-        .channel-stats-txt { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-top: 4px !important; }
-        .dot-separator { margin: 0 4px; }
-        
-        .channel-description-box { margin: 12px 0; background: var(--bg-color); padding: 12px 14px; border-radius: 12px; border: 1px solid var(--glass-border); }
-        .channel-desc-text { margin: 0; font-size: 0.88rem; color: var(--text-muted); line-height: 1.4; }
-        .channel-desc-text.line-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
-        .btn-more-desc { background: none; border: none; color: var(--primary); font-size: 0.82rem; font-weight: 800; cursor: pointer; padding: 4px 0 0; display: flex; align-items: center; gap: 4px; }
-        
-        .channel-action-row { display: flex; gap: 10px; margin-top: 14px; }
-        .btn-channel-action { flex: 1; background: var(--primary-glow); color: var(--primary); border: 1px solid transparent; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
-        .btn-channel-action:active { transform: scale(0.96); }
-        .btn-channel-action.btn-edit { background: var(--bg-color); border-color: var(--glass-border); color: var(--text-main); }
-        .btn-channel-action.btn-edit:active { background: var(--border-color); }
-
 /* Content Tabs */
-        .channel-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--glass-border); position: sticky; top: 64px; z-index: 10; }
+        .channel-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--glass-border); position: sticky; top: 0; z-index: 10; }
         .channel-tab-item { flex: 1; text-align: center; padding: 16px 0; font-size: 0.95rem; font-weight: 800; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; }
         .channel-tab-item.active { color: var(--primary); border-bottom-color: var(--primary); }
         .channel-tab-content { display: none; padding: 16px; }
@@ -390,158 +365,364 @@
 #edit-channel-page .avatar-overlay-camera { opacity: .9; }
 
 /* =========================================================
-   VIEW CHANNEL — FULL-BLEED BANNER + LIVE UPLOAD UI
+   VIEW CHANNEL — UPDATED TO MATCH REFERENCE IMAGE
    ========================================================= */
-#view-channel-page{
-    padding-top:0 !important;
-    overflow:hidden !important;
-    box-sizing:border-box !important;
+#view-channel-page {
+    padding-top: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
 }
-#view-channel-page > .appbar{
-    position:absolute !important;
-    top:0 !important;
-    left:0 !important;
-    right:0 !important;
-    width:100% !important;
-    height:60px !important;
-    min-height:60px !important;
-    background:transparent !important;
-    border:0 !important;
-    box-shadow:none !important;
-    z-index:1000 !important;
-    pointer-events:none !important;
+#view-channel-page > .appbar {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 60px !important;
+    min-height: 60px !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    z-index: 1000 !important;
+    pointer-events: none !important;
 }
-#view-channel-page > .appbar .appbar-back-btn{
-    pointer-events:auto !important;
-    position:absolute !important;
-    top:max(10px, env(safe-area-inset-top, 0px)) !important;
-    left:12px !important;
-    width:44px !important;
-    height:44px !important;
-    border:0 !important;
-    background:transparent !important;
-    box-shadow:none !important;
-    color:#111 !important;
-    z-index:1001 !important;
-    padding:0 !important;
+#view-channel-page > .appbar .appbar-back-btn {
+    pointer-events: auto !important;
+    position: absolute !important;
+    top: max(10px, env(safe-area-inset-top, 0px)) !important;
+    left: 12px !important;
+    width: 44px !important;
+    height: 44px !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #ffffff !important;
+    z-index: 1001 !important;
+    padding: 0 !important;
 }
-#view-channel-page > .appbar .appbar-back-btn i{
-    font-size:1.55rem !important;
-    text-shadow:0 1px 3px rgba(255,255,255,.8) !important;
+#view-channel-page > .appbar .appbar-back-btn i {
+    font-size: 1.55rem !important;
+    color: #ffffff !important;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.8) !important;
 }
 #view-channel-page > .appbar .centered-page-title,
-#view-channel-page > .appbar #view-appbar-title{
-    display:none !important;
+#view-channel-page > .appbar #view-appbar-title {
+    display: none !important;
 }
-#view-channel-page > .page-content{
-    height:100% !important;
-    min-height:0 !important;
-    padding:0 !important;
-    margin:0 !important;
-    overflow-y:auto !important;
-    overflow-x:hidden !important;
-    -webkit-overflow-scrolling:touch !important;
-    box-sizing:border-box !important;
+#view-channel-page > .page-content {
+    height: 100% !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    box-sizing: border-box !important;
 }
-#view-channel-page .channel-banner-container{
-    width:100% !important;
-    height:auto !important;
-    aspect-ratio:16 / 9 !important;
-    margin:0 !important;
-    padding:0 !important;
-    border:0 !important;
-    border-radius:0 !important;
-    box-shadow:none !important;
-    overflow:hidden !important;
-    position:relative !important;
-    background:#E2E8F0 !important;
-    flex:none !important;
+
+/* Banner area with smooth gradient overlay */
+#view-channel-page .channel-banner-container {
+    width: 100% !important;
+    height: 250px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    position: relative !important;
+    background: #0f1015 !important;
+    flex: none !important;
 }
-#view-channel-page .channel-banner-img{
-    display:block !important;
-    width:100% !important;
-    height:100% !important;
-    margin:0 !important;
-    padding:0 !important;
-    border:0 !important;
-    border-radius:0 !important;
-    object-fit:cover !important;
+#view-channel-page .channel-banner-img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    object-fit: cover !important;
 }
-#view-channel-page .banner-gradient{
-    display:none !important;
+#view-channel-page .banner-gradient {
+    display: block !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.45) 45%, rgba(0,0,0,0.85) 80%, var(--bg-color) 100%) !important;
+    pointer-events: none !important;
 }
-#view-channel-page .channel-tabs{
-    position:static !important;
-    top:auto !important;
-    z-index:2 !important;
+
+/* Top settings hamburger icon on banner */
+.view-channel-settings-btn {
+    position: absolute !important; 
+    top: max(10px, env(safe-area-inset-top, 0px)) !important; 
+    right: 12px !important;
+    width: 44px !important; height: 44px !important; padding: 0 !important;
+    border: 0 !important; border-radius: 0 !important;
+    background: transparent !important; color: #ffffff !important; display: flex !important;
+    align-items: center !important; justify-content: center !important; z-index: 1002 !important;
+    cursor: pointer !important; box-shadow: none !important;
 }
-#view-channel-page .channel-feels-container{
-    display:grid !important;
-    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
-    gap:8px !important;
-    width:100% !important;
-    max-width:100% !important;
-    min-width:0 !important;
-    box-sizing:border-box !important;
-    overflow:visible !important;
+.view-channel-settings-btn i { 
+    font-size: 1.6rem !important; 
+    line-height: 1 !important; 
+    color: #ffffff !important;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.8) !important;
+}
+.view-channel-settings-btn:active { transform: scale(.93); }
+
+/* Channel Profile Info Header (Pulled over banner gradient) */
+#view-channel-page .channel-profile-section {
+    position: relative !important;
+    margin-top: -125px !important;
+    padding: 0 16px 20px 16px !important;
+    background: transparent !important;
+    border-bottom: 1px solid var(--glass-border) !important;
+    z-index: 3 !important;
+}
+
+/* Main row: Info on left, Avatar on right */
+#view-channel-page .profile-row-main {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+    width: 100% !important;
+}
+#view-channel-page .channel-main-meta {
+    flex: 1 !important;
+    min-width: 0 !important;
+}
+#view-channel-page #view-channel-name-txt {
+    margin: 0 0 2px 0 !important;
+    font-size: 1.75rem !important;
+    font-weight: 900 !important;
+    color: #ffffff !important;
+    letter-spacing: -0.4px !important;
+    line-height: 1.2 !important;
+    word-break: break-word !important;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.6) !important;
+}
+#view-channel-page #view-channel-handle-txt {
+    margin: 0 0 14px 0 !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    line-height: 1.2 !important;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6) !important;
+}
+
+/* Stats (Subscriber & Videos column layout) */
+#view-channel-page .channel-stats-row {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 34px !important;
+    margin: 0 !important;
+}
+#view-channel-page .channel-stat-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 2px !important;
+}
+#view-channel-page .channel-stat-num {
+    font-size: 1.55rem !important;
+    font-weight: 900 !important;
+    color: #ffffff !important;
+    line-height: 1.1 !important;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.7) !important;
+}
+#view-channel-page .channel-stat-label {
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    color: rgba(255, 255, 255, 0.78) !important;
+    line-height: 1.2 !important;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6) !important;
+}
+
+/* Avatar container with circular ring matching reference image */
+#view-channel-page .view-avatar-wrap {
+    position: relative !important;
+    width: 104px !important;
+    height: 104px !important;
+    border-radius: 50% !important;
+    border: 3.5px solid #ffffff !important;
+    background: #0d1117 !important;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5) !important;
+    flex-shrink: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+#view-channel-page .view-avatar-img {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 50% !important;
+    border: none !important;
+    object-fit: cover !important;
+    display: block !important;
+    background: transparent !important;
+}
+#view-channel-page .view-avatar-placeholder {
+    position: absolute !important;
+    inset: 0 !important;
+    background: #0d1117 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    color: #ffffff !important;
+    pointer-events: none !important;
+}
+#view-channel-page .view-avatar-placeholder svg {
+    width: 36px !important;
+    height: 36px !important;
+    display: block !important;
+}
+#view-channel-page .view-avatar-placeholder span {
+    font-size: 0.88rem !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+    letter-spacing: 0.5px !important;
+    line-height: 1 !important;
+}
+
+/* Action Buttons: Pill shapes side-by-side */
+#view-channel-page .channel-action-row {
+    display: flex !important;
+    gap: 12px !important;
+    margin-top: 22px !important;
+    width: 100% !important;
+}
+#view-channel-page .btn-channel-pill {
+    flex: 1 !important;
+    height: 48px !important;
+    border-radius: 9999px !important;
+    font-size: 1rem !important;
+    font-weight: 850 !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    border: none !important;
+    outline: none !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    user-select: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+}
+#view-channel-page .btn-channel-pill:active {
+    transform: scale(0.96) !important;
+}
+#view-channel-page .btn-channel-pill.btn-analytics {
+    background: var(--primary, #FF2E55) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 18px rgba(255, 46, 85, 0.4) !important;
+}
+#view-channel-page .btn-channel-pill.btn-edit-channel {
+    background: #18181c !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+}
+[data-theme="dark"] #view-channel-page .btn-channel-pill.btn-edit-channel {
+    background: #1f1f24 !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* Channel Description: Placed directly below the Action Buttons */
+#view-channel-page .channel-description-box {
+    margin: 16px 0 0 0 !important;
+    background: var(--surface) !important;
+    padding: 12px 14px !important;
+    border-radius: 14px !important;
+    border: 1px solid var(--glass-border) !important;
+}
+#view-channel-page .channel-desc-text {
+    margin: 0 !important;
+    font-size: 0.88rem !important;
+    color: var(--text-muted) !important;
+    line-height: 1.45 !important;
+}
+#view-channel-page .channel-desc-text.line-clamp {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+#view-channel-page .btn-more-desc {
+    background: none !important;
+    border: none !important;
+    color: var(--primary) !important;
+    font-size: 0.82rem !important;
+    font-weight: 800 !important;
+    cursor: pointer !important;
+    padding: 5px 0 0 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+}
+
+/* Tabs & Video Feeds */
+#view-channel-page .channel-tabs {
+    position: static !important;
+    top: auto !important;
+    z-index: 2 !important;
+}
+#view-channel-page .channel-feels-container {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
 }
 #view-channel-page .channel-feels-container .feels-grid-card,
-#view-channel-page .channel-feels-container .short-grid-card{
-    width:100% !important;
-    min-width:0 !important;
-    max-width:100% !important;
-    aspect-ratio:9 / 16 !important;
-    height:auto !important;
-    margin:0 !important;
-    box-sizing:border-box !important;
-    overflow:hidden !important;
-    border-radius:12px !important;
+#view-channel-page .channel-feels-container .short-grid-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    aspect-ratio: 9 / 16 !important;
+    height: auto !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    border-radius: 12px !important;
 }
 #view-channel-page .channel-feels-container .feels-grid-card img,
-#view-channel-page .channel-feels-container .short-grid-card img{
-    display:block !important;
-    width:100% !important;
-    height:100% !important;
-    min-width:0 !important;
-    object-fit:cover !important;
+#view-channel-page .channel-feels-container .short-grid-card img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    object-fit: cover !important;
 }
-#view-channel-page .channel-tab-content{
-    min-width:0 !important;
-    max-width:100% !important;
-    box-sizing:border-box !important;
-    overflow-x:hidden !important;
+#view-channel-page .channel-tab-content {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
 }
-#view-channel-page .fl-live-upload-card{
-    grid-column:1 / -1 !important;
-    width:100% !important;
-    max-width:100% !important;
-    min-width:0 !important;
-    box-sizing:border-box !important;
-    margin-left:0 !important;
-    margin-right:0 !important;
+#view-channel-page .fl-live-upload-card {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
 }
 
 /* Channel Settings */
-.view-channel-settings-btn{
-    position:absolute !important; top:26px !important; right:12px !important;
-    width:44px !important; height:44px !important; padding:0 !important;
-    border:0 !important; border-radius:0 !important;
-    background:transparent !important; color:#111 !important; display:flex !important;
-    align-items:center !important; justify-content:center !important; z-index:1002 !important;
-    cursor:pointer !important; box-shadow:none !important;
-    -webkit-backdrop-filter:none !important; backdrop-filter:none !important;
-}
-.view-channel-settings-btn i{font-size:1.8rem !important; line-height:1 !important;}
-.view-channel-settings-btn:active{transform:scale(.93);}
-#channel-settings-page{z-index:1530 !important; background:var(--bg-color) !important;}
-#channel-settings-page .appbar{position:relative !important;}
-#channel-settings-page .appbar .centered-page-title{position:absolute !important; left:50% !important; transform:translateX(-50%) !important; margin:0 !important; text-align:center !important; white-space:nowrap !important;}
-#channel-settings-page .page-content{padding:18px 12px 60px !important;}
-
-/* Settings Page — floating icon and label layout; no card containers */
-#channel-settings-page .page-content {
-    padding: 18px 16px 60px !important;
-}
+#channel-settings-page { z-index: 1530 !important; background: var(--bg-color) !important; }
+#channel-settings-page .appbar { position: relative !important; }
+#channel-settings-page .appbar .centered-page-title { position: absolute !important; left: 50% !important; transform: translateX(-50%) !important; margin: 0 !important; text-align: center !important; white-space: nowrap !important; }
+#channel-settings-page .page-content { padding: 18px 16px 60px !important; }
 #channel-settings-page .settings-card-group {
     margin: 0 0 26px !important;
     background: transparent !important;
@@ -609,6 +790,7 @@
     margin-left: auto;
     flex-shrink: 0;
 }
+
 /* =========================================================
    BOTTOM SHEET POP-UP (DRAWER) STYLING
    ========================================================= */
@@ -745,9 +927,7 @@
     display: block;
 }
 
-
 /* You Page right-side quick menu */
-.view-channel-settings-btn { z-index: 1005 !important; }
 #you-quick-menu-overlay.you-quick-menu-overlay {
     position: fixed !important; inset: 0 !important; z-index: 2147483000 !important;
     display: none; background: rgba(0,0,0,.42) !important;
@@ -801,7 +981,6 @@
 @media (prefers-reduced-motion: reduce) {
     .you-quick-menu-overlay, .you-quick-menu-panel, .you-quick-menu-item { transition:none !important; }
 }
-
 </style></head><body>
 <div class="tab-content" id="you-tab">
 <div class="profile-card-you">
@@ -899,38 +1078,71 @@
 <button class="btn-primary-action" id="btn-submit-create" onclick="submitCreateChannel()">Create Channel</button>
 </div>
 </div>
+
+<!-- ========================================================= -->
+<!-- VIEW CHANNEL PAGE (UPDATED TO MATCH YOUR REFERENCE IMAGE) -->
+<!-- ========================================================= -->
 <div class="fullscreen-page" id="view-channel-page" style="z-index: 1510;">
 <header class="appbar">
+<button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
 <h3 class="appbar-title centered-page-title" id="view-appbar-title">Your Channel</h3>
 </header>
 <div class="page-content" style="padding: 0;">
+
+<!-- Banner area with Menu button -->
 <div class="channel-banner-container">
 <button class="view-channel-settings-btn" type="button" onclick="openYouQuickMenu()" aria-label="Open menu" title="Menu"><i class="fas fa-bars"></i></button>
 <img class="channel-banner-img" id="view-channel-banner" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&amp;w=2000&amp;auto=format&amp;fit=crop"/>
 <div class="banner-gradient"></div>
 </div>
+
+<!-- Main Channel Header Profile Info -->
 <div class="channel-profile-section">
 <div class="profile-row-main">
-<img class="view-avatar-img" id="view-channel-avatar" src=""/>
 <div class="channel-main-meta">
-<h2 id="view-channel-name-txt">Channel Name</h2>
+<h2 id="view-channel-name-txt">Your Name</h2>
 <p id="view-channel-handle-txt">@handle</p>
-<p class="channel-stats-txt">
-<span id="view-sub-count">0 Subscribers</span>
-<span class="dot-separator">•</span>
-<span id="view-vid-count">0 Videos</span>
-</p>
+<div class="channel-stats-row">
+<div class="channel-stat-item">
+<span class="channel-stat-num" id="view-sub-count-val">0</span>
+<span class="channel-stat-label">Subscriber</span>
+<span id="view-sub-count" style="display:none;">0 Subscribers</span>
+</div>
+<div class="channel-stat-item">
+<span class="channel-stat-num" id="view-vid-count-val">0</span>
+<span class="channel-stat-label">Videos</span>
+<span id="view-vid-count" style="display:none;">0 Videos</span>
 </div>
 </div>
+</div>
+
+<!-- Avatar on Right Side matching reference image -->
+<div class="view-avatar-wrap">
+<img class="view-avatar-img" id="view-channel-avatar" src="" alt="Avatar" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" onload="if(this.getAttribute('src')){this.style.display='block'; if(this.nextElementSibling) this.nextElementSibling.style.display='none';}"/>
+<div class="view-avatar-placeholder" id="view-avatar-placeholder">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<rect width="18" height="18" x="3" y="3" rx="4" ry="4" stroke="#ffffff"></rect>
+<circle cx="8.5" cy="8.5" r="1.5" fill="#ffffff" stroke="none"></circle>
+<path d="m21 15-5-5L5 21" stroke="#ffffff"></path>
+</svg>
+<span>image</span>
+</div>
+</div>
+</div>
+
+<!-- Action Buttons: Pill shapes side-by-side -->
+<div class="channel-action-row">
+<button class="btn-channel-pill btn-analytics" onclick="openAnalyticsPage()">Analytics</button>
+<button class="btn-channel-pill btn-edit-channel" onclick="openEditChannelPage()">Edit Channel</button>
+</div>
+
+<!-- Channel Description: Shown below Analytics & Edit Channel -->
 <div class="channel-description-box">
 <p class="channel-desc-text line-clamp" id="view-channel-desc">No description provided yet.</p>
 <button class="btn-more-desc" id="view-channel-desc-btn" onclick="toggleFullDescription()">More <i class="fas fa-chevron-down"></i></button>
 </div>
-<div class="channel-action-row">
-<button class="btn-channel-action" onclick="openAnalyticsPage()"><i class="fas fa-chart-bar"></i> Analytics</button>
-<button class="btn-channel-action btn-edit" onclick="openEditChannelPage()"><i class="fas fa-edit"></i> Edit Channel</button>
 </div>
-</div>
+
 <div class="channel-tabs">
 <div class="channel-tab-item active" id="tab-channel-videos" onclick="switchChannelTab('videos')">Videos</div>
 <div class="channel-tab-item" id="tab-channel-feels" onclick="switchChannelTab('feels')">Feels</div>
@@ -947,7 +1159,6 @@
 </div>
 </div>
 </div>
-
 
 <!-- You Page right-side menu drawer -->
 <div class="you-quick-menu-overlay" id="you-quick-menu-overlay" onclick="handleYouQuickMenuOverlay(event)" aria-hidden="true">
@@ -991,17 +1202,13 @@
   </aside>
 </div>
 
-<!-- ========================================== -->
-<!-- UPDATED SETTINGS PAGE (CONNECTED TO BOTTOM SHEETS) -->
-<!-- ========================================== -->
+<!-- Settings Page -->
 <div class="fullscreen-page" id="channel-settings-page" style="z-index: 1530;">
 <header class="appbar">
 <button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
 <h3 class="appbar-title centered-page-title">Setting</h3>
 </header>
 <div class="page-content">
-
-<!-- Card Box 1: Account -->
 <div class="settings-card-group">
 <div class="settings-card-group-title">Account</div>
 <div class="settings-card-box">
@@ -1023,7 +1230,6 @@
 </div>
 </div>
 
-<!-- Card Box 2: Appearance -->
 <div class="settings-card-group">
 <div class="settings-card-group-title">Appearance</div>
 <div class="settings-card-box">
@@ -1045,7 +1251,6 @@
 </div>
 </div>
 
-<!-- Card Box 3: Flaynity Features -->
 <div class="settings-card-group">
 <div class="settings-card-group-title">Flaynity Features</div>
 <div class="settings-card-box">
@@ -1082,7 +1287,6 @@
 </div>
 </div>
 
-<!-- Card Box 4: Privacy -->
 <div class="settings-card-group">
 <div class="settings-card-group-title">Privacy</div>
 <div class="settings-card-box">
@@ -1114,7 +1318,6 @@
 </div>
 </div>
 
-<!-- Card Box 5: Content & Playback -->
 <div class="settings-card-group">
 <div class="settings-card-group-title">Content & Playback</div>
 <div class="settings-card-box">
@@ -1136,7 +1339,6 @@
 </div>
 </div>
 
-<!-- Card Box 6: Support -->
 <div class="settings-card-group">
 <div class="settings-card-group-title">Support</div>
 <div class="settings-card-box">
@@ -1197,10 +1399,10 @@
 </div>
 </div>
 </div>
-
 </div>
 </div>
 
+<!-- Analytics Page -->
 <div class="fullscreen-page" id="analytics-page" style="z-index: 1520;">
 <header class="appbar">
 <button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
@@ -1272,6 +1474,8 @@
 </div>
 </div>
 </div>
+
+<!-- Edit Channel Page -->
 <div class="fullscreen-page" id="edit-channel-page" style="z-index: 1520;">
 <header class="appbar">
 <button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
@@ -1342,6 +1546,8 @@
 </div>
 </div>
 </div>
+
+<!-- Monetization Page -->
 <div class="fullscreen-page" id="monetization-page" style="z-index: 1530; background: var(--bg-color);">
 <header class="appbar" style="height: 56px; background: var(--surface); display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; justify-content: space-between;">
 <button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
@@ -1780,12 +1986,10 @@ function selectThemeOption(element, sheetId) {
 function openYouQuickMenu() {
     const overlay = document.getElementById('you-quick-menu-overlay');
     if (!overlay) return;
-    /* Keep the drawer outside hidden/transformed app pages so Android WebView can display it above every screen. */
     if (overlay.parentElement !== document.body) document.body.appendChild(overlay);
     overlay.style.setProperty('display', 'block', 'important');
     overlay.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
-    /* Force a closed frame first; then activate the transition for WebView reliability. */
     overlay.classList.remove('active');
     void overlay.offsetWidth;
     requestAnimationFrame(function () {
@@ -1822,6 +2026,33 @@ function openChannelSettingsPage() {
 function openSupportLink(type) {
     console.log("Opening support link:", type);
 }
+
+/* External JS Compatibility: Sync Subscribers & Videos to New Clean Display */
+function syncChannelStatsDisplay() {
+    const subEl = document.getElementById('view-sub-count');
+    const subVal = document.getElementById('view-sub-count-val');
+    if (subEl && subVal) {
+        const txt = (subEl.textContent || '').trim();
+        const m = txt.match(/^([^\s•]+)/);
+        if (m && m[1]) subVal.textContent = m[1];
+    }
+    const vidEl = document.getElementById('view-vid-count');
+    const vidVal = document.getElementById('view-vid-count-val');
+    if (vidEl && vidVal) {
+        const txt = (vidEl.textContent || '').trim();
+        const m = txt.match(/^([^\s•]+)/);
+        if (m && m[1]) vidVal.textContent = m[1];
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    syncChannelStatsDisplay();
+    ['view-sub-count', 'view-vid-count'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el && window.MutationObserver) {
+            new MutationObserver(syncChannelStatsDisplay).observe(el, { childList: true, characterData: true, subtree: true });
+        }
+    });
+});
 </script>
 </body>
 </html>

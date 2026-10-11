@@ -627,6 +627,17 @@
         }
         .fp-btn-submit-glow:active { transform: scale(0.98); opacity: 0.95; }
 
+        /* Setup Withdrawal: keep the primary action visible despite the WebView button reset. */
+        .flay-payout-wrapper #view-local-1 button.fp-btn-submit-glow {
+            background: #E8005A !important;
+            color: #FFFFFF;
+        }
+        html:not([data-theme="dark"]) .flay-payout-wrapper #view-local-1 button.fp-btn-submit-glow svg {
+            color: #000000;
+            fill: currentColor;
+            stroke: #000000;
+        }
+
         /* =========================================================
            11. CONFIRM PAYOUT FULL SCREEN PAGE (IMAGE 4)
            ========================================================= */

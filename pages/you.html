@@ -744,6 +744,56 @@
     display: block;
 }
 
+
+/* You Page right-side quick menu */
+.view-channel-settings-btn { z-index: 1005 !important; }
+.you-quick-menu-overlay {
+    position: fixed; inset: 0; z-index: 10020;
+    background: rgba(0,0,0,.42); opacity: 0; visibility: hidden;
+    transition: opacity .24s ease, visibility .24s ease;
+    -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+}
+.you-quick-menu-overlay.active { opacity: 1; visibility: visible; }
+.you-quick-menu-panel {
+    position: absolute; top: 0; right: 0; width: min(88vw, 370px);
+    height: 100%; height: 100dvh; overflow-y: auto; overscroll-behavior: contain;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 14px calc(22px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box; background: var(--bg-color); color: var(--text-main);
+    border-left: 1px solid var(--glass-border); box-shadow: -12px 0 36px rgba(0,0,0,.18);
+    transform: translate3d(102%,0,0); transition: transform .28s cubic-bezier(.22,.8,.25,1);
+    -webkit-overflow-scrolling: touch;
+}
+.you-quick-menu-overlay.active .you-quick-menu-panel { transform: translate3d(0,0,0); }
+.you-quick-menu-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin: 2px 2px 18px; }
+.you-quick-menu-title { margin:0; font-size:1.22rem; font-weight:850; color:var(--text-main); }
+.you-quick-menu-close {
+    width:40px; height:40px; border:1px solid var(--glass-border); border-radius:13px;
+    display:flex; align-items:center; justify-content:center; color:var(--text-main);
+    background:var(--surface); font-size:1.05rem; cursor:pointer; flex-shrink:0;
+}
+.you-quick-menu-section { margin: 0 0 19px; }
+.you-quick-menu-section-title {
+    margin: 0 8px 9px; color:var(--text-muted); font-size:.72rem; font-weight:850;
+    letter-spacing:1.15px; text-transform:uppercase;
+}
+.you-quick-menu-list {
+    display:flex; flex-direction:column; gap:8px;
+}
+.you-quick-menu-item {
+    width:100%; box-sizing:border-box; display:flex; align-items:center; gap:12px;
+    padding:11px 12px; min-height:62px; border-radius:15px; border:1px solid var(--glass-border);
+    background:var(--surface); color:var(--text-main); text-align:left; cursor:pointer;
+    transition:transform .18s ease, background .18s ease; font:inherit;
+}
+.you-quick-menu-item:active { transform:scale(.975); background:var(--primary-glow); }
+.you-quick-menu-item .premium-icon-box { width:39px; height:39px; border-radius:12px; flex:0 0 39px; }
+.you-quick-menu-item .premium-icon-box i { font-size:1.12rem !important; }
+.you-quick-menu-item .quick-menu-label { flex:1; min-width:0; font-size:.94rem; font-weight:750; }
+.you-quick-menu-item .arrow-r { font-size:.78rem !important; }
+@media (prefers-reduced-motion: reduce) {
+    .you-quick-menu-overlay, .you-quick-menu-panel, .you-quick-menu-item { transition:none !important; }
+}
+
 </style></head><body>
 <div class="tab-content" id="you-tab">
 <div class="profile-card-you">
@@ -848,7 +898,7 @@
 </header>
 <div class="page-content" style="padding: 0;">
 <div class="channel-banner-container">
-<button class="view-channel-settings-btn" type="button" onclick="openChannelSettingsPage()" aria-label="Setting" title="Setting"><i class="fas fa-gear"></i></button>
+<button class="view-channel-settings-btn" type="button" onclick="openYouQuickMenu()" aria-label="Open menu" title="Menu"><i class="fas fa-ellipsis-vertical"></i></button>
 <img class="channel-banner-img" id="view-channel-banner" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&amp;w=2000&amp;auto=format&amp;fit=crop"/>
 <div class="banner-gradient"></div>
 </div>
@@ -889,6 +939,49 @@
 <div class="channel-posts-container" id="channel-posts-feed"></div>
 </div>
 </div>
+</div>
+
+
+<!-- You Page right-side menu drawer -->
+<div class="you-quick-menu-overlay" id="you-quick-menu-overlay" onclick="handleYouQuickMenuOverlay(event)" aria-hidden="true">
+  <aside class="you-quick-menu-panel" role="dialog" aria-modal="true" aria-label="Quick menu">
+    <div class="you-quick-menu-head">
+      <h2 class="you-quick-menu-title">Menu</h2>
+      <button class="you-quick-menu-close" type="button" onclick="closeYouQuickMenu()" aria-label="Close menu"><i class="fas fa-xmark"></i></button>
+    </div>
+    <section class="you-quick-menu-section">
+      <h3 class="you-quick-menu-section-title">ACCOUNT</h3>
+      <div class="you-quick-menu-list">
+        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openMonetizationPage)"><span class="premium-icon-box icon-earning"><i class="fas fa-sack-dollar"></i></span><span class="quick-menu-label">Flay Earning</span><i class="fas fa-chevron-right arrow-r"></i></button>
+        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openEditChannelPage)"><span class="premium-icon-box icon-edit-prof"><i class="fas fa-user-pen"></i></span><span class="quick-menu-label">Edit Profile</span><i class="fas fa-chevron-right arrow-r"></i></button>
+        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openAccountSwitcher)"><span class="premium-icon-box icon-account"><i class="fas fa-exchange-alt"></i></span><span class="quick-menu-label">Switch Account</span><i class="fas fa-chevron-right arrow-r"></i></button>
+      </div>
+    </section>
+    <section class="you-quick-menu-section">
+      <h3 class="you-quick-menu-section-title">FLAYNITY FEATURES</h3>
+      <div class="you-quick-menu-list">
+        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('flay-verified-badge')})"><span class="premium-icon-box icon-verified"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12.0001 2.37877L14.1539 3.58552L16.634 3.44754L18.0699 5.56844L20.4705 6.30722L20.6724 8.78318L22.4516 10.4287L21.5794 12.7562L22.4516 15.0837L20.6724 16.7292L20.4705 19.2052L18.0699 19.9439L16.634 22.0648L14.1539 21.9269L12.0001 23.1336L9.84628 21.9269L7.36616 22.0648L5.93026 19.9439L3.52968 19.2052L3.32777 16.7292L1.54858 15.0837L2.42079 12.7562L1.54858 10.4287L3.32777 8.78318L3.52968 6.30722L5.93026 5.56844L7.36616 3.44754L9.84628 3.58552Z" fill="#D80E45"></path><path d="M10.8335 15.6881L7.14515 12.0858L8.35483 10.9044L10.8335 13.3253L15.6453 8.625L16.855 9.8064L10.8335 15.6881Z" fill="#FFFFFF"></path></svg></span><span class="quick-menu-label">Flay Verified Badge</span><i class="fas fa-chevron-right arrow-r"></i></button>
+        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('upgrade-pro')})"><span class="premium-icon-box icon-pro"><i class="fas fa-crown"></i></span><span class="quick-menu-label">Upgrade Pro</span><i class="fas fa-chevron-right arrow-r"></i></button>
+        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('boost-content')})"><span class="premium-icon-box icon-boost"><i class="fas fa-rocket"></i></span><span class="quick-menu-label">Boost Content</span><i class="fas fa-chevron-right arrow-r"></i></button>
+        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('flay-pay')})"><span class="premium-icon-box icon-pay"><i class="fas fa-wallet"></i></span><span class="quick-menu-label">Flay Pay</span><i class="fas fa-chevron-right arrow-r"></i></button>
+        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('flay-payout')})"><span class="premium-icon-box" style="background:linear-gradient(135deg,#E8005A 0%,#FF8A3D 100%);color:#FFFFFF;box-shadow:0 4px 14px rgba(232,0,90,.24);"><i class="fas fa-money-bill-transfer"></i></span><span class="quick-menu-label">Flay Payout</span><i class="fas fa-chevron-right arrow-r"></i></button>
+      </div>
+    </section>
+    <section class="you-quick-menu-section">
+      <h3 class="you-quick-menu-section-title">APPEARANCE</h3>
+      <div class="you-quick-menu-list">
+        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){openBottomSheet('sheet-theme')})"><span class="premium-icon-box icon-theme"><i class="fas fa-palette"></i></span><span class="quick-menu-label">Switch Theme</span><i class="fas fa-chevron-right arrow-r"></i></button>
+        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){openBottomSheet('sheet-language')})"><span class="premium-icon-box icon-lang"><i class="fas fa-language"></i></span><span class="quick-menu-label">App Language</span><i class="fas fa-chevron-right arrow-r"></i></button>
+      </div>
+    </section>
+    <section class="you-quick-menu-section">
+      <h3 class="you-quick-menu-section-title">SUPPORT</h3>
+      <div class="you-quick-menu-list">
+        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){openSupportLink('help-center')})"><span class="premium-icon-box icon-help"><i class="fas fa-circle-question"></i></span><span class="quick-menu-label">Help Center</span><i class="fas fa-chevron-right arrow-r"></i></button>
+        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openChannelSettingsPage)"><span class="premium-icon-box icon-theme"><i class="fas fa-gear"></i></span><span class="quick-menu-label">Setting</span><i class="fas fa-chevron-right arrow-r"></i></button>
+      </div>
+    </section>
+  </aside>
 </div>
 
 <!-- ========================================== -->
@@ -1677,7 +1770,31 @@ function selectThemeOption(element, sheetId) {
     selectGenericOption(element, sheetId);
 }
 
+function openYouQuickMenu() {
+    const overlay = document.getElementById('you-quick-menu-overlay');
+    if (!overlay) return;
+    overlay.style.display = 'block';
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => overlay.classList.add('active'));
+}
+function closeYouQuickMenu() {
+    const overlay = document.getElementById('you-quick-menu-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('active');
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    setTimeout(() => { if (!overlay.classList.contains('active')) overlay.style.display = 'none'; }, 290);
+}
+function handleYouQuickMenuOverlay(event) {
+    if (event.target && event.target.id === 'you-quick-menu-overlay') closeYouQuickMenu();
+}
+function runYouQuickMenuAction(action) {
+    closeYouQuickMenu();
+    setTimeout(() => { if (typeof action === 'function') action(); }, 100);
+}
 function openChannelSettingsPage() {
+    closeYouQuickMenu();
     const page = document.getElementById('channel-settings-page');
     if (page) page.style.display = 'block';
 }

@@ -4691,6 +4691,65 @@ async function submitCreateChannel() {
     }
 }
 
+/* You-page quick menu handlers.
+   Page HTML is mounted by the modular loader, which intentionally does not execute
+   inline scripts from pages/you.html. Keep these handlers in this main app script. */
+function openYouQuickMenu() {
+    const overlay = document.getElementById('you-quick-menu-overlay');
+    if (!overlay) {
+        console.warn('You quick menu overlay is missing.');
+        return;
+    }
+    if (overlay.parentElement !== document.body) document.body.appendChild(overlay);
+    overlay.style.setProperty('display', 'block', 'important');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    overlay.classList.remove('active');
+    void overlay.offsetWidth;
+    requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+            overlay.classList.add('active');
+        });
+    });
+}
+
+function closeYouQuickMenu() {
+    const overlay = document.getElementById('you-quick-menu-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('active');
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    setTimeout(function () {
+        if (!overlay.classList.contains('active')) {
+            overlay.style.setProperty('display', 'none', 'important');
+        }
+    }, 330);
+}
+
+function handleYouQuickMenuOverlay(event) {
+    if (event.target && event.target.id === 'you-quick-menu-overlay') {
+        closeYouQuickMenu();
+    }
+}
+
+function runYouQuickMenuAction(action) {
+    closeYouQuickMenu();
+    setTimeout(function () {
+        if (typeof action === 'function') action();
+    }, 100);
+}
+
+function openSupportLink(type) {
+    closeYouQuickMenu();
+    if (type === 'help-center') {
+        if (typeof showNotification === 'function') {
+            showNotification('Help Center is coming soon.', 'info', 2500);
+        }
+        return;
+    }
+    console.warn('Unknown support page:', type);
+}
+
 /* Settings bottom-sheet handlers for dynamically loaded You page. */
 function openBottomSheet(sheetId) {
     const overlay = document.getElementById(sheetId);

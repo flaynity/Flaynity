@@ -4846,25 +4846,47 @@ function openViewChannelPage() {
     if (viewTitle) viewTitle.innerText = data.channelName;
     if (viewBanner) viewBanner.src = data.bannerUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop";
     if (viewAvatar) {
-        const channelAvatar = data.avatarUrl || data.channelImage || data.photoURL || (auth.currentUser && auth.currentUser.photoURL) || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop";
+        const user = (typeof auth !== "undefined" && auth.currentUser) ? auth.currentUser : null;
+        const avatarCandidates = [
+            data.avatarUrl, data.channelImage, data.channelAvatar, data.profileImage,
+            data.profileImageUrl, data.imageUrl, data.photoURL, user && user.photoURL
+        ].filter((url, index, all) => typeof url === "string" && url.trim() && all.indexOf(url) === index);
+        const placeholder = document.getElementById("view-avatar-placeholder");
+        let avatarIndex = 0;
+
+        const showAvatarFallback = function () {
+            viewAvatar.onerror = null;
+            viewAvatar.onload = null;
+            viewAvatar.style.display = "none";
+            if (placeholder) {
+                placeholder.innerHTML = "";
+                const initial = document.createElement("span");
+                initial.textContent = String(data.channelName || (user && user.displayName) || "F").trim().charAt(0).toUpperCase();
+                initial.style.cssText = "display:flex;width:100%;height:100%;align-items:center;justify-content:center;font-size:64px;font-weight:800;color:#fff;";
+                placeholder.appendChild(initial);
+                placeholder.style.display = "flex";
+            }
+        };
+
         viewAvatar.onerror = function () {
-            const fallbackAvatar = (auth.currentUser && auth.currentUser.photoURL) || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop";
-            if (viewAvatar.src !== fallbackAvatar) {
-                viewAvatar.onerror = function () {
-                    viewAvatar.style.display = "none";
-                    if (viewAvatar.nextElementSibling) viewAvatar.nextElementSibling.style.display = "flex";
-                };
-                viewAvatar.src = fallbackAvatar;
+            avatarIndex++;
+            if (avatarIndex < avatarCandidates.length) {
+                viewAvatar.src = avatarCandidates[avatarIndex];
             } else {
-                viewAvatar.style.display = "none";
-                if (viewAvatar.nextElementSibling) viewAvatar.nextElementSibling.style.display = "flex";
+                showAvatarFallback();
             }
         };
         viewAvatar.onload = function () {
             viewAvatar.style.display = "block";
-            if (viewAvatar.nextElementSibling) viewAvatar.nextElementSibling.style.display = "none";
+            if (placeholder) placeholder.style.display = "none";
         };
-        viewAvatar.src = channelAvatar;
+        if (placeholder) placeholder.style.display = "flex";
+        viewAvatar.style.display = "none";
+        if (avatarCandidates.length) {
+            viewAvatar.src = avatarCandidates[0];
+        } else {
+            showAvatarFallback();
+        }
     }
     if (viewName) viewName.innerText = data.channelName;
     if (viewHandle) viewHandle.innerText = "@" + data.handle;

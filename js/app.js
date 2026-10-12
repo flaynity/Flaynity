@@ -1279,8 +1279,18 @@ function enforceContentAdminStatus(items, type) {
     return allowed;
 }
 
+let __flaynityLastAuthUid = null;
+
 auth.onAuthStateChanged(async (user) => {
     try {
+        // Native Google account switching can replace the Firebase user directly
+        // without an intermediate signed-out event. Clear all previous-user data
+        // whenever the authenticated UID changes, before initializing the new user.
+        if (user && __flaynityLastAuthUid && __flaynityLastAuthUid !== user.uid) {
+            cleanupUserSessionData();
+        }
+        __flaynityLastAuthUid = user ? user.uid : null;
+
         clearUserStatusListener();
         detachAdminControlListener();
         if (!user) {

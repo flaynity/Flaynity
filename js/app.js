@@ -4258,6 +4258,26 @@ function switchTab(tabId) {
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
     AppNavigation.pushTab(tabId);
+
+    // You bottom navigation opens the signed-in user's channel directly.
+    // If the channel record is not already cached, load that user's existing
+    // Firebase record before deciding whether to open the channel page.
+    if (tabId === 'you') {
+        const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
+        if (currentChannelData) {
+            openViewChannelPage();
+        } else if (user && typeof db !== 'undefined') {
+            db.ref(`channels/${user.uid}`).once('value').then((snapshot) => {
+                const channelData = snapshot.val();
+                if (!channelData) return;
+                currentChannelData = channelData;
+                try { localStorage.setItem('flaynity_user_session_cache', JSON.stringify(channelData)); } catch (e) {}
+                openViewChannelPage();
+            }).catch((error) => {
+                console.error('Failed to load channel for You navigation:', error);
+            });
+        }
+    }
 }
 
 function adjustHeaderForActiveTab(tabId) {
@@ -4410,12 +4430,9 @@ function renderYouTabWithData(data, user, wrap) {
             }
         }
 
-        wrap.innerHTML = `
-            <button class="btn-view-channel" onclick="openViewChannelPage()">
-                <i class="fas fa-tv"></i> View Channel 
-                <i class="fas fa-chevron-right" style="margin-left: auto;"></i>
-            </button>
-        `;
+        // A channel owner opens the channel directly from bottom navigation.
+        // Keep the You profile card free of a separate "View Channel" button.
+        wrap.innerHTML = '';
     } else {
         const displayName = user.displayName || user.email.split('@')[0];
         if (youFullNameTxt) youFullNameTxt.innerText = displayName;

@@ -1327,32 +1327,6 @@ auth.onAuthStateChanged(async (user) => {
 
         saveAccountToList(user);
 
-        // After switching accounts, show that account's own channel if it exists;
-        // otherwise return directly to the Create Channel card on the You tab.
-        if (__flaynityRouteAfterAccountSwitch) {
-            __flaynityRouteAfterAccountSwitch = false;
-            currentChannelData = null;
-            try { localStorage.removeItem('flaynity_user_session_cache'); } catch (e) {}
-            try {
-                const channelSnapshot = await db.ref(`channels/${user.uid}`).once('value');
-                currentChannelData = channelSnapshot.val();
-                if (currentChannelData) {
-                    try { localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData)); } catch (e) {}
-                    AppNavigation.stack = [{ type: 'tab', id: 'you' }];
-                    openViewChannelPage();
-                } else {
-                    AppNavigation.stack = [{ type: 'tab', id: 'you' }];
-                    AppNavigation.syncUI();
-                    initYouTabUI();
-                }
-                AppNavigation.updateBridge();
-            } catch (error) {
-                console.error('Unable to load channel after account switch:', error);
-                AppNavigation.stack = [{ type: 'tab', id: 'you' }];
-                AppNavigation.syncUI();
-                initYouTabUI();
-            }
-        }
         attachAdminControlListener();
 
         // Keep the ban state live. If Admin bans this user while the app is open,
@@ -1374,6 +1348,34 @@ auth.onAuthStateChanged(async (user) => {
         startRealtimeFeedsListener();
         restoreQueueFromLocalStorage();
         applyAdminControls();
+
+        // Route only after the new account's app UI and listeners are initialized.
+        // This prevents the channel page from being overwritten by the previous
+        // page's remaining initialization after an account switch.
+        if (__flaynityRouteAfterAccountSwitch) {
+            __flaynityRouteAfterAccountSwitch = false;
+            currentChannelData = null;
+            try { localStorage.removeItem('flaynity_user_session_cache'); } catch (e) {}
+            try {
+                const channelSnapshot = await db.ref(`channels/${user.uid}`).once('value');
+                currentChannelData = channelSnapshot.val();
+                AppNavigation.stack = [{ type: 'tab', id: 'you' }];
+                if (currentChannelData) {
+                    try { localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData)); } catch (e) {}
+                    AppNavigation.syncUI();
+                    openViewChannelPage();
+                } else {
+                    AppNavigation.syncUI();
+                    initYouTabUI();
+                }
+                AppNavigation.updateBridge();
+            } catch (error) {
+                console.error('Unable to load channel after account switch:', error);
+                AppNavigation.stack = [{ type: 'tab', id: 'you' }];
+                AppNavigation.syncUI();
+                initYouTabUI();
+            }
+        }
 
         const activeNav = document.querySelector('.nav-item.active');
         if (activeNav) adjustHeaderForActiveTab(activeNav.id.replace('nav-', ''));

@@ -1279,37 +1279,8 @@ function enforceContentAdminStatus(items, type) {
     return allowed;
 }
 
-let __flaynityLastAuthUid = null;
-
 auth.onAuthStateChanged(async (user) => {
     try {
-        // Native Google account switching can replace the Firebase user directly
-        // without an intermediate signed-out event. Clear all previous-user data
-        // whenever the authenticated UID changes, before initializing the new user.
-        if (user && __flaynityLastAuthUid && __flaynityLastAuthUid !== user.uid) {
-            cleanupUserSessionData();
-            // Reset channel DOM too: View Channel is a persistent page element and
-            // can otherwise keep the previous account's banner/avatar/name/handle.
-            const resetChannelImage = (id, fallback) => {
-                const el = document.getElementById(id);
-                if (el) el.src = fallback;
-            };
-            resetChannelImage('view-channel-banner', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop');
-            resetChannelImage('view-channel-avatar', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop');
-            const resetChannelText = (id, value) => {
-                const el = document.getElementById(id);
-                if (el) el.textContent = value;
-            };
-            resetChannelText('view-appbar-title', 'Your Channel');
-            resetChannelText('view-channel-name-txt', 'Your Name');
-            resetChannelText('view-channel-handle-txt', '@handle');
-            resetChannelText('view-channel-desc', 'No description provided yet.');
-            ['view-sub-count-val', 'view-vid-count-val'].forEach(id => resetChannelText(id, '0'));
-            const viewPage = document.getElementById('view-channel-page');
-            if (viewPage) viewPage.style.display = 'none';
-        }
-        __flaynityLastAuthUid = user ? user.uid : null;
-
         clearUserStatusListener();
         detachAdminControlListener();
         if (!user) {
@@ -1356,6 +1327,32 @@ auth.onAuthStateChanged(async (user) => {
 
         saveAccountToList(user);
 
+        // After switching accounts, show that account's own channel if it exists;
+        // otherwise return directly to the Create Channel card on the You tab.
+        if (__flaynityRouteAfterAccountSwitch) {
+            __flaynityRouteAfterAccountSwitch = false;
+            currentChannelData = null;
+            try { localStorage.removeItem('flaynity_user_session_cache'); } catch (e) {}
+            try {
+                const channelSnapshot = await db.ref(`channels/${user.uid}`).once('value');
+                currentChannelData = channelSnapshot.val();
+                if (currentChannelData) {
+                    try { localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData)); } catch (e) {}
+                    AppNavigation.stack = [{ type: 'tab', id: 'you' }];
+                    openViewChannelPage();
+                } else {
+                    AppNavigation.stack = [{ type: 'tab', id: 'you' }];
+                    AppNavigation.syncUI();
+                    initYouTabUI();
+                }
+                AppNavigation.updateBridge();
+            } catch (error) {
+                console.error('Unable to load channel after account switch:', error);
+                AppNavigation.stack = [{ type: 'tab', id: 'you' }];
+                AppNavigation.syncUI();
+                initYouTabUI();
+            }
+        }
         attachAdminControlListener();
 
         // Keep the ban state live. If Admin bans this user while the app is open,
@@ -1377,39 +1374,6 @@ auth.onAuthStateChanged(async (user) => {
         startRealtimeFeedsListener();
         restoreQueueFromLocalStorage();
         applyAdminControls();
-
-        // Route only after the new account's app UI and listeners are initialized.
-        // This prevents the channel page from being overwritten by the previous
-        // page's remaining initialization after an account switch.
-        if (__flaynityRouteAfterAccountSwitch && !__flaynityNativeSwitchInProgress) {
-            __flaynityRouteAfterAccountSwitch = false;
-            currentChannelData = null;
-            try { localStorage.removeItem('flaynity_user_session_cache'); } catch (e) {}
-            try {
-                const channelSnapshot = await db.ref(`channels/${user.uid}`).once('value');
-                currentChannelData = channelSnapshot.val();
-                if (currentChannelData) {
-                    try { localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData)); } catch (e) {}
-                    // Explicitly target the channel page after switching accounts.
-                    AppNavigation.stack = [
-                        { type: 'tab', id: 'you' },
-                        { type: 'page', id: 'view-channel-page' }
-                    ];
-                    AppNavigation.syncUI();
-                    openViewChannelPage();
-                } else {
-                    AppNavigation.stack = [{ type: 'tab', id: 'you' }];
-                    AppNavigation.syncUI();
-                    initYouTabUI();
-                }
-                AppNavigation.updateBridge();
-            } catch (error) {
-                console.error('Unable to load channel after account switch:', error);
-                AppNavigation.stack = [{ type: 'tab', id: 'you' }];
-                AppNavigation.syncUI();
-                initYouTabUI();
-            }
-        }
 
         const activeNav = document.querySelector('.nav-item.active');
         if (activeNav) adjustHeaderForActiveTab(activeNav.id.replace('nav-', ''));
@@ -1484,40 +1448,9 @@ window.handleNativeGoogleSignIn = function(idToken) {
     showNotification("Connecting secure session...", "success");
     const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
     auth.signInWithCredential(credential)
-        .then(async (result) => {
+        .then((result) => { 
             saveAccountToList(result.user);
-            showNotification("Google Sign-In Successful!", "success");
-            // Native auth can finish without the account-switch route being
-            // applied at the right time, so explicitly complete that route here.
-            if (__flaynityRouteAfterAccountSwitch) {
-                __flaynityRouteAfterAccountSwitch = false;
-                __flaynityNativeSwitchInProgress = false;
-                try {
-                    currentChannelData = null;
-                    localStorage.removeItem('flaynity_user_session_cache');
-                    const snapshot = await db.ref('channels/' + result.user.uid).once('value');
-                    currentChannelData = snapshot.val();
-                    if (currentChannelData) {
-                        localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
-                        AppNavigation.stack = [
-                            { type: 'tab', id: 'you' },
-                            { type: 'page', id: 'view-channel-page' }
-                        ];
-                        AppNavigation.syncUI();
-                        openViewChannelPage();
-                    } else {
-                        AppNavigation.stack = [{ type: 'tab', id: 'you' }];
-                        AppNavigation.syncUI();
-                        initYouTabUI();
-                    }
-                    AppNavigation.updateBridge();
-                } catch (error) {
-                    console.error('Unable to route after native account switch:', error);
-                    AppNavigation.stack = [{ type: 'tab', id: 'you' }];
-                    AppNavigation.syncUI();
-                    initYouTabUI();
-                }
-            }
+            showNotification("Google Sign-In Successful!", "success"); 
         })
         .catch(err => { showNotification("Native Auth Error: " + err.message, "error"); });
 };
@@ -5285,18 +5218,14 @@ function renderAccountSwitcherList() {
 }
 
 let __flaynityRouteAfterAccountSwitch = false;
-let __flaynityNativeSwitchInProgress = false;
 
 async function switchSession(email) {
     playUI('click');
     __flaynityRouteAfterAccountSwitch = true;
     showNotification("Switching account...", "success");
     if (window.AndroidBridge && typeof window.AndroidBridge.triggerGoogleSignIn === 'function') {
-        // Let the native sign-in callback own routing so the auth-state listener
-        // cannot consume the switch flag first and leave the app on the menu page.
-        __flaynityNativeSwitchInProgress = true;
+        window.AndroidBridge.triggerGoogleSignIn(); 
         AppNavigation.pop();
-        window.AndroidBridge.triggerGoogleSignIn();
     } else {
         try {
             await auth.signOut();

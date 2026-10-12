@@ -63,22 +63,21 @@
         }
 
         /* ========================================================
-           2. TOP BAR (BACKGROUND #0F0F0F IN DARK & CENTERED TITLE)
+           2. TOP BAR
         ======================================================== */
         #upgrade-pro-app .bar {
-            position: relative; /* স্ক্রল করলে সাথে সাথে ওপরে স্ক্রল হবে */
+            position: relative;
             height: 52px;
             margin: 0;
             padding: 0 16px;
             display: flex;
             align-items: center;
-            justify-content: space-between; /* দুই পাশে বাটন ও ব্যাজ */
+            justify-content: space-between;
             background: var(--bg);
             border-bottom: 1px solid var(--border);
             z-index: 10;
         }
 
-        /* App Dark মোডে Top Bar Box Background строго #0F0F0F */
         [data-theme=dark] #upgrade-pro-app .bar {
             background: #0F0F0F !important;
         }
@@ -99,7 +98,6 @@
         }
         #upgrade-pro-app .back:active { transform: scale(0.92); }
 
-        /* Upgrade Pro টাইটেল একদম সেন্টারে */
         #upgrade-pro-app .title {
             position: absolute;
             left: 50%;
@@ -109,7 +107,7 @@
             letter-spacing: -0.2px;
             text-align: center;
             white-space: nowrap;
-            pointer-events: none; /* ক্লিকের সমস্যা প্রতিরোধ */
+            pointer-events: none;
             z-index: 1;
         }
 
@@ -128,9 +126,9 @@
             z-index: 2;
         }
 
-        /* Content Area */
+        /* Content Area - Added bottom padding for fixed bottom dock */
         #upgrade-pro-app .content { 
-            padding: 14px 16px 40px; 
+            padding: 14px 16px 120px; 
         }
 
         /* Animations */
@@ -187,7 +185,7 @@
         }
 
         /* ========================================================
-           4. VIP USER & STATUS PASSPORT CARD (NO RED TICK)
+           4. VIP USER & STATUS PASSPORT CARD
         ======================================================== */
         #upgrade-pro-app .plan-status-card {
             background: var(--surface);
@@ -220,7 +218,6 @@
             box-shadow: 0 10px 30px rgba(251, 191, 36, 0.25);
         }
 
-        /* Top Row: User Avatar, Name, Handle | Status Badge */
         #upgrade-pro-app .status-card-inner {
             display: flex;
             justify-content: space-between;
@@ -277,7 +274,6 @@
             text-overflow: ellipsis;
         }
 
-        /* Status Badge Container */
         #upgrade-pro-app .plan-badge-wrapper {
             display: flex;
             flex-direction: column;
@@ -304,7 +300,6 @@
             transition: 0.3s;
         }
 
-        /* Bottom Status Footer Bar */
         #upgrade-pro-app .status-footer-bar {
             margin-top: 14px;
             padding-top: 12px;
@@ -353,86 +348,7 @@
         }
 
         /* ========================================================
-           5. PREMIUM FEATURE BOXES WITH DEDICATED COLORS
-        ======================================================== */
-        #upgrade-pro-app .section-title {
-            font-size: 18px;
-            font-weight: 800;
-            margin: 0 0 14px;
-            letter-spacing: -0.3px;
-        }
-        #upgrade-pro-app .features-box-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-            margin-bottom: 26px;
-        }
-        #upgrade-pro-app .feature-card-box {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 16px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            box-shadow: var(--shadow);
-            transition: transform 0.2s ease;
-        }
-        #upgrade-pro-app .feature-card-box:active {
-            transform: scale(0.98);
-        }
-
-        #upgrade-pro-app .box-icon {
-            width: 46px;
-            height: 46px;
-            border-radius: 14px;
-            display: grid;
-            place-items: center;
-            font-size: 17px;
-            flex-shrink: 0;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.05);
-        }
-
-        /* 1. Ad-Free: Electric Cyan */
-        #upgrade-pro-app .icon-adfree {
-            background: rgba(0, 210, 255, 0.12);
-            color: var(--cyan);
-            border: 1px solid rgba(0, 210, 255, 0.25);
-        }
-        /* 2. Premium Creator Tools: Electric Purple */
-        #upgrade-pro-app .icon-creator {
-            background: rgba(168, 85, 247, 0.12);
-            color: var(--purple);
-            border: 1px solid rgba(168, 85, 247, 0.25);
-        }
-        /* 3. Exclusive Pro Badge: Royal Gold */
-        #upgrade-pro-app .icon-badge {
-            background: rgba(251, 191, 36, 0.12);
-            color: var(--gold);
-            border: 1px solid rgba(251, 191, 36, 0.25);
-        }
-        /* 4. Priority Features: Signature Crimson */
-        #upgrade-pro-app .icon-priority {
-            background: rgba(255, 46, 85, 0.12);
-            color: var(--accent);
-            border: 1px solid rgba(255, 46, 85, 0.25);
-        }
-
-        #upgrade-pro-app .box-text h4 {
-            margin: 0 0 3px;
-            font-size: 14.5px;
-            font-weight: 800;
-            letter-spacing: -0.2px;
-        }
-        #upgrade-pro-app .box-text p {
-            margin: 0;
-            font-size: 12.5px;
-            color: var(--muted);
-            line-height: 1.4;
-        }
-
-        /* ========================================================
-           6. PLAN SELECTOR (PRO vs MAX)
+           5. PLAN SELECTOR (PRO vs MAX)
         ======================================================== */
         #upgrade-pro-app .plan-selection-title {
             font-size: 18px;
@@ -522,7 +438,7 @@
             font-weight: 700;
         }
 
-        /* Overview & Checkout */
+        /* Overview Card */
         #upgrade-pro-app .plan-overview-card {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -534,7 +450,7 @@
         #upgrade-pro-app .plan-checklist {
             list-style: none;
             padding: 0;
-            margin: 0 0 20px;
+            margin: 0;
             display: grid;
             gap: 10px;
         }
@@ -547,26 +463,54 @@
         }
         #upgrade-pro-app .plan-checklist i { color: var(--accent); font-size: 14px; }
 
-        /* Checkout Button */
+        /* ========================================================
+           6. FIXED BOTTOM DOCK (MATCHING THE SCREENSHOT EXACTLY)
+        ======================================================== */
+        #upgrade-pro-app .bottom-dock-wrapper {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+            z-index: 999;
+            box-shadow: 0 -8px 25px rgba(0,0,0,0.06);
+        }
+        [data-theme=dark] #upgrade-pro-app .bottom-dock-wrapper {
+            background: #0F0F0F !important;
+            border-color: #222222;
+            box-shadow: 0 -8px 30px rgba(0,0,0,0.6);
+        }
+        #upgrade-pro-app .bottom-dock-inner {
+            max-width: 680px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Primary Pill CTA Button */
         #upgrade-pro-app .primary-cta {
             width: 100%;
             border: 0;
             background: var(--accent);
             color: #ffffff;
-            font-size: 15px;
+            font-size: 16.5px;
             font-weight: 800;
-            padding: 15px;
-            border-radius: 16px;
+            padding: 16px 20px;
+            border-radius: 999px; /* Pill shape */
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: transform 0.2s ease, opacity 0.2s ease;
             box-shadow: 0 8px 24px var(--soft);
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             font-family: inherit;
         }
-        #upgrade-pro-app .primary-cta:not(:disabled):active { transform: scale(0.97); }
+        #upgrade-pro-app .primary-cta:not(:disabled):active { transform: scale(0.98); }
 
         #upgrade-pro-app .primary-cta:disabled {
             opacity: 0.6;
@@ -582,41 +526,62 @@
             box-shadow: 0 8px 20px rgba(22, 163, 74, 0.25);
         }
 
-        #upgrade-pro-app .payment-info { text-align: center; margin-top: 14px; }
-        #upgrade-pro-app .payment-info .secure-text {
-            font-size: 11.5px;
-            font-weight: 700;
-            color: var(--text);
-            margin: 0 0 3px;
+        #upgrade-pro-app .bottom-secure-note {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            margin: 0;
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             gap: 6px;
         }
-        #upgrade-pro-app .payment-info .secure-text i { color: #00a844; }
-        #upgrade-pro-app .payment-info .sub-text { font-size: 11px; color: var(--muted); margin: 0; line-height: 1.4; }
+        #upgrade-pro-app .bottom-secure-note i {
+            font-size: 11px;
+        }
 
         /* ========================================================
-           7. COMPARISON & FAQ
+           7. COMPARISON & FAQ (BOTH CARDS IN PINK-RED)
         ======================================================== */
+        #upgrade-pro-app .section-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin: 0 0 14px;
+            letter-spacing: -0.3px;
+        }
         #upgrade-pro-app .comparison-section { margin-bottom: 24px; }
         #upgrade-pro-app .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        /* Both Free & Pro Card Box Styled in Pink Red */
         #upgrade-pro-app .comp-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
+            border: 1px solid var(--accent);
+            background: var(--soft);
             border-radius: 16px;
             padding: 14px;
         }
-        #upgrade-pro-app .comp-card.pro { border-color: var(--accent); background: var(--soft); }
-        #upgrade-pro-app .comp-card h4 { margin: 0 0 8px; font-size: 14px; font-weight: 800; text-align: center; }
-        #upgrade-pro-app .comp-card.pro h4 { color: var(--accent); }
+        #upgrade-pro-app .comp-card h4 {
+            margin: 0 0 8px;
+            font-size: 14px;
+            font-weight: 800;
+            text-align: center;
+            color: var(--accent);
+        }
         #upgrade-pro-app .comp-card ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 7px; }
-        #upgrade-pro-app .comp-card li { font-size: 11.5px; font-weight: 600; color: var(--muted); display: flex; gap: 6px; line-height: 1.35; }
-        #upgrade-pro-app .comp-card.pro li { color: var(--text); }
-        #upgrade-pro-app .comp-card li i { font-size: 10px; margin-top: 2px; }
-        #upgrade-pro-app .comp-card.free li i { color: var(--muted); }
-        #upgrade-pro-app .comp-card.pro li i { color: var(--accent); }
+        #upgrade-pro-app .comp-card li {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--text);
+            display: flex;
+            gap: 6px;
+            line-height: 1.35;
+        }
+        #upgrade-pro-app .comp-card li i {
+            font-size: 10px;
+            margin-top: 2px;
+            color: var(--accent);
+        }
 
+        /* FAQ Section */
         #upgrade-pro-app .faq-section { margin-bottom: 16px; }
         #upgrade-pro-app .faq-item { border-bottom: 1px solid var(--border); }
         #upgrade-pro-app .faq-item:last-child { border-bottom: none; }
@@ -644,17 +609,12 @@
 
     <main class="app" id="upgrade-pro-app">
         
-        <!-- 1. Top Bar: Background #0F0F0F (Dark Mode) & Centered Text -->
+        <!-- 1. Top Bar -->
         <header class="bar">
-            <!-- Left: Back Button -->
             <button class="back" onclick="executeBackAction()" aria-label="Back">
                 <i class="fas fa-arrow-left"></i>
             </button>
-            
-            <!-- Center: Upgrade Pro Text -->
             <div class="title">Upgrade Pro</div>
-            
-            <!-- Right: PRO Badge -->
             <span class="badge"><i class="fas fa-crown"></i> PRO</span>
         </header>
 
@@ -670,10 +630,9 @@
                 <p class="desc">Unlock exclusive creator privileges, verified badges, and ad-free browsing.</p>
             </div>
 
-            <!-- 3. Redesigned VIP Status Passport Card (NO RED TICK) -->
+            <!-- 3. VIP Status Card -->
             <div class="plan-status-card fade-up delay-1" id="planStatusCard">
                 <div class="status-card-inner">
-                    <!-- Left: Avatar, Name (No Red Tick), Handle -->
                     <div class="pro-user-profile" id="proUserProfile" style="display: none;">
                         <div class="avatar-wrap">
                             <img src="" id="proUserAvatar" alt="Avatar">
@@ -684,83 +643,30 @@
                         </div>
                     </div>
 
-                    <!-- Right: CURRENT STATUS / FREE Badge -->
                     <div class="plan-badge-wrapper">
                         <span class="plan-label-mini">CURRENT STATUS</span>
                         <span class="free-badge-pill" id="planBadge">FREE</span>
                     </div>
                 </div>
 
-                <!-- Bottom: Upgrade prompt / Active indicator -->
                 <div class="status-footer-bar">
                     <i class="fas fa-sparkles" id="statusIcon"></i>
                     <span class="upgrade-prompt" id="planPrompt">Upgrade to unlock Pro or Max features</span>
                 </div>
             </div>
 
-            <!-- Countdown Timer (Visible only for Active Members) -->
+            <!-- Countdown Timer -->
             <div class="countdown-card fade-up delay-2" id="proCountdownCard">
                 <div class="countdown-title"><i class="fas fa-clock"></i> Membership Active For</div>
                 <div class="countdown-timer-display" id="countdownTimerDisplay">00d : 00h : 00m : 00s</div>
             </div>
 
-            <!-- 4. Premium Feature Boxes with Distinct Unique Colors -->
+            <!-- 4. Plan Selector (Pro vs Max Membership) -->
             <div class="fade-up delay-2">
-                <h2 class="section-title">Membership Benefits</h2>
-                
-                <div class="features-box-grid">
-                    <!-- Box 1: Ad-Free Experience (Vibrant Cyan) -->
-                    <div class="feature-card-box">
-                        <div class="box-icon icon-adfree">
-                            <i class="fas fa-shield-halved"></i>
-                        </div>
-                        <div class="box-text">
-                            <h4>Ad-Free Experience</h4>
-                            <p>Enjoy a cleaner, distraction-free Flaynity experience with zero ad interruptions.</p>
-                        </div>
-                    </div>
-
-                    <!-- Box 2: Premium Creator Tools (Electric Purple) -->
-                    <div class="feature-card-box">
-                        <div class="box-icon icon-creator">
-                            <i class="fas fa-wand-magic-sparkles"></i>
-                        </div>
-                        <div class="box-text">
-                            <h4>Premium Creator Tools</h4>
-                            <p>Unlock advanced analytics and suite tools crafted to accelerate content reach.</p>
-                        </div>
-                    </div>
-
-                    <!-- Box 3: Exclusive Pro Badge (Royal Gold) -->
-                    <div class="feature-card-box">
-                        <div class="box-icon icon-badge">
-                            <i class="fas fa-crown"></i>
-                        </div>
-                        <div class="box-text">
-                            <h4>Exclusive Pro Badge</h4>
-                            <p>Stand out across comments, posts, and your profile with VIP verified identity.</p>
-                        </div>
-                    </div>
-
-                    <!-- Box 4: Priority Features (Signature Crimson) -->
-                    <div class="feature-card-box">
-                        <div class="box-icon icon-priority">
-                            <i class="fas fa-bolt-lightning"></i>
-                        </div>
-                        <div class="box-text">
-                            <h4>Priority Features</h4>
-                            <p>Gain early instant access to upcoming experimental and high-speed tools.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 5. Plan Selector (Pro vs Max Membership) -->
-            <div class="fade-up delay-3">
                 <h2 class="plan-selection-title">Select Membership Plan</h2>
                 
                 <div class="plans-container">
-                    <!-- Choice 1: Pro Membership (1 Month - $4.99) -->
+                    <!-- Choice 1: Pro Membership -->
                     <div class="plan-choice-card" id="cardPro" onclick="choosePlan('monthly')">
                         <span class="plan-tag-badge">MONTHLY</span>
                         <div class="plan-choice-header">
@@ -773,7 +679,7 @@
                         <div class="plan-choice-duration">1 Month Access</div>
                     </div>
 
-                    <!-- Choice 2: Max Membership (1 Year - $55.99) [SELECTED BY DEFAULT] -->
+                    <!-- Choice 2: Max Membership -->
                     <div class="plan-choice-card selected" id="cardMax" onclick="choosePlan('yearly')">
                         <span class="plan-tag-badge gold">BEST VALUE</span>
                         <div class="plan-choice-header">
@@ -787,7 +693,7 @@
                     </div>
                 </div>
 
-                <!-- Plan Overview & Checkout Card -->
+                <!-- Plan Overview Checklist -->
                 <div class="plan-overview-card">
                     <ul class="plan-checklist" id="planChecklist">
                         <li><i class="fas fa-circle-check"></i> All 4 Premium Features Included</li>
@@ -795,22 +701,11 @@
                         <li><i class="fas fa-circle-check"></i> Guaranteed Priority Customer Support</li>
                         <li><i class="fas fa-circle-check"></i> Instant Flay Pay Activation</li>
                     </ul>
-
-                    <!-- Action Button -->
-                    <button class="primary-cta" id="continueBtn" onclick="continueToPay()" disabled>
-                        Upgrade to Max Flay Pay • $55.99 <i class="fas fa-arrow-right"></i>
-                    </button>
-
-                    <!-- Payment Trust Badge -->
-                    <div class="payment-info">
-                        <p class="secure-text"><i class="fas fa-shield-halved"></i> Instant secure checkout via Flay Pay</p>
-                        <p class="sub-text">Once active, plan will remain valid for the full period without duplicate charges.</p>
-                    </div>
                 </div>
             </div>
 
-            <!-- 6. Comparison Section -->
-            <div class="comparison-section fade-up delay-4">
+            <!-- 5. Comparison Section (Free Box is now Pink-Red as well) -->
+            <div class="comparison-section fade-up delay-3">
                 <h2 class="section-title">Free vs Membership</h2>
                 <div class="comparison-grid">
                     <div class="comp-card free">
@@ -833,7 +728,7 @@
                 </div>
             </div>
 
-            <!-- 7. FAQ Section -->
+            <!-- 6. FAQ Section -->
             <div class="faq-section fade-up delay-4">
                 <h2 class="section-title">Frequently Asked Questions</h2>
                 <div class="faq-item">
@@ -851,6 +746,19 @@
             </div>
 
         </section>
+
+        <!-- 7. FIXED BOTTOM DOCK (DOES NOT SCROLL) -->
+        <div class="bottom-dock-wrapper">
+            <div class="bottom-dock-inner">
+                <button class="primary-cta" id="continueBtn" onclick="continueToPay()" disabled>
+                    Continue to Flay Pay <i class="fas fa-arrow-right"></i>
+                </button>
+                <div class="bottom-secure-note">
+                    <i class="fas fa-lock"></i> Secure payment • Flay Pay
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- FAQ Accordion JS -->
@@ -882,7 +790,6 @@
             let isProActive = false;
             let selectedPlan = 'yearly'; // 'monthly' | 'yearly'
 
-            // Fallback back handler
             if (typeof window.executeBackAction !== 'function') {
                 window.executeBackAction = function() {
                     window.history.back();
@@ -902,7 +809,7 @@
                 if (plan === 'yearly') {
                     cardMax.classList.add('selected');
                     cardPro.classList.remove('selected');
-                    btn.innerHTML = 'Upgrade to Max Flay Pay • $55.99 <i class="fas fa-arrow-right"></i>';
+                    btn.innerHTML = 'Continue to Flay Pay <i class="fas fa-arrow-right"></i>';
                     checklist.innerHTML = `
                         <li><i class="fas fa-circle-check"></i> All 4 Premium Features Included</li>
                         <li><i class="fas fa-circle-check"></i> 1 Year Complete Uninterrupted VIP Access</li>
@@ -912,7 +819,7 @@
                 } else {
                     cardPro.classList.add('selected');
                     cardMax.classList.remove('selected');
-                    btn.innerHTML = 'Upgrade to Pro Flay Pay • $4.99 <i class="fas fa-arrow-right"></i>';
+                    btn.innerHTML = 'Continue to Flay Pay <i class="fas fa-arrow-right"></i>';
                     checklist.innerHTML = `
                         <li><i class="fas fa-circle-check"></i> All 4 Premium Features Included</li>
                         <li><i class="fas fa-circle-check"></i> 1 Month Uninterrupted VIP Access</li>
@@ -943,7 +850,6 @@
                     const data = snap.val() || {};
                     const avatar = data.avatarUrl || "https://ui-avatars.com/api/?name=" + encodeURIComponent(data.channelName || 'User');
                     
-                    // Show Profile Data without ANY Red Tick
                     document.getElementById('proUserAvatar').src = avatar;
                     document.getElementById('proUserName').textContent = data.channelName || 'Flaynity User';
                     document.getElementById('proUserHandle').textContent = '@' + (data.handle || uid.substring(0,8));
@@ -986,7 +892,6 @@
                 icon.className = 'fas fa-circle-check';
                 icon.style.color = '#00a844';
                 
-                // Button Lock for Active Member
                 const btn = document.getElementById('continueBtn');
                 btn.disabled = true;
                 btn.classList.add('is-active-btn');

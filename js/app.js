@@ -5285,13 +5285,14 @@ function renderAccountSwitcherList() {
 
 let __flaynityRouteAfterAccountSwitch = false;
 
-async function switchSession(email) {
+async async function switchSession(email) {
     playUI('click');
     __flaynityRouteAfterAccountSwitch = true;
     showNotification("Switching account...", "success");
     if (window.AndroidBridge && typeof window.AndroidBridge.triggerGoogleSignIn === 'function') {
-        // Keep the route intact while native Google Sign-In is in progress.
-        // The auth-state handler will route to the new channel when sign-in completes.
+        // Close the menu before native account selection. The successful native
+        // sign-in handler will explicitly open the selected account's channel.
+        AppNavigation.pop();
         window.AndroidBridge.triggerGoogleSignIn();
     } else {
         try {

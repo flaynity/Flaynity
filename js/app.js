@@ -1381,7 +1381,7 @@ auth.onAuthStateChanged(async (user) => {
         // Route only after the new account's app UI and listeners are initialized.
         // This prevents the channel page from being overwritten by the previous
         // page's remaining initialization after an account switch.
-        if (__flaynityRouteAfterAccountSwitch) {
+        if (__flaynityRouteAfterAccountSwitch && !__flaynityNativeSwitchInProgress) {
             __flaynityRouteAfterAccountSwitch = false;
             currentChannelData = null;
             try { localStorage.removeItem('flaynity_user_session_cache'); } catch (e) {}
@@ -1491,6 +1491,7 @@ window.handleNativeGoogleSignIn = function(idToken) {
             // applied at the right time, so explicitly complete that route here.
             if (__flaynityRouteAfterAccountSwitch) {
                 __flaynityRouteAfterAccountSwitch = false;
+                __flaynityNativeSwitchInProgress = false;
                 try {
                     currentChannelData = null;
                     localStorage.removeItem('flaynity_user_session_cache');
@@ -5284,14 +5285,16 @@ function renderAccountSwitcherList() {
 }
 
 let __flaynityRouteAfterAccountSwitch = false;
+let __flaynityNativeSwitchInProgress = false;
 
 async function switchSession(email) {
     playUI('click');
     __flaynityRouteAfterAccountSwitch = true;
     showNotification("Switching account...", "success");
     if (window.AndroidBridge && typeof window.AndroidBridge.triggerGoogleSignIn === 'function') {
-        // Close the menu before native account selection. The successful native
-        // sign-in handler will explicitly open the selected account's channel.
+        // Let the native sign-in callback own routing so the auth-state listener
+        // cannot consume the switch flag first and leave the app on the menu page.
+        __flaynityNativeSwitchInProgress = true;
         AppNavigation.pop();
         window.AndroidBridge.triggerGoogleSignIn();
     } else {

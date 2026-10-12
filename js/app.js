@@ -1326,6 +1326,33 @@ auth.onAuthStateChanged(async (user) => {
         if (appScr) appScr.style.display = 'block';
 
         saveAccountToList(user);
+
+        // After switching accounts, show that account's own channel if it exists;
+        // otherwise return directly to the Create Channel card on the You tab.
+        if (__flaynityRouteAfterAccountSwitch) {
+            __flaynityRouteAfterAccountSwitch = false;
+            currentChannelData = null;
+            try { localStorage.removeItem('flaynity_user_session_cache'); } catch (e) {}
+            try {
+                const channelSnapshot = await db.ref(`channels/${user.uid}`).once('value');
+                currentChannelData = channelSnapshot.val();
+                if (currentChannelData) {
+                    try { localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData)); } catch (e) {}
+                    AppNavigation.stack = [{ type: 'tab', id: 'you' }];
+                    openViewChannelPage();
+                } else {
+                    AppNavigation.stack = [{ type: 'tab', id: 'you' }];
+                    AppNavigation.syncUI();
+                    initYouTabUI();
+                }
+                AppNavigation.updateBridge();
+            } catch (error) {
+                console.error('Unable to load channel after account switch:', error);
+                AppNavigation.stack = [{ type: 'tab', id: 'you' }];
+                AppNavigation.syncUI();
+                initYouTabUI();
+            }
+        }
         attachAdminControlListener();
 
         // Keep the ban state live. If Admin bans this user while the app is open,
@@ -3680,6 +3707,12 @@ const AppNavigation = {
 
         adjustHeaderForActiveTab(activeTab);
 
+        // The Create Channel page should not show the global theme-switch control.
+        if (activePage === 'create-channel-page') {
+            const themeSwitch = document.getElementById('theme-toggle-btn');
+            if (themeSwitch) themeSwitch.style.display = 'none';
+        }
+
         // The bottom navigation may follow scroll only on Home. Notify the
         // scroll controller immediately when the active tab changes.
         window.dispatchEvent(new Event('flaynity-tab-changed'));
@@ -5184,8 +5217,11 @@ function renderAccountSwitcherList() {
     container.innerHTML = html;
 }
 
+let __flaynityRouteAfterAccountSwitch = false;
+
 async function switchSession(email) {
     playUI('click');
+    __flaynityRouteAfterAccountSwitch = true;
     showNotification("Switching account...", "success");
     if (window.AndroidBridge && typeof window.AndroidBridge.triggerGoogleSignIn === 'function') {
         window.AndroidBridge.triggerGoogleSignIn(); 

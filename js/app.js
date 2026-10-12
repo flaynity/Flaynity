@@ -3585,6 +3585,23 @@ const AppNavigation = {
     pop: function() {
         if (this.stack.length > 1) {
             const popped = this.stack.pop();
+
+            // When leaving the View Channel page opened from the You tab,
+            // skip the intermediate You landing screen and return to the
+            // actual page/tab the user came from.
+            const current = this.current();
+            if (
+                popped &&
+                popped.type === 'page' &&
+                popped.id === 'view-channel-page' &&
+                current &&
+                current.type === 'tab' &&
+                current.id === 'you' &&
+                this.stack.length > 1
+            ) {
+                this.stack.pop();
+            }
+
             this.syncUI();
             this.updateBridge();
             return popped;

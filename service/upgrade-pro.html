@@ -126,9 +126,9 @@
             z-index: 2;
         }
 
-        /* Content Area - Added bottom padding for fixed bottom dock */
+        /* Content Area */
         #upgrade-pro-app .content { 
-            padding: 14px 16px 120px; 
+            padding: 14px 16px 115px; 
         }
 
         /* Animations */
@@ -464,34 +464,43 @@
         #upgrade-pro-app .plan-checklist i { color: var(--accent); font-size: 14px; }
 
         /* ========================================================
-           6. FIXED BOTTOM DOCK (MATCHING THE SCREENSHOT EXACTLY)
+           6. CONTINUOUS FLOATING CTA (SMOOTH BOTTOM SLIDE-UP ANIMATION)
+           [NO BOTTOM-DOCK-WRAPPER BOX / BORDERS]
         ======================================================== */
-        #upgrade-pro-app .bottom-dock-wrapper {
+        @keyframes ctaSlideUp {
+            0% {
+                transform: translateX(-50%) translateY(140%);
+                opacity: 0;
+            }
+            100% {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        #upgrade-pro-app .floating-cta-container {
             position: fixed;
             bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--bg);
-            border-top: 1px solid var(--border);
-            padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
-            z-index: 999;
-            box-shadow: 0 -8px 25px rgba(0,0,0,0.06);
-        }
-        [data-theme=dark] #upgrade-pro-app .bottom-dock-wrapper {
-            background: #0F0F0F !important;
-            border-color: #222222;
-            box-shadow: 0 -8px 30px rgba(0,0,0,0.6);
-        }
-        #upgrade-pro-app .bottom-dock-inner {
+            left: 50%;
+            transform: translateX(-50%) translateY(140%);
+            width: 100%;
             max-width: 680px;
-            margin: 0 auto;
+            padding: 10px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+            z-index: 999;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            background: linear-gradient(to top, var(--bg) 75%, transparent);
+            pointer-events: none; /* যাতে পেজের কনটেন্ট ক্লিক লক না হয় */
+            animation: ctaSlideUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
         }
 
-        /* Primary Pill CTA Button */
+        #upgrade-pro-app .floating-cta-container > * {
+            pointer-events: auto; /* বাটন ও সিকিউর টেক্সট ক্লিকেবল */
+        }
+
+        /* Primary Pill CTA Button (Directly from Image) */
         #upgrade-pro-app .primary-cta {
             width: 100%;
             border: 0;
@@ -500,10 +509,10 @@
             font-size: 16.5px;
             font-weight: 800;
             padding: 16px 20px;
-            border-radius: 999px; /* Pill shape */
+            border-radius: 999px;
             cursor: pointer;
             transition: transform 0.2s ease, opacity 0.2s ease;
-            box-shadow: 0 8px 24px var(--soft);
+            box-shadow: 0 8px 25px var(--soft);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -552,7 +561,6 @@
         #upgrade-pro-app .comparison-section { margin-bottom: 24px; }
         #upgrade-pro-app .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         
-        /* Both Free & Pro Card Box Styled in Pink Red */
         #upgrade-pro-app .comp-card {
             border: 1px solid var(--accent);
             background: var(--soft);
@@ -704,7 +712,7 @@
                 </div>
             </div>
 
-            <!-- 5. Comparison Section (Free Box is now Pink-Red as well) -->
+            <!-- 5. Comparison Section -->
             <div class="comparison-section fade-up delay-3">
                 <h2 class="section-title">Free vs Membership</h2>
                 <div class="comparison-grid">
@@ -747,15 +755,13 @@
 
         </section>
 
-        <!-- 7. FIXED BOTTOM DOCK (DOES NOT SCROLL) -->
-        <div class="bottom-dock-wrapper">
-            <div class="bottom-dock-inner">
-                <button class="primary-cta" id="continueBtn" onclick="continueToPay()" disabled>
-                    Continue to Flay Pay <i class="fas fa-arrow-right"></i>
-                </button>
-                <div class="bottom-secure-note">
-                    <i class="fas fa-lock"></i> Secure payment • Flay Pay
-                </div>
+        <!-- 7. FLOATING CTA (SMOOTH SLIDE-UP ANIMATION - NO BOTTOM-DOCK-WRAPPER BOX) -->
+        <div class="floating-cta-container">
+            <button class="primary-cta" id="continueBtn" onclick="continueToPay()" disabled>
+                Continue to Flay Pay <i class="fas fa-arrow-right"></i>
+            </button>
+            <div class="bottom-secure-note">
+                <i class="fas fa-lock"></i> Secure payment • Flay Pay
             </div>
         </div>
 
@@ -788,7 +794,7 @@
             let channelRef = null;
             let countdownInterval = null;
             let isProActive = false;
-            let selectedPlan = 'yearly'; // 'monthly' | 'yearly'
+            let selectedPlan = 'yearly';
 
             if (typeof window.executeBackAction !== 'function') {
                 window.executeBackAction = function() {

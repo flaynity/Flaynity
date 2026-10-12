@@ -5285,7 +5285,7 @@ function renderAccountSwitcherList() {
 
 let __flaynityRouteAfterAccountSwitch = false;
 
-async async function switchSession(email) {
+async function switchSession(email) {
     playUI('click');
     __flaynityRouteAfterAccountSwitch = true;
     showNotification("Switching account...", "success");

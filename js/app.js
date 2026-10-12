@@ -1388,12 +1388,17 @@ auth.onAuthStateChanged(async (user) => {
             try {
                 const channelSnapshot = await db.ref(`channels/${user.uid}`).once('value');
                 currentChannelData = channelSnapshot.val();
-                AppNavigation.stack = [{ type: 'tab', id: 'you' }];
                 if (currentChannelData) {
                     try { localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData)); } catch (e) {}
+                    // Explicitly target the channel page after switching accounts.
+                    AppNavigation.stack = [
+                        { type: 'tab', id: 'you' },
+                        { type: 'page', id: 'view-channel-page' }
+                    ];
                     AppNavigation.syncUI();
                     openViewChannelPage();
                 } else {
+                    AppNavigation.stack = [{ type: 'tab', id: 'you' }];
                     AppNavigation.syncUI();
                     initYouTabUI();
                 }
@@ -5255,8 +5260,9 @@ async function switchSession(email) {
     __flaynityRouteAfterAccountSwitch = true;
     showNotification("Switching account...", "success");
     if (window.AndroidBridge && typeof window.AndroidBridge.triggerGoogleSignIn === 'function') {
-        window.AndroidBridge.triggerGoogleSignIn(); 
-        AppNavigation.pop();
+        // Keep the route intact while native Google Sign-In is in progress.
+        // The auth-state handler will route to the new channel when sign-in completes.
+        window.AndroidBridge.triggerGoogleSignIn();
     } else {
         try {
             await auth.signOut();

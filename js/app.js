@@ -4257,36 +4257,6 @@ function escapeHTML(str) {
 function switchTab(tabId) {
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
-
-    // If the signed-in user already owns a channel, the You bottom-nav button
-    // opens that channel directly instead of showing the View Channel card.
-    if (tabId === 'you') {
-        const user = (typeof auth !== 'undefined' && auth) ? auth.currentUser : null;
-        if (user && currentChannelData) {
-            AppNavigation.pushTab('you');
-            openViewChannelPage();
-            return;
-        }
-        if (user && typeof db !== 'undefined' && db) {
-            db.ref(`channels/${user.uid}`).once('value').then((snapshot) => {
-                const channel = snapshot.val();
-                if (channel) {
-                    currentChannelData = channel;
-                    try { localStorage.setItem('flaynity_user_session_cache', JSON.stringify(channel)); } catch (e) {}
-                    AppNavigation.pushTab('you');
-                    openViewChannelPage();
-                } else {
-                    currentChannelData = null;
-                    AppNavigation.pushTab('you');
-                }
-            }).catch((error) => {
-                console.error('Failed to load channel from You navigation:', error);
-                AppNavigation.pushTab('you');
-            });
-            return;
-        }
-    }
-
     AppNavigation.pushTab(tabId);
 }
 
@@ -4440,12 +4410,13 @@ function renderYouTabWithData(data, user, wrap) {
             }
         }
 
-        // The channel is opened directly from the You bottom navigation,
-        // so the old View Channel card is intentionally removed from this page.
-        wrap.innerHTML = '';
-        wrap.style.display = 'none';
+        wrap.innerHTML = `
+            <button class="btn-view-channel" onclick="openViewChannelPage()">
+                <i class="fas fa-tv"></i> View Channel 
+                <i class="fas fa-chevron-right" style="margin-left: auto;"></i>
+            </button>
+        `;
     } else {
-        wrap.style.display = '';
         const displayName = user.displayName || user.email.split('@')[0];
         if (youFullNameTxt) youFullNameTxt.innerText = displayName;
         if (youEmailTxt) {

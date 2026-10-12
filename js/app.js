@@ -1288,6 +1288,25 @@ auth.onAuthStateChanged(async (user) => {
         // whenever the authenticated UID changes, before initializing the new user.
         if (user && __flaynityLastAuthUid && __flaynityLastAuthUid !== user.uid) {
             cleanupUserSessionData();
+            // Reset channel DOM too: View Channel is a persistent page element and
+            // can otherwise keep the previous account's banner/avatar/name/handle.
+            const resetChannelImage = (id, fallback) => {
+                const el = document.getElementById(id);
+                if (el) el.src = fallback;
+            };
+            resetChannelImage('view-channel-banner', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop');
+            resetChannelImage('view-channel-avatar', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop');
+            const resetChannelText = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            };
+            resetChannelText('view-appbar-title', 'Your Channel');
+            resetChannelText('view-channel-name-txt', 'Your Name');
+            resetChannelText('view-channel-handle-txt', '@handle');
+            resetChannelText('view-channel-desc', 'No description provided yet.');
+            ['view-sub-count-val', 'view-vid-count-val'].forEach(id => resetChannelText(id, '0'));
+            const viewPage = document.getElementById('view-channel-page');
+            if (viewPage) viewPage.style.display = 'none';
         }
         __flaynityLastAuthUid = user ? user.uid : null;
 

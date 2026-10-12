@@ -537,6 +537,15 @@
     line-height: 1.1 !important;
     text-shadow: 0 2px 6px rgba(0,0,0,0.8) !important;
 }
+/* Dark theme: keep channel identity and statistics white on the dark overlay */
+[data-theme="dark"] #view-channel-page #view-channel-name-txt,
+[data-theme="dark"] #view-channel-page .channel-stat-num,
+[data-theme="dark"] #view-channel-page .channel-stat-label,
+[data-theme="dark"] #view-channel-page #view-channel-handle-txt {
+    color: #ffffff !important;
+    text-shadow: none !important;
+}
+
 /* Light theme: keep channel identity and statistics readable on the white overlay */
 [data-theme="light"] #view-channel-page #view-channel-name-txt,
 [data-theme="light"] #view-channel-page .channel-stat-num,

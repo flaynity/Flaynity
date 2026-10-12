@@ -1484,9 +1484,39 @@ window.handleNativeGoogleSignIn = function(idToken) {
     showNotification("Connecting secure session...", "success");
     const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
     auth.signInWithCredential(credential)
-        .then((result) => { 
+        .then(async (result) => {
             saveAccountToList(result.user);
-            showNotification("Google Sign-In Successful!", "success"); 
+            showNotification("Google Sign-In Successful!", "success");
+            // Native auth can finish without the account-switch route being
+            // applied at the right time, so explicitly complete that route here.
+            if (__flaynityRouteAfterAccountSwitch) {
+                __flaynityRouteAfterAccountSwitch = false;
+                try {
+                    currentChannelData = null;
+                    localStorage.removeItem('flaynity_user_session_cache');
+                    const snapshot = await db.ref('channels/' + result.user.uid).once('value');
+                    currentChannelData = snapshot.val();
+                    if (currentChannelData) {
+                        localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                        AppNavigation.stack = [
+                            { type: 'tab', id: 'you' },
+                            { type: 'page', id: 'view-channel-page' }
+                        ];
+                        AppNavigation.syncUI();
+                        openViewChannelPage();
+                    } else {
+                        AppNavigation.stack = [{ type: 'tab', id: 'you' }];
+                        AppNavigation.syncUI();
+                        initYouTabUI();
+                    }
+                    AppNavigation.updateBridge();
+                } catch (error) {
+                    console.error('Unable to route after native account switch:', error);
+                    AppNavigation.stack = [{ type: 'tab', id: 'you' }];
+                    AppNavigation.syncUI();
+                    initYouTabUI();
+                }
+            }
         })
         .catch(err => { showNotification("Native Auth Error: " + err.message, "error"); });
 };

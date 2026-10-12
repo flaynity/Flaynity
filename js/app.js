@@ -3642,6 +3642,16 @@ const AppNavigation = {
             if (directPage) directPage.classList.add('you-direct-page');
         }
 
+        // Keep the shared bottom navigation visible and tappable above View Channel only.
+        const bottomNav = document.querySelector('#app-screen .bottom-nav, .bottom-nav');
+        if (bottomNav) bottomNav.style.zIndex = activePage === 'view-channel-page' ? '1600' : '1000';
+        if (!document.getElementById('flaynity-view-channel-bottom-nav-spacing')) {
+            const navSpacingStyle = document.createElement('style');
+            navSpacingStyle.id = 'flaynity-view-channel-bottom-nav-spacing';
+            navSpacingStyle.textContent = '#view-channel-page .page-content { padding-bottom: 64px !important; }';
+            document.head.appendChild(navSpacingStyle);
+        }
+
         document.querySelectorAll('.tab-content, .nav-item').forEach(el => el.classList.remove('active'));
         const tabEl = document.getElementById(`${activeTab}-tab`);
         const navEl = document.getElementById(`nav-${activeTab}`);

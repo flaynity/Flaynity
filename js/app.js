@@ -4933,13 +4933,27 @@ function switchChannelTab(type) {
     playUI('click');
     activeChannelTab = type;
     document.querySelectorAll('.channel-tab-item, .channel-tab-content').forEach(el => el.classList.remove('active'));
-    
+
     const tabEl = document.getElementById(`tab-channel-${type}`);
     const contentEl = document.getElementById(`channel-content-${type}`);
     if (tabEl) tabEl.classList.add('active');
     if (contentEl) contentEl.classList.add('active');
 
-    let targetId = auth.currentUser.uid;
+    if (!navigator.onLine) {
+        const gridId = type === 'videos' ? 'channel-videos-grid' : (type === 'feels' ? 'channel-feels-grid' : 'channel-posts-feed');
+        const grid = document.getElementById(gridId);
+        if (grid) {
+            const count = type === 'videos' ? 4 : (type === 'feels' ? 6 : 3);
+            grid.innerHTML = Array.from({length: count}, () =>
+                '<div class="channel-offline-skeleton"><div class="skel-box" style="width:100%;height:150px;border-radius:12px;"></div><div class="skel-box" style="width:72%;height:12px;margin-top:10px;border-radius:6px;"></div><div class="skel-box" style="width:46%;height:10px;margin-top:7px;border-radius:6px;"></div></div>'
+            ).join('');
+        }
+        return;
+    }
+
+    const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
+    if (!user) return;
+    const targetId = user.uid;
     if (type === 'videos') renderChannelVideos(targetId);
     else if (type === 'feels') renderChannelFeels(targetId);
     else if (type === 'posts') renderChannelPosts(targetId);

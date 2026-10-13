@@ -4290,37 +4290,37 @@ async function switchTab(tabId) {
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
 
-    // Opening You from the bottom navigation should enter an existing channel directly.
-    // Offline data is cached per Firebase UID to prevent cross-account channel leakage.
     if (tabId === 'you') {
         const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
-        if (user) {
-            let channel = null;
-            if (navigator.onLine) {
+        let channel = null;
+        if (user && navigator.onLine) {
+            try {
+                const snapshot = await db.ref(`channels/${user.uid}`).once('value');
+                channel = snapshot.val();
                 try {
-                    const snapshot = await db.ref(`channels/${user.uid}`).once('value');
-                    channel = snapshot.val();
-                    try {
-                        if (channel) localStorage.setItem('flaynity_channel_cache:' + user.uid, JSON.stringify(channel));
-                        else localStorage.removeItem('flaynity_channel_cache:' + user.uid);
-                    } catch (e) {}
-                } catch (e) {
-                    try {
-                        const cached = localStorage.getItem('flaynity_channel_cache:' + user.uid);
-                        if (cached) channel = JSON.parse(cached);
-                    } catch (ignored) {}
-                }
-            } else {
-                try {
-                    const cached = localStorage.getItem('flaynity_channel_cache:' + user.uid);
-                    if (cached) channel = JSON.parse(cached);
+                    if (channel) {
+                        localStorage.setItem('flaynity_channel_cache:' + user.uid, JSON.stringify(channel));
+                        localStorage.setItem('flaynity_user_session_cache', JSON.stringify(channel));
+                    } else localStorage.removeItem('flaynity_channel_cache:' + user.uid);
                 } catch (e) {}
-            }
+            } catch (e) {}
+        }
+        if (!channel && user) {
+            try {
+                const cached = localStorage.getItem('flaynity_channel_cache:' + user.uid);
+                if (cached) channel = JSON.parse(cached);
+            } catch (e) {}
+        }
+        if (!channel && !navigator.onLine) {
+            try {
+                const cachedSession = localStorage.getItem('flaynity_user_session_cache');
+                if (cachedSession) channel = JSON.parse(cachedSession);
+            } catch (e) {}
+        }
+        if (channel) {
             currentChannelData = channel;
-            if (channel) {
-                openViewChannelPage();
-                return;
-            }
+            openViewChannelPage();
+            return;
         }
     }
     AppNavigation.pushTab(tabId);
@@ -4431,20 +4431,20 @@ function initYouTabUI() {
     if (!wrap) return;
 
     const user = auth.currentUser;
-    if (!user) return;
-
     if (!navigator.onLine) {
         try {
-            const cached = localStorage.getItem('flaynity_channel_cache:' + user.uid);
-            currentChannelData = cached ? JSON.parse(cached) : null;
+            const cached = user ? localStorage.getItem('flaynity_channel_cache:' + user.uid) : null;
+            const session = localStorage.getItem('flaynity_user_session_cache');
+            currentChannelData = cached ? JSON.parse(cached) : (session ? JSON.parse(session) : null);
         } catch (e) { currentChannelData = null; }
         if (currentChannelData) {
-            renderYouTabWithData(currentChannelData, user, wrap);
+            renderYouTabWithData(currentChannelData, user || { displayName: currentChannelData.channelName || 'Flaynity User', photoURL: currentChannelData.avatarUrl || '', email: '' }, wrap);
         } else {
             wrap.innerHTML = `<div class="skel-box" style="width: 100%; height: 48px; border-radius: 20px;"></div>`;
         }
         return;
     }
+    if (!user) return;
 
     db.ref(`channels/${user.uid}`).once('value', (snapshot) => {
         currentChannelData = snapshot.val();
@@ -4897,6 +4897,13 @@ function openViewChannelPage() {
     ensureLiveUploadStyles();
     playUI('click');
     let data = currentChannelData;
+    if (!data && !navigator.onLine) {
+        try {
+            const cached = localStorage.getItem('flaynity_user_session_cache');
+            if (cached) data = JSON.parse(cached);
+        } catch (e) {}
+        if (data) currentChannelData = data;
+    }
     if (!data) return;
 
     const viewTitle = document.getElementById('view-appbar-title');
@@ -4920,6 +4927,29 @@ function openViewChannelPage() {
     startLiveChannelUploadRefresh();
     setTimeout(() => renderChannelUploadQueue('videos'), 120);
     setTimeout(() => renderChannelUploadQueue('feels'), 120);
+}
+
+function renderOfflineChannelPageSkeletons(activeType) {
+    if (navigator.onLine) return;
+    const types = activeType ? [activeType] : ['videos', 'feels', 'posts'];
+    types.forEach(type => {
+        const gridId = type === 'videos' ? 'channel-videos-grid' : (type === 'feels' ? 'channel-feels-grid' : 'channel-posts-feed');
+        const grid = document.getElementById(gridId);
+        if (!grid) return;
+        const count = type === 'videos' ? 4 : (type === 'feels' ? 6 : 3);
+        grid.innerHTML = Array.from({length: count}, () =>
+            '<div class="channel-offline-skeleton"><div class="skel-box" style="width:100%;height:150px;border-radius:12px;"></div><div class="skel-box" style="width:72%;height:12px;margin-top:10px;border-radius:6px;"></div><div class="skel-box" style="width:46%;height:10px;margin-top:7px;border-radius:6px;"></div></div>'
+        ).join('');
+    });
+    const menuPanel = document.querySelector('#you-quick-menu-overlay .you-quick-menu-panel');
+    if (menuPanel && !menuPanel.dataset.offlineSkeletonApplied) {
+        menuPanel.dataset.offlineSkeletonApplied = '1';
+        menuPanel.querySelectorAll('.you-quick-menu-list').forEach(list => {
+            list.innerHTML = Array.from({length: 3}, () =>
+                '<div class="channel-offline-skeleton" style="height:48px;border-radius:14px;margin:8px 0;"><div class="skel-box" style="width:100%;height:100%;border-radius:14px;"></div></div>'
+            ).join('');
+        });
+    }
 }
 
 let activeChannelVideosListener = null;
@@ -4951,6 +4981,7 @@ function switchChannelTab(type) {
     if (contentEl) contentEl.classList.add('active');
 
     if (!navigator.onLine) {
+        renderOfflineChannelPageSkeletons(type);
         const gridId = type === 'videos' ? 'channel-videos-grid' : (type === 'feels' ? 'channel-feels-grid' : 'channel-posts-feed');
         const grid = document.getElementById(gridId);
         if (grid) {

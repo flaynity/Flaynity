@@ -1326,33 +1326,6 @@ auth.onAuthStateChanged(async (user) => {
         if (appScr) appScr.style.display = 'block';
 
         saveAccountToList(user);
-
-        // After switching accounts, show that account's own channel if it exists;
-        // otherwise return directly to the Create Channel card on the You tab.
-        if (__flaynityRouteAfterAccountSwitch) {
-            __flaynityRouteAfterAccountSwitch = false;
-            currentChannelData = null;
-            try { localStorage.removeItem('flaynity_user_session_cache'); } catch (e) {}
-            try {
-                const channelSnapshot = await db.ref(`channels/${user.uid}`).once('value');
-                currentChannelData = channelSnapshot.val();
-                if (currentChannelData) {
-                    try { localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData)); } catch (e) {}
-                    AppNavigation.stack = [{ type: 'tab', id: 'you' }];
-                    openViewChannelPage();
-                } else {
-                    AppNavigation.stack = [{ type: 'tab', id: 'you' }];
-                    AppNavigation.syncUI();
-                    initYouTabUI();
-                }
-                AppNavigation.updateBridge();
-            } catch (error) {
-                console.error('Unable to load channel after account switch:', error);
-                AppNavigation.stack = [{ type: 'tab', id: 'you' }];
-                AppNavigation.syncUI();
-                initYouTabUI();
-            }
-        }
         attachAdminControlListener();
 
         // Keep the ban state live. If Admin bans this user while the app is open,
@@ -3612,23 +3585,6 @@ const AppNavigation = {
     pop: function() {
         if (this.stack.length > 1) {
             const popped = this.stack.pop();
-
-            // When leaving the View Channel page opened from the You tab,
-            // skip the intermediate You landing screen and return to the
-            // actual page/tab the user came from.
-            const current = this.current();
-            if (
-                popped &&
-                popped.type === 'page' &&
-                popped.id === 'view-channel-page' &&
-                current &&
-                current.type === 'tab' &&
-                current.id === 'you' &&
-                this.stack.length > 1
-            ) {
-                this.stack.pop();
-            }
-
             this.syncUI();
             this.updateBridge();
             return popped;
@@ -3686,16 +3642,6 @@ const AppNavigation = {
             if (directPage) directPage.classList.add('you-direct-page');
         }
 
-        // Keep the shared bottom navigation visible and tappable above View Channel only.
-        const bottomNav = document.querySelector('#app-screen .bottom-nav, .bottom-nav');
-        if (bottomNav) bottomNav.style.zIndex = activePage === 'view-channel-page' ? '1600' : '1000';
-        if (!document.getElementById('flaynity-view-channel-bottom-nav-spacing')) {
-            const navSpacingStyle = document.createElement('style');
-            navSpacingStyle.id = 'flaynity-view-channel-bottom-nav-spacing';
-            navSpacingStyle.textContent = '#view-channel-page .page-content { padding-bottom: 64px !important; }';
-            document.head.appendChild(navSpacingStyle);
-        }
-
         document.querySelectorAll('.tab-content, .nav-item').forEach(el => el.classList.remove('active'));
         const tabEl = document.getElementById(`${activeTab}-tab`);
         const navEl = document.getElementById(`nav-${activeTab}`);
@@ -3706,12 +3652,6 @@ const AppNavigation = {
         if (navEl) navEl.classList.add('active');
 
         adjustHeaderForActiveTab(activeTab);
-
-        // The Create Channel page should not show the global theme-switch control.
-        if (activePage === 'create-channel-page') {
-            const themeSwitch = document.getElementById('theme-toggle-btn');
-            if (themeSwitch) themeSwitch.style.display = 'none';
-        }
 
         // The bottom navigation may follow scroll only on Home. Notify the
         // scroll controller immediately when the active tab changes.
@@ -4318,26 +4258,6 @@ function switchTab(tabId) {
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
     AppNavigation.pushTab(tabId);
-
-    // You bottom navigation opens the signed-in user's channel directly.
-    // If the channel record is not already cached, load that user's existing
-    // Firebase record before deciding whether to open the channel page.
-    if (tabId === 'you') {
-        const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
-        if (currentChannelData) {
-            openViewChannelPage();
-        } else if (user && typeof db !== 'undefined') {
-            db.ref(`channels/${user.uid}`).once('value').then((snapshot) => {
-                const channelData = snapshot.val();
-                if (!channelData) return;
-                currentChannelData = channelData;
-                try { localStorage.setItem('flaynity_user_session_cache', JSON.stringify(channelData)); } catch (e) {}
-                openViewChannelPage();
-            }).catch((error) => {
-                console.error('Failed to load channel for You navigation:', error);
-            });
-        }
-    }
 }
 
 function adjustHeaderForActiveTab(tabId) {
@@ -4490,9 +4410,12 @@ function renderYouTabWithData(data, user, wrap) {
             }
         }
 
-        // A channel owner opens the channel directly from bottom navigation.
-        // Keep the You profile card free of a separate "View Channel" button.
-        wrap.innerHTML = '';
+        wrap.innerHTML = `
+            <button class="btn-view-channel" onclick="openViewChannelPage()">
+                <i class="fas fa-tv"></i> View Channel 
+                <i class="fas fa-chevron-right" style="margin-left: auto;"></i>
+            </button>
+        `;
     } else {
         const displayName = user.displayName || user.email.split('@')[0];
         if (youFullNameTxt) youFullNameTxt.innerText = displayName;
@@ -5217,11 +5140,8 @@ function renderAccountSwitcherList() {
     container.innerHTML = html;
 }
 
-let __flaynityRouteAfterAccountSwitch = false;
-
 async function switchSession(email) {
     playUI('click');
-    __flaynityRouteAfterAccountSwitch = true;
     showNotification("Switching account...", "success");
     if (window.AndroidBridge && typeof window.AndroidBridge.triggerGoogleSignIn === 'function') {
         window.AndroidBridge.triggerGoogleSignIn(); 

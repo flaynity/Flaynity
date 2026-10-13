@@ -4927,6 +4927,29 @@ function openViewChannelPage() {
     if (viewDesc) viewDesc.innerText = data.description || "No description provided yet.";
     if (viewSub) viewSub.innerText = formatCount(data.subscribersCount) + " Subscriber" + (data.subscribersCount === 1 ? "" : "s");
 
+    // Keep the user's cached banner and avatar visible offline; only action buttons
+    // use skeleton placeholders until the connection returns.
+    const analyticsButton = document.querySelector('#view-channel-page .btn-analytics');
+    const editChannelButton = document.querySelector('#view-channel-page .btn-edit-channel');
+    if (!navigator.onLine) {
+        [analyticsButton, editChannelButton].forEach(button => {
+            if (!button) return;
+            button.dataset.offlineLabel = button.dataset.offlineLabel || button.textContent.trim();
+            button.disabled = true;
+            button.setAttribute('aria-label', button.dataset.offlineLabel);
+            button.innerHTML = '<span class="skel-box" style="display:block;width:76px;height:14px;border-radius:7px;"></span>';
+        });
+    } else {
+        if (analyticsButton) {
+            analyticsButton.disabled = false;
+            analyticsButton.textContent = analyticsButton.dataset.offlineLabel || 'Analytics';
+        }
+        if (editChannelButton) {
+            editChannelButton.disabled = false;
+            editChannelButton.textContent = editChannelButton.dataset.offlineLabel || 'Edit Channel';
+        }
+    }
+
     switchChannelTab('videos');
     AppNavigation.pushPage('view-channel-page');
     startLiveChannelUploadRefresh();

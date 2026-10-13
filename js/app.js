@@ -4473,6 +4473,40 @@ function initYouTabUI() {
     });
 }
 
+function cacheChannelImageOffline(url, storageKey) {
+    if (!url || typeof url !== 'string' || !navigator.onLine) return;
+    // Keep already embedded image data untouched.
+    if (/^data:image\//i.test(url)) {
+        try { localStorage.setItem(storageKey, url); } catch (e) {}
+        return;
+    }
+    try { localStorage.setItem(storageKey + '_url', url); } catch (e) {}
+    fetch(url, { method: 'GET', mode: 'cors', cache: 'force-cache' })
+        .then(response => {
+            if (!response.ok) throw new Error('Image download failed');
+            return response.blob();
+        })
+        .then(blob => new Promise((resolve, reject) => {
+            if (!blob || !blob.type || !blob.type.startsWith('image/')) {
+                reject(new Error('Invalid image response'));
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        }))
+        .then(dataUrl => {
+            if (typeof dataUrl === 'string' && dataUrl.startsWith('data:image/')) {
+                try { localStorage.setItem(storageKey, dataUrl); } catch (e) {}
+            }
+        })
+        .catch(() => {
+            // The normal URL remains cached; cross-origin hosts that deny fetch
+            // cannot be converted to an offline data URL from this WebView.
+        });
+}
+
 function renderYouTabWithData(data, user, wrap) {
     const youAvatarLarge = document.getElementById('you-avatar-large');
     const youFullNameTxt = document.getElementById('you-fullname-txt');
@@ -4487,9 +4521,17 @@ function renderYouTabWithData(data, user, wrap) {
         // Preserve channel image URLs separately so they survive offline sessions
         // even if the session object is incomplete or auth.currentUser is not restored.
         try {
-            if (channelAvatar) localStorage.setItem('flaynity_cached_channel_avatar', channelAvatar);
-            if (channelBanner) localStorage.setItem('flaynity_cached_channel_banner', channelBanner);
+            if (channelAvatar) {
+                localStorage.setItem('flaynity_cached_channel_avatar_url', channelAvatar);
+                if (/^data:image\//i.test(channelAvatar)) localStorage.setItem('flaynity_cached_channel_avatar', channelAvatar);
+            }
+            if (channelBanner) {
+                localStorage.setItem('flaynity_cached_channel_banner_url', channelBanner);
+                if (/^data:image\//i.test(channelBanner)) localStorage.setItem('flaynity_cached_channel_banner', channelBanner);
+            }
         } catch (e) {}
+        cacheChannelImageOffline(channelAvatar, 'flaynity_cached_channel_avatar');
+        cacheChannelImageOffline(channelBanner, 'flaynity_cached_channel_banner');
 
         if (youFullNameTxt) youFullNameTxt.innerText = channelName;
         if (youEmailTxt) {
@@ -4952,9 +4994,14 @@ function openViewChannelPage() {
     let cachedBannerUrl = data.bannerUrl || data.channelBannerUrl || data.banner || data.channelBanner || '';
     let cachedAvatarUrl = data.avatarUrl || data.channelImageUrl || data.profileImageUrl || data.photoURL || '';
     try {
-        cachedBannerUrl = cachedBannerUrl || localStorage.getItem('flaynity_cached_channel_banner') || '';
-        cachedAvatarUrl = cachedAvatarUrl || localStorage.getItem('flaynity_cached_channel_avatar') || '';
+        // Prefer downloaded image data for reliable offline rendering.
+        cachedBannerUrl = localStorage.getItem('flaynity_cached_channel_banner') || cachedBannerUrl || localStorage.getItem('flaynity_cached_channel_banner_url') || '';
+        cachedAvatarUrl = localStorage.getItem('flaynity_cached_channel_avatar') || cachedAvatarUrl || localStorage.getItem('flaynity_cached_channel_avatar_url') || '';
     } catch (e) {}
+    if (navigator.onLine) {
+        cacheChannelImageOffline(cachedBannerUrl, 'flaynity_cached_channel_banner');
+        cacheChannelImageOffline(cachedAvatarUrl, 'flaynity_cached_channel_avatar');
+    }
     if (viewBanner) {
         viewBanner.src = cachedBannerUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop";
         viewBanner.style.visibility = 'visible';

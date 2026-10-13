@@ -619,23 +619,33 @@
     border-color: rgba(255, 255, 255, 0.18) !important;
 }
 
-/* Channel Description: Shown below Analytics & Edit Channel */
+/* Channel Description: floating text, no card box; minimum three lines */
 #view-channel-page .channel-description-box {
-    margin: 16px 0 0 0 !important;
-    background: var(--surface) !important;
-    padding: 12px 14px !important;
-    border-radius: 14px !important;
-    border: 1px solid var(--glass-border) !important;
+    position: sticky !important;
+    top: 60px !important;
+    z-index: 20 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    background: transparent !important;
+    padding: 8px 16px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
 }
 #view-channel-page .channel-desc-text {
     margin: 0 !important;
     font-size: 0.88rem !important;
-    color: var(--text-muted) !important;
+    color: #000000 !important;
     line-height: 1.45 !important;
+    min-height: calc(1.45em * 3) !important;
+}
+[data-theme="dark"] #view-channel-page .channel-desc-text {
+    color: #ffffff !important;
 }
 #view-channel-page .channel-desc-text.line-clamp {
     display: -webkit-box !important;
-    -webkit-line-clamp: 2 !important;
+    -webkit-line-clamp: 3 !important;
     -webkit-box-orient: vertical !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;

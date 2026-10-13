@@ -3619,12 +3619,18 @@ const AppNavigation = {
         if (!document.getElementById('flaynity-you-direct-page-style')) {
             const style = document.createElement('style');
             style.id = 'flaynity-you-direct-page-style';
-            style.textContent = '.fullscreen-page.you-direct-page { animation: none !important; transform: none !important; }';
+            style.textContent = [
+                '.fullscreen-page.you-direct-page { animation: none !important; transform: none !important; }',
+                '.fullscreen-page#view-channel-page { animation: none !important; transform: none !important; bottom: 48px !important; height: calc(100vh - 48px) !important; }',
+                '.bottom-nav.view-channel-visible { z-index: 1520 !important; transform: translate3d(0,0,0) !important; -webkit-transform: translate3d(0,0,0) !important; }'
+            ].join(' ');
             document.head.appendChild(style);
         }
         document.querySelectorAll('.fullscreen-page').forEach(el => {
             el.classList.remove('you-direct-page');
         });
+        const globalBottomNav = document.querySelector('#app-screen .bottom-nav, .bottom-nav');
+        if (globalBottomNav) globalBottomNav.classList.remove('view-channel-visible');
         document.querySelectorAll('.fullscreen-page, .premium-download-modal').forEach(el => {
             el.style.display = 'none';
         });
@@ -3657,10 +3663,15 @@ const AppNavigation = {
             }
         });
 
-        // Any page opened from You should appear instantly instead of sliding in.
-        if (activeTab === 'you' && activePage) {
+        // Pages opened from You, including View Channel, appear directly without sliding.
+        if ((activeTab === 'you' && activePage) || activePage === 'view-channel-page') {
             const directPage = document.getElementById(activePage);
             if (directPage) directPage.classList.add('you-direct-page');
+        }
+
+        // Keep the global bottom navigation visible and tappable only on View Channel.
+        if (activePage === 'view-channel-page' && globalBottomNav) {
+            globalBottomNav.classList.add('view-channel-visible');
         }
 
         document.querySelectorAll('.tab-content, .nav-item').forEach(el => el.classList.remove('active'));

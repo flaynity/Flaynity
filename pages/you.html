@@ -158,6 +158,10 @@
 #view-channel-page .channel-tab-item.active .channel-tab-icon { color: var(--text-main) !important; }
 [data-theme="light"] #view-channel-page .channel-tab-icon { color: #000000 !important; }
 [data-theme="dark"] #view-channel-page .channel-tab-icon { color: #FFFFFF !important; }
+/* View Channel: remove the underline and divider beneath Videos, Feels, Posts icons only */
+#view-channel-page .channel-tabs { border-bottom: none !important; }
+#view-channel-page .channel-tab-item,
+#view-channel-page .channel-tab-item.active { border-bottom: none !important; border-bottom-color: transparent !important; }
         .channel-tab-content { display: none; padding: 16px; }
         .channel-tab-content.active { display: block; }
         

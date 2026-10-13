@@ -650,14 +650,22 @@
 [data-theme="dark"] #view-channel-page .channel-desc-text {
     color: #ffffff !important;
 }
-#view-channel-page .channel-desc-text.line-clamp {
-    display: block !important;
+#view-channel-page .channel-description-box {
     overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    contain: paint !important;
+}
+#view-channel-page #view-channel-desc.line-clamp {
+    display: block !important;
+    position: relative !important;
+    overflow: hidden !important;
+    white-space: normal !important;
     line-height: 1.65 !important;
-    height: calc(1.65em * 3) !important;
-    min-height: calc(1.65em * 3) !important;
-    max-height: calc(1.65em * 3) !important;
+    height: 4.356em !important;
+    min-height: 4.356em !important;
+    max-height: 4.356em !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    clip-path: inset(0 0 0 0) !important;
 }
 #view-channel-page .btn-more-desc {
     background: none !important;

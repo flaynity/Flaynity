@@ -4481,7 +4481,15 @@ function renderYouTabWithData(data, user, wrap) {
     if (data) {
         const channelName = data.channelName;
         const channelHandle = "@" + data.handle;
-        const channelAvatar = data.avatarUrl || user.photoURL || '';
+        const channelAvatar = data.avatarUrl || data.channelImageUrl || data.profileImageUrl || data.photoURL || (user && user.photoURL) || '';
+        const channelBanner = data.bannerUrl || data.channelBannerUrl || data.banner || data.channelBanner || '';
+
+        // Preserve channel image URLs separately so they survive offline sessions
+        // even if the session object is incomplete or auth.currentUser is not restored.
+        try {
+            if (channelAvatar) localStorage.setItem('flaynity_cached_channel_avatar', channelAvatar);
+            if (channelBanner) localStorage.setItem('flaynity_cached_channel_banner', channelBanner);
+        } catch (e) {}
 
         if (youFullNameTxt) youFullNameTxt.innerText = channelName;
         if (youEmailTxt) {
@@ -4941,8 +4949,12 @@ function openViewChannelPage() {
 
     if (viewTitle) viewTitle.innerText = data.channelName;
     // Read image URLs from the cached channel record, including older field names.
-    const cachedBannerUrl = data.bannerUrl || data.channelBannerUrl || data.banner || data.channelBanner || '';
-    const cachedAvatarUrl = data.avatarUrl || data.channelImageUrl || data.profileImageUrl || data.photoURL || '';
+    let cachedBannerUrl = data.bannerUrl || data.channelBannerUrl || data.banner || data.channelBanner || '';
+    let cachedAvatarUrl = data.avatarUrl || data.channelImageUrl || data.profileImageUrl || data.photoURL || '';
+    try {
+        cachedBannerUrl = cachedBannerUrl || localStorage.getItem('flaynity_cached_channel_banner') || '';
+        cachedAvatarUrl = cachedAvatarUrl || localStorage.getItem('flaynity_cached_channel_avatar') || '';
+    } catch (e) {}
     if (viewBanner) {
         viewBanner.src = cachedBannerUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop";
         viewBanner.style.visibility = 'visible';
@@ -4968,7 +4980,7 @@ function openViewChannelPage() {
             button.setAttribute('aria-label', button.dataset.offlineLabel || button.textContent.trim());
             button.style.setProperty('color', 'transparent', 'important');
             button.style.setProperty('pointer-events', 'none', 'important');
-            button.innerHTML = '<span class="skel-box" style="display:block;width:100%;height:100%;min-height:38px;border-radius:inherit;"></span>';
+            button.innerHTML = '<span class="skel-box" style="display:block;width:76px;height:14px;border-radius:7px;"></span>';
         });
     } else {
         [analyticsButton, editChannelButton].forEach((button, index) => {

@@ -4786,6 +4786,26 @@ function openYouQuickMenu() {
         return;
     }
     if (overlay.parentElement !== document.body) document.body.appendChild(overlay);
+    // Restore the original menu items when the connection returns.
+    if (navigator.onLine) {
+        overlay.querySelectorAll('.you-quick-menu-list').forEach(list => {
+            if (list.dataset.originalMenuHTML) {
+                list.innerHTML = list.dataset.originalMenuHTML;
+                delete list.dataset.originalMenuHTML;
+            }
+        });
+        const panel = overlay.querySelector('.you-quick-menu-panel');
+        if (panel) delete panel.dataset.offlineSkeletonApplied;
+    } else {
+        overlay.querySelectorAll('.you-quick-menu-list').forEach(list => {
+            if (!list.dataset.originalMenuHTML) list.dataset.originalMenuHTML = list.innerHTML;
+            list.innerHTML = Array.from({length: 3}, () =>
+                '<div class="channel-offline-skeleton" style="height:48px;border-radius:14px;margin:8px 0;"><div class="skel-box" style="width:100%;height:100%;border-radius:14px;"></div></div>'
+            ).join('');
+        });
+        const panel = overlay.querySelector('.you-quick-menu-panel');
+        if (panel) panel.dataset.offlineSkeletonApplied = '1';
+    }
     overlay.style.setProperty('display', 'block', 'important');
     overlay.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
@@ -4920,8 +4940,17 @@ function openViewChannelPage() {
     const viewSub = document.getElementById('view-sub-count');
 
     if (viewTitle) viewTitle.innerText = data.channelName;
-    if (viewBanner) viewBanner.src = data.bannerUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop";
-    if (viewAvatar) viewAvatar.src = data.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop";
+    // Read image URLs from the cached channel record, including older field names.
+    const cachedBannerUrl = data.bannerUrl || data.channelBannerUrl || data.banner || data.channelBanner || '';
+    const cachedAvatarUrl = data.avatarUrl || data.channelImageUrl || data.profileImageUrl || data.photoURL || '';
+    if (viewBanner) {
+        viewBanner.src = cachedBannerUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop";
+        viewBanner.style.visibility = 'visible';
+    }
+    if (viewAvatar) {
+        viewAvatar.src = cachedAvatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop";
+        viewAvatar.style.visibility = 'visible';
+    }
     if (viewName) viewName.innerText = data.channelName;
     if (viewHandle) viewHandle.innerText = "@" + data.handle;
     if (viewDesc) viewDesc.innerText = data.description || "No description provided yet.";
@@ -4934,20 +4963,22 @@ function openViewChannelPage() {
     if (!navigator.onLine) {
         [analyticsButton, editChannelButton].forEach(button => {
             if (!button) return;
-            button.dataset.offlineLabel = button.dataset.offlineLabel || button.textContent.trim();
+            if (!button.dataset.originalButtonHTML) button.dataset.originalButtonHTML = button.innerHTML;
             button.disabled = true;
-            button.setAttribute('aria-label', button.dataset.offlineLabel);
-            button.innerHTML = '<span class="skel-box" style="display:block;width:76px;height:14px;border-radius:7px;"></span>';
+            button.setAttribute('aria-label', button.dataset.offlineLabel || button.textContent.trim());
+            button.style.setProperty('color', 'transparent', 'important');
+            button.style.setProperty('pointer-events', 'none', 'important');
+            button.innerHTML = '<span class="skel-box" style="display:block;width:100%;height:100%;min-height:38px;border-radius:inherit;"></span>';
         });
     } else {
-        if (analyticsButton) {
-            analyticsButton.disabled = false;
-            analyticsButton.textContent = analyticsButton.dataset.offlineLabel || 'Analytics';
-        }
-        if (editChannelButton) {
-            editChannelButton.disabled = false;
-            editChannelButton.textContent = editChannelButton.dataset.offlineLabel || 'Edit Channel';
-        }
+        [analyticsButton, editChannelButton].forEach((button, index) => {
+            if (!button) return;
+            button.disabled = false;
+            button.style.removeProperty('color');
+            button.style.removeProperty('pointer-events');
+            if (button.dataset.originalButtonHTML) button.innerHTML = button.dataset.originalButtonHTML;
+            else button.textContent = index === 0 ? 'Analytics' : 'Edit Channel';
+        });
     }
 
     switchChannelTab('videos');
@@ -4973,6 +5004,7 @@ function renderOfflineChannelPageSkeletons(activeType) {
     if (menuPanel && !menuPanel.dataset.offlineSkeletonApplied) {
         menuPanel.dataset.offlineSkeletonApplied = '1';
         menuPanel.querySelectorAll('.you-quick-menu-list').forEach(list => {
+            if (!list.dataset.originalMenuHTML) list.dataset.originalMenuHTML = list.innerHTML;
             list.innerHTML = Array.from({length: 3}, () =>
                 '<div class="channel-offline-skeleton" style="height:48px;border-radius:14px;margin:8px 0;"><div class="skel-box" style="width:100%;height:100%;border-radius:14px;"></div></div>'
             ).join('');

@@ -619,21 +619,26 @@
     border-color: rgba(255, 255, 255, 0.18) !important;
 }
 
-/* Channel Description: floating text, no card box; minimum three lines */
+/* Channel Description: full-width text immediately below channel stats */
 #view-channel-page .channel-description-box {
     position: sticky !important;
     top: 60px !important;
     z-index: 20 !important;
+    display: block !important;
     margin: 0 !important;
     width: 100% !important;
+    max-width: 100% !important;
     box-sizing: border-box !important;
     background: transparent !important;
-    padding: 8px 16px !important;
+    padding: 8px 12px !important;
     border: 0 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
 }
 #view-channel-page .channel-desc-text {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
     margin: 0 !important;
     font-size: 0.88rem !important;
     color: #000000 !important;
@@ -1044,11 +1049,13 @@
 <div class="channel-action-row">
 </div>
 
+
+</div>
+
 <!-- Channel Description: Shown below Analytics & Edit Channel -->
 <div class="channel-description-box">
 <p class="channel-desc-text line-clamp" id="view-channel-desc">No description provided yet.</p>
 <button class="btn-more-desc" id="view-channel-desc-btn" onclick="toggleFullDescription()">More <i class="fas fa-chevron-down"></i></button>
-</div>
 </div>
 
 <div class="channel-tabs">

@@ -4322,6 +4322,11 @@ async function switchTab(tabId) {
             openViewChannelPage();
             return;
         }
+        if (!navigator.onLine) {
+            AppNavigation.pushPage('view-channel-page');
+            renderOfflineChannelPageSkeletons();
+            return;
+        }
     }
     AppNavigation.pushTab(tabId);
 }

@@ -1350,6 +1350,27 @@ auth.onAuthStateChanged(async (user) => {
 
         const activeNav = document.querySelector('.nav-item.active');
         if (activeNav) adjustHeaderForActiveTab(activeNav.id.replace('nav-', ''));
+
+        if (window.__flaynityAccountSwitchShouldOpenChannel) {
+            window.__flaynityAccountSwitchShouldOpenChannel = false;
+            currentChannelData = null;
+            try {
+                const channelSnapshot = await db.ref(`channels/${user.uid}`).once('value');
+                currentChannelData = channelSnapshot.val();
+                if (currentChannelData) {
+                    try { localStorage.setItem('flaynity_channel_cache:' + user.uid, JSON.stringify(currentChannelData)); } catch (e) {}
+                    openViewChannelPage();
+                } else {
+                    try { localStorage.removeItem('flaynity_channel_cache:' + user.uid); } catch (e) {}
+                    const current = AppNavigation.current();
+                    if (current && current.type === 'page' && current.id === 'view-channel-page') AppNavigation.pop();
+                    AppNavigation.pushTab('you');
+                }
+            } catch (channelError) {
+                console.error('Unable to resolve selected account channel:', channelError);
+                if (navigator.onLine) showNotification('Unable to load this account Channel.', 'error');
+            }
+        }
     } catch (e) {
         console.error('Auth status sync error:', e);
         try { await auth.signOut(); } catch(err) {}
@@ -4254,9 +4275,43 @@ function escapeHTML(str) {
 // =========================================
 // NAVIGATION & DISCOVER TAB
 // =========================================
-function switchTab(tabId) {
+async function switchTab(tabId) {
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
+
+    // Opening You from the bottom navigation should enter an existing channel directly.
+    // Offline data is cached per Firebase UID to prevent cross-account channel leakage.
+    if (tabId === 'you') {
+        const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
+        if (user) {
+            let channel = null;
+            if (navigator.onLine) {
+                try {
+                    const snapshot = await db.ref(`channels/${user.uid}`).once('value');
+                    channel = snapshot.val();
+                    try {
+                        if (channel) localStorage.setItem('flaynity_channel_cache:' + user.uid, JSON.stringify(channel));
+                        else localStorage.removeItem('flaynity_channel_cache:' + user.uid);
+                    } catch (e) {}
+                } catch (e) {
+                    try {
+                        const cached = localStorage.getItem('flaynity_channel_cache:' + user.uid);
+                        if (cached) channel = JSON.parse(cached);
+                    } catch (ignored) {}
+                }
+            } else {
+                try {
+                    const cached = localStorage.getItem('flaynity_channel_cache:' + user.uid);
+                    if (cached) channel = JSON.parse(cached);
+                } catch (e) {}
+            }
+            currentChannelData = channel;
+            if (channel) {
+                openViewChannelPage();
+                return;
+            }
+        }
+    }
     AppNavigation.pushTab(tabId);
 }
 
@@ -4368,6 +4423,10 @@ function initYouTabUI() {
     if (!user) return;
 
     if (!navigator.onLine) {
+        try {
+            const cached = localStorage.getItem('flaynity_channel_cache:' + user.uid);
+            currentChannelData = cached ? JSON.parse(cached) : null;
+        } catch (e) { currentChannelData = null; }
         if (currentChannelData) {
             renderYouTabWithData(currentChannelData, user, wrap);
         } else {
@@ -4378,9 +4437,22 @@ function initYouTabUI() {
 
     db.ref(`channels/${user.uid}`).once('value', (snapshot) => {
         currentChannelData = snapshot.val();
-        if (currentChannelData) {
-            localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
-        }
+        try {
+            if (currentChannelData) {
+                localStorage.setItem('flaynity_channel_cache:' + user.uid, JSON.stringify(currentChannelData));
+                localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+            } else {
+                localStorage.removeItem('flaynity_channel_cache:' + user.uid);
+            }
+        } catch (e) {}
+        renderYouTabWithData(currentChannelData, user, wrap);
+    }).catch(() => {
+        let cached = null;
+        try {
+            const value = localStorage.getItem('flaynity_channel_cache:' + user.uid);
+            if (value) cached = JSON.parse(value);
+        } catch (e) {}
+        currentChannelData = cached;
         renderYouTabWithData(currentChannelData, user, wrap);
     });
 }
@@ -5144,6 +5216,7 @@ async function switchSession(email) {
     playUI('click');
     showNotification("Switching account...", "success");
     if (window.AndroidBridge && typeof window.AndroidBridge.triggerGoogleSignIn === 'function') {
+        window.__flaynityAccountSwitchShouldOpenChannel = true;
         window.AndroidBridge.triggerGoogleSignIn(); 
         AppNavigation.pop();
     } else {
@@ -5159,6 +5232,22 @@ async function switchSession(email) {
             AppNavigation.pop();
             showNotification("Switched successfully!", "success");
             SyncManager.refreshEverything();
+            currentChannelData = null;
+            try {
+                const channelSnapshot = await db.ref(`channels/${result.user.uid}`).once('value');
+                currentChannelData = channelSnapshot.val();
+                if (currentChannelData) {
+                    try { localStorage.setItem('flaynity_channel_cache:' + result.user.uid, JSON.stringify(currentChannelData)); } catch (e) {}
+                    openViewChannelPage();
+                } else {
+                    try { localStorage.removeItem('flaynity_channel_cache:' + result.user.uid); } catch (e) {}
+                    const current = AppNavigation.current();
+                    if (current && current.type === 'page' && current.id === 'view-channel-page') AppNavigation.pop();
+                    AppNavigation.pushTab('you');
+                }
+            } catch (channelError) {
+                console.error('Unable to resolve selected account channel:', channelError);
+            }
         } catch (err) {
             showNotification("Failed to switch: " + err.message, "error");
         }

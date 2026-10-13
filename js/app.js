@@ -4482,12 +4482,9 @@ function renderYouTabWithData(data, user, wrap) {
             }
         }
 
-        wrap.innerHTML = `
-            <button class="btn-view-channel" onclick="openViewChannelPage()">
-                <i class="fas fa-tv"></i> View Channel 
-                <i class="fas fa-chevron-right" style="margin-left: auto;"></i>
-            </button>
-        `;
+        // Existing channels are opened directly from the You bottom navigation.
+        // Do not render the obsolete View Channel card inside the You profile.
+        wrap.innerHTML = '';
     } else {
         const displayName = user.displayName || user.email.split('@')[0];
         if (youFullNameTxt) youFullNameTxt.innerText = displayName;

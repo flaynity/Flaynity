@@ -9799,7 +9799,7 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
     }
     function initAfterInjection() {
         connectFeels();
-        if (typeof initFlaynityDiscoverSearch === "function") initFlaynityDiscoverSearch();
+        if (typeof initSearchEvents === "function") initSearchEvents();
     }
     window.addEventListener("flaynity-pages-ready", initAfterInjection);
     window.addEventListener("flaynity-dom-ready", initAfterInjection);

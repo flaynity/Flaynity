@@ -38,10 +38,7 @@
     function showOfflineCachedApp() {
         if (navigator.onLine) return;
         let cachedSession = null;
-        try {
-            cachedSession = localStorage.getItem('flaynity_auth_session_cache') ||
-                            localStorage.getItem('flaynity_user_session_cache');
-        } catch (e) {}
+        try { cachedSession = localStorage.getItem('flaynity_user_session_cache'); } catch (e) {}
         if (!cachedSession) return;
         const authScr = document.getElementById('auth-screen');
         const appScr = document.getElementById('app-screen');
@@ -581,11 +578,6 @@ window.FlaynityNetworkOnline = function() {
     if (spinner) spinner.style.display = 'none';
 
     try { firebase.database().goOnline(); } catch(e) {}
-    try {
-        if (typeof window.FlaynityDiscoverFeelsOnline === 'function') {
-            window.FlaynityDiscoverFeelsOnline();
-        }
-    } catch(e) {}
     showNotification("Network Restored! Syncing Live Data...", "success");
 
     const waitingUploads = uploadQueue.filter(i => i.status === 'paused' || i.status === 'waiting');
@@ -605,11 +597,6 @@ window.FlaynityNetworkOnline = function() {
 
 window.FlaynityNetworkOffline = function() {
     try { firebase.database().goOffline(); } catch(e) {}
-    try {
-        if (typeof window.FlaynityDiscoverFeelsOffline === 'function') {
-            window.FlaynityDiscoverFeelsOffline();
-        }
-    } catch(e) {}
     showNotification("Offline Mode. Showing Skeletons.", "error");
 
     renderAllSkeletons();
@@ -1154,7 +1141,6 @@ function cleanupUserSessionData() {
     uploadQueue = [];
     localStorage.removeItem('flaynity_upload_queue_v2'); 
     localStorage.removeItem('flaynity_user_session_cache');
-    localStorage.removeItem('flaynity_auth_session_cache');
 
     const homeFeed = document.getElementById('home-feed-container');
     if (homeFeed) homeFeed.innerHTML = '';
@@ -1298,27 +1284,6 @@ auth.onAuthStateChanged(async (user) => {
         clearUserStatusListener();
         detachAdminControlListener();
         if (!user) {
-            // Firebase Auth can temporarily report no user while the WebView is offline.
-            // Keep the last locally cached session instead of wiping it or blocking app entry.
-            let offlineSession = null;
-            try {
-                if (!navigator.onLine) offlineSession = JSON.parse(
-                    localStorage.getItem('flaynity_user_session_cache') ||
-                    localStorage.getItem('flaynity_auth_session_cache') || 'null'
-                );
-            } catch (cacheError) {}
-            if (!navigator.onLine && offlineSession) {
-                const appScr = document.getElementById('app-screen');
-                const authScr = document.getElementById('auth-screen');
-                if (appScr) appScr.style.display = 'block';
-                if (authScr) authScr.style.display = 'none';
-                document.body.classList.remove('auth-active');
-                window.__flaynityOfflineSessionActive = true;
-                currentChannelData = (offlineSession.channelName || offlineSession.handle || offlineSession.bannerUrl) ? offlineSession : null;
-                try { if (currentChannelData) initYouTabUI(); } catch (e) {}
-                try { renderAllSkeletons(); } catch (e) {}
-                return;
-            }
             cleanupUserSessionData();
             document.body.classList.add('auth-active');
             const appScr = document.getElementById('app-screen');
@@ -1332,28 +1297,6 @@ auth.onAuthStateChanged(async (user) => {
                 // all images before revealing the screen, preventing late/flickering shows.
                 window.__flaynityShowOnboarding();
             }
-            return;
-        }
-
-        // A cached signed-in session must remain usable when Firebase cannot be reached.
-        // Do not wait on a server read or sign the user out just because the device is offline.
-        if (!navigator.onLine) {
-            let offlineSession = null;
-            try {
-                offlineSession = JSON.parse(
-                    localStorage.getItem('flaynity_user_session_cache') ||
-                    localStorage.getItem('flaynity_auth_session_cache') || 'null'
-                );
-            } catch (cacheError) {}
-            const appScr = document.getElementById('app-screen');
-            const authScr = document.getElementById('auth-screen');
-            if (appScr) appScr.style.display = 'block';
-            if (authScr) authScr.style.display = 'none';
-            document.body.classList.remove('auth-active');
-            window.__flaynityOfflineSessionActive = true;
-            if (offlineSession && (offlineSession.channelName || offlineSession.handle || offlineSession.bannerUrl)) currentChannelData = offlineSession;
-            try { if (currentChannelData) initYouTabUI(); } catch (e) {}
-            try { renderAllSkeletons(); } catch (e) {}
             return;
         }
 
@@ -1383,15 +1326,6 @@ auth.onAuthStateChanged(async (user) => {
         if (appScr) appScr.style.display = 'block';
 
         saveAccountToList(user);
-        try {
-            localStorage.setItem('flaynity_auth_session_cache', JSON.stringify({
-                uid: user.uid,
-                email: user.email || '',
-                gmailName: user.displayName || '',
-                avatarUrl: user.photoURL || '',
-                cachedAt: Date.now()
-            }));
-        } catch (cacheError) {}
         attachAdminControlListener();
 
         // Keep the ban state live. If Admin bans this user while the app is open,
@@ -1439,27 +1373,6 @@ auth.onAuthStateChanged(async (user) => {
         }
     } catch (e) {
         console.error('Auth status sync error:', e);
-        if (!navigator.onLine) {
-            // Network failure is not a sign-out. Preserve cached data and keep the app open.
-            try {
-                const cached = JSON.parse(
-                    localStorage.getItem('flaynity_user_session_cache') ||
-                    localStorage.getItem('flaynity_auth_session_cache') || 'null'
-                );
-                const appScr = document.getElementById('app-screen');
-                const authScr = document.getElementById('auth-screen');
-                if (appScr) appScr.style.display = cached ? 'block' : appScr.style.display;
-                if (authScr && cached) authScr.style.display = 'none';
-                if (cached) {
-                    document.body.classList.remove('auth-active');
-                    currentChannelData = (cached.channelName || cached.handle || cached.bannerUrl) ? cached : null;
-                    window.__flaynityOfflineSessionActive = true;
-                    try { if (currentChannelData) initYouTabUI(); } catch (innerError) {}
-                    try { renderAllSkeletons(); } catch (innerError) {}
-                }
-            } catch (cacheError) {}
-            return;
-        }
         try { await auth.signOut(); } catch(err) {}
     }
 });
@@ -9785,16 +9698,6 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
     function showState(grid, message) {
         if (grid) grid.innerHTML = '<div class="discover-feels-empty">' + message + '</div>';
     }
-    function showSkeletons(grid) {
-        if (!grid) return;
-        grid.innerHTML = [1, 2, 3, 4, 5, 6].map(function () {
-            return '<div class="discover-feels-skeleton-card" aria-hidden="true">' +
-                '<div class="discover-feels-skeleton-media"></div>' +
-                '<div class="discover-feels-skeleton-line"></div>' +
-                '<div class="discover-feels-skeleton-line short"></div>' +
-            '</div>';
-        }).join("");
-    }
     function renderFeels(snapshot) {
         var grid = document.getElementById("discover-feels-grid");
         if (!grid) return;
@@ -9859,14 +9762,10 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
             grid.appendChild(card);
         });
     }
-    function connectFeels(forceReconnect) {
+    function connectFeels() {
         var grid = document.getElementById("discover-feels-grid");
         if (!grid) return;
-        if (!navigator.onLine) {
-            showSkeletons(grid);
-            return;
-        }
-        if (boundGrid === grid && listenerRef && !forceReconnect) return;
+        if (boundGrid === grid && listenerRef) return;
         boundGrid = grid;
         if (!window.firebase || typeof window.firebase.database !== "function") {
             if (retryCount++ < 20) {
@@ -9899,15 +9798,9 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
         }
     }
     function initAfterInjection() {
-        connectFeels(false);
+        connectFeels();
         if (typeof initSearchEvents === "function") initSearchEvents();
     }
-    window.FlaynityDiscoverFeelsOffline = function () {
-        showSkeletons(document.getElementById("discover-feels-grid"));
-    };
-    window.FlaynityDiscoverFeelsOnline = function () {
-        connectFeels(true);
-    };
     window.addEventListener("flaynity-pages-ready", initAfterInjection);
     window.addEventListener("flaynity-dom-ready", initAfterInjection);
     window.addEventListener("flaynity-tab-changed", initAfterInjection);

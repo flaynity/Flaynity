@@ -1154,6 +1154,7 @@ function cleanupUserSessionData() {
     uploadQueue = [];
     localStorage.removeItem('flaynity_upload_queue_v2'); 
     localStorage.removeItem('flaynity_user_session_cache');
+    localStorage.removeItem('flaynity_auth_session_cache');
 
     const homeFeed = document.getElementById('home-feed-container');
     if (homeFeed) homeFeed.innerHTML = '';
@@ -1313,8 +1314,8 @@ auth.onAuthStateChanged(async (user) => {
                 if (authScr) authScr.style.display = 'none';
                 document.body.classList.remove('auth-active');
                 window.__flaynityOfflineSessionActive = true;
-                currentChannelData = offlineSession;
-                try { initYouTabUI(); } catch (e) {}
+                currentChannelData = (offlineSession.channelName || offlineSession.handle || offlineSession.bannerUrl) ? offlineSession : null;
+                try { if (currentChannelData) initYouTabUI(); } catch (e) {}
                 try { renderAllSkeletons(); } catch (e) {}
                 return;
             }
@@ -1350,8 +1351,8 @@ auth.onAuthStateChanged(async (user) => {
             if (authScr) authScr.style.display = 'none';
             document.body.classList.remove('auth-active');
             window.__flaynityOfflineSessionActive = true;
-            if (offlineSession) currentChannelData = offlineSession;
-            try { if (offlineSession) initYouTabUI(); } catch (e) {}
+            if (offlineSession && (offlineSession.channelName || offlineSession.handle || offlineSession.bannerUrl)) currentChannelData = offlineSession;
+            try { if (currentChannelData) initYouTabUI(); } catch (e) {}
             try { renderAllSkeletons(); } catch (e) {}
             return;
         }
@@ -1451,9 +1452,9 @@ auth.onAuthStateChanged(async (user) => {
                 if (authScr && cached) authScr.style.display = 'none';
                 if (cached) {
                     document.body.classList.remove('auth-active');
-                    currentChannelData = cached;
+                    currentChannelData = (cached.channelName || cached.handle || cached.bannerUrl) ? cached : null;
                     window.__flaynityOfflineSessionActive = true;
-                    try { initYouTabUI(); } catch (innerError) {}
+                    try { if (currentChannelData) initYouTabUI(); } catch (innerError) {}
                     try { renderAllSkeletons(); } catch (innerError) {}
                 }
             } catch (cacheError) {}

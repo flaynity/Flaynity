@@ -9668,3 +9668,102 @@ window.addEventListener('flaynity-dom-ready', initFlaynityDiscoverSearch);
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
     else init();
 })();
+
+
+/* Discover Feels feed — live updates from the existing Firebase Realtime Database path. */
+(function () {
+    "use strict";
+    var FEELS_PATH = "admin_panel/movies/feels";
+    var listenerRef = null;
+    var lastGrid = null;
+
+    function pickText(item) {
+        return String(item.caption || item.title || item.name || item.description || "").trim();
+    }
+    function pickImage(item) {
+        return item.thumbnailUrl || item.thumbnailURL || item.thumbnail || item.posterUrl ||
+               item.poster || item.imageUrl || item.imageURL || item.coverUrl || item.cover ||
+               item.previewUrl || item.preview || "";
+    }
+    function pickVideo(item) {
+        return item.videoUrl || item.videoURL || item.video || item.mediaUrl ||
+               item.mediaURL || item.fileUrl || item.url || "";
+    }
+    function renderFeels(snapshot) {
+        var grid = document.getElementById("discover-feels-grid");
+        if (!grid) return;
+        lastGrid = grid;
+        var data = snapshot && snapshot.val ? (snapshot.val() || {}) : {};
+        var entries = Object.entries(data).filter(function (entry) {
+            var item = entry[1] || {};
+            return item.status !== "hidden" && item.published !== false && item.isPublished !== false;
+        }).sort(function (a, b) {
+            var av = Number((a[1] || {}).createdAt || (a[1] || {}).timestamp || 0);
+            var bv = Number((b[1] || {}).createdAt || (b[1] || {}).timestamp || 0);
+            return bv - av;
+        });
+        if (!entries.length) {
+            grid.innerHTML = '<div class="discover-feels-empty">No Feels available yet</div>';
+            return;
+        }
+        grid.innerHTML = "";
+        entries.forEach(function (entry) {
+            var item = entry[1] || {};
+            var card = document.createElement("div");
+            card.className = "discover-feels-card";
+            var image = pickImage(item);
+            var video = pickVideo(item);
+            if (image) {
+                var img = document.createElement("img");
+                img.src = image;
+                img.alt = pickText(item) || "Feel";
+                img.loading = "lazy";
+                img.onerror = function () { this.style.display = "none"; };
+                card.appendChild(img);
+            } else if (video) {
+                var poster = document.createElement("video");
+                poster.src = video;
+                poster.muted = true;
+                poster.playsInline = true;
+                poster.preload = "metadata";
+                poster.setAttribute("aria-label", pickText(item) || "Feel");
+                card.appendChild(poster);
+            }
+            var caption = pickText(item);
+            if (caption) {
+                var label = document.createElement("div");
+                label.className = "discover-feels-caption";
+                label.textContent = caption;
+                card.appendChild(label);
+            }
+            if (!image && !video) {
+                card.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;padding:8px;text-align:center;">Feel</div>';
+            }
+            grid.appendChild(card);
+        });
+    }
+    function connectFeels() {
+        var grid = document.getElementById("discover-feels-grid");
+        if (!grid || grid === lastGrid && listenerRef) return;
+        lastGrid = grid;
+        if (!window.firebase || !firebase.database) {
+            grid.innerHTML = '<div class="discover-feels-empty">Feels are unavailable right now</div>';
+            return;
+        }
+        try {
+            if (listenerRef) listenerRef.off("value");
+            listenerRef = firebase.database().ref(FEELS_PATH);
+            listenerRef.on("value", renderFeels, function () {
+                var currentGrid = document.getElementById("discover-feels-grid");
+                if (currentGrid) currentGrid.innerHTML = '<div class="discover-feels-empty">Unable to load Feels</div>';
+            });
+        } catch (error) {
+            grid.innerHTML = '<div class="discover-feels-empty">Unable to load Feels</div>';
+            console.error("Discover Feels loading error:", error);
+        }
+    }
+    window.addEventListener("flaynity-pages-ready", connectFeels);
+    window.addEventListener("flaynity-tab-changed", connectFeels);
+    document.addEventListener("DOMContentLoaded", connectFeels);
+    setTimeout(connectFeels, 0);
+})();

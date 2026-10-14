@@ -578,6 +578,11 @@ window.FlaynityNetworkOnline = function() {
     if (spinner) spinner.style.display = 'none';
 
     try { firebase.database().goOnline(); } catch(e) {}
+    try {
+        if (typeof window.FlaynityDiscoverFeelsOnline === 'function') {
+            window.FlaynityDiscoverFeelsOnline();
+        }
+    } catch(e) {}
     showNotification("Network Restored! Syncing Live Data...", "success");
 
     const waitingUploads = uploadQueue.filter(i => i.status === 'paused' || i.status === 'waiting');
@@ -597,6 +602,11 @@ window.FlaynityNetworkOnline = function() {
 
 window.FlaynityNetworkOffline = function() {
     try { firebase.database().goOffline(); } catch(e) {}
+    try {
+        if (typeof window.FlaynityDiscoverFeelsOffline === 'function') {
+            window.FlaynityDiscoverFeelsOffline();
+        }
+    } catch(e) {}
     showNotification("Offline Mode. Showing Skeletons.", "error");
 
     renderAllSkeletons();
@@ -9698,6 +9708,16 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
     function showState(grid, message) {
         if (grid) grid.innerHTML = '<div class="discover-feels-empty">' + message + '</div>';
     }
+    function showSkeletons(grid) {
+        if (!grid) return;
+        grid.innerHTML = [1, 2, 3, 4, 5, 6].map(function () {
+            return '<div class="discover-feels-skeleton-card" aria-hidden="true">' +
+                '<div class="discover-feels-skeleton-media"></div>' +
+                '<div class="discover-feels-skeleton-line"></div>' +
+                '<div class="discover-feels-skeleton-line short"></div>' +
+            '</div>';
+        }).join("");
+    }
     function renderFeels(snapshot) {
         var grid = document.getElementById("discover-feels-grid");
         if (!grid) return;
@@ -9762,10 +9782,14 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
             grid.appendChild(card);
         });
     }
-    function connectFeels() {
+    function connectFeels(forceReconnect) {
         var grid = document.getElementById("discover-feels-grid");
         if (!grid) return;
-        if (boundGrid === grid && listenerRef) return;
+        if (!navigator.onLine) {
+            showSkeletons(grid);
+            return;
+        }
+        if (boundGrid === grid && listenerRef && !forceReconnect) return;
         boundGrid = grid;
         if (!window.firebase || typeof window.firebase.database !== "function") {
             if (retryCount++ < 20) {
@@ -9798,9 +9822,15 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
         }
     }
     function initAfterInjection() {
-        connectFeels();
+        connectFeels(false);
         if (typeof initSearchEvents === "function") initSearchEvents();
     }
+    window.FlaynityDiscoverFeelsOffline = function () {
+        showSkeletons(document.getElementById("discover-feels-grid"));
+    };
+    window.FlaynityDiscoverFeelsOnline = function () {
+        connectFeels(true);
+    };
     window.addEventListener("flaynity-pages-ready", initAfterInjection);
     window.addEventListener("flaynity-dom-ready", initAfterInjection);
     window.addEventListener("flaynity-tab-changed", initAfterInjection);

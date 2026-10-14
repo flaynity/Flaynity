@@ -1294,6 +1294,24 @@ auth.onAuthStateChanged(async (user) => {
         clearUserStatusListener();
         detachAdminControlListener();
         if (!user) {
+            // Firebase Auth can temporarily report no user while the WebView is offline.
+            // Keep the last locally cached session instead of wiping it or blocking app entry.
+            let offlineSession = null;
+            try {
+                if (!navigator.onLine) offlineSession = JSON.parse(localStorage.getItem('flaynity_user_session_cache') || 'null');
+            } catch (cacheError) {}
+            if (!navigator.onLine && offlineSession) {
+                const appScr = document.getElementById('app-screen');
+                const authScr = document.getElementById('auth-screen');
+                if (appScr) appScr.style.display = 'block';
+                if (authScr) authScr.style.display = 'none';
+                document.body.classList.remove('auth-active');
+                window.__flaynityOfflineSessionActive = true;
+                currentChannelData = offlineSession;
+                try { initYouTabUI(); } catch (e) {}
+                try { renderAllSkeletons(); } catch (e) {}
+                return;
+            }
             cleanupUserSessionData();
             document.body.classList.add('auth-active');
             const appScr = document.getElementById('app-screen');
@@ -1307,6 +1325,23 @@ auth.onAuthStateChanged(async (user) => {
                 // all images before revealing the screen, preventing late/flickering shows.
                 window.__flaynityShowOnboarding();
             }
+            return;
+        }
+
+        // A cached signed-in session must remain usable when Firebase cannot be reached.
+        // Do not wait on a server read or sign the user out just because the device is offline.
+        if (!navigator.onLine) {
+            let offlineSession = null;
+            try { offlineSession = JSON.parse(localStorage.getItem('flaynity_user_session_cache') || 'null'); } catch (cacheError) {}
+            const appScr = document.getElementById('app-screen');
+            const authScr = document.getElementById('auth-screen');
+            if (appScr) appScr.style.display = 'block';
+            if (authScr) authScr.style.display = 'none';
+            document.body.classList.remove('auth-active');
+            window.__flaynityOfflineSessionActive = true;
+            if (offlineSession) currentChannelData = offlineSession;
+            try { if (offlineSession) initYouTabUI(); } catch (e) {}
+            try { renderAllSkeletons(); } catch (e) {}
             return;
         }
 
@@ -1383,6 +1418,24 @@ auth.onAuthStateChanged(async (user) => {
         }
     } catch (e) {
         console.error('Auth status sync error:', e);
+        if (!navigator.onLine) {
+            // Network failure is not a sign-out. Preserve cached data and keep the app open.
+            try {
+                const cached = JSON.parse(localStorage.getItem('flaynity_user_session_cache') || 'null');
+                const appScr = document.getElementById('app-screen');
+                const authScr = document.getElementById('auth-screen');
+                if (appScr) appScr.style.display = cached ? 'block' : appScr.style.display;
+                if (authScr && cached) authScr.style.display = 'none';
+                if (cached) {
+                    document.body.classList.remove('auth-active');
+                    currentChannelData = cached;
+                    window.__flaynityOfflineSessionActive = true;
+                    try { initYouTabUI(); } catch (innerError) {}
+                    try { renderAllSkeletons(); } catch (innerError) {}
+                }
+            } catch (cacheError) {}
+            return;
+        }
         try { await auth.signOut(); } catch(err) {}
     }
 });

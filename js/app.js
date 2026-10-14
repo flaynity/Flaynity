@@ -38,7 +38,10 @@
     function showOfflineCachedApp() {
         if (navigator.onLine) return;
         let cachedSession = null;
-        try { cachedSession = localStorage.getItem('flaynity_user_session_cache'); } catch (e) {}
+        try {
+            cachedSession = localStorage.getItem('flaynity_auth_session_cache') ||
+                            localStorage.getItem('flaynity_user_session_cache');
+        } catch (e) {}
         if (!cachedSession) return;
         const authScr = document.getElementById('auth-screen');
         const appScr = document.getElementById('app-screen');
@@ -1298,7 +1301,10 @@ auth.onAuthStateChanged(async (user) => {
             // Keep the last locally cached session instead of wiping it or blocking app entry.
             let offlineSession = null;
             try {
-                if (!navigator.onLine) offlineSession = JSON.parse(localStorage.getItem('flaynity_user_session_cache') || 'null');
+                if (!navigator.onLine) offlineSession = JSON.parse(
+                    localStorage.getItem('flaynity_user_session_cache') ||
+                    localStorage.getItem('flaynity_auth_session_cache') || 'null'
+                );
             } catch (cacheError) {}
             if (!navigator.onLine && offlineSession) {
                 const appScr = document.getElementById('app-screen');
@@ -1332,7 +1338,12 @@ auth.onAuthStateChanged(async (user) => {
         // Do not wait on a server read or sign the user out just because the device is offline.
         if (!navigator.onLine) {
             let offlineSession = null;
-            try { offlineSession = JSON.parse(localStorage.getItem('flaynity_user_session_cache') || 'null'); } catch (cacheError) {}
+            try {
+                offlineSession = JSON.parse(
+                    localStorage.getItem('flaynity_user_session_cache') ||
+                    localStorage.getItem('flaynity_auth_session_cache') || 'null'
+                );
+            } catch (cacheError) {}
             const appScr = document.getElementById('app-screen');
             const authScr = document.getElementById('auth-screen');
             if (appScr) appScr.style.display = 'block';
@@ -1371,6 +1382,15 @@ auth.onAuthStateChanged(async (user) => {
         if (appScr) appScr.style.display = 'block';
 
         saveAccountToList(user);
+        try {
+            localStorage.setItem('flaynity_auth_session_cache', JSON.stringify({
+                uid: user.uid,
+                email: user.email || '',
+                gmailName: user.displayName || '',
+                avatarUrl: user.photoURL || '',
+                cachedAt: Date.now()
+            }));
+        } catch (cacheError) {}
         attachAdminControlListener();
 
         // Keep the ban state live. If Admin bans this user while the app is open,
@@ -1421,7 +1441,10 @@ auth.onAuthStateChanged(async (user) => {
         if (!navigator.onLine) {
             // Network failure is not a sign-out. Preserve cached data and keep the app open.
             try {
-                const cached = JSON.parse(localStorage.getItem('flaynity_user_session_cache') || 'null');
+                const cached = JSON.parse(
+                    localStorage.getItem('flaynity_user_session_cache') ||
+                    localStorage.getItem('flaynity_auth_session_cache') || 'null'
+                );
                 const appScr = document.getElementById('app-screen');
                 const authScr = document.getElementById('auth-screen');
                 if (appScr) appScr.style.display = cached ? 'block' : appScr.style.display;

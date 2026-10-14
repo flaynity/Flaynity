@@ -430,51 +430,6 @@
             padding: 12px 0 18px;
             text-align: center;
         }
-        .discover-feels-skeleton-card {
-            min-width: 0;
-            aspect-ratio: 9 / 16;
-            overflow: hidden;
-            border-radius: 10px;
-            padding: 0 0 8px;
-            box-sizing: border-box;
-            background: var(--surface);
-        }
-        .discover-feels-skeleton-media,
-        .discover-feels-skeleton-line {
-            position: relative;
-            overflow: hidden;
-            background: var(--border-color);
-        }
-        .discover-feels-skeleton-media {
-            width: 100%;
-            height: 76%;
-            border-radius: 10px;
-        }
-        .discover-feels-skeleton-line {
-            height: 8px;
-            margin: 8px 7px 0;
-            border-radius: 5px;
-        }
-        .discover-feels-skeleton-line.short {
-            width: 55%;
-            margin-top: 6px;
-        }
-        .discover-feels-skeleton-media::after,
-        .discover-feels-skeleton-line::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            transform: translateX(-100%);
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,.28), transparent);
-            animation: discover-feels-shimmer 1.35s infinite;
-        }
-        @keyframes discover-feels-shimmer {
-            100% { transform: translateX(100%); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .discover-feels-skeleton-media::after,
-            .discover-feels-skeleton-line::after { animation: none; }
-        }
 
     </style>
 </head>

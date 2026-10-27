@@ -92,18 +92,34 @@
     layer.className = 'exoclick-feels-ad';
     layer.style.cssText = 'position:absolute;inset:0;z-index:30;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;';
     layer.innerHTML = '<div style="position:absolute;top:14px;left:14px;z-index:2;color:#fff;background:#222b;padding:5px 8px;border-radius:4px;font:12px sans-serif;">Advertisement</div><video playsinline webkit-playsinline controls preload="none" style="width:100%;height:100%;object-fit:contain;background:#000;"></video><button type="button" style="position:absolute;right:14px;top:12px;z-index:3;border:0;border-radius:18px;padding:7px 12px;background:#333;color:#fff;">Close ad</button>';
+    slide.classList.add('exoclick-feels-ad-slot');
     slide.appendChild(layer);
+    // Hide the entire organic Feels card so the third slot is ad-only.
+    Array.from(slide.children).forEach(child => { if (child !== layer) child.style.setProperty('visibility', 'hidden', 'important'); });
+    const organicVideo = contentVideo;
+    if (organicVideo) {
+      organicVideo.pause();
+      organicVideo.removeAttribute('autoplay');
+      organicVideo.style.setProperty('display', 'none', 'important');
+    }
     const adVideo = layer.querySelector('video');
     const close = () => {
       if (!layer.isConnected) return;
       try { adVideo.pause(); } catch (e) {}
+      // Keep the ad slot organic-content-free for this feed session.
       layer.remove();
+      const placeholder = document.createElement('div');
+      placeholder.className = 'exoclick-feels-ad-fallback';
+      placeholder.style.cssText = 'position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;color:#fff;font:14px sans-serif;';
+      placeholder.textContent = 'Advertisement unavailable';
+      slide.appendChild(placeholder);
       feelsAdActive = false;
       // The organic Feels item used as this ad slot must not resume after the ad.
       if (contentVideo && contentVideo.isConnected) {
         contentVideo.pause();
         contentVideo.currentTime = 0;
-        contentVideo.style.visibility = 'hidden';
+        contentVideo.style.setProperty('display', 'none', 'important');
+        contentVideo.style.setProperty('visibility', 'hidden', 'important');
       }
     };
     layer.querySelector('button').addEventListener('click', close);

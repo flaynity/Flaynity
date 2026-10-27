@@ -103,16 +103,21 @@
       organicVideo.style.setProperty('display', 'none', 'important');
     }
     const adVideo = layer.querySelector('video');
-    const close = () => {
+    let adResolved = false;
+    let adFallbackTimer = null;
+    const close = (showFallback = true) => {
       if (!layer.isConnected) return;
       try { adVideo.pause(); } catch (e) {}
+      if (adFallbackTimer) clearTimeout(adFallbackTimer);
       // Keep the ad slot organic-content-free for this feed session.
       layer.remove();
-      const placeholder = document.createElement('div');
-      placeholder.className = 'exoclick-feels-ad-fallback';
-      placeholder.style.cssText = 'position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;color:#fff;font:14px sans-serif;';
-      placeholder.textContent = 'Advertisement unavailable';
-      slide.appendChild(placeholder);
+      if (showFallback) {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'exoclick-feels-ad-fallback';
+        placeholder.style.cssText = 'position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;color:#fff;font:14px sans-serif;';
+        placeholder.textContent = 'Advertisement unavailable';
+        slide.appendChild(placeholder);
+      }
       feelsAdActive = false;
       // The organic Feels item used as this ad slot must not resume after the ad.
       if (contentVideo && contentVideo.isConnected) {
@@ -123,8 +128,9 @@
       }
     };
     layer.querySelector('button').addEventListener('click', close);
-    adVideo.addEventListener('ended', close, { once: true });
-    adVideo.addEventListener('error', close, { once: true });
+    adVideo.addEventListener('ended', () => close(false), { once: true });
+    // A VAST player may briefly reset its media element while resolving the tag.
+    // Do not treat that transient event as a confirmed ad failure.
     feelsAdActive = true;
     if (contentVideo) {
       contentVideo.pause();
@@ -135,15 +141,25 @@
       if (!layer.isConnected) return;
       try {
         fluidPlayer(adVideo, {
-          layoutControls: { autoPlay: true, mute: false, controlBar: { autoHide: true } },
+          layoutControls: { autoPlay: true, mute: true, controlBar: { autoHide: true } },
           vastOptions: {
             adList: [{ roll: 'preRoll', vastTag: EXO.feelsVast }],
             adText: 'Advertisement',
-            showPlayButton: true
+            showPlayButton: true,
+            vastTimeout: 12000
           }
         });
-      } catch (e) { close(); }
-    }).catch(close);
+        // Give Fluid Player time to resolve the VAST XML and begin playback before fallback.
+        adFallbackTimer = setTimeout(() => {
+          if (!layer.isConnected || adResolved) return;
+          if (adVideo.currentTime > 0 && !adVideo.paused) adResolved = true;
+          else close(true);
+        }, 15000);
+        adVideo.addEventListener('playing', () => { adResolved = true; if (adFallbackTimer) clearTimeout(adFallbackTimer); }, { once: true });
+        const playPromise = adVideo.play();
+        if (playPromise && typeof playPromise.catch === 'function') playPromise.catch(() => {});
+      } catch (e) { console.warn('[ExoClick] Feels VAST initialization failed.', e); close(true); }
+    }).catch((e) => { console.warn('[ExoClick] Feels ad player library failed to load.', e); close(true); });
   }
 
   function watchFeels() {

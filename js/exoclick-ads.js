@@ -65,7 +65,7 @@
     const posts = Array.from(root.querySelectorAll('.post-card')).filter(el => !el.closest('.exoclick-post-ad'));
     root.querySelectorAll('.exoclick-post-ad').forEach(el => el.remove());
     if (posts.length < 3) return;
-    for (let i = 2; i < posts.length; i += 3) {
+    for (let i = 3; i < posts.length; i += 4) {
       const post = posts[i];
       if (!post || !post.parentNode) continue;
       post.insertAdjacentHTML('beforebegin', bannerMarkup());
@@ -149,7 +149,8 @@
 
   function scan() {
     const home = document.getElementById('home-feed-container');
-    if (home) loadBannerAds(home);
+    if (home && (typeof activeHomeCategory === 'undefined' || activeHomeCategory === 'Posts')) loadBannerAds(home);
+    else if (home) home.querySelectorAll('.exoclick-post-ad').forEach(el => el.remove());
     const video = document.getElementById('fly-video');
     if (video && video.currentSrc && !video.dataset.exoclickVastAttached) attachLongVideoAds(video);
     watchFeels();

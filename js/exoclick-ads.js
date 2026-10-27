@@ -13,6 +13,7 @@
   let fluidPromise;
   const adSeen = new WeakSet();
   let feelsOrganicSinceAd = 0;
+  let feelsAdSlotSlideId = '';
   let feelsAdActive = false;
 
   function loadFluidPlayer() {
@@ -98,13 +99,22 @@
       try { adVideo.pause(); } catch (e) {}
       layer.remove();
       feelsAdActive = false;
-      if (contentVideo && contentVideo.isConnected) contentVideo.play().catch(() => {});
+      // The organic Feels item used as this ad slot must not resume after the ad.
+      if (contentVideo && contentVideo.isConnected) {
+        contentVideo.pause();
+        contentVideo.currentTime = 0;
+        contentVideo.style.visibility = 'hidden';
+      }
     };
     layer.querySelector('button').addEventListener('click', close);
     adVideo.addEventListener('ended', close, { once: true });
     adVideo.addEventListener('error', close, { once: true });
     feelsAdActive = true;
-    if (contentVideo) contentVideo.pause();
+    if (contentVideo) {
+      contentVideo.pause();
+      contentVideo.currentTime = 0;
+      contentVideo.style.visibility = 'hidden';
+    }
     loadFluidPlayer().then((fluidPlayer) => {
       if (!layer.isConnected) return;
       try {
@@ -134,8 +144,10 @@
         lastId = id;
         if (feelsAdActive) return;
         feelsOrganicSinceAd++;
-        if (feelsOrganicSinceAd >= 3) {
+        // Every second Feels slot is an ad-only slot: do not play its organic video.
+        if (feelsOrganicSinceAd >= 2 && feelsAdSlotSlideId !== id) {
           feelsOrganicSinceAd = 0;
+          feelsAdSlotSlideId = id;
           const video = slide.querySelector('video.short-video-el');
           if (video) createFeelsAdLayer(slide, video);
         }

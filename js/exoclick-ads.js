@@ -161,7 +161,7 @@
         if (feelsAdActive) return;
         feelsOrganicSinceAd++;
         // Every second Feels slot is an ad-only slot: do not play its organic video.
-        if (feelsOrganicSinceAd >= 2 && feelsAdSlotSlideId !== id) {
+        if (feelsOrganicSinceAd >= 3 && feelsAdSlotSlideId !== id) {
           feelsOrganicSinceAd = 0;
           feelsAdSlotSlideId = id;
           const video = slide.querySelector('video.short-video-el');

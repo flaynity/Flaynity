@@ -2256,80 +2256,79 @@ function ensureHomePostScrollFlow() {
     } catch (e) {}
 }
 
+const FB_LIKE_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11H3v10h4h1h9.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z M7,20H4v-8h3V20z M19.98,13.17l-1.34,6C18.54,19.65,18.03,20,17.43,20H8v-8.61l5.6-6.06C13.79,5.12,14.08,5,14.38,5c0.26,0,0.5,0.11,0.63,0.3c0.07,0.1,0.15,0.26,0.09,0.47l-1.52,4.94L13.18,12h1.35h4.23c0.41,0,0.8,0.17,1.03,0.46C19.92,12.61,20.05,12.86,19.98,13.17z"/></svg>';
+const FB_COMMENT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>';
+const FB_SHARE_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M15,5.63L20.66,12L15,18.37V14h-1c-3.96,0-7.14,1-9.75,3.09c1.84-4.07,5.11-6.4,9.89-7.1L15,9.86V5.63 M14,3v6C6.22,10.13,3.11,15.33,2,21c2.78-3.97,6.44-6,12-6v6l9-9L14,3L14,3z"/></svg>';
+const FB_DOTS_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="4.5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19.5" cy="12" r="2"/></svg>';
+const FB_X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg>';
+const _fbHiddenPosts = new Set();
+
+function fbTimeShort(ts) {
+    if (!ts) return 'Just now';
+    const d = new Date(ts);
+    const diff = Date.now() - d.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return mins + 'm';
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + 'h';
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return days + 'd';
+    const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+    return d.getFullYear() === new Date().getFullYear() ? `${mon} ${d.getDate()}` : `${mon} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
+function fbCaptionHTML(text) {
+    return String(text).split(/(#[^\s#]+)/g).map((p, i) => i % 2 ? `<span class="fb-tag">${escapeHTML(p)}</span>` : escapeHTML(p)).join('');
+}
+
+function fbReactionBadgesHTML(types) {
+    const bg = { like: '#1877F2', love: '#F33E58', care: '#F7B125', haha: '#F7B125', wow: '#F7B125', sad: '#F7B125', angry: '#E9710F' };
+    return types.map((t, i) => {
+        const inner = t === 'like' ? '<i class="fas fa-thumbs-up"></i>' : t === 'love' ? '<i class="fas fa-heart"></i>' : reactionEmojis[t];
+        return `<span class="fb-badge" style="background:${bg[t] || '#F7B125'}; z-index:${10 - i}; ${i ? 'margin-left:-6px;' : ''}">${inner}</span>`;
+    }).join('');
+}
+
 function renderSinglePostSegmentUI(post) {
     ensureHomePostScrollFlow();
     if (!post) return '';
+    if (_fbHiddenPosts.has(String(post.id))) return '';
 
     const titleText = post.title || post.caption || '';
     const plainCaption = post.caption || '';
-    const combinedText = titleText === plainCaption ? plainCaption : `${titleText}\n\n${plainCaption}`;
-    
-    const isLong = combinedText.length > 80; 
-    
-    let titleHtml = '';
-    if (isLong) {
-        titleHtml = `
-            <div id="title-collapsed-${post.id}" style="line-height: 1.4; font-weight: 800; white-space: pre-wrap; word-break: break-word;">
-                ${escapeHTML(combinedText)}
-            </div>
-            <div id="title-expanded-${post.id}" style="display: none; line-height: 1.4; font-weight: 800; white-space: pre-wrap; word-break: break-word;">
-                ${escapeHTML(combinedText)}
-            </div>
-        `;
-    } else {
-        titleHtml = `<div style="line-height: 1.4; font-weight: 800; white-space: pre-wrap; word-break: break-word;">${escapeHTML(combinedText)}</div>`;
-    }
+    const combinedText = (titleText === plainCaption ? plainCaption : `${titleText}\n\n${plainCaption}`).trim();
+    const isLong = combinedText.length > 150 || combinedText.split('\n').length > 4;
 
     const subBtnId = `post-sub-btn-${post.id}`;
-    const subUserId = post.userId;
-    
-    if (auth.currentUser && navigator.onLine) {
-        db.ref(`subscribers/${subUserId}/${auth.currentUser.uid}`).on('value', (snapshot) => {
+    const isOwn = !!(auth.currentUser && auth.currentUser.uid === post.userId);
+
+    if (auth.currentUser && navigator.onLine && !isOwn) {
+        db.ref(`subscribers/${post.userId}/${auth.currentUser.uid}`).on('value', (snapshot) => {
             const btn = document.getElementById(subBtnId);
             if (btn) {
                 if (snapshot.exists()) {
-                    btn.innerText = "Subscribed";
-                    btn.style.color = "var(--text-muted)";
-                    btn.style.borderColor = "var(--border-color)";
+                    btn.innerText = "Following";
+                    btn.style.color = "var(--fb-muted)";
                 } else {
-                    btn.innerText = "Subscribe";
-                    btn.style.color = "var(--primary)";
-                    btn.style.borderColor = "var(--primary)";
+                    btn.innerText = "Follow";
+                    btn.style.color = "";
                 }
             }
         });
     }
 
-    const avatarHtml = `<div class="live-avatar-${post.userId}" style="width:40px; height:40px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
+    const captionHtml = combinedText ? `
+        <div class="fb-caption-wrap">
+            <div id="post-caption-${post.id}" class="fb-caption ${isLong ? 'fb-clamp' : ''}">${fbCaptionHTML(combinedText)}</div>
+            ${isLong ? `<button id="post-more-${post.id}" class="fb-seemore" onclick="togglePostTitleExpand('${post.id}')">See more</button>` : ''}
+        </div>` : '';
 
-    let imagesHtml = '';
-    if (post.images && post.images.length > 0) {
-        imagesHtml = `
-            <div style="margin-left: -16px; margin-right: -16px; margin-top: 12px; margin-bottom: 12px; width: calc(100% + 32px); aspect-ratio: 3/4; position: relative; background: #0F0F0F; overflow: visible; border-radius: 0 !important;">
-                <img src="${post.images[0]}" onclick="openFullScreenImagePreview('${post.images[0]}')" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; display: block; border-radius: 0 !important;" loading="lazy">
-                
-                <div style="position: absolute; top: 0; left: 0; right: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%); padding: 16px 20px; color: #FFFFFF; z-index: 10;">
-                     <div id="title-container-${post.id}" onclick="event.stopPropagation(); togglePostTitleExpand('${post.id}')" style="cursor: pointer; font-size: 0.95rem; font-weight: 800; line-height: 1.4; text-shadow: 0 2px 8px rgba(0,0,0,0.95); font-family: 'Plus Jakarta Sans', sans-serif;">
-                         ${titleHtml}
-                     </div>
-                </div>
-
-                ${post.images.length > 1 ? `
-                    <div style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; z-index: 12;">
-                        +${post.images.length - 1} More
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    } else {
-        imagesHtml = `
-            <div style="margin-bottom: 12px; padding: 0 4px;">
-                 <div id="title-container-${post.id}" onclick="togglePostTitleExpand('${post.id}')" style="cursor: pointer; font-size: 0.95rem; font-weight: 800; line-height: 1.4; color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif;">
-                     ${titleHtml}
-                 </div>
-            </div>
-        `;
-    }
+    const mediaHtml = (post.images && post.images.length > 0) ? `
+        <div class="fb-media">
+            <img src="${post.images[0]}" onclick="openFullScreenImagePreview('${post.images[0]}')" loading="lazy" alt="">
+            ${post.images.length > 1 ? `<div class="fb-more-badge">+${post.images.length - 1} More</div>` : ''}
+        </div>` : '';
 
     const totalReactionsId = `post-total-reactions-${post.id}`;
     const totalCommentsId = `post-total-comments-${post.id}`;
@@ -2337,47 +2336,43 @@ function renderSinglePostSegmentUI(post) {
     const loveBtnId = `post-love-btn-${post.id}`;
 
     return `
-        <div class="post-card" id="post-card-${post.id}" style="margin-bottom: 24px; background: transparent; border: none; border-radius: 0; padding: 12px 0; box-shadow: none; overflow: visible; border-bottom: 1px solid var(--border-color);">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 4px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    ${avatarHtml}
-                    <div>
-                        <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0;" class="live-username-${post.userId}">@${escapeHTML(post.username)}</h4>
-                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${getRelativeTime(post.createdAt)}</span>
+        <div class="post-card fb-post" id="post-card-${post.id}">
+            <div class="fb-head">
+                <div class="fb-ring"><div class="fb-av live-avatar-${post.userId}"></div></div>
+                <div class="fb-who">
+                    <div class="fb-name">
+                        <span class="fb-uname live-username-${post.userId}">${escapeHTML(post.username || 'Flaynity User')}</span>
+                        ${isOwn ? '' : `<span class="fb-dot">·</span><button id="${subBtnId}" class="fb-follow" onclick="toggleClipSubscribe('${post.userId}', this)">Follow</button>`}
                     </div>
+                    <div class="fb-sub"><span>${fbTimeShort(post.createdAt)}</span><span class="fb-dot">·</span><i class="fas fa-globe-americas"></i></div>
                 </div>
-                <button id="${subBtnId}" onclick="toggleClipSubscribe('${post.userId}', this)" style="background: none; border: 1.5px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 800; cursor: pointer; transition: all 0.2s;">Subscribe</button>
+                <button class="fb-hbtn" onclick="typeof showUpcomingModal==='function' && showUpcomingModal()" aria-label="More">${FB_DOTS_SVG}</button>
+                <button class="fb-hbtn fb-x" onclick="fbHidePost('${post.id}')" aria-label="Hide">${FB_X_SVG}</button>
             </div>
-
-            ${imagesHtml}
-
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border-color); font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-left: -16px; margin-right: -16px; background: transparent;">
-                <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="openReactedPeoplePage('${post.id}')">
-                    <span id="${topEmojisId}" style="display: flex; gap: -4px;"></span>
-                    <span id="${totalReactionsId}" style="margin-left: 4px;">0 Reactions</span>
+            ${captionHtml}
+            ${mediaHtml}
+            <div class="fb-foot">
+                <div class="fb-act">
+                    <button id="${loveBtnId}" class="fb-ico post-action-btn-fb"
+                            onmousedown="startReactionTimer('${post.id}', event)"
+                            ontouchstart="startReactionTimer('${post.id}', event)"
+                            onmouseup="clearReactionTimer('${post.id}', event)"
+                            ontouchend="clearReactionTimer('${post.id}', event)"
+                            onclick="handleLoveSingleClick('${post.id}')" aria-label="React">
+                        <span class="love-icon-element" id="love-icon-${post.id}">${FB_LIKE_SVG}</span>
+                    </button>
+                    <span id="love-text-${post.id}" style="display:none">Love</span>
+                    <span id="${totalReactionsId}" class="fb-count" onclick="openReactedPeoplePage('${post.id}')">0</span>
                 </div>
-                <div style="cursor: pointer;" onclick="openCommentsForPost('${post.id}')">
-                    <span id="${totalCommentsId}">0 Comments</span>
+                <div class="fb-act" onclick="openCommentsForPost('${post.id}')">
+                    <span class="fb-ico">${FB_COMMENT_SVG}</span>
+                    <span id="${totalCommentsId}" class="fb-count">0</span>
                 </div>
-            </div>
-
-            <div style="display: flex; gap: 8px; margin-top: 12px; padding: 0 4px;">
-                <button id="${loveBtnId}" 
-                        class="post-action-btn-fb ripple" 
-                        style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--border-color); border: none; padding: 12px; border-radius: 12px; font-size: 0.9rem; font-weight: 800; color: var(--text-main); cursor: pointer; transition: all 0.2s;"
-                        onmousedown="startReactionTimer('${post.id}', event)"
-                        ontouchstart="startReactionTimer('${post.id}', event)"
-                        onmouseup="clearReactionTimer('${post.id}', event)"
-                        ontouchend="clearReactionTimer('${post.id}', event)"
-                        onclick="handleLoveSingleClick('${post.id}')">
-                    <i class="far fa-heart love-icon-element" id="love-icon-${post.id}"></i> <span id="love-text-${post.id}" style="display: inline-flex; align-items: center; line-height: 1;">Love</span>
-                </button>
-                
-                <button class="post-action-btn-fb ripple" 
-                        onclick="openCommentsForPost('${post.id}')"
-                        style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--border-color); border: none; padding: 12px; border-radius: 12px; font-size: 0.9rem; font-weight: 800; color: var(--text-main); cursor: pointer; transition: all 0.2s;">
-                    <i class="far fa-comment"></i> Comment
-                </button>
+                <div class="fb-act" onclick="fbSharePost('${post.id}')">
+                    <span class="fb-ico">${FB_SHARE_SVG}</span>
+                </div>
+                <div class="fb-spacer"></div>
+                <span id="${topEmojisId}" class="fb-badges" onclick="openReactedPeoplePage('${post.id}')"></span>
             </div>
         </div>
     `;
@@ -2385,17 +2380,31 @@ function renderSinglePostSegmentUI(post) {
 
 function togglePostTitleExpand(postId) {
     playUI('click');
-    const collapsed = document.getElementById(`title-collapsed-${postId}`);
-    const expanded = document.getElementById(`title-expanded-${postId}`);
-    if (collapsed && expanded) {
-        if (collapsed.style.display === 'none') {
-            expanded.style.display = 'none';
-            collapsed.style.display = '-webkit-box';
-        } else {
-            collapsed.style.display = 'none';
-            expanded.style.display = 'block';
-        }
-    }
+    const el = document.getElementById(`post-caption-${postId}`);
+    const btn = document.getElementById(`post-more-${postId}`);
+    if (!el) return;
+    const clamped = el.classList.toggle('fb-clamp');
+    if (btn) btn.style.display = clamped ? 'inline' : 'none';
+}
+
+function fbHidePost(postId) {
+    playUI('click');
+    const el = document.getElementById(`post-card-${postId}`);
+    _fbHiddenPosts.add(String(postId));
+    if (!el) return;
+    el.style.height = el.offsetHeight + 'px';
+    el.style.overflow = 'hidden';
+    el.style.transition = 'height .32s ease, opacity .25s ease, margin .32s ease';
+    requestAnimationFrame(() => { el.style.opacity = '0'; el.style.height = '0px'; el.style.marginBottom = '0px'; });
+    setTimeout(() => el.remove(), 350);
+}
+
+function fbSharePost(postId) {
+    playUI('click');
+    const p = (typeof allCommunityPosts !== 'undefined') ? allCommunityPosts.find(x => String(x.id) === String(postId)) : null;
+    const data = { title: (p && (p.title || p.caption)) || 'Flaynity', text: (p && (p.caption || p.title)) || 'Flaynity', url: location.href };
+    if (navigator.share) { navigator.share(data).catch(() => {}); }
+    else if (navigator.clipboard) { navigator.clipboard.writeText(location.href); if (typeof showNotification === 'function') showNotification('Link copied', 'success'); }
 }
 
 function playFeelsSlide(shortId, resetTime = true) {
@@ -5923,12 +5932,12 @@ function registerPostReactionsListener(postId) {
 
         const topEmojisEl = document.getElementById(`post-top-emojis-${postId}`);
         if (topEmojisEl) {
-            topEmojisEl.innerHTML = sortedTypes.map(t => reactionEmojis[t]).join('');
+            topEmojisEl.innerHTML = fbReactionBadgesHTML(sortedTypes);
         }
 
         const totalReactionsEl = document.getElementById(`post-total-reactions-${postId}`);
         if (totalReactionsEl) {
-            totalReactionsEl.innerText = `${totalReactions} Reaction${totalReactions === 1 ? '' : 's'}`;
+            totalReactionsEl.innerText = formatCount(totalReactions);
         }
 
         const loveBtn = document.getElementById(`post-love-btn-${postId}`);
@@ -5950,8 +5959,8 @@ function registerPostReactionsListener(postId) {
                 }
             } else {
                 if (loveIcon) {
-                    loveIcon.className = 'far fa-heart love-icon-element';
-                    loveIcon.innerText = '';
+                    loveIcon.className = 'love-icon-element';
+                    loveIcon.innerHTML = FB_LIKE_SVG;
                     loveIcon.style.fontSize = '';
                 }
                 if (loveText) {
@@ -5967,7 +5976,7 @@ function registerPostReactionsListener(postId) {
         const totalComments = Object.keys(comments).length;
         const totalCommentsEl = document.getElementById(`post-total-comments-${postId}`);
         if (totalCommentsEl) {
-            totalCommentsEl.innerText = `${totalComments} Comment${totalComments === 1 ? '' : 's'}`;
+            totalCommentsEl.innerText = formatCount(totalComments);
         }
     });
 }

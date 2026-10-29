@@ -1134,17 +1134,18 @@
 .wp-sub{margin:0 0 0 2.2vw;height:8.9vw;min-height:0;padding:0 3.3vw;border-radius:8.9vw;background:var(--text-main);color:var(--bg-color);font-size:3.4vw;font-weight:600;line-height:1;flex-shrink:0;border:0;}
 .wp-spacer{flex:1;min-width:0;}
 .wp-ico{position:relative;width:11.3vw;height:11.3vw;max-width:11.3vw;background:none;border:0;padding:0;color:var(--text-main);display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%;outline:none;}
-.wp-ico:last-child{width:9.5vw;}
-.wp-ico svg{position:relative;width:5.9vw;height:5.9vw;display:block;transition:transform .2s ease;}
-.wp-ico svg path{fill:transparent;transition:fill .28s ease;}
+.wp-ico svg{position:relative;width:6.4vw;height:6.4vw;display:block;transition:transform .18s ease;}
 .wp-ico:active svg{transform:scale(.82);}
 .wp-ico::before{content:"";position:absolute;inset:6%;border-radius:50%;background:var(--wp-panel);opacity:0;transform:scale(.3);pointer-events:none;}
-#movie-like-btn.active svg path,#movie-dislike-btn.active svg path{fill:currentColor;}
-#movie-like-btn.wp-anim svg{animation:wpLikePop .55s cubic-bezier(.3,.9,.4,1);}
-#movie-dislike-btn.wp-anim svg{animation:wpDislikePop .55s cubic-bezier(.3,.9,.4,1);}
-.wp-ico.wp-anim::before{animation:wpRing .5s ease-out;}
-@keyframes wpLikePop{0%{transform:scale(1) rotate(0)}28%{transform:scale(.72) rotate(-18deg) translateY(2px)}62%{transform:scale(1.3) rotate(10deg) translateY(-2px)}100%{transform:scale(1) rotate(0)}}
-@keyframes wpDislikePop{0%{transform:scale(1) rotate(0)}28%{transform:scale(.72) rotate(18deg) translateY(-2px)}62%{transform:scale(1.3) rotate(-10deg) translateY(2px)}100%{transform:scale(1) rotate(0)}}
+.wp-ico .wp-off,.wp-ico .wp-on{transform-box:fill-box;transform-origin:center;transition:opacity .22s ease,transform .38s cubic-bezier(.34,1.56,.64,1);}
+.wp-ico .wp-on{opacity:0;transform:scale(.3);}
+.wp-ico.active .wp-on{opacity:1;transform:scale(1);}
+.wp-ico.active .wp-off{opacity:0;transform:scale(.6);}
+#movie-like-btn.wp-anim svg{animation:wpLikePop .6s cubic-bezier(.3,.9,.4,1);}
+#movie-dislike-btn.wp-anim svg{animation:wpDislikePop .6s cubic-bezier(.3,.9,.4,1);}
+.wp-ico.wp-anim::before{animation:wpRing .55s ease-out;}
+@keyframes wpLikePop{0%{transform:scale(1) rotate(0)}25%{transform:scale(.7) rotate(-16deg) translateY(2px)}60%{transform:scale(1.28) rotate(9deg) translateY(-2px)}100%{transform:scale(1) rotate(0)}}
+@keyframes wpDislikePop{0%{transform:scale(1) rotate(0)}25%{transform:scale(.7) rotate(16deg) translateY(-2px)}60%{transform:scale(1.28) rotate(-9deg) translateY(2px)}100%{transform:scale(1) rotate(0)}}
 @keyframes wpRing{0%{opacity:.95;transform:scale(.3)}100%{opacity:0;transform:scale(1.15)}}
 #full-movie-page .comment-preview-card{background:var(--wp-panel);border-radius:22px;padding:14px 18px 16px;margin:0 0 0;gap:10px;}
 #full-movie-page .comment-preview-title{font-size:1rem;font-weight:700;}
@@ -1241,20 +1242,13 @@
 <button class="btn-watch-subscribe wp-sub" id="movie-subscribe-btn" onclick="toggleMovieChannelSubscribe()">Subscribe</button>
 <div class="wp-spacer"></div>
 <button class="wp-ico" id="movie-like-btn" onclick="toggleMovieLike()" aria-label="Like">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg><span id="movie-like-count" style="display:none">0</span>
+<svg viewBox="0 0 24 24" fill="currentColor"><path class="wp-off" d="M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11H3v10h4h1h9.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z M7,20H4v-8h3V20z M19.98,13.17l-1.34,6C18.54,19.65,18.03,20,17.43,20H8v-8.61l5.6-6.06C13.79,5.12,14.08,5,14.38,5c0.26,0,0.5,0.11,0.63,0.3c0.07,0.1,0.15,0.26,0.09,0.47l-1.52,4.94L13.18,12h1.35h4.23c0.41,0,0.8,0.17,1.03,0.46C19.92,12.61,20.05,12.86,19.98,13.17z"/><path class="wp-on" d="M3,11h3v10H3V11z M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11v10h10.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z"/></svg><span id="movie-like-count" style="display:none">0</span>
 </button>
 <button class="wp-ico" id="movie-dislike-btn" onclick="toggleMovieDislike()" aria-label="Dislike">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+<svg viewBox="0 0 24 24" fill="currentColor"><g transform="rotate(180 12 12)"><path class="wp-off" d="M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11H3v10h4h1h9.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z M7,20H4v-8h3V20z M19.98,13.17l-1.34,6C18.54,19.65,18.03,20,17.43,20H8v-8.61l5.6-6.06C13.79,5.12,14.08,5,14.38,5c0.26,0,0.5,0.11,0.63,0.3c0.07,0.1,0.15,0.26,0.09,0.47l-1.52,4.94L13.18,12h1.35h4.23c0.41,0,0.8,0.17,1.03,0.46C19.92,12.61,20.05,12.86,19.98,13.17z"/><path class="wp-on" d="M3,11h3v10H3V11z M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11v10h10.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z"/></g></svg>
 </button>
-<button class="wp-ico" onclick="wpShare()" aria-label="Share">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.5l7 7-7 7v-4c-5 0-8.5 1.3-11 5 .8-5.8 4-10 11-10.8z"/></svg>
-</button>
-<button class="wp-ico" onclick="requestDownloadWithAd()" aria-label="Download">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg>
-</button>
-<button class="wp-ico" onclick="openMoreDescriptionSheet()" aria-label="More">
-<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>
-</button>
+<button class="wp-ico" onclick="wpShare()" aria-label="Share"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15,5.63L20.66,12L15,18.37V14h-1c-3.96,0-7.14,1-9.75,3.09c1.84-4.07,5.11-6.4,9.89-7.1L15,9.86V5.63 M14,3v6C6.22,10.13,3.11,15.33,2,21c2.78-3.97,6.44-6,12-6v6l9-9L14,3L14,3z"/></svg></button>
+<button class="wp-ico" onclick="requestDownloadWithAd()" aria-label="Download"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 18v1H6v-1h11zm-.5-6.6-.7-.7-3.8 3.7V4h-1v10.4l-3.8-3.8-.7.7 5 5 5-5z"/></svg></button>
 </div>
 <div class="comment-preview-card" id="comment-preview-trigger" onclick="openCommentModal()">
 <div class="comment-preview-header">
@@ -1474,4 +1468,4 @@
 <span class="nav-label">You</span>
 </div>
 </div>
-</body></html
+</body></html>

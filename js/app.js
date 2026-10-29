@@ -2636,6 +2636,153 @@ function openFeelsComments(shortId, event) {
     openShortComments(s.id);
 }
 
+
+// =========================================================
+// EXOCLICK VAST AD-ONLY FEELS SLOTS
+// Shows one ad-only slot after each pair of Feels. No Feels
+// video is attached to an ad slot; empty VAST responses remain
+// scrollable and never substitute a Feels video.
+// =========================================================
+const FLAYNITY_EXOCLICK_VAST_TAG = 'https://s.magsrv.com/v1/vast.php?idzone=6067029';
+let flaynityFluidPlayerPromise = null;
+
+function ensureExoclickFluidPlayer() {
+    if (window.fluidPlayer) return Promise.resolve(true);
+    if (flaynityFluidPlayerPromise) return flaynityFluidPlayerPromise;
+    flaynityFluidPlayerPromise = new Promise(resolve => {
+        if (!document.querySelector('link[data-flaynity-exoclick-css]')) {
+            const css = document.createElement('link');
+            css.rel = 'stylesheet';
+            css.href = 'https://cdn.fluidplayer.com/v3/current/fluidplayer.min.css';
+            css.dataset.flaynityExoclickCss = '1';
+            document.head.appendChild(css);
+        }
+        const existing = document.querySelector('script[data-flaynity-exoclick-js]');
+        if (existing) {
+            existing.addEventListener('load', () => resolve(!!window.fluidPlayer), { once:true });
+            existing.addEventListener('error', () => resolve(false), { once:true });
+            if (window.fluidPlayer) resolve(true);
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js';
+        script.async = true;
+        script.dataset.flaynityExoclickJs = '1';
+        script.onload = () => resolve(!!window.fluidPlayer);
+        script.onerror = () => resolve(false);
+        document.head.appendChild(script);
+    });
+    return flaynityFluidPlayerPromise;
+}
+
+function initExoclickAdSlides(container) {
+    if (!container) return;
+    const adSlides = container.querySelectorAll('.exoclick-ad-slide');
+    if (!adSlides.length) return;
+
+    const initOne = async slide => {
+        if (!slide || slide.dataset.adInit === '1') return;
+        slide.dataset.adInit = '1';
+        const video = slide.querySelector('video');
+        const status = slide.querySelector('.exoclick-ad-status');
+        if (!video) return;
+
+        const available = await ensureExoclickFluidPlayer();
+        if (!available || !window.fluidPlayer || !slide.isConnected) {
+            if (status) status.textContent = 'Advertisement unavailable';
+            return;
+        }
+
+        let adPlaybackStarted = false;
+        const startFallback = setTimeout(() => {
+            if (!adPlaybackStarted && status) status.textContent = 'Advertisement unavailable';
+        }, 12000);
+        video.addEventListener('playing', () => {
+            adPlaybackStarted = true;
+            clearTimeout(startFallback);
+            if (status) status.style.display = 'none';
+        }, { once:false });
+        video.addEventListener('error', () => {
+            if (status && !adPlaybackStarted) status.textContent = 'Advertisement unavailable';
+        });
+
+        try {
+            const player = window.fluidPlayer(video.id, {
+                layoutControls: {
+                    primaryColor: '#D80E45',
+                    fillToContainer: true,
+                    autoPlay: true,
+                    mute: false,
+                    allowTheatre: false,
+                    playButtonShowing: false,
+                    playbackRateEnabled: false,
+                    controlBar: { autoHide: true, autoHideTimeout: 3, animated: true }
+                },
+                vastOptions: {
+                    adList: [{ roll: 'preRoll', vastTag: FLAYNITY_EXOCLICK_VAST_TAG }],
+                    adCTAText: 'Visit advertiser'
+                }
+            });
+            if (player && typeof player.play === 'function') {
+                const result = player.play();
+                if (result && typeof result.catch === 'function') result.catch(() => {});
+            } else {
+                video.play().catch(() => {});
+            }
+        } catch (error) {
+            clearTimeout(startFallback);
+            if (status) status.textContent = 'Advertisement unavailable';
+        }
+    };
+
+    if (window.flaynityExoclickAdObserver) {
+        try { window.flaynityExoclickAdObserver.disconnect(); } catch (e) {}
+    }
+    window.flaynityExoclickAdObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && entry.intersectionRatio >= 0.55) {
+                initOne(entry.target);
+            } else if (!entry.isIntersecting) {
+                const video = entry.target.querySelector('video');
+                if (video) {
+                    try { video.pause(); } catch (e) {}
+                }
+            }
+        });
+    }, { threshold: [0.55, 0.75] });
+    adSlides.forEach(slide => window.flaynityExoclickAdObserver.observe(slide));
+}
+
+function getExoclickAdSlideHTML(slotNumber) {
+    const videoId = 'flaynity-exoclick-vast-' + slotNumber + '-' + Date.now();
+    return `
+        <section class="short-slide exoclick-ad-slide" id="exoclick-ad-slide-${slotNumber}" data-ad-slot="${slotNumber}" aria-label="Advertisement">
+            <div class="exoclick-ad-content">
+                <div class="exoclick-ad-label">ADVERTISEMENT</div>
+                <video id="${videoId}" playsinline webkit-playsinline preload="none" aria-label="ExoClick video advertisement"></video>
+                <div class="exoclick-ad-status">Loading advertisement…</div>
+            </div>
+        </section>
+    `;
+}
+
+function ensureExoclickAdStyles() {
+    if (document.getElementById('flaynity-exoclick-ad-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'flaynity-exoclick-ad-styles';
+    style.textContent = `
+        .exoclick-ad-slide { background:#000!important; color:#fff; }
+        .exoclick-ad-content { position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#000; overflow:hidden; }
+        .exoclick-ad-content video { width:100%; height:100%; object-fit:contain; background:#000; }
+        .exoclick-ad-label { position:absolute; top:18px; left:14px; z-index:20; padding:5px 8px; border-radius:4px; background:rgba(0,0,0,.7); color:#ddd; font:700 10px/1.2 Arial,sans-serif; letter-spacing:1px; pointer-events:none; }
+        .exoclick-ad-status { position:absolute; z-index:15; left:50%; top:50%; transform:translate(-50%,-50%); color:#aaa; font:500 14px/1.4 Arial,sans-serif; text-align:center; pointer-events:none; }
+        .exoclick-ad-slide .fluid_video_wrapper { width:100%!important; height:100%!important; }
+        .exoclick-ad-slide .fluid_video_wrapper video { width:100%!important; height:100%!important; object-fit:contain!important; }
+    `;
+    document.head.appendChild(style);
+}
+
+
 function buildFeelsPage() {
     const container = document.getElementById('feels-swiper-container');
     if (!container) return;
@@ -2655,7 +2802,7 @@ function buildFeelsPage() {
     }
 
     let html = '';
-    activeFeelsList.forEach(s => {
+    activeFeelsList.forEach((s, feelsItemIndex) => {
         const isLikedId = `short-like-btn-${s.id}`;
         const likesCountId = `short-likes-count-${s.id}`;
         const commentsCountId = `short-comments-count-${s.id}`;
@@ -2734,6 +2881,10 @@ function buildFeelsPage() {
             </div>
         `;
 
+        if ((feelsItemIndex + 1) % 2 === 0 && feelsItemIndex < activeFeelsList.length - 1) {
+            html += getExoclickAdSlideHTML((feelsItemIndex + 1) / 2);
+        }
+
         db.ref(`movie_stats/${s.id}`).on('value', (snapshot) => {
             const stats = snapshot.val() || {};
             const viewsObj = stats.views || {};
@@ -2785,6 +2936,9 @@ function buildFeelsPage() {
     });
 
     container.innerHTML = `<div class="feels-swiper">${html}</div>`;
+
+    ensureExoclickAdStyles();
+    initExoclickAdSlides(container);
 
     // Bind subscription state AFTER the Feels DOM exists. This is required
     // because the buttons are created by the template above.

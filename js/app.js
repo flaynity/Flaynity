@@ -2636,178 +2636,6 @@ function openFeelsComments(shortId, event) {
     openShortComments(s.id);
 }
 
-
-// =========================================================
-// EXOCLICK VAST AD-ONLY FEELS SLOTS
-// Shows one ad-only slot after each pair of Feels. No Feels
-// video is attached to an ad slot; empty VAST responses remain
-// scrollable and never substitute a Feels video.
-// =========================================================
-const FLAYNITY_EXOCLICK_VAST_TAG = 'https://s.magsrv.com/v1/vast.php?idzone=6067029';
-let flaynityImaSdkPromise = null;
-
-function ensureFlaynityImaSdk() {
-    if (window.google && window.google.ima) return Promise.resolve(true);
-    if (flaynityImaSdkPromise) return flaynityImaSdkPromise;
-    flaynityImaSdkPromise = new Promise(resolve => {
-        const existing = document.querySelector('script[data-flaynity-ima-sdk]');
-        if (existing) {
-            existing.addEventListener('load', () => resolve(!!(window.google && window.google.ima)), { once: true });
-            existing.addEventListener('error', () => resolve(false), { once: true });
-            if (window.google && window.google.ima) resolve(true);
-            return;
-        }
-        const script = document.createElement('script');
-        script.src = 'https://imasdk.googleapis.com/js/sdkloader/ima3.js';
-        script.async = true;
-        script.dataset.flaynityImaSdk = '1';
-        script.onload = () => resolve(!!(window.google && window.google.ima));
-        script.onerror = () => resolve(false);
-        document.head.appendChild(script);
-    });
-    return flaynityImaSdkPromise;
-}
-
-function initExoclickAdSlides(container) {
-    if (!container) return;
-    const adSlides = container.querySelectorAll('.exoclick-ad-slide');
-    if (!adSlides.length) return;
-
-    const initOne = async slide => {
-        if (!slide || slide.dataset.adInit === '1') return;
-        slide.dataset.adInit = '1';
-        const video = slide.querySelector('video');
-        const adContainer = slide.querySelector('.exoclick-ad-container');
-        const status = slide.querySelector('.exoclick-ad-status');
-        if (!video || !adContainer) return;
-
-        const available = await ensureFlaynityImaSdk();
-        if (!available || !slide.isConnected || !window.google?.ima) {
-            if (status) status.textContent = 'Advertisement unavailable';
-            return;
-        }
-
-        let adsManager = null;
-        let adPlaybackStarted = false;
-        let timeoutId = setTimeout(() => {
-            if (!adPlaybackStarted && status) status.textContent = 'Advertisement unavailable';
-        }, 15000);
-
-        const showUnavailable = () => {
-            clearTimeout(timeoutId);
-            if (!adPlaybackStarted && status) {
-                status.textContent = 'Advertisement unavailable';
-                status.style.display = 'block';
-            }
-        };
-
-        try {
-            const ima = window.google.ima;
-            const displayContainer = new ima.AdDisplayContainer(adContainer, video);
-            const adsLoader = new ima.AdsLoader(displayContainer);
-
-            adsLoader.addEventListener(ima.AdsManagerLoadedEvent.Type.ADS_MANAGER_LOADED, event => {
-                try {
-                    adsManager = event.getAdsManager(video);
-                    adsManager.addEventListener(ima.AdEvent.Type.STARTED, () => {
-                        adPlaybackStarted = true;
-                        clearTimeout(timeoutId);
-                        if (status) status.style.display = 'none';
-                    });
-                    adsManager.addEventListener(ima.AdEvent.Type.COMPLETE, () => {
-                        if (status) {
-                            status.textContent = 'Advertisement finished';
-                            status.style.display = 'block';
-                        }
-                    });
-                    adsManager.addEventListener(ima.AdEvent.Type.ALL_ADS_COMPLETED, () => {
-                        if (status) {
-                            status.textContent = 'Advertisement finished';
-                            status.style.display = 'block';
-                        }
-                    });
-                    adsManager.addEventListener(ima.AdErrorEvent.Type.AD_ERROR, showUnavailable);
-                    const rect = slide.getBoundingClientRect();
-                    adsManager.init(Math.max(1, Math.round(rect.width)), Math.max(1, Math.round(rect.height)), ima.ViewMode.NORMAL);
-                    adsManager.start();
-                } catch (error) {
-                    showUnavailable();
-                }
-            });
-
-            adsLoader.addEventListener(window.google.ima.AdErrorEvent.Type.AD_ERROR, showUnavailable);
-            const request = new ima.AdsRequest();
-            request.adTagUrl = FLAYNITY_EXOCLICK_VAST_TAG;
-            const rect = slide.getBoundingClientRect();
-            request.linearAdSlotWidth = Math.max(1, Math.round(rect.width));
-            request.linearAdSlotHeight = Math.max(1, Math.round(rect.height));
-            request.nonLinearAdSlotWidth = Math.max(1, Math.round(rect.width));
-            request.nonLinearAdSlotHeight = Math.max(1, Math.round(rect.height * 0.25));
-
-            // IMA requires this initialization to be associated with a user gesture
-            // on many mobile browsers. A scroll into the ad slot is the user's feed action.
-            displayContainer.initialize();
-            adsLoader.requestAds(request);
-
-            slide._flaynityImaCleanup = () => {
-                clearTimeout(timeoutId);
-                try { if (adsManager) adsManager.destroy(); } catch (e) {}
-            };
-        } catch (error) {
-            showUnavailable();
-        }
-    };
-
-    if (window.flaynityExoclickAdObserver) {
-        try { window.flaynityExoclickAdObserver.disconnect(); } catch (e) {}
-    }
-    window.flaynityExoclickAdObserver = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting && entry.intersectionRatio >= 0.55) {
-                initOne(entry.target);
-            } else if (!entry.isIntersecting) {
-                try { entry.target._flaynityImaCleanup?.(); } catch (e) {}
-                const video = entry.target.querySelector('video');
-                if (video) {
-                    try { video.pause(); } catch (e) {}
-                }
-            }
-        });
-    }, { threshold: [0.55, 0.75] });
-    adSlides.forEach(slide => window.flaynityExoclickAdObserver.observe(slide));
-}
-
-function getExoclickAdSlideHTML(slotNumber) {
-    const videoId = 'flaynity-exoclick-vast-' + slotNumber + '-' + Date.now();
-    return `
-        <section class="short-slide exoclick-ad-slide" id="exoclick-ad-slide-${slotNumber}" data-ad-slot="${slotNumber}" aria-label="Advertisement">
-            <div class="exoclick-ad-content">
-                <div class="exoclick-ad-label">ADVERTISEMENT</div>
-                <video id="${videoId}" playsinline webkit-playsinline preload="none" aria-label="Vertical video advertisement"></video>
-                <div class="exoclick-ad-container" aria-label="Video advertisement player"></div>
-                <div class="exoclick-ad-status">Loading advertisement…</div>
-            </div>
-        </section>
-    `;
-}
-
-function ensureExoclickAdStyles() {
-    if (document.getElementById('flaynity-exoclick-ad-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'flaynity-exoclick-ad-styles';
-    style.textContent = `
-        .exoclick-ad-slide { background:#000!important; color:#fff; }
-        .exoclick-ad-content { position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#000; overflow:hidden; }
-        .exoclick-ad-content video { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#000; }
-        .exoclick-ad-container { position:absolute; inset:0; z-index:10; width:100%; height:100%; }
-        .exoclick-ad-container video { width:100%!important; height:100%!important; object-fit:contain!important; }
-        .exoclick-ad-label { position:absolute; top:18px; left:14px; z-index:20; padding:5px 8px; border-radius:4px; background:rgba(0,0,0,.7); color:#ddd; font:700 10px/1.2 Arial,sans-serif; letter-spacing:1px; pointer-events:none; }
-        .exoclick-ad-status { position:absolute; z-index:25; left:50%; top:50%; transform:translate(-50%,-50%); color:#aaa; font:500 14px/1.4 Arial,sans-serif; text-align:center; pointer-events:none; }
-    `;
-    document.head.appendChild(style);
-}
-
-
 function buildFeelsPage() {
     const container = document.getElementById('feels-swiper-container');
     if (!container) return;
@@ -2827,7 +2655,7 @@ function buildFeelsPage() {
     }
 
     let html = '';
-    activeFeelsList.forEach((s, feelsItemIndex) => {
+    activeFeelsList.forEach(s => {
         const isLikedId = `short-like-btn-${s.id}`;
         const likesCountId = `short-likes-count-${s.id}`;
         const commentsCountId = `short-comments-count-${s.id}`;
@@ -2906,10 +2734,6 @@ function buildFeelsPage() {
             </div>
         `;
 
-        if ((feelsItemIndex + 1) % 2 === 0 && feelsItemIndex < activeFeelsList.length - 1) {
-            html += getExoclickAdSlideHTML((feelsItemIndex + 1) / 2);
-        }
-
         db.ref(`movie_stats/${s.id}`).on('value', (snapshot) => {
             const stats = snapshot.val() || {};
             const viewsObj = stats.views || {};
@@ -2961,9 +2785,6 @@ function buildFeelsPage() {
     });
 
     container.innerHTML = `<div class="feels-swiper">${html}</div>`;
-
-    ensureExoclickAdStyles();
-    initExoclickAdSlides(container);
 
     // Bind subscription state AFTER the Feels DOM exists. This is required
     // because the buttons are created by the template above.
@@ -4396,9 +4217,7 @@ function renderMovieWatchRecommendedFeed() {
     const container = document.getElementById('yt-related-list');
     if (!container) return;
 
-    let html = '';
     const currentId = currentActiveMovie ? String(currentActiveMovie.id) : null;
-    
     const longvids = allLongVideos.filter(m => String(m.id) !== currentId);
 
     if (longvids.length === 0) {
@@ -4407,54 +4226,53 @@ function renderMovieWatchRecommendedFeed() {
     }
 
     longvids.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-    const limit = Math.min(longvids.length, watchRecommendedLimit);
-    const itemsToRender = longvids.slice(0, limit);
-
+    const itemsToRender = longvids.slice(0, Math.min(longvids.length, watchRecommendedLimit));
     const uniqueUserIds = new Set();
+    let html = '';
 
     itemsToRender.forEach(v => {
         const viewsId = `rec-long-views-${v.id}`;
-        const relTime = getRelativeTime(v.createdAt);
-        
         if (v.userId) uniqueUserIds.add(v.userId);
-        
-        const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px; height:36px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>`;
-
         html += `
-            <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin-bottom: 8px; cursor: pointer; background: var(--surface); border-radius: 0; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-                <div class="long-video-thumb-container" style="position: relative; aspect-ratio: 16/9; background: #0F0F0F; overflow: hidden; border-radius: 16px;">
-                    <img src="${v.poster}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
-                    <span class="long-video-duration" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.85); color: #fff; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">${v.duration || '10:00'}</span>
+            <div class="wp-card long-video-feed-card" onclick="openMoviePage('${v.id}', false)">
+                <div class="wp-thumb long-video-thumb-container">
+                    <img src="${v.poster}" loading="lazy" alt="">
+                    <span class="wp-dur long-video-duration">${v.duration || '10:00'}</span>
                 </div>
-                <div class="long-video-details" style="padding: 14px 16px; display: flex; gap: 12px;">
-                    ${avatarHtml}
-                    <div class="long-video-meta-text" style="flex-grow: 1; min-width: 0;">
-                        <h4 class="long-video-title" style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(v.title)}</h4>
-                        <div class="long-video-subtitle" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;">
+                <div class="wp-row long-video-details">
+                    <div class="wp-ch live-avatar-${v.userId}"></div>
+                    <div class="wp-txt long-video-meta-text">
+                        <h4 class="long-video-title">${escapeHTML(v.title)}</h4>
+                        <div class="wp-sub2 long-video-subtitle">
                             <span class="live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
-                            <span>•</span>
-                            <span id="${viewsId}">0 Views</span>
-                            <span>•</span>
-                            <span>${relTime}</span>
+                            <span class="wp-v"><i class="fas fa-play"></i><span id="${viewsId}">0</span></span>
+                            <span>${getRelativeTime(v.createdAt)}</span>
                         </div>
                     </div>
+                    <button class="wp-dots" onclick="event.stopPropagation(); typeof showUpcomingModal==='function' && showUpcomingModal();" aria-label="More"><i class="fas fa-ellipsis-h"></i></button>
                 </div>
             </div>
         `;
 
-        if(navigator.onLine) {
+        if (navigator.onLine) {
             db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
-                const viewsObj = vSnap.val() || {};
-                const count = Object.keys(viewsObj).length;
+                const count = Object.keys(vSnap.val() || {}).length;
                 const label = document.getElementById(viewsId);
-                if (label) label.innerText = formatCount(count) + " Views";
+                if (label) label.innerText = formatCount(count);
             });
         }
     });
 
     container.innerHTML = html;
     uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
+}
+
+function wpShare() {
+    const m = currentActiveMovie;
+    if (!m) return;
+    const data = { title: m.title || 'Flaynity', text: m.title || 'Flaynity', url: location.href };
+    if (navigator.share) { navigator.share(data).catch(() => {}); }
+    else if (navigator.clipboard) { navigator.clipboard.writeText(location.href); if (typeof showNotification === 'function') showNotification('Link copied', 'success'); }
 }
 
 function escapeHTML(str) {

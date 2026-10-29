@@ -1116,6 +1116,47 @@
 .fly-menu-back{display:flex;align-items:center;gap:8px;padding:10px 14px;font-weight:800;font-size:0.85rem;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:4px;}
 .fly-player-wrap:fullscreen,.fly-player-wrap:-webkit-full-screen{width:100vw;height:100vh;}
 .fly-player-wrap:fullscreen .fly-video{object-fit:contain;}
+
+/* ===== LONG VIDEO PAGE — YouTube-style watch layout ===== */
+:root{--wp-panel:#F2F2F2;--wp-muted:#606060;}
+[data-theme="dark"]{--wp-panel:#272727;--wp-muted:#AAAAAA;}
+#full-movie-page{top:env(safe-area-inset-top,0px)!important;bottom:0;height:auto!important;background:var(--bg-color)!important;overscroll-behavior:contain;}
+#full-movie-page .wp-stage{position:sticky;top:0;z-index:60;}
+#full-movie-page .wp-back{top:8px;left:8px;width:34px;height:34px;font-size:.95rem;background:rgba(0,0,0,.45);border:0;color:#fff;box-shadow:none;z-index:12;backdrop-filter:blur(6px);}
+.wp-info{background:var(--bg-color);border-radius:24px 24px 0 0;margin-top:-1px;padding:20px 12px 14px;}
+[data-theme="dark"] .wp-info{background:linear-gradient(180deg,#2A2A2A 0%,#171717 38%,#0F0F0F 100%);}
+.wp-title{margin:0 0 10px;padding:0 4px;font-size:1.32rem;font-weight:800;line-height:1.28;letter-spacing:-.2px;color:var(--text-main);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.wp-meta{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:0 4px;font-size:.84rem;font-weight:500;color:var(--wp-muted);}
+.wp-meta .wp-handle{color:var(--text-main);font-weight:700;}
+.wp-more{background:none;border:0;padding:0;font-size:.84rem;font-weight:800;color:var(--text-main);}
+.wp-actions{display:flex;align-items:center;gap:0;margin:18px 0 16px;padding:0 2px;}
+.wp-avatar{width:44px;height:44px;border-radius:50%;object-fit:cover;background:#E2E8F0;flex-shrink:0;border:0;}
+.wp-sub{margin-left:12px;height:44px;padding:0 18px;border-radius:22px;background:var(--text-main);color:var(--bg-color);font-size:.92rem;font-weight:700;flex-shrink:0;}
+.wp-spacer{flex:1;min-width:0;}
+.wp-ico{width:38px;height:44px;background:none;border:0;padding:0;color:var(--text-main);font-size:1.28rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%;}
+.wp-ico:active{background:var(--wp-panel);}
+.wp-ico .fas.fa-download{font-size:1.15rem;}
+#full-movie-page .comment-preview-card{background:var(--wp-panel);border-radius:22px;padding:14px 18px 16px;margin:0 0 0;gap:10px;}
+#full-movie-page .comment-preview-title{font-size:1rem;font-weight:700;}
+#full-movie-page .comment-preview-count{font-size:.9rem;font-weight:500;color:var(--wp-muted);margin-left:6px;}
+#full-movie-page .comment-preview-content{align-items:flex-start;gap:12px;}
+#full-movie-page .comment-preview-avatar{width:36px;height:36px;font-size:.9rem;}
+#full-movie-page .comment-preview-text{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:.95rem;line-height:1.4;color:var(--text-main);font-weight:500;}
+.wp-pager{display:flex;align-items:center;gap:5px;}
+.wp-pager i{display:block;height:8px;border-radius:4px;background:var(--wp-muted);opacity:.7;width:8px;}
+.wp-pager i:first-child{width:20px;background:var(--text-main);opacity:1;}
+.wp-related{display:flex;flex-direction:column;gap:0;padding:6px 0 80px;}
+.wp-card{cursor:pointer;margin:0 0 18px;background:var(--bg-color);}
+.wp-thumb{position:relative;width:100%;aspect-ratio:16/9;background:#0F0F0F;overflow:hidden;}
+.wp-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.wp-dur{position:absolute;right:12px;bottom:12px;background:rgba(40,40,40,.88);color:#fff;font-size:.82rem;font-weight:700;padding:5px 10px;border-radius:12px;line-height:1;}
+.wp-row{display:flex;gap:12px;align-items:flex-start;padding:12px 12px 0;}
+.wp-row .wp-ch{width:40px;height:40px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#E2E8F0;}
+.wp-txt{flex:1;min-width:0;}
+.wp-txt h4{margin:0 0 4px;font-size:1rem;font-weight:600;line-height:1.3;color:var(--text-main);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.wp-sub2{display:flex;flex-wrap:wrap;align-items:center;gap:2px 12px;font-size:.8rem;color:var(--wp-muted);font-weight:500;}
+.wp-sub2 .wp-v i{font-size:.62rem;margin-right:3px;}
+.wp-dots{background:none;border:0;color:var(--text-main);font-size:1.05rem;width:34px;height:34px;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin:-4px -4px 0 0;}
 </style></head><body>
 <audio id="startupSound" preload="auto">
 <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg"/>
@@ -1167,67 +1208,52 @@
 <div id="home-feed-container" style="margin-top: 0;"></div>
 </div>
 <div id="full-movie-page">
-<button class="back-btn" onclick="executeBackAction(); playUI('click')">
-<i class="fas fa-arrow-left"></i>
-</button>
-<div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #0F0F0F;">
+<div class="wp-stage" style="position: relative; width: 100%; aspect-ratio: 16/9; background: #0F0F0F;">
+<button class="back-btn wp-back" onclick="executeBackAction(); playUI('click')" aria-label="Back"><i class="fas fa-arrow-left"></i></button>
 <div id="video-player-skeleton" style="position: absolute; top:0; left:0; width:100%; height:100%; background:#0F0F0F; display:flex; align-items:center; justify-content:center; z-index:11;">
 <div style="width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
 </div>
-<img class="full-page-banner" id="movie-detail-banner" onerror="this.src=''" src="" style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; border-radius:0;"/>
-<div class="video-container" id="video-player-container" style="width:100%; height:100%; display:none; position:absolute; top:0; left:0; z-index:10; border-radius:0;"></div>
+<img class="full-page-banner" id="movie-detail-banner" onerror="this.src=''" src="" style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; border-radius:0; border:0;"/>
+<div class="video-container" id="video-player-container" style="width:100%; height:100%; display:none; position:absolute; top:0; left:0; z-index:10; border-radius:0; border:0;"></div>
 </div>
-<div class="full-page-content" style="padding: 16px;">
-<div class="premium-white-card-watch">
-<h1 id="movie-detail-title" style="font-size: 1.15rem; font-weight: 800; margin: 0 0 6px 0; line-height: 1.35; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Plus Jakarta Sans', sans-serif;">Title</h1>
-<div class="movie-metadata-row">
-<span id="movie-detail-channel-handle" style="color: var(--text-main); font-weight: 800;">@channel</span>
-<span>•</span>
+<div class="full-page-content wp-content" style="padding: 0;">
+<section class="wp-info">
+<h1 id="movie-detail-title" class="wp-title">Title</h1>
+<div class="wp-meta">
+<span id="movie-detail-channel-handle" class="wp-handle">@channel</span>
 <span id="movie-detail-likes">0 Likes</span>
-<span>•</span>
 <span id="movie-detail-views">0 Views</span>
-<span>•</span>
 <span id="movie-detail-upload-time">Just Now</span>
-<button class="btn-more-meta" onclick="openMoreDescriptionSheet()">...more</button>
+<button class="wp-more" onclick="openMoreDescriptionSheet()">more</button>
 </div>
-</div>
-<div class="channel-action-row-watch">
-<div class="action-row-left">
-<img id="movie-channel-avatar" src="" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--border-color); background: #E2E8F0;"/>
-<button class="btn-watch-subscribe" id="movie-subscribe-btn" onclick="toggleMovieChannelSubscribe()">Subscribe</button>
-</div>
-<div class="action-row-right">
-<div class="pill-likes-dislikes">
-<button class="btn-watch-like ripple" id="movie-like-btn" onclick="toggleMovieLike()">
-<i class="far fa-thumbs-up" id="movie-like-icon"></i>
-<span id="movie-like-count">0</span>
+<div class="wp-actions">
+<img id="movie-channel-avatar" class="wp-avatar" src="" alt=""/>
+<button class="btn-watch-subscribe wp-sub" id="movie-subscribe-btn" onclick="toggleMovieChannelSubscribe()">Subscribe</button>
+<div class="wp-spacer"></div>
+<button class="wp-ico ripple" id="movie-like-btn" onclick="toggleMovieLike()" aria-label="Like">
+<i class="far fa-thumbs-up" id="movie-like-icon"></i><span id="movie-like-count" style="display:none">0</span>
 </button>
-<div style="width: 1px; height: 16px; background: rgba(0,0,0,0.12); align-self: center;"></div>
-<button class="btn-watch-dislike ripple" id="movie-dislike-btn" onclick="toggleMovieDislike()">
+<button class="wp-ico ripple" id="movie-dislike-btn" onclick="toggleMovieDislike()" aria-label="Dislike">
 <i class="far fa-thumbs-down" id="movie-dislike-icon"></i>
 </button>
-</div>
-<button class="btn-watch-download ripple" onclick="requestDownloadWithAd()" style="width: 34px; height: 34px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;" title="Download">
-<i class="fas fa-download"></i>
+<button class="wp-ico ripple" onclick="wpShare()" aria-label="Share">
+<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l7 6.5-7 6.5v-4c-5 0-8.5 1.3-11 5 .8-5.8 4-9.6 11-10.3V4z"/></svg>
 </button>
-</div>
+<button class="wp-ico ripple" onclick="requestDownloadWithAd()" aria-label="Download"><i class="fas fa-download"></i></button>
+<button class="wp-ico ripple" onclick="openMoreDescriptionSheet()" aria-label="More"><i class="fas fa-ellipsis-h"></i></button>
 </div>
 <div class="comment-preview-card" id="comment-preview-trigger" onclick="openCommentModal()">
 <div class="comment-preview-header">
 <span class="comment-preview-title">Comments <span class="comment-preview-count" id="comment-preview-count">0</span></span>
-<i class="fas fa-chevron-down" style="font-size: 0.75rem; color: var(--text-muted);"></i>
+<span class="wp-pager"><i></i><i></i></span>
 </div>
 <div class="comment-preview-content">
-<div class="comment-preview-avatar" id="comment-preview-avatar">
-<i class="far fa-comment" style="color: var(--text-muted);"></i>
-</div>
+<div class="comment-preview-avatar" id="comment-preview-avatar"><i class="far fa-comment" style="color: var(--text-muted);"></i></div>
 <span class="comment-preview-text" id="comment-preview-text">No comments yet. Tap to start the conversation!</span>
 </div>
 </div>
-<div class="recommended-feed-title">
-<i class="fas fa-play-circle" style="color:var(--primary);"></i> Recommended Feed
-            </div>
-<div id="yt-related-list" style="display:flex; flex-direction:column; gap:12px; padding-bottom: 60px;"></div>
+</section>
+<div id="yt-related-list" class="wp-related"></div>
 </div>
 </div>
 <div class="premium-download-modal" id="comment-modal">
@@ -1434,4 +1460,4 @@
 <span class="nav-label">You</span>
 </div>
 </div>
-</body></html>
+</body></html

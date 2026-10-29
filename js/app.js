@@ -2644,35 +2644,28 @@ function openFeelsComments(shortId, event) {
 // scrollable and never substitute a Feels video.
 // =========================================================
 const FLAYNITY_EXOCLICK_VAST_TAG = 'https://s.magsrv.com/v1/vast.php?idzone=6067029';
-let flaynityFluidPlayerPromise = null;
+let flaynityImaSdkPromise = null;
 
-function ensureExoclickFluidPlayer() {
-    if (window.fluidPlayer) return Promise.resolve(true);
-    if (flaynityFluidPlayerPromise) return flaynityFluidPlayerPromise;
-    flaynityFluidPlayerPromise = new Promise(resolve => {
-        if (!document.querySelector('link[data-flaynity-exoclick-css]')) {
-            const css = document.createElement('link');
-            css.rel = 'stylesheet';
-            css.href = 'https://cdn.fluidplayer.com/v3/current/fluidplayer.min.css';
-            css.dataset.flaynityExoclickCss = '1';
-            document.head.appendChild(css);
-        }
-        const existing = document.querySelector('script[data-flaynity-exoclick-js]');
+function ensureFlaynityImaSdk() {
+    if (window.google && window.google.ima) return Promise.resolve(true);
+    if (flaynityImaSdkPromise) return flaynityImaSdkPromise;
+    flaynityImaSdkPromise = new Promise(resolve => {
+        const existing = document.querySelector('script[data-flaynity-ima-sdk]');
         if (existing) {
-            existing.addEventListener('load', () => resolve(!!window.fluidPlayer), { once:true });
-            existing.addEventListener('error', () => resolve(false), { once:true });
-            if (window.fluidPlayer) resolve(true);
+            existing.addEventListener('load', () => resolve(!!(window.google && window.google.ima)), { once: true });
+            existing.addEventListener('error', () => resolve(false), { once: true });
+            if (window.google && window.google.ima) resolve(true);
             return;
         }
         const script = document.createElement('script');
-        script.src = 'https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js';
+        script.src = 'https://imasdk.googleapis.com/js/sdkloader/ima3.js';
         script.async = true;
-        script.dataset.flaynityExoclickJs = '1';
-        script.onload = () => resolve(!!window.fluidPlayer);
+        script.dataset.flaynityImaSdk = '1';
+        script.onload = () => resolve(!!(window.google && window.google.ima));
         script.onerror = () => resolve(false);
         document.head.appendChild(script);
     });
-    return flaynityFluidPlayerPromise;
+    return flaynityImaSdkPromise;
 }
 
 function initExoclickAdSlides(container) {
@@ -2684,67 +2677,84 @@ function initExoclickAdSlides(container) {
         if (!slide || slide.dataset.adInit === '1') return;
         slide.dataset.adInit = '1';
         const video = slide.querySelector('video');
+        const adContainer = slide.querySelector('.exoclick-ad-container');
         const status = slide.querySelector('.exoclick-ad-status');
-        if (!video) return;
+        if (!video || !adContainer) return;
 
-        const available = await ensureExoclickFluidPlayer();
-        if (!available || !window.fluidPlayer || !slide.isConnected) {
+        const available = await ensureFlaynityImaSdk();
+        if (!available || !slide.isConnected || !window.google?.ima) {
             if (status) status.textContent = 'Advertisement unavailable';
             return;
         }
 
+        let adsManager = null;
         let adPlaybackStarted = false;
-        let adPlayer = null;
-        // Request audible playback; Android WebView may still require its native
-        // mediaPlaybackRequiresUserGesture setting to be disabled for autoplay.
-        video.muted = false;
-        video.defaultMuted = false;
-        video.volume = 1;
-        const startFallback = setTimeout(() => {
+        let timeoutId = setTimeout(() => {
             if (!adPlaybackStarted && status) status.textContent = 'Advertisement unavailable';
-        }, 12000);
-        video.addEventListener('playing', () => {
-            adPlaybackStarted = true;
-            clearTimeout(startFallback);
-            if (status) status.style.display = 'none';
-        }, { once:false });
-        video.addEventListener('error', () => {
-            if (status && !adPlaybackStarted) status.textContent = 'Advertisement unavailable';
-        });
+        }, 15000);
+
+        const showUnavailable = () => {
+            clearTimeout(timeoutId);
+            if (!adPlaybackStarted && status) {
+                status.textContent = 'Advertisement unavailable';
+                status.style.display = 'block';
+            }
+        };
 
         try {
-            adPlayer = window.fluidPlayer(video.id, {
-                layoutControls: {
-                    primaryColor: '#D80E45',
-                    fillToContainer: true,
-                    autoPlay: true,
-                    mute: false,
-                    allowTheatre: false,
-                    playButtonShowing: true,
-                    playbackRateEnabled: false,
-                    controlBar: { autoHide: true, autoHideTimeout: 3, animated: true }
-                },
-                vastOptions: {
-                    adList: [{ roll: 'preRoll', vastTag: FLAYNITY_EXOCLICK_VAST_TAG }],
-                    adCTAText: 'Visit advertiser'
+            const ima = window.google.ima;
+            const displayContainer = new ima.AdDisplayContainer(adContainer, video);
+            const adsLoader = new ima.AdsLoader(displayContainer);
+
+            adsLoader.addEventListener(ima.AdsManagerLoadedEvent.Type.ADS_MANAGER_LOADED, event => {
+                try {
+                    adsManager = event.getAdsManager(video);
+                    adsManager.addEventListener(ima.AdEvent.Type.STARTED, () => {
+                        adPlaybackStarted = true;
+                        clearTimeout(timeoutId);
+                        if (status) status.style.display = 'none';
+                    });
+                    adsManager.addEventListener(ima.AdEvent.Type.COMPLETE, () => {
+                        if (status) {
+                            status.textContent = 'Advertisement finished';
+                            status.style.display = 'block';
+                        }
+                    });
+                    adsManager.addEventListener(ima.AdEvent.Type.ALL_ADS_COMPLETED, () => {
+                        if (status) {
+                            status.textContent = 'Advertisement finished';
+                            status.style.display = 'block';
+                        }
+                    });
+                    adsManager.addEventListener(ima.AdErrorEvent.Type.AD_ERROR, showUnavailable);
+                    const rect = slide.getBoundingClientRect();
+                    adsManager.init(Math.max(1, Math.round(rect.width)), Math.max(1, Math.round(rect.height)), ima.ViewMode.NORMAL);
+                    adsManager.start();
+                } catch (error) {
+                    showUnavailable();
                 }
             });
-            video.muted = false;
-            video.defaultMuted = false;
-            video.volume = 1;
-            if (adPlayer && typeof adPlayer.setVolume === 'function') {
-                try { adPlayer.setVolume(1); } catch (e) {}
-            }
-            if (adPlayer && typeof adPlayer.play === 'function') {
-                const result = adPlayer.play();
-                if (result && typeof result.catch === 'function') result.catch(() => {});
-            } else {
-                const result = video.play();
-                if (result && typeof result.catch === 'function') result.catch(() => {});
-            }
+
+            adsLoader.addEventListener(window.google.ima.AdErrorEvent.Type.AD_ERROR, showUnavailable);
+            const request = new ima.AdsRequest();
+            request.adTagUrl = FLAYNITY_EXOCLICK_VAST_TAG;
+            const rect = slide.getBoundingClientRect();
+            request.linearAdSlotWidth = Math.max(1, Math.round(rect.width));
+            request.linearAdSlotHeight = Math.max(1, Math.round(rect.height));
+            request.nonLinearAdSlotWidth = Math.max(1, Math.round(rect.width));
+            request.nonLinearAdSlotHeight = Math.max(1, Math.round(rect.height * 0.25));
+
+            // IMA requires this initialization to be associated with a user gesture
+            // on many mobile browsers. A scroll into the ad slot is the user's feed action.
+            displayContainer.initialize();
+            adsLoader.requestAds(request);
+
+            slide._flaynityImaCleanup = () => {
+                clearTimeout(timeoutId);
+                try { if (adsManager) adsManager.destroy(); } catch (e) {}
+            };
         } catch (error) {
-            clearTimeout(startFallback);
-            if (status) status.textContent = 'Advertisement unavailable';
+            showUnavailable();
         }
     };
 
@@ -2756,6 +2766,7 @@ function initExoclickAdSlides(container) {
             if (entry.isIntersecting && entry.intersectionRatio >= 0.55) {
                 initOne(entry.target);
             } else if (!entry.isIntersecting) {
+                try { entry.target._flaynityImaCleanup?.(); } catch (e) {}
                 const video = entry.target.querySelector('video');
                 if (video) {
                     try { video.pause(); } catch (e) {}
@@ -2772,7 +2783,8 @@ function getExoclickAdSlideHTML(slotNumber) {
         <section class="short-slide exoclick-ad-slide" id="exoclick-ad-slide-${slotNumber}" data-ad-slot="${slotNumber}" aria-label="Advertisement">
             <div class="exoclick-ad-content">
                 <div class="exoclick-ad-label">ADVERTISEMENT</div>
-                <video id="${videoId}" playsinline webkit-playsinline preload="none" muted="false" aria-label="ExoClick video advertisement"></video>
+                <video id="${videoId}" playsinline webkit-playsinline preload="none" aria-label="Vertical video advertisement"></video>
+                <div class="exoclick-ad-container" aria-label="Video advertisement player"></div>
                 <div class="exoclick-ad-status">Loading advertisement…</div>
             </div>
         </section>
@@ -2786,11 +2798,11 @@ function ensureExoclickAdStyles() {
     style.textContent = `
         .exoclick-ad-slide { background:#000!important; color:#fff; }
         .exoclick-ad-content { position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#000; overflow:hidden; }
-        .exoclick-ad-content video { width:100%; height:100%; object-fit:contain; background:#000; }
+        .exoclick-ad-content video { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#000; }
+        .exoclick-ad-container { position:absolute; inset:0; z-index:10; width:100%; height:100%; }
+        .exoclick-ad-container video { width:100%!important; height:100%!important; object-fit:contain!important; }
         .exoclick-ad-label { position:absolute; top:18px; left:14px; z-index:20; padding:5px 8px; border-radius:4px; background:rgba(0,0,0,.7); color:#ddd; font:700 10px/1.2 Arial,sans-serif; letter-spacing:1px; pointer-events:none; }
-        .exoclick-ad-status { position:absolute; z-index:15; left:50%; top:50%; transform:translate(-50%,-50%); color:#aaa; font:500 14px/1.4 Arial,sans-serif; text-align:center; pointer-events:none; }
-        .exoclick-ad-slide .fluid_video_wrapper { width:100%!important; height:100%!important; }
-        .exoclick-ad-slide .fluid_video_wrapper video { width:100%!important; height:100%!important; object-fit:contain!important; }
+        .exoclick-ad-status { position:absolute; z-index:25; left:50%; top:50%; transform:translate(-50%,-50%); color:#aaa; font:500 14px/1.4 Arial,sans-serif; text-align:center; pointer-events:none; }
     `;
     document.head.appendChild(style);
 }

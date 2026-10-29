@@ -3899,6 +3899,7 @@ function registerViewAndListen(movieId) {
     if(!navigator.onLine) return;
 
     activeStatsRef = db.ref(`movie_stats/${movieId}`);
+    let wpFirstStats = true;
     activeStatsRef.on('value', (snapshot) => {
         const stats = snapshot.val() || {};
         const viewsObj = stats.views || {};
@@ -3916,20 +3917,10 @@ function registerViewAndListen(movieId) {
         if (likesEl) likesEl.innerText = formatCount(totalLikes) + " Likes";
         if (countEl) countEl.innerText = formatCount(totalLikes);
 
-        const likeIcon = document.getElementById('movie-like-icon');
-        const dislikeIcon = document.getElementById('movie-dislike-icon');
-        
-        if (auth.currentUser && likesObj[auth.currentUser.uid]) {
-            if (likeIcon) likeIcon.className = "fas fa-thumbs-up";
-        } else {
-            if (likeIcon) likeIcon.className = "far fa-thumbs-up";
-        }
-
-        if (auth.currentUser && dislikesObj[auth.currentUser.uid]) {
-            if (dislikeIcon) dislikeIcon.className = "fas fa-thumbs-down";
-        } else {
-            if (dislikeIcon) dislikeIcon.className = "far fa-thumbs-down";
-        }
+        const uidNow = auth.currentUser ? auth.currentUser.uid : null;
+        wpApplyReaction('movie-like-btn', !!(uidNow && likesObj[uidNow]), wpFirstStats);
+        wpApplyReaction('movie-dislike-btn', !!(uidNow && dislikesObj[uidNow]), wpFirstStats);
+        wpFirstStats = false;
     });
 
     activeCommentsRef = db.ref(`movie_comments/${movieId}`);
@@ -4265,6 +4256,19 @@ function renderMovieWatchRecommendedFeed() {
 
     container.innerHTML = html;
     uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
+}
+
+function wpApplyReaction(btnId, isOn, silent) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    const was = btn.classList.contains('active');
+    btn.classList.toggle('active', isOn);
+    if (!silent && was !== isOn) {
+        btn.classList.remove('wp-anim');
+        void btn.offsetWidth;
+        btn.classList.add('wp-anim');
+        setTimeout(() => btn.classList.remove('wp-anim'), 650);
+    }
 }
 
 function wpShare() {

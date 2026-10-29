@@ -2694,6 +2694,29 @@ function initExoclickAdSlides(container) {
         }
 
         let adPlaybackStarted = false;
+        let adPlayer = null;
+        const soundButton = slide.querySelector('.exoclick-ad-sound');
+        const enableAdSound = () => {
+            // Mobile WebViews commonly block audible autoplay until a user gesture.
+            try {
+                video.muted = false;
+                video.defaultMuted = false;
+                video.volume = 1;
+                if (adPlayer && typeof adPlayer.unmute === 'function') adPlayer.unmute();
+                if (adPlayer && typeof adPlayer.setVolume === 'function') adPlayer.setVolume(1);
+                const playResult = adPlayer && typeof adPlayer.play === 'function' ? adPlayer.play() : video.play();
+                if (playResult && typeof playResult.catch === 'function') playResult.catch(() => {});
+                if (soundButton) soundButton.textContent = 'Sound on';
+            } catch (e) {}
+        };
+        if (soundButton) soundButton.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            enableAdSound();
+        });
+        video.muted = false;
+        video.defaultMuted = false;
+        video.volume = 1;
         const startFallback = setTimeout(() => {
             if (!adPlaybackStarted && status) status.textContent = 'Advertisement unavailable';
         }, 12000);
@@ -2707,12 +2730,13 @@ function initExoclickAdSlides(container) {
         });
 
         try {
-            const player = window.fluidPlayer(video.id, {
+            adPlayer = window.fluidPlayer(video.id, {
                 layoutControls: {
                     primaryColor: '#D80E45',
                     fillToContainer: true,
                     autoPlay: true,
                     mute: false,
+                    autoPlayWithMuted: false,
                     allowTheatre: false,
                     playButtonShowing: false,
                     playbackRateEnabled: false,
@@ -2723,11 +2747,15 @@ function initExoclickAdSlides(container) {
                     adCTAText: 'Visit advertiser'
                 }
             });
-            if (player && typeof player.play === 'function') {
-                const result = player.play();
+            video.muted = false;
+            video.defaultMuted = false;
+            video.volume = 1;
+            if (adPlayer && typeof adPlayer.play === 'function') {
+                const result = adPlayer.play();
                 if (result && typeof result.catch === 'function') result.catch(() => {});
             } else {
-                video.play().catch(() => {});
+                const result = video.play();
+                if (result && typeof result.catch === 'function') result.catch(() => {});
             }
         } catch (error) {
             clearTimeout(startFallback);
@@ -2759,7 +2787,8 @@ function getExoclickAdSlideHTML(slotNumber) {
         <section class="short-slide exoclick-ad-slide" id="exoclick-ad-slide-${slotNumber}" data-ad-slot="${slotNumber}" aria-label="Advertisement">
             <div class="exoclick-ad-content">
                 <div class="exoclick-ad-label">ADVERTISEMENT</div>
-                <video id="${videoId}" playsinline webkit-playsinline preload="none" aria-label="ExoClick video advertisement"></video>
+                <video id="${videoId}" playsinline webkit-playsinline preload="none" muted="false" aria-label="ExoClick video advertisement"></video>
+                <button type="button" class="exoclick-ad-sound" aria-label="Enable advertisement sound">Enable sound</button>
                 <div class="exoclick-ad-status">Loading advertisement…</div>
             </div>
         </section>
@@ -2775,6 +2804,8 @@ function ensureExoclickAdStyles() {
         .exoclick-ad-content { position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#000; overflow:hidden; }
         .exoclick-ad-content video { width:100%; height:100%; object-fit:contain; background:#000; }
         .exoclick-ad-label { position:absolute; top:18px; left:14px; z-index:20; padding:5px 8px; border-radius:4px; background:rgba(0,0,0,.7); color:#ddd; font:700 10px/1.2 Arial,sans-serif; letter-spacing:1px; pointer-events:none; }
+        .exoclick-ad-sound { position:absolute; right:14px; bottom:76px; z-index:50; border:1px solid rgba(255,255,255,.45); border-radius:20px; padding:9px 13px; background:rgba(0,0,0,.78); color:#fff; font:600 12px/1.2 Arial,sans-serif; cursor:pointer; touch-action:manipulation; }
+        .exoclick-ad-sound:active { background:rgba(40,40,40,.95); }
         .exoclick-ad-status { position:absolute; z-index:15; left:50%; top:50%; transform:translate(-50%,-50%); color:#aaa; font:500 14px/1.4 Arial,sans-serif; text-align:center; pointer-events:none; }
         .exoclick-ad-slide .fluid_video_wrapper { width:100%!important; height:100%!important; }
         .exoclick-ad-slide .fluid_video_wrapper video { width:100%!important; height:100%!important; object-fit:contain!important; }

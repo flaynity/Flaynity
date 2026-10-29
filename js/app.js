@@ -2695,25 +2695,8 @@ function initExoclickAdSlides(container) {
 
         let adPlaybackStarted = false;
         let adPlayer = null;
-        const soundButton = slide.querySelector('.exoclick-ad-sound');
-        const enableAdSound = () => {
-            // Mobile WebViews commonly block audible autoplay until a user gesture.
-            try {
-                video.muted = false;
-                video.defaultMuted = false;
-                video.volume = 1;
-                if (adPlayer && typeof adPlayer.unmute === 'function') adPlayer.unmute();
-                if (adPlayer && typeof adPlayer.setVolume === 'function') adPlayer.setVolume(1);
-                const playResult = adPlayer && typeof adPlayer.play === 'function' ? adPlayer.play() : video.play();
-                if (playResult && typeof playResult.catch === 'function') playResult.catch(() => {});
-                if (soundButton) soundButton.textContent = 'Sound on';
-            } catch (e) {}
-        };
-        if (soundButton) soundButton.addEventListener('click', event => {
-            event.preventDefault();
-            event.stopPropagation();
-            enableAdSound();
-        });
+        // Request audible playback; Android WebView may still require its native
+        // mediaPlaybackRequiresUserGesture setting to be disabled for autoplay.
         video.muted = false;
         video.defaultMuted = false;
         video.volume = 1;
@@ -2736,9 +2719,8 @@ function initExoclickAdSlides(container) {
                     fillToContainer: true,
                     autoPlay: true,
                     mute: false,
-                    autoPlayWithMuted: false,
                     allowTheatre: false,
-                    playButtonShowing: false,
+                    playButtonShowing: true,
                     playbackRateEnabled: false,
                     controlBar: { autoHide: true, autoHideTimeout: 3, animated: true }
                 },
@@ -2750,6 +2732,9 @@ function initExoclickAdSlides(container) {
             video.muted = false;
             video.defaultMuted = false;
             video.volume = 1;
+            if (adPlayer && typeof adPlayer.setVolume === 'function') {
+                try { adPlayer.setVolume(1); } catch (e) {}
+            }
             if (adPlayer && typeof adPlayer.play === 'function') {
                 const result = adPlayer.play();
                 if (result && typeof result.catch === 'function') result.catch(() => {});
@@ -2788,7 +2773,6 @@ function getExoclickAdSlideHTML(slotNumber) {
             <div class="exoclick-ad-content">
                 <div class="exoclick-ad-label">ADVERTISEMENT</div>
                 <video id="${videoId}" playsinline webkit-playsinline preload="none" muted="false" aria-label="ExoClick video advertisement"></video>
-                <button type="button" class="exoclick-ad-sound" aria-label="Enable advertisement sound">Enable sound</button>
                 <div class="exoclick-ad-status">Loading advertisement…</div>
             </div>
         </section>
@@ -2804,8 +2788,6 @@ function ensureExoclickAdStyles() {
         .exoclick-ad-content { position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#000; overflow:hidden; }
         .exoclick-ad-content video { width:100%; height:100%; object-fit:contain; background:#000; }
         .exoclick-ad-label { position:absolute; top:18px; left:14px; z-index:20; padding:5px 8px; border-radius:4px; background:rgba(0,0,0,.7); color:#ddd; font:700 10px/1.2 Arial,sans-serif; letter-spacing:1px; pointer-events:none; }
-        .exoclick-ad-sound { position:absolute; right:14px; bottom:76px; z-index:50; border:1px solid rgba(255,255,255,.45); border-radius:20px; padding:9px 13px; background:rgba(0,0,0,.78); color:#fff; font:600 12px/1.2 Arial,sans-serif; cursor:pointer; touch-action:manipulation; }
-        .exoclick-ad-sound:active { background:rgba(40,40,40,.95); }
         .exoclick-ad-status { position:absolute; z-index:15; left:50%; top:50%; transform:translate(-50%,-50%); color:#aaa; font:500 14px/1.4 Arial,sans-serif; text-align:center; pointer-events:none; }
         .exoclick-ad-slide .fluid_video_wrapper { width:100%!important; height:100%!important; }
         .exoclick-ad-slide .fluid_video_wrapper video { width:100%!important; height:100%!important; object-fit:contain!important; }

@@ -4049,6 +4049,10 @@ function toggleMovieDislike() {
 
 function openCommentModal() {
     playUI('click');
+    const _fbm = document.getElementById('comment-modal');
+    const _fbOn = fbcmIsPostActive();
+    if (_fbm) _fbm.classList.toggle('fb-cm', _fbOn);
+    if (_fbOn) fbcmInit();
     const currentU = auth.currentUser;
     const avatarEl = document.getElementById('comment-user-avatar');
     if (currentU && avatarEl && navigator.onLine) {
@@ -4115,7 +4119,231 @@ function submitComment() {
     });
 }
 
+
+// =========================================================
+// FACEBOOK-STYLE COMMENT SHEET (used for community posts)
+// =========================================================
+let _fbcmData = {};
+let _fbcmSort = 'relevant';
+let _fbcmReply = null;
+const _FBCM_LABELS = { relevant: 'Most relevant', newest: 'Newest', all: 'All comments' };
+const FBCM_UP = (on) => `<svg viewBox="0 0 24 24"><path d="${on ? 'M3,11h3v10H3V11z M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11v10h10.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z' : 'M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11H3v10h4h1h9.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z M7,20H4v-8h3V20z M19.98,13.17l-1.34,6C18.54,19.65,18.03,20,17.43,20H8v-8.61l5.6-6.06C13.79,5.12,14.08,5,14.38,5c0.26,0,0.5,0.11,0.63,0.3c0.07,0.1,0.15,0.26,0.09,0.47l-1.52,4.94L13.18,12h1.35h4.23c0.41,0,0.8,0.17,1.03,0.46C19.92,12.61,20.05,12.86,19.98,13.17z'}"/></svg>`;
+const FBCM_DOWN = (on) => `<svg viewBox="0 0 24 24"><g transform="rotate(180 12 12)"><path d="${on ? 'M3,11h3v10H3V11z M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11v10h10.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z' : 'M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11H3v10h4h1h9.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z M7,20H4v-8h3V20z M19.98,13.17l-1.34,6C18.54,19.65,18.03,20,17.43,20H8v-8.61l5.6-6.06C13.79,5.12,14.08,5,14.38,5c0.26,0,0.5,0.11,0.63,0.3c0.07,0.1,0.15,0.26,0.09,0.47l-1.52,4.94L13.18,12h1.35h4.23c0.41,0,0.8,0.17,1.03,0.46C19.92,12.61,20.05,12.86,19.98,13.17z'}"/></g></svg>`;
+
+function fbcmIsPostActive() {
+    return !!(currentActiveMovie && typeof allCommunityPosts !== 'undefined' &&
+        allCommunityPosts.some(p => String(p.id) === String(currentActiveMovie.id)));
+}
+
+function fbcmInit() {
+    _fbcmReply = null;
+    _fbcmData = {};
+    const _lc = document.getElementById('comment-list-container'); if (_lc) _lc.innerHTML = '';
+    const rb = document.getElementById('fbcm-replybar'); if (rb) rb.style.display = 'none';
+    const mn = document.getElementById('fbcm-mention'); if (mn) mn.style.display = 'none';
+    const inp = document.getElementById('fbcm-input'); if (inp) inp.value = '';
+    fbcmOnInput();
+    const lbl = document.getElementById('fbcm-sort-label'); if (lbl) lbl.innerText = _FBCM_LABELS[_fbcmSort];
+    fbcmPaintHead(currentActiveMovie && currentActiveMovie.id);
+    if (inp) {
+        inp.placeholder = 'Comment';
+        const u = auth.currentUser;
+        if (u) {
+            const fallback = (u.email || '').split('@')[0] || 'User';
+            inp.placeholder = 'Comment as ' + fallback;
+            if (navigator.onLine) db.ref(`users/${u.uid}`).once('value', (snap) => {
+                const d = snap.val() || {};
+                const el = document.getElementById('fbcm-input');
+                if (el) el.placeholder = 'Comment as ' + (d.username || d.displayName || fallback);
+            });
+        }
+    }
+    const modal = document.getElementById('comment-modal');
+    if (modal && !modal._fbSwipe) {
+        modal._fbSwipe = true;
+        setTimeout(() => setupSwipeToClose(modal, 'fbcm-drag-handle', closeCommentModal), 50);
+    }
+}
+
+function fbcmPaintHead(postId) {
+    if (!postId || !currentActiveMovie || String(currentActiveMovie.id) !== String(postId)) return;
+    const badges = document.getElementById('fbcm-badges');
+    const cnt = document.getElementById('fbcm-react-count');
+    if (!badges || !cnt) return;
+    const reactions = (typeof _postReactionCache !== 'undefined' && _postReactionCache[postId] && _postReactionCache[postId].reactions) || {};
+    const counts = {};
+    Object.values(reactions).forEach(r => { if (r && r.type) counts[r.type] = (counts[r.type] || 0) + 1; });
+    const top = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, 3);
+    badges.innerHTML = fbReactionBadgesHTML(top);
+    cnt.innerText = Object.keys(reactions).length ? formatCount(Object.keys(reactions).length) : '';
+}
+
+function fbcmOnInput() {
+    const inp = document.getElementById('fbcm-input');
+    const pill = document.getElementById('fbcm-pill');
+    if (pill) pill.classList.toggle('has-text', !!(inp && inp.value.trim()));
+}
+
+function fbcmAddEmoji(em) {
+    playUI('click');
+    const inp = document.getElementById('fbcm-input');
+    if (!inp) return;
+    inp.value += em;
+    fbcmOnInput();
+}
+
+function fbcmRender(popKey, popType) {
+    const container = document.getElementById('comment-list-container');
+    if (!container) return;
+    const uid = auth.currentUser ? auth.currentUser.uid : null;
+    const entries = Object.keys(_fbcmData || {}).map(k => Object.assign({ _k: k }, _fbcmData[k])).filter(c => c && c.text !== undefined);
+
+    const countEl = document.getElementById('fbcm-comment-count');
+    if (countEl) countEl.innerText = entries.length + (entries.length === 1 ? ' comment' : ' comments');
+
+    if (entries.length === 0) {
+        container.innerHTML = `<div class="fbcm-empty">No comments yet. Be the first to comment!</div>`;
+        return;
+    }
+
+    const keys = new Set(entries.map(c => c._k));
+    const top = entries.filter(c => !c.parentId || !keys.has(c.parentId));
+    const kids = {};
+    entries.filter(c => c.parentId && keys.has(c.parentId)).forEach(c => { (kids[c.parentId] = kids[c.parentId] || []).push(c); });
+    Object.values(kids).forEach(a => a.sort((x, y) => (x.timestamp || 0) - (y.timestamp || 0)));
+
+    const likesOf = c => Object.keys(c.likes || {}).length;
+    if (_fbcmSort === 'newest') top.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    else if (_fbcmSort === 'all') top.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+    else top.sort((a, b) => ((likesOf(b) * 3 + (kids[b._k] || []).length) - (likesOf(a) * 3 + (kids[a._k] || []).length)) || ((b.timestamp || 0) - (a.timestamp || 0)));
+
+    const row = (c, isReply) => {
+        const initial = (c.username || 'U').charAt(0).toUpperCase();
+        const av = c.avatar ? `<img class="fbcm-av" src="${escapeHTML(c.avatar)}" alt="">` : `<div class="fbcm-av" style="background:linear-gradient(135deg,var(--primary),#FF7A00)">${escapeHTML(initial)}</div>`;
+        const lc = likesOf(c);
+        const liked = !!(uid && c.likes && c.likes[uid]);
+        const disliked = !!(uid && c.dislikes && c.dislikes[uid]);
+        const hl = _fbcmReply && _fbcmReply.target === c._k ? ' hl' : '';
+        const mention = c.replyToName ? `<span class="fbcm-m">${escapeHTML(c.replyToName)}</span> ` : '';
+        return `
+        <div class="fbcm-c${isReply ? ' reply' : ''}${hl}" data-k="${c._k}">
+            ${av}
+            <div class="fbcm-body">
+                <div class="fbcm-meta"><b>${escapeHTML(c.username || 'User')}</b><span>·</span><span>${fbTimeShort(c.timestamp)}</span></div>
+                <div class="fbcm-text">${mention}${escapeHTML(c.text)}</div>
+                <div class="fbcm-acts">
+                    <button class="fbcm-reply" onclick="fbcmReply('${c._k}')">Reply</button>
+                    ${lc > 0 ? `<span class="fbcm-chip"><i><svg viewBox="0 0 24 24"><path d="M3,11h3v10H3V11z M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11v10h10.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z"/></svg></i>${lc}</span>` : ''}
+                    <span class="fbcm-sp"></span>
+                    <button class="fbcm-ic fbcm-like${liked ? ' on' : ''}" onclick="fbcmReact('${c._k}','likes')" aria-label="Like">${FBCM_UP(liked)}</button>
+                    <button class="fbcm-ic fbcm-dis${disliked ? ' on' : ''}" onclick="fbcmReact('${c._k}','dislikes')" aria-label="Dislike">${FBCM_DOWN(disliked)}</button>
+                </div>
+            </div>
+        </div>`;
+    };
+
+    const prevScroll = container.scrollTop;
+    container.innerHTML = top.map(c => row(c, false) + (kids[c._k] || []).map(r => row(r, true)).join('')).join('');
+    container.scrollTop = prevScroll;
+
+    if (popKey) {
+        const b = container.querySelector(`[data-k="${popKey}"] .${popType === 'likes' ? 'fbcm-like' : 'fbcm-dis'}`);
+        if (b) { b.classList.add('pop'); setTimeout(() => b.classList.remove('pop'), 500); }
+    }
+}
+
+function fbcmReact(key, type) {
+    playUI('click');
+    try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) {}
+    if (!auth.currentUser) { showNotification('Please sign in to react', 'error'); return; }
+    if (!currentActiveMovie) return;
+    const uid = auth.currentUser.uid;
+    const other = type === 'likes' ? 'dislikes' : 'likes';
+    const c = _fbcmData[key];
+    if (!c) return;
+    const had = !!(c[type] && c[type][uid]);
+    // optimistic UI
+    c[type] = c[type] || {};
+    if (had) delete c[type][uid]; else { c[type][uid] = true; if (c[other]) delete c[other][uid]; }
+    fbcmRender(had ? null : key, type);
+
+    const base = db.ref(`movie_comments/${currentActiveMovie.id}/${key}`);
+    const op = had ? base.child(type).child(uid).remove()
+                   : Promise.all([base.child(type).child(uid).set(true), base.child(other).child(uid).remove()]);
+    op.catch(() => showNotification('Could not update reaction', 'error'));
+}
+
+function fbcmReply(key) {
+    playUI('click');
+    const c = _fbcmData[key];
+    if (!c) return;
+    const parent = c.parentId && _fbcmData[c.parentId] ? c.parentId : key;
+    _fbcmReply = { target: key, parent, name: c.username || 'User' };
+    const rb = document.getElementById('fbcm-replybar'); if (rb) rb.style.display = 'block';
+    const rn = document.getElementById('fbcm-reply-name'); if (rn) rn.innerText = _fbcmReply.name;
+    const mn = document.getElementById('fbcm-mention'); if (mn) { mn.innerText = _fbcmReply.name; mn.style.display = 'inline'; }
+    fbcmRender();
+    const inp = document.getElementById('fbcm-input'); if (inp) inp.focus();
+}
+
+function fbcmCancelReply() {
+    playUI('click');
+    _fbcmReply = null;
+    const rb = document.getElementById('fbcm-replybar'); if (rb) rb.style.display = 'none';
+    const mn = document.getElementById('fbcm-mention'); if (mn) mn.style.display = 'none';
+    fbcmRender();
+}
+
+function fbcmSubmit() {
+    playUI('click');
+    if (!auth.currentUser) { showNotification('Please log in to Comment', 'error'); return; }
+    if (!currentActiveMovie) return;
+    const inp = document.getElementById('fbcm-input');
+    const text = inp ? inp.value.trim() : '';
+    if (!text) return;
+    const userId = auth.currentUser.uid;
+    const postId = currentActiveMovie.id;
+    const reply = _fbcmReply;
+
+    db.ref(`users/${userId}`).once('value', (snap) => {
+        const uData = snap.val() || {};
+        const username = uData.username || (auth.currentUser.email || 'user').split('@')[0];
+        const avatar = (typeof currentChannelData !== 'undefined' && currentChannelData && (currentChannelData.avatarUrl || currentChannelData.photoURL)) || uData.photoURL || auth.currentUser.photoURL || '';
+        const data = { uid: userId, username, avatar, text, timestamp: Date.now() };
+        if (reply) { data.parentId = reply.parent; data.replyToName = reply.name; }
+        db.ref(`movie_comments/${postId}`).push(data)
+            .then(() => {
+                const el = document.getElementById('fbcm-input');
+                if (el) el.value = '';
+                fbcmOnInput();
+                fbcmCancelReply();
+            })
+            .catch(() => showNotification('Failed to post comment', 'error'));
+    });
+}
+
+function fbcmOpenSort() {
+    playUI('click');
+    document.querySelectorAll('#fbcm-sort-sheet .fbcm-opt').forEach(o => o.classList.toggle('sel', o.dataset.k === _fbcmSort));
+    AppNavigation.pushModal('fbcm-sort-sheet');
+}
+
+function fbcmCloseSort() {
+    const c = AppNavigation.current();
+    if (c && c.type === 'modal' && c.id === 'fbcm-sort-sheet') AppNavigation.pop();
+}
+
+function fbcmSetSort(k) {
+    playUI('click');
+    _fbcmSort = k;
+    const lbl = document.getElementById('fbcm-sort-label'); if (lbl) lbl.innerText = _FBCM_LABELS[k];
+    document.querySelectorAll('#fbcm-sort-sheet .fbcm-opt').forEach(o => o.classList.toggle('sel', o.dataset.k === k));
+    fbcmRender();
+    setTimeout(fbcmCloseSort, 160);
+}
+
 function renderCommentList(commentsObj) {
+    if (fbcmIsPostActive()) { _fbcmData = commentsObj || {}; fbcmRender(); return; }
     const container = document.getElementById('comment-list-container');
     if (!container) return;
 
@@ -6046,6 +6274,8 @@ function paintPostReactions(postId) {
             }
         }
     }
+
+    if (typeof fbcmPaintHead === 'function') fbcmPaintHead(postId);
 
     if (c.commentCount !== undefined) {
         const totalCommentsEl = document.getElementById(`post-total-comments-${postId}`);
@@ -9923,4 +10153,4 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
         observer.observe(document.body, { childList: true, subtree: true });
     }
     setTimeout(initAfterInjection, 0);
-})()
+})();

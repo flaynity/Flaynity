@@ -3727,8 +3727,10 @@ const AppNavigation = {
             document.body.style.overflow = 'auto';
             const container = document.getElementById('video-player-container');
             if (container) container.innerHTML = '';
-            if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
-            if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }
+            if (!activeModals.includes('comment-modal')) {
+                if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
+                if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }
+            }
         }
 
         activeModals.forEach(modalId => {
@@ -4081,7 +4083,11 @@ function openCommentModal() {
 }
 
 function closeCommentModal() {
+    const _pid = currentActiveMovie && currentActiveMovie.id;
+    const _wasPost = fbcmIsPostActive();
+    fbcmDetach();
     if (activeCommentsRef) { try { activeCommentsRef.off(); } catch(e) {} activeCommentsRef = null; }
+    if (_wasPost) fbcmRestoreCountListener(_pid);
     AppNavigation.pop();
 }
 
@@ -4134,6 +4140,40 @@ function submitComment() {
 // =========================================================
 // FACEBOOK-STYLE COMMENT SHEET (used for community posts)
 // =========================================================
+let _fbcmRef = null;
+let _fbcmCb = null;
+
+function fbcmDetach() {
+    if (_fbcmRef && _fbcmCb) { try { _fbcmRef.off('value', _fbcmCb); } catch (e) {} }
+    _fbcmRef = null; _fbcmCb = null;
+}
+
+// Always-on realtime listener for the comment sheet: every add / reply / edit / delete
+// in Firebase Realtime Database is reflected here instantly (local writes fire immediately too).
+function fbcmAttach(postId) {
+    fbcmDetach();
+    if (!postId || typeof db === 'undefined') return;
+    _fbcmRef = db.ref(`movie_comments/${postId}`);
+    _fbcmCb = (snap) => {
+        if (!currentActiveMovie || String(currentActiveMovie.id) !== String(postId)) return;
+        _fbcmData = snap.val() || {};
+        _fbcmLoaded = true;
+        const n = Object.keys(_fbcmData).length;
+        const mc = document.getElementById('modal-comment-count'); if (mc) mc.innerText = n;
+        fbcmRender();
+    };
+    _fbcmRef.on('value', _fbcmCb);
+}
+
+function fbcmRestoreCountListener(postId) {
+    // closing the sheet calls ref.off() on this path, which also removes the feed's comment-count listener
+    if (!postId || typeof _postReactionCache === 'undefined' || !_postReactionCache[postId]) return;
+    db.ref(`movie_comments/${postId}`).on('value', (snapshot) => {
+        _postReactionCache[postId].commentCount = Object.keys(snapshot.val() || {}).length;
+        if (typeof paintPostReactions === 'function') paintPostReactions(postId);
+    });
+}
+
 let _fbcmData = {};
 let _fbcmLoaded = false;
 let _fbcmOpen = new Set();
@@ -4194,6 +4234,7 @@ function fbcmInit() {
             });
         }
     }
+    if (currentActiveMovie) fbcmAttach(currentActiveMovie.id);
     const modal = document.getElementById('comment-modal');
     if (modal && !modal._fbSwipe) {
         modal._fbSwipe = true;

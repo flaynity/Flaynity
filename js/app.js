@@ -2331,6 +2331,9 @@ function renderSinglePostSegmentUI(post) {
     const topEmojisId = `post-top-emojis-${post.id}`;
     const loveBtnId = `post-love-btn-${post.id}`;
 
+    // Whatever inserts this HTML, make sure its reaction/comment data gets bound and painted.
+    setTimeout(() => registerPostReactionsListener(post.id), 0);
+
     return `
         <div class="post-card fb-post" id="post-card-${post.id}">
             <div class="fb-head">
@@ -5985,43 +5988,41 @@ function triggerFloatingReaction(type) {
     setTimeout(() => { floatEl.remove(); }, 1200);
 }
 
-function registerPostReactionsListener(postId) {
-    if (_boundPostReactionListeners[postId]) return;
-    _boundPostReactionListeners[postId] = true;
+// Latest Firebase data per post. The feed DOM is rebuilt often (refresh, new data,
+// entering the page again), so every rebuild repaints from this cache instead of
+// waiting for Firebase to fire again.
+const _postReactionCache = {};
 
-    db.ref(`post_reactions/${postId}`).on('value', (snapshot) => {
-        const reactions = snapshot.val() || {};
+function paintPostReactions(postId) {
+    const c = _postReactionCache[postId];
+    if (!c) return;
+
+    if (c.reactions) {
+        const reactions = c.reactions;
         const totalReactions = Object.keys(reactions).length;
-        
+
         const reactionCounts = { love: 0, like: 0, care: 0, haha: 0, wow: 0, sad: 0, angry: 0 };
         Object.values(reactions).forEach(r => {
-            if (r && r.type && reactionCounts[r.type] !== undefined) {
-                reactionCounts[r.type]++;
-            }
+            if (r && r.type && reactionCounts[r.type] !== undefined) reactionCounts[r.type]++;
         });
-
         const sortedTypes = Object.keys(reactionCounts)
             .filter(t => reactionCounts[t] > 0)
-            .sort((a,b) => reactionCounts[b] - reactionCounts[a])
+            .sort((a, b) => reactionCounts[b] - reactionCounts[a])
             .slice(0, 3);
 
         const topEmojisEl = document.getElementById(`post-top-emojis-${postId}`);
-        if (topEmojisEl) {
-            topEmojisEl.innerHTML = fbReactionBadgesHTML(sortedTypes);
-        }
+        if (topEmojisEl) topEmojisEl.innerHTML = fbReactionBadgesHTML(sortedTypes);
 
         const totalReactionsEl = document.getElementById(`post-total-reactions-${postId}`);
-        if (totalReactionsEl) {
-            totalReactionsEl.innerText = formatCount(totalReactions);
-        }
+        if (totalReactionsEl) totalReactionsEl.innerText = formatCount(totalReactions);
 
         const loveBtn = document.getElementById(`post-love-btn-${postId}`);
         const loveIcon = document.getElementById(`love-icon-${postId}`);
         const loveText = document.getElementById(`love-text-${postId}`);
 
-        if (loveBtn && auth.currentUser) {
-            const myReact = reactions[auth.currentUser.uid];
-            if (myReact) {
+        if (loveBtn) {
+            const myReact = (auth.currentUser && reactions[auth.currentUser.uid]) || null;
+            if (myReact && myReact.type && fbRxSvg(myReact.type)) {
                 const type = myReact.type;
                 if (loveIcon) {
                     loveIcon.className = 'love-icon-element';
@@ -6044,17 +6045,40 @@ function registerPostReactionsListener(postId) {
                 }
             }
         }
+    }
+
+    if (c.commentCount !== undefined) {
+        const totalCommentsEl = document.getElementById(`post-total-comments-${postId}`);
+        if (totalCommentsEl) totalCommentsEl.innerText = formatCount(c.commentCount);
+    }
+}
+
+function registerPostReactionsListener(postId) {
+    // Already listening: just repaint the (possibly new) DOM from the cache.
+    if (_boundPostReactionListeners[postId]) {
+        paintPostReactions(postId);
+        return;
+    }
+    _boundPostReactionListeners[postId] = true;
+    if (!_postReactionCache[postId]) _postReactionCache[postId] = {};
+
+    db.ref(`post_reactions/${postId}`).on('value', (snapshot) => {
+        _postReactionCache[postId].reactions = snapshot.val() || {};
+        paintPostReactions(postId);
     });
 
     db.ref(`movie_comments/${postId}`).on('value', (snapshot) => {
-        const comments = snapshot.val() || {};
-        const totalComments = Object.keys(comments).length;
-        const totalCommentsEl = document.getElementById(`post-total-comments-${postId}`);
-        if (totalCommentsEl) {
-            totalCommentsEl.innerText = formatCount(totalComments);
-        }
+        _postReactionCache[postId].commentCount = Object.keys(snapshot.val() || {}).length;
+        paintPostReactions(postId);
     });
 }
+
+// Auth is often restored AFTER the feed renders (page refresh): repaint so "my reaction" shows up.
+try {
+    auth.onAuthStateChanged(() => {
+        Object.keys(_postReactionCache).forEach(paintPostReactions);
+    });
+} catch (e) {}
 
 function openCommentsForPost(postId) {
     playUI('click');

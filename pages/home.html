@@ -1217,8 +1217,8 @@
 .fb-rx svg{width:100%;height:100%;display:block;overflow:visible;}
 .fb-rx-picker.open .fb-rx{animation:rxIn .55s cubic-bezier(.2,1.7,.4,1) both;animation-delay:calc(var(--i)*45ms);}
 @keyframes rxIn{from{opacity:0;transform:translateY(70%) scale(.2)}to{opacity:1;transform:none}}
-.fb-rx-picker.open .fb-rx svg{animation:rxFloat 2.6s ease-in-out infinite;animation-delay:calc(var(--i)*-.37s);}
-@keyframes rxFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-7%) rotate(2.5deg)}}
+.fb-rx-picker.open .fb-rx svg{animation:rxFloat 2.4s ease-in-out infinite;animation-delay:calc(var(--i)*-.37s);}
+@keyframes rxFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-8%) rotate(3deg)}}
 .fb-rx-picker.has-hover .fb-rx{width:9.3vw;height:9.3vw;}
 .fb-rx-picker.has-hover .fb-rx.on{width:20.5vw;height:20.5vw;z-index:3;}
 .fb-rx.on svg{animation:none!important;}
@@ -1227,34 +1227,75 @@
 .fb-rx-picker.picking .fb-rx:not(.picked){opacity:0;transform:scale(.6);}
 .fb-rx.picked{animation:none!important;transform:translateY(-35%) scale(1.25);transition:transform .26s cubic-bezier(.3,1.6,.5,1);}
 .fb-rx.picked::after{opacity:0;}
-.fb-rx svg *{transform-box:fill-box;transform-origin:center;}
-/* per-emoji hover motion */
-.fb-rx.on .rx-thumb{transform-origin:20% 90%;animation:rxThumb .65s ease-in-out infinite;}
-@keyframes rxThumb{0%,100%{transform:rotate(-16deg) scale(1)}50%{transform:rotate(8deg) scale(1.12)}}
-.fb-rx.on .rx-heart{animation:rxBeat .7s ease-in-out infinite;}
-@keyframes rxBeat{0%,100%{transform:scale(1)}30%{transform:scale(1.2)}60%{transform:scale(.95)}}
-.fb-rx.on .rx-mouth-l{animation:rxLaugh .38s ease-in-out infinite alternate;transform-origin:50% 0;}
-@keyframes rxLaugh{from{transform:scaleY(.78)}to{transform:scaleY(1.12)}}
-.fb-rx[data-type="haha"].on svg>*:not(.rx-mouth-l){animation:rxJig .38s ease-in-out infinite alternate;}
-@keyframes rxJig{from{transform:translateY(0)}to{transform:translateY(-2.5%)}}
-.fb-rx.on .rx-mouth-o{animation:rxO .7s ease-in-out infinite;}
-@keyframes rxO{0%,100%{transform:scale(1)}50%{transform:scale(1.35,1.2)}}
-.fb-rx.on .rx-brow{animation:rxBrow .7s ease-in-out infinite;}
-@keyframes rxBrow{0%,100%{transform:translateY(0)}50%{transform:translateY(-12%)}}
-.fb-rx.on .rx-tear{animation:rxTear 1s ease-in infinite;}
-@keyframes rxTear{0%{transform:translateY(-10%) scale(.6);opacity:0}25%{opacity:1;transform:translateY(0) scale(1)}100%{transform:translateY(90%) scale(.9);opacity:0}}
-.fb-rx[data-type="angry"].on svg{animation:rxShake .22s linear infinite!important;}
-@keyframes rxShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3%) rotate(-2deg)}75%{transform:translateX(3%) rotate(2deg)}}
-.fb-rx.on .rx-blink{animation:rxBlink 1.4s infinite;}
-@keyframes rxBlink{0%,90%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
-.fb-rx[data-type="care"].on .rx-hug{animation:rxBeat .7s ease-in-out infinite;}
+/* transform origins (SVG user units) */
+.fb-rx .rx-all{transform-origin:50px 50px;}
+.fb-rx .rx-thumb{transform-origin:30px 84px;}
+.fb-rx .rx-heart{transform-origin:50px 52px;}
+.fb-rx .rx-hug{transform-origin:34px 76px;}
+.fb-rx .rx-mouth-l{transform-origin:50px 54px;}
+.fb-rx .rx-mouth-o{transform-origin:50px 62px;}
+.fb-rx .rx-brow{transform-origin:50px 28px;}
+.fb-rx .rx-tear{transform-origin:74px 56px;}
+/* idle life — everything keeps moving while the picker is open */
+.fb-rx-picker.open .rx-thumb{animation:rxThumbI 1.7s ease-in-out infinite;}
+@keyframes rxThumbI{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(6deg) scale(1.06)}}
+.fb-rx-picker.open .rx-heart,.fb-rx-picker.open .rx-hug{animation:rxBeatI 1.1s ease-in-out infinite;}
+@keyframes rxBeatI{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.fb-rx-picker.open .rx-mouth-l{animation:rxLaughI .55s ease-in-out infinite alternate;}
+@keyframes rxLaughI{from{transform:scaleY(.88)}to{transform:scaleY(1.07)}}
+.fb-rx-picker.open .rx-mouth-o{animation:rxOI 1.3s ease-in-out infinite;}
+@keyframes rxOI{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+.fb-rx-picker.open .rx-eye{animation:rxBlink 3.2s infinite;animation-delay:calc(var(--i)*-.55s);}
+@keyframes rxBlink{0%,90%,100%{transform:scaleY(1)}95%{transform:scaleY(.12)}}
+.fb-rx-picker.open .rx-tear{animation:rxTearI 2.2s ease-in infinite;}
+@keyframes rxTearI{0%{transform:translateY(-10%) scale(.6);opacity:0}25%{opacity:1;transform:none}100%{transform:translateY(80%);opacity:0}}
+.fb-rx-picker.open .rx-brow{animation:rxBrowI 2s ease-in-out infinite;}
+@keyframes rxBrowI{0%,100%{transform:translateY(0)}50%{transform:translateY(-8%)}}
+.fb-rx-picker.open .fb-rx[data-type="angry"] .rx-all{animation:rxShakeI .45s ease-in-out infinite;}
+@keyframes rxShakeI{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(-1.5%) rotate(-1.5deg)}75%{transform:translateX(1.5%) rotate(1.5deg)}}
+.fb-rx-picker.open .fb-rx[data-type="haha"] .rx-all{animation:rxBobI .8s ease-in-out infinite alternate;}
+@keyframes rxBobI{from{transform:translateY(0) rotate(-2deg)}to{transform:translateY(-2.5%) rotate(2deg)}}
+/* hover — big Facebook-style character motion */
+.fb-rx[data-type="like"].on .rx-thumb{animation:rxThumbH .6s ease-in-out infinite;}
+@keyframes rxThumbH{0%,100%{transform:rotate(-24deg) scale(1)}50%{transform:rotate(12deg) scale(1.2)}}
+.fb-rx[data-type="like"].on .rx-all,.fb-rx[data-type="love"].on .rx-all{animation:rxPulseH .62s ease-in-out infinite;}
+@keyframes rxPulseH{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+.fb-rx[data-type="love"].on .rx-heart{animation:rxBeatH .62s ease-in-out infinite;}
+@keyframes rxBeatH{0%,100%{transform:scale(1)}25%{transform:scale(1.3)}50%{transform:scale(.9)}75%{transform:scale(1.16)}}
+.fb-rx[data-type="care"].on .rx-hug{animation:rxBeatH .7s ease-in-out infinite;}
+.fb-rx[data-type="care"].on .rx-all{animation:rxCareH 1.1s ease-in-out infinite;}
+@keyframes rxCareH{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg) translateY(-2%)}}
+.fb-rx[data-type="haha"].on .rx-all{animation:rxHahaH .32s ease-in-out infinite alternate;}
+@keyframes rxHahaH{from{transform:translateY(0) rotate(-7deg)}to{transform:translateY(-5%) rotate(7deg)}}
+.fb-rx[data-type="haha"].on .rx-mouth-l{animation:rxLaughH .32s ease-in-out infinite alternate;}
+@keyframes rxLaughH{from{transform:scaleY(.62)}to{transform:scaleY(1.22)}}
+.fb-rx[data-type="wow"].on .rx-brow{animation:rxBrowH .8s ease-in-out infinite;}
+@keyframes rxBrowH{0%,100%{transform:translateY(0)}50%{transform:translateY(-16%)}}
+.fb-rx[data-type="wow"].on .rx-mouth-o{animation:rxOH .8s ease-in-out infinite;}
+@keyframes rxOH{0%,100%{transform:scale(.9)}50%{transform:scale(1.55,1.35)}}
+.fb-rx[data-type="wow"].on .rx-eye{animation:rxEyeH .8s ease-in-out infinite;}
+@keyframes rxEyeH{0%,100%{transform:scale(1)}50%{transform:scale(1.22)}}
+.fb-rx[data-type="sad"].on .rx-tear{animation:rxTearH .95s ease-in infinite;}
+@keyframes rxTearH{0%{transform:translateY(-12%) scale(.5);opacity:0}25%{opacity:1;transform:none}100%{transform:translateY(95%) scale(.9);opacity:0}}
+.fb-rx[data-type="sad"].on .rx-brow{animation:rxBrowSad 1.2s ease-in-out infinite;}
+@keyframes rxBrowSad{0%,100%{transform:translateY(0)}50%{transform:translateY(9%)}}
+.fb-rx[data-type="sad"].on .rx-all{animation:rxSadH 1.6s ease-in-out infinite;}
+@keyframes rxSadH{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(2.5%) rotate(-2.5deg)}}
+.fb-rx[data-type="angry"].on .rx-all{animation:rxShakeH .18s linear infinite;}
+@keyframes rxShakeH{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(-3.5%) rotate(-3deg)}75%{transform:translateX(3.5%) rotate(3deg)}}
 .floating-emoji.rx-float{width:64px;height:64px;font-size:0;}
 .floating-emoji.rx-float svg{width:100%;height:100%;display:block;}
 .love-icon-element{-webkit-touch-callout:none;}
-.fb-ico svg *{transform-box:fill-box;transform-origin:center;}
 .fb-badge{background:none!important;border:0!important;margin-top:0!important;margin-bottom:0!important;box-shadow:0 0 0 2px var(--fb-card);}
 .fb-badge svg{width:100%;height:100%;display:block;}
 .post-action-btn-fb{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;}
+/* post header: Subscribe pill (same look as the long-video page) */
+.fb-subbtn{height:32px;min-height:0;padding:0 14px;border-radius:16px;border:0;background:var(--text-main);color:var(--bg-color);font-size:13px;font-weight:600;line-height:1;flex-shrink:0;margin-right:2px;}
+.fb-subbtn.subbed{background:var(--wp-panel);color:var(--text-main);}
+/* black post cards */
+[data-theme="dark"]{--fb-card:#000000;--fb-gap:#1C1C1C;}
+/* All People Reacted page starts under the status bar */
+#reacted-people-page{top:env(safe-area-inset-top,0px)!important;bottom:0;height:auto!important;}
 </style></head><body>
 <audio id="startupSound" preload="auto">
 <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg"/>

@@ -1300,6 +1300,63 @@
 :root{--fb-line:#A3A5A9;}
 [data-theme="dark"]{--fb-line:#2E2E2E;}
 .post-card.fb-post::after{content:"";display:block;height:3px;width:100%;background:var(--fb-line);}
+
+/* ===== FACEBOOK-STYLE COMMENT SHEET (posts) ===== */
+:root{--fbcm-pill:#F0F2F5;--fbcm-hl:#F0F2F5;--fbcm-border:#CED0D4;}
+[data-theme="dark"]{--fbcm-pill:#242526;--fbcm-hl:#1B1B1B;--fbcm-border:#2E2E2E;}
+#comment-modal:not(.fb-cm) .fbcm-only{display:none!important;}
+#comment-modal.fb-cm .cm-legacy{display:none!important;}
+#comment-modal.fb-cm{backdrop-filter:none;background:rgba(0,0,0,.45);}
+#comment-modal.fb-cm .premium-download-content{background:var(--fb-card);padding:0;height:calc(100% - env(safe-area-inset-top,0px) - 8px);max-height:none;border-radius:24px 24px 0 0;overflow:hidden;}
+#comment-modal.fb-cm #comment-list-container{padding:0;margin:0;min-height:0!important;overscroll-behavior:contain;}
+.fbcm-handle{width:13.5vw;height:5px;border-radius:5px;background:#8A8D91;margin:0 auto 14px;}
+.fbcm-head{padding:10px 12px 0;flex-shrink:0;}
+.fbcm-top{display:flex;justify-content:space-between;align-items:center;font-size:16px;font-weight:600;color:var(--text-main);padding:0 2px;}
+.fbcm-react{display:flex;align-items:center;gap:8px;}
+.fbcm-react .fb-badges .fb-badge{box-shadow:none;}
+.fbcm-sort{display:flex;align-items:center;gap:8px;background:none;border:0;padding:20px 2px 12px;font-size:17px;font-weight:700;color:var(--text-main);}
+.fbcm-c{display:flex;gap:10px;padding:12px 12px 6px;}
+.fbcm-c.hl{background:var(--fbcm-hl);}
+.fbcm-c.reply{padding-left:54px;}
+.fbcm-av{width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#3A3B3C;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;}
+.fbcm-c.reply .fbcm-av{width:28px;height:28px;font-size:11px;}
+.fbcm-body{flex:1;min-width:0;}
+.fbcm-meta{display:flex;align-items:baseline;gap:6px;font-size:14px;color:var(--fb-muted);}
+.fbcm-meta b{color:var(--text-main);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.fbcm-text{font-size:16px;line-height:1.4;color:var(--text-main);margin-top:3px;white-space:pre-wrap;word-break:break-word;}
+.fbcm-m{color:var(--fb-link);font-weight:600;}
+.fbcm-acts{display:flex;align-items:center;margin-top:8px;min-height:36px;}
+.fbcm-reply{background:none;border:0;padding:0;font-size:14px;font-weight:700;color:var(--fb-muted);}
+.fbcm-chip{display:flex;align-items:center;gap:6px;margin-left:26px;font-size:14px;font-weight:700;color:var(--fb-muted);}
+.fbcm-chip i{width:22px;height:22px;border-radius:50%;background:#1877F2;display:flex;align-items:center;justify-content:center;}
+.fbcm-chip svg{width:13px;height:13px;fill:#fff;display:block;}
+.fbcm-sp{flex:1;}
+.fbcm-ic{width:46px;height:36px;background:none;border:0;padding:0;color:var(--fb-muted);display:flex;align-items:center;justify-content:center;}
+.fbcm-ic svg{width:25px;height:25px;display:block;fill:currentColor;}
+.fbcm-ic.on{color:var(--fb-link);}
+.fbcm-ic.pop svg{animation:fbcmPop .45s cubic-bezier(.3,1.5,.5,1);}
+@keyframes fbcmPop{0%{transform:scale(1)}35%{transform:scale(.7) rotate(-12deg)}70%{transform:scale(1.25) rotate(6deg)}100%{transform:scale(1)}}
+.fbcm-empty{text-align:center;color:var(--fb-muted);padding:50px 20px;font-size:15px;}
+.fbcm-composer{flex-shrink:0;border-top:1px solid var(--fbcm-border);background:var(--fb-card);padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));}
+.fbcm-replybar{padding:12px 16px 0;font-size:16px;color:var(--text-main);}
+.fbcm-replybar b{font-weight:700;}
+.fbcm-replybar button{background:none;border:0;padding:0;font-size:16px;font-weight:700;color:var(--fb-muted);}
+.fbcm-dot{color:var(--fb-muted);}
+.fbcm-emojis{display:flex;justify-content:space-between;padding:10px 6px 6px;}
+.fbcm-em{background:none;border:0;padding:2px 4px;font-size:28px;line-height:1.15;}
+.fbcm-em:active{transform:scale(1.25);}
+.fbcm-pill{display:flex;align-items:center;gap:6px;margin:6px 12px 0;padding:0 14px 0 20px;min-height:54px;border-radius:30px;background:var(--fbcm-pill);}
+.fbcm-pill input{flex:1;min-width:0;border:0;outline:none;background:transparent;color:var(--text-main);font-size:17px;padding:14px 0;}
+.fbcm-pill input::placeholder{color:var(--fb-muted);}
+.fbcm-mention{color:var(--fb-link);font-weight:700;font-size:17px;white-space:nowrap;}
+.fbcm-send{background:none;border:0;padding:0;width:0;opacity:0;overflow:hidden;transition:opacity .15s,width .15s;display:flex;align-items:center;justify-content:center;}
+.fbcm-pill.has-text .fbcm-send{width:34px;opacity:1;}
+.fbcm-sortc{background:var(--fb-card)!important;padding:14px 12px 28px!important;border-radius:24px 24px 0 0!important;}
+.fbcm-opt{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 12px;}
+.fbcm-opt b{display:block;font-size:20px;font-weight:700;color:var(--text-main);}
+.fbcm-opt p{margin:4px 0 0;font-size:16px;line-height:1.35;color:var(--fb-muted);}
+.fbcm-radio{width:30px;height:30px;box-sizing:border-box;border:3px solid #8A8D91;border-radius:50%;flex-shrink:0;}
+.fbcm-opt.sel .fbcm-radio{border-color:#0866FF;background:radial-gradient(circle,#0866FF 0 52%,transparent 56%);}
 </style></head><body>
 <audio id="startupSound" preload="auto">
 <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg"/>
@@ -1398,17 +1455,35 @@
 </div>
 <div class="premium-download-modal" id="comment-modal">
 <div class="premium-download-content">
-<div class="drag-handle-line"></div>
-<div class="download-modal-header">
+<div class="drag-handle-line cm-legacy"></div>
+<div class="download-modal-header cm-legacy">
 <h3>Comments (<span id="modal-comment-count">0</span>)</h3>
 <button class="close-download-modal" onclick="closeCommentModal()"><i class="fas fa-times"></i></button>
 </div>
-<div style="display: flex; gap: 10px; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--glass-border); padding-bottom: 16px;">
+<div class="cm-legacy" style="display: flex; gap: 10px; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--glass-border); padding-bottom: 16px;">
 <div class="header-avatar" id="comment-user-avatar" style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%;"></div>
 <input id="comment-input" onkeydown="if(event.key === 'Enter') submitComment()" placeholder="Add a public comment..." style="flex: 1; border: 1.5px solid var(--glass-border); padding: 12px 16px; border-radius: 16px; outline: none; background: var(--bg-color); color: var(--text-main); font-size: 0.95rem; font-weight: 500;" type="text"/>
 <button class="play-btn" onclick="submitComment()" style="flex: 0 0 auto; width: 44px; height: 44px; padding: 0; border-radius: 14px;"><i class="fas fa-paper-plane"></i></button>
 </div>
+<div class="fbcm-only fbcm-head">
+<div class="fbcm-handle" id="fbcm-drag-handle"></div>
+<div class="fbcm-top"><div class="fbcm-react"><span id="fbcm-badges" class="fb-badges"></span><span id="fbcm-react-count"></span></div><span id="fbcm-comment-count">0 comments</span></div>
+<button class="fbcm-sort" onclick="fbcmOpenSort()"><span id="fbcm-sort-label">Most relevant</span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"/></svg></button>
+</div>
 <div class="download-modal-scrollable" id="comment-list-container" style="flex-grow: 1; min-height: 220px;"></div>
+<div class="fbcm-only fbcm-composer">
+<div id="fbcm-replybar" class="fbcm-replybar" style="display:none">Replying to <b id="fbcm-reply-name"></b> <span class="fbcm-dot">·</span> <button onclick="fbcmCancelReply()">Cancel</button></div>
+<div class="fbcm-emojis"><button class="fbcm-em" onclick="fbcmAddEmoji('❤️')">❤️</button><button class="fbcm-em" onclick="fbcmAddEmoji('🙌')">🙌</button><button class="fbcm-em" onclick="fbcmAddEmoji('🔥')">🔥</button><button class="fbcm-em" onclick="fbcmAddEmoji('👏')">👏</button><button class="fbcm-em" onclick="fbcmAddEmoji('😢')">😢</button><button class="fbcm-em" onclick="fbcmAddEmoji('😍')">😍</button><button class="fbcm-em" onclick="fbcmAddEmoji('😮')">😮</button><button class="fbcm-em" onclick="fbcmAddEmoji('😂')">😂</button></div>
+<div class="fbcm-pill" id="fbcm-pill"><span id="fbcm-mention" class="fbcm-mention" style="display:none"></span><input id="fbcm-input" type="text" autocomplete="off" oninput="fbcmOnInput()" onkeydown="if(event.key==='Enter') fbcmSubmit()" placeholder="Comment as ..."/><button id="fbcm-send" class="fbcm-send" onclick="fbcmSubmit()" aria-label="Send"><svg viewBox="0 0 24 24" width="30" height="30"><path fill="#0866FF" d="M21.6 3.3c.5-.2 1 .3.8.8l-7.2 16.9c-.2.5-.9.6-1.2.1l-3.1-5.3-5.3-3.1c-.5-.3-.4-1 .1-1.2L21.6 3.3zM10.5 14.2l.9 1.6 4.2-8.6-5.1 7z"/></svg></button></div>
+</div>
+</div>
+</div>
+<div class="premium-download-modal" id="fbcm-sort-sheet" style="z-index: 3100;" onclick="if(event.target===this) fbcmCloseSort()">
+<div class="premium-download-content fbcm-sortc">
+<div class="fbcm-handle" style="margin-bottom:10px"></div>
+<div class="fbcm-opt" data-k="relevant" onclick="fbcmSetSort('relevant')"><div><b>Most relevant</b><p>Show the most liked and most engaging comments first.</p></div><span class="fbcm-radio"></span></div>
+<div class="fbcm-opt" data-k="newest" onclick="fbcmSetSort('newest')"><div><b>Newest</b><p>Show all comments with the newest comments first.</p></div><span class="fbcm-radio"></span></div>
+<div class="fbcm-opt" data-k="all" onclick="fbcmSetSort('all')"><div><b>All comments</b><p>Show all comments, oldest first.</p></div><span class="fbcm-radio"></span></div>
 </div>
 </div>
 <div class="upcoming-modal" id="upcoming-modal">

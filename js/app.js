@@ -4255,6 +4255,13 @@ function fbcmPaintHead(postId) {
     cnt.innerText = Object.keys(reactions).length ? formatCount(Object.keys(reactions).length) : '';
 }
 
+function fbcmOpenReacted() {
+    if (!currentActiveMovie) return;
+    const reactions = (typeof _postReactionCache !== 'undefined' && _postReactionCache[currentActiveMovie.id] && _postReactionCache[currentActiveMovie.id].reactions) || {};
+    if (!Object.keys(reactions).length) return;
+    openReactedPeoplePage(currentActiveMovie.id);
+}
+
 function fbcmOnInput() {
     const inp = document.getElementById('fbcm-input');
     const pill = document.getElementById('fbcm-pill');
@@ -4586,6 +4593,7 @@ function fbcmReply(key) {
     if (_fbcmEdit) { _fbcmEdit = null; const eb = document.getElementById('fbcm-editbar'); if (eb) eb.style.display = 'none'; const i0 = document.getElementById('fbcm-input'); if (i0) i0.value = ''; fbcmOnInput(); }
     const parent = c.parentId && _fbcmData[c.parentId] ? c.parentId : key;
     _fbcmReply = { target: key, parent, name: c.username || 'User', mention: true };
+    _fbcmOpen.add(parent);
     const rb = document.getElementById('fbcm-replybar'); if (rb) rb.style.display = 'block';
     const rn = document.getElementById('fbcm-reply-name'); if (rn) rn.innerText = _fbcmReply.name;
     const mn = document.getElementById('fbcm-mention'); if (mn) { mn.innerHTML = escapeHTML(_fbcmReply.name) + '<i class="fbcm-x">✕</i>'; mn.style.display = 'inline-flex'; }

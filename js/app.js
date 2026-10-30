@@ -2283,11 +2283,7 @@ function fbCaptionHTML(text) {
 }
 
 function fbReactionBadgesHTML(types) {
-    const bg = { like: '#1877F2', love: '#F33E58', care: '#F7B125', haha: '#F7B125', wow: '#F7B125', sad: '#F7B125', angry: '#E9710F' };
-    return types.map((t, i) => {
-        const inner = t === 'like' ? '<i class="fas fa-thumbs-up"></i>' : t === 'love' ? '<i class="fas fa-heart"></i>' : reactionEmojis[t];
-        return `<span class="fb-badge" style="background:${bg[t] || '#F7B125'}; z-index:${10 - i}; ${i ? 'margin-left:-6px;' : ''}">${inner}</span>`;
-    }).join('');
+    return types.map((t, i) => `<span class="fb-badge" style="z-index:${10 - i}; ${i ? 'margin-left:-5px;' : ''}">${fbRxSvg(t)}</span>`).join('');
 }
 
 function renderSinglePostSegmentUI(post) {
@@ -5782,44 +5778,115 @@ function closeFullScreenImagePreview() {
 // =========================================================
 // FACEBOOK REACTION EVENT CONTROLLERS
 // =========================================================
+const FB_RX = {"like": "<svg viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"50\" fill=\"url(#rxBlue)\"/><g class=\"rx-thumb\"><g transform=\"translate(24.5 23.5) scale(2.1)\"><path fill=\"#fff\" d=\"M3,11h3v10H3V11z M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11v10h10.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z\"/></g></g></svg>", "love": "<svg viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"50\" fill=\"url(#rxRed)\"/><g class=\"rx-heart\"><path fill=\"#fff\" d=\"M50 73C27 58 22 44 27 35C32 27 44 27 50 36C56 27 68 27 73 35C78 44 73 58 50 73Z\"/></g></svg>", "care": "<svg viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"50\" fill=\"url(#rxFace)\"/><path class=\"rx-brow\" d=\"M24 29Q33 22 42 28M58 28Q67 22 76 29\" fill=\"none\" stroke=\"#D9721A\" stroke-width=\"4\" stroke-linecap=\"round\"/><g class=\"rx-blink\"><ellipse cx=\"35\" cy=\"42\" rx=\"6.3\" ry=\"6\" fill=\"#2B3050\"/><circle cx=\"36.8\" cy=\"39.3\" r=\"2.3\" fill=\"#fff\"/></g><g class=\"rx-blink\"><ellipse cx=\"65\" cy=\"42\" rx=\"6.3\" ry=\"6\" fill=\"#2B3050\"/><circle cx=\"66.8\" cy=\"39.3\" r=\"2.3\" fill=\"#fff\"/></g><path d=\"M43 52Q50 57 57 52\" fill=\"none\" stroke=\"#5B2A1A\" stroke-width=\"3.2\" stroke-linecap=\"round\"/><g class=\"rx-hug\"><ellipse cx=\"13\" cy=\"71\" rx=\"9\" ry=\"7\" fill=\"#FDC14A\" stroke=\"#E79A22\" stroke-width=\"1.5\"/><path fill=\"url(#rxHeart)\" d=\"M34 92C16 80 13 68 17 62C21 56 30 57 34 63C38 57 47 56 51 62C55 68 52 80 34 92Z\"/><ellipse cx=\"55\" cy=\"73\" rx=\"9\" ry=\"7\" fill=\"#FDC14A\" stroke=\"#E79A22\" stroke-width=\"1.5\"/></g></svg>", "haha": "<svg viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"50\" fill=\"url(#rxFace)\"/><path d=\"M24 41Q33 30 42 41M58 41Q67 30 76 41\" fill=\"none\" stroke=\"#2B3050\" stroke-width=\"4.8\" stroke-linecap=\"round\"/><g class=\"rx-mouth-l\"><path d=\"M23 54Q50 50 77 54Q75 83 50 85Q25 83 23 54Z\" fill=\"url(#rxMouth)\"/><path d=\"M33 74Q50 66 67 74Q60 84 50 84Q40 84 33 74Z\" fill=\"#FF7A8A\"/></g></svg>", "wow": "<svg viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"50\" fill=\"url(#rxFace)\"/><path class=\"rx-brow\" d=\"M24 29Q33 21 42 28M58 28Q67 21 76 29\" fill=\"none\" stroke=\"#D9721A\" stroke-width=\"4\" stroke-linecap=\"round\"/><g class=\"rx-blink\"><ellipse cx=\"35\" cy=\"46\" rx=\"6.3\" ry=\"8\" fill=\"#2B3050\"/><circle cx=\"36.8\" cy=\"42.4\" r=\"2.3\" fill=\"#fff\"/></g><g class=\"rx-blink\"><ellipse cx=\"65\" cy=\"46\" rx=\"6.3\" ry=\"8\" fill=\"#2B3050\"/><circle cx=\"66.8\" cy=\"42.4\" r=\"2.3\" fill=\"#fff\"/></g><ellipse class=\"rx-mouth-o\" cx=\"50\" cy=\"71\" rx=\"8\" ry=\"11\" fill=\"url(#rxMouth)\"/></svg>", "sad": "<svg viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"50\" fill=\"url(#rxFace)\"/><path d=\"M23 37Q33 33 42 26M58 26Q67 33 77 37\" fill=\"none\" stroke=\"#D9721A\" stroke-width=\"4\" stroke-linecap=\"round\"/><g class=\"rx-blink\"><ellipse cx=\"35\" cy=\"49\" rx=\"6.3\" ry=\"6.6\" fill=\"#2B3050\"/><circle cx=\"36.8\" cy=\"46.0\" r=\"2.3\" fill=\"#fff\"/></g><g class=\"rx-blink\"><ellipse cx=\"65\" cy=\"49\" rx=\"6.3\" ry=\"6.6\" fill=\"#2B3050\"/><circle cx=\"66.8\" cy=\"46.0\" r=\"2.3\" fill=\"#fff\"/></g><path d=\"M40 70Q50 61 60 70\" fill=\"none\" stroke=\"#5B2A1A\" stroke-width=\"3.6\" stroke-linecap=\"round\"/><path class=\"rx-tear\" d=\"M74 54C74 54 67 62 67 67A7 7 0 0 0 81 67C81 62 74 54 74 54Z\" fill=\"#6EC3FF\"/></svg>", "angry": "<svg viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"50\" fill=\"url(#rxAng)\"/><path d=\"M21 31L44 41M79 31L56 41\" fill=\"none\" stroke=\"#B2380F\" stroke-width=\"5.5\" stroke-linecap=\"round\"/><g class=\"rx-blink\"><ellipse cx=\"36\" cy=\"52\" rx=\"6.3\" ry=\"5.8\" fill=\"#2B3050\"/><circle cx=\"37.8\" cy=\"49.4\" r=\"2.3\" fill=\"#fff\"/></g><g class=\"rx-blink\"><ellipse cx=\"64\" cy=\"52\" rx=\"6.3\" ry=\"5.8\" fill=\"#2B3050\"/><circle cx=\"65.8\" cy=\"49.4\" r=\"2.3\" fill=\"#fff\"/></g><path d=\"M38 72Q50 64 62 72\" fill=\"none\" stroke=\"#5B2A1A\" stroke-width=\"4\" stroke-linecap=\"round\"/></svg>"};
+function fbRxSvg(t){ return FB_RX[t] || ""; }
+const FB_RX_ORDER = ["like","love","care","haha","wow","sad","angry"];
+
 let reactionActivePostId = null;
-let reactionTimer = null;
+let _rx = null;
+let _rxLastTouchAt = 0;
+let _rxSuppressClickUntil = 0;
 
-function startReactionTimer(postId, e) {
-    reactionActivePostId = postId;
-    clearTimeout(reactionTimer);
-    reactionTimer = setTimeout(() => {
-        showReactionPicker(postId, e);
-    }, 500); 
-}
-
-function clearReactionTimer(postId, e) {
-    clearTimeout(reactionTimer);
-}
-
-function showReactionPicker(postId, e) {
-    playUI('click');
+function fbRxFill() {
     const picker = document.getElementById('fb-reaction-picker');
     if (!picker) return;
+    picker.querySelectorAll('.fb-rx').forEach(c => { if (!c.firstChild) c.innerHTML = fbRxSvg(c.dataset.type); });
+}
 
-    let clientX = 0, clientY = 0;
-    if (e.touches && e.touches[0]) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-    } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
-    }
+function fbRxPoint(e) {
+    const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+    return t ? { x: t.clientX, y: t.clientY } : { x: e.clientX, y: e.clientY };
+}
 
-    picker.style.left = `${Math.max(16, Math.min(window.innerWidth - 320, clientX - 140))}px`; 
-    picker.style.top = `${clientY - 75}px`;
-    picker.dataset.postId = postId;
-    
-    picker.classList.remove('picker-pop-active');
-    void picker.offsetWidth; 
-    picker.classList.add('picker-pop-active');
+function fbRxCleanup() {
+    if (!_rx) return;
+    clearTimeout(_rx.timer);
+    document.removeEventListener('touchmove', _rx.onMove, { passive: false });
+    document.removeEventListener('mousemove', _rx.onMove);
+    document.removeEventListener('touchend', _rx.onEnd);
+    document.removeEventListener('touchcancel', _rx.onEnd);
+    document.removeEventListener('mouseup', _rx.onEnd);
+    _rx = null;
+}
 
+function startReactionTimer(postId, e) {
+    const isTouch = e.type === 'touchstart';
+    if (isTouch) _rxLastTouchAt = Date.now();
+    else if (Date.now() - _rxLastTouchAt < 900) return;
+    if (isTouch && e.touches && e.touches.length > 1) return;
+    fbRxCleanup();
+    const pt = fbRxPoint(e);
+    const btn = e.target && e.target.closest ? e.target.closest('.post-action-btn-fb') : null;
+    reactionActivePostId = postId;
+    const st = { postId, btn, sx: pt.x, sy: pt.y, open: false, moved: false, hover: null, ox: 0, oy: 0 };
+    st.onMove = (ev) => {
+        const p = fbRxPoint(ev);
+        if (!st.open) {
+            if (Math.hypot(p.x - st.sx, p.y - st.sy) > 10) fbRxCleanup();
+            return;
+        }
+        if (ev.cancelable) ev.preventDefault();
+        if (Math.hypot(p.x - st.ox, p.y - st.oy) > 8) st.moved = true;
+        if (st.moved) fbRxHover(p);
+    };
+    st.onEnd = (ev) => {
+        if (!st.open) { fbRxCleanup(); return; }
+        if (ev.cancelable) ev.preventDefault();
+        _rxSuppressClickUntil = Date.now() + 600;
+        const hover = st.hover, moved = st.moved;
+        fbRxCleanup();
+        if (hover) selectPostReaction(hover);
+        else if (moved) { const c = AppNavigation.current(); if (c && c.type === 'modal' && c.id === 'fb-reaction-picker') AppNavigation.pop(); }
+    };
+    st.timer = setTimeout(() => fbRxOpen(st), 380);
+    _rx = st;
+    document.addEventListener('touchmove', st.onMove, { passive: false });
+    document.addEventListener('mousemove', st.onMove);
+    document.addEventListener('touchend', st.onEnd);
+    document.addEventListener('touchcancel', st.onEnd);
+    document.addEventListener('mouseup', st.onEnd);
+}
+
+function clearReactionTimer() { /* handled by document-level listeners */ }
+
+function fbRxOpen(st) {
+    const picker = document.getElementById('fb-reaction-picker');
+    if (!picker || _rx !== st) return;
+    fbRxFill();
+    st.open = true; st.ox = st.sx; st.oy = st.sy;
+    picker.dataset.postId = st.postId;
+    picker.classList.remove('open', 'picking', 'has-hover');
+    picker.querySelectorAll('.fb-rx').forEach(c => c.classList.remove('on', 'picked'));
+    picker.style.visibility = 'hidden';
+    try { triggerHapticFeedback(); } catch (e) {}
     AppNavigation.pushModal('fb-reaction-picker');
+    requestAnimationFrame(() => {
+        const rect = st.btn ? st.btn.getBoundingClientRect() : { top: st.sy - 20, bottom: st.sy + 20 };
+        const ph = picker.offsetHeight;
+        let top = rect.top - ph - 14;
+        if (top < window.innerWidth * 0.12) top = rect.bottom + 12;
+        picker.style.top = top + 'px';
+        picker.style.visibility = 'visible';
+        void picker.offsetWidth;
+        picker.classList.add('open');
+    });
+}
+
+function fbRxHover(p) {
+    const picker = document.getElementById('fb-reaction-picker');
+    if (!picker || !_rx) return;
+    const r = picker.getBoundingClientRect();
+    const pad = r.width * 0.0176;
+    let idx = null;
+    if (p.x >= r.left && p.x <= r.right && p.y > r.top - 140 && p.y < r.bottom + 70) {
+        idx = Math.max(0, Math.min(6, Math.floor((p.x - r.left - pad) / ((r.width - pad * 2) / 7))));
+    }
+    const type = idx === null ? null : FB_RX_ORDER[idx];
+    if (type === _rx.hover) return;
+    _rx.hover = type;
+    picker.classList.toggle('has-hover', type !== null);
+    picker.querySelectorAll('.fb-rx').forEach(c => c.classList.toggle('on', c.dataset.type === type));
+    if (type) { try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) {} }
 }
 
 document.addEventListener('click', (e) => {
@@ -5848,13 +5915,21 @@ function selectPostReaction(type) {
     const picker = document.getElementById('fb-reaction-picker');
     if (!picker) return;
     const postId = picker.dataset.postId;
-    if (!postId) return;
-
-    AppNavigation.pop(); 
+    if (!postId || picker.classList.contains('picking')) return;
+    const cell = picker.querySelector(`.fb-rx[data-type="${type}"]`);
+    picker.classList.add('picking');
+    if (cell) cell.classList.add('picked');
     submitPostReaction(postId, type);
+    setTimeout(() => {
+        const c = AppNavigation.current();
+        if (c && c.type === 'modal' && c.id === 'fb-reaction-picker') AppNavigation.pop();
+        picker.classList.remove('picking', 'has-hover', 'open');
+        if (cell) cell.classList.remove('picked');
+    }, 280);
 }
 
 function handleLoveSingleClick(postId) {
+    if (Date.now() < _rxSuppressClickUntil) return;
     if (!auth.currentUser) {
         showNotification("Please sign in to react", "error");
         return;
@@ -5865,10 +5940,10 @@ function handleLoveSingleClick(postId) {
     }
     const userId = auth.currentUser.uid;
     db.ref(`post_reactions/${postId}/${userId}`).once('value', (snap) => {
-        if (snap.exists() && snap.val().type === 'love') {
+        if (snap.exists()) {
             db.ref(`post_reactions/${postId}/${userId}`).remove();
         } else {
-            submitPostReaction(postId, 'love');
+            submitPostReaction(postId, 'like');
         }
     });
 }
@@ -5895,13 +5970,12 @@ async function submitPostReaction(postId, type) {
 }
 
 function triggerFloatingReaction(type) {
-    const emoji = reactionEmojis[type];
-    if (!emoji) return;
+    if (!fbRxSvg(type)) return;
 
     const floatEl = document.createElement('div');
-    floatEl.className = 'floating-emoji';
-    floatEl.innerText = emoji;
-    floatEl.style.left = `${window.innerWidth / 2 - 20}px`;
+    floatEl.className = 'floating-emoji rx-float';
+    floatEl.innerHTML = fbRxSvg(type);
+    floatEl.style.left = `${window.innerWidth / 2 - 32}px`;
     floatEl.style.top = `${window.innerHeight - 150}px`;
 
     document.body.appendChild(floatEl);
@@ -5950,7 +6024,7 @@ function registerPostReactionsListener(postId) {
                 const type = myReact.type;
                 if (loveIcon) {
                     loveIcon.className = 'love-icon-element';
-                    loveIcon.innerText = reactionEmojis[type];
+                    loveIcon.innerHTML = fbRxSvg(type);
                     loveIcon.style.fontSize = '1.25rem';
                 }
                 if (loveText) {

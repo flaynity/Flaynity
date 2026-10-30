@@ -4163,6 +4163,8 @@ function fbcmIsPostActive() {
 
 function fbcmInit() {
     _fbcmReply = null;
+    _fbcmEdit = null;
+    { const eb = document.getElementById('fbcm-editbar'); if (eb) eb.style.display = 'none'; }
     _fbcmData = {};
     _fbcmLoaded = false;
     _fbcmOpen = new Set();
@@ -4273,7 +4275,7 @@ function fbcmRender(popKey, popType) {
         <div class="fbcm-c${isReply ? ' reply' : ''}${hl}" data-k="${c._k}">
             ${av}
             <div class="fbcm-body">
-                <div class="fbcm-meta"><b>${escapeHTML(c.username || 'User')}</b><span>·</span><span>${fbTimeShort(c.timestamp)}</span></div>
+                <div class="fbcm-meta"><b>${escapeHTML(c.username || 'User')}</b><span>·</span><span>${fbTimeShort(c.timestamp)}</span>${c.edited ? '<span>· Edited</span>' : ''}</div>
                 <div class="fbcm-text">${mention}${escapeHTML(c.text)}</div>
                 <div class="fbcm-acts">
                     <button class="fbcm-reply" onclick="fbcmReply('${c._k}')">Reply</button>
@@ -4363,6 +4365,7 @@ const FBCM_ICONS = {
     reply: '<svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
     copy: '<svg viewBox="0 0 24 24"><path d="M9 3h7l4 4v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M16 3v4h4"/><path d="M4.5 8v11a2 2 0 0 0 2 2H15"/></svg>',
     hide: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3.5"/><path d="M9 9l6 6M15 9l-6 6"/></svg>',
+    edit: '<svg viewBox="0 0 24 24"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17l-1 3z"/><path d="M14.5 7.5l3 3"/></svg>',
     del: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>'
 };
 
@@ -4422,11 +4425,16 @@ function fbcmOpenActions(key) {
     const em = document.getElementById('fbcm-act-emojis');
     if (em) em.innerHTML = order.map((t, i) => `<div class="fbcm-aem${mine === t ? ' cur' : ''}" style="--i:${i}" onclick="fbcmActReact('${t}')">${fbRxSvg(t)}</div>`).join('');
     const isOwn = !!(uid && c.uid === uid);
-    const items = [
+    const items = isOwn ? [
+        ['reply', 'Reply', 'fbcmActReply()'],
+        ['copy', 'Copy', 'fbcmActCopy()'],
+        ['del', 'Delete', 'fbcmActDelete()'],
+        ['edit', 'Edit', 'fbcmActEdit()']
+    ] : [
         ['report', 'Report comment', 'fbcmActReport()'],
         ['reply', 'Reply', 'fbcmActReply()'],
         ['copy', 'Copy', 'fbcmActCopy()'],
-        isOwn ? ['del', 'Delete comment', 'fbcmActDelete()'] : ['hide', 'Hide comment', 'fbcmActHide()']
+        ['hide', 'Hide comment', 'fbcmActHide()']
     ];
     const list = document.getElementById('fbcm-act-list');
     if (list) list.innerHTML = items.map(it => `<div class="fbcm-ai" onclick="${it[2]}">${FBCM_ICONS[it[0]]}<span>${it[1]}</span></div>`).join('');
@@ -4495,6 +4503,31 @@ function fbcmActDelete() {
         .catch(() => showNotification('Could not delete comment', 'error'));
 }
 
+let _fbcmEdit = null;
+
+function fbcmActEdit() {
+    const k = _fbcmActKey;
+    fbcmActDone();
+    const c = _fbcmData[k];
+    if (!k || !c || !auth.currentUser || c.uid !== auth.currentUser.uid) return;
+    setTimeout(() => {
+        if (_fbcmReply) fbcmCancelReply();
+        _fbcmEdit = { key: k };
+        const eb = document.getElementById('fbcm-editbar'); if (eb) eb.style.display = 'block';
+        const inp = document.getElementById('fbcm-input');
+        if (inp) { inp.value = c.text || ''; inp.focus(); }
+        fbcmOnInput();
+    }, 30);
+}
+
+function fbcmCancelEdit() {
+    playUI('click');
+    _fbcmEdit = null;
+    const eb = document.getElementById('fbcm-editbar'); if (eb) eb.style.display = 'none';
+    const inp = document.getElementById('fbcm-input'); if (inp) inp.value = '';
+    fbcmOnInput();
+}
+
 function fbcmActReport() {
     const k = _fbcmActKey;
     fbcmActDone();
@@ -4509,6 +4542,7 @@ function fbcmReply(key) {
     playUI('click');
     const c = _fbcmData[key];
     if (!c) return;
+    if (_fbcmEdit) { _fbcmEdit = null; const eb = document.getElementById('fbcm-editbar'); if (eb) eb.style.display = 'none'; const i0 = document.getElementById('fbcm-input'); if (i0) i0.value = ''; fbcmOnInput(); }
     const parent = c.parentId && _fbcmData[c.parentId] ? c.parentId : key;
     _fbcmReply = { target: key, parent, name: c.username || 'User', mention: true };
     const rb = document.getElementById('fbcm-replybar'); if (rb) rb.style.display = 'block';
@@ -4552,6 +4586,22 @@ function fbcmSubmit() {
     const userId = auth.currentUser.uid;
     const postId = currentActiveMovie.id;
     const reply = _fbcmReply;
+
+    if (_fbcmEdit) {
+        const ek = _fbcmEdit.key;
+        const old = _fbcmData[ek];
+        if (!old || old.uid !== userId) { fbcmCancelEdit(); return; }
+        if (text === old.text) { fbcmCancelEdit(); return; }
+        db.ref(`movie_comments/${postId}/${ek}`).update({ text, edited: true, editedAt: Date.now() })
+            .then(() => {
+                _fbcmEdit = null;
+                const eb = document.getElementById('fbcm-editbar'); if (eb) eb.style.display = 'none';
+                const el = document.getElementById('fbcm-input'); if (el) el.value = '';
+                fbcmOnInput();
+            })
+            .catch(() => showNotification('Failed to edit comment', 'error'));
+        return;
+    }
 
     db.ref(`users/${userId}`).once('value', (snap) => {
         const uData = snap.val() || {};

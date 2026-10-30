@@ -218,27 +218,105 @@
             to { transform: translateY(-50px); opacity: 0; }
         }
 
-/* Auth Screen */
-        #auth-screen { 
-            position: fixed; top: 0; left: 0;
-            width: 100vw; height: 100vh; overflow: hidden; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            background: linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0.7) 100%), url('https://assets.nflxext.com/ffe/siteui/vlv3/f841d4c7-10e1-40af-bcae-07a3f8dc141a/f6d7434e-d6de-4185-a6d4-c77a2d08737b/US-en-20220502-popsignuptwoweeks-perspective_alpha_website_small.jpg') center/cover; 
-            padding: 16px; box-sizing: border-box;
+/* Auth Screen — Welcome / Log In / Create Account (pastel gradient design) */
+        #auth-screen {
+            position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; overflow: hidden;
+            display: flex; flex-direction: column; z-index: 99999; box-sizing: border-box;
+            background: #F4E9FB; color: #000; font-family: 'Plus Jakarta Sans', sans-serif;
+            --au-grad: linear-gradient(90deg, #FDB6C4 0%, #B79BF2 100%);
+            --au-violet: #4B1FD0;
         }
-        .auth-box { 
-            background: var(--surface); backdrop-filter: blur(30px); 
-            border: 1px solid var(--glass-border); box-shadow: 0 20px 40px rgba(0,0,0,0.05); 
-            padding: 35px 24px; border-radius: 32px; width: 100%; max-width: 420px; max-height: 90vh;
-            overflow-y: auto; scrollbar-width: none; animation: scaleFadeIn 0.6s ease; 
+        #auth-screen .au-view { position: absolute; inset: 0; display: none; flex-direction: column; }
+        #auth-screen .au-view.active { display: flex; animation: auViewIn .38s cubic-bezier(.22,.8,.2,1); }
+        #auth-screen .au-view.back-anim.active { animation-name: auViewInBack; }
+        @keyframes auViewIn { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes auViewInBack { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* gradient + fine wave lines (shared by welcome and the top of login/signup) */
+        #auth-screen .au-bg {
+            position: absolute; inset: 0; overflow: hidden;
+            background:
+                radial-gradient(120% 55% at 100% 22%, rgba(168,122,236,.85) 0%, rgba(168,122,236,0) 62%),
+                radial-gradient(90% 45% at 0% 38%, rgba(255,196,205,.95) 0%, rgba(255,196,205,0) 70%),
+                radial-gradient(110% 40% at 50% 100%, rgba(190,150,235,.95) 0%, rgba(190,150,235,0) 72%),
+                linear-gradient(180deg, #CDB4F4 0%, #F7B7CC 36%, #FDA8C2 62%, #D9A9EA 86%, #EBD3F5 100%);
         }
-        .auth-box::-webkit-scrollbar { display: none; }
-        .auth-box h1 { color: var(--text-main); text-align: center; font-size: 2.2rem; margin: 0 0 5px 0; font-weight: 900; }
-        .auth-box h1 span { color: var(--primary); }
-        .auth-box h2 { text-align: center; margin: 0 0 25px 0; font-weight: 500; color: var(--text-muted); font-size: 1rem; }
-        
-        .btn-google { width: 100%; padding: 18px; background: var(--surface); color: var(--text-main); border: 1px solid var(--glass-border); border-radius: 18px; font-size: 1.05rem; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.03); }
-        .btn-google img { width: 22px; }
+        #auth-screen .au-bg::before {
+            content: ''; position: absolute; left: -30%; right: -30%; top: -34%; height: 92%;
+            background: repeating-radial-gradient(ellipse 70% 62% at 50% 100%,
+                rgba(255,255,255,0) 0 4px, rgba(255,255,255,.62) 4px 5px);
+            -webkit-mask-image: linear-gradient(180deg, #000 18%, transparent 92%);
+            mask-image: linear-gradient(180deg, #000 18%, transparent 92%);
+        }
+        #auth-screen .au-bg.short { bottom: auto; height: 58%; }
+        #auth-screen .au-bg.short::before { top: -52%; height: 130%; }
+
+        /* Welcome */
+        #au-welcome { align-items: center; padding: calc(env(safe-area-inset-top, 0px) + 56px) 28px calc(max(22px, env(safe-area-inset-bottom, 0px)) + 14px); box-sizing: border-box; }
+        #au-welcome > *:not(.au-bg) { position: relative; z-index: 1; }
+        .au-hello-title { margin: 0; font-size: clamp(2.3rem, 10vw, 3rem); font-weight: 800; letter-spacing: -1px; color: #000; text-align: center; }
+        .au-hello-text { margin: 20px 0 0; text-align: center; font-size: .86rem; line-height: 1.5; font-weight: 500; color: #111; }
+        .au-hello-text b { font-weight: 800; }
+        .au-figure { flex: 1 1 auto; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; padding: 18px 0; }
+        .au-figure img { max-height: 100%; max-width: 78%; width: auto; height: auto; object-fit: contain; display: block; pointer-events: none; -webkit-user-drag: none; }
+        .au-welcome-btns { width: 100%; display: flex; flex-direction: column; gap: 14px; }
+        .au-btn-white, .au-btn-outline { height: 56px; border-radius: 999px; font: 700 1.02rem 'Plus Jakarta Sans', sans-serif; cursor: pointer; width: 100%; -webkit-tap-highlight-color: transparent; transition: transform .15s ease; }
+        .au-btn-white { background: #fff; color: #000; border: 0; box-shadow: 0 8px 22px rgba(120,60,160,.14); }
+        .au-btn-outline { background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,.85); }
+        .au-btn-white:active, .au-btn-outline:active { transform: scale(.98); }
+
+        /* Login + Sign up */
+        .au-back { position: absolute; z-index: 3; left: 24px; top: calc(env(safe-area-inset-top, 0px) + 26px); display: flex; align-items: center; gap: 8px; background: none; border: 0; padding: 4px 0; font: 500 .98rem 'Plus Jakarta Sans', sans-serif; color: #111; cursor: pointer; }
+        .au-back svg { width: 18px; height: 18px; }
+        .au-sheet {
+            position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; background: #fff;
+            border-radius: 44px 44px 0 0; padding: 40px 24px calc(max(18px, env(safe-area-inset-bottom, 0px)) + 8px);
+            display: flex; flex-direction: column; box-sizing: border-box; overflow-y: auto; scrollbar-width: none;
+        }
+        .au-sheet::-webkit-scrollbar { display: none; }
+        #au-login .au-sheet { top: 31%; }
+        #au-signup .au-sheet { top: 21%; }
+        .au-sheet h2 { margin: 0; text-align: center; font-size: 1.62rem; font-weight: 800; letter-spacing: -.4px; color: #000; }
+        .au-sub { margin: 14px 0 0; text-align: center; font-size: .8rem; line-height: 1.55; color: #222; font-weight: 500; }
+        .au-sub b { font-weight: 800; color: #000; }
+        .au-fields { margin-top: 28px; display: flex; flex-direction: column; gap: 14px; }
+        .au-input-wrap { position: relative; }
+        .au-input {
+            width: 100%; height: 54px; border: 1.5px solid #D3D3D7; border-radius: 16px; background: #fff;
+            padding: 0 18px; font: 500 .9rem 'Plus Jakarta Sans', sans-serif; color: #000; outline: none; box-sizing: border-box;
+            -webkit-user-select: text; user-select: text; transition: border-color .2s ease, box-shadow .2s ease;
+        }
+        .au-input::placeholder { color: #8B8B93; }
+        .au-input:focus { border-color: #A98CF0; box-shadow: 0 0 0 3px rgba(169,140,240,.18); }
+        .au-input.has-eye { padding-right: 52px; }
+        .au-eye { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: none; border: 0; cursor: pointer; color: #8B8B93; }
+        .au-eye svg { width: 24px; height: 24px; }
+        .au-row { margin-top: 12px; display: flex; align-items: center; justify-content: space-between; }
+        .au-row.end { justify-content: flex-end; }
+        .au-remember { display: flex; align-items: center; gap: 9px; font-size: .74rem; font-weight: 600; color: var(--au-violet); cursor: pointer; }
+        .au-remember input { appearance: none; -webkit-appearance: none; width: 17px; height: 17px; margin: 0; border: 1.5px solid var(--au-violet); border-radius: 4px; background: #fff; display: grid; place-items: center; cursor: pointer; }
+        .au-remember input:checked { background: var(--au-violet); }
+        .au-remember input:checked::after { content: ''; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px,-1px); }
+        .au-link { background: none; border: 0; padding: 0; font: 600 .74rem 'Plus Jakarta Sans', sans-serif; color: var(--au-violet); cursor: pointer; }
+        .au-submit { margin-top: 22px; height: 56px; border: 0; border-radius: 999px; background: var(--au-grad); color: #fff; font: 700 1.04rem 'Plus Jakarta Sans', sans-serif; cursor: pointer; box-shadow: 0 10px 22px rgba(169,140,240,.32); transition: transform .15s ease, opacity .2s ease; -webkit-tap-highlight-color: transparent; }
+        .au-submit:active { transform: scale(.98); }
+        .au-submit[disabled] { opacity: .6; pointer-events: none; }
+        .au-social-wrap { margin-top: auto; padding-top: 26px; }
+        .au-divider { display: flex; align-items: center; gap: 14px; font-size: .78rem; color: #555; font-weight: 500; }
+        .au-divider::before, .au-divider::after { content: ''; flex: 1; height: 1px; background: #E4E4E8; }
+        .au-social { margin-top: 18px; display: flex; justify-content: center; gap: 34px; }
+        .au-social button { width: 44px; height: 44px; border: 0; background: none; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .au-social button:active { transform: scale(.92); }
+        .au-social svg { width: 34px; height: 34px; }
+        .au-switch { margin: 18px 0 0; text-align: center; font-size: .8rem; color: #111; font-weight: 500; }
+        .au-switch button { background: none; border: 0; padding: 0; font: 700 .8rem 'Plus Jakarta Sans', sans-serif; color: var(--au-violet); cursor: pointer; }
+        @media (max-height: 700px) {
+            #au-login .au-sheet { top: 24%; padding-top: 28px; }
+            #au-signup .au-sheet { top: 15%; padding-top: 28px; }
+            .au-fields { margin-top: 18px; gap: 10px; } .au-input { height: 48px; } .au-submit { height: 50px; margin-top: 16px; }
+            .au-figure { padding: 8px 0; } .au-hello-text { margin-top: 12px; }
+        }
+        @media (prefers-reduced-motion: reduce) { #auth-screen .au-view.active { animation: none; } }
         @keyframes scaleFadeIn { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
 
 /* App Layout & Header Spacing */
@@ -1493,17 +1571,73 @@
 <p style="font-weight:700;">Reconnecting to Server...</p>
 </div>
 <div id="auth-screen">
-<div class="auth-box" id="login-box" style="text-align: center;">
-<h1>Flay<span>nity</span></h1>
-<h2 style="margin-bottom: 30px;">Cinematic Experience Awaits</h2>
-<button class="btn-google" onclick="signInWithGoogle()" style="padding: 18px; font-size: 1.15rem; width: 100%; border-radius: 24px; box-shadow: 0 10px 25px rgba(255, 46, 85, 0.25); display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer;">
-<img alt="Google" src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg"/>
-                Sign in with Google
-            </button>
-<p style="text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-top: 25px; line-height: 1.4;">
-                By continuing, you agree to Flaynity's Terms of Service and Privacy Policy.
-            </p>
+
+<!-- 1) WELCOME -->
+<div class="au-view active" id="au-welcome">
+<div class="au-bg"></div>
+<h1 class="au-hello-title">Welcome =)</h1>
+<p class="au-hello-text">Hi there!<br>We’re here to help you watch, share and create.<br>The choice is yours: <b>Log in</b> or <b>create an account</b>.</p>
+<div class="au-figure"><img src="assets/onboarding/welcome-figure.png" alt="" draggable="false"></div>
+<div class="au-welcome-btns">
+<button class="au-btn-white" type="button" onclick="authShowView('signup')">Create Account</button>
+<button class="au-btn-outline" type="button" onclick="authShowView('login')">Log In</button>
 </div>
+</div>
+
+<!-- 2) LOG IN -->
+<div class="au-view" id="au-login">
+<div class="au-bg short"></div>
+<button class="au-back" type="button" onclick="authShowView('welcome', true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Back</button>
+<div class="au-sheet">
+<h2>Welcome Back</h2>
+<p class="au-sub">Ready to continue your watching journey?<br><b>Your path is right here.</b></p>
+<div class="au-fields">
+<input class="au-input" id="au-login-email" type="email" inputmode="email" autocomplete="email" placeholder="Enter email">
+<div class="au-input-wrap"><input class="au-input has-eye" id="au-login-pass" type="password" autocomplete="current-password" placeholder="Password"><button class="au-eye" type="button" onclick="authTogglePass('au-login-pass', this)" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+</div>
+<div class="au-row">
+<label class="au-remember"><input type="checkbox" id="au-remember" checked>Remember me</label>
+<button class="au-link" type="button" onclick="authForgotPassword()">Forgot password?</button>
+</div>
+<button class="au-submit" id="au-login-btn" type="button" onclick="authEmailLogin()">Log In</button>
+<div class="au-social-wrap">
+<div class="au-divider">Sign in with</div>
+<div class="au-social">
+<button type="button" onclick="authSocialSignIn('facebook')" aria-label="Facebook"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="#1877F2"/><path fill="#fff" d="M26.6 44V28.8h5.1l.8-6h-5.9v-3.8c0-1.7.5-2.9 3-2.9h3.2v-5.4c-.6-.1-2.4-.2-4.6-.2-4.5 0-7.6 2.8-7.6 7.8v4.5h-5.1v6h5.1V44z"/></svg></button>
+<button type="button" onclick="signInWithGoogle()" aria-label="Google"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.9 2.3-8.5 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg></button>
+<button type="button" onclick="authSocialSignIn('apple')" aria-label="Apple"><svg viewBox="0 0 24 24"><path fill="#000" d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg></button>
+</div>
+<p class="au-switch">Don’t have an account? <button type="button" onclick="authShowView('signup')">Sign Up</button></p>
+</div>
+</div>
+</div>
+
+<!-- 3) CREATE ACCOUNT -->
+<div class="au-view" id="au-signup">
+<div class="au-bg short"></div>
+<button class="au-back" type="button" onclick="authShowView('welcome', true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Back</button>
+<div class="au-sheet">
+<h2>Create Your Account</h2>
+<p class="au-sub">We’re here to help you reach the peaks<br>of entertainment. <b>Are you ready?</b></p>
+<div class="au-fields">
+<input class="au-input" id="au-signup-name" type="text" autocomplete="name" placeholder="Enter full name">
+<input class="au-input" id="au-signup-email" type="email" inputmode="email" autocomplete="email" placeholder="Enter email">
+<div class="au-input-wrap"><input class="au-input has-eye" id="au-signup-pass" type="password" autocomplete="new-password" placeholder="Enter password"><button class="au-eye" type="button" onclick="authTogglePass('au-signup-pass', this)" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+</div>
+<div class="au-row end"><button class="au-link" type="button" onclick="authForgotPassword()">Forgot password?</button></div>
+<button class="au-submit" id="au-signup-btn" type="button" onclick="authEmailSignup()">Get Started</button>
+<div class="au-social-wrap">
+<div class="au-divider">Sign up with</div>
+<div class="au-social">
+<button type="button" onclick="authSocialSignIn('facebook')" aria-label="Facebook"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="#1877F2"/><path fill="#fff" d="M26.6 44V28.8h5.1l.8-6h-5.9v-3.8c0-1.7.5-2.9 3-2.9h3.2v-5.4c-.6-.1-2.4-.2-4.6-.2-4.5 0-7.6 2.8-7.6 7.8v4.5h-5.1v6h5.1V44z"/></svg></button>
+<button type="button" onclick="signInWithGoogle()" aria-label="Google"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.9 2.3-8.5 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg></button>
+<button type="button" onclick="authSocialSignIn('apple')" aria-label="Apple"><svg viewBox="0 0 24 24"><path fill="#000" d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg></button>
+</div>
+<p class="au-switch">Already have an account? <button type="button" onclick="authShowView('login')">Log In</button></p>
+</div>
+</div>
+</div>
+
 </div>
 <header>
 <div class="brand" id="brand-appbar">

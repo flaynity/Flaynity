@@ -3744,6 +3744,7 @@ const AppNavigation = {
                 }
             }
         });
+        if (typeof fbcmRestoreScroll === 'function') fbcmRestoreScroll();
     },
 
     updateBridge: function() {
@@ -4140,6 +4141,13 @@ let _fbcmScrollTop = 0;
 let _fbcmSort = 'relevant';
 let _fbcmReply = null;
 const _FBCM_LABELS = { relevant: 'Most relevant', newest: 'Newest', all: 'All comments' };
+function fbcmReactMap(c) {
+    const m = {};
+    Object.keys(c.likes || {}).forEach(u => { m[u] = 'like'; });
+    Object.keys(c.reacts || {}).forEach(u => { if (c.reacts[u]) m[u] = c.reacts[u]; });
+    return m;
+}
+let _fbcmHidden = new Set((() => { try { return JSON.parse(localStorage.getItem('fbcm_hidden') || '[]'); } catch (e) { return []; } })());
 const FBCM_UP = (on) => `<svg viewBox="0 0 24 24"><path d="${on ? 'M3,11h3v10H3V11z M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11v10h10.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z' : 'M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11H3v10h4h1h9.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z M7,20H4v-8h3V20z M19.98,13.17l-1.34,6C18.54,19.65,18.03,20,17.43,20H8v-8.61l5.6-6.06C13.79,5.12,14.08,5,14.38,5c0.26,0,0.5,0.11,0.63,0.3c0.07,0.1,0.15,0.26,0.09,0.47l-1.52,4.94L13.18,12h1.35h4.23c0.41,0,0.8,0.17,1.03,0.46C19.92,12.61,20.05,12.86,19.98,13.17z'}"/></svg>`;
 const FBCM_DOWN = (on) => `<svg viewBox="0 0 24 24"><g transform="rotate(180 12 12)"><path d="${on ? 'M3,11h3v10H3V11z M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11v10h10.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z' : 'M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11H3v10h4h1h9.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z M7,20H4v-8h3V20z M19.98,13.17l-1.34,6C18.54,19.65,18.03,20,17.43,20H8v-8.61l5.6-6.06C13.79,5.12,14.08,5,14.38,5c0.26,0,0.5,0.11,0.63,0.3c0.07,0.1,0.15,0.26,0.09,0.47l-1.52,4.94L13.18,12h1.35h4.23c0.41,0,0.8,0.17,1.03,0.46C19.92,12.61,20.05,12.86,19.98,13.17z'}"/></g></svg>`;
 
@@ -4162,6 +4170,7 @@ function fbcmInit() {
     const _lc = document.getElementById('comment-list-container');
     if (_lc) {
         _lc.innerHTML = fbcmSkeletonHTML();
+        if (!_lc._fbLP) { _lc._fbLP = true; fbcmBindLongPress(_lc); }
         if (!_lc._fbScroll) { _lc._fbScroll = true; _lc.addEventListener('scroll', () => { _fbcmScrollTop = _lc.scrollTop; }, { passive: true }); }
     }
     const rb = document.getElementById('fbcm-replybar'); if (rb) rb.style.display = 'none';
@@ -4221,7 +4230,7 @@ function fbcmRender(popKey, popType) {
     const container = document.getElementById('comment-list-container');
     if (!container) return;
     const uid = auth.currentUser ? auth.currentUser.uid : null;
-    const entries = Object.keys(_fbcmData || {}).map(k => Object.assign({ _k: k }, _fbcmData[k])).filter(c => c && c.text !== undefined);
+    const entries = Object.keys(_fbcmData || {}).map(k => Object.assign({ _k: k }, _fbcmData[k])).filter(c => c && c.text !== undefined && !_fbcmHidden.has(c._k));
 
     const countEl = document.getElementById('fbcm-comment-count');
     if (countEl) countEl.innerText = entries.length + (entries.length === 1 ? ' comment' : ' comments');
@@ -4239,7 +4248,7 @@ function fbcmRender(popKey, popType) {
     entries.filter(c => c.parentId && keys.has(c.parentId)).forEach(c => { (kids[c.parentId] = kids[c.parentId] || []).push(c); });
     Object.values(kids).forEach(a => a.sort((x, y) => (x.timestamp || 0) - (y.timestamp || 0)));
 
-    const likesOf = c => Object.keys(c.likes || {}).length;
+    const likesOf = c => Object.keys(fbcmReactMap(c)).length;
     if (_fbcmSort === 'newest') top.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
     else if (_fbcmSort === 'all') top.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
     else top.sort((a, b) => ((likesOf(b) * 3 + (kids[b._k] || []).length) - (likesOf(a) * 3 + (kids[a._k] || []).length)) || ((b.timestamp || 0) - (a.timestamp || 0)));
@@ -4247,10 +4256,16 @@ function fbcmRender(popKey, popType) {
     const row = (c, isReply) => {
         const initial = (c.username || 'U').charAt(0).toUpperCase();
         const av = c.avatar ? `<img class="fbcm-av" src="${escapeHTML(c.avatar)}" alt="">` : `<div class="fbcm-av" style="background:linear-gradient(135deg,var(--primary),#FF7A00)">${escapeHTML(initial)}</div>`;
-        const lc = likesOf(c);
+        const rm = fbcmReactMap(c);
+        const lc = Object.keys(rm).length;
+        const myR = uid ? (rm[uid] || null) : null;
+        const tcount = {};
+        Object.values(rm).forEach(t => { tcount[t] = (tcount[t] || 0) + 1; });
+        const topT = Object.keys(tcount).sort((a, b) => tcount[b] - tcount[a]).slice(0, 3);
+        const likeIcon = !myR ? FBCM_UP(false) : (myR === 'like' ? FBCM_UP(true) : `<span class="rx-ico">${fbRxSvg(myR)}</span>`);
         const nk = isReply ? 0 : (kids[c._k] || []).length;
         const isOpen = _fbcmOpen.has(c._k);
-        const liked = !!(uid && c.likes && c.likes[uid]);
+        const liked = !!myR;
         const disliked = !!(uid && c.dislikes && c.dislikes[uid]);
         const hl = _fbcmReply && _fbcmReply.target === c._k ? ' hl' : '';
         const mention = c.replyToName ? `<span class="fbcm-m">${escapeHTML(c.replyToName)}</span> ` : '';
@@ -4262,10 +4277,10 @@ function fbcmRender(popKey, popType) {
                 <div class="fbcm-text">${mention}${escapeHTML(c.text)}</div>
                 <div class="fbcm-acts">
                     <button class="fbcm-reply" onclick="fbcmReply('${c._k}')">Reply</button>
-                    ${lc > 0 ? `<span class="fbcm-chip"><i><svg viewBox="0 0 24 24"><path d="M3,11h3v10H3V11z M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11v10h10.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z"/></svg></i>${lc}</span>` : ''}
+                    ${lc > 0 ? `<span class="fbcm-chip"><span class="fbcm-cb">${topT.map((t, ix) => `<i style="z-index:${5 - ix}">${fbRxSvg(t)}</i>`).join('')}</span>${lc}</span>` : ''}
                     <span class="fbcm-sp"></span>
-                    <button class="fbcm-ic fbcm-like${liked ? ' on' : ''}" onclick="fbcmReact('${c._k}','likes')" aria-label="Like">${FBCM_UP(liked)}</button>
-                    <button class="fbcm-ic fbcm-dis${disliked ? ' on' : ''}" onclick="fbcmReact('${c._k}','dislikes')" aria-label="Dislike">${FBCM_DOWN(disliked)}</button>
+                    <button class="fbcm-ic fbcm-like post-action-btn-fb${liked ? ' on' : ''}" ontouchstart="startReactionTimer('${c._k}', event, 'comment')" onmousedown="startReactionTimer('${c._k}', event, 'comment')" ontouchend="clearReactionTimer()" onmouseup="clearReactionTimer()" oncontextmenu="return false" onclick="fbcmLikeTap('${c._k}')" aria-label="React">${likeIcon}</button>
+                    <button class="fbcm-ic fbcm-dis${disliked ? ' on' : ''}" onclick="fbcmDislike('${c._k}')" aria-label="Dislike">${FBCM_DOWN(disliked)}</button>
                 </div>
                 ${nk ? `<button class="fbcm-vr" onclick="fbcmToggleReplies('${c._k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" class="${isOpen ? 'up' : ''}"><path d="M5 9l7 7 7-7"/></svg>${isOpen ? 'Hide replies' : `View ${nk} ${nk === 1 ? 'reply' : 'replies'}`}</button>` : ''}
             </div>
@@ -4288,25 +4303,206 @@ function fbcmToggleReplies(key) {
     fbcmRender();
 }
 
-function fbcmReact(key, type) {
+function fbcmSetReaction(key, type) {
+    if (!auth.currentUser) { showNotification('Please sign in to react', 'error'); return; }
+    if (!currentActiveMovie) return;
+    const uid = auth.currentUser.uid;
+    const c = _fbcmData[key];
+    if (!c) return;
+    c.reacts = c.reacts || {};
+    if (c.likes) delete c.likes[uid];
+    if (c.dislikes) delete c.dislikes[uid];
+    if (type) c.reacts[uid] = type; else delete c.reacts[uid];
+    fbcmRender(type ? key : null, 'likes');
+    const upd = {};
+    upd[`reacts/${uid}`] = type || null;
+    upd[`likes/${uid}`] = null;
+    if (type) upd[`dislikes/${uid}`] = null;
+    db.ref(`movie_comments/${currentActiveMovie.id}/${key}`).update(upd)
+        .catch(() => showNotification('Could not update reaction', 'error'));
+}
+
+function fbcmLikeTap(key) {
+    if (Date.now() < _rxSuppressClickUntil) return;
+    playUI('click');
+    try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) {}
+    const c = _fbcmData[key];
+    if (!c || !auth.currentUser) { if (!auth.currentUser) showNotification('Please sign in to react', 'error'); return; }
+    const mine = fbcmReactMap(c)[auth.currentUser.uid];
+    fbcmSetReaction(key, mine ? null : 'like');
+}
+
+function fbcmDislike(key) {
     playUI('click');
     try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) {}
     if (!auth.currentUser) { showNotification('Please sign in to react', 'error'); return; }
     if (!currentActiveMovie) return;
     const uid = auth.currentUser.uid;
-    const other = type === 'likes' ? 'dislikes' : 'likes';
     const c = _fbcmData[key];
     if (!c) return;
-    const had = !!(c[type] && c[type][uid]);
-    // optimistic UI
-    c[type] = c[type] || {};
-    if (had) delete c[type][uid]; else { c[type][uid] = true; if (c[other]) delete c[other][uid]; }
-    fbcmRender(had ? null : key, type);
+    const had = !!(c.dislikes && c.dislikes[uid]);
+    c.dislikes = c.dislikes || {};
+    const upd = {};
+    if (had) { delete c.dislikes[uid]; upd[`dislikes/${uid}`] = null; }
+    else {
+        c.dislikes[uid] = true;
+        if (c.reacts) delete c.reacts[uid];
+        if (c.likes) delete c.likes[uid];
+        upd[`dislikes/${uid}`] = true; upd[`reacts/${uid}`] = null; upd[`likes/${uid}`] = null;
+    }
+    fbcmRender(had ? null : key, 'dislikes');
+    db.ref(`movie_comments/${currentActiveMovie.id}/${key}`).update(upd)
+        .catch(() => showNotification('Could not update reaction', 'error'));
+}
 
-    const base = db.ref(`movie_comments/${currentActiveMovie.id}/${key}`);
-    const op = had ? base.child(type).child(uid).remove()
-                   : Promise.all([base.child(type).child(uid).set(true), base.child(other).child(uid).remove()]);
-    op.catch(() => showNotification('Could not update reaction', 'error'));
+// ---------- long-press actions sheet ----------
+let _fbcmActKey = null;
+let _fbcmLPUntil = 0;
+const FBCM_ICONS = {
+    report: '<svg viewBox="0 0 24 24"><path d="M5 3h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 4.5V5a2 2 0 0 1 1-2z"/><path d="M12 7v4"/><path d="M12 13.4v.1"/></svg>',
+    reply: '<svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
+    copy: '<svg viewBox="0 0 24 24"><path d="M9 3h7l4 4v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M16 3v4h4"/><path d="M4.5 8v11a2 2 0 0 0 2 2H15"/></svg>',
+    hide: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3.5"/><path d="M9 9l6 6M15 9l-6 6"/></svg>',
+    del: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>'
+};
+
+function fbcmBindLongPress(container) {
+    let timer = null, sx = 0, sy = 0, key = null, lastOpen = 0;
+    const cancel = () => { clearTimeout(timer); timer = null; };
+    const open = (k) => {
+        if (!k || Date.now() - lastOpen < 800) return;
+        lastOpen = Date.now();
+        cancel();
+        fbcmOpenActions(k);
+    };
+    container.addEventListener('touchstart', (e) => {
+        const row = e.target.closest && e.target.closest('.fbcm-c');
+        if (!row || e.target.closest('button') || (e.touches && e.touches.length > 1)) return;
+        sx = e.touches[0].clientX; sy = e.touches[0].clientY; key = row.dataset.k;
+        cancel();
+        timer = setTimeout(() => { timer = null; open(key); }, 400);
+    }, { passive: true });
+    container.addEventListener('touchmove', (e) => {
+        if (!timer) return;
+        const t = e.touches[0];
+        if (Math.hypot(t.clientX - sx, t.clientY - sy) > 12) cancel();
+    }, { passive: true });
+    container.addEventListener('touchend', cancel, { passive: true });
+    // Android WebView fires touchcancel when its native long-press starts, so it must not cancel the timer.
+    // Real scrolls are already handled by touchmove above.
+    container.addEventListener('scroll', cancel, { passive: true });
+    // Fallback: native long-press / right-click opens the same sheet.
+    container.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        const row = e.target.closest && e.target.closest('.fbcm-c');
+        if (row && !e.target.closest('button')) open(row.dataset.k);
+    });
+    // Desktop: mouse hold
+    container.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        const row = e.target.closest && e.target.closest('.fbcm-c');
+        if (!row || e.target.closest('button')) return;
+        const k = row.dataset.k;
+        cancel();
+        timer = setTimeout(() => { timer = null; open(k); }, 450);
+    });
+    container.addEventListener('mouseup', cancel);
+    container.addEventListener('mouseleave', cancel);
+}
+
+function fbcmOpenActions(key) {
+    const c = _fbcmData[key];
+    if (!c) return;
+    try { if (navigator.vibrate) navigator.vibrate(15); } catch (e) {}
+    _fbcmActKey = key;
+    _fbcmLPUntil = Date.now() + 500;
+    const uid = auth.currentUser ? auth.currentUser.uid : null;
+    const mine = uid ? fbcmReactMap(c)[uid] : null;
+    const order = ['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'];
+    const em = document.getElementById('fbcm-act-emojis');
+    if (em) em.innerHTML = order.map((t, i) => `<div class="fbcm-aem${mine === t ? ' cur' : ''}" style="--i:${i}" onclick="fbcmActReact('${t}')">${fbRxSvg(t)}</div>`).join('');
+    const isOwn = !!(uid && c.uid === uid);
+    const items = [
+        ['report', 'Report comment', 'fbcmActReport()'],
+        ['reply', 'Reply', 'fbcmActReply()'],
+        ['copy', 'Copy', 'fbcmActCopy()'],
+        isOwn ? ['del', 'Delete comment', 'fbcmActDelete()'] : ['hide', 'Hide comment', 'fbcmActHide()']
+    ];
+    const list = document.getElementById('fbcm-act-list');
+    if (list) list.innerHTML = items.map(it => `<div class="fbcm-ai" onclick="${it[2]}">${FBCM_ICONS[it[0]]}<span>${it[1]}</span></div>`).join('');
+    AppNavigation.pushModal('fbcm-actions-sheet');
+}
+
+function fbcmCloseActions() {
+    if (Date.now() < _fbcmLPUntil) return;
+    const c = AppNavigation.current();
+    if (c && c.type === 'modal' && c.id === 'fbcm-actions-sheet') AppNavigation.pop();
+}
+
+function fbcmActDone() {
+    _fbcmLPUntil = 0;
+    fbcmCloseActions();
+}
+
+function fbcmActReact(type) {
+    playUI('click');
+    const k = _fbcmActKey;
+    fbcmActDone();
+    if (k) fbcmSetReaction(k, type);
+}
+
+function fbcmActReply() {
+    const k = _fbcmActKey;
+    fbcmActDone();
+    if (k) setTimeout(() => fbcmReply(k), 30);
+}
+
+function fbcmActCopy() {
+    const c = _fbcmData[_fbcmActKey];
+    fbcmActDone();
+    if (!c) return;
+    const text = String(c.text || '');
+    const done = () => showNotification('Copied', 'success');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(() => { fbcmLegacyCopy(text); done(); });
+    } else { fbcmLegacyCopy(text); done(); }
+}
+
+function fbcmLegacyCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    ta.remove();
+}
+
+function fbcmActHide() {
+    const k = _fbcmActKey;
+    fbcmActDone();
+    if (!k) return;
+    _fbcmHidden.add(k);
+    try { localStorage.setItem('fbcm_hidden', JSON.stringify(Array.from(_fbcmHidden))); } catch (e) {}
+    fbcmRender();
+    showNotification('Comment hidden', 'success');
+}
+
+function fbcmActDelete() {
+    const k = _fbcmActKey;
+    fbcmActDone();
+    if (!k || !currentActiveMovie) return;
+    db.ref(`movie_comments/${currentActiveMovie.id}/${k}`).remove()
+        .then(() => showNotification('Comment deleted', 'success'))
+        .catch(() => showNotification('Could not delete comment', 'error'));
+}
+
+function fbcmActReport() {
+    const k = _fbcmActKey;
+    fbcmActDone();
+    if (!k || !currentActiveMovie) return;
+    if (auth.currentUser) {
+        db.ref(`comment_reports/${currentActiveMovie.id}/${k}/${auth.currentUser.uid}`).set(Date.now()).catch(() => {});
+    }
+    showNotification("Thanks for letting us know", 'success');
 }
 
 function fbcmReply(key) {
@@ -4383,7 +4579,8 @@ function fbcmOpenSort() {
 
 function fbcmRestoreScroll() {
     const lc = document.getElementById('comment-list-container');
-    if (!lc) return;
+    const cm = document.getElementById('comment-modal');
+    if (!lc || !cm || !cm.classList.contains('fb-cm') || cm.style.display !== 'flex') return;
     const y = _fbcmScrollTop;
     requestAnimationFrame(() => { lc.scrollTop = y; });
     setTimeout(() => { lc.scrollTop = y; }, 60);
@@ -6103,7 +6300,7 @@ function fbRxCleanup() {
     _rx = null;
 }
 
-function startReactionTimer(postId, e) {
+function startReactionTimer(postId, e, ctx) {
     const isTouch = e.type === 'touchstart';
     if (isTouch) _rxLastTouchAt = Date.now();
     else if (Date.now() - _rxLastTouchAt < 900) return;
@@ -6112,7 +6309,7 @@ function startReactionTimer(postId, e) {
     const pt = fbRxPoint(e);
     const btn = e.target && e.target.closest ? e.target.closest('.post-action-btn-fb') : null;
     reactionActivePostId = postId;
-    const st = { postId, btn, sx: pt.x, sy: pt.y, open: false, moved: false, hover: null, ox: 0, oy: 0 };
+    const st = { postId, ctx: ctx || '', btn, sx: pt.x, sy: pt.y, open: false, moved: false, hover: null, ox: 0, oy: 0 };
     st.onMove = (ev) => {
         const p = fbRxPoint(ev);
         if (!st.open) {
@@ -6149,6 +6346,7 @@ function fbRxOpen(st) {
     fbRxFill();
     st.open = true; st.ox = st.sx; st.oy = st.sy;
     picker.dataset.postId = st.postId;
+    picker.dataset.ctx = st.ctx || '';
     picker.classList.remove('open', 'picking', 'has-hover');
     picker.querySelectorAll('.fb-rx').forEach(c => c.classList.remove('on', 'picked'));
     picker.style.visibility = 'hidden';
@@ -6213,7 +6411,7 @@ function selectPostReaction(type) {
     const cell = picker.querySelector(`.fb-rx[data-type="${type}"]`);
     picker.classList.add('picking');
     if (cell) cell.classList.add('picked');
-    submitPostReaction(postId, type);
+    if (picker.dataset.ctx === 'comment') fbcmSetReaction(postId, type); else submitPostReaction(postId, type);
     setTimeout(() => {
         const c = AppNavigation.current();
         if (c && c.type === 'modal' && c.id === 'fb-reaction-picker') AppNavigation.pop();

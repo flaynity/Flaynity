@@ -1449,6 +1449,136 @@ window.handleNativeGoogleSignIn = function(idToken) {
         .catch(err => { showNotification("Native Auth Error: " + err.message, "error"); });
 };
 
+// =========================================================
+// AUTH SCREEN (Welcome / Log In / Create Account)
+// =========================================================
+window.authShowView = function (name, back) {
+    const views = { welcome: 'au-welcome', login: 'au-login', signup: 'au-signup' };
+    const target = document.getElementById(views[name] || 'au-welcome');
+    if (!target) return;
+    try { playUI('click'); } catch (e) {}
+    Object.values(views).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.classList.remove('active'); el.classList.remove('back-anim'); }
+    });
+    if (back) target.classList.add('back-anim');
+    target.classList.add('active');
+    try { const a = document.activeElement; if (a && a.blur) a.blur(); } catch (e) {}
+};
+
+window.authTogglePass = function (inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    if (btn) btn.style.color = show ? '#4B1FD0' : '#8B8B93';
+};
+
+function authFriendlyError(err) {
+    const code = (err && err.code) || '';
+    const map = {
+        'auth/invalid-email': 'Please enter a valid email address.',
+        'auth/user-not-found': 'No account found with this email.',
+        'auth/wrong-password': 'Incorrect password. Please try again.',
+        'auth/invalid-credential': 'Incorrect email or password.',
+        'auth/invalid-login-credentials': 'Incorrect email or password.',
+        'auth/email-already-in-use': 'This email is already registered. Please log in.',
+        'auth/weak-password': 'Password must be at least 6 characters.',
+        'auth/too-many-requests': 'Too many attempts. Please try again later.',
+        'auth/network-request-failed': 'No internet connection.',
+        'auth/popup-closed-by-user': 'Sign-in was cancelled.',
+        'auth/operation-not-allowed': 'This sign-in method is not enabled yet.',
+        'auth/account-exists-with-different-credential': 'An account already exists with this email using another sign-in method.'
+    };
+    return map[code] || (err && err.message) || 'Something went wrong.';
+}
+
+function authSetBusy(btnId, busy, idleText) {
+    const b = document.getElementById(btnId);
+    if (!b) return;
+    b.disabled = !!busy;
+    b.textContent = busy ? 'Please wait...' : idleText;
+}
+
+async function authApplyPersistence() {
+    // "Remember me" is checked by default, so the user signs in only once.
+    const box = document.getElementById('au-remember');
+    const keep = !box || box.checked;
+    try {
+        await auth.setPersistence(keep ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION);
+    } catch (e) {}
+}
+
+window.authEmailLogin = async function () {
+    playUI('click');
+    const email = (document.getElementById('au-login-email').value || '').trim();
+    const pass = document.getElementById('au-login-pass').value || '';
+    if (!email || !pass) { showNotification('Please enter your email and password.', 'error'); return; }
+    authSetBusy('au-login-btn', true, 'Log In');
+    try {
+        await authApplyPersistence();
+        const result = await auth.signInWithEmailAndPassword(email, pass);
+        saveAccountToList(result.user);
+        showNotification('Welcome back!', 'success');
+    } catch (err) {
+        showNotification(authFriendlyError(err), 'error');
+    } finally {
+        authSetBusy('au-login-btn', false, 'Log In');
+    }
+};
+
+window.authEmailSignup = async function () {
+    playUI('click');
+    const name = (document.getElementById('au-signup-name').value || '').trim();
+    const email = (document.getElementById('au-signup-email').value || '').trim();
+    const pass = document.getElementById('au-signup-pass').value || '';
+    if (!name) { showNotification('Please enter your full name.', 'error'); return; }
+    if (!email) { showNotification('Please enter your email.', 'error'); return; }
+    if (pass.length < 6) { showNotification('Password must be at least 6 characters.', 'error'); return; }
+    authSetBusy('au-signup-btn', true, 'Get Started');
+    try {
+        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+        const result = await auth.createUserWithEmailAndPassword(email, pass);
+        try { await result.user.updateProfile({ displayName: name }); } catch (e) {}
+        saveAccountToList(result.user);
+        showNotification('Account created successfully!', 'success');
+    } catch (err) {
+        showNotification(authFriendlyError(err), 'error');
+    } finally {
+        authSetBusy('au-signup-btn', false, 'Get Started');
+    }
+};
+
+window.authForgotPassword = async function () {
+    playUI('click');
+    const loginEmail = document.getElementById('au-login-email');
+    const signupEmail = document.getElementById('au-signup-email');
+    const email = ((loginEmail && loginEmail.value) || (signupEmail && signupEmail.value) || '').trim();
+    if (!email) { showNotification('Enter your email first, then tap Forgot password.', 'error'); return; }
+    try {
+        await auth.sendPasswordResetEmail(email);
+        showNotification('Password reset email sent. Check your inbox.', 'success', 3500);
+    } catch (err) {
+        showNotification(authFriendlyError(err), 'error');
+    }
+};
+
+window.authSocialSignIn = async function (kind) {
+    playUI('click');
+    try {
+        let provider;
+        if (kind === 'facebook') provider = new firebase.auth.FacebookAuthProvider();
+        else if (kind === 'apple') provider = new firebase.auth.OAuthProvider('apple.com');
+        else return signInWithGoogle();
+        await authApplyPersistence();
+        const result = await auth.signInWithPopup(provider);
+        saveAccountToList(result.user);
+        showNotification('Signed in successfully!', 'success');
+    } catch (err) {
+        showNotification(authFriendlyError(err), 'error');
+    }
+};
+
 function logout() { 
     cleanupUserSessionData();
     auth.signOut(); 

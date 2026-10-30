@@ -114,63 +114,115 @@
 
 <style id="flaynity-onboarding-style">
     #flaynity-onboarding {
-        position: fixed; inset: 0; width: 100vw; height: 100vh; min-height: 100dvh;
-        z-index: 2147483646; background: #0F0F0F; overflow: hidden; display: none;
-        font-family: 'Plus Jakarta Sans', sans-serif; touch-action: pan-y;
+        position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh;
+        z-index: 2147483646; background: #000; overflow: hidden; display: none;
+        font-family: 'Plus Jakarta Sans', sans-serif; touch-action: pan-y; color: #fff;
     }
     #flaynity-onboarding-track {
         position: absolute; inset: 0; width: 100%; height: 100%; display: flex;
-        transform: translate3d(0,0,0); will-change: transform; transition: transform .42s cubic-bezier(.22,.8,.2,1);
-        touch-action: pan-y;
+        transform: translate3d(0,0,0); will-change: transform;
+        transition: transform .42s cubic-bezier(.22,.8,.2,1); touch-action: pan-y;
     }
-    #flaynity-onboarding .onboarding-slide {
-        position: relative; flex: 0 0 100%; width: 100%; height: 100%; object-fit: cover;
-        display: block; opacity: 1; visibility: visible; user-select: none; -webkit-user-drag: none;
-        background: #0F0F0F; transform: translateZ(0); backface-visibility: hidden;
+    #flaynity-onboarding .ob-slide {
+        flex: 0 0 100%; width: 100%; height: 100%; display: flex; flex-direction: column;
+        align-items: center; background: #000;
+        padding: calc(env(safe-area-inset-top, 0px) + 12px) 24px calc(max(22px, env(safe-area-inset-bottom, 0px)) + 142px);
+        box-sizing: border-box;
     }
-    #flaynity-onboarding::after {
-        content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 28%;
-        background: transparent;
-        pointer-events: none; z-index: 2;
+    #flaynity-onboarding .ob-art {
+        flex: 1 1 auto; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center;
     }
-    #flaynity-onboarding-next {
-        position: absolute; z-index: 4; left: 16px; right: 16px; bottom: max(18px, env(safe-area-inset-bottom));
-        width: calc(100% - 32px); min-height: 54px; border: 0; border-radius: 16px;
-        background: #FF2E55; color: #fff; font-size: 1.05rem; font-weight: 800;
-        cursor: pointer; box-shadow: none !important; text-shadow: none; -webkit-box-shadow: none !important;
-        -webkit-tap-highlight-color: transparent; opacity: 0; transform: translateX(70px);
-        transition: opacity .55s ease, transform .55s cubic-bezier(.22,.8,.2,1);
+    #flaynity-onboarding .ob-art img {
+        max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block;
+        pointer-events: none; -webkit-user-drag: none; user-select: none;
     }
-    #flaynity-onboarding.ready #flaynity-onboarding-next { opacity: 1; transform: translateX(0); }
+    #flaynity-onboarding .ob-title {
+        margin: 18px 0 0; text-align: center; font-weight: 800; font-size: clamp(1.9rem, 8.4vw, 2.5rem);
+        line-height: 1.08; letter-spacing: -0.8px; color: #fff;
+    }
+    #flaynity-onboarding .ob-title em {
+        font-style: normal; background: var(--g); -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent; color: transparent;
+    }
+    #flaynity-onboarding .ob-desc {
+        margin: 14px 0 0; max-width: 320px; text-align: center; font-weight: 500;
+        font-size: 1.02rem; line-height: 1.42; color: rgba(255,255,255,.92);
+    }
     #flaynity-onboarding-dots {
-        position: absolute; z-index: 5; left: 0; right: 0; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 70px);
-        display: flex; justify-content: center; align-items: center; gap: 7px; pointer-events: none;
+        position: absolute; z-index: 5; left: 0; right: 0;
+        bottom: calc(max(22px, env(safe-area-inset-bottom, 0px)) + 82px);
+        display: flex; justify-content: center; align-items: center; gap: 12px; pointer-events: none;
     }
-    #flaynity-onboarding-dots span { width: 6px; height: 6px; border-radius: 50%; background: #000; display: block; flex: 0 0 6px; transform: translate3d(0,0,0); }
+    #flaynity-onboarding-dots span {
+        width: 10px; height: 10px; border-radius: 50%; background: #4A4D5A; display: block; flex: 0 0 10px;
+        transition: background .3s ease, transform .3s ease;
+    }
+    #flaynity-onboarding-dots span.on { background: #FF2D87; transform: scale(1.05); }
+    #flaynity-onboarding-next {
+        position: absolute; z-index: 4; left: 24px; right: 24px;
+        bottom: max(22px, env(safe-area-inset-bottom, 0px));
+        width: calc(100% - 48px); height: 58px; border: 0; border-radius: 999px;
+        background: linear-gradient(90deg, #FF4A8D 0%, #FF1F4B 100%); color: #fff;
+        font: 800 1.12rem 'Plus Jakarta Sans', sans-serif; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 10px 28px rgba(255, 31, 91, .28);
+        -webkit-tap-highlight-color: transparent; opacity: 0; transform: translateY(24px);
+        transition: opacity .5s ease, transform .5s cubic-bezier(.22,.8,.2,1);
+    }
+    #flaynity-onboarding-next svg { position: absolute; right: 24px; width: 24px; height: 24px; }
+    #flaynity-onboarding-next:active { transform: scale(.98); }
+    #flaynity-onboarding.ready #flaynity-onboarding-next { opacity: 1; transform: translateY(0); }
+    @media (max-height: 640px) {
+        #flaynity-onboarding .ob-title { font-size: 1.7rem; margin-top: 10px; }
+        #flaynity-onboarding .ob-desc { font-size: .92rem; margin-top: 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        #flaynity-onboarding-track { transition: none !important; }
+    }
 </style>
 <div id="flaynity-onboarding" aria-hidden="true">
     <div id="flaynity-onboarding-track">
-        <img class="onboarding-slide" src="assets/onboarding/get-started-1.png" alt="" draggable="false">
-        <img class="onboarding-slide" src="assets/onboarding/get-started-2.png" alt="" draggable="false">
-        <img class="onboarding-slide" src="assets/onboarding/get-started-3.png" alt="" draggable="false">
+        <section class="ob-slide">
+            <div class="ob-art"><img src="assets/onboarding/slide-1.jpg" alt="" draggable="false"></div>
+            <h2 class="ob-title">Connect<br>with the <em style="--g:linear-gradient(90deg,#B24BF3,#FF2D87)">World</em></h2>
+            <p class="ob-desc">Meet new people, share your moments and be part of a global community.</p>
+        </section>
+        <section class="ob-slide">
+            <div class="ob-art"><img src="assets/onboarding/slide-2.jpg" alt="" draggable="false"></div>
+            <h2 class="ob-title">Share Your<br><em style="--g:linear-gradient(90deg,#7C8CFF,#C04BFF)">Moments</em></h2>
+            <p class="ob-desc">Post, like and enjoy content from people around the world.</p>
+        </section>
+        <section class="ob-slide">
+            <div class="ob-art"><img src="assets/onboarding/slide-3.jpg" alt="" draggable="false"></div>
+            <h2 class="ob-title">Grow Your<br><em style="--g:linear-gradient(90deg,#6C8DFF,#FF2D87)">Community</em></h2>
+            <p class="ob-desc">Follow your favorite creators and build meaningful connections.</p>
+        </section>
+        <section class="ob-slide">
+            <div class="ob-art"><img src="assets/onboarding/slide-4.jpg" alt="" draggable="false"></div>
+            <h2 class="ob-title">Start Your<br><em style="--g:linear-gradient(90deg,#7C6CFF,#FF2D87)">Journey</em></h2>
+            <p class="ob-desc">Dive into a smarter, more connected social experience.</p>
+        </section>
     </div>
-    <div id="flaynity-onboarding-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-    <button id="flaynity-onboarding-next" type="button">Get Started</button>
+    <div id="flaynity-onboarding-dots" aria-hidden="true"><span class="on"></span><span></span><span></span><span></span></div>
+    <button id="flaynity-onboarding-next" type="button"><span id="flaynity-onboarding-label">Get Started</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M14 6l6 6-6 6"/></svg></button>
 </div>
 <script>
 (function () {
     'use strict';
     const onboarding = document.getElementById('flaynity-onboarding');
     const track = document.getElementById('flaynity-onboarding-track');
-    const slides = onboarding ? Array.from(onboarding.querySelectorAll('.onboarding-slide')) : [];
+    const slides = onboarding ? Array.from(onboarding.querySelectorAll('.ob-slide')) : [];
+    const dots = onboarding ? Array.from(onboarding.querySelectorAll('#flaynity-onboarding-dots span')) : [];
     const nextButton = document.getElementById('flaynity-onboarding-next');
+    const label = document.getElementById('flaynity-onboarding-label');
     const splash = document.getElementById('flaynity-startup-splash');
-    const urls = slides.map(function (img) { return img.getAttribute('src'); });
-    let current = 0, timer = null, swipeStartX = 0, swipeStartY = 0, swipeStartTime = 0, dragging = false, swipeMoved = false, pointerId = null;
-    let pendingShow = false;
-    const SLIDE_MS = 3000;
+    const themeMeta = document.getElementById('flaynity-theme-color');
+    const urls = Array.from(document.querySelectorAll('#flaynity-onboarding .ob-art img')).map(function (img) { return img.getAttribute('src'); });
+    const LAST = slides.length - 1;
+    let current = 0, swipeStartX = 0, swipeStartY = 0, dragging = false, swipeMoved = false;
+    let pendingShow = false, savedThemeColor = null;
 
-    // Preload all onboarding images before the onboarding UI becomes visible.
+    // Preload every illustration before the onboarding becomes visible.
     const preloadPromise = Promise.all(urls.map(function (url) {
         return new Promise(function (resolve) {
             const img = new Image();
@@ -179,30 +231,29 @@
         });
     }));
 
+    function render() {
+        dots.forEach(function (d, i) { d.classList.toggle('on', i === current); });
+        // Image 2 design: slide 1 and the last slide say "Get Started", the middle ones say "Next".
+        if (label) label.textContent = (current === 0 || current === LAST) ? 'Get Started' : 'Next';
+    }
     function positionSlide(index, animate) {
-        current = (index + slides.length) % slides.length;
+        current = Math.max(0, Math.min(LAST, index));
         if (track) {
             track.style.transition = animate ? 'transform .42s cubic-bezier(.22,.8,.2,1)' : 'none';
             track.style.transform = 'translate3d(' + (-current * 100) + '%,0,0)';
         }
-    }
-    function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
-    function startTimer() {
-        stopTimer();
-        timer = setInterval(function () { positionSlide(current + 1, true); }, SLIDE_MS);
+        render();
     }
     function reveal() {
         if (!onboarding) return;
+        if (themeMeta) { savedThemeColor = themeMeta.getAttribute('content'); themeMeta.setAttribute('content', '#000000'); }
         onboarding.style.display = 'block';
         onboarding.setAttribute('aria-hidden', 'false');
         onboarding.classList.remove('ready');
         positionSlide(0, false);
         requestAnimationFrame(function () {
-            requestAnimationFrame(function () {
-                onboarding.classList.add('ready');
-            });
+            requestAnimationFrame(function () { onboarding.classList.add('ready'); });
         });
-        startTimer();
     }
     async function show() {
         pendingShow = true;
@@ -218,25 +269,23 @@
     window.__flaynityShowOnboarding = function () { show(); };
     window.__flaynityHideOnboarding = function () {
         pendingShow = false;
-        stopTimer();
         if (!onboarding) return;
         onboarding.classList.remove('ready');
         onboarding.style.display = 'none';
         onboarding.setAttribute('aria-hidden', 'true');
+        if (themeMeta && savedThemeColor !== null) { themeMeta.setAttribute('content', savedThemeColor); savedThemeColor = null; }
     };
 
-    function pointerStart(x, y, id) {
-        stopTimer();
-        swipeStartX = x; swipeStartY = y; swipeStartTime = Date.now();
-        dragging = true; swipeMoved = false; pointerId = id || null;
+    function pointerStart(x, y) {
+        swipeStartX = x; swipeStartY = y; dragging = true; swipeMoved = false;
         if (track) { track.style.transition = 'none'; track.style.transform = 'translate3d(' + (-current * 100) + '%,0,0)'; }
     }
     function pointerMove(x, y) {
         if (!dragging || !track) return;
         const dx = x - swipeStartX, dy = y - swipeStartY;
         if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.05) {
-            // Lock the outer edges: first slide cannot move right, third slide cannot move left.
-            if ((current === 0 && dx > 0) || (current === slides.length - 1 && dx < 0)) {
+            // Outer edges are locked: no drag past the first or last slide.
+            if ((current === 0 && dx > 0) || (current === LAST && dx < 0)) {
                 swipeMoved = false;
                 track.style.transform = 'translate3d(' + (-current * 100) + '%,0,0)';
                 return;
@@ -250,43 +299,28 @@
         dragging = false;
         const dx = x - swipeStartX, dy = y - swipeStartY;
         const width = onboarding ? onboarding.clientWidth : window.innerWidth;
-        const progress = Math.min(1, Math.abs(dx) / Math.max(1, width));
-        // A held/tapped image must not slide. Swipe follows the finger and only commits after a real horizontal drag.
-        const edgeLocked = (current === 0 && dx > 0) || (current === slides.length - 1 && dx < 0);
+        const edgeLocked = (current === 0 && dx > 0) || (current === LAST && dx < 0);
         if (!edgeLocked && swipeMoved && Math.abs(dx) >= Math.max(45, width * 0.18) && Math.abs(dx) > Math.abs(dy) * 1.15) {
             positionSlide(current + (dx < 0 ? 1 : -1), true);
         } else {
             positionSlide(current, true);
         }
-        startTimer();
-        swipeMoved = false; pointerId = null;
+        swipeMoved = false;
     }
     if (onboarding) {
-        onboarding.addEventListener('touchstart', function (e) {
-            if (!e.touches.length) return;
-            pointerStart(e.touches[0].clientX, e.touches[0].clientY, e.touches[0].identifier);
-        }, { passive: true });
-        onboarding.addEventListener('touchmove', function (e) {
-            if (!e.touches.length) return;
-            pointerMove(e.touches[0].clientX, e.touches[0].clientY);
-        }, { passive: true });
-        onboarding.addEventListener('touchend', function (e) {
-            if (!e.changedTouches.length) return;
-            pointerEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-        }, { passive: true });
-        onboarding.addEventListener('pointerdown', function (e) {
-            if (e.pointerType === 'mouse') pointerStart(e.clientX, e.clientY, e.pointerId);
-        });
-        onboarding.addEventListener('pointermove', function (e) {
-            if (e.pointerType === 'mouse') pointerMove(e.clientX, e.clientY);
-        });
-        onboarding.addEventListener('pointerup', function (e) {
-            if (e.pointerType === 'mouse') pointerEnd(e.clientX, e.clientY);
-        });
+        onboarding.addEventListener('touchstart', function (e) { if (e.touches.length) pointerStart(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+        onboarding.addEventListener('touchmove', function (e) { if (e.touches.length) pointerMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+        onboarding.addEventListener('touchend', function (e) { if (e.changedTouches.length) pointerEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY); }, { passive: true });
+        onboarding.addEventListener('pointerdown', function (e) { if (e.pointerType === 'mouse') pointerStart(e.clientX, e.clientY); });
+        onboarding.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse') pointerMove(e.clientX, e.clientY); });
+        onboarding.addEventListener('pointerup', function (e) { if (e.pointerType === 'mouse') pointerEnd(e.clientX, e.clientY); });
     }
     if (nextButton) {
         nextButton.addEventListener('click', function () {
+            if (current < LAST) { positionSlide(current + 1, true); return; }
+            // Last slide: "Get Started" opens the Welcome page (Create Account / Log In).
             window.__flaynityHideOnboarding();
+            if (typeof window.authShowView === 'function') window.authShowView('welcome', true);
             const authScreen = document.getElementById('auth-screen');
             if (authScreen) authScreen.style.display = 'flex';
             document.body.classList.add('auth-active');
@@ -304,4 +338,4 @@
 <div id="app"></div>
 <script src="js/app.js"></script>
 </body>
-</html>
+</html

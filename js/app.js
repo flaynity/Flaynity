@@ -4051,7 +4051,17 @@ function openCommentModal() {
     playUI('click');
     const _fbm = document.getElementById('comment-modal');
     const _fbOn = fbcmIsPostActive();
-    if (_fbm) _fbm.classList.toggle('fb-cm', _fbOn);
+    if (_fbm) {
+        _fbm.classList.toggle('fb-cm', _fbOn);
+        if (_fbOn) {
+            _fbm.classList.remove('opening');
+            void _fbm.offsetWidth;
+            _fbm.classList.add('opening');
+            setTimeout(() => _fbm.classList.remove('opening'), 450);
+        } else {
+            _fbm.classList.remove('opening');
+        }
+    }
     if (_fbOn) fbcmInit();
     const currentU = auth.currentUser;
     const avatarEl = document.getElementById('comment-user-avatar');
@@ -4124,11 +4134,19 @@ function submitComment() {
 // FACEBOOK-STYLE COMMENT SHEET (used for community posts)
 // =========================================================
 let _fbcmData = {};
+let _fbcmLoaded = false;
+let _fbcmOpen = new Set();
+let _fbcmScrollTop = 0;
 let _fbcmSort = 'relevant';
 let _fbcmReply = null;
 const _FBCM_LABELS = { relevant: 'Most relevant', newest: 'Newest', all: 'All comments' };
 const FBCM_UP = (on) => `<svg viewBox="0 0 24 24"><path d="${on ? 'M3,11h3v10H3V11z M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11v10h10.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z' : 'M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11H3v10h4h1h9.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z M7,20H4v-8h3V20z M19.98,13.17l-1.34,6C18.54,19.65,18.03,20,17.43,20H8v-8.61l5.6-6.06C13.79,5.12,14.08,5,14.38,5c0.26,0,0.5,0.11,0.63,0.3c0.07,0.1,0.15,0.26,0.09,0.47l-1.52,4.94L13.18,12h1.35h4.23c0.41,0,0.8,0.17,1.03,0.46C19.92,12.61,20.05,12.86,19.98,13.17z'}"/></svg>`;
 const FBCM_DOWN = (on) => `<svg viewBox="0 0 24 24"><g transform="rotate(180 12 12)"><path d="${on ? 'M3,11h3v10H3V11z M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11v10h10.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z' : 'M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11H3v10h4h1h9.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z M7,20H4v-8h3V20z M19.98,13.17l-1.34,6C18.54,19.65,18.03,20,17.43,20H8v-8.61l5.6-6.06C13.79,5.12,14.08,5,14.38,5c0.26,0,0.5,0.11,0.63,0.3c0.07,0.1,0.15,0.26,0.09,0.47l-1.52,4.94L13.18,12h1.35h4.23c0.41,0,0.8,0.17,1.03,0.46C19.92,12.61,20.05,12.86,19.98,13.17z'}"/></g></svg>`;
+
+function fbcmSkeletonHTML() {
+    const w = [55, 34, 45, 45, 34, 34, 45, 55];
+    return w.map(x => `<div class="fbcm-sk"><i></i><b style="width:${x}%"></b></div>`).join('');
+}
 
 function fbcmIsPostActive() {
     return !!(currentActiveMovie && typeof allCommunityPosts !== 'undefined' &&
@@ -4138,7 +4156,14 @@ function fbcmIsPostActive() {
 function fbcmInit() {
     _fbcmReply = null;
     _fbcmData = {};
-    const _lc = document.getElementById('comment-list-container'); if (_lc) _lc.innerHTML = '';
+    _fbcmLoaded = false;
+    _fbcmOpen = new Set();
+    _fbcmScrollTop = 0;
+    const _lc = document.getElementById('comment-list-container');
+    if (_lc) {
+        _lc.innerHTML = fbcmSkeletonHTML();
+        if (!_lc._fbScroll) { _lc._fbScroll = true; _lc.addEventListener('scroll', () => { _fbcmScrollTop = _lc.scrollTop; }, { passive: true }); }
+    }
     const rb = document.getElementById('fbcm-replybar'); if (rb) rb.style.display = 'none';
     const mn = document.getElementById('fbcm-mention'); if (mn) mn.style.display = 'none';
     const inp = document.getElementById('fbcm-input'); if (inp) inp.value = '';
@@ -4201,6 +4226,8 @@ function fbcmRender(popKey, popType) {
     const countEl = document.getElementById('fbcm-comment-count');
     if (countEl) countEl.innerText = entries.length + (entries.length === 1 ? ' comment' : ' comments');
 
+    if (!_fbcmLoaded) { container.innerHTML = fbcmSkeletonHTML(); return; }
+
     if (entries.length === 0) {
         container.innerHTML = `<div class="fbcm-empty">No comments yet. Be the first to comment!</div>`;
         return;
@@ -4221,6 +4248,8 @@ function fbcmRender(popKey, popType) {
         const initial = (c.username || 'U').charAt(0).toUpperCase();
         const av = c.avatar ? `<img class="fbcm-av" src="${escapeHTML(c.avatar)}" alt="">` : `<div class="fbcm-av" style="background:linear-gradient(135deg,var(--primary),#FF7A00)">${escapeHTML(initial)}</div>`;
         const lc = likesOf(c);
+        const nk = isReply ? 0 : (kids[c._k] || []).length;
+        const isOpen = _fbcmOpen.has(c._k);
         const liked = !!(uid && c.likes && c.likes[uid]);
         const disliked = !!(uid && c.dislikes && c.dislikes[uid]);
         const hl = _fbcmReply && _fbcmReply.target === c._k ? ' hl' : '';
@@ -4238,18 +4267,25 @@ function fbcmRender(popKey, popType) {
                     <button class="fbcm-ic fbcm-like${liked ? ' on' : ''}" onclick="fbcmReact('${c._k}','likes')" aria-label="Like">${FBCM_UP(liked)}</button>
                     <button class="fbcm-ic fbcm-dis${disliked ? ' on' : ''}" onclick="fbcmReact('${c._k}','dislikes')" aria-label="Dislike">${FBCM_DOWN(disliked)}</button>
                 </div>
+                ${nk ? `<button class="fbcm-vr" onclick="fbcmToggleReplies('${c._k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" class="${isOpen ? 'up' : ''}"><path d="M5 9l7 7 7-7"/></svg>${isOpen ? 'Hide replies' : `View ${nk} ${nk === 1 ? 'reply' : 'replies'}`}</button>` : ''}
             </div>
         </div>`;
     };
 
     const prevScroll = container.scrollTop;
-    container.innerHTML = top.map(c => row(c, false) + (kids[c._k] || []).map(r => row(r, true)).join('')).join('');
+    container.innerHTML = top.map(c => row(c, false) + (_fbcmOpen.has(c._k) ? (kids[c._k] || []).map(r => row(r, true)).join('') : '')).join('');
     container.scrollTop = prevScroll;
 
     if (popKey) {
         const b = container.querySelector(`[data-k="${popKey}"] .${popType === 'likes' ? 'fbcm-like' : 'fbcm-dis'}`);
         if (b) { b.classList.add('pop'); setTimeout(() => b.classList.remove('pop'), 500); }
     }
+}
+
+function fbcmToggleReplies(key) {
+    playUI('click');
+    if (_fbcmOpen.has(key)) _fbcmOpen.delete(key); else _fbcmOpen.add(key);
+    fbcmRender();
 }
 
 function fbcmReact(key, type) {
@@ -4278,12 +4314,28 @@ function fbcmReply(key) {
     const c = _fbcmData[key];
     if (!c) return;
     const parent = c.parentId && _fbcmData[c.parentId] ? c.parentId : key;
-    _fbcmReply = { target: key, parent, name: c.username || 'User' };
+    _fbcmReply = { target: key, parent, name: c.username || 'User', mention: true };
     const rb = document.getElementById('fbcm-replybar'); if (rb) rb.style.display = 'block';
     const rn = document.getElementById('fbcm-reply-name'); if (rn) rn.innerText = _fbcmReply.name;
-    const mn = document.getElementById('fbcm-mention'); if (mn) { mn.innerText = _fbcmReply.name; mn.style.display = 'inline'; }
+    const mn = document.getElementById('fbcm-mention'); if (mn) { mn.innerHTML = escapeHTML(_fbcmReply.name) + '<i class="fbcm-x">✕</i>'; mn.style.display = 'inline-flex'; }
     fbcmRender();
     const inp = document.getElementById('fbcm-input'); if (inp) inp.focus();
+}
+
+function fbcmRemoveMention() {
+    if (!_fbcmReply || !_fbcmReply.mention) return;
+    playUI('click');
+    _fbcmReply.mention = false;
+    const mn = document.getElementById('fbcm-mention'); if (mn) mn.style.display = 'none';
+    const inp = document.getElementById('fbcm-input'); if (inp) inp.focus();
+}
+
+function fbcmKey(e) {
+    if (e.key === 'Backspace' && !e.target.value && _fbcmReply && _fbcmReply.mention) { e.preventDefault(); fbcmRemoveMention(); }
+}
+
+function fbcmBefore(e) {
+    if (e.inputType === 'deleteContentBackward' && !e.target.value && _fbcmReply && _fbcmReply.mention) { e.preventDefault(); fbcmRemoveMention(); }
 }
 
 function fbcmCancelReply() {
@@ -4310,7 +4362,7 @@ function fbcmSubmit() {
         const username = uData.username || (auth.currentUser.email || 'user').split('@')[0];
         const avatar = (typeof currentChannelData !== 'undefined' && currentChannelData && (currentChannelData.avatarUrl || currentChannelData.photoURL)) || uData.photoURL || auth.currentUser.photoURL || '';
         const data = { uid: userId, username, avatar, text, timestamp: Date.now() };
-        if (reply) { data.parentId = reply.parent; data.replyToName = reply.name; }
+        if (reply) { data.parentId = reply.parent; if (reply.mention) data.replyToName = reply.name; _fbcmOpen.add(reply.parent); }
         db.ref(`movie_comments/${postId}`).push(data)
             .then(() => {
                 const el = document.getElementById('fbcm-input');
@@ -4326,11 +4378,21 @@ function fbcmOpenSort() {
     playUI('click');
     document.querySelectorAll('#fbcm-sort-sheet .fbcm-opt').forEach(o => o.classList.toggle('sel', o.dataset.k === _fbcmSort));
     AppNavigation.pushModal('fbcm-sort-sheet');
+    fbcmRestoreScroll();
+}
+
+function fbcmRestoreScroll() {
+    const lc = document.getElementById('comment-list-container');
+    if (!lc) return;
+    const y = _fbcmScrollTop;
+    requestAnimationFrame(() => { lc.scrollTop = y; });
+    setTimeout(() => { lc.scrollTop = y; }, 60);
 }
 
 function fbcmCloseSort() {
     const c = AppNavigation.current();
     if (c && c.type === 'modal' && c.id === 'fbcm-sort-sheet') AppNavigation.pop();
+    fbcmRestoreScroll();
 }
 
 function fbcmSetSort(k) {
@@ -4343,7 +4405,7 @@ function fbcmSetSort(k) {
 }
 
 function renderCommentList(commentsObj) {
-    if (fbcmIsPostActive()) { _fbcmData = commentsObj || {}; fbcmRender(); return; }
+    if (fbcmIsPostActive()) { _fbcmData = commentsObj || {}; _fbcmLoaded = true; fbcmRender(); return; }
     const container = document.getElementById('comment-list-container');
     if (!container) return;
 

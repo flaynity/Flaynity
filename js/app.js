@@ -313,10 +313,10 @@ function __flaynityReady(fn) {
 function getHomeSkeletonHTML() {
     return `
         <div class="offline-home-skeleton">
-            <div class="offline-video-skeleton lv-skel-card">
-                <div class="skel-box" style="width:100%; aspect-ratio:16/9; border-radius:28px;"></div>
+            <div class="offline-video-skeleton">
+                <div class="skel-box" style="width:100%; aspect-ratio:16/9; border-radius:16px;"></div>
                 <div class="offline-video-meta">
-                    <div class="skel-box" style="width:9.1vw; height:9.1vw; border-radius:50%; flex-shrink:0;"></div>
+                    <div class="skel-box" style="width:40px; height:40px; border-radius:50%; flex-shrink:0;"></div>
                     <div class="offline-video-lines">
                         <div class="skel-box" style="width:85%; height:16px; border-radius:4px;"></div>
                         <div class="skel-box" style="width:50%; height:12px; border-radius:4px;"></div>
@@ -344,10 +344,10 @@ function getHomeSkeletonHTML() {
                 </div>
             </div>
 
-            <div class="offline-video-skeleton lv-skel-card" style="margin-top:8px;">
-                <div class="skel-box" style="width:100%; aspect-ratio:16/9; border-radius:28px;"></div>
+            <div class="offline-video-skeleton" style="margin-top:8px;">
+                <div class="skel-box" style="width:100%; aspect-ratio:16/9; border-radius:16px;"></div>
                 <div class="offline-video-meta">
-                    <div class="skel-box" style="width:9.1vw; height:9.1vw; border-radius:50%; flex-shrink:0;"></div>
+                    <div class="skel-box" style="width:40px; height:40px; border-radius:50%; flex-shrink:0;"></div>
                     <div class="offline-video-lines">
                         <div class="skel-box" style="width:75%; height:16px; border-radius:4px;"></div>
                         <div class="skel-box" style="width:45%; height:12px; border-radius:4px;"></div>
@@ -2564,46 +2564,43 @@ function renderFeelsSegmentUI(segmentFeels) {
     return html;
 }
 
-function lvCardMenu(e) {
-    // 3-dots button: must not open the video page
-    if (e) { e.stopPropagation(); e.preventDefault(); }
-    try { playUI('click'); } catch (err) {}
-    showUpcomingModal();
+function lvcCardHTML(v, viewsId) {
+    return `
+            <div class="lvc long-video-feed-card" onclick="openMoviePage('${v.id}', false)">
+                <div class="lvc-thumb long-video-thumb-container">
+                    <img src="${v.poster}" loading="lazy" alt="">
+                    <span class="lvc-dur long-video-duration">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2.8v18.4c0 .8.9 1.3 1.6.9l15-9.2c.7-.4.7-1.4 0-1.8l-15-9.2C5.9 1.5 5 2 5 2.8z"/></svg>
+                        <span>${v.duration || '10:00'}</span>
+                    </span>
+                </div>
+                <div class="lvc-info long-video-details">
+                    <div class="lvc-av"><div class="live-avatar-${v.userId}"></div></div>
+                    <div class="lvc-txt long-video-meta-text">
+                        <h4 class="lvc-title long-video-title">${escapeHTML(v.title)}</h4>
+                        <div class="lvc-sub long-video-subtitle">
+                            <span class="lvc-ch live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
+                            <span class="lvc-sep"></span><span id="${viewsId}">0 Views</span>
+                            <span class="lvc-sep"></span><span>${getRelativeTime(v.createdAt)}</span>
+                        </div>
+                    </div>
+                    <button class="lvc-dots" aria-label="More" onclick="event.stopPropagation(); typeof showUpcomingModal==='function' && showUpcomingModal();"><i></i><i></i><i></i></button>
+                </div>
+            </div>`;
 }
 
 function renderLongVideosSegmentUI(segmentLongs) {
     if (!segmentLongs || segmentLongs.length === 0) return '';
-    let html = '<div class="lv-section">';
+    let html = '';
     segmentLongs.forEach(v => {
         const viewsId = `home-long-views-${v.id}`;
-        const relTime = getRelativeTime(v.createdAt);
-        html += `
-            <div class="long-video-feed-card lv-card" onclick="openMoviePage('${v.id}', false)">
-                <div class="lv-thumb">
-                    <img src="${v.poster}" loading="lazy" alt="">
-                </div>
-                <div class="lv-info">
-                    <div class="lv-avatar live-avatar-${v.userId}"></div>
-                    <div class="lv-text">
-                        <h4 class="long-video-title lv-title">${escapeHTML(v.title)}</h4>
-                        <div class="lv-sub">
-                            <span class="lv-ch live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
-                            <i class="lv-dot"></i><span id="${viewsId}">0 Views</span>
-                            <i class="lv-dot"></i><span>${relTime}</span>
-                        </div>
-                    </div>
-                    <button class="lv-more" type="button" aria-label="More" onclick="lvCardMenu(event)">
-                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="4.5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19.5" cy="12" r="2"/></svg>
-                    </button>
-                </div>
-            </div>`;
+        html += lvcCardHTML(v, viewsId);
         db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
             const count = Object.keys(vSnap.val() || {}).length;
             const label = document.getElementById(viewsId);
             if (label) label.innerText = formatCount(count) + " Views";
         });
     });
-    html += '</div>';
     return html;
 }
 
@@ -5191,32 +5188,13 @@ function renderMovieWatchRecommendedFeed() {
     itemsToRender.forEach(v => {
         const viewsId = `rec-long-views-${v.id}`;
         if (v.userId) uniqueUserIds.add(v.userId);
-        html += `
-            <div class="wp-card long-video-feed-card" onclick="openMoviePage('${v.id}', false)">
-                <div class="wp-thumb long-video-thumb-container">
-                    <img src="${v.poster}" loading="lazy" alt="">
-                    <span class="wp-dur long-video-duration">${v.duration || '10:00'}</span>
-                </div>
-                <div class="wp-row long-video-details">
-                    <div class="wp-ch live-avatar-${v.userId}"></div>
-                    <div class="wp-txt long-video-meta-text">
-                        <h4 class="long-video-title">${escapeHTML(v.title)}</h4>
-                        <div class="wp-sub2 long-video-subtitle">
-                            <span class="live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
-                            <span class="wp-v"><i class="fas fa-play"></i><span id="${viewsId}">0</span></span>
-                            <span>${getRelativeTime(v.createdAt)}</span>
-                        </div>
-                    </div>
-                    <button class="wp-dots" onclick="event.stopPropagation(); typeof showUpcomingModal==='function' && showUpcomingModal();" aria-label="More"><i class="fas fa-ellipsis-h"></i></button>
-                </div>
-            </div>
-        `;
+        html += lvcCardHTML(v, viewsId);
 
         if (navigator.onLine) {
             db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
                 const count = Object.keys(vSnap.val() || {}).length;
                 const label = document.getElementById(viewsId);
-                if (label) label.innerText = formatCount(count);
+                if (label) label.innerText = formatCount(count) + " Views";
             });
         }
     });

@@ -319,6 +319,42 @@
         @media (prefers-reduced-motion: reduce) { #auth-screen .au-view.active { animation: none; } }
         @keyframes scaleFadeIn { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
 
+
+/* ===== Email verification (4-digit code) ===== */
+        #au-verify { background: #FDFCF8; align-items: center; justify-content: center; padding: 20px 16px; box-sizing: border-box; overflow-y: auto; }
+        #au-verify .vf-back { position: absolute; left: 20px; top: calc(env(safe-area-inset-top, 0px) + 20px); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: none; border: 0; color: #111; cursor: pointer; }
+        #au-verify .vf-back svg { width: 22px; height: 22px; }
+        #au-verify .vf-card { width: 100%; max-width: 380px; background: #fff; border-radius: 34px; padding: 26px 22px 28px; box-sizing: border-box; box-shadow: 0 10px 40px rgba(60,40,20,.07); display: flex; flex-direction: column; align-items: center; text-align: center; }
+        #au-verify .vf-icon { width: 86px; height: 86px; border-radius: 50%; background: #FCE8B2; display: flex; align-items: center; justify-content: center; margin-top: 4px; }
+        #au-verify .vf-icon svg { width: 42px; height: 42px; color: #1E2530; }
+        #au-verify h2 { margin: 22px 0 0; font-size: 1.45rem; font-weight: 800; color: #0B0B0B; letter-spacing: -.4px; }
+        #au-verify .vf-sub { margin: 18px 0 0; font-size: 1rem; line-height: 1.5; color: #555; font-weight: 500; word-break: break-all; }
+        #au-verify .vf-boxes { margin-top: 28px; display: flex; gap: 12px; justify-content: center; }
+        #au-verify .vf-box { width: 56px; height: 60px; border: 1.5px solid #DADADF; border-radius: 14px; background: #fff; text-align: center; font: 700 1.5rem 'Plus Jakarta Sans', sans-serif; color: #111; outline: none; padding: 0; box-sizing: border-box; -webkit-user-select: text; user-select: text; caret-color: #5B8DEF; transition: border-color .15s ease, box-shadow .15s ease; }
+        #au-verify .vf-box:focus { border-color: #5B8DEF; box-shadow: 0 0 0 3px rgba(91,141,239,.15); }
+        #au-verify .vf-boxes.err .vf-box { border-color: #FF3B3B; color: #F00; box-shadow: none; }
+        #au-verify .vf-error { margin: 10px 0 0; font-size: .92rem; font-weight: 500; color: #F00; line-height: 1.4; }
+        #au-verify .vf-error:empty { display: none; }
+        #au-verify .vf-btn { width: 100%; height: 58px; margin-top: 24px; border: 0; border-radius: 999px; background: #FF3F7F; color: #fff; font: 700 1.05rem 'Plus Jakarta Sans', sans-serif; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .15s ease, opacity .2s ease; }
+        #au-verify .vf-btn:active { transform: scale(.98); }
+        #au-verify .vf-btn[disabled] { opacity: .6; pointer-events: none; }
+        #au-verify .vf-help { margin: 26px 0 0; font-size: .95rem; line-height: 1.45; color: #555; font-weight: 500; max-width: 260px; }
+        #au-verify .vf-resend { margin-top: 18px; background: none; border: 0; padding: 6px 10px; font: 700 .98rem 'Plus Jakarta Sans', sans-serif; color: #FF1F6B; cursor: pointer; }
+        #au-verify .vf-resend[disabled] { color: #C9A3B3; cursor: default; }
+        #au-verify .vf-seal { width: 150px; height: 150px; margin-top: 6px; }
+        #au-verify .vf-ok-title { margin: 22px 0 0; font-size: 2rem; font-weight: 800; color: #000; letter-spacing: -.6px; }
+        #au-verify .vf-ok-sub { margin: 12px 0 0; font-size: 1.15rem; color: #777; font-weight: 500; }
+        #au-verify .vf-hr { width: 100%; height: 1px; background: #ECECEF; margin: 26px 0 16px; }
+        #au-verify .vf-legal { display: flex; align-items: center; gap: 14px; }
+        #au-verify .vf-legal button { background: none; border: 0; padding: 4px 2px; font: 500 .88rem 'Plus Jakarta Sans', sans-serif; color: #555; cursor: pointer; }
+        #au-verify .vf-legal i { width: 1.5px; height: 16px; background: #555; display: block; }
+        #vf-legal-page { position: fixed; inset: 0; z-index: 100000; background: #fff; display: none; flex-direction: column; }
+        #vf-legal-page.open { display: flex; }
+        #vf-legal-page .vf-lbar { height: 54px; padding: env(safe-area-inset-top, 0px) 8px 0; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid #ECECEF; flex: 0 0 auto; box-sizing: content-box; }
+        #vf-legal-page .vf-lbar button { background: none; border: 0; height: 44px; padding: 0 12px; color: #111; font: 600 .9rem 'Plus Jakarta Sans', sans-serif; cursor: pointer; }
+        #vf-legal-page .vf-lbar b { flex: 1; font: 700 1rem 'Plus Jakarta Sans', sans-serif; color: #111; text-align: center; }
+        #vf-legal-page iframe { flex: 1 1 auto; width: 100%; border: 0; }
+
 /* App Layout & Header Spacing */
         #app-screen { display: none; position: relative; }
         header { 
@@ -1638,6 +1674,41 @@
 </div>
 </div>
 
+
+<!-- 4) EMAIL VERIFICATION -->
+<div class="au-view" id="au-verify">
+<button class="vf-back" type="button" onclick="vfBack()" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+
+<div class="vf-card" id="vf-card-code">
+<div class="vf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3.5 7.5l8.5 6 8.5-6"/></svg></div>
+<h2>Enter verification code</h2>
+<p class="vf-sub">We’ve sent a code to<br><span id="vf-email"></span></p>
+<div class="vf-boxes" id="vf-boxes">
+<input class="vf-box" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" aria-label="Digit 1">
+<input class="vf-box" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 2">
+<input class="vf-box" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 3">
+<input class="vf-box" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 4">
+</div>
+<p class="vf-error" id="vf-error"></p>
+<button class="vf-btn" id="vf-submit" type="button" onclick="vfSubmit()">Submit code</button>
+<p class="vf-help">Experiencing issues receiving the code?</p>
+<button class="vf-resend" id="vf-resend" type="button" onclick="vfResend()">Resend code</button>
+</div>
+
+<div class="vf-card" id="vf-card-success" style="display:none">
+<svg class="vf-seal" viewBox="0 0 100 100" aria-hidden="true"><polygon points="50.0,4.0 60.1,12.3 73.0,10.2 77.6,22.4 89.8,27.0 87.7,39.9 96.0,50.0 87.7,60.1 89.8,73.0 77.6,77.6 73.0,89.8 60.1,87.7 50.0,96.0 39.9,87.7 27.0,89.8 22.4,77.6 10.2,73.0 12.3,60.1 4.0,50.0 12.3,39.9 10.2,27.0 22.4,22.4 27.0,10.2 39.9,12.3" fill="#3CC47C" stroke="#3CC47C" stroke-width="7" stroke-linejoin="round"/><path d="M30 52l13 13 27-29" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<div class="vf-ok-title">Success!</div>
+<p class="vf-ok-sub">You are now logged in</p>
+<button class="vf-btn" type="button" onclick="vfContinue()" style="margin-top:34px">Continue</button>
+<div class="vf-hr"></div>
+<div class="vf-legal"><button type="button" onclick="vfOpenLegal('https://flaynity-website.pages.dev/Flaynity-Terms-of-Service','Terms of Service')">Terms of Service</button><i></i><button type="button" onclick="vfOpenLegal('https://flaynity-website.pages.dev/Flaynity-Privacy-Policy','Privacy Policy')">Privacy Policy</button></div>
+</div>
+</div>
+
+</div>
+<div id="vf-legal-page">
+<div class="vf-lbar"><button type="button" onclick="vfCloseLegal()">&#8592; Back</button><b id="vf-legal-title"></b><button type="button" onclick="vfLegalExternal()">Open</button></div>
+<iframe id="vf-legal-frame" title="Legal"></iframe>
 </div>
 <header>
 <div class="brand" id="brand-appbar">
@@ -1937,4 +2008,4 @@
 <span class="nav-label">You</span>
 </div>
 </div>
-</body></html>
+</body></html

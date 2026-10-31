@@ -1279,10 +1279,12 @@ function enforceContentAdminStatus(items, type) {
     return allowed;
 }
 
-auth.onAuthStateChanged(async (user) => {
+auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
     try {
         clearUserStatusListener();
         detachAdminControlListener();
+        // New email sign-ups must finish the 4-digit code step before entering the app.
+        if (user && window.vfGate && window.vfGate(user)) return;
         if (!user) {
             cleanupUserSessionData();
             document.body.classList.add('auth-active');
@@ -1538,16 +1540,227 @@ window.authEmailSignup = async function () {
     authSetBusy('au-signup-btn', true, 'Get Started');
     try {
         await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+        // Hold the app back: the verification page opens instead of the home screen.
+        try { localStorage.setItem('flaynity-verify-pending', 'pending'); localStorage.removeItem('flaynity-verify-sent'); } catch (e) {}
         const result = await auth.createUserWithEmailAndPassword(email, pass);
         try { await result.user.updateProfile({ displayName: name }); } catch (e) {}
         saveAccountToList(result.user);
-        showNotification('Account created successfully!', 'success');
+        window.vfBegin(result.user);
     } catch (err) {
+        try { localStorage.removeItem('flaynity-verify-pending'); } catch (e) {}
         showNotification(authFriendlyError(err), 'error');
     } finally {
         authSetBusy('au-signup-btn', false, 'Get Started');
     }
 };
+
+
+// =========================================================
+// EMAIL VERIFICATION — 4-digit code (valid 60s, resend cooldown 60s)
+// Backend: Firebase Cloud Functions `sendEmailCode` + `verifyEmailCode`
+// =========================================================
+(function () {
+    const KEY = 'flaynity-verify-pending';
+    const SENT_KEY = 'flaynity-verify-sent';
+    const COOLDOWN = 60; // seconds
+    let timer = null, busy = false, retryMode = false, done = false;
+
+    const $ = (id) => document.getElementById(id);
+    const boxes = () => Array.from(document.querySelectorAll('#vf-boxes .vf-box'));
+    const ls = {
+        get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+        set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
+        del: (k) => { try { localStorage.removeItem(k); } catch (e) {} }
+    };
+    const fn = (name) => firebase.functions().httpsCallable(name);
+
+    function setError(msg) {
+        $('vf-error').textContent = msg || '';
+        $('vf-boxes').classList.toggle('err', !!msg);
+    }
+    function setRetry(on) {
+        retryMode = on;
+        $('vf-submit').textContent = on ? 'Try Again' : 'Submit code';
+    }
+    function clearBoxes(focus) {
+        boxes().forEach(b => { b.value = ''; });
+        if (focus) { const f = boxes()[0]; if (f) f.focus(); }
+    }
+    function readCode() { return boxes().map(b => b.value).join(''); }
+
+    function remaining() {
+        const t = parseInt(ls.get(SENT_KEY) || '0', 10);
+        if (!t) return 0;
+        return Math.max(0, COOLDOWN - Math.floor((Date.now() - t) / 1000));
+    }
+    function paintResend() {
+        const btn = $('vf-resend');
+        if (!btn) return;
+        const r = remaining();
+        if (r > 0) {
+            btn.disabled = true;
+            btn.textContent = 'Resend code in ' + Math.floor(r / 60) + ':' + String(r % 60).padStart(2, '0');
+        } else {
+            btn.disabled = false;
+            btn.textContent = 'Resend code';
+            if (timer) { clearInterval(timer); timer = null; }
+        }
+    }
+    function startTimer() {
+        if (timer) clearInterval(timer);
+        paintResend();
+        if (remaining() > 0) timer = setInterval(paintResend, 500);
+    }
+
+    function showCard(which) {
+        $('vf-card-code').style.display = which === 'code' ? 'flex' : 'none';
+        $('vf-card-success').style.display = which === 'success' ? 'flex' : 'none';
+        $('au-verify').querySelector('.vf-back').style.display = which === 'code' ? 'flex' : 'none';
+    }
+
+    function showView(user) {
+        document.body.classList.add('auth-active');
+        const appScr = $('app-screen'); if (appScr) appScr.style.display = 'none';
+        try { if (typeof window.__flaynityHideOnboarding === 'function') window.__flaynityHideOnboarding(); } catch (e) {}
+        const authScr = $('auth-screen'); if (authScr) authScr.style.display = 'flex';
+        ['au-welcome', 'au-login', 'au-signup'].forEach(id => { const el = $(id); if (el) el.classList.remove('active'); });
+        const v = $('au-verify');
+        if (!v.classList.contains('active')) v.classList.add('active');
+        $('vf-email').textContent = (user && user.email) || '';
+        if (!done) {
+            showCard('code');
+            startTimer();
+            setTimeout(() => { const f = boxes()[0]; if (f && !readCode()) f.focus(); }, 380);
+        }
+    }
+
+    // Called by onAuthStateChanged: true => hold the app back and show the code page.
+    window.vfGate = function (user) {
+        let v = ls.get(KEY);
+        if (v === 'pending') { ls.set(KEY, user.uid); v = user.uid; }
+        if (!v || v !== user.uid) return false;
+        showView(user);
+        return true;
+    };
+
+    async function sendCode(isResend) {
+        try {
+            await fn('sendEmailCode')({});
+            ls.set(SENT_KEY, String(Date.now()));
+            startTimer();
+            if (isResend) showNotification('A new code has been sent.', 'success');
+        } catch (err) {
+            const m = (err && err.message) || 'Could not send the code.';
+            if (err && err.code === 'functions/resource-exhausted') {
+                ls.set(SENT_KEY, String(Date.now()));
+                startTimer();
+            }
+            showNotification(m, 'error', 3500);
+        }
+    }
+
+    window.vfBegin = async function (user) {
+        done = false; setError(''); setRetry(false); clearBoxes(false);
+        if (ls.get(KEY) === 'pending') ls.set(KEY, user.uid);
+        showView(user);
+        await sendCode(false);
+    };
+
+    window.vfResend = async function () {
+        if (remaining() > 0 || busy) return;
+        try { playUI('click'); } catch (e) {}
+        setError(''); setRetry(false); clearBoxes(true);
+        busy = true;
+        await sendCode(true);
+        busy = false;
+    };
+
+    window.vfSubmit = async function () {
+        try { playUI('click'); } catch (e) {}
+        if (retryMode) { setError(''); setRetry(false); clearBoxes(true); return; }
+        if (busy) return;
+        const code = readCode();
+        if (code.length < 4) { setError('Please enter the 4-digit code.'); setRetry(true); return; }
+        busy = true;
+        const btn = $('vf-submit'); btn.disabled = true; btn.textContent = 'Please wait...';
+        try {
+            await fn('verifyEmailCode')({ code });
+            done = true;
+            ls.del(KEY); ls.del(SENT_KEY);
+            if (timer) { clearInterval(timer); timer = null; }
+            try { if (auth.currentUser) await auth.currentUser.reload(); } catch (e) {}
+            showCard('success');
+        } catch (err) {
+            setError((err && err.message) || 'The code you entered is incorrect. Please try again.');
+            setRetry(true);
+        } finally {
+            busy = false; btn.disabled = false;
+            btn.textContent = retryMode ? 'Try Again' : 'Submit code';
+        }
+    };
+
+    window.vfContinue = function () {
+        try { playUI('click'); } catch (e) {}
+        const v = $('au-verify'); if (v) v.classList.remove('active');
+        done = false;
+        if (typeof window.__flaynityAuthHandler === 'function' && auth.currentUser) {
+            window.__flaynityAuthHandler(auth.currentUser);
+        } else { location.reload(); }
+    };
+
+    // Back arrow: cancel sign-up (the unverified account is removed so the email can be reused).
+    window.vfBack = async function () {
+        try { playUI('click'); } catch (e) {}
+        const user = auth.currentUser;
+        ls.del(KEY); ls.del(SENT_KEY);
+        if (timer) { clearInterval(timer); timer = null; }
+        try { if (user) await user.delete(); } catch (e) { try { await auth.signOut(); } catch (e2) {} }
+        $('au-verify').classList.remove('active');
+        setError(''); setRetry(false); clearBoxes(false);
+        if (typeof window.authShowView === 'function') window.authShowView('signup', true);
+    };
+
+    // Terms / Privacy
+    let legalUrl = '';
+    window.vfOpenLegal = function (url, title) {
+        legalUrl = url;
+        $('vf-legal-title').textContent = title;
+        $('vf-legal-frame').src = url;
+        $('vf-legal-page').classList.add('open');
+    };
+    window.vfCloseLegal = function () {
+        $('vf-legal-page').classList.remove('open');
+        $('vf-legal-frame').src = 'about:blank';
+    };
+    window.vfLegalExternal = function () { try { window.open(legalUrl, '_blank'); } catch (e) { location.href = legalUrl; } };
+
+    // Digit boxes: type, backspace, paste
+    document.addEventListener('input', function (e) {
+        const t = e.target;
+        if (!t || !t.classList || !t.classList.contains('vf-box')) return;
+        t.value = (t.value || '').replace(/\D/g, '').slice(-1);
+        if ($('vf-boxes').classList.contains('err') && !retryMode) setError('');
+        const list = boxes(), i = list.indexOf(t);
+        if (t.value && i < list.length - 1) list[i + 1].focus();
+    });
+    document.addEventListener('keydown', function (e) {
+        const t = e.target;
+        if (!t || !t.classList || !t.classList.contains('vf-box')) return;
+        const list = boxes(), i = list.indexOf(t);
+        if (e.key === 'Backspace' && !t.value && i > 0) { list[i - 1].focus(); list[i - 1].value = ''; }
+        if (e.key === 'Enter') window.vfSubmit();
+    });
+    document.addEventListener('paste', function (e) {
+        const t = e.target;
+        if (!t || !t.classList || !t.classList.contains('vf-box')) return;
+        const text = ((e.clipboardData || window.clipboardData).getData('text') || '').replace(/\D/g, '').slice(0, 4);
+        if (!text) return;
+        e.preventDefault();
+        const list = boxes();
+        text.split('').forEach((d, k) => { if (list[k]) list[k].value = d; });
+        list[Math.min(text.length, list.length - 1)].focus();
+    });
+})();
 
 window.authForgotPassword = async function () {
     playUI('click');

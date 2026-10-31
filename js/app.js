@@ -313,10 +313,10 @@ function __flaynityReady(fn) {
 function getHomeSkeletonHTML() {
     return `
         <div class="offline-home-skeleton">
-            <div class="offline-video-skeleton">
-                <div class="skel-box" style="width:100%; aspect-ratio:16/9; border-radius:16px;"></div>
+            <div class="offline-video-skeleton lv-skel-card">
+                <div class="skel-box" style="width:100%; aspect-ratio:16/9; border-radius:28px;"></div>
                 <div class="offline-video-meta">
-                    <div class="skel-box" style="width:40px; height:40px; border-radius:50%; flex-shrink:0;"></div>
+                    <div class="skel-box" style="width:9.1vw; height:9.1vw; border-radius:50%; flex-shrink:0;"></div>
                     <div class="offline-video-lines">
                         <div class="skel-box" style="width:85%; height:16px; border-radius:4px;"></div>
                         <div class="skel-box" style="width:50%; height:12px; border-radius:4px;"></div>
@@ -344,10 +344,10 @@ function getHomeSkeletonHTML() {
                 </div>
             </div>
 
-            <div class="offline-video-skeleton" style="margin-top:8px;">
-                <div class="skel-box" style="width:100%; aspect-ratio:16/9; border-radius:16px;"></div>
+            <div class="offline-video-skeleton lv-skel-card" style="margin-top:8px;">
+                <div class="skel-box" style="width:100%; aspect-ratio:16/9; border-radius:28px;"></div>
                 <div class="offline-video-meta">
-                    <div class="skel-box" style="width:40px; height:40px; border-radius:50%; flex-shrink:0;"></div>
+                    <div class="skel-box" style="width:9.1vw; height:9.1vw; border-radius:50%; flex-shrink:0;"></div>
                     <div class="offline-video-lines">
                         <div class="skel-box" style="width:75%; height:16px; border-radius:4px;"></div>
                         <div class="skel-box" style="width:45%; height:12px; border-radius:4px;"></div>
@@ -2564,29 +2564,37 @@ function renderFeelsSegmentUI(segmentFeels) {
     return html;
 }
 
+function lvCardMenu(e) {
+    // 3-dots button: must not open the video page
+    if (e) { e.stopPropagation(); e.preventDefault(); }
+    try { playUI('click'); } catch (err) {}
+    showUpcomingModal();
+}
+
 function renderLongVideosSegmentUI(segmentLongs) {
     if (!segmentLongs || segmentLongs.length === 0) return '';
-    let html = '';
+    let html = '<div class="lv-section">';
     segmentLongs.forEach(v => {
         const viewsId = `home-long-views-${v.id}`;
         const relTime = getRelativeTime(v.createdAt);
-        const avatarHtml = `<div class="live-avatar-${v.userId}" style="width:36px;height:36px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></div>`;
         html += `
-            <div class="long-video-feed-card" onclick="openMoviePage('${v.id}', false)" style="margin:0 -16px 8px -16px;width:calc(100% + 32px);cursor:pointer;background:var(--surface);border-radius:0;overflow:hidden;">
-                <div class="long-video-thumb-container" style="position:relative;width:100%;aspect-ratio:16/9;background:#0F0F0F;overflow:hidden;border-radius:0;">
-                    <img src="${v.poster}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;">
-                    <span style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.85);color:#fff;font-size:0.72rem;padding:2px 6px;border-radius:4px;font-weight:800;">${v.duration || '10:00'}</span>
+            <div class="long-video-feed-card lv-card" onclick="openMoviePage('${v.id}', false)">
+                <div class="lv-thumb">
+                    <img src="${v.poster}" loading="lazy" alt="">
                 </div>
-                <div style="padding:14px 16px;display:flex;gap:12px;">
-                    ${avatarHtml}
-                    <div style="flex-grow:1;min-width:0;">
-                        <h4 class="long-video-title" style="font-size:0.95rem;font-weight:800;color:var(--text-main);margin:0 0 4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHTML(v.title)}</h4>
-                        <div style="font-size:0.8rem;color:var(--text-muted);font-weight:600;display:flex;flex-wrap:wrap;align-items:center;gap:4px;">
-                            <span class="live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
-                            <span>•</span><span id="${viewsId}">0 Views</span>
-                            <span>•</span><span>${relTime}</span>
+                <div class="lv-info">
+                    <div class="lv-avatar live-avatar-${v.userId}"></div>
+                    <div class="lv-text">
+                        <h4 class="long-video-title lv-title">${escapeHTML(v.title)}</h4>
+                        <div class="lv-sub">
+                            <span class="lv-ch live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
+                            <i class="lv-dot"></i><span id="${viewsId}">0 Views</span>
+                            <i class="lv-dot"></i><span>${relTime}</span>
                         </div>
                     </div>
+                    <button class="lv-more" type="button" aria-label="More" onclick="lvCardMenu(event)">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="4.5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19.5" cy="12" r="2"/></svg>
+                    </button>
                 </div>
             </div>`;
         db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
@@ -2595,6 +2603,7 @@ function renderLongVideosSegmentUI(segmentLongs) {
             if (label) label.innerText = formatCount(count) + " Views";
         });
     });
+    html += '</div>';
     return html;
 }
 

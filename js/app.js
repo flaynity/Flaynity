@@ -2581,6 +2581,8 @@ const FX_ICON = {
 function fxBuildLongVideoCard(v) {
     const id = String(v.id);
     const uid = v.userId || '';
+    // Same reaction system as Community Posts (hold the like button => emoji picker).
+    setTimeout(() => { try { registerPostReactionsListener(id); } catch (e) {} }, 0);
     return `
         <div class="fx-card long-video-feed-card" onclick="openMoviePage('${id}', false)">
             <div class="fx-thumb long-video-thumb-container">
@@ -2602,9 +2604,23 @@ function fxBuildLongVideoCard(v) {
                     <span class="fx-stat">${FX_ICON.clock}<span>${getRelativeTime(v.createdAt)}</span></span>
                 </div>
                 <div class="fx-actions">
-                    <button class="fx-act" data-fx-like="${id}" aria-label="Like" onclick="event.stopPropagation(); fxToggleLike('${id}')">${FX_ICON.heart}<span data-fx-likes="${id}">0</span></button>
-                    <button class="fx-act" aria-label="Comments" onclick="event.stopPropagation(); openMoviePage('${id}', false)">${FX_ICON.chat}<span data-fx-comments="${id}">0</span></button>
-                    <button class="fx-act" aria-label="Share" onclick="event.stopPropagation(); fxShareVideo('${id}')">${FX_ICON.share}<span>Share</span></button>
+                    <div class="fx-act">
+                        <button id="post-love-btn-${id}" class="fx-ico post-action-btn-fb"
+                                onmousedown="startReactionTimer('${id}', event)"
+                                ontouchstart="startReactionTimer('${id}', event)"
+                                onmouseup="clearReactionTimer('${id}', event)"
+                                ontouchend="clearReactionTimer('${id}', event)"
+                                onclick="event.stopPropagation(); handleLoveSingleClick('${id}')" aria-label="React">
+                            <span class="love-icon-element" id="love-icon-${id}">${FB_LIKE_SVG}</span>
+                        </button>
+                        <span id="love-text-${id}" style="display:none">Love</span>
+                        <span id="post-total-reactions-${id}" class="fx-count" onclick="event.stopPropagation(); openReactedPeoplePage('${id}')">0</span>
+                    </div>
+                    <div class="fx-act" onclick="event.stopPropagation(); openMoviePage('${id}', false)">
+                        <span class="fx-ico fx-chat">${FB_COMMENT_SVG}</span>
+                        <span id="post-total-comments-${id}" class="fx-count">0</span>
+                    </div>
+                    <span id="post-top-emojis-${id}" class="fx-badges" onclick="event.stopPropagation(); openReactedPeoplePage('${id}')"></span>
                     <button class="fx-watch" onclick="event.stopPropagation(); openMoviePage('${id}', false)">${FX_ICON.play}<span>Watch Now</span></button>
                 </div>
             </div>
@@ -2613,41 +2629,10 @@ function fxBuildLongVideoCard(v) {
 
 function fxLoadCardStats(id) {
     if (!navigator.onLine || typeof db === 'undefined') return;
-    const uid = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.uid : null;
-    const set = (attr, text) => document.querySelectorAll(`[${attr}="${id}"]`).forEach(el => { el.textContent = text; });
-    db.ref(`movie_stats/${id}/views`).once('value', s => set('data-fx-views', formatCount(Object.keys(s.val() || {}).length) + ' Views'));
-    db.ref(`movie_stats/${id}/likes`).once('value', s => {
-        const val = s.val() || {};
-        set('data-fx-likes', formatCount(Object.keys(val).length));
-        if (uid && val[uid]) document.querySelectorAll(`[data-fx-like="${id}"]`).forEach(b => b.classList.add('fx-liked'));
+    db.ref(`movie_stats/${id}/views`).once('value', s => {
+        const txt = formatCount(Object.keys(s.val() || {}).length) + ' Views';
+        document.querySelectorAll(`[data-fx-views="${id}"]`).forEach(el => { el.textContent = txt; });
     });
-    db.ref(`movie_comments/${id}`).once('value', s => set('data-fx-comments', formatCount(Object.keys(s.val() || {}).length)));
-}
-
-function fxToggleLike(id) {
-    if (typeof playUI === 'function') playUI('click');
-    if (typeof auth === 'undefined' || !auth.currentUser) { showNotification('Please sign in to Like', 'error'); return; }
-    const uid = auth.currentUser.uid;
-    const likeRef = db.ref(`movie_stats/${id}/likes/${uid}`);
-    const dislikeRef = db.ref(`movie_stats/${id}/dislikes/${uid}`);
-    likeRef.once('value', snap => {
-        const wasLiked = snap.exists();
-        const op = wasLiked ? likeRef.remove() : Promise.all([likeRef.set(true), dislikeRef.remove()]);
-        op.then(() => {
-            document.querySelectorAll(`[data-fx-like="${id}"]`).forEach(b => b.classList.toggle('fx-liked', !wasLiked));
-            db.ref(`movie_stats/${id}/likes`).once('value', s => {
-                document.querySelectorAll(`[data-fx-likes="${id}"]`).forEach(el => { el.textContent = formatCount(Object.keys(s.val() || {}).length); });
-            });
-        }).catch(() => showNotification('Like update failed. Please try again.', 'error'));
-    });
-}
-
-function fxShareVideo(id) {
-    if (typeof playUI === 'function') playUI('click');
-    const v = (typeof allLongVideos !== 'undefined') ? allLongVideos.find(x => String(x.id) === String(id)) : null;
-    const data = { title: (v && v.title) || 'Flaynity', text: (v && v.title) || 'Flaynity', url: location.href };
-    if (navigator.share) { navigator.share(data).catch(() => {}); }
-    else if (navigator.clipboard) { navigator.clipboard.writeText(location.href); if (typeof showNotification === 'function') showNotification('Link copied', 'success'); }
 }
 
 function renderLongVideosSegmentUI(segmentLongs) {
@@ -6981,6 +6966,8 @@ const _postReactionCache = {};
 function paintPostReactions(postId) {
     const c = _postReactionCache[postId];
     if (!c) return;
+    // Paint EVERY element carrying these ids (a video can be on Home and on the Watch page at once).
+    const all = (id) => document.querySelectorAll(`[id="${id}"]`);
 
     if (c.reactions) {
         const reactions = c.reactions;
@@ -6995,48 +6982,37 @@ function paintPostReactions(postId) {
             .sort((a, b) => reactionCounts[b] - reactionCounts[a])
             .slice(0, 3);
 
-        const topEmojisEl = document.getElementById(`post-top-emojis-${postId}`);
-        if (topEmojisEl) topEmojisEl.innerHTML = fbReactionBadgesHTML(sortedTypes);
+        const badgesHtml = fbReactionBadgesHTML(sortedTypes);
+        all(`post-top-emojis-${postId}`).forEach(el => { el.innerHTML = badgesHtml; });
+        all(`post-total-reactions-${postId}`).forEach(el => { el.innerText = formatCount(totalReactions); });
 
-        const totalReactionsEl = document.getElementById(`post-total-reactions-${postId}`);
-        if (totalReactionsEl) totalReactionsEl.innerText = formatCount(totalReactions);
-
-        const loveBtn = document.getElementById(`post-love-btn-${postId}`);
-        const loveIcon = document.getElementById(`love-icon-${postId}`);
-        const loveText = document.getElementById(`love-text-${postId}`);
-
-        if (loveBtn) {
-            const myReact = (auth.currentUser && reactions[auth.currentUser.uid]) || null;
-            if (myReact && myReact.type && fbRxSvg(myReact.type)) {
-                const type = myReact.type;
-                if (loveIcon) {
-                    loveIcon.className = 'love-icon-element';
-                    loveIcon.innerHTML = fbRxSvg(type);
-                    loveIcon.style.fontSize = '1.25rem';
-                }
-                if (loveText) {
-                    loveText.innerText = reactionLabels[type];
-                    loveText.style.color = reactionColors[type];
-                }
+        const myReact = (auth.currentUser && reactions[auth.currentUser.uid]) || null;
+        const hasMine = !!(myReact && myReact.type && fbRxSvg(myReact.type));
+        all(`love-icon-${postId}`).forEach(loveIcon => {
+            loveIcon.className = 'love-icon-element';
+            if (hasMine) {
+                loveIcon.innerHTML = fbRxSvg(myReact.type);
+                loveIcon.style.fontSize = '1.25rem';
             } else {
-                if (loveIcon) {
-                    loveIcon.className = 'love-icon-element';
-                    loveIcon.innerHTML = FB_LIKE_SVG;
-                    loveIcon.style.fontSize = '';
-                }
-                if (loveText) {
-                    loveText.innerText = 'Love';
-                    loveText.style.color = '';
-                }
+                loveIcon.innerHTML = FB_LIKE_SVG;
+                loveIcon.style.fontSize = '';
             }
-        }
+        });
+        all(`love-text-${postId}`).forEach(loveText => {
+            if (hasMine) {
+                loveText.innerText = reactionLabels[myReact.type];
+                loveText.style.color = reactionColors[myReact.type];
+            } else {
+                loveText.innerText = 'Love';
+                loveText.style.color = '';
+            }
+        });
     }
 
     if (typeof fbcmPaintHead === 'function') fbcmPaintHead(postId);
 
     if (c.commentCount !== undefined) {
-        const totalCommentsEl = document.getElementById(`post-total-comments-${postId}`);
-        if (totalCommentsEl) totalCommentsEl.innerText = formatCount(c.commentCount);
+        all(`post-total-comments-${postId}`).forEach(el => { el.innerText = formatCount(c.commentCount); });
     }
 }
 

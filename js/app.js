@@ -2564,42 +2564,98 @@ function renderFeelsSegmentUI(segmentFeels) {
     return html;
 }
 
-function lvcCardHTML(v, viewsId) {
+
+// =========================================================
+// PREMIUM LONG VIDEO CARD (shared by Home feed + Watch page related list)
+// =========================================================
+const FX_ICON = {
+    eye:   '<svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    clock: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    heart: '<svg viewBox="0 0 24 24"><path d="M12 20.5s-8-4.9-8-11A4.6 4.6 0 0 1 12 6.6a4.6 4.6 0 0 1 8 2.9c0 6.1-8 11-8 11z"/></svg>',
+    chat:  '<svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7A8.4 8.4 0 0 1 4 11.5 8.5 8.5 0 0 1 8.7 3.9 8.4 8.4 0 0 1 12.5 3h.5a8.5 8.5 0 0 1 8 8z"/></svg>',
+    share: '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.7l7.4-4.3M8.3 13.3l7.4 4.3"/></svg>',
+    dots:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19.5" r="2"/></svg>',
+    play:  '<svg viewBox="0 0 24 24"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.2-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>'
+};
+
+function fxBuildLongVideoCard(v) {
+    const id = String(v.id);
+    const uid = v.userId || '';
     return `
-            <div class="lvc long-video-feed-card" onclick="openMoviePage('${v.id}', false)">
-                <div class="lvc-thumb long-video-thumb-container">
-                    <img src="${v.poster}" loading="lazy" alt="">
-                    <span class="lvc-dur long-video-duration">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2.8v18.4c0 .8.9 1.3 1.6.9l15-9.2c.7-.4.7-1.4 0-1.8l-15-9.2C5.9 1.5 5 2 5 2.8z"/></svg>
-                        <span>${v.duration || '10:00'}</span>
-                    </span>
-                </div>
-                <div class="lvc-info long-video-details">
-                    <div class="lvc-av"><div class="live-avatar-${v.userId}"></div></div>
-                    <div class="lvc-txt long-video-meta-text">
-                        <h4 class="lvc-title long-video-title">${escapeHTML(v.title)}</h4>
-                        <div class="lvc-sub long-video-subtitle">
-                            <span class="lvc-ch live-username-${v.userId}">${escapeHTML(v.username || 'Flaynity User')}</span>
-                            <span class="lvc-sep"></span><span id="${viewsId}">0 Views</span>
-                            <span class="lvc-sep"></span><span>${getRelativeTime(v.createdAt)}</span>
-                        </div>
+        <div class="fx-card long-video-feed-card" onclick="openMoviePage('${id}', false)">
+            <div class="fx-thumb long-video-thumb-container">
+                <img src="${v.poster || ''}" loading="lazy" alt="" draggable="false">
+                <span class="fx-dur long-video-duration">${v.duration || '10:00'}</span>
+            </div>
+            <div class="fx-body">
+                <div class="fx-head">
+                    <div class="fx-av live-avatar-${uid}"></div>
+                    <div class="fx-txt">
+                        <h4 class="fx-title long-video-title">${escapeHTML(v.title || '')}</h4>
+                        <div class="fx-channel live-username-${uid}">${escapeHTML(v.username || 'Flaynity User')}</div>
                     </div>
-                    <button class="lvc-dots" aria-label="More" onclick="event.stopPropagation(); typeof showUpcomingModal==='function' && showUpcomingModal();"><i></i><i></i><i></i></button>
+                    <button class="fx-more" aria-label="More" onclick="event.stopPropagation(); typeof showUpcomingModal==='function' && showUpcomingModal();">${FX_ICON.dots}</button>
                 </div>
-            </div>`;
+                <div class="fx-stats">
+                    <span class="fx-stat">${FX_ICON.eye}<span data-fx-views="${id}">0 Views</span></span>
+                    <span class="fx-sep"></span>
+                    <span class="fx-stat">${FX_ICON.clock}<span>${getRelativeTime(v.createdAt)}</span></span>
+                </div>
+                <div class="fx-actions">
+                    <button class="fx-act" data-fx-like="${id}" aria-label="Like" onclick="event.stopPropagation(); fxToggleLike('${id}')">${FX_ICON.heart}<span data-fx-likes="${id}">0</span></button>
+                    <button class="fx-act" aria-label="Comments" onclick="event.stopPropagation(); openMoviePage('${id}', false)">${FX_ICON.chat}<span data-fx-comments="${id}">0</span></button>
+                    <button class="fx-act" aria-label="Share" onclick="event.stopPropagation(); fxShareVideo('${id}')">${FX_ICON.share}<span>Share</span></button>
+                    <button class="fx-watch" onclick="event.stopPropagation(); openMoviePage('${id}', false)">${FX_ICON.play}<span>Watch Now</span></button>
+                </div>
+            </div>
+        </div>`;
+}
+
+function fxLoadCardStats(id) {
+    if (!navigator.onLine || typeof db === 'undefined') return;
+    const uid = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.uid : null;
+    const set = (attr, text) => document.querySelectorAll(`[${attr}="${id}"]`).forEach(el => { el.textContent = text; });
+    db.ref(`movie_stats/${id}/views`).once('value', s => set('data-fx-views', formatCount(Object.keys(s.val() || {}).length) + ' Views'));
+    db.ref(`movie_stats/${id}/likes`).once('value', s => {
+        const val = s.val() || {};
+        set('data-fx-likes', formatCount(Object.keys(val).length));
+        if (uid && val[uid]) document.querySelectorAll(`[data-fx-like="${id}"]`).forEach(b => b.classList.add('fx-liked'));
+    });
+    db.ref(`movie_comments/${id}`).once('value', s => set('data-fx-comments', formatCount(Object.keys(s.val() || {}).length)));
+}
+
+function fxToggleLike(id) {
+    if (typeof playUI === 'function') playUI('click');
+    if (typeof auth === 'undefined' || !auth.currentUser) { showNotification('Please sign in to Like', 'error'); return; }
+    const uid = auth.currentUser.uid;
+    const likeRef = db.ref(`movie_stats/${id}/likes/${uid}`);
+    const dislikeRef = db.ref(`movie_stats/${id}/dislikes/${uid}`);
+    likeRef.once('value', snap => {
+        const wasLiked = snap.exists();
+        const op = wasLiked ? likeRef.remove() : Promise.all([likeRef.set(true), dislikeRef.remove()]);
+        op.then(() => {
+            document.querySelectorAll(`[data-fx-like="${id}"]`).forEach(b => b.classList.toggle('fx-liked', !wasLiked));
+            db.ref(`movie_stats/${id}/likes`).once('value', s => {
+                document.querySelectorAll(`[data-fx-likes="${id}"]`).forEach(el => { el.textContent = formatCount(Object.keys(s.val() || {}).length); });
+            });
+        }).catch(() => showNotification('Like update failed. Please try again.', 'error'));
+    });
+}
+
+function fxShareVideo(id) {
+    if (typeof playUI === 'function') playUI('click');
+    const v = (typeof allLongVideos !== 'undefined') ? allLongVideos.find(x => String(x.id) === String(id)) : null;
+    const data = { title: (v && v.title) || 'Flaynity', text: (v && v.title) || 'Flaynity', url: location.href };
+    if (navigator.share) { navigator.share(data).catch(() => {}); }
+    else if (navigator.clipboard) { navigator.clipboard.writeText(location.href); if (typeof showNotification === 'function') showNotification('Link copied', 'success'); }
 }
 
 function renderLongVideosSegmentUI(segmentLongs) {
     if (!segmentLongs || segmentLongs.length === 0) return '';
     let html = '';
     segmentLongs.forEach(v => {
-        const viewsId = `home-long-views-${v.id}`;
-        html += lvcCardHTML(v, viewsId);
-        db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
-            const count = Object.keys(vSnap.val() || {}).length;
-            const label = document.getElementById(viewsId);
-            if (label) label.innerText = formatCount(count) + " Views";
-        });
+        html += fxBuildLongVideoCard(v);
+        setTimeout(() => fxLoadCardStats(String(v.id)), 0);
     });
     return html;
 }
@@ -5186,20 +5242,12 @@ function renderMovieWatchRecommendedFeed() {
     let html = '';
 
     itemsToRender.forEach(v => {
-        const viewsId = `rec-long-views-${v.id}`;
         if (v.userId) uniqueUserIds.add(v.userId);
-        html += lvcCardHTML(v, viewsId);
-
-        if (navigator.onLine) {
-            db.ref(`movie_stats/${v.id}/views`).once('value', (vSnap) => {
-                const count = Object.keys(vSnap.val() || {}).length;
-                const label = document.getElementById(viewsId);
-                if (label) label.innerText = formatCount(count) + " Views";
-            });
-        }
+        html += fxBuildLongVideoCard(v);
     });
 
     container.innerHTML = html;
+    itemsToRender.forEach(v => fxLoadCardStats(String(v.id)));
     uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
 }
 

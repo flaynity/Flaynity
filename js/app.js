@@ -1541,7 +1541,7 @@ window.authEmailSignup = async function () {
     try {
         await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
         // Hold the app back: the verification page opens instead of the home screen.
-        try { localStorage.setItem('flaynity-verify-pending', 'pending'); localStorage.removeItem('flaynity-verify-sent'); } catch (e) {}
+        try { localStorage.setItem('flaynity-verify-pending', 'pending'); localStorage.removeItem('flaynity-verify-sent'); localStorage.removeItem('flaynity-verify-token'); } catch (e) {}
         const result = await auth.createUserWithEmailAndPassword(email, pass);
         try { await result.user.updateProfile({ displayName: name }); } catch (e) {}
         saveAccountToList(result.user);
@@ -1562,6 +1562,7 @@ window.authEmailSignup = async function () {
 (function () {
     const KEY = 'flaynity-verify-pending';
     const SENT_KEY = 'flaynity-verify-sent';
+    const TOKEN_KEY = 'flaynity-verify-token';
     const COOLDOWN = 60; // seconds
     let timer = null, busy = false, retryMode = false, done = false;
 
@@ -1572,7 +1573,24 @@ window.authEmailSignup = async function () {
         set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
         del: (k) => { try { localStorage.removeItem(k); } catch (e) {} }
     };
-    const fn = (name) => firebase.functions().httpsCallable(name);
+    // Cloudflare Worker URL (no trailing slash). Replace after deploying the worker.
+    const VF_API = 'https://flaynity-verify.flaynity.workers.dev';
+    const fn = (name) => async (data) => {
+        const user = auth.currentUser;
+        if (!user) { const e = new Error('Please sign in first.'); e.code = 'functions/unauthenticated'; throw e; }
+        const token = await user.getIdToken();
+        let res, j = {};
+        try {
+            res = await fetch(VF_API + '/' + name, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify(data || {})
+            });
+            j = await res.json().catch(() => ({}));
+        } catch (netErr) { const e = new Error('No internet connection.'); e.code = 'functions/unavailable'; throw e; }
+        if (!res.ok || j.ok === false) { const e = new Error(j.error || 'Something went wrong.'); e.code = 'functions/' + (j.code || 'error'); throw e; }
+        return j;
+    };
 
     function setError(msg) {
         $('vf-error').textContent = msg || '';
@@ -1645,7 +1663,8 @@ window.authEmailSignup = async function () {
 
     async function sendCode(isResend) {
         try {
-            await fn('sendEmailCode')({});
+            const sent = await fn('sendEmailCode')({ prev: ls.get(TOKEN_KEY) || '' });
+            ls.set(TOKEN_KEY, sent.token || '');
             ls.set(SENT_KEY, String(Date.now()));
             startTimer();
             if (isResend) showNotification('A new code has been sent.', 'success');
@@ -1684,9 +1703,9 @@ window.authEmailSignup = async function () {
         busy = true;
         const btn = $('vf-submit'); btn.disabled = true; btn.textContent = 'Please wait...';
         try {
-            await fn('verifyEmailCode')({ code });
+            await fn('verifyEmailCode')({ code, token: ls.get(TOKEN_KEY) || '' });
             done = true;
-            ls.del(KEY); ls.del(SENT_KEY);
+            ls.del(KEY); ls.del(SENT_KEY); ls.del(TOKEN_KEY);
             if (timer) { clearInterval(timer); timer = null; }
             try { if (auth.currentUser) await auth.currentUser.reload(); } catch (e) {}
             showCard('success');
@@ -1712,7 +1731,7 @@ window.authEmailSignup = async function () {
     window.vfBack = async function () {
         try { playUI('click'); } catch (e) {}
         const user = auth.currentUser;
-        ls.del(KEY); ls.del(SENT_KEY);
+        ls.del(KEY); ls.del(SENT_KEY); ls.del(TOKEN_KEY);
         if (timer) { clearInterval(timer); timer = null; }
         try { if (user) await user.delete(); } catch (e) { try { await auth.signOut(); } catch (e2) {} }
         $('au-verify').classList.remove('active');
@@ -10855,4 +10874,4 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
         observer.observe(document.body, { childList: true, subtree: true });
     }
     setTimeout(initAfterInjection, 0);
-})();
+})()

@@ -1675,6 +1675,7 @@ window.authEmailSignup = async function () {
                 startTimer();
             }
             showNotification(m, 'error', 3500);
+            if (!(err && err.code === 'functions/resource-exhausted')) $('vf-error').textContent = m;
         }
     }
 
@@ -10874,4 +10875,4 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
         observer.observe(document.body, { childList: true, subtree: true });
     }
     setTimeout(initAfterInjection, 0);
-})()
+})();

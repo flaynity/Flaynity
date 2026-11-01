@@ -2578,11 +2578,58 @@ const FX_ICON = {
     play:  '<svg viewBox="0 0 24 24"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.2-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>'
 };
 
+// Title: 25 characters per line, max 2 lines ("…" at the end if longer).
+function fxTitleTwoLines(title) {
+    const W = 25;
+    const t = Array.from(String(title || '').replace(/\s+/g, ' ').trim());
+    if (t.length <= W) return t.join('');
+    let cut = t.slice(0, W + 1).lastIndexOf(' ');
+    if (cut < Math.floor(W * 0.5)) cut = W;
+    const line1 = t.slice(0, cut).join('').trim();
+    let rest = t.slice(cut);
+    while (rest.length && rest[0] === ' ') rest.shift();
+    if (rest.length > W) rest = rest.slice(0, W - 1).concat(['…']);
+    return line1 + '\n' + rest.join('').trim();
+}
+
+// Dislike (per video). Live state is shared by every card of the same video (Home + Watch page).
+const _fxDislikeCache = {};
+const _fxDislikeBound = {};
+function fxPaintDislike(id) {
+    const mine = !!(typeof auth !== 'undefined' && auth.currentUser && _fxDislikeCache[id] && _fxDislikeCache[id][auth.currentUser.uid]);
+    document.querySelectorAll(`[data-fx-dislike="${id}"]`).forEach(b => b.classList.toggle('fx-on', mine));
+}
+function fxListenDislike(id) {
+    if (_fxDislikeBound[id]) { fxPaintDislike(id); return; }
+    if (typeof db === 'undefined') return;
+    _fxDislikeBound[id] = true;
+    db.ref(`movie_stats/${id}/dislikes`).on('value', snap => {
+        _fxDislikeCache[id] = snap.val() || {};
+        fxPaintDislike(id);
+    });
+}
+try { auth.onAuthStateChanged(() => Object.keys(_fxDislikeCache).forEach(fxPaintDislike)); } catch (e) {}
+
+function fxToggleDislike(id) {
+    if (typeof playUI === 'function') playUI('click');
+    if (typeof auth === 'undefined' || !auth.currentUser) { showNotification('Please sign in to Dislike', 'error'); return; }
+    if (!navigator.onLine) { showNotification('Cannot dislike while offline.', 'error'); return; }
+    const uid = auth.currentUser.uid;
+    const dRef = db.ref(`movie_stats/${id}/dislikes/${uid}`);
+    dRef.once('value', snap => {
+        if (snap.exists()) {
+            dRef.remove();
+        } else {
+            dRef.set(true).then(() => db.ref(`post_reactions/${id}/${uid}`).remove()).catch(() => {});
+        }
+    });
+}
+
 function fxBuildLongVideoCard(v) {
     const id = String(v.id);
     const uid = v.userId || '';
     // Same reaction system as Community Posts (hold the like button => emoji picker).
-    setTimeout(() => { try { registerPostReactionsListener(id); } catch (e) {} }, 0);
+    setTimeout(() => { try { registerPostReactionsListener(id); fxListenDislike(id); } catch (e) {} }, 0);
     return `
         <div class="fx-card long-video-feed-card" onclick="openMoviePage('${id}', false)">
             <div class="fx-thumb long-video-thumb-container">
@@ -2593,7 +2640,7 @@ function fxBuildLongVideoCard(v) {
                 <div class="fx-head">
                     <div class="fx-av live-avatar-${uid}"></div>
                     <div class="fx-txt">
-                        <h4 class="fx-title long-video-title">${escapeHTML(v.title || '')}</h4>
+                        <h4 class="fx-title long-video-title">${escapeHTML(fxTitleTwoLines(v.title))}</h4>
                         <div class="fx-channel live-username-${uid}">${escapeHTML(v.username || 'Flaynity User')}</div>
                     </div>
                     <button class="fx-more" aria-label="More" onclick="event.stopPropagation(); typeof showUpcomingModal==='function' && showUpcomingModal();">${FX_ICON.dots}</button>
@@ -2616,9 +2663,11 @@ function fxBuildLongVideoCard(v) {
                         <span id="love-text-${id}" style="display:none">Love</span>
                         <span id="post-total-reactions-${id}" class="fx-count" onclick="event.stopPropagation(); openReactedPeoplePage('${id}')">0</span>
                     </div>
-                    <div class="fx-act" onclick="event.stopPropagation(); openMoviePage('${id}', false)">
-                        <span class="fx-ico fx-chat">${FB_COMMENT_SVG}</span>
-                        <span id="post-total-comments-${id}" class="fx-count">0</span>
+                    <div class="fx-act">
+                        <button class="fx-ico fx-dislike" data-fx-dislike="${id}" aria-label="Dislike"
+                                onclick="event.stopPropagation(); fxToggleDislike('${id}')">
+                            <span class="love-icon-element">${FB_LIKE_SVG}</span>
+                        </button>
                     </div>
                     <span id="post-top-emojis-${id}" class="fx-badges" onclick="event.stopPropagation(); openReactedPeoplePage('${id}')"></span>
                     <button class="fx-watch" onclick="event.stopPropagation(); openMoviePage('${id}', false)">${FX_ICON.play}<span>Watch Now</span></button>
@@ -6939,6 +6988,7 @@ async function submitPostReaction(postId, type) {
         avatar: avatar,
         timestamp: Date.now()
     });
+    try { db.ref(`movie_stats/${postId}/dislikes/${userId}`).remove().catch(() => {}); } catch (e) {}
 
     triggerFloatingReaction(type);
 }

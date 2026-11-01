@@ -3015,7 +3015,7 @@ function fxPaintPlayLikes(id) {
     const n = formatCount(set.size);
     const likesEl = document.getElementById('movie-detail-likes');
     const countEl = document.getElementById('movie-like-count');
-    if (likesEl) likesEl.innerText = n + ' Likes';
+    if (likesEl) likesEl.innerText = n + ' likes';
     if (countEl) countEl.innerText = n;
     const uid = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.uid : null;
     const silent = !_fxPlayLikeInit[id];
@@ -4914,6 +4914,7 @@ async function openMoviePage(id, isTMDB = false) {
     if (bannerImg) bannerImg.src = currentActiveMovie.banner;
     if (titleEl) titleEl.innerText = currentActiveMovie.title;
     if (handleEl) handleEl.innerText = currentActiveMovie.username ? "@" + currentActiveMovie.username : "@flaynity";
+    const _vb = document.getElementById('movie-verified-badge'); if (_vb) _vb.style.display = 'none';
 
     // Show the watch page before starting playback. Android WebView can reject
     // autoplay/play() when the video element is still inside a display:none page.
@@ -4997,6 +4998,21 @@ function extractVideoID(url) {
     return (match && match[2].length === 11) ? match[2] : null;
 }
 
+// Short YouTube-style relative time for the watch page ("5h ago", "6mo ago").
+function wpShortTime(timestamp) {
+    const diff = Date.now() - new Date(timestamp).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (!(mins >= 1)) return "just now";
+    if (mins < 60) return mins + "m ago";
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return hours + "h ago";
+    const days = Math.floor(hours / 24);
+    if (days < 7) return days + "d ago";
+    if (days < 30) return Math.floor(days / 7) + "w ago";
+    if (days < 365) return Math.floor(days / 30) + "mo ago";
+    return Math.floor(days / 365) + "y ago";
+}
+
 function registerViewAndListen(movieId) {
     const userId = auth.currentUser ? auth.currentUser.uid : 'anonymous';
     
@@ -5004,9 +5020,9 @@ function registerViewAndListen(movieId) {
         db.ref(`movie_stats/${movieId}/views/${userId}`).set(true);
     }
 
-    let uploadTimeText = "Just Now"; 
+    let uploadTimeText = "just now"; 
     if (currentActiveMovie && currentActiveMovie.createdAt) {
-        uploadTimeText = getRelativeTime(currentActiveMovie.createdAt);
+        uploadTimeText = wpShortTime(currentActiveMovie.createdAt);
     }
     const timeEl = document.getElementById('movie-detail-upload-time');
     if (timeEl) timeEl.innerText = uploadTimeText;
@@ -5026,7 +5042,7 @@ function registerViewAndListen(movieId) {
 
         const viewsEl = document.getElementById('movie-detail-views');
 
-        if (viewsEl) viewsEl.innerText = formatCount(totalViews) + " Views";
+        if (viewsEl) viewsEl.innerText = formatCount(totalViews) + " views";
 
         const uidNow = auth.currentUser ? auth.currentUser.uid : null;
         _fxMovieLikes[movieId] = likesObj;
@@ -5062,6 +5078,8 @@ function loadChannelMetaForWatchPage(channelId) {
             const p = profile || {};
             if (avatarImg) avatarImg.src = p.avatarUrl || p.photoURL || p.photoUrl || fallbackAvatar;
             if (handleEl && p.username) handleEl.innerText = "@" + String(p.username).replace(/^@/, "");
+            const vb = document.getElementById('movie-verified-badge');
+            if (vb && (p.verified || p.isVerified)) vb.style.display = 'inline-block';
         };
         apply(data);
         if (!data.avatarUrl && !data.photoURL && !data.photoUrl) {
@@ -5856,7 +5874,7 @@ function updateCommentPreviewCard(commentsObj) {
             avatarEl.style.background = 'linear-gradient(135deg, var(--primary), #FF7A00)';
         }
     }
-    if (textEl) textEl.innerText = `${lastComment.username}: ${lastComment.text}`;
+    if (textEl) textEl.innerText = lastComment.text || "";
 }
 
 function openMoreDescriptionSheet() {
@@ -9063,6 +9081,7 @@ function flyBuildPlayerHTML(){
                 <div id="fly-quality-list"></div>
             </div>
         </div>
+        <div class="fly-mini" id="fly-mini"><div class="fly-mini-buf" id="fly-mini-buf"></div><div class="fly-mini-fill" id="fly-mini-fill"></div></div>
     </div>`;
 }
 
@@ -9135,7 +9154,8 @@ function flyUpdateProgress(){
     const v=document.getElementById('fly-video'); if(!v||!v.duration) return;
     const pct=(v.currentTime/v.duration)*100;
     const f=document.getElementById('fly-progress-filled'); if(f) f.style.width=pct+'%';
-    try{ if(v.buffered.length){ const b=(v.buffered.end(v.buffered.length-1)/v.duration)*100; const be=document.getElementById('fly-progress-buffered'); if(be) be.style.width=b+'%'; } }catch(e){}
+    const mf=document.getElementById('fly-mini-fill'); if(mf) mf.style.width=pct+'%';
+    try{ if(v.buffered.length){ const b=(v.buffered.end(v.buffered.length-1)/v.duration)*100; const be=document.getElementById('fly-progress-buffered'); if(be) be.style.width=b+'%'; const mb=document.getElementById('fly-mini-buf'); if(mb) mb.style.width=b+'%'; } }catch(e){}
     const t=document.getElementById('fly-time'); if(t) t.innerText=flyFmt(v.currentTime)+' / '+flyFmt(v.duration);
 }
 function flyBindProgressDrag(){

@@ -4309,7 +4309,375 @@ function handleFeelsInfoClick(event, shortId, action) {
     }
 }
 
-function openShortComments(shortId) {
+// =========================================================
+// TIKTOK-STYLE COMMENT SHEET (Feels)
+// Data path (same as before): movie_comments/{feelsId}/{key}
+//   { uid, username, avatar, text, timestamp, likes:{uid:true}, parentId?, replyToName? }
+// =========================================================
+let _ttRef = null, _ttCb = null, _ttId = null, _ttData = {};
+let _ttReply = null;               // { parent, name, mention }
+const _ttOpen = new Set();         // parent keys whose replies are expanded
+const _ttShown = {};               // parent key -> how many replies are visible
+let _ttScroll = 0;
+const TT_EMOJIS = ['😃','😄','😁','😆','😅','😂','🤣','☺️','😊'];
+const TT_REPLY_PAGE = 3;
+
+function ttEsc(v) { return escapeHTML(String(v == null ? '' : v)); }
+function ttShortAgo(ts) {
+    if (!ts) return '';
+    const d = Math.max(0, Date.now() - new Date(ts).getTime());
+    const m = Math.floor(d / 60000);
+    if (m < 1) return 'now';
+    if (m < 60) return m + 'm';
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + 'h';
+    const dd = Math.floor(h / 24);
+    if (dd < 7) return dd + 'd';
+    if (dd < 53) return Math.floor(dd / 7) + 'w';
+    return Math.floor(dd / 30) + 'mo';
+}
+function ttLikeUids(c) {
+    const s = new Set(Object.keys(c.likes || {}));
+    Object.keys(c.reacts || {}).forEach(u => { if (c.reacts[u]) s.add(u); });
+    return s;
+}
+function ttAvatar(c, size) {
+    const initial = ((c.username || 'U').trim().charAt(0).toUpperCase() || 'U').replace(/[^\p{L}\p{N}]/gu, 'U');
+    if (c.avatar) return `<img class="tt-av" style="width:${size}px;height:${size}px" src="${ttEsc(c.avatar)}" alt="" onerror="this.outerHTML='<div class=&quot;tt-av tt-av-fb&quot; style=&quot;width:${size}px;height:${size}px&quot;>${initial}</div>'">`;
+    return `<div class="tt-av tt-av-fb" style="width:${size}px;height:${size}px">${ttEsc(initial)}</div>`;
+}
+
+function ttEnsureSheet() {
+    let el = document.getElementById('tt-comment-modal');
+    if (el) return el;
+    const st = document.createElement('style');
+    st.id = 'tt-comment-style';
+    st.textContent = `
+    #tt-comment-modal{position:fixed;inset:0;z-index:3000;display:none;align-items:flex-end;justify-content:center;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;animation:none}
+    #tt-comment-modal .tt-sheet{position:relative;width:100%;height:72%;max-height:calc(100% - 120px);background:var(--surface,#fff);color:var(--text-main,#161823);border-radius:14px 14px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -4px 24px rgba(0,0,0,.18);animation:ttUp .3s cubic-bezier(.22,1,.36,1)}
+    @keyframes ttUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    .tt-head{position:relative;flex:0 0 auto;height:48px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;border-bottom:1px solid rgba(128,128,128,.18)}
+    .tt-close{position:absolute;right:6px;top:4px;width:40px;height:40px;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .tt-close svg{width:22px;height:22px;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;fill:none}
+    .tt-list{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding:12px 14px 8px;-webkit-overflow-scrolling:touch}
+    .tt-empty{text-align:center;color:var(--text-muted,#8a8b91);font-size:14px;margin-top:60px}
+    .tt-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:16px}
+    .tt-row.tt-reply{margin-left:46px;margin-bottom:14px}
+    .tt-av{border-radius:50%;object-fit:cover;flex:0 0 auto;display:block}
+    .tt-av-fb{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#fe2c55,#ff7a00);color:#fff;font-weight:800;font-size:14px}
+    .tt-body{flex:1 1 auto;min-width:0}
+    .tt-name{font-size:13px;font-weight:600;color:var(--text-muted,#75767a);display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+    .tt-name .tt-to{display:inline-flex;align-items:center;gap:4px}
+    .tt-name .tt-to:before{content:"";border-left:6px solid currentColor;border-top:4px solid transparent;border-bottom:4px solid transparent}
+    .tt-text{font-size:15px;line-height:1.35;margin:2px 0 0;word-break:break-word;white-space:pre-wrap}
+    .tt-meta{display:flex;gap:18px;font-size:13px;color:var(--text-muted,#8a8b91);margin-top:6px;font-weight:500}
+    .tt-meta button{border:0;background:transparent;color:inherit;font:inherit;padding:0;cursor:pointer}
+    .tt-like{flex:0 0 auto;width:44px;display:flex;flex-direction:column;align-items:center;padding-top:6px;color:var(--text-muted,#8a8b91);font-size:13px;border:0;background:transparent;cursor:pointer}
+    .tt-like svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linejoin:round}
+    .tt-like.on{color:#fe2c55}.tt-like.on svg{fill:#fe2c55;stroke:#fe2c55;animation:ttPop .3s cubic-bezier(.175,.885,.32,1.5)}
+    @keyframes ttPop{0%{transform:scale(.5)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+    .tt-more{margin:-4px 0 14px 46px;display:flex;align-items:center;gap:18px;font-size:13px;font-weight:600;color:var(--text-muted,#75767a)}
+    .tt-more button{border:0;background:transparent;color:inherit;font:inherit;padding:0;display:flex;align-items:center;gap:6px;cursor:pointer}
+    .tt-more .tt-dash{width:24px;height:1px;background:rgba(128,128,128,.5)}
+    .tt-more svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+    .tt-foot{flex:0 0 auto;border-top:1px solid rgba(128,128,128,.18);padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--surface,#fff)}
+    .tt-inrow{display:flex;align-items:center;gap:10px}
+    .tt-pill{flex:1 1 auto;min-width:0;background:rgba(128,128,128,.14);border-radius:22px;padding:0 16px;height:44px;display:flex;align-items:center}
+    .tt-pill input{width:100%;border:0;outline:0;background:transparent;color:inherit;font-size:16px;font-family:inherit}
+    .tt-pill input::placeholder{color:var(--text-muted,#8a8b91)}
+    .tt-actions{display:none;justify-content:flex-end;margin-top:10px}
+    .tt-foot.open .tt-actions{display:flex}
+    .tt-send{width:78px;height:46px;border:0;border-radius:23px;background:#fe2c55;color:#fff;display:flex;align-items:center;justify-content:center;opacity:.35;transition:opacity .15s;cursor:pointer}
+    .tt-send.ready{opacity:1}
+    .tt-send svg{width:24px;height:24px;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;fill:none}
+    .tt-emojis{display:none;justify-content:space-between;margin-top:8px}
+    .tt-foot.open .tt-emojis{display:flex}
+    .tt-emojis button{border:0;background:transparent;font-size:30px;line-height:1;padding:4px;cursor:pointer}
+    .tt-menu{position:absolute;left:0;right:0;bottom:0;background:var(--surface,#fff);border-radius:14px 14px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,.25);padding:6px 0 calc(8px + env(safe-area-inset-bottom,0px));z-index:5;animation:ttUp .22s ease}
+    .tt-menu button{display:block;width:100%;border:0;background:transparent;color:inherit;font-size:16px;font-weight:600;padding:15px 20px;text-align:center;cursor:pointer;border-bottom:1px solid rgba(128,128,128,.14)}
+    .tt-menu button.danger{color:#fe2c55}
+    .tt-sk{display:flex;gap:10px;margin-bottom:18px;align-items:center}
+    .tt-sk i{width:36px;height:36px;border-radius:50%;background:rgba(128,128,128,.18)}
+    .tt-sk b{height:14px;border-radius:7px;background:rgba(128,128,128,.18)}
+    `;
+    document.head.appendChild(st);
+
+    el = document.createElement('div');
+    el.id = 'tt-comment-modal';
+    el.className = 'premium-download-modal';
+    el.innerHTML = `
+      <div style="position:absolute;inset:0" onclick="closeTikTokComments()"></div>
+      <div class="tt-sheet" id="tt-sheet">
+        <div class="tt-head"><span id="tt-count">Comments</span>
+          <button class="tt-close" aria-label="Close" onclick="closeTikTokComments()"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+        </div>
+        <div class="tt-list" id="tt-list"></div>
+        <div class="tt-foot" id="tt-foot">
+          <div class="tt-inrow">
+            <div id="tt-me" style="flex:0 0 auto"></div>
+            <div class="tt-pill"><input id="tt-input" type="text" autocomplete="off" enterkeyhint="send" placeholder="Add comment..." maxlength="500"></div>
+          </div>
+          <div class="tt-actions"><button class="tt-send" id="tt-send" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M12 20V5M5.5 11.5L12 5l6.5 6.5"/></svg></button></div>
+          <div class="tt-emojis">${TT_EMOJIS.map(e => `<button type="button" data-e="${e}">${e}</button>`).join('')}</div>
+        </div>
+      </div>`;
+    document.body.appendChild(el);
+
+    const input = el.querySelector('#tt-input');
+    const foot = el.querySelector('#tt-foot');
+    input.addEventListener('focus', () => { foot.classList.add('open'); });
+    input.addEventListener('input', ttSyncSend);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submitTikTokComment(); } });
+    el.querySelector('#tt-send').addEventListener('click', submitTikTokComment);
+    el.querySelectorAll('.tt-emojis button').forEach(b => b.addEventListener('mousedown', (e) => e.preventDefault()));
+    el.querySelectorAll('.tt-emojis button').forEach(b => b.addEventListener('click', () => ttInsertEmoji(b.dataset.e)));
+    const list = el.querySelector('#tt-list');
+    list.addEventListener('scroll', () => { _ttScroll = list.scrollTop; }, { passive: true });
+    list.addEventListener('click', ttListClick);
+    ttBindLongPress(list);
+    if (window.visualViewport) {
+        const fit = () => {
+            const m = document.getElementById('tt-comment-modal');
+            if (!m || m.style.display === 'none') return;
+            const vv = window.visualViewport;
+            const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+            m.style.paddingBottom = kb + 'px';
+        };
+        window.visualViewport.addEventListener('resize', fit);
+        window.visualViewport.addEventListener('scroll', fit);
+    }
+    return el;
+}
+
+function ttSyncSend() {
+    const i = document.getElementById('tt-input'), b = document.getElementById('tt-send');
+    if (b) b.classList.toggle('ready', !!(i && i.value.trim()));
+}
+function ttInsertEmoji(e) {
+    const i = document.getElementById('tt-input'); if (!i) return;
+    const s = i.selectionStart == null ? i.value.length : i.selectionStart;
+    const t = i.selectionEnd == null ? i.value.length : i.selectionEnd;
+    i.value = i.value.slice(0, s) + e + i.value.slice(t);
+    const p = s + e.length;
+    try { i.setSelectionRange(p, p); } catch (x) {}
+    i.focus(); ttSyncSend();
+}
+
+function openTikTokComments(shortId) {
+    playUI('click');
+    triggerHapticFeedback();
+    const s = allFeels.find(x => String(x.id) === String(shortId));
+    if (!s) return;
+    currentActiveMovie = s;
+    keepFeelsVideoActive(s.id);
+    const el = ttEnsureSheet();
+    ttDetach();
+    _ttId = String(s.id); _ttData = {}; _ttReply = null; _ttScroll = 0;
+    _ttOpen.clear(); Object.keys(_ttShown).forEach(k => delete _ttShown[k]);
+
+    const input = el.querySelector('#tt-input');
+    input.value = ''; input.placeholder = 'Add comment...';
+    el.querySelector('#tt-foot').classList.remove('open');
+    ttSyncSend();
+    const cached = feelsCommentsCache[s.id];
+    const list = el.querySelector('#tt-list');
+    if (cached && Object.keys(cached).length) { _ttData = cached; ttRender(); }
+    else list.innerHTML = [55, 34, 45, 45, 34, 55].map(w => `<div class="tt-sk"><i></i><b style="width:${w}%"></b></div>`).join('');
+    ttPaintMe();
+
+    _ttRef = db.ref(`movie_comments/${s.id}`);
+    _ttCb = (snap) => {
+        const m = document.getElementById('tt-comment-modal');
+        if (!m || m.style.display === 'none') { ttDetach(); return; }   // closed with the Android back button
+        if (String(_ttId) !== String(s.id)) return;
+        _ttData = snap.val() || {};
+        feelsCommentsCache[s.id] = _ttData;
+        ttRender();
+    };
+    _ttRef.on('value', _ttCb);
+    AppNavigation.pushModal('tt-comment-modal');
+    requestAnimationFrame(() => keepFeelsVideoActive(shortId));
+}
+
+function ttDetach() {
+    if (_ttRef && _ttCb) { try { _ttRef.off('value', _ttCb); } catch (e) {} }
+    _ttRef = null; _ttCb = null;
+}
+function closeTikTokComments() {
+    playUI('click');
+    const i = document.getElementById('tt-input'); if (i) i.blur();
+    const m = document.getElementById('tt-comment-modal'); if (m) m.style.paddingBottom = '0px';
+    ttDetach();
+    const cur = AppNavigation.current();
+    if (cur && cur.id === 'tt-comment-modal') AppNavigation.pop();
+    else if (m) m.style.display = 'none';
+}
+
+function ttPaintMe() {
+    const box = document.getElementById('tt-me'); if (!box) return;
+    const u = auth.currentUser;
+    const fb = ((u && u.email) || 'U').charAt(0).toUpperCase();
+    const paint = (photo) => { box.innerHTML = ttAvatar({ avatar: photo, username: fb }, 36); };
+    paint((u && (u.photoURL)) || (typeof currentChannelData !== 'undefined' && currentChannelData && (currentChannelData.avatarUrl || currentChannelData.photoURL)) || '');
+    if (u && navigator.onLine) db.ref(`users/${u.uid}`).once('value', (snap) => { const d = snap.val() || {}; if (d.photoURL) paint(d.photoURL); });
+}
+
+function ttRender() {
+    const list = document.getElementById('tt-list'); if (!list) return;
+    const entries = Object.entries(_ttData || {}).filter(([k, c]) => c && typeof c === 'object').map(([k, c]) => ({ k, c }));
+    const total = entries.length;
+    const head = document.getElementById('tt-count');
+    if (head) head.textContent = total === 0 ? 'Comments' : `${formatCount(total)} comment${total === 1 ? '' : 's'}`;
+
+    const keys = new Set(entries.map(e => e.k));
+    const top = entries.filter(e => !e.c.parentId || !keys.has(e.c.parentId));
+    const kids = {};
+    entries.filter(e => e.c.parentId && keys.has(e.c.parentId)).forEach(e => { (kids[e.c.parentId] = kids[e.c.parentId] || []).push(e); });
+    const uid = auth.currentUser && auth.currentUser.uid;
+    const now = Date.now();
+    const likeN = e => ttLikeUids(e.c).size;
+    const fresh = e => uid && e.c.uid === uid && now - (e.c.timestamp || 0) < 120000;
+    top.sort((a, b) => (fresh(b) - fresh(a)) || (likeN(b) - likeN(a)) || ((b.c.timestamp || 0) - (a.c.timestamp || 0)));
+
+    if (!top.length) { list.innerHTML = '<div class="tt-empty">No comments yet. Be the first to comment!</div>'; return; }
+
+    const heart = '<svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.2-9.3C1.7 8 3.5 4.8 6.8 4.6c2-.1 3.7 1 5.2 3 1.5-2 3.2-3.1 5.2-3 3.3.2 5.1 3.4 4 6.6-1.7 4.7-9.2 9.3-9.2 9.3z"/></svg>';
+    const chev = d => `<svg viewBox="0 0 24 24"><path d="${d ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'}"/></svg>`;
+    const row = (e, isReply) => {
+        const c = e.c, likes = ttLikeUids(e.c), on = !!(uid && likes.has(uid)), n = likes.size;
+        const to = isReply && c.replyToName ? `<span class="tt-to">${ttEsc(c.replyToName)}</span>` : '';
+        return `<div class="tt-row${isReply ? ' tt-reply' : ''}" data-k="${ttEsc(e.k)}">
+            ${ttAvatar(c, isReply ? 30 : 36)}
+            <div class="tt-body">
+              <div class="tt-name"><span>${ttEsc(c.username || 'user')}</span>${to}</div>
+              <div class="tt-text">${ttEsc(c.text)}</div>
+              <div class="tt-meta"><span>${ttShortAgo(c.timestamp)}</span><button type="button" data-act="reply">Reply</button></div>
+            </div>
+            <button type="button" class="tt-like${on ? ' on' : ''}" data-act="like" aria-label="Like">${heart}<span>${n > 0 ? formatCount(n) : ''}</span></button>
+          </div>`;
+    };
+
+    let html = '';
+    top.forEach(p => {
+        html += row(p, false);
+        const rs = (kids[p.k] || []).slice().sort((a, b) => (a.c.timestamp || 0) - (b.c.timestamp || 0));
+        if (!rs.length) return;
+        if (!_ttOpen.has(p.k)) {
+            html += `<div class="tt-more"><button type="button" data-act="open" data-p="${ttEsc(p.k)}"><span class="tt-dash"></span>View ${formatCount(rs.length)} ${rs.length === 1 ? 'reply' : 'replies'}${chev(false)}</button></div>`;
+            return;
+        }
+        const shown = Math.min(rs.length, _ttShown[p.k] || TT_REPLY_PAGE);
+        rs.slice(0, shown).forEach(r => { html += row(r, true); });
+        const left = rs.length - shown;
+        html += `<div class="tt-more">${left > 0 ? `<button type="button" data-act="more" data-p="${ttEsc(p.k)}"><span class="tt-dash"></span>View ${formatCount(left)} more${chev(false)}</button>` : ''}<button type="button" data-act="hide" data-p="${ttEsc(p.k)}">Hide${chev(true)}</button></div>`;
+    });
+    const prev = _ttScroll;
+    list.innerHTML = html;
+    list.scrollTop = prev;
+}
+
+function ttListClick(e) {
+    const btn = e.target.closest('[data-act]'); if (!btn) return;
+    const act = btn.dataset.act;
+    const rowEl = btn.closest('.tt-row');
+    const key = rowEl ? rowEl.dataset.k : null;
+    const p = btn.dataset.p;
+    if (act === 'like') return ttToggleLike(key);
+    if (act === 'reply') return ttStartReply(key);
+    if (act === 'open') { _ttOpen.add(p); _ttShown[p] = TT_REPLY_PAGE; return ttRender(); }
+    if (act === 'more') { _ttShown[p] = (_ttShown[p] || TT_REPLY_PAGE) + 5; return ttRender(); }
+    if (act === 'hide') { _ttOpen.delete(p); return ttRender(); }
+}
+
+function ttToggleLike(key) {
+    playUI('click'); triggerHapticFeedback();
+    if (!auth.currentUser) { showNotification('Please log in to Like', 'error'); return; }
+    const c = _ttData[key]; if (!c) return;
+    const uid = auth.currentUser.uid;
+    const base = `movie_comments/${_ttId}/${key}`;
+    if (ttLikeUids(c).has(uid)) {
+        const upd = {}; upd[`likes/${uid}`] = null; upd[`reacts/${uid}`] = null;
+        db.ref(base).update(upd).catch(() => showNotification('Failed to update like', 'error'));
+    } else {
+        db.ref(`${base}/likes/${uid}`).set(true).catch(() => showNotification('Failed to update like', 'error'));
+    }
+}
+
+function ttStartReply(key) {
+    playUI('click');
+    const c = _ttData[key]; if (!c) return;
+    const parent = (c.parentId && _ttData[c.parentId]) ? c.parentId : key;
+    _ttReply = { parent, name: c.username || 'user', mention: !!(c.parentId && _ttData[c.parentId]) };
+    _ttOpen.add(parent);
+    if (!_ttShown[parent]) _ttShown[parent] = TT_REPLY_PAGE;
+    const i = document.getElementById('tt-input');
+    if (i) { i.placeholder = `Reply to ${_ttReply.name}:`; i.focus(); }
+    document.getElementById('tt-foot').classList.add('open');
+}
+
+function submitTikTokComment() {
+    playUI('click');
+    if (!auth.currentUser) { showNotification('Please log in to Comment', 'error'); return; }
+    if (!navigator.onLine) { showNotification("You're offline", 'error'); return; }
+    const input = document.getElementById('tt-input');
+    const text = input ? input.value.trim() : '';
+    if (!text || !_ttId) return;
+    const userId = auth.currentUser.uid, movieId = _ttId, reply = _ttReply;
+    const send = document.getElementById('tt-send'); if (send) send.classList.remove('ready');
+    db.ref(`users/${userId}`).once('value', (snap) => {
+        const u = snap.val() || {};
+        const username = u.username || (auth.currentUser.email || 'user').split('@')[0];
+        const avatar = (typeof currentChannelData !== 'undefined' && currentChannelData && (currentChannelData.avatarUrl || currentChannelData.photoURL)) || u.photoURL || auth.currentUser.photoURL || '';
+        const data = { uid: userId, username, avatar, text, timestamp: Date.now() };
+        if (reply) { data.parentId = reply.parent; if (reply.mention) data.replyToName = reply.name; _ttOpen.add(reply.parent); _ttShown[reply.parent] = 9999; }
+        db.ref(`movie_comments/${movieId}`).push(data).then(() => {
+            if (input) { input.value = ''; input.placeholder = 'Add comment...'; input.blur(); }
+            _ttReply = null; ttSyncSend();
+            document.getElementById('tt-foot').classList.remove('open');
+            if (!reply) { _ttScroll = 0; const l = document.getElementById('tt-list'); if (l) l.scrollTop = 0; }
+        }).catch(() => { showNotification('Failed to post comment', 'error'); ttSyncSend(); });
+    });
+}
+
+// Long-press a comment: Copy / Delete (own comments only)
+function ttBindLongPress(list) {
+    let timer = null, sx = 0, sy = 0;
+    const clear = () => { clearTimeout(timer); timer = null; };
+    list.addEventListener('touchstart', (e) => {
+        const r = e.target.closest('.tt-row'); if (!r || e.target.closest('[data-act]')) return;
+        sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+        timer = setTimeout(() => { timer = null; triggerHapticFeedback(); ttOpenMenu(r.dataset.k); }, 520);
+    }, { passive: true });
+    list.addEventListener('touchmove', (e) => { if (timer && (Math.abs(e.touches[0].clientX - sx) > 8 || Math.abs(e.touches[0].clientY - sy) > 8)) clear(); }, { passive: true });
+    list.addEventListener('touchend', clear); list.addEventListener('touchcancel', clear);
+}
+function ttOpenMenu(key) {
+    const c = _ttData[key]; if (!c) return;
+    ttCloseMenu();
+    const mine = auth.currentUser && c.uid === auth.currentUser.uid;
+    const m = document.createElement('div');
+    m.className = 'tt-menu'; m.id = 'tt-menu';
+    m.innerHTML = `<button type="button" data-m="copy">Copy text</button>${mine ? '<button type="button" class="danger" data-m="del">Delete</button>' : ''}<button type="button" data-m="x" style="border:0;color:var(--text-muted,#8a8b91)">Cancel</button>`;
+    m.addEventListener('click', (e) => {
+        const b = e.target.closest('button'); if (!b) return;
+        if (b.dataset.m === 'copy') { try { navigator.clipboard.writeText(c.text || ''); showNotification('Copied', 'success'); } catch (x) {} }
+        if (b.dataset.m === 'del') ttDelete(key);
+        ttCloseMenu();
+    });
+    document.getElementById('tt-sheet').appendChild(m);
+}
+function ttCloseMenu() { const m = document.getElementById('tt-menu'); if (m) m.remove(); }
+function ttDelete(key) {
+    const c = _ttData[key];
+    if (!c || !auth.currentUser || c.uid !== auth.currentUser.uid) return;
+    const upd = {}; upd[key] = null;
+    if (!c.parentId) Object.entries(_ttData).forEach(([k, v]) => { if (v && v.parentId === key) upd[k] = null; });   // replies go with their comment
+    db.ref(`movie_comments/${_ttId}`).update(upd).then(() => showNotification('Comment deleted', 'success')).catch(() => showNotification('Failed to delete', 'error'));
+}
+
+function openShortComments(shortId) { openTikTokComments(shortId); }
+
+function openShortCommentsLegacy(shortId) {
     playUI('click');
     triggerHapticFeedback();
     currentActiveMovie = allFeels.find(s => String(s.id) === String(shortId));

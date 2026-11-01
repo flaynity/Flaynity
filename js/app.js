@@ -2735,6 +2735,207 @@ function fxClearDislikeFeedback(videoId, uid) {
     try { db.ref(`video_dislike_feedback/${videoId}/${uid}`).remove().catch(() => {}); } catch (e) {}
 }
 
+// =========================================================
+// VIDEO CARD 3-DOT MENU (Download / Share / Not interested / Don't recommend channel / Report)
+// =========================================================
+const FXM_ITEMS = [
+    { a: 'download', t: 'Download', i: '<svg viewBox="0 0 24 24"><path d="M12 3v12M7 10.5l5 5 5-5M4 20h16"/></svg>' },
+    { a: 'share', t: 'Share', i: '<svg viewBox="0 0 24 24"><path d="M14 4l7 6.5-7 6.5v-4c-5 0-8.5 1.5-11 5 .8-5.5 4-9.5 11-10V4z"/></svg>' },
+    { a: 'not_interested', t: 'Not interested', i: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>' },
+    { a: 'no_channel', t: "Don't recommend channel", i: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5 1.2 0 2.3.2 3.2.7M16 14l6 6M22 14l-6 6"/></svg>' },
+    { a: 'report', t: 'Report', danger: true, i: '<svg viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>' }
+];
+const FXR_REASONS = [
+    { k: 'sexual', t: 'Sexual content' },
+    { k: 'violent', t: 'Violent or repulsive content' },
+    { k: 'hateful', t: 'Hateful or abusive content' },
+    { k: 'harmful', t: 'Harmful or dangerous acts' },
+    { k: 'spam', t: 'Spam or misleading' }
+];
+let _fxmVideoId = null;
+let _fxrVideoId = null;
+let _fxrBusy = false;
+
+// ---- hidden videos / channels (kept on this device) ----
+function fxLoadSet(key) { try { return new Set(JSON.parse(localStorage.getItem(key) || '[]')); } catch (e) { return new Set(); } }
+function fxSaveSet(key, set) { try { localStorage.setItem(key, JSON.stringify(Array.from(set))); } catch (e) {} }
+const _fxHiddenVideos = fxLoadSet('fx_hidden_videos');
+const _fxHiddenChannels = fxLoadSet('fx_hidden_channels');
+
+function fxRemoveCards(selector) {
+    document.querySelectorAll(selector).forEach(el => {
+        el.style.height = el.offsetHeight + 'px';
+        el.style.overflow = 'hidden';
+        el.style.transition = 'height .32s ease, opacity .25s ease, margin .32s ease';
+        requestAnimationFrame(() => { el.style.opacity = '0'; el.style.height = '0px'; el.style.marginBottom = '0px'; });
+        setTimeout(() => el.remove(), 350);
+    });
+}
+
+function fxEnsureMenu() {
+    let root = document.getElementById('fx-video-menu');
+    if (root) return root;
+    root = document.createElement('div');
+    root.id = 'fx-video-menu';
+    root.className = 'fxm-root';
+    root.innerHTML = `<div class="fxm-pop" id="fxm-pop">${FXM_ITEMS.map(it => `
+        ${it.danger ? '<div class="fxm-sep"></div>' : ''}
+        <button type="button" class="fxm-item${it.danger ? ' danger' : ''}" data-a="${it.a}">
+            <span class="fxm-ic">${it.i}</span><span class="fxm-tx">${it.t}</span>
+        </button>`).join('')}</div>`;
+    document.body.appendChild(root);
+    root.addEventListener('click', (e) => {
+        const btn = e.target.closest('.fxm-item');
+        if (btn) { fxMenuAction(btn.dataset.a); return; }
+        if (e.target === root) fxCloseVideoMenu();
+    });
+    return root;
+}
+
+function fxOpenVideoMenu(videoId, anchor) {
+    if (typeof playUI === 'function') playUI('click');
+    const root = fxEnsureMenu();
+    _fxmVideoId = String(videoId);
+    const pop = root.querySelector('#fxm-pop');
+    root.classList.remove('open', 'closing');
+    AppNavigation.pushModal('fx-video-menu');
+    pop.style.visibility = 'hidden';
+    requestAnimationFrame(() => {
+        const r = anchor ? anchor.getBoundingClientRect() : { top: 80, bottom: 110, right: window.innerWidth - 12 };
+        const w = pop.offsetWidth, ph = pop.offsetHeight;
+        const vw = window.innerWidth, vh = window.innerHeight;
+        let left = Math.min(Math.max(12, r.right - w), vw - w - 12);
+        let top = r.bottom + 6, up = false;
+        if (top + ph > vh - 12) { top = Math.max(12, r.top - ph - 6); up = true; }
+        pop.style.left = left + 'px';
+        pop.style.top = top + 'px';
+        pop.style.transformOrigin = (up ? 'bottom' : 'top') + ' right';
+        pop.style.visibility = 'visible';
+        root.classList.add('open');
+    });
+}
+
+function fxCloseVideoMenu(done) {
+    const root = document.getElementById('fx-video-menu');
+    if (!root || root.classList.contains('closing')) { if (done) done(); return; }
+    root.classList.add('closing');
+    root.classList.remove('open');
+    setTimeout(() => {
+        const c = AppNavigation.current();
+        if (c && c.type === 'modal' && c.id === 'fx-video-menu') AppNavigation.pop();
+        else root.style.display = 'none';
+        root.classList.remove('closing');
+        if (done) done();
+    }, 170);
+}
+
+function fxMenuAction(action) {
+    const id = _fxmVideoId;
+    const v = (typeof allLongVideos !== 'undefined') ? allLongVideos.find(x => String(x.id) === String(id)) : null;
+    fxCloseVideoMenu(() => {
+        if (!v) return;
+        if (action === 'download') {
+            const raw = v.videoLink || v.videoUrl;
+            const name = `${String(v.title || 'video').replace(/\s+/g, '_')}_video-720.mp4`;
+            const url = (typeof normalizeFlaynityMediaUrl === 'function' && raw) ? normalizeFlaynityMediaUrl(raw) : raw;
+            if (!url) { showNotification('No valid download link found.', 'error'); return; }
+            triggerFileDownload(url, name);
+        } else if (action === 'share') {
+            const data = { title: v.title || 'Flaynity', text: v.title || 'Flaynity', url: location.href };
+            if (navigator.share) navigator.share(data).catch(() => {});
+            else if (navigator.clipboard) { navigator.clipboard.writeText(location.href); showNotification('Link copied', 'success'); }
+        } else if (action === 'not_interested') {
+            _fxHiddenVideos.add(String(v.id)); fxSaveSet('fx_hidden_videos', _fxHiddenVideos);
+            fxRemoveCards(`.fx-card[data-fx-id="${v.id}"]`);
+            showNotification("Video hidden. We'll show fewer videos like this.", 'success', 2400);
+        } else if (action === 'no_channel') {
+            if (v.userId) {
+                _fxHiddenChannels.add(String(v.userId)); fxSaveSet('fx_hidden_channels', _fxHiddenChannels);
+                fxRemoveCards(`.fx-card[data-fx-uid="${v.userId}"]`);
+            }
+            showNotification("Okay, we won't recommend this channel.", 'success', 2400);
+        } else if (action === 'report') {
+            fxOpenReportDialog(v.id);
+        }
+    });
+}
+
+// ---- Report dialog ----
+function fxEnsureReport() {
+    let root = document.getElementById('fx-report-dialog');
+    if (root) return root;
+    root = document.createElement('div');
+    root.id = 'fx-report-dialog';
+    root.className = 'fxr-root';
+    root.innerHTML = `
+        <div class="fxr-card" id="fxr-card">
+            <div class="fxr-head">
+                <div class="fxr-flag"><svg viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg></div>
+                <div><h3>Report video</h3><p>Select the issue you want to report</p></div>
+            </div>
+            <div class="fxr-list" id="fxr-list">${FXR_REASONS.map(r => `
+                <button type="button" class="fxr-opt" data-k="${r.k}">
+                    <span class="fxr-radio"><i></i></span><span class="fxr-label">${r.t}</span>
+                </button>`).join('')}</div>
+            <div class="fxr-actions">
+                <button type="button" class="fxr-cancel" id="fxr-cancel">Cancel</button>
+                <button type="button" class="fxr-send" id="fxr-send" disabled>Report</button>
+            </div>
+        </div>`;
+    document.body.appendChild(root);
+    root.addEventListener('click', (e) => { if (e.target === root) fxCloseReportDialog(); });
+    root.querySelector('#fxr-list').addEventListener('click', (e) => {
+        const opt = e.target.closest('.fxr-opt');
+        if (!opt) return;
+        if (typeof playUI === 'function') playUI('click');
+        root.querySelectorAll('.fxr-opt').forEach(o => o.classList.toggle('on', o === opt));
+        root.querySelector('#fxr-send').disabled = false;
+    });
+    root.querySelector('#fxr-cancel').addEventListener('click', () => fxCloseReportDialog());
+    root.querySelector('#fxr-send').addEventListener('click', () => fxSubmitReport());
+    return root;
+}
+
+function fxOpenReportDialog(videoId) {
+    const root = fxEnsureReport();
+    _fxrVideoId = String(videoId); _fxrBusy = false;
+    root.querySelectorAll('.fxr-opt').forEach(o => o.classList.remove('on'));
+    const send = root.querySelector('#fxr-send');
+    send.disabled = true; send.textContent = 'Report';
+    root.classList.remove('open', 'closing');
+    AppNavigation.pushModal('fx-report-dialog');
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('open')));
+}
+
+function fxCloseReportDialog() {
+    const root = document.getElementById('fx-report-dialog');
+    if (!root || root.classList.contains('closing')) return;
+    root.classList.add('closing');
+    root.classList.remove('open');
+    setTimeout(() => {
+        const c = AppNavigation.current();
+        if (c && c.type === 'modal' && c.id === 'fx-report-dialog') AppNavigation.pop();
+        else root.style.display = 'none';
+        root.classList.remove('closing');
+    }, 200);
+}
+
+function fxSubmitReport() {
+    if (_fxrBusy) return;
+    const root = document.getElementById('fx-report-dialog');
+    const sel = root && root.querySelector('.fxr-opt.on');
+    if (!sel || !_fxrVideoId) return;
+    if (typeof auth === 'undefined' || !auth.currentUser) { showNotification('Please sign in to report', 'error'); return; }
+    if (!navigator.onLine) { showNotification('Cannot report while offline.', 'error'); return; }
+    _fxrBusy = true;
+    const send = root.querySelector('#fxr-send');
+    send.textContent = 'Sending...'; send.disabled = true;
+    db.ref(`video_reports/${_fxrVideoId}/${auth.currentUser.uid}`)
+        .set({ reason: sel.dataset.k, timestamp: Date.now() })
+        .then(() => { showNotification('Report submitted. Thank you!', 'success', 2400); fxCloseReportDialog(); })
+        .catch(() => { showNotification('Could not send report. Please try again.', 'error'); _fxrBusy = false; send.textContent = 'Report'; send.disabled = false; });
+}
+
 // Title: 25 characters per line, max 2 lines ("…" at the end if longer).
 function fxTitleTwoLines(title) {
     const W = 25;
@@ -2922,10 +3123,11 @@ function fxPreviewTick() {
 function fxBuildLongVideoCard(v) {
     const id = String(v.id);
     const uid = v.userId || '';
+    if (_fxHiddenVideos.has(id) || (uid && _fxHiddenChannels.has(String(uid)))) return '';
     // Same reaction system as Community Posts (hold the like button => emoji picker).
     setTimeout(() => { try { registerPostReactionsListener(id); fxListenDislike(id); } catch (e) {} }, 0);
     return `
-        <div class="fx-card long-video-feed-card" data-fx-id="${id}" onclick="openMoviePage('${id}', false)">
+        <div class="fx-card long-video-feed-card" data-fx-id="${id}" data-fx-uid="${uid}" onclick="openMoviePage('${id}', false)">
             <div class="fx-thumb long-video-thumb-container">
                 <img src="${v.poster || ''}" loading="lazy" alt="" draggable="false">
                 <span class="fx-dur long-video-duration">${v.duration || '10:00'}</span>
@@ -2937,7 +3139,7 @@ function fxBuildLongVideoCard(v) {
                         <h4 class="fx-title long-video-title">${escapeHTML(fxTitleTwoLines(v.title))}</h4>
                         <div class="fx-channel live-username-${uid}">${escapeHTML(v.username || 'Flaynity User')}</div>
                     </div>
-                    <button class="fx-more" aria-label="More" onclick="event.stopPropagation(); typeof showUpcomingModal==='function' && showUpcomingModal();">${FX_ICON.dots}</button>
+                    <button class="fx-more" aria-label="More" onclick="event.stopPropagation(); fxOpenVideoMenu('${id}', this);">${FX_ICON.dots}</button>
                 </div>
                 <div class="fx-stats">
                     <span class="fx-stat">${FX_ICON.eye}<span data-fx-views="${id}">0 Views</span></span>
@@ -4410,6 +4612,7 @@ const AppNavigation = {
 
         const fxdSheetEl = document.getElementById('fx-dislike-sheet');
         if (fxdSheetEl) fxdSheetEl.style.display = 'none';
+        ['fx-video-menu', 'fx-report-dialog'].forEach(mid => { const el = document.getElementById(mid); if (el) el.style.display = 'none'; });
 
         let activeTab = 'home';
         let activePage = null;

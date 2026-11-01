@@ -1258,6 +1258,10 @@
 #movie-like-btn.wp-anim svg{animation:wpLikePop .6s cubic-bezier(.3,.9,.4,1);}
 #movie-dislike-btn.wp-anim svg{animation:wpDislikePop .6s cubic-bezier(.3,.9,.4,1);}
 .wp-ico.wp-anim::before{animation:wpRing .55s ease-out;}
+.wp-ico .wp-rx-ico{display:none;align-items:center;justify-content:center;width:7vw;height:7vw;}
+.wp-ico .wp-rx-ico svg{width:7vw;height:7vw;max-width:none;}
+.wp-ico.wp-rx-on > svg{display:none;}
+.wp-ico.wp-rx-on .wp-rx-ico{display:flex;}
 @keyframes wpLikePop{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
 @keyframes wpDislikePop{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
 @keyframes wpRing{0%{opacity:.95;transform:scale(.3)}100%{opacity:0;transform:scale(1.15)}}
@@ -1875,7 +1879,7 @@
 <img id="movie-channel-avatar" class="wp-avatar" src="" alt=""/>
 <button class="btn-watch-subscribe wp-sub" id="movie-subscribe-btn" onclick="toggleMovieChannelSubscribe()">Subscribe</button>
 <div class="wp-spacer"></div>
-<button class="wp-ico" id="movie-like-btn" onclick="toggleMovieLike()" aria-label="Like">
+<button class="wp-ico post-action-btn-fb" id="movie-like-btn" onclick="toggleMovieLike()" onmousedown="wpLikeRxStart(event)" ontouchstart="wpLikeRxStart(event)" aria-label="Like">
 <svg viewBox="0 0 24 24" fill="currentColor"><path class="wp-off" d="M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11H3v10h4h1h9.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z M7,20H4v-8h3V20z M19.98,13.17l-1.34,6C18.54,19.65,18.03,20,17.43,20H8v-8.61l5.6-6.06C13.79,5.12,14.08,5,14.38,5c0.26,0,0.5,0.11,0.63,0.3c0.07,0.1,0.15,0.26,0.09,0.47l-1.52,4.94L13.18,12h1.35h4.23c0.41,0,0.8,0.17,1.03,0.46C19.92,12.61,20.05,12.86,19.98,13.17z"/><path class="wp-on" d="M3,11h3v10H3V11z M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11v10h10.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z"/></svg><span id="movie-like-count" style="display:none">0</span>
 </button>
 <button class="wp-ico" id="movie-dislike-btn" onclick="toggleMovieDislike()" aria-label="Dislike">

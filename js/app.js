@@ -465,12 +465,84 @@ function stabilizeInitialOfflineHomeSkeleton() {
 window.addEventListener('flaynity-dom-ready', stabilizeInitialOfflineHomeSkeleton, { once: true });
 
 // =========================================
+// STATUS BAR ICON COLOUR (follows the REAL colour behind the status bar, page by page)
+// Dark page behind the status bar -> white icons | Light page -> black icons
+// =========================================
+(function () {
+    var lastSent = '';
+
+    function parseColor(c) {
+        var m = c && c.match(/rgba?\(([^)]+)\)/);
+        if (!m) return null;
+        var p = m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat);
+        if (p.length < 3) return null;
+        return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
+    }
+
+    function themeFallbackRGB() {
+        var t = document.documentElement.getAttribute('data-theme') || 'light';
+        return t === 'dark' ? { r: 15, g: 15, b: 15 } : { r: 255, g: 255, b: 255 };
+    }
+
+    function detectTone() {
+        try {
+            var x = Math.floor(window.innerWidth / 2);
+            var stack = document.elementsFromPoint(x, 3) || [];
+            var accR = 0, accG = 0, accB = 0, accA = 0;
+            for (var i = 0; i < stack.length && accA < 0.99; i++) {
+                var el = stack[i];
+                var tag = (el.tagName || '').toUpperCase();
+                if (tag === 'VIDEO' || tag === 'CANVAS') {
+                    // video / canvas at the very top = treated as dark
+                    var w = (1 - accA);
+                    accR += 0 * w; accG += 0 * w; accB += 0 * w; accA = 1;
+                    break;
+                }
+                var c = parseColor(getComputedStyle(el).backgroundColor);
+                if (!c || c.a <= 0) continue;
+                var contrib = c.a * (1 - accA);
+                accR += c.r * contrib; accG += c.g * contrib; accB += c.b * contrib;
+                accA += contrib;
+            }
+            if (accA < 0.99) {
+                var f = themeFallbackRGB();
+                var rest = 1 - accA;
+                accR += f.r * rest; accG += f.g * rest; accB += f.b * rest;
+            }
+            var lum = (0.299 * accR + 0.587 * accG + 0.114 * accB) / 255;
+            return lum < 0.5 ? 'dark' : 'light';
+        } catch (e) {
+            return (document.documentElement.getAttribute('data-theme') === 'dark') ? 'dark' : 'light';
+        }
+    }
+
+    function update() {
+        if (document.hidden) return;
+        var tone = detectTone();
+        if (tone === lastSent) return;
+        lastSent = tone;
+        try {
+            if (window.AndroidBridge && typeof window.AndroidBridge.setStatusBarTheme === 'function') {
+                window.AndroidBridge.setStatusBarTheme(tone);
+            }
+        } catch (e) {}
+    }
+
+    window.__flaynityUpdateStatusBar = update;
+    setInterval(update, 300);
+    window.addEventListener('flaynity-dom-ready', update);
+    window.addEventListener('flaynity-pages-ready', update);
+    document.addEventListener('visibilitychange', function () { lastSent = ''; update(); });
+    window.addEventListener('focus', function () { lastSent = ''; update(); });
+})();
+
+// =========================================
 // AUTOMATIC & MANUAL THEME ENGINE
 // =========================================
 function applyTheme() {
     let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
     document.documentElement.setAttribute('data-theme', pref);
-    try { if (window.AndroidBridge && typeof window.AndroidBridge.setStatusBarTheme === 'function') window.AndroidBridge.setStatusBarTheme(pref); } catch (e) {}
+    try { if (typeof window.__flaynityUpdateStatusBar === 'function') { window.__flaynityUpdateStatusBar(); setTimeout(window.__flaynityUpdateStatusBar, 350); } } catch (e) {}
     
     const themeBtns = document.querySelectorAll('.appbar-theme-btn');
     themeBtns.forEach(btn => {

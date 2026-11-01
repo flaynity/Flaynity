@@ -3021,6 +3021,26 @@ function fxPaintPlayLikes(id) {
     const silent = !_fxPlayLikeInit[id];
     _fxPlayLikeInit[id] = true;
     wpApplyReaction('movie-like-btn', !!(uid && set.has(uid)), silent);
+
+    // Show my chosen reaction emoji (Love, Haha, ...) on the like button, like Posts do.
+    let myType = null;
+    if (uid) {
+        const mine = cache.reactions[uid];
+        if (mine && mine.type) myType = mine.type;
+        else if (_fxMovieLikes[id][uid]) myType = 'like';
+    }
+    const btn = document.getElementById('movie-like-btn');
+    if (btn) {
+        const svg = (myType && myType !== 'like') ? fbRxSvg(myType) : '';
+        if (svg) {
+            let rx = btn.querySelector('.wp-rx-ico');
+            if (!rx) { rx = document.createElement('span'); rx.className = 'wp-rx-ico'; btn.appendChild(rx); }
+            rx.innerHTML = svg;
+            btn.classList.add('wp-rx-on');
+        } else {
+            btn.classList.remove('wp-rx-on');
+        }
+    }
 }
 function fxPaintDislike(id) {
     const mine = !!(typeof auth !== 'undefined' && auth.currentUser && _fxDislikeCache[id] && _fxDislikeCache[id][auth.currentUser.uid]);
@@ -5094,7 +5114,14 @@ async function toggleMovieChannelSubscribe() {
     });
 }
 
+// Hold the Play Page like button => same emoji reaction picker as Community Posts.
+function wpLikeRxStart(e) {
+    if (!currentActiveMovie) return;
+    startReactionTimer(String(currentActiveMovie.id), e);
+}
+
 function toggleMovieLike() {
+    if (Date.now() < _rxSuppressClickUntil) return; // a long-press just picked a reaction
     playUI('click');
     if (!auth.currentUser) { showNotification("Please sign in to Like", "error"); return; }
     if (!currentActiveMovie) return;

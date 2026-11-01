@@ -470,6 +470,7 @@ window.addEventListener('flaynity-dom-ready', stabilizeInitialOfflineHomeSkeleto
 function applyTheme() {
     let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
     document.documentElement.setAttribute('data-theme', pref);
+    try { if (window.AndroidBridge && typeof window.AndroidBridge.setStatusBarTheme === 'function') window.AndroidBridge.setStatusBarTheme(pref); } catch (e) {}
     
     const themeBtns = document.querySelectorAll('.appbar-theme-btn');
     themeBtns.forEach(btn => {

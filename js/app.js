@@ -3527,6 +3527,26 @@ function fbSharePost(postId) {
     else if (navigator.clipboard) { navigator.clipboard.writeText(location.href); if (typeof showNotification === 'function') showNotification('Link copied', 'success'); }
 }
 
+function shareFeel(shortId, event) {
+    if (event) { event.stopPropagation(); event.preventDefault(); }
+    try { playUI('click'); } catch (e) {}
+    const f = (typeof allFeels !== 'undefined') ? allFeels.find(x => String(x.id) === String(shortId)) : null;
+    const data = { title: (f && f.title) || 'Flaynity', text: (f && f.title) || 'Flaynity', url: location.href };
+    if (navigator.share) { navigator.share(data).catch(() => {}); }
+    else if (navigator.clipboard) {
+        navigator.clipboard.writeText(location.href).catch(() => {});
+        if (typeof showNotification === 'function') showNotification('Link copied', 'success');
+    }
+}
+
+function feelsMarkMore() {
+    document.querySelectorAll('.short-title-wrap').forEach(wrap => {
+        const h = wrap.querySelector('.short-title-text');
+        if (!h) return;
+        wrap.classList.toggle('has-more', h.scrollHeight > h.clientHeight + 1);
+    });
+}
+
 function playFeelsSlide(shortId, resetTime = true) {
     const targetSlide = document.getElementById(`slide-short-${shortId}`);
     if (!targetSlide) return false;
@@ -3821,43 +3841,46 @@ function buildFeelsPage() {
                     </div>
 
                     <div class="short-action-container">
-                        <button class="short-action-btn-tiktok" id="${isLikedId}" onclick="toggleShortLike('${s.id}')">
+                        <button class="short-action-btn-tiktok" id="${isLikedId}" aria-label="Like" onclick="toggleShortLike('${s.id}')">
                             <i class="fas fa-heart${isLocallyLiked ? ' liked' : ''}"></i>
                         </button>
                         <div class="short-action-label-tiktok" id="${likesCountId}">${formatCount(cachedStats.likes)}</div>
                     </div>
 
                     <div class="short-action-container">
-                        <button class="short-action-btn-tiktok-other" onclick="openFeelsComments('${s.id}', event)">
-                            <i class="fas fa-comment"></i>
+                        <button class="short-action-btn-tiktok-other" aria-label="Comments" onclick="openFeelsComments('${s.id}', event)">
+                            <i class="fas fa-comment-dots"></i>
                         </button>
                         <div class="short-action-label-tiktok" id="${commentsCountId}">${formatCount(cachedStats.comments)}</div>
                     </div>
 
                     <div class="short-action-container">
-                        <button class="short-action-btn-tiktok-other" onclick="triggerShortDownload('${s.id}', event)">
-                            <i class="fas fa-download"></i>
+                        <button class="short-action-btn-tiktok-other" aria-label="Save" onclick="triggerShortDownload('${s.id}', event)">
+                            <i class="fas fa-bookmark"></i>
                         </button>
                         <div class="short-action-label-tiktok">Save</div>
                     </div>
 
                     <div class="short-action-container">
-                        <select id="short-quality-${s.id}" aria-label="Video quality" onchange="setFeelsQuality('${s.id}', this.value)" style="max-width:72px;background:#111;color:white;border:1px solid #888;border-radius:8px;padding:6px;"><option value="0">Auto</option></select>
-                        <div class="short-action-label-tiktok">Quality</div>
+                        <button class="short-action-btn-tiktok-other" aria-label="Share" onclick="shareFeel('${s.id}', event)">
+                            <i class="fas fa-share"></i>
+                        </button>
+                        <div class="short-action-label-tiktok">Share</div>
                     </div>
-                    <div class="music-disc-container">
-                        <div class="music-disc-inner live-disc-avatar-${s.userId || s.channelId}" id="music-disc-${s.id}">
-                            <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                        </div>
-                    </div>
+                    <select id="short-quality-${s.id}" aria-hidden="true" tabindex="-1" style="display:none"><option value="0">Original</option></select>
                 </div>
 
                 <div class="short-bottom-info">
-                    <div class="short-channel-name live-username-${s.userId || s.channelId}" style="color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8); margin-bottom:6px;">${escapeHTML(String(s.channelName || s.username || 'Flaynity').slice(0, 25))}</div>
-                    <div class="short-title-wrap" style="cursor:pointer;" onclick="openFeelsDescription('${s.id}', event)">
-                        <h2 id="short-title-val-${s.id}" class="short-title-text" style="font-size:0.82rem; font-weight:700; color:#EBEBEB; margin:0; line-height:1.4; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; text-overflow:ellipsis;">
-                            ${escapeHTML(s.title)}
-                        </h2>
+                    <div class="short-channel-name live-username-${s.userId || s.channelId}">${escapeHTML(String(s.channelName || s.username || 'Flaynity').slice(0, 25))}</div>
+                    <div class="short-title-wrap" onclick="openFeelsDescription('${s.id}', event)">
+                        <h2 id="short-title-val-${s.id}" class="short-title-text">${escapeHTML(s.title)}</h2>
+                        <span class="feels-more">…more</span>
+                    </div>
+                </div>
+
+                <div class="short-disc-corner">
+                    <div class="music-disc-inner live-disc-avatar-${s.userId || s.channelId}" id="music-disc-${s.id}">
+                        <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" alt="">
                     </div>
                 </div>
             </div>
@@ -3914,6 +3937,7 @@ function buildFeelsPage() {
     });
 
     container.innerHTML = `<div class="feels-swiper">${html}</div>`;
+    requestAnimationFrame(feelsMarkMore);
 
     // Bind subscription state AFTER the Feels DOM exists. This is required
     // because the buttons are created by the template above.
@@ -4474,6 +4498,7 @@ function warmNextFeels(activeIndex) {
 }
 
 function optimizeFeelsMemoryAndPreload(activeIndex) {
+    try { feelsMarkMore(); } catch (e) {}
     const slides = document.querySelectorAll('.short-slide');
     slides.forEach((slide, idx) => {
         const video = slide.querySelector('video');

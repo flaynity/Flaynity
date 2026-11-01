@@ -1258,8 +1258,8 @@
 #movie-like-btn.wp-anim svg{animation:wpLikePop .6s cubic-bezier(.3,.9,.4,1);}
 #movie-dislike-btn.wp-anim svg{animation:wpDislikePop .6s cubic-bezier(.3,.9,.4,1);}
 .wp-ico.wp-anim::before{animation:wpRing .55s ease-out;}
-@keyframes wpLikePop{0%{transform:scale(1) rotate(0)}25%{transform:scale(.7) rotate(-16deg) translateY(2px)}60%{transform:scale(1.28) rotate(9deg) translateY(-2px)}100%{transform:scale(1) rotate(0)}}
-@keyframes wpDislikePop{0%{transform:scale(1) rotate(0)}25%{transform:scale(.7) rotate(16deg) translateY(-2px)}60%{transform:scale(1.28) rotate(-9deg) translateY(2px)}100%{transform:scale(1) rotate(0)}}
+@keyframes wpLikePop{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
+@keyframes wpDislikePop{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
 @keyframes wpRing{0%{opacity:.95;transform:scale(.3)}100%{opacity:0;transform:scale(1.15)}}
 #full-movie-page .comment-preview-card{background:var(--wp-panel);border-radius:22px;padding:14px 18px 16px;margin:0 0 0;gap:10px;}
 #full-movie-page .comment-preview-title{font-size:1rem;font-weight:700;}
@@ -1289,7 +1289,7 @@
 .fx-card{position:relative;width:100%;margin:0 0 10px;background:var(--fx-card);border:0;border-radius:0;overflow:hidden;cursor:pointer;box-shadow:none;}
 .fx-card *{box-sizing:border-box;}
 #home-feed-container .fx-card{width:calc(100% + 32px);margin-left:-16px;margin-right:-16px;}
-.fx-thumb{position:relative;width:100%;aspect-ratio:16/9;background:#0F0F0F;overflow:hidden;border-radius:14px;}
+.fx-thumb{position:relative;width:100%;aspect-ratio:16/9;background:#0F0F0F;overflow:hidden;border-radius:10px;}
 .fx-thumb img{width:100%;height:100%;object-fit:cover;object-position:center;display:block;}
 .fx-pv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;opacity:0;transition:opacity .25s ease;background:#000;}
 .fx-vol{position:absolute;top:10px;right:10px;z-index:3;width:34px;height:34px;border-radius:50%;background:rgba(18,18,18,.6);border:0;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;}

@@ -2220,7 +2220,7 @@ function startRealtimeFeedsListener() {
                 } else {
                     allLongVideos.forEach(v => {
                         const titleEl = document.querySelector(`.long-video-feed-card[onclick*="${v.id}"] .long-video-title`);
-                        if (titleEl) titleEl.innerText = escapeHTML(v.title);
+                        if (titleEl) titleEl.textContent = fxTitleTwoLines(v.title);
                     });
                 }
             } catch (e) {}
@@ -2625,13 +2625,148 @@ function fxToggleDislike(id) {
     });
 }
 
+// =========================================================
+// HOME FEED AUTO PREVIEW: stay 2 seconds on a Long Video card => it plays (muted) inside the card.
+// Scroll away => video stops and the banner comes back.
+// =========================================================
+const FX_PREVIEW_DELAY = 2000;
+const FX_VOL_ON  = '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
+const FX_VOL_OFF = '<svg viewBox="0 0 24 24"><path d="M16.5 12A4.5 4.5 0 0 0 14 8v2.2l2.5 2.5V12zM19 12c0 .9-.2 1.8-.5 2.6l1.5 1.5A8.8 8.8 0 0 0 21 12c0-4.3-3-7.9-7-8.8v2.1c2.9.9 5 3.5 5 6.7zM4.3 3L3 4.3 7.7 9H3v6h4l5 5v-6.7l4.2 4.2c-.7.5-1.4.9-2.2 1.1v2.1c1.4-.3 2.6-1 3.7-1.9l2 2 1.3-1.3L4.3 3zM12 4L9.9 6.1 12 8.2V4z"/></svg>';
+const _fxPrev = { thumb: null, video: null, pending: null, timer: null };
+let _fxPreviewMuted = true;
+
+function fxThumbMetrics(thumb) {
+    const r = thumb.getBoundingClientRect();
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    const visible = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0));
+    return { r, vh, ratio: r.height ? visible / r.height : 0, cy: (r.top + r.bottom) / 2 };
+}
+
+// true when nothing (watch page, modal, other tab) covers the thumb
+function fxThumbOnTop(thumb, r, vh) {
+    const x = r.left + r.width / 2;
+    const y = Math.min(Math.max((r.top + r.bottom) / 2, 1), vh - 1);
+    const el = document.elementFromPoint(x, y);
+    return !!el && thumb.contains(el);
+}
+
+function fxPickPreviewCandidate() {
+    let best = null, bestDist = Infinity;
+    document.querySelectorAll('#home-feed-container .fx-card .fx-thumb').forEach(t => {
+        const m = fxThumbMetrics(t);
+        if (!m.r.width || m.ratio < 0.75) return;
+        if (m.cy < m.vh * 0.12 || m.cy > m.vh * 0.88) return;
+        if (!fxThumbOnTop(t, m.r, m.vh)) return;
+        const d = Math.abs(m.cy - m.vh * 0.45);
+        if (d < bestDist) { best = t; bestDist = d; }
+    });
+    return best;
+}
+
+function fxStopPreview() {
+    clearTimeout(_fxPrev.timer);
+    _fxPrev.timer = null; _fxPrev.pending = null;
+    const { thumb, video } = _fxPrev;
+    _fxPrev.thumb = null; _fxPrev.video = null;
+    if (video) {
+        try { video.pause(); video.removeAttribute('src'); video.load(); } catch (e) {}
+        video.remove();
+    }
+    if (thumb) thumb.querySelectorAll('.fx-vol, .fx-prog').forEach(n => n.remove());
+}
+
+function fxStartPreview(thumb) {
+    _fxPrev.timer = null; _fxPrev.pending = null;
+    if (!thumb || !thumb.isConnected || document.hidden || !navigator.onLine) return;
+    if (navigator.connection && navigator.connection.saveData) return;
+    const m = fxThumbMetrics(thumb);
+    if (m.ratio < 0.6 || !fxThumbOnTop(thumb, m.r, m.vh)) return;
+    const card = thumb.closest('.fx-card');
+    const id = card && card.dataset.fxId;
+    const v = (typeof allLongVideos !== 'undefined') ? allLongVideos.find(x => String(x.id) === String(id)) : null;
+    const raw = v && (v.videoLink || v.videoUrl);
+    if (!raw || /youtube\.com|youtu\.be/i.test(raw)) return;
+    const url = (typeof normalizeFlaynityMediaUrl === 'function') ? normalizeFlaynityMediaUrl(raw) : raw;
+    if (!/^https?:\/\//i.test(url)) return;
+
+    fxStopPreview();
+    const vid = document.createElement('video');
+    vid.className = 'fx-pv';
+    vid.muted = _fxPreviewMuted; vid.defaultMuted = _fxPreviewMuted;
+    vid.loop = true; vid.playsInline = true; vid.preload = 'auto';
+    vid.setAttribute('playsinline', ''); vid.setAttribute('webkit-playsinline', '');
+    vid.disablePictureInPicture = true;
+    vid.setAttribute('controlslist', 'nodownload noremoteplayback');
+    vid.src = url;
+
+    const vol = document.createElement('button');
+    vol.className = 'fx-vol'; vol.setAttribute('aria-label', 'Sound');
+    vol.innerHTML = _fxPreviewMuted ? FX_VOL_OFF : FX_VOL_ON;
+    vol.onclick = (e) => {
+        e.stopPropagation();
+        _fxPreviewMuted = !_fxPreviewMuted;
+        vid.muted = _fxPreviewMuted;
+        vol.innerHTML = _fxPreviewMuted ? FX_VOL_OFF : FX_VOL_ON;
+        if (vid.paused) vid.play().catch(() => {});
+    };
+    const prog = document.createElement('div');
+    prog.className = 'fx-prog'; prog.innerHTML = '<i></i>';
+    const bar = prog.firstChild;
+
+    vid.addEventListener('playing', () => { vid.style.opacity = '1'; });
+    vid.addEventListener('timeupdate', () => { if (vid.duration) bar.style.width = (vid.currentTime / vid.duration * 100) + '%'; });
+    vid.addEventListener('error', () => { if (_fxPrev.video === vid) fxStopPreview(); });
+
+    const first = thumb.querySelector('img');
+    if (first && first.nextSibling) thumb.insertBefore(vid, first.nextSibling); else thumb.appendChild(vid);
+    thumb.appendChild(vol); thumb.appendChild(prog);
+    _fxPrev.thumb = thumb; _fxPrev.video = vid;
+
+    vid.play().catch(() => {
+        if (!vid.muted) {
+            _fxPreviewMuted = true; vid.muted = true; vol.innerHTML = FX_VOL_OFF;
+            vid.play().catch(() => { if (_fxPrev.video === vid) fxStopPreview(); });
+        } else if (_fxPrev.video === vid) fxStopPreview();
+    });
+}
+
+function fxPreviewTick() {
+    if (document.hidden) { if (_fxPrev.thumb || _fxPrev.pending) fxStopPreview(); return; }
+    const cur = _fxPrev.thumb;
+    if (cur) {
+        let ok = cur.isConnected;
+        if (ok) {
+            const m = fxThumbMetrics(cur);
+            ok = m.r.width > 0 && m.ratio >= 0.5 && m.cy > m.vh * 0.05 && m.cy < m.vh * 0.95 && fxThumbOnTop(cur, m.r, m.vh);
+        }
+        if (ok) return;
+        fxStopPreview(); // scrolled away / covered => banner comes back
+    }
+    const cand = fxPickPreviewCandidate();
+    if (cand !== _fxPrev.pending) {
+        clearTimeout(_fxPrev.timer);
+        _fxPrev.pending = cand;
+        _fxPrev.timer = cand ? setTimeout(() => fxStartPreview(cand), FX_PREVIEW_DELAY) : null;
+    }
+}
+
+(function fxInitPreview() {
+    let raf = 0;
+    document.addEventListener('scroll', () => {
+        if (raf) return;
+        raf = requestAnimationFrame(() => { raf = 0; fxPreviewTick(); });
+    }, { capture: true, passive: true });
+    document.addEventListener('visibilitychange', fxPreviewTick);
+    setInterval(fxPreviewTick, 400);
+})();
+
 function fxBuildLongVideoCard(v) {
     const id = String(v.id);
     const uid = v.userId || '';
     // Same reaction system as Community Posts (hold the like button => emoji picker).
     setTimeout(() => { try { registerPostReactionsListener(id); fxListenDislike(id); } catch (e) {} }, 0);
     return `
-        <div class="fx-card long-video-feed-card" onclick="openMoviePage('${id}', false)">
+        <div class="fx-card long-video-feed-card" data-fx-id="${id}" onclick="openMoviePage('${id}', false)">
             <div class="fx-thumb long-video-thumb-container">
                 <img src="${v.poster || ''}" loading="lazy" alt="" draggable="false">
                 <span class="fx-dur long-video-duration">${v.duration || '10:00'}</span>

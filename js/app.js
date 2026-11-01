@@ -3527,26 +3527,6 @@ function fbSharePost(postId) {
     else if (navigator.clipboard) { navigator.clipboard.writeText(location.href); if (typeof showNotification === 'function') showNotification('Link copied', 'success'); }
 }
 
-function shareFeel(shortId, event) {
-    if (event) { event.stopPropagation(); event.preventDefault(); }
-    try { playUI('click'); } catch (e) {}
-    const f = (typeof allFeels !== 'undefined') ? allFeels.find(x => String(x.id) === String(shortId)) : null;
-    const data = { title: (f && f.title) || 'Flaynity', text: (f && f.title) || 'Flaynity', url: location.href };
-    if (navigator.share) { navigator.share(data).catch(() => {}); }
-    else if (navigator.clipboard) {
-        navigator.clipboard.writeText(location.href).catch(() => {});
-        if (typeof showNotification === 'function') showNotification('Link copied', 'success');
-    }
-}
-
-function feelsMarkMore() {
-    document.querySelectorAll('.short-title-wrap').forEach(wrap => {
-        const h = wrap.querySelector('.short-title-text');
-        if (!h) return;
-        wrap.classList.toggle('has-more', h.scrollHeight > h.clientHeight + 1);
-    });
-}
-
 function playFeelsSlide(shortId, resetTime = true) {
     const targetSlide = document.getElementById(`slide-short-${shortId}`);
     if (!targetSlide) return false;
@@ -3627,6 +3607,7 @@ let feelsFeedMode = 'for-you';
 const feelsSubscribedChannels = {};
 const feelsSubscriptionListeners = {};
 const feelsLikedByUser = {};
+const feelsSavedByUser = {};
 const feelsCommentsCache = {};
 let feelsLastPlayedId = null;
 let feelsPendingRestoreId = null;
@@ -3810,7 +3791,7 @@ function buildFeelsPage() {
         const commentsCountId = `short-comments-count-${s.id}`;
         const statsCacheKey = `flaynity_stats_cache_${s.id}`;
 
-        let cachedStats = { likes: 0, comments: 0 };
+        let cachedStats = { likes: 0, comments: 0, saves: 0 };
         let offlineLikes = JSON.parse(localStorage.getItem('flaynity_offline_likes') || '{}');
         let isLocallyLiked = !!offlineLikes[s.id] || !!feelsLikedByUser[s.id];
         try {
@@ -3841,46 +3822,47 @@ function buildFeelsPage() {
                     </div>
 
                     <div class="short-action-container">
-                        <button class="short-action-btn-tiktok" id="${isLikedId}" aria-label="Like" onclick="toggleShortLike('${s.id}')">
+                        <button class="short-action-btn-tiktok" id="${isLikedId}" onclick="toggleShortLike('${s.id}')">
                             <i class="fas fa-heart${isLocallyLiked ? ' liked' : ''}"></i>
                         </button>
                         <div class="short-action-label-tiktok" id="${likesCountId}">${formatCount(cachedStats.likes)}</div>
                     </div>
 
                     <div class="short-action-container">
-                        <button class="short-action-btn-tiktok-other" aria-label="Comments" onclick="openFeelsComments('${s.id}', event)">
+                        <button class="short-action-btn-tiktok-other" onclick="openFeelsComments('${s.id}', event)">
                             <i class="fas fa-comment-dots"></i>
                         </button>
                         <div class="short-action-label-tiktok" id="${commentsCountId}">${formatCount(cachedStats.comments)}</div>
                     </div>
 
                     <div class="short-action-container">
-                        <button class="short-action-btn-tiktok-other" aria-label="Save" onclick="triggerShortDownload('${s.id}', event)">
-                            <i class="fas fa-bookmark"></i>
+                        <button class="short-action-btn-tiktok-other" id="short-save-btn-${s.id}" aria-label="Save" onclick="toggleShortSave('${s.id}', event)">
+                            <i class="fas fa-bookmark${(feelsSavedByUser[s.id] ? ' saved' : '')}"></i>
                         </button>
-                        <div class="short-action-label-tiktok">Save</div>
+                        <div class="short-action-label-tiktok" id="short-saves-count-${s.id}">${formatCount(cachedStats.saves || 0)}</div>
                     </div>
 
                     <div class="short-action-container">
-                        <button class="short-action-btn-tiktok-other" aria-label="Share" onclick="shareFeel('${s.id}', event)">
+                        <button class="short-action-btn-tiktok-other" aria-label="Share" onclick="shareFeels('${s.id}', event)">
                             <i class="fas fa-share"></i>
                         </button>
-                        <div class="short-action-label-tiktok">Share</div>
+                        <div class="short-action-label-tiktok" id="short-shares-count-${s.id}">Share</div>
                     </div>
-                    <select id="short-quality-${s.id}" aria-hidden="true" tabindex="-1" style="display:none"><option value="0">Original</option></select>
+
+                    <div class="short-quality-pill">
+                        <select id="short-quality-${s.id}" aria-label="Video quality" onchange="setFeelsQuality('${s.id}', this.value)"><option value="0">Auto</option></select>
+                    </div>
+                    <div class="music-disc-container" style="display:none">
+                        <div class="music-disc-inner live-disc-avatar-${s.userId || s.channelId}" id="music-disc-${s.id}">
+                            <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="short-bottom-info">
-                    <div class="short-channel-name live-username-${s.userId || s.channelId}">${escapeHTML(String(s.channelName || s.username || 'Flaynity').slice(0, 25))}</div>
-                    <div class="short-title-wrap" onclick="openFeelsDescription('${s.id}', event)">
-                        <h2 id="short-title-val-${s.id}" class="short-title-text">${escapeHTML(s.title)}</h2>
-                        <span class="feels-more">…more</span>
-                    </div>
-                </div>
-
-                <div class="short-disc-corner">
-                    <div class="music-disc-inner live-disc-avatar-${s.userId || s.channelId}" id="music-disc-${s.id}">
-                        <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" alt="">
+                    <div class="short-channel-name live-username-${s.userId || s.channelId}" style="color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8); margin-bottom:6px;">${escapeHTML(String(s.channelName || s.username || 'Flaynity').slice(0, 25))}</div>
+                    <div class="short-title-wrap" style="cursor:pointer;" onclick="openFeelsDescription('${s.id}', event)">
+                        <h2 id="short-title-val-${s.id}" class="short-title-text">${escapeHTML(s.title)}${String(s.title || '').length > 55 ? ' <span class="short-more">...more</span>' : ''}</h2>
                     </div>
                 </div>
             </div>
@@ -3891,8 +3873,23 @@ function buildFeelsPage() {
             const viewsObj = stats.views || {};
             const likesObj = stats.likes || {};
             const likesCount = Object.keys(likesObj).length;
+            const savesObj = stats.saves || {};
+            const savesCount = Object.keys(savesObj).length;
             if (auth.currentUser) {
                 feelsLikedByUser[s.id] = !!likesObj[auth.currentUser.uid];
+                feelsSavedByUser[s.id] = !!savesObj[auth.currentUser.uid];
+            }
+            try {
+                let sc = JSON.parse(localStorage.getItem(statsCacheKey) || '{"likes": 0, "comments": 0}');
+                sc.saves = savesCount;
+                localStorage.setItem(statsCacheKey, JSON.stringify(sc));
+            } catch(e) {}
+            const lblSaves = document.getElementById(`short-saves-count-${s.id}`);
+            if (lblSaves) lblSaves.innerText = formatCount(savesCount);
+            const saveBtn = document.getElementById(`short-save-btn-${s.id}`);
+            if (saveBtn) {
+                const saved = !!(auth.currentUser && savesObj[auth.currentUser.uid]);
+                saveBtn.innerHTML = `<i class="fas fa-bookmark${saved ? ' saved' : ''}"></i>`;
             }
 
             try {
@@ -3937,7 +3934,6 @@ function buildFeelsPage() {
     });
 
     container.innerHTML = `<div class="feels-swiper">${html}</div>`;
-    requestAnimationFrame(feelsMarkMore);
 
     // Bind subscription state AFTER the Feels DOM exists. This is required
     // because the buttons are created by the template above.
@@ -4159,6 +4155,34 @@ function setupSwipeToClose(element, handleId, closeCallback) {
         startY = 0;
         currentY = 0;
     };
+}
+
+function toggleShortSave(shortId, event) {
+    if (event) { event.preventDefault(); event.stopPropagation(); }
+    playUI('click');
+    triggerHapticFeedback();
+    if (!auth.currentUser) { showNotification("Please sign in to Save", "error"); return; }
+    if (!navigator.onLine) { showNotification("You're offline", "error"); return; }
+    // One account = one save. Click again to remove it (count goes back down).
+    const ref = db.ref(`movie_stats/${shortId}/saves/${auth.currentUser.uid}`);
+    ref.once('value', (snap) => {
+        if (snap.exists()) ref.remove(); else ref.set(true);
+    });
+}
+
+function shareFeels(shortId, event) {
+    if (event) { event.preventDefault(); event.stopPropagation(); }
+    playUI('click');
+    triggerHapticFeedback();
+    const s = allFeels.find(item => String(item.id) === String(shortId));
+    if (!s) return;
+    const text = String(s.title || 'Flaynity');
+    const url = (s.shareUrl || location.href);
+    if (navigator.share) {
+        navigator.share({ title: text, text: text, url: url }).catch(() => {});
+    } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => showNotification("Link copied", "success")).catch(() => {});
+    }
 }
 
 function toggleShortLike(shortId, forceLike = false) {
@@ -4498,7 +4522,6 @@ function warmNextFeels(activeIndex) {
 }
 
 function optimizeFeelsMemoryAndPreload(activeIndex) {
-    try { feelsMarkMore(); } catch (e) {}
     const slides = document.querySelectorAll('.short-slide');
     slides.forEach((slide, idx) => {
         const video = slide.querySelector('video');

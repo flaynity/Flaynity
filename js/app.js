@@ -2419,6 +2419,11 @@ function buildHomeFeed() {
     let longs = isAdminFeatureEnabled('homeVideosEnabled') ? [...allLongVideos] : [];
     let posts = isAdminFeatureEnabled('homePostsEnabled') ? [...allCommunityPosts] : [];
 
+    // "Not interested" / "Don't recommend channel" apply to the Home Feed only (per account).
+    longs = longs.filter(x => !_fxHiddenVideos.has(String(x.id)) && !(x.userId && _fxHiddenChannels.has(String(x.userId))));
+    feels = feels.filter(x => !(x.userId && _fxHiddenChannels.has(String(x.userId))));
+    posts = posts.filter(x => !(x.userId && _fxHiddenChannels.has(String(x.userId))));
+
     feels.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
     longs.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
     posts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -2756,11 +2761,35 @@ let _fxmVideoId = null;
 let _fxrVideoId = null;
 let _fxrBusy = false;
 
-// ---- hidden videos / channels (kept on this device) ----
-function fxLoadSet(key) { try { return new Set(JSON.parse(localStorage.getItem(key) || '[]')); } catch (e) { return new Set(); } }
-function fxSaveSet(key, set) { try { localStorage.setItem(key, JSON.stringify(Array.from(set))); } catch (e) {} }
-const _fxHiddenVideos = fxLoadSet('fx_hidden_videos');
-const _fxHiddenChannels = fxLoadSet('fx_hidden_channels');
+// ---- hidden videos / channels: stored PER ACCOUNT (never shared with other accounts) ----
+const _fxHiddenVideos = new Set();
+const _fxHiddenChannels = new Set();
+function fxHideKey(kind) {
+    const uid = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.uid : 'guest';
+    return `fx_hidden_${kind}:${uid}`;
+}
+function fxReloadHidden() {
+    _fxHiddenVideos.clear(); _fxHiddenChannels.clear();
+    try { JSON.parse(localStorage.getItem(fxHideKey('videos')) || '[]').forEach(x => _fxHiddenVideos.add(String(x))); } catch (e) {}
+    try { JSON.parse(localStorage.getItem(fxHideKey('channels')) || '[]').forEach(x => _fxHiddenChannels.add(String(x))); } catch (e) {}
+}
+function fxPersistHidden() {
+    try {
+        localStorage.setItem(fxHideKey('videos'), JSON.stringify(Array.from(_fxHiddenVideos)));
+        localStorage.setItem(fxHideKey('channels'), JSON.stringify(Array.from(_fxHiddenChannels)));
+    } catch (e) {}
+}
+try { localStorage.removeItem('fx_hidden_videos'); localStorage.removeItem('fx_hidden_channels'); } catch (e) {}
+fxReloadHidden();
+try {
+    // Account switched / logged in: load THAT account's hidden list, then refresh the Home feed if it differs.
+    auth.onAuthStateChanged(() => {
+        const snapshot = () => JSON.stringify([Array.from(_fxHiddenVideos).sort(), Array.from(_fxHiddenChannels).sort()]);
+        const before = snapshot();
+        fxReloadHidden();
+        if (snapshot() !== before) { try { buildHomeFeed(); } catch (e) {} }
+    });
+} catch (e) {}
 
 function fxRemoveCards(selector) {
     document.querySelectorAll(selector).forEach(el => {
@@ -2845,13 +2874,14 @@ function fxMenuAction(action) {
             if (navigator.share) navigator.share(data).catch(() => {});
             else if (navigator.clipboard) { navigator.clipboard.writeText(location.href); showNotification('Link copied', 'success'); }
         } else if (action === 'not_interested') {
-            _fxHiddenVideos.add(String(v.id)); fxSaveSet('fx_hidden_videos', _fxHiddenVideos);
-            fxRemoveCards(`.fx-card[data-fx-id="${v.id}"]`);
+            _fxHiddenVideos.add(String(v.id)); fxPersistHidden();
+            fxRemoveCards(`#home-feed-container .fx-card[data-fx-id="${v.id}"]`);
             showNotification("Video hidden. We'll show fewer videos like this.", 'success', 2400);
         } else if (action === 'no_channel') {
             if (v.userId) {
-                _fxHiddenChannels.add(String(v.userId)); fxSaveSet('fx_hidden_channels', _fxHiddenChannels);
-                fxRemoveCards(`.fx-card[data-fx-uid="${v.userId}"]`);
+                _fxHiddenChannels.add(String(v.userId)); fxPersistHidden();
+                fxRemoveCards(`#home-feed-container .fx-card[data-fx-uid="${v.userId}"]`);
+                setTimeout(() => { try { if (AppNavigation.current() && AppNavigation.current().type === 'tab') buildHomeFeed(); } catch (e) {} }, 400);
             }
             showNotification("Okay, we won't recommend this channel.", 'success', 2400);
         } else if (action === 'report') {
@@ -2953,6 +2983,45 @@ function fxTitleTwoLines(title) {
 // Dislike (per video). Live state is shared by every card of the same video (Home + Watch page).
 const _fxDislikeCache = {};
 const _fxDislikeBound = {};
+const _fxMovieLikes = {};      // movie_stats/{id}/likes cache (same video, Home card + Play Page)
+const _fxPlayLikeInit = {};
+
+function fxIsVideoId(id) {
+    return typeof allLongVideos !== 'undefined' && allLongVideos.some(v => String(v.id) === String(id));
+}
+
+// One like OR one dislike per user per video, shown identically on the Home card and on the Play Page.
+function fxToggleVideoLike(id, silent) {
+    if (typeof auth === 'undefined' || !auth.currentUser) { showNotification('Please sign in to Like', 'error'); return; }
+    if (!navigator.onLine) { showNotification('Cannot react while offline.', 'error'); return; }
+    const uid = auth.currentUser.uid;
+    const rRef = db.ref(`post_reactions/${id}/${uid}`);
+    const lRef = db.ref(`movie_stats/${id}/likes/${uid}`);
+    Promise.all([rRef.once('value'), lRef.once('value')]).then(([r, l]) => {
+        if (r.exists() || l.exists()) {
+            rRef.remove().catch(() => {});
+            lRef.remove().catch(() => {});
+        } else {
+            submitPostReaction(id, 'like', !!silent);
+        }
+    }).catch(() => showNotification('Like update failed. Please try again.', 'error'));
+}
+
+function fxPaintPlayLikes(id) {
+    if (typeof currentActiveMovie === 'undefined' || !currentActiveMovie || String(currentActiveMovie.id) !== String(id)) return;
+    const cache = _postReactionCache[id];
+    if (!_fxMovieLikes[id] || !cache || !cache.reactions) return;
+    const set = new Set(Object.keys(cache.reactions).concat(Object.keys(_fxMovieLikes[id])));
+    const n = formatCount(set.size);
+    const likesEl = document.getElementById('movie-detail-likes');
+    const countEl = document.getElementById('movie-like-count');
+    if (likesEl) likesEl.innerText = n + ' Likes';
+    if (countEl) countEl.innerText = n;
+    const uid = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.uid : null;
+    const silent = !_fxPlayLikeInit[id];
+    _fxPlayLikeInit[id] = true;
+    wpApplyReaction('movie-like-btn', !!(uid && set.has(uid)), silent);
+}
 function fxPaintDislike(id) {
     const mine = !!(typeof auth !== 'undefined' && auth.currentUser && _fxDislikeCache[id] && _fxDislikeCache[id][auth.currentUser.uid]);
     document.querySelectorAll(`[data-fx-dislike="${id}"]`).forEach(b => b.classList.toggle('fx-on', mine));
@@ -2964,6 +3033,10 @@ function fxListenDislike(id) {
     db.ref(`movie_stats/${id}/dislikes`).on('value', snap => {
         _fxDislikeCache[id] = snap.val() || {};
         fxPaintDislike(id);
+    });
+    db.ref(`movie_stats/${id}/likes`).on('value', snap => {
+        _fxMovieLikes[id] = snap.val() || {};
+        try { paintPostReactions(id); } catch (e) {}
     });
 }
 try { auth.onAuthStateChanged(() => Object.keys(_fxDislikeCache).forEach(fxPaintDislike)); } catch (e) {}
@@ -2979,7 +3052,7 @@ function fxToggleDislike(id) {
             dRef.remove();
             fxClearDislikeFeedback(id, uid);
         } else {
-            dRef.set(true).then(() => db.ref(`post_reactions/${id}/${uid}`).remove()).catch(() => {});
+            dRef.set(true).then(() => Promise.all([db.ref(`post_reactions/${id}/${uid}`).remove(), db.ref(`movie_stats/${id}/likes/${uid}`).remove()])).catch(() => {});
             fxOpenDislikeSheet(id);
         }
     });
@@ -3123,7 +3196,6 @@ function fxPreviewTick() {
 function fxBuildLongVideoCard(v) {
     const id = String(v.id);
     const uid = v.userId || '';
-    if (_fxHiddenVideos.has(id) || (uid && _fxHiddenChannels.has(String(uid)))) return '';
     // Same reaction system as Community Posts (hold the like button => emoji picker).
     setTimeout(() => { try { registerPostReactionsListener(id); fxListenDislike(id); } catch (e) {} }, 0);
     return `
@@ -4519,6 +4591,30 @@ function __flaynityOpenPremiumService(serviceId) {
 // =========================================================
 const AppNavigation = {
     stack: [{ type: 'tab', id: 'home' }],
+    _mem: {},
+    _view: 'home|',
+    _viewTab: 'home',
+    _viewPage: null,
+    _fresh: false,
+
+    // Remember every scroll position of the view that is on screen right now.
+    _collectScroll: function(root, out) {
+        if (!root || !root.getClientRects().length) return;
+        const nodes = [root];
+        root.querySelectorAll('*').forEach(n => nodes.push(n));
+        nodes.forEach(n => { if (n.scrollTop > 0) out.push([n, n.scrollTop]); });
+    },
+    _saveScroll: function() {
+        const rec = { win: null, els: [] };
+        if (!this._viewPage) {
+            rec.win = window.pageYOffset || document.documentElement.scrollTop || 0;
+            if (this._viewTab !== 'feels') this._collectScroll(document.getElementById(this._viewTab + '-tab'), rec.els);
+        } else {
+            const pid = this._viewPage === 'full-movie-page' ? 'full-movie-page' : (this._viewPage.endsWith('-page') ? this._viewPage : this._viewPage + '-page');
+            this._collectScroll(document.getElementById(pid), rec.els);
+        }
+        this._mem[this._view] = rec;
+    },
 
     pushTab: function(tabId) {
         const current = this.current();
@@ -4536,6 +4632,7 @@ const AppNavigation = {
             return;
         }
         this.stack.push({ type: 'page', id: pageId });
+        this._fresh = true;
         this.syncUI();
         this.updateBridge();
     },
@@ -4547,6 +4644,7 @@ const AppNavigation = {
             return Promise.resolve(document.getElementById(serviceId + '-page'));
         }
         this.stack.push({ type: 'page', id: serviceId + '-page', premiumService: serviceId, paymentService: paymentService || null });
+        this._fresh = true;
         if (serviceId === 'flay-pay') window.__flaynityPremiumPayService = paymentService || null;
         this.syncUI();
         this.updateBridge();
@@ -4590,30 +4688,8 @@ const AppNavigation = {
             ].join(' ');
             document.head.appendChild(style);
         }
-        document.querySelectorAll('.fullscreen-page').forEach(el => {
-            el.classList.remove('you-direct-page');
-        });
-        const globalBottomNav = document.querySelector('#app-screen .bottom-nav, .bottom-nav');
-        if (globalBottomNav) globalBottomNav.classList.remove('view-channel-visible');
-        document.querySelectorAll('.fullscreen-page, .premium-download-modal').forEach(el => {
-            el.style.display = 'none';
-        });
-        const moviePage = document.getElementById('full-movie-page');
-        if (moviePage) moviePage.style.display = 'none';
-        
-        const themeMenu = document.getElementById('theme-popup-menu');
-        if (themeMenu) themeMenu.style.display = 'none';
-
-        const imagePreview = document.getElementById('full-image-preview-overlay');
-        if (imagePreview) imagePreview.style.display = 'none';
-
-        const reactionPicker = document.getElementById('fb-reaction-picker');
-        if (reactionPicker) reactionPicker.style.display = 'none';
-
-        const fxdSheetEl = document.getElementById('fx-dislike-sheet');
-        if (fxdSheetEl) fxdSheetEl.style.display = 'none';
-        ['fx-video-menu', 'fx-report-dialog'].forEach(mid => { const el = document.getElementById(mid); if (el) el.style.display = 'none'; });
-
+        // Work out the target view first, so the page that stays open is never hidden and re-shown
+        // (that replayed its slide-up animation and reset its scroll = the "jump").
         let activeTab = 'home';
         let activePage = null;
         let activeModals = [];
@@ -4630,6 +4706,34 @@ const AppNavigation = {
                 activeModals.push(item.id);
             }
         });
+        const newViewKey = activeTab + '|' + (activePage || '');
+        try { this._saveScroll(); } catch (e) {}
+        const keepIds = new Set(activeModals);
+        if (activePage) keepIds.add(activePage === 'full-movie-page' ? 'full-movie-page' : (activePage.endsWith('-page') ? activePage : activePage + '-page'));
+
+        document.querySelectorAll('.fullscreen-page').forEach(el => {
+            el.classList.remove('you-direct-page');
+        });
+        const globalBottomNav = document.querySelector('#app-screen .bottom-nav, .bottom-nav');
+        if (globalBottomNav) globalBottomNav.classList.remove('view-channel-visible');
+        document.querySelectorAll('.fullscreen-page, .premium-download-modal').forEach(el => {
+            if (!keepIds.has(el.id)) el.style.display = 'none';
+        });
+        const moviePage = document.getElementById('full-movie-page');
+        if (moviePage && !keepIds.has('full-movie-page')) moviePage.style.display = 'none';
+        
+        const themeMenu = document.getElementById('theme-popup-menu');
+        if (themeMenu) themeMenu.style.display = 'none';
+
+        const imagePreview = document.getElementById('full-image-preview-overlay');
+        if (imagePreview) imagePreview.style.display = 'none';
+
+        const reactionPicker = document.getElementById('fb-reaction-picker');
+        if (reactionPicker) reactionPicker.style.display = 'none';
+
+        const fxdSheetEl = document.getElementById('fx-dislike-sheet');
+        if (fxdSheetEl) fxdSheetEl.style.display = 'none';
+        ['fx-video-menu', 'fx-report-dialog'].forEach(mid => { const el = document.getElementById(mid); if (el) el.style.display = 'none'; });
 
         // Pages opened from You, including View Channel, appear directly without sliding.
         if ((activeTab === 'you' && activePage) || activePage === 'view-channel-page') {
@@ -4706,6 +4810,22 @@ const AppNavigation = {
             }
         });
         if (typeof fbcmRestoreScroll === 'function') fbcmRestoreScroll();
+
+        // Come back to exactly where the user was (Home feed, Play Page, any page).
+        this._view = newViewKey; this._viewTab = activeTab; this._viewPage = activePage;
+        if (this._fresh) { delete this._mem[newViewKey]; this._fresh = false; }
+        const rec = this._mem[newViewKey];
+        if (rec) {
+            const apply = () => {
+                if (!activePage && rec.win != null) { try { window.scrollTo(0, rec.win); } catch (e) {} }
+                rec.els.forEach(([el, top]) => {
+                    if (el.isConnected && el.getClientRects().length && Math.abs(el.scrollTop - top) > 1) el.scrollTop = top;
+                });
+            };
+            apply();
+            requestAnimationFrame(apply);
+            setTimeout(apply, 120);
+        }
     },
 
     updateBridge: function() {
@@ -4777,10 +4897,14 @@ async function openMoviePage(id, isTMDB = false) {
 
     // Show the watch page before starting playback. Android WebView can reject
     // autoplay/play() when the video element is still inside a display:none page.
+    delete _fxPlayLikeInit[currentActiveMovie.id];
     AppNavigation.pushPage('full-movie-page');
+    const _mvPage = document.getElementById('full-movie-page');
+    if (_mvPage) _mvPage.scrollTop = 0; // a new video always starts at the top
     
     startVideoPlayer();
     registerViewAndListen(currentActiveMovie.id);
+    try { registerPostReactionsListener(String(currentActiveMovie.id)); fxListenDislike(String(currentActiveMovie.id)); } catch (e) {}
     loadChannelMetaForWatchPage(currentActiveMovie.userId || currentActiveMovie.channelId);
 }
 
@@ -4881,15 +5005,12 @@ function registerViewAndListen(movieId) {
         const totalLikes = Object.keys(likesObj).length;
 
         const viewsEl = document.getElementById('movie-detail-views');
-        const likesEl = document.getElementById('movie-detail-likes');
-        const countEl = document.getElementById('movie-like-count');
 
         if (viewsEl) viewsEl.innerText = formatCount(totalViews) + " Views";
-        if (likesEl) likesEl.innerText = formatCount(totalLikes) + " Likes";
-        if (countEl) countEl.innerText = formatCount(totalLikes);
 
         const uidNow = auth.currentUser ? auth.currentUser.uid : null;
-        wpApplyReaction('movie-like-btn', !!(uidNow && likesObj[uidNow]), wpFirstStats);
+        _fxMovieLikes[movieId] = likesObj;
+        fxPaintPlayLikes(movieId);
         wpApplyReaction('movie-dislike-btn', !!(uidNow && dislikesObj[uidNow]), wpFirstStats);
         wpFirstStats = false;
     });
@@ -4977,18 +5098,7 @@ function toggleMovieLike() {
     playUI('click');
     if (!auth.currentUser) { showNotification("Please sign in to Like", "error"); return; }
     if (!currentActiveMovie) return;
-    const userId = auth.currentUser.uid;
-    const movieId = currentActiveMovie.id;
-    
-    const likeRef = db.ref(`movie_stats/${movieId}/likes/${userId}`);
-    const dislikeRef = db.ref(`movie_stats/${movieId}/dislikes/${userId}`);
-    
-    likeRef.once('value', (snap) => {
-        const op = snap.exists()
-            ? likeRef.remove()
-            : Promise.all([likeRef.set(true), dislikeRef.remove()]);
-        op.catch(() => showNotification("Like update failed. Please try again.", "error"));
-    });
+    fxToggleVideoLike(currentActiveMovie.id, true);
 }
 
 function toggleMovieDislike() {
@@ -5005,7 +5115,7 @@ function toggleMovieDislike() {
         const had = snap.exists();
         const op = had
             ? dislikeRef.remove()
-            : Promise.all([dislikeRef.set(true), likeRef.remove()]);
+            : Promise.all([dislikeRef.set(true), likeRef.remove(), db.ref(`post_reactions/${movieId}/${userId}`).remove()]);
         op.catch(() => showNotification("Dislike update failed. Please try again.", "error"));
         if (had) fxClearDislikeFeedback(movieId, userId);
         else fxOpenDislikeSheet(movieId);
@@ -7465,6 +7575,7 @@ function handleLoveSingleClick(postId) {
         return;
     }
     const userId = auth.currentUser.uid;
+    if (fxIsVideoId(postId)) { fxToggleVideoLike(postId, false); return; }
     db.ref(`post_reactions/${postId}/${userId}`).once('value', (snap) => {
         if (snap.exists()) {
             db.ref(`post_reactions/${postId}/${userId}`).remove();
@@ -7474,7 +7585,7 @@ function handleLoveSingleClick(postId) {
     });
 }
 
-async function submitPostReaction(postId, type) {
+async function submitPostReaction(postId, type, silent) {
     if (!auth.currentUser) {
         showNotification("Please sign in to react", "error");
         return;
@@ -7492,8 +7603,9 @@ async function submitPostReaction(postId, type) {
         timestamp: Date.now()
     });
     try { db.ref(`movie_stats/${postId}/dislikes/${userId}`).remove().catch(() => {}); } catch (e) {}
+    if (fxIsVideoId(postId)) { try { db.ref(`movie_stats/${postId}/likes/${userId}`).set(true).catch(() => {}); } catch (e) {} }
 
-    triggerFloatingReaction(type);
+    if (!silent) triggerFloatingReaction(type);
 }
 
 function triggerFloatingReaction(type) {
@@ -7522,8 +7634,14 @@ function paintPostReactions(postId) {
     // Paint EVERY element carrying these ids (a video can be on Home and on the Watch page at once).
     const all = (id) => document.querySelectorAll(`[id="${id}"]`);
 
-    if (c.reactions) {
-        const reactions = c.reactions;
+    let reactionsAll = c.reactions;
+    if (_fxMovieLikes[postId]) {
+        const merged = {};
+        Object.keys(_fxMovieLikes[postId]).forEach(u => { merged[u] = { type: 'like' }; });
+        reactionsAll = Object.assign(merged, reactionsAll || {});
+    }
+    if (reactionsAll) {
+        const reactions = reactionsAll;
         const totalReactions = Object.keys(reactions).length;
 
         const reactionCounts = { love: 0, like: 0, care: 0, haha: 0, wow: 0, sad: 0, angry: 0 };
@@ -7567,6 +7685,7 @@ function paintPostReactions(postId) {
     if (c.commentCount !== undefined) {
         all(`post-total-comments-${postId}`).forEach(el => { el.innerText = formatCount(c.commentCount); });
     }
+    try { fxPaintPlayLikes(postId); } catch (e) {}
 }
 
 function registerPostReactionsListener(postId) {

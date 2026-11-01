@@ -2578,6 +2578,163 @@ const FX_ICON = {
     play:  '<svg viewBox="0 0 24 24"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.2-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>'
 };
 
+// =========================================================
+// DISLIKE FEEDBACK SHEET ("Why did you dislike this video?")
+// Opens from the Home long-video card AND the Long Video Play Page dislike button.
+// =========================================================
+const FXD_REASONS = [
+    { k: 'inappropriate', t: 'Inappropriate', i: '<svg viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>' },
+    { k: 'misleading', t: 'Misleading', i: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5h.01"/></svg>' },
+    { k: 'not_channel', t: 'Not interested in this channel', i: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M17 9l5 5M22 9l-5 5"/></svg>' },
+    { k: 'not_topic', t: 'Not interested in this topic', i: '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.1A10.9 10.9 0 0 1 12 6c6.5 0 10 6 10 6a17 17 0 0 1-3.2 3.9M6.6 7.6A16.6 16.6 0 0 0 2 12s3.5 6 10 6c1.7 0 3.2-.4 4.5-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>' },
+    { k: 'ai', t: 'AI-generated', i: '<svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16z"/></svg>' },
+    { k: 'other', t: 'Other', i: '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>' }
+];
+const FXD_DOWN_SVG = '<svg viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H6.7a2 2 0 0 0-2 1.7l-1.4 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.7A2.3 2.3 0 0 1 22 4.3v7.4A2.3 2.3 0 0 1 19.7 14H17"/></svg>';
+let _fxdVideoId = null;
+let _fxdBusy = false;
+
+function fxdEnsureSheet() {
+    let root = document.getElementById('fx-dislike-sheet');
+    if (root) return root;
+    root = document.createElement('div');
+    root.id = 'fx-dislike-sheet';
+    root.className = 'fxd-root';
+    root.innerHTML = `
+        <div class="fxd-sheet" id="fxd-sheet">
+            <div class="fxd-grab" id="fxd-grab"><span></span></div>
+            <div class="fxd-main" id="fxd-main">
+                <div class="fxd-head">
+                    <div class="fxd-badge">${FXD_DOWN_SVG}</div>
+                    <div class="fxd-htxt">
+                        <h3>Why did you dislike this video?</h3>
+                        <p>Help us improve your feed</p>
+                    </div>
+                </div>
+                <div class="fxd-chips" id="fxd-chips">
+                    ${FXD_REASONS.map(r => `
+                        <button type="button" class="fxd-chip" data-k="${r.k}">
+                            <span class="fxd-ci">${r.i}</span>
+                            <span class="fxd-ct">${r.t}</span>
+                            <span class="fxd-tick"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+                        </button>`).join('')}
+                </div>
+                <textarea id="fxd-note" class="fxd-note" rows="3" maxlength="300" placeholder="Tell us more (optional)"></textarea>
+                <div class="fxd-actions">
+                    <button type="button" class="fxd-skip" id="fxd-skip">Not now</button>
+                    <button type="button" class="fxd-send" id="fxd-send" disabled>Send feedback</button>
+                </div>
+            </div>
+            <div class="fxd-done" id="fxd-done">
+                <div class="fxd-check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+                <h3>Thanks for your feedback</h3>
+                <p>We will use it to improve your feed.</p>
+            </div>
+        </div>`;
+    document.body.appendChild(root);
+
+    root.addEventListener('click', (e) => { if (e.target === root) fxCloseDislikeSheet(); });
+    root.querySelector('#fxd-chips').addEventListener('click', (e) => {
+        const chip = e.target.closest('.fxd-chip');
+        if (!chip) return;
+        if (typeof playUI === 'function') playUI('click');
+        chip.classList.toggle('on');
+        fxdSync();
+    });
+    root.querySelector('#fxd-skip').addEventListener('click', () => fxCloseDislikeSheet());
+    root.querySelector('#fxd-send').addEventListener('click', () => fxSubmitDislikeFeedback());
+
+    // swipe down to close
+    const sheet = root.querySelector('#fxd-sheet');
+    const grab = root.querySelector('#fxd-grab');
+    let sy = 0, dy = 0, drag = false;
+    grab.addEventListener('touchstart', (e) => { drag = true; sy = e.touches[0].clientY; dy = 0; sheet.style.transition = 'none'; }, { passive: true });
+    grab.addEventListener('touchmove', (e) => {
+        if (!drag) return;
+        dy = Math.max(0, e.touches[0].clientY - sy);
+        sheet.style.transform = `translateY(${dy}px)`;
+    }, { passive: true });
+    const end = () => {
+        if (!drag) return;
+        drag = false; sheet.style.transition = '';
+        if (dy > 90) fxCloseDislikeSheet(); else sheet.style.transform = '';
+    };
+    grab.addEventListener('touchend', end);
+    grab.addEventListener('touchcancel', end);
+    return root;
+}
+
+function fxdSync() {
+    const root = document.getElementById('fx-dislike-sheet');
+    if (!root) return;
+    const chosen = root.querySelectorAll('.fxd-chip.on');
+    const other = root.querySelector('.fxd-chip[data-k="other"]');
+    root.querySelector('#fxd-send').disabled = chosen.length === 0;
+    root.querySelector('#fxd-note').classList.toggle('show', !!(other && other.classList.contains('on')));
+}
+
+function fxOpenDislikeSheet(videoId) {
+    const root = fxdEnsureSheet();
+    _fxdVideoId = String(videoId);
+    _fxdBusy = false;
+    root.querySelectorAll('.fxd-chip').forEach(c => c.classList.remove('on'));
+    root.querySelector('#fxd-note').value = '';
+    root.querySelector('#fxd-main').style.display = '';
+    root.querySelector('#fxd-done').classList.remove('show');
+    root.classList.remove('open', 'closing');
+    root.querySelector('#fxd-sheet').style.transform = '';
+    const send = root.querySelector('#fxd-send');
+    send.textContent = 'Send feedback';
+    fxdSync();
+    AppNavigation.pushModal('fx-dislike-sheet');
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('open')));
+}
+
+function fxCloseDislikeSheet() {
+    const root = document.getElementById('fx-dislike-sheet');
+    if (!root || root.classList.contains('closing')) return;
+    root.classList.add('closing');
+    root.classList.remove('open');
+    setTimeout(() => {
+        const c = AppNavigation.current();
+        if (c && c.type === 'modal' && c.id === 'fx-dislike-sheet') AppNavigation.pop();
+        else root.style.display = 'none';
+        root.classList.remove('closing');
+    }, 240);
+}
+
+function fxSubmitDislikeFeedback() {
+    if (_fxdBusy) return;
+    const root = document.getElementById('fx-dislike-sheet');
+    if (!root || !_fxdVideoId) return;
+    const reasons = Array.from(root.querySelectorAll('.fxd-chip.on')).map(c => c.dataset.k);
+    if (!reasons.length) return;
+    _fxdBusy = true;
+    const note = reasons.includes('other') ? root.querySelector('#fxd-note').value.trim().slice(0, 300) : '';
+    const send = root.querySelector('#fxd-send');
+    send.textContent = 'Sending...'; send.disabled = true;
+
+    const finish = (ok) => {
+        if (ok) {
+            root.querySelector('#fxd-main').style.display = 'none';
+            root.querySelector('#fxd-done').classList.add('show');
+            setTimeout(fxCloseDislikeSheet, 1300);
+        } else {
+            if (typeof showNotification === 'function') showNotification('Could not send feedback. Please try again.', 'error');
+            _fxdBusy = false; send.textContent = 'Send feedback'; send.disabled = false;
+        }
+    };
+    if (typeof auth === 'undefined' || !auth.currentUser || !navigator.onLine) { finish(false); return; }
+    db.ref(`video_dislike_feedback/${_fxdVideoId}/${auth.currentUser.uid}`)
+        .set({ reasons, note, timestamp: Date.now() })
+        .then(() => finish(true))
+        .catch(() => finish(false));
+}
+
+function fxClearDislikeFeedback(videoId, uid) {
+    try { db.ref(`video_dislike_feedback/${videoId}/${uid}`).remove().catch(() => {}); } catch (e) {}
+}
+
 // Title: 25 characters per line, max 2 lines ("…" at the end if longer).
 function fxTitleTwoLines(title) {
     const W = 25;
@@ -2619,8 +2776,10 @@ function fxToggleDislike(id) {
     dRef.once('value', snap => {
         if (snap.exists()) {
             dRef.remove();
+            fxClearDislikeFeedback(id, uid);
         } else {
             dRef.set(true).then(() => db.ref(`post_reactions/${id}/${uid}`).remove()).catch(() => {});
+            fxOpenDislikeSheet(id);
         }
     });
 }
@@ -4249,6 +4408,9 @@ const AppNavigation = {
         const reactionPicker = document.getElementById('fb-reaction-picker');
         if (reactionPicker) reactionPicker.style.display = 'none';
 
+        const fxdSheetEl = document.getElementById('fx-dislike-sheet');
+        if (fxdSheetEl) fxdSheetEl.style.display = 'none';
+
         let activeTab = 'home';
         let activePage = null;
         let activeModals = [];
@@ -4637,10 +4799,13 @@ function toggleMovieDislike() {
     const dislikeRef = db.ref(`movie_stats/${movieId}/dislikes/${userId}`);
     
     dislikeRef.once('value', (snap) => {
-        const op = snap.exists()
+        const had = snap.exists();
+        const op = had
             ? dislikeRef.remove()
             : Promise.all([dislikeRef.set(true), likeRef.remove()]);
         op.catch(() => showNotification("Dislike update failed. Please try again.", "error"));
+        if (had) fxClearDislikeFeedback(movieId, userId);
+        else fxOpenDislikeSheet(movieId);
     });
 }
 

@@ -1230,6 +1230,10 @@
 .fly-menu-back{display:flex;align-items:center;gap:8px;padding:10px 14px;font-weight:800;font-size:0.85rem;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:4px;}
 .fly-player-wrap:fullscreen,.fly-player-wrap:-webkit-full-screen{width:100vw;height:100vh;}
 .fly-player-wrap:fullscreen .fly-video{object-fit:contain;}
+.fly-mini{position:absolute;left:0;right:0;bottom:0;height:max(3px,.65vw);background:rgba(255,255,255,.2);z-index:9;pointer-events:none;transition:opacity .2s ease;}
+.fly-mini-buf{position:absolute;left:0;top:0;height:100%;width:0;background:rgba(255,255,255,.55);}
+.fly-mini-fill{position:absolute;left:0;top:0;height:100%;width:0;background:#D80E45;}
+.fly-controls.show ~ .fly-mini{opacity:0;}
 
 /* ===== LONG VIDEO PAGE — YouTube-style watch layout ===== */
 :root{--wp-panel:#F2F2F2;--wp-muted:#606060;}
@@ -1237,18 +1241,21 @@
 #full-movie-page{top:env(safe-area-inset-top,0px)!important;bottom:0;height:auto!important;background:var(--bg-color)!important;overscroll-behavior:contain;}
 #full-movie-page .wp-stage{position:sticky;top:0;z-index:60;}
 #full-movie-page .wp-back{top:8px;left:8px;width:34px;height:34px;font-size:.95rem;background:rgba(0,0,0,.45);border:0;color:#fff;box-shadow:none;z-index:12;backdrop-filter:blur(6px);}
-.wp-info{background:var(--bg-color);border-radius:24px 24px 0 0;margin-top:-1px;padding:20px 3.3vw 14px;}
+.wp-info{background:var(--bg-color);border-radius:3.5vw 3.5vw 0 0;margin-top:0;padding:5.1vw 3.3vw 3.2vw;}
+#full-movie-page .wp-content{background:linear-gradient(#0F0F0F 0,#0F0F0F 3.5vw,transparent 3.5vw);}
+.wp-info,.wp-info *{font-family:Roboto,"Helvetica Neue",Arial,sans-serif;}
 [data-theme="dark"] .wp-info{background:linear-gradient(180deg,#2A2A2A 0%,#171717 38%,#0F0F0F 100%);}
-.wp-title{margin:0 0 10px;font-size:1.32rem;font-weight:800;line-height:1.28;letter-spacing:-.2px;color:var(--text-main);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-.wp-meta{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:.84rem;font-weight:500;color:var(--wp-muted);}
-.wp-meta .wp-handle{color:var(--text-main);font-weight:700;}
-.wp-more{background:none;border:0;padding:0;font-size:.84rem;font-weight:800;color:var(--text-main);}
-.wp-actions{display:flex;align-items:center;margin:5vw 0 4.3vw;}
+.wp-title{margin:0 0 2vw;font-size:clamp(15px,4.5vw,20px);font-weight:700;line-height:1.3;letter-spacing:0;color:var(--text-main);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.wp-meta{display:flex;flex-wrap:wrap;align-items:center;gap:.4vw 1.6vw;font-size:clamp(11px,2.9vw,13px);line-height:1.45;font-weight:400;color:var(--wp-muted);}
+.wp-meta .wp-handle{color:var(--text-main);font-weight:600;}
+.wp-verified{display:none;width:3.1vw;height:3.1vw;min-width:12px;min-height:12px;margin-left:-.6vw;color:var(--wp-muted);flex-shrink:0;}
+.wp-more{background:none;border:0;padding:0;font-size:inherit;font-weight:600;color:var(--text-main);}
+.wp-actions{display:flex;align-items:center;margin:2.6vw -3.3vw 2.7vw 0;}
 .wp-avatar{width:8.9vw;height:8.9vw;border-radius:50%;object-fit:cover;background:#E2E8F0;flex-shrink:0;border:0;display:block;}
-.wp-sub{margin:0 0 0 2.2vw;height:8.9vw;min-height:0;padding:0 3.3vw;border-radius:8.9vw;background:var(--text-main);color:var(--bg-color);font-size:3.4vw;font-weight:600;line-height:1;flex-shrink:0;border:0;}
+.wp-sub{margin:0 0 0 2.2vw;height:8.9vw;min-height:0;padding:0 3.4vw;border-radius:8.9vw;background:var(--text-main);color:var(--bg-color);font-size:clamp(12px,3vw,14px);font-weight:500;line-height:1;flex-shrink:0;border:0;}
 .wp-spacer{flex:1;min-width:0;}
 .wp-ico{position:relative;width:11.3vw;height:11.3vw;max-width:11.3vw;background:none;border:0;padding:0;color:var(--text-main);display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%;outline:none;}
-.wp-ico svg{position:relative;width:6.4vw;height:6.4vw;display:block;transition:transform .18s ease;}
+.wp-ico svg{position:relative;width:7.65vw;height:7.65vw;display:block;transition:transform .18s ease;}
 .wp-ico:active svg{transform:scale(.82);}
 .wp-ico::before{content:"";position:absolute;inset:6%;border-radius:50%;background:var(--wp-panel);opacity:0;transform:scale(.3);pointer-events:none;}
 .wp-ico .wp-off,.wp-ico .wp-on{transform-box:fill-box;transform-origin:center;transition:opacity .22s ease,transform .38s cubic-bezier(.34,1.56,.64,1);}
@@ -1265,15 +1272,16 @@
 @keyframes wpLikePop{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
 @keyframes wpDislikePop{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
 @keyframes wpRing{0%{opacity:.95;transform:scale(.3)}100%{opacity:0;transform:scale(1.15)}}
-#full-movie-page .comment-preview-card{background:var(--wp-panel);border-radius:22px;padding:14px 18px 16px;margin:0 0 0;gap:10px;}
-#full-movie-page .comment-preview-title{font-size:1rem;font-weight:700;}
-#full-movie-page .comment-preview-count{font-size:.9rem;font-weight:500;color:var(--wp-muted);margin-left:6px;}
-#full-movie-page .comment-preview-content{align-items:flex-start;gap:12px;}
-#full-movie-page .comment-preview-avatar{width:36px;height:36px;font-size:.9rem;}
-#full-movie-page .comment-preview-text{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:.95rem;line-height:1.4;color:var(--text-main);font-weight:500;}
-.wp-pager{display:flex;align-items:center;gap:5px;}
-.wp-pager i{display:block;height:8px;border-radius:4px;background:var(--wp-muted);opacity:.7;width:8px;}
-.wp-pager i:first-child{width:20px;background:var(--text-main);opacity:1;}
+#full-movie-page .comment-preview-card{background:var(--wp-panel);border-radius:3.5vw;padding:3.5vw 3.5vw 4vw;margin:0;gap:3.1vw;}
+#full-movie-page .comment-preview-header{align-items:flex-start;}
+#full-movie-page .comment-preview-title{font-size:clamp(14px,3.6vw,17px);font-weight:600;display:inline-flex;align-items:baseline;gap:1.5vw;color:var(--text-main);}
+#full-movie-page .comment-preview-count{font-size:clamp(11px,2.9vw,13px);font-weight:400;color:var(--wp-muted);margin-left:0;}
+#full-movie-page .comment-preview-content{align-items:flex-start;gap:2.2vw;}
+#full-movie-page .comment-preview-avatar{width:6.7vw;height:6.7vw;min-width:26px;min-height:26px;font-size:.8rem;}
+#full-movie-page .comment-preview-text{white-space:pre-line;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:clamp(12px,3.15vw,14px);line-height:1.45;color:var(--text-main);font-weight:400;}
+.wp-pager{display:flex;align-items:center;gap:1.1vw;margin-top:.2vw;}
+.wp-pager i{display:block;width:1.75vw;height:1.75vw;min-width:7px;min-height:7px;border-radius:50%;background:var(--wp-muted);opacity:.35;}
+.wp-pager i:first-child{width:3.3vw;min-width:13px;border-radius:999px;background:var(--text-main);opacity:1;}
 .wp-related{display:flex;flex-direction:column;gap:0;padding:6px 0 80px;}
 .wp-card{cursor:pointer;margin:0 0 18px;background:var(--bg-color);}
 .wp-thumb{position:relative;width:100%;aspect-ratio:16/9;background:#0F0F0F;overflow:hidden;}
@@ -1870,28 +1878,29 @@
 <h1 id="movie-detail-title" class="wp-title">Title</h1>
 <div class="wp-meta">
 <span id="movie-detail-channel-handle" class="wp-handle">@channel</span>
-<span id="movie-detail-likes">0 Likes</span>
-<span id="movie-detail-views">0 Views</span>
-<span id="movie-detail-upload-time">Just Now</span>
-<button class="wp-more" onclick="openMoreDescriptionSheet()">more</button>
+<svg class="wp-verified" id="movie-verified-badge" viewBox="0 0 24 24" aria-label="Verified"><path fill="currentColor" d="M23.25 12.00 L23.10 12.73 L22.68 13.41 L22.10 14.01 L21.49 14.54 L20.97 15.05 L20.64 15.58 L20.50 16.19 L20.51 16.91 L20.56 17.72 L20.55 18.56 L20.36 19.33 L19.95 19.95 L19.33 20.36 L18.56 20.55 L17.72 20.56 L16.91 20.51 L16.19 20.50 L15.58 20.64 L15.05 20.97 L14.54 21.49 L14.01 22.10 L13.41 22.68 L12.73 23.10 L12.00 23.25 L11.27 23.10 L10.59 22.68 L9.99 22.10 L9.46 21.49 L8.95 20.97 L8.42 20.64 L7.81 20.50 L7.09 20.51 L6.28 20.56 L5.44 20.55 L4.67 20.36 L4.05 19.95 L3.64 19.33 L3.45 18.56 L3.44 17.72 L3.49 16.91 L3.50 16.19 L3.36 15.58 L3.03 15.05 L2.51 14.54 L1.90 14.01 L1.32 13.41 L0.90 12.73 L0.75 12.00 L0.90 11.27 L1.32 10.59 L1.90 9.99 L2.51 9.46 L3.03 8.95 L3.36 8.42 L3.50 7.81 L3.49 7.09 L3.44 6.28 L3.45 5.44 L3.64 4.67 L4.05 4.05 L4.67 3.64 L5.44 3.45 L6.28 3.44 L7.09 3.49 L7.81 3.50 L8.42 3.36 L8.95 3.03 L9.46 2.51 L9.99 1.90 L10.59 1.32 L11.27 0.90 L12.00 0.75 L12.73 0.90 L13.41 1.32 L14.01 1.90 L14.54 2.51 L15.05 3.03 L15.58 3.36 L16.19 3.50 L16.91 3.49 L17.72 3.44 L18.56 3.45 L19.33 3.64 L19.95 4.05 L20.36 4.67 L20.55 5.44 L20.56 6.28 L20.51 7.09 L20.50 7.81 L20.64 8.42 L20.97 8.95 L21.49 9.46 L22.10 9.99 L22.68 10.59 L23.10 11.27Z"/><path d="M8 12.3l2.7 2.7 5.3-5.6" fill="none" style="stroke:var(--bg-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<span id="movie-detail-likes">0 likes</span>
+<span id="movie-detail-views">0 views</span>
+<span id="movie-detail-upload-time">just now</span>
+<button class="wp-more" onclick="openMoreDescriptionSheet()">…more</button>
 </div>
 <div class="wp-actions">
 <img id="movie-channel-avatar" class="wp-avatar" src="" alt=""/>
 <button class="btn-watch-subscribe wp-sub" id="movie-subscribe-btn" onclick="toggleMovieChannelSubscribe()">Subscribe</button>
 <div class="wp-spacer"></div>
 <button class="wp-ico post-action-btn-fb" id="movie-like-btn" onclick="toggleMovieLike()" onmousedown="wpLikeRxStart(event)" ontouchstart="wpLikeRxStart(event)" aria-label="Like">
-<svg viewBox="0 0 24 24" fill="currentColor"><path class="wp-off" d="M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11H3v10h4h1h9.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z M7,20H4v-8h3V20z M19.98,13.17l-1.34,6C18.54,19.65,18.03,20,17.43,20H8v-8.61l5.6-6.06C13.79,5.12,14.08,5,14.38,5c0.26,0,0.5,0.11,0.63,0.3c0.07,0.1,0.15,0.26,0.09,0.47l-1.52,4.94L13.18,12h1.35h4.23c0.41,0,0.8,0.17,1.03,0.46C19.92,12.61,20.05,12.86,19.98,13.17z"/><path class="wp-on" d="M3,11h3v10H3V11z M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11v10h10.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z"/></svg><span id="movie-like-count" style="display:none">0</span>
+<svg viewBox="0 0 24 24"><g transform="translate(12 12) scale(0.774) translate(-12 -12)"><path class="wp-off" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M2.30 12.92Q2.30 11.87 3.35 11.87L6.71 11.87L10.26 3.68Q10.88 2.00 12.05 2.00Q13.84 2.16 13.84 4.65L13.53 8.63Q13.45 9.80 14.70 9.80L19.58 9.80Q21.72 9.72 21.64 11.87L21.64 13.23Q21.64 13.93 20.79 14.17Q21.57 14.56 21.14 15.57Q20.86 16.27 20.24 16.82Q21.02 17.52 20.24 18.15Q19.38 18.61 19.30 19.67Q19.15 21.34 17.04 21.50L11.58 21.50Q8.85 21.42 6.71 20.45L3.35 20.45Q2.30 20.45 2.30 19.39Z"/></g><g transform="translate(12 12) scale(0.85) translate(-12 -12)"><path class="wp-on" fill="currentColor" d="M2.30 12.92Q2.30 11.87 3.35 11.87L6.71 11.87L10.26 3.68Q10.88 2.00 12.05 2.00Q13.84 2.16 13.84 4.65L13.53 8.63Q13.45 9.80 14.70 9.80L19.58 9.80Q21.72 9.72 21.64 11.87L21.64 13.23Q21.64 13.93 20.79 14.17Q21.57 14.56 21.14 15.57Q20.86 16.27 20.24 16.82Q21.02 17.52 20.24 18.15Q19.38 18.61 19.30 19.67Q19.15 21.34 17.04 21.50L11.58 21.50Q8.85 21.42 6.71 20.45L3.35 20.45Q2.30 20.45 2.30 19.39Z"/></g></svg><span id="movie-like-count" style="display:none">0</span>
 </button>
 <button class="wp-ico" id="movie-dislike-btn" onclick="toggleMovieDislike()" aria-label="Dislike">
-<svg viewBox="0 0 24 24" fill="currentColor"><g transform="rotate(180 12 12)"><path class="wp-off" d="M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11H3v10h4h1h9.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z M7,20H4v-8h3V20z M19.98,13.17l-1.34,6C18.54,19.65,18.03,20,17.43,20H8v-8.61l5.6-6.06C13.79,5.12,14.08,5,14.38,5c0.26,0,0.5,0.11,0.63,0.3c0.07,0.1,0.15,0.26,0.09,0.47l-1.52,4.94L13.18,12h1.35h4.23c0.41,0,0.8,0.17,1.03,0.46C19.92,12.61,20.05,12.86,19.98,13.17z"/><path class="wp-on" d="M3,11h3v10H3V11z M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11v10h10.43c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z"/></g></svg>
+<svg viewBox="0 0 24 24"><g transform="rotate(180 12 12)"><g transform="translate(12 12) scale(0.774) translate(-12 -12)"><path class="wp-off" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M2.30 12.92Q2.30 11.87 3.35 11.87L6.71 11.87L10.26 3.68Q10.88 2.00 12.05 2.00Q13.84 2.16 13.84 4.65L13.53 8.63Q13.45 9.80 14.70 9.80L19.58 9.80Q21.72 9.72 21.64 11.87L21.64 13.23Q21.64 13.93 20.79 14.17Q21.57 14.56 21.14 15.57Q20.86 16.27 20.24 16.82Q21.02 17.52 20.24 18.15Q19.38 18.61 19.30 19.67Q19.15 21.34 17.04 21.50L11.58 21.50Q8.85 21.42 6.71 20.45L3.35 20.45Q2.30 20.45 2.30 19.39Z"/></g><g transform="translate(12 12) scale(0.85) translate(-12 -12)"><path class="wp-on" fill="currentColor" d="M2.30 12.92Q2.30 11.87 3.35 11.87L6.71 11.87L10.26 3.68Q10.88 2.00 12.05 2.00Q13.84 2.16 13.84 4.65L13.53 8.63Q13.45 9.80 14.70 9.80L19.58 9.80Q21.72 9.72 21.64 11.87L21.64 13.23Q21.64 13.93 20.79 14.17Q21.57 14.56 21.14 15.57Q20.86 16.27 20.24 16.82Q21.02 17.52 20.24 18.15Q19.38 18.61 19.30 19.67Q19.15 21.34 17.04 21.50L11.58 21.50Q8.85 21.42 6.71 20.45L3.35 20.45Q2.30 20.45 2.30 19.39Z"/></g></g></svg>
 </button>
-<button class="wp-ico" onclick="wpShare()" aria-label="Share"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15,5.63L20.66,12L15,18.37V14h-1c-3.96,0-7.14,1-9.75,3.09c1.84-4.07,5.11-6.4,9.89-7.1L15,9.86V5.63 M14,3v6C6.22,10.13,3.11,15.33,2,21c2.78-3.97,6.44-6,12-6v6l9-9L14,3L14,3z"/></svg></button>
-<button class="wp-ico" onclick="requestDownloadWithAd()" aria-label="Download"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 18v1H6v-1h11zm-.5-6.6-.7-.7-3.8 3.7V4h-1v10.4l-3.8-3.8-.7.7 5 5 5-5z"/></svg></button>
+<button class="wp-ico" onclick="wpShare()" aria-label="Share"><svg viewBox="0 0 24 24"><path transform="translate(12 12) scale(.86) translate(-12.5 -12)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" d="M14 3v6C6.22 10.13 3.11 15.33 2 21c2.78-3.97 6.44-6 12-6v6l9-9z"/></svg></button>
+<button class="wp-ico" onclick="requestDownloadWithAd()" aria-label="Download"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" d="M12 4.8v10.9M7 10.9l5 5 5-5M4 19.2h16"/></svg></button>
 </div>
 <div class="comment-preview-card" id="comment-preview-trigger" onclick="openCommentModal()">
 <div class="comment-preview-header">
 <span class="comment-preview-title">Comments <span class="comment-preview-count" id="comment-preview-count">0</span></span>
-<span class="wp-pager"><i></i><i></i></span>
+<span class="wp-pager"><i></i><i></i><i></i></span>
 </div>
 <div class="comment-preview-content">
 <div class="comment-preview-avatar" id="comment-preview-avatar"><i class="far fa-comment" style="color: var(--text-muted);"></i></div>

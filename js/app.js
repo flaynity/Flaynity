@@ -3766,6 +3766,39 @@ function openFeelsComments(shortId, event) {
     openShortComments(s.id);
 }
 
+function fitFeelsTitles(attempt = 0) {
+    const titles = document.querySelectorAll('#feels-swiper-container .short-title-text');
+    let waiting = false;
+    titles.forEach(h => {
+        const full = h.dataset.full != null ? h.dataset.full : (h.dataset.full = h.textContent);
+        if (!h.clientWidth) { waiting = true; return; }          // tab not visible yet
+        if (h.dataset.fitW === String(h.clientWidth)) return;    // already fitted for this width
+        h.dataset.fitW = String(h.clientWidth);
+        h.classList.add('measure');
+        const lh = parseFloat(getComputedStyle(h).lineHeight) || 20;
+        const maxH = lh * 2 + 1;
+        const paint = (n) => {
+            h.textContent = '';
+            h.appendChild(document.createTextNode(full.slice(0, n).replace(/\s+$/, '') + '... '));
+            const m = document.createElement('span');
+            m.className = 'short-more'; m.textContent = 'more';
+            h.appendChild(m);
+        };
+        h.textContent = full;
+        if (h.scrollHeight <= maxH) { h.classList.remove('measure'); return; }
+        let lo = 0, hi = full.length;
+        while (lo < hi) {
+            const mid = (lo + hi + 1) >> 1;
+            paint(mid);
+            if (h.scrollHeight <= maxH) lo = mid; else hi = mid - 1;
+        }
+        paint(lo);
+        h.classList.remove('measure');
+    });
+    if (waiting && attempt < 8) setTimeout(() => fitFeelsTitles(attempt + 1), 200);
+}
+window.addEventListener('resize', () => { try { fitFeelsTitles(); } catch (e) {} });
+
 function buildFeelsPage() {
     const container = document.getElementById('feels-swiper-container');
     if (!container) return;
@@ -3817,7 +3850,6 @@ function buildFeelsPage() {
                             <div class="short-channel-action-avatar live-avatar-${s.userId || s.channelId}">
                                 <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" alt="Channel">
                             </div>
-                            <div class="short-channel-bell"><svg viewBox="0 0 32 26" aria-hidden="true"><g fill="#fff"><path d="M16 3a1.4 1.4 0 0 1 1.4 1.4v.5A5.6 5.6 0 0 1 21.5 10.3V14l1.8 1.8v.9H8.7v-.9L10.5 14v-3.7a5.6 5.6 0 0 1 4.1-5.4v-.5A1.4 1.4 0 0 1 16 3z"/><path d="M13.6 18.2a2.4 2.4 0 0 0 4.8 0z"/></g><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"><path d="M6.8 8.6a7 7 0 0 0 0 7.6"/><path d="M3.4 6.4a10.4 10.4 0 0 0 0 12"/><path d="M25.2 8.6a7 7 0 0 1 0 7.6"/><path d="M28.6 6.4a10.4 10.4 0 0 1 0 12"/></g></svg></div>
                         </div>
                         <button class="short-channel-subscribe-btn" id="short-sub-btn-${s.id}" aria-label="Subscribe" onclick="toggleClipSubscribe('${s.userId || s.channelId}', this)">
                             <i class="fas fa-plus"></i>
@@ -3865,7 +3897,7 @@ function buildFeelsPage() {
                 <div class="short-bottom-info">
                     <div class="short-channel-name live-username-${s.userId || s.channelId}" style="color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8); margin-bottom:6px;">${escapeHTML(String(s.channelName || s.username || 'Flaynity').slice(0, 25))}</div>
                     <div class="short-title-wrap" style="cursor:pointer;" onclick="openFeelsDescription('${s.id}', event)">
-                        <h2 id="short-title-val-${s.id}" class="short-title-text">${escapeHTML(s.title)}${String(s.title || '').length > 55 ? ' <span class="short-more">...more</span>' : ''}</h2>
+                        <h2 id="short-title-val-${s.id}" class="short-title-text">${escapeHTML(s.title)}</h2>
                     </div>
                 </div>
             </div>
@@ -3971,6 +4003,7 @@ function buildFeelsPage() {
     initFeelsObserver();
     setupDoubleTapListeners();
     bindFeelsVideoEvents();
+    requestAnimationFrame(() => fitFeelsTitles());
 
     // Immediately activate an explicitly requested Home/mode-switch target.
     // This avoids the initial observer pass picking another Feels first.
@@ -4455,6 +4488,14 @@ function ttEnsureSheet() {
     .tt-sk{display:flex;gap:10px;margin-bottom:18px;align-items:center}
     .tt-sk i{width:36px;height:36px;border-radius:50%;background:rgba(128,128,128,.18)}
     .tt-sk b{height:14px;border-radius:7px;background:rgba(128,128,128,.18)}
+    #tt-comment-modal .tt-menu-wrap{position:absolute;inset:0;z-index:10;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;animation:ttFade .2s ease}
+    @keyframes ttFade{from{opacity:0}to{opacity:1}}
+    .tt-menu2{width:100%;box-sizing:border-box;background:#f6f6f6;background:color-mix(in srgb,var(--surface,#fff) 94%,#808080);border-radius:20px 20px 0 0;padding:16px 14px calc(22px + env(safe-area-inset-bottom,0px));animation:ttUp .26s cubic-bezier(.22,1,.36,1)}
+    .tt-mi{display:flex;align-items:center;gap:16px;width:100%;height:58px;box-sizing:border-box;border:0;outline:0;background:var(--surface,#fff);color:var(--text-main,#161823);border-radius:18px;padding:0 20px;margin:0 0 12px;font-size:17px;font-weight:700;font-family:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .tt-mi:last-child{margin-bottom:0}
+    .tt-mi:active{opacity:.7}
+    .tt-mi-ic{width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+    .tt-mi-ic svg{display:block}
     `;
     document.head.appendChild(st);
 

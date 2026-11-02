@@ -4159,14 +4159,16 @@ function bindFeelsScrub(slide, video) {
     tip.className = 'short-scrub-time';
     slide.appendChild(tip);
     const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
-    let pid = null, active = false, wasPlaying = false, sx = 0, sy = 0;
+    let pid = null, active = false, wasPlaying = false, sx = 0, sy = 0, down = false;
+
     const apply = (x) => {
         if (!video.duration || !isFinite(video.duration)) return;
         const r = box.getBoundingClientRect();
+        if (!r.width) return;
         const p = Math.min(1, Math.max(0, (x - r.left) / r.width));
         video.currentTime = p * video.duration;
         // bar end and thumb centre use the same position, and the thumb never leaves the screen
-        const pos = `calc(8px + (100% - 16px) * ${p})`;
+        const pos = `calc(6px + (100% - 12px) * ${p})`;
         if (bar) bar.style.width = pos;
         thumb.style.left = pos;
         tip.textContent = `${fmt(p * video.duration)} / ${fmt(video.duration)}`;
@@ -4181,6 +4183,8 @@ function bindFeelsScrub(slide, video) {
         apply(x);
     };
     const finish = () => {
+        down = false;
+        if (pid != null) { try { box.releasePointerCapture(pid); } catch (x) {} }
         pid = null;
         if (!active) return;
         active = false;
@@ -4188,18 +4192,24 @@ function bindFeelsScrub(slide, video) {
         slide.classList.remove('scrubbing');
         if (wasPlaying) video.play().catch(() => {});
     };
+
     // A plain touch / tap does nothing. Only holding the finger and dragging left/right seeks.
     box.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
         e.stopPropagation();
+        // A stale gesture (missed pointerup) must never block the next one.
+        if (active) finish();
+        down = true;
         pid = e.pointerId; sx = e.clientX; sy = e.clientY; active = false;
         try { box.setPointerCapture(pid); } catch (x) {}
     });
     box.addEventListener('pointermove', (e) => {
-        if (pid !== e.pointerId) return;
-        e.preventDefault();
+        if (!down || pid !== e.pointerId) return;
+        if (e.cancelable) e.preventDefault();
         if (!active) {
             const dx = Math.abs(e.clientX - sx), dy = Math.abs(e.clientY - sy);
-            if (dx > 8 && dx > dy) begin(e.clientX);
+            // Slightly diagonal drags must still start the scrub (was: dx had to beat dy exactly).
+            if (dx > 5 && dx >= dy * 0.6) begin(e.clientX);
             return;
         }
         apply(e.clientX);
@@ -4209,6 +4219,18 @@ function bindFeelsScrub(slide, video) {
     box.addEventListener('pointercancel', end);
     box.addEventListener('lostpointercapture', end);
     box.addEventListener('click', (e) => e.stopPropagation());
+
+    // The feed is a scroll-snap scroller. If it grabs the touch, the browser fires
+    // pointercancel and the scrub randomly "doesn't come". Claiming the touch here
+    // (non-passive) keeps the gesture on the progress bar, and keeps the global
+    // swipe / pull-to-refresh / nav handlers out of it.
+    box.addEventListener('touchstart', (e) => { e.stopPropagation(); }, { passive: true });
+    box.addEventListener('touchmove', (e) => {
+        e.stopPropagation();
+        if (e.cancelable) e.preventDefault();
+    }, { passive: false });
+    box.addEventListener('touchend', (e) => { e.stopPropagation(); }, { passive: true });
+    box.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
 function bindFeelsVideoEvents() {

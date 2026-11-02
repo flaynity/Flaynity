@@ -3813,8 +3813,11 @@ function buildFeelsPage() {
 
                 <div class="short-right-actions">
                     <div class="short-channel-action">
-                        <div class="short-channel-action-avatar live-avatar-${s.userId || s.channelId}">
-                            <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" alt="Channel">
+                        <div class="short-channel-ring">
+                            <div class="short-channel-action-avatar live-avatar-${s.userId || s.channelId}">
+                                <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" alt="Channel">
+                            </div>
+                            <div class="short-channel-bell"><svg viewBox="0 0 32 26" aria-hidden="true"><g fill="#fff"><path d="M16 3a1.4 1.4 0 0 1 1.4 1.4v.5A5.6 5.6 0 0 1 21.5 10.3V14l1.8 1.8v.9H8.7v-.9L10.5 14v-3.7a5.6 5.6 0 0 1 4.1-5.4v-.5A1.4 1.4 0 0 1 16 3z"/><path d="M13.6 18.2a2.4 2.4 0 0 0 4.8 0z"/></g><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"><path d="M6.8 8.6a7 7 0 0 0 0 7.6"/><path d="M3.4 6.4a10.4 10.4 0 0 0 0 12"/><path d="M25.2 8.6a7 7 0 0 1 0 7.6"/><path d="M28.6 6.4a10.4 10.4 0 0 1 0 12"/></g></svg></div>
                         </div>
                         <button class="short-channel-subscribe-btn" id="short-sub-btn-${s.id}" aria-label="Subscribe" onclick="toggleClipSubscribe('${s.userId || s.channelId}', this)">
                             <i class="fas fa-plus"></i>
@@ -3852,7 +3855,7 @@ function buildFeelsPage() {
                     <div class="short-quality-pill">
                         <select id="short-quality-${s.id}" aria-label="Video quality" onchange="setFeelsQuality('${s.id}', this.value)"><option value="0">Auto</option></select>
                     </div>
-                    <div class="music-disc-container" style="display:none">
+                    <div class="music-disc-container">
                         <div class="music-disc-inner live-disc-avatar-${s.userId || s.channelId}" id="music-disc-${s.id}">
                             <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                         </div>
@@ -3889,7 +3892,9 @@ function buildFeelsPage() {
             const saveBtn = document.getElementById(`short-save-btn-${s.id}`);
             if (saveBtn) {
                 const saved = !!(auth.currentUser && savesObj[auth.currentUser.uid]);
-                saveBtn.innerHTML = `<i class="fas fa-bookmark${saved ? ' saved' : ''}"></i>`;
+                const sic = saveBtn.querySelector('i');
+                if (sic) sic.classList.toggle('saved', saved);
+                else saveBtn.innerHTML = `<i class="fas fa-bookmark${saved ? ' saved' : ''}"></i>`;
             }
 
             try {
@@ -3903,11 +3908,12 @@ function buildFeelsPage() {
 
             const likeBtn = document.getElementById(isLikedId);
             if (likeBtn && auth.currentUser) {
-                if (likesObj[auth.currentUser.uid]) {
-                    likeBtn.innerHTML = `<i class="fas fa-heart liked"></i>`;
-                } else {
-                    likeBtn.innerHTML = `<i class="fas fa-heart"></i>`;
-                }
+                // Toggle the class only. Rewriting innerHTML replayed the pop animation
+                // every time ANY stat (like a Save) changed.
+                const liked = !!likesObj[auth.currentUser.uid];
+                const ic = likeBtn.querySelector('i');
+                if (ic) ic.classList.toggle('liked', liked);
+                else likeBtn.innerHTML = `<i class="fas fa-heart${liked ? ' liked' : ''}"></i>`;
             }
         });
 
@@ -4035,6 +4041,53 @@ function setupDoubleTapListeners() {
     });
 }
 
+function bindFeelsScrub(slide, video) {
+    const box = slide.querySelector('.short-progress-container');
+    if (!box || box._scrubBound) return;
+    box._scrubBound = true;
+    const bar = box.querySelector('.short-progress-bar');
+    const thumb = document.createElement('div');
+    thumb.className = 'short-scrub-thumb';
+    box.appendChild(thumb);
+    const tip = document.createElement('div');
+    tip.className = 'short-scrub-time';
+    slide.appendChild(tip);
+    const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+    let pid = null, wasPlaying = false;
+    const apply = (x) => {
+        if (!video.duration || !isFinite(video.duration)) return;
+        const r = box.getBoundingClientRect();
+        const p = Math.min(1, Math.max(0, (x - r.left) / r.width));
+        video.currentTime = p * video.duration;
+        if (bar) bar.style.width = (p * 100) + '%';
+        thumb.style.left = (p * 100) + '%';
+        tip.textContent = `${fmt(p * video.duration)} / ${fmt(video.duration)}`;
+    };
+    box.addEventListener('pointerdown', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        pid = e.pointerId;
+        try { box.setPointerCapture(pid); } catch (x) {}
+        wasPlaying = !video.paused;
+        slide._scrubbing = true;
+        slide.classList.add('scrubbing');
+        if (wasPlaying) video.pause();
+        triggerFeelsHaptic(6);
+        apply(e.clientX);
+    });
+    box.addEventListener('pointermove', (e) => { if (pid !== e.pointerId) return; e.preventDefault(); apply(e.clientX); });
+    const end = (e) => {
+        if (pid == null || (e && e.pointerId != null && e.pointerId !== pid)) return;
+        pid = null;
+        slide._scrubbing = false;
+        slide.classList.remove('scrubbing');
+        if (wasPlaying) video.play().catch(() => {});
+    };
+    box.addEventListener('pointerup', end);
+    box.addEventListener('pointercancel', end);
+    box.addEventListener('lostpointercapture', end);
+    box.addEventListener('click', (e) => e.stopPropagation());
+}
+
 function bindFeelsVideoEvents() {
     document.querySelectorAll('.short-slide').forEach(slide => {
         const video = slide.querySelector('video');
@@ -4044,6 +4097,7 @@ function bindFeelsVideoEvents() {
         video.setAttribute('playsinline', '');
         video.setAttribute('webkit-playsinline', '');
         video.style.background = 'transparent';
+        bindFeelsScrub(slide, video);
 
         video.onplay = () => {
             // Playback is the authoritative selection: switching feeds must
@@ -4361,7 +4415,9 @@ function ttEnsureSheet() {
     .tt-close svg{width:22px;height:22px;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;fill:none}
     .tt-list{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding:12px 14px 8px;-webkit-overflow-scrolling:touch}
     .tt-empty{text-align:center;color:var(--text-muted,#8a8b91);font-size:14px;margin-top:60px}
-    .tt-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:16px}
+    .tt-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:16px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+    .tt-editbar{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;color:var(--text-muted,#75767a);padding:0 4px 8px}
+    .tt-editbar button{border:0;background:transparent;color:#fe2c55;font:inherit;cursor:pointer}
     .tt-row.tt-reply{margin-left:46px;margin-bottom:14px}
     .tt-av{border-radius:50%;object-fit:cover;flex:0 0 auto;display:block}
     .tt-av-fb{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#fe2c55,#ff7a00);color:#fff;font-weight:800;font-size:14px}
@@ -4413,6 +4469,7 @@ function ttEnsureSheet() {
         </div>
         <div class="tt-list" id="tt-list"></div>
         <div class="tt-foot" id="tt-foot">
+          <div class="tt-editbar" id="tt-editbar" style="display:none"><span>Editing comment</span><button type="button" onclick="ttCancelEdit()">Cancel</button></div>
           <div class="tt-inrow">
             <div id="tt-me" style="flex:0 0 auto"></div>
             <div class="tt-pill"><input id="tt-input" type="text" autocomplete="off" enterkeyhint="send" placeholder="Add comment..." maxlength="500"></div>
@@ -4485,18 +4542,33 @@ function openTikTokComments(shortId) {
     else list.innerHTML = [55, 34, 45, 45, 34, 55].map(w => `<div class="tt-sk"><i></i><b style="width:${w}%"></b></div>`).join('');
     ttPaintMe();
 
-    _ttRef = db.ref(`movie_comments/${s.id}`);
+    ttAttach(s.id);
+    AppNavigation.pushModal('tt-comment-modal');
+    requestAnimationFrame(() => keepFeelsVideoActive(shortId));
+}
+
+let _ttGot = false, _ttEdit = null, _ttMe = null;
+function ttAttach(id) {
+    ttDetach();
+    _ttRef = db.ref(`movie_comments/${id}`);
     _ttCb = (snap) => {
+        _ttGot = true;
         const m = document.getElementById('tt-comment-modal');
         if (!m || m.style.display === 'none') { ttDetach(); return; }   // closed with the Android back button
-        if (String(_ttId) !== String(s.id)) return;
+        if (String(_ttId) !== String(id)) return;
         _ttData = snap.val() || {};
-        feelsCommentsCache[s.id] = _ttData;
+        feelsCommentsCache[id] = _ttData;
         ttRender();
     };
     _ttRef.on('value', _ttCb);
-    AppNavigation.pushModal('tt-comment-modal');
-    requestAnimationFrame(() => keepFeelsVideoActive(shortId));
+}
+// Safety net: after a write, if the realtime listener stayed silent, re-attach it.
+function ttWatch() {
+    _ttGot = false;
+    setTimeout(() => {
+        const m = document.getElementById('tt-comment-modal');
+        if (!_ttGot && _ttId && m && m.style.display !== 'none') ttAttach(_ttId);
+    }, 900);
 }
 
 function ttDetach() {
@@ -4505,6 +4577,7 @@ function ttDetach() {
 }
 function closeTikTokComments() {
     playUI('click');
+    ttCloseMenu();
     const i = document.getElementById('tt-input'); if (i) i.blur();
     const m = document.getElementById('tt-comment-modal'); if (m) m.style.paddingBottom = '0px';
     ttDetach();
@@ -4519,7 +4592,7 @@ function ttPaintMe() {
     const fb = ((u && u.email) || 'U').charAt(0).toUpperCase();
     const paint = (photo) => { box.innerHTML = ttAvatar({ avatar: photo, username: fb }, 36); };
     paint((u && (u.photoURL)) || (typeof currentChannelData !== 'undefined' && currentChannelData && (currentChannelData.avatarUrl || currentChannelData.photoURL)) || '');
-    if (u && navigator.onLine) db.ref(`users/${u.uid}`).once('value', (snap) => { const d = snap.val() || {}; if (d.photoURL) paint(d.photoURL); });
+    if (u && navigator.onLine) db.ref(`users/${u.uid}`).once('value', (snap) => { const d = snap.val() || {}; _ttMe = { uid: u.uid, username: d.username || (u.email || 'user').split('@')[0], avatar: (typeof currentChannelData !== 'undefined' && currentChannelData && (currentChannelData.avatarUrl || currentChannelData.photoURL)) || d.photoURL || u.photoURL || '' }; if (d.photoURL) paint(d.photoURL); });
 }
 
 function ttRender() {
@@ -4551,7 +4624,7 @@ function ttRender() {
             <div class="tt-body">
               <div class="tt-name"><span>${ttEsc(c.username || 'user')}</span>${to}</div>
               <div class="tt-text">${ttEsc(c.text)}</div>
-              <div class="tt-meta"><span>${ttShortAgo(c.timestamp)}</span><button type="button" data-act="reply">Reply</button></div>
+              <div class="tt-meta"><span>${ttShortAgo(c.timestamp)}</span><button type="button" data-act="reply">Reply</button>${c.edited ? '<span>Edited</span>' : ''}</div>
             </div>
             <button type="button" class="tt-like${on ? ' on' : ''}" data-act="like" aria-label="Like">${heart}<span>${n > 0 ? formatCount(n) : ''}</span></button>
           </div>`;
@@ -4595,7 +4668,12 @@ function ttToggleLike(key) {
     const c = _ttData[key]; if (!c) return;
     const uid = auth.currentUser.uid;
     const base = `movie_comments/${_ttId}/${key}`;
-    if (ttLikeUids(c).has(uid)) {
+    const had = ttLikeUids(c).has(uid);
+    // show it instantly, Firebase then confirms
+    if (had) { if (c.likes) delete c.likes[uid]; if (c.reacts) delete c.reacts[uid]; }
+    else { c.likes = c.likes || {}; c.likes[uid] = true; }
+    ttRender(); ttWatch();
+    if (had) {
         const upd = {}; upd[`likes/${uid}`] = null; upd[`reacts/${uid}`] = null;
         db.ref(base).update(upd).catch(() => showNotification('Failed to update like', 'error'));
     } else {
@@ -4606,6 +4684,7 @@ function ttToggleLike(key) {
 function ttStartReply(key) {
     playUI('click');
     const c = _ttData[key]; if (!c) return;
+    if (_ttEdit) ttCancelEdit();
     const parent = (c.parentId && _ttData[c.parentId]) ? c.parentId : key;
     _ttReply = { parent, name: c.username || 'user', mention: !!(c.parentId && _ttData[c.parentId]) };
     _ttOpen.add(parent);
@@ -4615,6 +4694,32 @@ function ttStartReply(key) {
     document.getElementById('tt-foot').classList.add('open');
 }
 
+function ttStartEdit(key) {
+    const c = _ttData[key];
+    if (!c || !auth.currentUser || c.uid !== auth.currentUser.uid) return;
+    _ttReply = null; _ttEdit = key;
+    const i = document.getElementById('tt-input');
+    document.getElementById('tt-editbar').style.display = 'flex';
+    document.getElementById('tt-foot').classList.add('open');
+    if (i) { i.value = c.text || ''; i.placeholder = 'Edit comment...'; i.focus(); }
+    ttSyncSend();
+}
+function ttCancelEdit() {
+    _ttEdit = null;
+    const bar = document.getElementById('tt-editbar'); if (bar) bar.style.display = 'none';
+    const i = document.getElementById('tt-input');
+    if (i) { i.value = ''; i.placeholder = _ttReply ? `Reply to ${_ttReply.name}:` : 'Add comment...'; }
+    ttSyncSend();
+}
+function ttResetInput() {
+    const input = document.getElementById('tt-input');
+    if (input) { input.value = ''; input.placeholder = 'Add comment...'; input.blur(); }
+    _ttReply = null; _ttEdit = null;
+    const bar = document.getElementById('tt-editbar'); if (bar) bar.style.display = 'none';
+    document.getElementById('tt-foot').classList.remove('open');
+    ttSyncSend();
+}
+
 function submitTikTokComment() {
     playUI('click');
     if (!auth.currentUser) { showNotification('Please log in to Comment', 'error'); return; }
@@ -4622,20 +4727,42 @@ function submitTikTokComment() {
     const input = document.getElementById('tt-input');
     const text = input ? input.value.trim() : '';
     if (!text || !_ttId) return;
-    const userId = auth.currentUser.uid, movieId = _ttId, reply = _ttReply;
-    const send = document.getElementById('tt-send'); if (send) send.classList.remove('ready');
-    db.ref(`users/${userId}`).once('value', (snap) => {
-        const u = snap.val() || {};
-        const username = u.username || (auth.currentUser.email || 'user').split('@')[0];
-        const avatar = (typeof currentChannelData !== 'undefined' && currentChannelData && (currentChannelData.avatarUrl || currentChannelData.photoURL)) || u.photoURL || auth.currentUser.photoURL || '';
-        const data = { uid: userId, username, avatar, text, timestamp: Date.now() };
+    const userId = auth.currentUser.uid, movieId = _ttId;
+    if (!_ttData || typeof _ttData !== 'object') _ttData = {};
+
+    // ---- edit an existing comment ----
+    if (_ttEdit) {
+        const key = _ttEdit, old = _ttData[key];
+        if (!old || old.uid !== userId || text === old.text) { ttResetInput(); return; }
+        old.text = text; old.edited = true; old.editedAt = Date.now();
+        ttResetInput(); ttRender(); ttWatch();
+        db.ref(`movie_comments/${movieId}/${key}`).update({ text, edited: true, editedAt: old.editedAt })
+            .catch(() => showNotification('Failed to edit comment', 'error'));
+        return;
+    }
+
+    // ---- new comment / reply: appears on screen immediately ----
+    const reply = _ttReply;
+    const post = (me) => {
+        const data = { uid: userId, username: me.username, avatar: me.avatar || '', text, timestamp: Date.now() };
         if (reply) { data.parentId = reply.parent; if (reply.mention) data.replyToName = reply.name; _ttOpen.add(reply.parent); _ttShown[reply.parent] = 9999; }
-        db.ref(`movie_comments/${movieId}`).push(data).then(() => {
-            if (input) { input.value = ''; input.placeholder = 'Add comment...'; input.blur(); }
-            _ttReply = null; ttSyncSend();
-            document.getElementById('tt-foot').classList.remove('open');
-            if (!reply) { _ttScroll = 0; const l = document.getElementById('tt-list'); if (l) l.scrollTop = 0; }
-        }).catch(() => { showNotification('Failed to post comment', 'error'); ttSyncSend(); });
+        const ref = db.ref(`movie_comments/${movieId}`).push();
+        _ttData[ref.key] = data;
+        feelsCommentsCache[movieId] = _ttData;
+        ttResetInput();
+        if (!reply) _ttScroll = 0;
+        ttRender();
+        if (!reply) { const l = document.getElementById('tt-list'); if (l) l.scrollTop = 0; }
+        const cnt = document.getElementById(`short-comments-count-${movieId}`);
+        if (cnt) cnt.innerText = formatCount(Object.keys(_ttData).length);
+        ttWatch();
+        ref.set(data).catch(() => { delete _ttData[ref.key]; ttRender(); showNotification('Failed to post comment', 'error'); });
+    };
+    if (_ttMe && _ttMe.uid === userId) post(_ttMe);
+    else db.ref(`users/${userId}`).once('value', (snap) => {
+        const u = snap.val() || {};
+        post({ username: u.username || (auth.currentUser.email || 'user').split('@')[0],
+               avatar: (typeof currentChannelData !== 'undefined' && currentChannelData && (currentChannelData.avatarUrl || currentChannelData.photoURL)) || u.photoURL || auth.currentUser.photoURL || '' });
     });
 }
 
@@ -4650,21 +4777,37 @@ function ttBindLongPress(list) {
     }, { passive: true });
     list.addEventListener('touchmove', (e) => { if (timer && (Math.abs(e.touches[0].clientX - sx) > 8 || Math.abs(e.touches[0].clientY - sy) > 8)) clear(); }, { passive: true });
     list.addEventListener('touchend', clear); list.addEventListener('touchcancel', clear);
+    list.addEventListener('contextmenu', (e) => { const r = e.target.closest('.tt-row'); if (r) { e.preventDefault(); ttOpenMenu(r.dataset.k); } });
 }
+const TT_IC = {
+    del: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12.2A2 2 0 0 0 9 21h6a2 2 0 0 0 2-1.8L18 7M9 7V4h6v3"/></svg>',
+    edit: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="9" width="12" height="12" rx="3"/><path d="M9 6V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-1"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="9" width="12" height="12" rx="3"/><path d="M9 6V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-1"/></svg>',
+    cancel: '<svg viewBox="0 0 28 28" width="32" height="32"><path d="M14 3.5 26 24.5H2z" fill="#fe2c55" stroke="#fe2c55" stroke-width="3" stroke-linejoin="round"/><path d="M14 11v6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="14" cy="20.6" r="1.4" fill="#fff"/></svg>'
+};
 function ttOpenMenu(key) {
     const c = _ttData[key]; if (!c) return;
     ttCloseMenu();
-    const mine = auth.currentUser && c.uid === auth.currentUser.uid;
-    const m = document.createElement('div');
-    m.className = 'tt-menu'; m.id = 'tt-menu';
-    m.innerHTML = `<button type="button" data-m="copy">Copy text</button>${mine ? '<button type="button" class="danger" data-m="del">Delete</button>' : ''}<button type="button" data-m="x" style="border:0;color:var(--text-muted,#8a8b91)">Cancel</button>`;
-    m.addEventListener('click', (e) => {
-        const b = e.target.closest('button'); if (!b) return;
-        if (b.dataset.m === 'copy') { try { navigator.clipboard.writeText(c.text || ''); showNotification('Copied', 'success'); } catch (x) {} }
-        if (b.dataset.m === 'del') ttDelete(key);
+    const mine = !!(auth.currentUser && c.uid === auth.currentUser.uid);
+    const item = (k, label) => `<button type="button" class="tt-mi" data-m="${k}"><span class="tt-mi-ic">${TT_IC[k]}</span>${label}</button>`;
+    const wrap = document.createElement('div');
+    wrap.className = 'tt-menu-wrap'; wrap.id = 'tt-menu';
+    wrap._t = Date.now();
+    wrap.innerHTML = `<div class="tt-menu2">${mine ? item('del', 'Delete') + item('edit', 'Edit') : ''}${item('copy', 'Copy')}${item('cancel', 'Cancel')}</div>`;
+    wrap.addEventListener('click', (e) => {
+        if (Date.now() - wrap._t < 350) return;          // ignore the finger-lift of the long press
+        const b = e.target.closest('button');
+        if (!b) { if (e.target === wrap) ttCloseMenu(); return; }
+        const m = b.dataset.m;
         ttCloseMenu();
+        if (m === 'copy') {
+            const t = c.text || '';
+            try { navigator.clipboard.writeText(t).then(() => showNotification('Copied', 'success')).catch(() => {}); }
+            catch (x) { try { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); showNotification('Copied', 'success'); } catch (y) {} }
+        } else if (m === 'edit') ttStartEdit(key);
+        else if (m === 'del') ttDelete(key);
     });
-    document.getElementById('tt-sheet').appendChild(m);
+    document.getElementById('tt-comment-modal').appendChild(wrap);
 }
 function ttCloseMenu() { const m = document.getElementById('tt-menu'); if (m) m.remove(); }
 function ttDelete(key) {
@@ -4672,6 +4815,10 @@ function ttDelete(key) {
     if (!c || !auth.currentUser || c.uid !== auth.currentUser.uid) return;
     const upd = {}; upd[key] = null;
     if (!c.parentId) Object.entries(_ttData).forEach(([k, v]) => { if (v && v.parentId === key) upd[k] = null; });   // replies go with their comment
+    Object.keys(upd).forEach(k => delete _ttData[k]);
+    ttRender(); ttWatch();
+    const cnt = document.getElementById(`short-comments-count-${_ttId}`);
+    if (cnt) cnt.innerText = formatCount(Object.keys(_ttData).length);
     db.ref(`movie_comments/${_ttId}`).update(upd).then(() => showNotification('Comment deleted', 'success')).catch(() => showNotification('Failed to delete', 'error'));
 }
 
@@ -4975,6 +5122,7 @@ function initFeelsObserver() {
                     }
 
                     video.ontimeupdate = () => {
+                        if (entry.target._scrubbing) return;
                         if (video.duration) {
                             const percentage = (video.currentTime / video.duration) * 100;
                             if (progressBar) progressBar.style.width = `${percentage}%`;

@@ -440,13 +440,14 @@
 .short-more { font-weight: 700; opacity: .85; }
 .short-title-text.measure { display: block !important; -webkit-line-clamp: unset !important; overflow: visible !important; }
 
-/* Pink-red draggable progress bar, flush on top of the nav */
-.short-progress-container { height: 26px !important; bottom: 0 !important; background: transparent !important; touch-action: none; z-index: 15; }
-.short-progress-container::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255,255,255,.28); transition: height .15s ease, bottom .15s ease, border-radius .15s; }
-.short-progress-bar { position: absolute !important; left: 0; bottom: 0; height: 2px !important; background: #FE2C55 !important; transition: width .1s linear, height .15s ease, bottom .15s ease !important; }
-.short-scrub-thumb { position: absolute; bottom: 3px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: #FE2C55; box-shadow: 0 0 0 2.5px #fff; opacity: 0; transform: scale(.4); transition: opacity .15s, transform .15s; pointer-events: none; }
-.short-slide.scrubbing .short-progress-container::before { height: 6px; bottom: 8px; border-radius: 3px; }
-.short-slide.scrubbing .short-progress-bar { height: 6px !important; bottom: 8px; border-radius: 3px; transition: none !important; }
+/* Pink-red draggable progress bar, flush on top of the nav.
+   The bar NEVER moves up: while scrubbing it only gets a little thicker, anchored to the bottom. */
+.short-progress-container { height: 40px !important; bottom: 0 !important; background: transparent !important; touch-action: none !important; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; z-index: 15; }
+.short-progress-container::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255,255,255,.28); transition: height .15s ease; pointer-events: none; }
+.short-progress-bar { position: absolute !important; left: 0; bottom: 0 !important; height: 2px !important; background: #FE2C55 !important; transition: width .1s linear, height .15s ease !important; pointer-events: none; }
+.short-scrub-thumb { position: absolute; bottom: 0; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: #FE2C55; box-shadow: 0 0 0 2px #fff; opacity: 0; transform: scale(.4); transform-origin: 50% 100%; transition: opacity .15s, transform .15s; pointer-events: none; }
+.short-slide.scrubbing .short-progress-container::before { height: 5px; }
+.short-slide.scrubbing .short-progress-bar { height: 5px !important; transition: none !important; }
 .short-slide.scrubbing .short-scrub-thumb { opacity: 1; transform: scale(1); }
 .short-scrub-time { position: absolute; left: 50%; bottom: 110px; transform: translateX(-50%); z-index: 16; color: #fff; font-size: 30px; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,.6); opacity: 0; pointer-events: none; transition: opacity .15s; white-space: nowrap; }
 .short-slide.scrubbing .short-scrub-time { opacity: 1; }

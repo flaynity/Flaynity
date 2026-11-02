@@ -413,7 +413,7 @@
 .feels-search-btn:active { transform: scale(.88); }
 
 /* Right action column */
-.short-right-actions { right: 8px !important; bottom: 14px !important; gap: 14px !important; z-index: 12; }
+.short-right-actions { right: 8px !important; bottom: 14px !important; gap: 14px !important; z-index: 17; }
 .short-channel-subscribe-btn {
     border: 0 !important; background: #FE2C55 !important; box-shadow: none !important;
 }
@@ -426,14 +426,11 @@
 .short-action-btn-tiktok-other i.saved { color: #FFC107 !important; animation: tiktokHeartPop .35s cubic-bezier(.175,.885,.32,1.5) forwards; }
 .short-action-label-tiktok { font-size: 13px !important; font-weight: 600 !important; margin-top: 3px !important; }
 .short-quality-pill { margin-top: 2px; }
-.short-quality-pill select {
-    appearance: none; -webkit-appearance: none; max-width: 56px; text-align: center;
-    background: rgba(0,0,0,.38); color: #fff; border: 0; border-radius: 10px;
-    padding: 3px 6px; font-size: 11px; font-weight: 700;
-}
+.short-quality-btn { display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.14); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: #fff; border-radius: 14px; padding: 5px 9px; font-size: 11.5px; font-weight: 800; letter-spacing: .2px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .15s; }
+.short-quality-btn:active { transform: scale(.92); }
 
 /* Bottom info (starts right above the bottom nav) */
-.short-bottom-info { bottom: 14px !important; left: 12px !important; right: 78px !important; z-index: 12; }
+.short-bottom-info { bottom: 14px !important; left: 12px !important; right: 78px !important; z-index: 17; }
 .short-channel-name { font-size: 17px !important; font-weight: 700 !important; margin-bottom: 6px !important; }
 .short-title-text {
     font-size: 15px !important; font-weight: 400 !important; line-height: 1.35 !important; color: #fff !important;
@@ -445,13 +442,13 @@
 
 /* Pink-red draggable progress bar, flush on top of the nav */
 .short-progress-container { height: 26px !important; bottom: 0 !important; background: transparent !important; touch-action: none; z-index: 15; }
-.short-progress-container::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255,255,255,.28); transition: height .15s ease; }
-.short-progress-bar { position: absolute !important; left: 0; bottom: 0; height: 2px !important; background: #FE2C55 !important; transition: width .1s linear, height .15s ease !important; }
-.short-scrub-thumb { position: absolute; bottom: -3px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: #FE2C55; box-shadow: 0 0 0 2px rgba(255,255,255,.9); opacity: 0; transform: scale(.4); transition: opacity .15s, transform .15s; pointer-events: none; }
-.short-slide.scrubbing .short-progress-container::before { height: 6px; }
-.short-slide.scrubbing .short-progress-bar { height: 6px !important; transition: none !important; }
-.short-slide.scrubbing .short-scrub-thumb { opacity: 1; transform: scale(1); bottom: -3px; }
-.short-scrub-time { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 16; color: #fff; font-size: 30px; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,.6); opacity: 0; pointer-events: none; transition: opacity .15s; white-space: nowrap; }
+.short-progress-container::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255,255,255,.28); transition: height .15s ease, bottom .15s ease, border-radius .15s; }
+.short-progress-bar { position: absolute !important; left: 0; bottom: 0; height: 2px !important; background: #FE2C55 !important; transition: width .1s linear, height .15s ease, bottom .15s ease !important; }
+.short-scrub-thumb { position: absolute; bottom: 3px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: #FE2C55; box-shadow: 0 0 0 2.5px #fff; opacity: 0; transform: scale(.4); transition: opacity .15s, transform .15s; pointer-events: none; }
+.short-slide.scrubbing .short-progress-container::before { height: 6px; bottom: 8px; border-radius: 3px; }
+.short-slide.scrubbing .short-progress-bar { height: 6px !important; bottom: 8px; border-radius: 3px; transition: none !important; }
+.short-slide.scrubbing .short-scrub-thumb { opacity: 1; transform: scale(1); }
+.short-scrub-time { position: absolute; left: 50%; bottom: 110px; transform: translateX(-50%); z-index: 16; color: #fff; font-size: 30px; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,.6); opacity: 0; pointer-events: none; transition: opacity .15s; white-space: nowrap; }
 .short-slide.scrubbing .short-scrub-time { opacity: 1; }
 .short-slide.scrubbing .short-right-actions, .short-slide.scrubbing .short-bottom-info { opacity: 0; transition: opacity .15s; }
 .short-right-actions, .short-bottom-info { transition: opacity .15s; }
@@ -462,6 +459,12 @@
 .short-channel-ring .short-channel-action-avatar { position: relative !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; border: 2px solid #000 !important; box-sizing: border-box; background: #000; }
 .short-channel-subscribe-btn { width: 26px !important; height: 26px !important; font-size: 14px !important; bottom: 0 !important; }
 .double-tap-heart { color: #FE2C55 !important; }
+
+/* No black shadow on Like / Comment / Save / Share */
+.short-action-btn-tiktok, .short-action-btn-tiktok-other, .short-action-btn-tiktok i, .short-action-btn-tiktok-other i, .short-action-container i {
+    filter: none !important; text-shadow: none !important; box-shadow: none !important; -webkit-filter: none !important;
+}
+.short-action-label-tiktok { text-shadow: none !important; }
 </style></head><body>
 <div class="tab-content" id="feels-tab" style="padding:0;">
 <div class="feels-mode-switch" role="tablist" aria-label="Feels feed">

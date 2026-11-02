@@ -3885,7 +3885,7 @@ function buildFeelsPage() {
                     </div>
 
                     <div class="short-quality-pill">
-                        <select id="short-quality-${s.id}" aria-label="Video quality" onchange="setFeelsQuality('${s.id}', this.value)"><option value="0">Auto</option></select>
+                        <button type="button" class="short-quality-btn" aria-label="Video quality" onclick="openFeelsQualitySheet('${s.id}', event)"><span class="short-quality-label">${feelsQualityLabel()}</span><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
                     </div>
                     <div class="music-disc-container">
                         <div class="music-disc-inner live-disc-avatar-${s.userId || s.channelId}" id="music-disc-${s.id}">
@@ -4074,6 +4074,79 @@ function setupDoubleTapListeners() {
     });
 }
 
+// ---------------- Premium video-quality sheet ----------------
+function feelsQualityPref() { try { return localStorage.getItem('feels_quality_pref') === 'original' ? 'original' : 'auto'; } catch (e) { return 'auto'; } }
+function feelsQualityLabel() { return feelsQualityPref() === 'original' ? 'Original' : 'Auto'; }
+
+function ttqEnsure() {
+    let el = document.getElementById('feels-quality-sheet');
+    if (el) return el;
+    const st = document.createElement('style');
+    st.textContent = `
+    #feels-quality-sheet{position:fixed;inset:0;z-index:3000;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);animation:ttFade .2s ease}
+    #feels-quality-sheet .fq-sheet{width:100%;box-sizing:border-box;background:var(--surface,#fff);color:var(--text-main,#161823);border-radius:26px 26px 0 0;padding:10px 18px calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.28);animation:ttUp .32s cubic-bezier(.22,1,.36,1)}
+    .fq-grab{width:42px;height:5px;border-radius:3px;background:rgba(128,128,128,.4);margin:0 auto 14px}
+    .fq-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+    .fq-title{font-size:20px;font-weight:800;letter-spacing:-.2px}
+    .fq-x{width:36px;height:36px;border:0;border-radius:50%;background:rgba(128,128,128,.16);color:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .fq-x svg{width:16px;height:16px;stroke:currentColor;stroke-width:2.8;stroke-linecap:round;fill:none}
+    .fq-sub{font-size:13px;color:var(--text-muted,#8a8b91);margin:0 0 16px}
+    .fq-opt{position:relative;display:flex;align-items:center;gap:14px;width:100%;box-sizing:border-box;border:1.5px solid rgba(128,128,128,.22);background:rgba(128,128,128,.07);color:inherit;border-radius:20px;padding:14px 16px;margin-bottom:12px;text-align:left;font-family:inherit;cursor:pointer;transition:transform .15s,border-color .2s,background .2s;-webkit-tap-highlight-color:transparent}
+    .fq-opt:active{transform:scale(.98)}
+    .fq-opt.sel{border-color:#fe2c55;background:linear-gradient(135deg,rgba(254,44,85,.13),rgba(254,44,85,.04))}
+    .fq-ic{flex:0 0 auto;width:46px;height:46px;border-radius:15px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#8a8d99,#5d606c);color:#fff}
+    .fq-opt.sel .fq-ic{background:linear-gradient(135deg,#fe2c55,#ff7a5c);box-shadow:0 6px 16px rgba(254,44,85,.35)}
+    .fq-ic svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .fq-txt{flex:1 1 auto;min-width:0}
+    .fq-name{font-size:16.5px;font-weight:800;display:flex;align-items:center;gap:8px}
+    .fq-badge{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#fe2c55,#ff7a5c);padding:3px 7px;border-radius:8px}
+    .fq-desc{font-size:12.5px;color:var(--text-muted,#8a8b91);margin-top:3px}
+    .fq-check{flex:0 0 auto;width:26px;height:26px;border-radius:50%;border:2px solid rgba(128,128,128,.4);display:flex;align-items:center;justify-content:center;transition:all .2s}
+    .fq-check svg{width:14px;height:14px;stroke:#fff;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;fill:none;opacity:0;transform:scale(.4);transition:all .2s}
+    .fq-opt.sel .fq-check{background:#fe2c55;border-color:#fe2c55}
+    .fq-opt.sel .fq-check svg{opacity:1;transform:scale(1)}
+    `;
+    document.head.appendChild(st);
+    el = document.createElement('div');
+    el.id = 'feels-quality-sheet';
+    el.className = 'premium-download-modal';
+    el.addEventListener('click', (e) => { if (e.target === el) closeFeelsQualitySheet(); });
+    document.body.appendChild(el);
+    return el;
+}
+function ttqRender() {
+    const el = ttqEnsure();
+    const cur = feelsQualityPref();
+    const opt = (k, name, desc, icon, badge) => `<button type="button" class="fq-opt${cur === k ? ' sel' : ''}" data-q="${k}"><span class="fq-ic">${icon}</span><span class="fq-txt"><span class="fq-name">${name}${badge ? `<span class="fq-badge">${badge}</span>` : ''}</span><div class="fq-desc">${desc}</div></span><span class="fq-check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>`;
+    el.innerHTML = `<div class="fq-sheet"><div class="fq-grab"></div>
+        <div class="fq-head"><div class="fq-title">Video quality</div><button type="button" class="fq-x" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button></div>
+        <p class="fq-sub">Choose how Feels videos play</p>
+        ${opt('auto', 'Auto', 'Adjusts to your connection for smooth playback', '<svg viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg>', 'Recommended')}
+        ${opt('original', 'Original', 'Highest quality, uses more data', '<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg>', '')}
+    </div>`;
+    el.querySelector('.fq-x').addEventListener('click', closeFeelsQualitySheet);
+    el.querySelectorAll('.fq-opt').forEach(b => b.addEventListener('click', () => {
+        const q = b.dataset.q;
+        try { localStorage.setItem('feels_quality_pref', q); } catch (e) {}
+        triggerFeelsHaptic(10);
+        document.querySelectorAll('.short-quality-label').forEach(n => { n.textContent = feelsQualityLabel(); });
+        el.querySelectorAll('.fq-opt').forEach(o => o.classList.toggle('sel', o.dataset.q === q));
+        setTimeout(closeFeelsQualitySheet, 220);
+    }));
+}
+function openFeelsQualitySheet(shortId, event) {
+    if (event) { event.preventDefault(); event.stopPropagation(); }
+    playUI('click');
+    keepFeelsVideoActive(shortId);
+    ttqRender();
+    AppNavigation.pushModal('feels-quality-sheet');
+}
+function closeFeelsQualitySheet() {
+    const cur = AppNavigation.current();
+    if (cur && cur.id === 'feels-quality-sheet') AppNavigation.pop();
+    else { const el = document.getElementById('feels-quality-sheet'); if (el) el.style.display = 'none'; }
+}
+
 function bindFeelsScrub(slide, video) {
     const box = slide.querySelector('.short-progress-container');
     if (!box || box._scrubBound) return;
@@ -4086,35 +4159,52 @@ function bindFeelsScrub(slide, video) {
     tip.className = 'short-scrub-time';
     slide.appendChild(tip);
     const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
-    let pid = null, wasPlaying = false;
+    let pid = null, active = false, wasPlaying = false, sx = 0, sy = 0;
     const apply = (x) => {
         if (!video.duration || !isFinite(video.duration)) return;
         const r = box.getBoundingClientRect();
         const p = Math.min(1, Math.max(0, (x - r.left) / r.width));
         video.currentTime = p * video.duration;
-        if (bar) bar.style.width = (p * 100) + '%';
-        thumb.style.left = (p * 100) + '%';
+        // bar end and thumb centre use the same position, and the thumb never leaves the screen
+        const pos = `calc(8px + (100% - 16px) * ${p})`;
+        if (bar) bar.style.width = pos;
+        thumb.style.left = pos;
         tip.textContent = `${fmt(p * video.duration)} / ${fmt(video.duration)}`;
     };
-    box.addEventListener('pointerdown', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        pid = e.pointerId;
-        try { box.setPointerCapture(pid); } catch (x) {}
+    const begin = (x) => {
+        active = true;
         wasPlaying = !video.paused;
         slide._scrubbing = true;
         slide.classList.add('scrubbing');
         if (wasPlaying) video.pause();
         triggerFeelsHaptic(6);
-        apply(e.clientX);
-    });
-    box.addEventListener('pointermove', (e) => { if (pid !== e.pointerId) return; e.preventDefault(); apply(e.clientX); });
-    const end = (e) => {
-        if (pid == null || (e && e.pointerId != null && e.pointerId !== pid)) return;
+        apply(x);
+    };
+    const finish = () => {
         pid = null;
+        if (!active) return;
+        active = false;
         slide._scrubbing = false;
         slide.classList.remove('scrubbing');
         if (wasPlaying) video.play().catch(() => {});
     };
+    // A plain touch / tap does nothing. Only holding the finger and dragging left/right seeks.
+    box.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        pid = e.pointerId; sx = e.clientX; sy = e.clientY; active = false;
+        try { box.setPointerCapture(pid); } catch (x) {}
+    });
+    box.addEventListener('pointermove', (e) => {
+        if (pid !== e.pointerId) return;
+        e.preventDefault();
+        if (!active) {
+            const dx = Math.abs(e.clientX - sx), dy = Math.abs(e.clientY - sy);
+            if (dx > 8 && dx > dy) begin(e.clientX);
+            return;
+        }
+        apply(e.clientX);
+    });
+    const end = (e) => { if (pid != null && e && e.pointerId != null && e.pointerId !== pid) return; finish(); };
     box.addEventListener('pointerup', end);
     box.addEventListener('pointercancel', end);
     box.addEventListener('lostpointercapture', end);
@@ -4165,6 +4255,16 @@ function bindFeelsVideoEvents() {
 }
 
 function openShortDescBottomSheet(shortId) {
+    playUI('click');
+    const s = allFeels.find(item => String(item.id) === String(shortId));
+    if (!s) return;
+    currentActiveMovie = s;
+    keepFeelsVideoActive(s.id);
+    openMoreDescriptionSheet();          // same Description page as Long Video
+    requestAnimationFrame(() => keepFeelsVideoActive(s.id));
+}
+
+function openShortDescBottomSheetLegacy(shortId) {
     playUI('click');
     const s = allFeels.find(item => item.id === shortId);
     if (!s) return;

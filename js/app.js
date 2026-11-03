@@ -1436,7 +1436,48 @@ function applyAdminControls() {
                 const reader=new FileReader();reader.onload=()=>{root.querySelector('#flcc-avatar').innerHTML='<img alt="Channel image preview" src="'+reader.result+'"><button type="button" id="flcc-avatar-pick">Change photo</button>';root.querySelector('#flcc-avatar-pick').addEventListener('click',()=>avatarInput.click());};reader.readAsDataURL(file);
                 status.textContent='Channel image selected';
             });
+
+            // Dedicated, animated editor pages for the fields shown on the setup form.
+            const openEditor=(key,title,description,value,kind,save)=>{
+                let page=root.querySelector('#flcc-editor'); if(page)page.remove();
+                page=document.createElement('div');page.id='flcc-editor';
+                page.style.cssText='position:fixed;inset:0;z-index:20;background:#fff;padding:calc(env(safe-area-inset-top,0px) + 22px) 24px 28px;display:flex;flex-direction:column;animation:flccIn .22s ease both;color:#17171b';
+                const input=kind==='textarea'?document.createElement('textarea'):document.createElement('input');
+                input.style.cssText='width:100%;margin-top:28px;border:0;border-radius:16px;background:#f2f2f4;padding:18px;font:500 17px inherit;outline:none;min-height:'+(kind==='textarea'?'180px':'58px');
+                if(kind==='textarea')input.rows=5;else input.type=kind==='date'?'date':'text';
+                input.value=value||'';input.placeholder=description;
+                page.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;font-size:16px"><button type="button" data-cancel style="border:0;background:none;font:inherit">Cancel</button><button type="button" data-save style="border:0;background:none;color:#e81768;font-weight:800;font:inherit">Save</button></div><h1 style="font-size:30px;margin:52px 0 10px;font-weight:900">'+esc(title)+'</h1><p style="font-size:16px;color:#777;line-height:1.5">'+esc(description)+'</p>';
+                page.appendChild(input);const count=document.createElement('div');count.style.cssText='text-align:right;color:#888;margin-top:8px;font-size:13px';page.appendChild(count);
+                const updateCount=()=>{count.textContent=input.value.length+'/'+(key==='bio'?160:key==='name'?30:24);};input.addEventListener('input',updateCount);updateCount();
+                page.querySelector('[data-cancel]').onclick=()=>page.remove();
+                page.querySelector('[data-save]').onclick=async()=>{const val=input.value.trim();if(!val){count.textContent='Please enter a value';return;}await save(val,page.querySelector('[data-save]'),count);};
+                root.appendChild(page);input.focus();
+            };
+            const persistField=async(field,value,button,count,page)=>{
+                button.disabled=true;button.textContent='Saving…';
+                try{const patch={};patch[field]=value;patch.updatedAt=firebase.database.ServerValue.TIMESTAMP;await db.ref('channels/'+user.uid).update(patch);await db.ref('users/'+user.uid+'/'+field).set(value);page.remove();const el=root.querySelector('#flcc-'+field);if(el)el.value=value;status.textContent='Saved successfully';}
+                catch(e){count.textContent=e.message||'Could not save. Try again.';button.disabled=false;button.textContent='Save';}
+            };
+            root.querySelector('#flcc-name').readOnly=true;root.querySelector('#flcc-handle').readOnly=true;
+            const nameField=root.querySelector('#flcc-name'),handleField=root.querySelector('#flcc-handle'),bioField=root.querySelector('#flcc-bio');
+            nameField.addEventListener('click',()=>openEditor('name','Name','Your name can only be changed once every 7 days.',nameField.value,'text',(v,b,ct,p)=>persistField('channelName',v,b,ct,p)));
+            handleField.addEventListener('click',()=>openEditor('handle','Username','Use 3–24 letters, numbers, dots or underscores.',handleField.value,'text',async(v,b,ct,p)=>{
+                const h=v.replace(/^@/,'').toLowerCase();if(!/^[a-z0-9._]{3,24}$/.test(h)){ct.textContent='Use 3–24 letters, numbers, dots or underscores.';return;}
+                b.disabled=true;b.textContent='Checking…';
+                try{const snap=await db.ref('channelHandles/'+h).once('value');if(snap.val()&&snap.val()!==user.uid){ct.textContent='Username is already taken.';b.disabled=false;b.textContent='Save';return;}
+                    const old=handleField.value;const updates={};updates['channelHandles/'+old]=null;updates['channelHandles/'+h]=user.uid;updates['channels/'+user.uid+'/handle']=h;updates['channels/'+user.uid+'/updatedAt']=firebase.database.ServerValue.TIMESTAMP;updates['users/'+user.uid+'/handle']=h;await db.ref().update(updates);handleField.value=h;p.remove();
+                }catch(e){ct.textContent=e.message||'Username check failed.';b.disabled=false;b.textContent='Save';}
+            }));
+            bioField.readOnly=true;bioField.addEventListener('click',()=>openEditor('bio','Bio','You can edit your bio any time.',bioField.value,'textarea',(v,b,ct,p)=>persistField('bio',v,b,ct,p)));
+            const country=root.querySelector('#flcc-country');country.readOnly=true;country.addEventListener('click',()=>{
+                const countries=['Afghanistan','Albania','Algeria','Argentina','Australia','Bangladesh','Brazil','Canada','China','France','Germany','India','Indonesia','Japan','Malaysia','Nepal','Pakistan','Saudi Arabia','Singapore','South Korea','Sri Lanka','United Kingdom','United States'];
+                openEditor('country','Select country or region','Search or enter your country.',country.value,'text',async(v,b,ct,p)=>{await persistField('country',v,b,ct,p);});
+            });
+            root.querySelector('#flcc-category').addEventListener('change',async e=>{try{await db.ref('channels/'+user.uid+'/category').set(e.target.value);}catch(err){status.textContent='Could not save category';}});
+            root.querySelector('#flcc-dob').addEventListener('change',async e=>{try{await db.ref('channels/'+user.uid+'/dateOfBirth').set(e.target.value);}catch(err){status.textContent='Could not save date of birth';}});
+            root.querySelector('#flcc-gender').addEventListener('change',async e=>{try{await db.ref('channels/'+user.uid+'/gender').set(e.target.value);}catch(err){status.textContent='Could not save gender';}});
             root.querySelector('#flcc-back').addEventListener('click',()=>{status.textContent='Complete channel setup to continue.';});
+
             root.querySelector('#flcc-submit').addEventListener('click',async()=>{
                 const name=root.querySelector('#flcc-name').value.trim();
                 const handle=root.querySelector('#flcc-handle').value.trim().replace(/^@/,'').toLowerCase();

@@ -28,6 +28,9 @@
         .profile-info-you p { margin: 0; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
         
         .channel-action-box { margin-top: 14px; border-top: 1px solid var(--glass-border); padding-top: 14px; }
+/* Channel creation now happens automatically on first sign-in in the Home app shell. */
+#channel-action-box .btn-create-channel, #channel-action-box [data-action="create-channel"] { display:none !important; }
+
         .btn-create-channel {
             background: var(--primary); color: white; border: none; width: 100%; padding: 12px;
             border-radius: 16px; font-weight: 800; font-size: 1rem; cursor: pointer;

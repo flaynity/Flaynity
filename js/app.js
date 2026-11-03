@@ -1274,12 +1274,26 @@ function cleanupUserSessionData() {
      'channel-feels-container','notifications-list','inbox-list','manager-items-list'].forEach(id => {
         const el = document.getElementById(id); if (el) el.innerHTML = '';
     });
-    // Drop account-specific keys only; keep theme, language and the saved-account picker.
+    // Remove all account-scoped cached data, including per-UID image/banner caches.
+    // Keep only non-account preferences and the saved-account selector.
     try {
+        const keepKeys = /^(theme|language|locale|flaynity_saved_accounts|savedAccounts|account_list)$/i;
         for (let i = localStorage.length - 1; i >= 0; i--) {
             const key = localStorage.key(i) || '';
-            if (/^(flaynity_(user|profile|channel|feed|hidden|saved_posts|saved_videos|likes|follows|notifications|inbox|drafts|watch_history|recent_searches)_cache(?::|$)|^fx_hidden_(videos|channels)$)/i.test(key)) localStorage.removeItem(key);
+            if (!keepKeys.test(key) && (/^(flaynity_|fx_hidden_|channel_|profile_|you_|feed_|user_|account_)/i.test(key))) {
+                localStorage.removeItem(key);
+            }
         }
+    } catch (e) {}
+    try {
+        // Reset visible You page immediately, including inline banner/avatar backgrounds.
+        const youWrap = document.getElementById('channel-action-box');
+        if (youWrap) youWrap.innerHTML = '';
+        document.querySelectorAll('[id*="banner"],[id*="avatar"],[id*="channel-image"],[id*="channel-image"]').forEach(el => {
+            if (el.tagName === 'IMG') el.removeAttribute('src');
+            if (el.style) { el.style.backgroundImage = 'none'; el.style.background = ''; }
+        });
+        document.querySelectorAll('[data-account-uid]').forEach(el => el.remove());
     } catch (e) {}
 
     SyncManager.isRefreshing = false;
@@ -1641,8 +1655,13 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         });
 
         _feedListenersAttached = false;
+        // Start fresh listeners for this Firebase UID and redraw account-bound screens immediately.
         startRealtimeFeedsListener();
         restoreQueueFromLocalStorage();
+        try { if (typeof initYouTabUI === 'function') initYouTabUI(); } catch (e) { console.warn('You page refresh failed:', e); }
+        try {
+            if (typeof window.refreshCurrentUserData === 'function') await window.refreshCurrentUserData(user.uid);
+        } catch (e) { console.warn('Current account refresh failed:', e); }
         applyAdminControls();
 
         const activeNav = document.querySelector('.nav-item.active');
@@ -7147,8 +7166,8 @@ function initYouTabUI() {
     if (!navigator.onLine) {
         try {
             const cached = user ? localStorage.getItem('flaynity_channel_cache:' + user.uid) : null;
-            const session = localStorage.getItem('flaynity_user_session_cache');
-            currentChannelData = cached ? JSON.parse(cached) : (session ? JSON.parse(session) : null);
+            // Never use the unscoped session cache: it can belong to a previous account.
+            currentChannelData = cached ? JSON.parse(cached) : null;
         } catch (e) { currentChannelData = null; }
         if (currentChannelData) {
             renderYouTabWithData(currentChannelData, user || { displayName: currentChannelData.channelName || 'Flaynity User', photoURL: currentChannelData.avatarUrl || '', email: '' }, wrap);

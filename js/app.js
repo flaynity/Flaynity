@@ -1339,6 +1339,136 @@ function applyAdminControls() {
     });
 }
 
+
+/* First-run Create Channel screen — mounted inside the Home app shell. */
+(function installCreateChannelPage(){
+    if (window.__flaynityCreateChannelInstalled) return;
+    window.__flaynityCreateChannelInstalled = true;
+    const esc = (s) => String(s || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    window.showCreateChannelPage = async function(force){
+        const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
+        if (!user) return;
+        let channel = null;
+        try { const snap = await db.ref('channels/' + user.uid).once('value'); channel = snap.val(); } catch(e) {}
+        if (channel && !force) return;
+        let root = document.getElementById('fl-create-channel');
+        if (!root) {
+            root = document.createElement('section');
+            root.id = 'fl-create-channel';
+            root.innerHTML = `
+              <style>
+                #fl-create-channel{position:fixed;inset:0;z-index:2147483000;background:#f7f7f9;color:#17171b;font-family:'Plus Jakarta Sans',sans-serif;overflow-y:auto;overscroll-behavior:contain;animation:flccIn .32s ease both}
+                #fl-create-channel *{box-sizing:border-box}
+                #fl-create-channel .flcc-banner{position:relative;width:100%;aspect-ratio:2.35/1;min-height:150px;max-height:260px;background:linear-gradient(135deg,#f9b5cf,#e8d9ff 55%,#ffd7c5);background-size:cover;background-position:center}
+                #fl-create-channel .flcc-banner:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.06),rgba(0,0,0,.28));pointer-events:none}
+                #fl-create-channel .flcc-top{position:absolute;z-index:2;left:18px;right:18px;top:calc(env(safe-area-inset-top,0px) + 14px);display:flex;align-items:center;justify-content:space-between;gap:12px}
+                #fl-create-channel .flcc-back,#fl-create-channel .flcc-change{border:1px solid rgba(255,255,255,.24);background:rgba(20,20,24,.56);color:#fff;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);height:42px;border-radius:24px;padding:0 15px;font:700 13px inherit;display:flex;align-items:center;gap:8px}
+                #fl-create-channel .flcc-change{font-size:13px}
+                #fl-create-channel .flcc-sheet{position:relative;margin-top:-22px;background:#f7f7f9;border-radius:25px 25px 0 0;padding:0 20px calc(26px + env(safe-area-inset-bottom,0px));min-height:calc(100% - 150px)}
+                #fl-create-channel .flcc-avatar-wrap{height:116px;display:flex;justify-content:center;position:relative;margin-bottom:8px}
+                #fl-create-channel .flcc-avatar{position:relative;margin-top:-54px;width:124px;height:124px;border:4px solid #f7f7f9;border-radius:50%;background:linear-gradient(145deg,#ff2c86,#c30049);display:grid;place-items:center;overflow:hidden;box-shadow:0 8px 22px rgba(25,10,20,.12)}
+                #fl-create-channel .flcc-avatar img{width:100%;height:100%;object-fit:cover}
+                #fl-create-channel .flcc-avatar button{position:absolute;inset:auto 0 0;height:38px;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:800}
+                #fl-create-channel .flcc-title{text-align:center;margin:2px 0 5px;font-size:23px;letter-spacing:-.7px;font-weight:900}
+                #fl-create-channel .flcc-sub{text-align:center;margin:0 auto 22px;color:#777781;font-size:12.5px;line-height:1.5;max-width:280px}
+                #fl-create-channel .flcc-card{background:#fff;border:1px solid rgba(20,20,30,.045);border-radius:20px;padding:5px 16px;margin:0 0 14px;box-shadow:0 3px 15px rgba(20,20,30,.025)}
+                #fl-create-channel .flcc-field{display:grid;grid-template-columns:88px minmax(0,1fr);gap:10px;align-items:start;padding:14px 0}
+                #fl-create-channel .flcc-field+.flcc-field{border-top:1px solid #f0f0f3}
+                #fl-create-channel label{font-size:13px;color:#6e6e77;padding-top:10px;font-weight:600}
+                #fl-create-channel input,#fl-create-channel textarea,#fl-create-channel select{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#18181c;font:600 14px 'Plus Jakarta Sans',sans-serif;padding:8px 0;resize:vertical}
+                #fl-create-channel input::placeholder,#fl-create-channel textarea::placeholder{color:#aaaab2;font-weight:500}
+                #fl-create-channel .flcc-section{font-size:13px;color:#81818a;margin:23px 4px 10px;font-weight:800}
+                #fl-create-channel .flcc-info{display:flex;align-items:center;gap:13px;padding:13px 12px;min-height:65px}
+                #fl-create-channel .flcc-ico{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:#fff0f6;color:#e81768;font-size:19px;flex:0 0 auto}
+                #fl-create-channel .flcc-info label{display:block;padding:0;color:#202027;font-size:13px;font-weight:800}
+                #fl-create-channel .flcc-info select,#fl-create-channel .flcc-info input{padding:5px 0 0;font-size:12.5px;color:#777}
+                #fl-create-channel .flcc-submit{width:100%;height:57px;border:0;border-radius:30px;background:linear-gradient(100deg,#ff2b83,#f0004f);color:#fff;font:800 16px 'Plus Jakarta Sans',sans-serif;margin:12px 0 0;box-shadow:0 8px 20px rgba(240,0,79,.18);transition:transform .16s,opacity .16s}
+                #fl-create-channel .flcc-submit:active{transform:scale(.985)} #fl-create-channel .flcc-submit:disabled{opacity:.55}
+                #fl-create-channel .flcc-terms{text-align:center;color:#777781;font-size:10.5px;line-height:1.6;margin:12px 12px 0}
+                #fl-create-channel .flcc-status{font-size:12px;text-align:center;color:#777;margin:8px 0;min-height:16px}
+                @keyframes flccIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+                @media(prefers-reduced-motion:reduce){#fl-create-channel{animation:none}}
+              </style>
+              <div class="flcc-banner" id="flcc-banner">
+                <div class="flcc-top"><button class="flcc-back" type="button" id="flcc-back" aria-label="Back">‹</button><button class="flcc-change" type="button" id="flcc-change">Change background</button></div>
+              </div>
+              <div class="flcc-sheet">
+                <div class="flcc-avatar-wrap"><div class="flcc-avatar" id="flcc-avatar"><span style="font-size:36px;color:#fff"><i class="fa-solid fa-camera"></i></span><button type="button" id="flcc-avatar-pick">Add photo</button></div></div>
+                <h1 class="flcc-title">Create your Channel</h1><p class="flcc-sub">Make your space yours. Add a name, image and a little information to get started.</p>
+                <div class="flcc-card">
+                  <div class="flcc-field"><label for="flcc-name">Name</label><input id="flcc-name" maxlength="50" placeholder="Your channel name" autocomplete="nickname"></div>
+                  <div class="flcc-field"><label for="flcc-handle">Username</label><input id="flcc-handle" maxlength="24" placeholder="yourusername" autocapitalize="none" autocomplete="off"></div>
+                </div>
+                <div class="flcc-card"><div class="flcc-field"><label for="flcc-bio">Bio</label><textarea id="flcc-bio" maxlength="180" rows="3" placeholder="Write a short description about who you are or what your account is about"></textarea></div></div>
+                <div class="flcc-section">Basic info</div>
+                <div class="flcc-card">
+                  <div class="flcc-info"><span class="flcc-ico"><i class="fa-solid fa-shapes"></i></span><div style="flex:1;min-width:0"><label for="flcc-category">Category</label><select id="flcc-category"><option value="">Select category</option><option>Creator</option><option>Entertainment</option><option>Education</option><option>Gaming</option><option>Music</option><option>Technology</option><option>Business</option><option>Personal</option><option>Other</option></select></div></div>
+                  <div class="flcc-info"><span class="flcc-ico"><i class="fa-regular fa-envelope"></i></span><div style="flex:1;min-width:0"><label>Email</label><input id="flcc-email" type="email" readonly></div></div>
+                  <div class="flcc-info"><span class="flcc-ico"><i class="fa-solid fa-globe"></i></span><div style="flex:1;min-width:0"><label for="flcc-country">Country</label><input id="flcc-country" maxlength="60" placeholder="Select country"></div></div>
+                  <div class="flcc-info"><span class="flcc-ico"><i class="fa-regular fa-calendar"></i></span><div style="flex:1;min-width:0"><label for="flcc-dob">Date of Birth</label><input id="flcc-dob" type="date"></div></div>
+                  <div class="flcc-info"><span class="flcc-ico"><i class="fa-solid fa-venus-mars"></i></span><div style="flex:1;min-width:0"><label for="flcc-gender">Gender</label><select id="flcc-gender"><option value="">Select gender</option><option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option></select></div></div>
+                </div>
+                <p class="flcc-status" id="flcc-status" role="status"></p>
+                <button class="flcc-submit" id="flcc-submit" type="button">Create Channel <span style="float:right;margin-right:10px">›</span></button>
+                <p class="flcc-terms">By creating a channel, you agree to our Terms of Service and Privacy Policy.</p>
+              </div>
+              <input id="flcc-banner-file" type="file" accept="image/*" hidden>
+              <input id="flcc-avatar-file" type="file" accept="image/*" hidden>
+            `;
+            document.body.appendChild(root);
+            const bannerInput=root.querySelector('#flcc-banner-file'), avatarInput=root.querySelector('#flcc-avatar-file');
+            const status=root.querySelector('#flcc-status');
+            let bannerFile=null, avatarFile=null;
+            root.querySelector('#flcc-change').addEventListener('click',()=>bannerInput.click());
+            root.querySelector('#flcc-avatar-pick').addEventListener('click',()=>avatarInput.click());
+            root.querySelector('#flcc-avatar').addEventListener('click',e=>{if(e.target.closest('button'))return;avatarInput.click();});
+            bannerInput.addEventListener('change',()=>{
+                const file=bannerInput.files&&bannerInput.files[0]; if(!file)return;
+                if(!file.type.startsWith('image/')){status.textContent='Please choose an image file.';return;}
+                bannerFile=file;
+                const reader=new FileReader(); reader.onload=()=>{root.querySelector('#flcc-banner').style.backgroundImage='url("'+String(reader.result).replace(/"/g,'%22')+'")';};reader.readAsDataURL(file);
+                status.textContent='Banner selected · 2.35:1 display ratio';
+            });
+            avatarInput.addEventListener('change',()=>{
+                const file=avatarInput.files&&avatarInput.files[0];if(!file)return;
+                if(!file.type.startsWith('image/')){status.textContent='Please choose an image file.';return;}
+                avatarFile=file;
+                const reader=new FileReader();reader.onload=()=>{root.querySelector('#flcc-avatar').innerHTML='<img alt="Channel image preview" src="'+reader.result+'"><button type="button" id="flcc-avatar-pick">Change photo</button>';root.querySelector('#flcc-avatar-pick').addEventListener('click',()=>avatarInput.click());};reader.readAsDataURL(file);
+                status.textContent='Channel image selected';
+            });
+            root.querySelector('#flcc-back').addEventListener('click',()=>{status.textContent='Complete channel setup to continue.';});
+            root.querySelector('#flcc-submit').addEventListener('click',async()=>{
+                const name=root.querySelector('#flcc-name').value.trim();
+                const handle=root.querySelector('#flcc-handle').value.trim().replace(/^@/,'').toLowerCase();
+                if(name.length<2){status.textContent='Enter a channel name (at least 2 characters).';return;}
+                if(!/^[a-z0-9._]{3,24}$/.test(handle)){status.textContent='Username must be 3–24 characters: letters, numbers, dot or underscore.';return;}
+                const btn=root.querySelector('#flcc-submit');btn.disabled=true;status.textContent='Saving your channel…';
+                try{
+                    let bannerUrl='',avatarUrl='';
+                    if(bannerFile){if(typeof uploadImageToR2!=='function')throw new Error('Image upload service is unavailable.');bannerUrl=await uploadImageToR2(bannerFile,'channel-banners');}
+                    if(avatarFile){if(typeof uploadImageToR2!=='function')throw new Error('Image upload service is unavailable.');avatarUrl=await uploadImageToR2(avatarFile,'channel-images');}
+                    const handleSnap=await db.ref('channelHandles/'+handle).once('value');
+                    const claimed=handleSnap.val();
+                    if(claimed&&claimed!==user.uid)throw new Error('This username is already taken. Try another one.');
+                    const payload={uid:user.uid,userId:user.uid,channelName:name,handle:handle,bio:root.querySelector('#flcc-bio').value.trim(),category:root.querySelector('#flcc-category').value,email:user.email||'',country:root.querySelector('#flcc-country').value.trim(),dateOfBirth:root.querySelector('#flcc-dob').value,gender:root.querySelector('#flcc-gender').value,avatarUrl:avatarUrl||user.photoURL||'',channelImageUrl:avatarUrl||user.photoURL||'',bannerUrl:bannerUrl,channelBannerUrl:bannerUrl,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP};
+                    const updates={};updates['channels/'+user.uid]=payload;updates['users/'+user.uid+'/channelName']=name;updates['users/'+user.uid+'/handle']=handle;updates['users/'+user.uid+'/channelCreated']=true;updates['channelHandles/'+handle]=user.uid;
+                    await db.ref().update(updates);
+                    currentChannelData=payload;
+                    try{localStorage.setItem('flaynity_channel_cache:'+user.uid,JSON.stringify(payload));localStorage.setItem('flaynity_user_session_cache',JSON.stringify(payload));}catch(e){}
+                    root.remove();
+                    if(typeof showNotification==='function')showNotification('Your channel is ready!','success');
+                    if(typeof initYouTabUI==='function')initYouTabUI();
+                }catch(err){status.textContent=err.message||'Could not create channel. Please try again.';btn.disabled=false;}
+            });
+        }
+        root.style.display='block';
+        const email=root.querySelector('#flcc-email');if(email)email.value=user.email||'';
+        const nameInput=root.querySelector('#flcc-name');if(nameInput&&!nameInput.value)nameInput.value=user.displayName||'';
+        const handleInput=root.querySelector('#flcc-handle');
+        if(handleInput&&!handleInput.value){handleInput.value=String(user.displayName||user.email?.split('@')[0]||'').toLowerCase().replace(/[^a-z0-9._]/g,'').slice(0,24);}
+    };
+})();
+
 function enforceContentAdminStatus(items, type) {
     const allowed = items.filter(item => {
         const status = String(item?.status || item?.visibility || 'published').toLowerCase();
@@ -1399,6 +1529,14 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         const appScr = document.getElementById('app-screen');
         if (authScr) authScr.style.display = 'none';
         if (appScr) appScr.style.display = 'block';
+
+        // First-time users must create a channel before continuing in the app.
+        try {
+            const channelSnap = await db.ref('channels/' + user.uid).once('value');
+            if (!channelSnap.exists() && typeof window.showCreateChannelPage === 'function') {
+                window.showCreateChannelPage();
+            }
+        } catch (channelCheckError) { console.warn('Create Channel check failed:', channelCheckError); }
 
         saveAccountToList(user);
         attachAdminControlListener();

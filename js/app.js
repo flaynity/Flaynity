@@ -1535,12 +1535,16 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
             const appScr = document.getElementById('app-screen');
             const authScr = document.getElementById('auth-screen');
             if (appScr) appScr.style.display = 'none';
-            // First launch / every launch without a signed-in account: show onboarding first.
-            // The existing Google auth screen is revealed only after Get Started.
+            // Account switching must open the auth Welcome choices directly, not replay onboarding.
+            if (window.__flaynityDirectWelcomeAfterSwitch) {
+                window.__flaynityDirectWelcomeAfterSwitch = false;
+                if (authScr) authScr.style.display = 'flex';
+                if (typeof window.authShowView === 'function') window.authShowView('welcome', true);
+                return;
+            }
+            // First launch / ordinary signed-out launch keeps the existing onboarding flow.
             if (authScr) authScr.style.display = 'none';
             if (typeof window.__flaynityShowOnboarding === 'function') {
-                // The onboarding controller waits for the startup splash and preloads
-                // all images before revealing the screen, preventing late/flickering shows.
                 window.__flaynityShowOnboarding();
             }
             return;
@@ -7986,9 +7990,12 @@ function openAccountSwitcher() {
     // Switching accounts returns to the Welcome screen so the user can choose
     // Create Account or Log In, rather than remaining inside the current session.
     (async function openWelcomeForAccountSwitch() {
+        // Set the flag before signOut so onAuthStateChanged bypasses the onboarding carousel.
+        window.__flaynityDirectWelcomeAfterSwitch = true;
         try {
             if (auth && auth.currentUser) await auth.signOut();
         } catch (e) {
+            window.__flaynityDirectWelcomeAfterSwitch = false;
             console.error('Unable to sign out before account switch:', e);
             showNotification('Could not switch account. Please try again.', 'error');
             return;
@@ -8002,6 +8009,7 @@ function openAccountSwitcher() {
         if (authScreen) authScreen.style.display = 'flex';
         document.body.classList.add('auth-active');
         if (typeof window.authShowView === 'function') window.authShowView('welcome', true);
+        else window.__flaynityDirectWelcomeAfterSwitch = false;
     })();
 }
 

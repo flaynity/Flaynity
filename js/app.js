@@ -1199,6 +1199,14 @@ function saveAccountToList(user) {
 }
 
 function cleanupUserSessionData() {
+    // Remove every account-scoped in-memory and visible UI value before another UID is rendered.
+    window.__flaynityActiveDataUid = null;
+    try { if (window.AppNavigation && typeof AppNavigation.popToRoot === 'function') AppNavigation.popToRoot(); } catch (e) {}
+    try { if (window.currentUserUnsubscribe) window.currentUserUnsubscribe(); } catch (e) {}
+    try { if (window.__flaynityUserListeners) window.__flaynityUserListeners.forEach(fn => { try { fn(); } catch (e) {} }); } catch (e) {}
+    try { window.__flaynityUserListeners = []; } catch (e) {}
+    try { ['flaynity_user_session_cache','flaynity_upload_queue_v2','flaynity_channel_cache','flaynity_profile_cache','flaynity_user_cache'].forEach(k => localStorage.removeItem(k)); } catch (e) {}
+
     Object.keys(liveChannelDataCache).forEach(uid => delete liveChannelDataCache[uid]);
     currentChannelData = null;
     tempCreateAvatarUrl = "";
@@ -1248,6 +1256,31 @@ function cleanupUserSessionData() {
     _detachAllGlobalFeedListeners();
     try { clearFeelsSubscriptionListeners(); } catch(e) {}
     _feedListenersAttached = false;
+
+    // Clear additional account-owned surfaces so stale profile/feed data cannot flash.
+    ['you-bio-txt','you-username-txt','you-phone-txt','you-country-txt','you-channel-name','you-channel-username',
+     'channel-profile-name','channel-profile-bio','channel-profile-username','channel-banner','channel-avatar',
+     'profile-fullname','profile-username','profile-bio','profile-email','profile-phone','profile-country',
+     'profile-avatar','profile-banner','you-channel-banner','you-channel-avatar'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if ('value' in el) el.value = '';
+        else if (el.tagName === 'IMG') el.removeAttribute('src');
+        else el.textContent = '';
+        if (el.style && (id.includes('banner') || id.includes('avatar'))) el.style.backgroundImage = '';
+    });
+    ['home-feed-container','feels-swiper-container','search-results','you-posts-container',
+     'you-videos-container','you-feels-container','channel-posts-container','channel-videos-container',
+     'channel-feels-container','notifications-list','inbox-list','manager-items-list'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.innerHTML = '';
+    });
+    // Drop account-specific keys only; keep theme, language and the saved-account picker.
+    try {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+            const key = localStorage.key(i) || '';
+            if (/^(flaynity_(user|profile|channel|feed|hidden|saved_posts|saved_videos|likes|follows|notifications|inbox|drafts|watch_history|recent_searches)_cache(?::|$)|^fx_hidden_(videos|channels)$)/i.test(key)) localStorage.removeItem(key);
+        }
+    } catch (e) {}
 
     SyncManager.isRefreshing = false;
 }
@@ -1549,6 +1582,12 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
             }
             return;
         }
+
+        // Firebase may switch accounts without a page reload. Reset stale data when UID changes.
+        if (window.__flaynityActiveDataUid && window.__flaynityActiveDataUid !== user.uid) {
+            cleanupUserSessionData();
+        }
+        window.__flaynityActiveDataUid = user.uid;
 
         // Always verify the account status from Firebase before exposing the app.
         const userRef = db.ref(`users/${user.uid}`);

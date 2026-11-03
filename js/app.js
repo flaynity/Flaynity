@@ -7983,8 +7983,26 @@ function closeDescBottomSheet() {
 
 function openAccountSwitcher() {
     playUI('click');
-    AppNavigation.pushModal('account-switcher-modal');
-    renderAccountSwitcherList();
+    // Switching accounts returns to the Welcome screen so the user can choose
+    // Create Account or Log In, rather than remaining inside the current session.
+    (async function openWelcomeForAccountSwitch() {
+        try {
+            if (auth && auth.currentUser) await auth.signOut();
+        } catch (e) {
+            console.error('Unable to sign out before account switch:', e);
+            showNotification('Could not switch account. Please try again.', 'error');
+            return;
+        }
+        try {
+            if (window.AppNavigation && typeof AppNavigation.popToRoot === 'function') AppNavigation.popToRoot();
+        } catch (e) {}
+        const appScreen = document.getElementById('app-screen');
+        const authScreen = document.getElementById('auth-screen');
+        if (appScreen) appScreen.style.display = 'none';
+        if (authScreen) authScreen.style.display = 'flex';
+        document.body.classList.add('auth-active');
+        if (typeof window.authShowView === 'function') window.authShowView('welcome', true);
+    })();
 }
 
 function closeAccountSwitcher() {

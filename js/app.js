@@ -1248,6 +1248,20 @@ function cleanupUserSessionData() {
     const youAvatar = document.getElementById('you-avatar-large');
     if (youAvatar) youAvatar.innerHTML = 'U';
 
+    // Remove the previous account's visible channel imagery immediately.
+    ['view-channel-banner','view-channel-avatar'].forEach(id => {
+        const image = document.getElementById(id);
+        if (image) {
+            image.removeAttribute('src');
+            image.style.visibility = 'hidden';
+        }
+    });
+    ['view-appbar-title','view-channel-name-txt','view-channel-handle-txt','view-channel-desc','view-sub-count']
+        .forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = '';
+        });
+
     const actionBox = document.getElementById('channel-action-box');
     if (actionBox) actionBox.innerHTML = '';
 
@@ -1693,6 +1707,8 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
                     }
                 } catch (e) {}
                 if (currentChannelData) {
+                    // Render the new UID's profile and images without requiring another You tap.
+                    initYouTabUI();
                     openViewChannelPage();
                 } else {
                     initYouTabUI();
@@ -7799,8 +7815,8 @@ function openViewChannelPage() {
         cachedAvatarUrl = localStorage.getItem('flaynity_cached_channel_avatar:' + auth.currentUser.uid) || cachedAvatarUrl || localStorage.getItem('flaynity_cached_channel_avatar_url:' + auth.currentUser.uid) || '';
     } catch (e) {}
     if (navigator.onLine) {
-        cacheChannelImageOffline(cachedBannerUrl, 'flaynity_cached_channel_banner');
-        cacheChannelImageOffline(cachedAvatarUrl, 'flaynity_cached_channel_avatar');
+        cacheChannelImageOffline(cachedBannerUrl, 'flaynity_cached_channel_banner:' + activeUid);
+        cacheChannelImageOffline(cachedAvatarUrl, 'flaynity_cached_channel_avatar:' + activeUid);
     }
     if (viewBanner) {
         viewBanner.src = cachedBannerUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop";

@@ -1199,6 +1199,13 @@ function saveAccountToList(user) {
 }
 
 function cleanupUserSessionData() {
+    window.__flaynityYouLoadToken = (window.__flaynityYouLoadToken || 0) + 1;
+    try {
+        ['flaynity_cached_channel_avatar','flaynity_cached_channel_avatar_url',
+         'flaynity_cached_channel_banner','flaynity_cached_channel_banner_url']
+            .forEach(key => localStorage.removeItem(key));
+    } catch (e) {}
+
     // Remove every account-scoped in-memory and visible UI value before another UID is rendered.
     window.__flaynityActiveDataUid = null;
     try { if (window.AppNavigation && typeof AppNavigation.popToRoot === 'function') AppNavigation.popToRoot(); } catch (e) {}
@@ -7163,41 +7170,72 @@ function initYouTabUI() {
     if (!wrap) return;
 
     const user = auth.currentUser;
+    if (!user) {
+        currentChannelData = null;
+        wrap.innerHTML = '';
+        return;
+    }
+
+    // Every request belongs to one UID and one render generation. A late Firebase
+    // response from a previous account is never allowed to repaint the You page.
+    const uid = user.uid;
+    const loadToken = (window.__flaynityYouLoadToken || 0) + 1;
+    window.__flaynityYouLoadToken = loadToken;
+    const isCurrent = () => !!auth.currentUser &&
+        auth.currentUser.uid === uid &&
+        window.__flaynityYouLoadToken === loadToken;
+
     if (!navigator.onLine) {
         try {
-            const cached = user ? localStorage.getItem('flaynity_channel_cache:' + user.uid) : null;
-            // Never use the unscoped session cache: it can belong to a previous account.
+            const cached = localStorage.getItem('flaynity_channel_cache:' + uid);
             currentChannelData = cached ? JSON.parse(cached) : null;
         } catch (e) { currentChannelData = null; }
-        if (currentChannelData) {
-            renderYouTabWithData(currentChannelData, user || { displayName: currentChannelData.channelName || 'Flaynity User', photoURL: currentChannelData.avatarUrl || '', email: '' }, wrap);
-        } else {
-            wrap.innerHTML = `<div class="skel-box" style="width: 100%; height: 48px; border-radius: 20px;"></div>`;
+        if (isCurrent()) {
+            if (currentChannelData) {
+                renderYouTabWithData(currentChannelData, user, wrap);
+            } else {
+                wrap.innerHTML = '<div class="skel-box" style="width:100%;height:48px;border-radius:20px;"></div>';
+            }
         }
         return;
     }
-    if (!user) return;
 
-    db.ref(`channels/${user.uid}`).once('value', (snapshot) => {
-        currentChannelData = snapshot.val();
-        try {
-            if (currentChannelData) {
-                localStorage.setItem('flaynity_channel_cache:' + user.uid, JSON.stringify(currentChannelData));
-                localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
-            } else {
-                localStorage.removeItem('flaynity_channel_cache:' + user.uid);
-            }
-        } catch (e) {}
-        renderYouTabWithData(currentChannelData, user, wrap);
-    }).catch(() => {
-        let cached = null;
-        try {
-            const value = localStorage.getItem('flaynity_channel_cache:' + user.uid);
-            if (value) cached = JSON.parse(value);
-        } catch (e) {}
-        currentChannelData = cached;
-        renderYouTabWithData(currentChannelData, user, wrap);
-    });
+    // Do not leave the previous account's identity visible while the new
+    // account's channel record is being fetched.
+    currentChannelData = null;
+    const nameEl = document.getElementById('you-fullname-txt');
+    const handleEl = document.getElementById('you-email-txt');
+    const avatarEl = document.getElementById('you-avatar-large');
+    if (nameEl) nameEl.innerText = user.displayName || (user.email || '').split('@')[0] || 'User';
+    if (handleEl) handleEl.innerText = user.email || '';
+    if (avatarEl) {
+        avatarEl.innerHTML = user.photoURL
+            ? '<img src="' + user.photoURL + '" style="width:100%;height:100%;object-fit:cover;">'
+            : ((user.displayName || user.email || 'U').charAt(0).toUpperCase());
+    }
+    wrap.innerHTML = '<div class="skel-box" style="width:100%;height:48px;border-radius:20px;"></div>';
+
+    db.ref('channels/' + uid).once('value')
+        .then(snapshot => {
+            if (!isCurrent()) return;
+            const data = snapshot.val() || null;
+            currentChannelData = data;
+            try {
+                if (data) localStorage.setItem('flaynity_channel_cache:' + uid, JSON.stringify(data));
+                else localStorage.removeItem('flaynity_channel_cache:' + uid);
+            } catch (e) {}
+            renderYouTabWithData(data, user, wrap);
+        })
+        .catch(() => {
+            if (!isCurrent()) return;
+            let cached = null;
+            try {
+                const value = localStorage.getItem('flaynity_channel_cache:' + uid);
+                if (value) cached = JSON.parse(value);
+            } catch (e) {}
+            currentChannelData = cached;
+            renderYouTabWithData(cached, user, wrap);
+        });
 }
 
 function cacheChannelImageOffline(url, storageKey) {
@@ -7249,16 +7287,16 @@ function renderYouTabWithData(data, user, wrap) {
         // even if the session object is incomplete or auth.currentUser is not restored.
         try {
             if (channelAvatar) {
-                localStorage.setItem('flaynity_cached_channel_avatar_url', channelAvatar);
-                if (/^data:image\//i.test(channelAvatar)) localStorage.setItem('flaynity_cached_channel_avatar', channelAvatar);
+                localStorage.setItem('flaynity_cached_channel_avatar_url:' + user.uid, channelAvatar);
+                if (/^data:image\//i.test(channelAvatar)) localStorage.setItem('flaynity_cached_channel_avatar:' + user.uid, channelAvatar);
             }
             if (channelBanner) {
-                localStorage.setItem('flaynity_cached_channel_banner_url', channelBanner);
-                if (/^data:image\//i.test(channelBanner)) localStorage.setItem('flaynity_cached_channel_banner', channelBanner);
+                localStorage.setItem('flaynity_cached_channel_banner_url:' + user.uid, channelBanner);
+                if (/^data:image\//i.test(channelBanner)) localStorage.setItem('flaynity_cached_channel_banner:' + user.uid, channelBanner);
             }
         } catch (e) {}
-        cacheChannelImageOffline(channelAvatar, 'flaynity_cached_channel_avatar');
-        cacheChannelImageOffline(channelBanner, 'flaynity_cached_channel_banner');
+        cacheChannelImageOffline(channelAvatar, 'flaynity_cached_channel_avatar:' + user.uid);
+        cacheChannelImageOffline(channelBanner, 'flaynity_cached_channel_banner:' + user.uid);
 
         if (youFullNameTxt) youFullNameTxt.innerText = channelName;
         if (youEmailTxt) {
@@ -7722,8 +7760,8 @@ function openViewChannelPage() {
     let cachedAvatarUrl = data.avatarUrl || data.channelImageUrl || data.profileImageUrl || data.photoURL || '';
     try {
         // Prefer downloaded image data for reliable offline rendering.
-        cachedBannerUrl = localStorage.getItem('flaynity_cached_channel_banner') || cachedBannerUrl || localStorage.getItem('flaynity_cached_channel_banner_url') || '';
-        cachedAvatarUrl = localStorage.getItem('flaynity_cached_channel_avatar') || cachedAvatarUrl || localStorage.getItem('flaynity_cached_channel_avatar_url') || '';
+        cachedBannerUrl = localStorage.getItem('flaynity_cached_channel_banner:' + auth.currentUser.uid) || cachedBannerUrl || localStorage.getItem('flaynity_cached_channel_banner_url:' + auth.currentUser.uid) || '';
+        cachedAvatarUrl = localStorage.getItem('flaynity_cached_channel_avatar:' + auth.currentUser.uid) || cachedAvatarUrl || localStorage.getItem('flaynity_cached_channel_avatar_url:' + auth.currentUser.uid) || '';
     } catch (e) {}
     if (navigator.onLine) {
         cacheChannelImageOffline(cachedBannerUrl, 'flaynity_cached_channel_banner');

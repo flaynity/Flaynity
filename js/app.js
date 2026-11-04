@@ -1674,6 +1674,36 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         const activeNav = document.querySelector('.nav-item.active');
         if (activeNav) adjustHeaderForActiveTab(activeNav.id.replace('nav-', ''));
 
+        if (window.__flaynityReturnToYouAfterAccountSwitch) {
+            window.__flaynityReturnToYouAfterAccountSwitch = false;
+            try {
+                // Restore the You tab automatically; the user must not need to tap it again.
+                if (window.AppNavigation && typeof AppNavigation.pushTab === 'function') {
+                    AppNavigation.pushTab('you');
+                }
+                currentChannelData = null;
+                const switchedChannelSnap = await db.ref('channels/' + user.uid).once('value');
+                if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
+                currentChannelData = switchedChannelSnap.val() || null;
+                try {
+                    if (currentChannelData) {
+                        localStorage.setItem('flaynity_channel_cache:' + user.uid, JSON.stringify(currentChannelData));
+                    } else {
+                        localStorage.removeItem('flaynity_channel_cache:' + user.uid);
+                    }
+                } catch (e) {}
+                if (currentChannelData) {
+                    openViewChannelPage();
+                } else {
+                    initYouTabUI();
+                }
+            } catch (switchRefreshError) {
+                console.error('New account You page refresh failed:', switchRefreshError);
+                try { AppNavigation.pushTab('you'); } catch (e) {}
+                try { initYouTabUI(); } catch (e) {}
+            }
+        }
+
         if (window.__flaynityAccountSwitchShouldOpenChannel) {
             window.__flaynityAccountSwitchShouldOpenChannel = false;
             currentChannelData = null;
@@ -8093,6 +8123,8 @@ function openAccountSwitcher() {
     (async function openWelcomeForAccountSwitch() {
         // Set the flag before signOut so onAuthStateChanged bypasses the onboarding carousel.
         window.__flaynityDirectWelcomeAfterSwitch = true;
+        // After the next successful sign-in, automatically return to this account's You page.
+        window.__flaynityReturnToYouAfterAccountSwitch = true;
         try {
             if (auth && auth.currentUser) await auth.signOut();
         } catch (e) {

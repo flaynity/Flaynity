@@ -7024,45 +7024,46 @@ async function switchTab(tabId) {
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
 
+    // Update the selected bottom-navigation item immediately. Do this before
+    // any Firebase request or page navigation so the previous tab cannot stay pink.
+    AppNavigation.pushTab(tabId);
+
     if (tabId === 'you') {
         const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
+        if (!user) return;
+
         let channel = null;
-        if (user && navigator.onLine) {
+        if (navigator.onLine) {
             try {
-                const snapshot = await db.ref(`channels/${user.uid}`).once('value');
-                channel = snapshot.val();
+                const snapshot = await db.ref('channels/' + user.uid).once('value');
+                // Ignore a late response if the user switched accounts meanwhile.
+                if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
+                channel = snapshot.val() || null;
                 try {
-                    if (channel) {
-                        localStorage.setItem('flaynity_channel_cache:' + user.uid, JSON.stringify(channel));
-                        localStorage.setItem('flaynity_user_session_cache', JSON.stringify(channel));
-                    } else localStorage.removeItem('flaynity_channel_cache:' + user.uid);
+                    if (channel) localStorage.setItem('flaynity_channel_cache:' + user.uid, JSON.stringify(channel));
+                    else localStorage.removeItem('flaynity_channel_cache:' + user.uid);
                 } catch (e) {}
             } catch (e) {}
         }
-        if (!channel && user) {
+
+        if (!channel) {
             try {
                 const cached = localStorage.getItem('flaynity_channel_cache:' + user.uid);
                 if (cached) channel = JSON.parse(cached);
             } catch (e) {}
         }
-        if (!channel && !navigator.onLine) {
-            try {
-                const cachedSession = localStorage.getItem('flaynity_user_session_cache');
-                if (cachedSession) channel = JSON.parse(cachedSession);
-            } catch (e) {}
-        }
+
         if (channel) {
             currentChannelData = channel;
             openViewChannelPage();
-            return;
-        }
-        if (!navigator.onLine) {
+        } else if (!navigator.onLine) {
             AppNavigation.pushPage('view-channel-page');
             renderOfflineChannelPageSkeletons();
-            return;
+        } else {
+            currentChannelData = null;
+            initYouTabUI();
         }
     }
-    AppNavigation.pushTab(tabId);
 }
 
 function adjustHeaderForActiveTab(tabId) {

@@ -8236,7 +8236,7 @@ async function switchSession(email) {
     window.__flaynityReturnToYouAfterAccountSwitch = true;
 
     if (window.AndroidBridge && typeof window.AndroidBridge.triggerGoogleSignIn === 'function') {
-        window.__flaynityAccountSwitchShouldOpenChannel = true;
+        window.__flaynityAccountSwitchShouldOpenChannel = false;
         window.AndroidBridge.triggerGoogleSignIn();
         AppNavigation.pop();
     } else {

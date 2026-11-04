@@ -7332,17 +7332,18 @@ function cacheChannelImageOffline(url, storageKey) {
     if (!url || typeof url !== 'string' || !navigator.onLine) return;
     // Keep already embedded image data untouched.
     if (/^data:image\//i.test(url)) {
-        try { localStorage.setItem(storageKey, url); } catch (e) {}
+        try {
+            localStorage.setItem(storageKey, url);
+            localStorage.setItem(storageKey + '_url', url);
+        } catch (e) {}
         return;
     }
     try {
         const previousUrl = localStorage.getItem(storageKey + '_url');
         const previousImage = localStorage.getItem(storageKey);
-        // Reuse the existing channel image cache when the URL has not changed.
-        // A remembered URL is not proof that the image bytes were cached.
-        // Only skip the download when the actual offline image data exists.
+        // Reuse the cached bytes only when they belong to this exact image URL.
         if (previousUrl === url && previousImage && /^data:image\//i.test(previousImage)) return;
-        localStorage.setItem(storageKey + '_url', url);
+        // Do not mark the new URL as cached until its image bytes download successfully.
     } catch (e) {}
     fetch(url, { method: 'GET', mode: 'cors', cache: 'force-cache' })
         .then(response => {
@@ -7361,7 +7362,10 @@ function cacheChannelImageOffline(url, storageKey) {
         }))
         .then(dataUrl => {
             if (typeof dataUrl === 'string' && dataUrl.startsWith('data:image/')) {
-                try { localStorage.setItem(storageKey, dataUrl); } catch (e) {}
+                try {
+                    localStorage.setItem(storageKey, dataUrl);
+                    localStorage.setItem(storageKey + '_url', url);
+                } catch (e) {}
             }
         })
         .catch(() => {
@@ -7384,13 +7388,13 @@ function renderYouTabWithData(data, user, wrap) {
         // Preserve channel image URLs separately so they survive offline sessions
         // even if the session object is incomplete or auth.currentUser is not restored.
         try {
-            if (channelAvatar) {
-                localStorage.setItem('flaynity_cached_channel_avatar_url:' + user.uid, channelAvatar);
-                if (/^data:image\//i.test(channelAvatar)) localStorage.setItem('flaynity_cached_channel_avatar:' + user.uid, channelAvatar);
+            // Embedded image data can be saved immediately. Remote URLs are
+            // recorded by cacheChannelImageOffline only after the download succeeds.
+            if (channelAvatar && /^data:image\//i.test(channelAvatar)) {
+                localStorage.setItem('flaynity_cached_channel_avatar:' + user.uid, channelAvatar);
             }
-            if (channelBanner) {
-                localStorage.setItem('flaynity_cached_channel_banner_url:' + user.uid, channelBanner);
-                if (/^data:image\//i.test(channelBanner)) localStorage.setItem('flaynity_cached_channel_banner:' + user.uid, channelBanner);
+            if (channelBanner && /^data:image\//i.test(channelBanner)) {
+                localStorage.setItem('flaynity_cached_channel_banner:' + user.uid, channelBanner);
             }
         } catch (e) {}
         cacheChannelImageOffline(channelAvatar, 'flaynity_cached_channel_avatar:' + user.uid);

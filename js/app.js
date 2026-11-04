@@ -1693,6 +1693,9 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
             try {
                 // Restore the You tab automatically; the user must not need to tap it again.
                 if (window.AppNavigation && typeof AppNavigation.pushTab === 'function') {
+                    try {
+                        if (typeof AppNavigation.popToRoot === 'function') AppNavigation.popToRoot();
+                    } catch (e) {}
                     AppNavigation.pushTab('you');
                 }
                 currentChannelData = null;
@@ -8227,9 +8230,14 @@ function renderAccountSwitcherList() {
 async function switchSession(email) {
     playUI('click');
     showNotification("Switching account...", "success");
+
+    // Both Android Google Sign-In and browser popup sign-in must trigger the
+    // same automatic You-page refresh after Firebase confirms the new UID.
+    window.__flaynityReturnToYouAfterAccountSwitch = true;
+
     if (window.AndroidBridge && typeof window.AndroidBridge.triggerGoogleSignIn === 'function') {
         window.__flaynityAccountSwitchShouldOpenChannel = true;
-        window.AndroidBridge.triggerGoogleSignIn(); 
+        window.AndroidBridge.triggerGoogleSignIn();
         AppNavigation.pop();
     } else {
         try {
@@ -8244,23 +8252,11 @@ async function switchSession(email) {
             AppNavigation.pop();
             showNotification("Switched successfully!", "success");
             SyncManager.refreshEverything();
-            currentChannelData = null;
-            try {
-                const channelSnapshot = await db.ref(`channels/${result.user.uid}`).once('value');
-                currentChannelData = channelSnapshot.val();
-                if (currentChannelData) {
-                    try { localStorage.setItem('flaynity_channel_cache:' + result.user.uid, JSON.stringify(currentChannelData)); } catch (e) {}
-                    openViewChannelPage();
-                } else {
-                    try { localStorage.removeItem('flaynity_channel_cache:' + result.user.uid); } catch (e) {}
-                    const current = AppNavigation.current();
-                    if (current && current.type === 'page' && current.id === 'view-channel-page') AppNavigation.pop();
-                    AppNavigation.pushTab('you');
-                }
-            } catch (channelError) {
-                console.error('Unable to resolve selected account channel:', channelError);
-            }
+            // The auth-state handler owns the UID-safe You page/channel refresh.
+            // Do not render here as well: that creates competing page transitions.
         } catch (err) {
+            window.__flaynityReturnToYouAfterAccountSwitch = false;
+            window.__flaynityAccountSwitchShouldOpenChannel = false;
             showNotification("Failed to switch: " + err.message, "error");
         }
     }

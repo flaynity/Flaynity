@@ -7319,7 +7319,9 @@ function cacheChannelImageOffline(url, storageKey) {
         const previousUrl = localStorage.getItem(storageKey + '_url');
         const previousImage = localStorage.getItem(storageKey);
         // Reuse the existing channel image cache when the URL has not changed.
-        if (previousUrl === url && (previousImage || previousUrl)) return;
+        // A remembered URL is not proof that the image bytes were cached.
+        // Only skip the download when the actual offline image data exists.
+        if (previousUrl === url && previousImage && /^data:image\//i.test(previousImage)) return;
         localStorage.setItem(storageKey + '_url', url);
     } catch (e) {}
     fetch(url, { method: 'GET', mode: 'cors', cache: 'force-cache' })
@@ -7381,9 +7383,13 @@ function renderYouTabWithData(data, user, wrap) {
             youEmailTxt.style.fontWeight = "800";
         }
 
+        let displayAvatarUrl = channelAvatar;
+        if (!navigator.onLine) {
+            try { displayAvatarUrl = localStorage.getItem('flaynity_cached_channel_avatar:' + user.uid) || ''; } catch (e) { displayAvatarUrl = ''; }
+        }
         if (youAvatarLarge) {
-            if (channelAvatar) {
-                youAvatarLarge.innerHTML = `<img src="${channelAvatar}" style="width:100%; height:100%; object-fit:cover;">`;
+            if (displayAvatarUrl) {
+                youAvatarLarge.innerHTML = `<img src="${displayAvatarUrl}" style="width:100%; height:100%; object-fit:cover;">`;
             } else {
                 youAvatarLarge.innerHTML = channelName.charAt(0).toUpperCase();
             }
@@ -12759,11 +12765,15 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
     }
     window.addEventListener("flaynity-pages-ready", initAfterInjection);
     // Warm the You/Channel screen in the background while the user stays on Home.
-    window.addEventListener("flaynity-pages-ready", function preloadYouTabInBackground() {
+    function preloadYouTabInBackground() {
         const activeNav = document.querySelector('.nav-item.active');
         const signedInUid = auth && auth.currentUser ? auth.currentUser.uid : '';
+        // Keep Home visible; initYouTabUI only prepares the hidden You tab's
+        // profile/channel data and starts banner/avatar offline caching.
         if (signedInUid && (!activeNav || activeNav.id === 'nav-home')) initYouTabUI();
-    }, { once: true });
+    }
+    window.addEventListener("flaynity-pages-ready", preloadYouTabInBackground);
+    window.addEventListener("flaynity-dom-ready", preloadYouTabInBackground);
     window.addEventListener("flaynity-dom-ready", initAfterInjection);
     window.addEventListener("flaynity-tab-changed", initAfterInjection);
     document.addEventListener("DOMContentLoaded", initAfterInjection);

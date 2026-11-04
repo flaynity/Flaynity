@@ -1691,16 +1691,18 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         if (window.__flaynityReturnToYouAfterAccountSwitch) {
             window.__flaynityReturnToYouAfterAccountSwitch = false;
             try {
-                // Restore the You tab automatically; the user must not need to tap it again.
-                if (window.AppNavigation && typeof AppNavigation.pushTab === 'function') {
-                    try {
-                        if (typeof AppNavigation.popToRoot === 'function') AppNavigation.popToRoot();
-                    } catch (e) {}
-                    AppNavigation.pushTab('you');
+                // Force a clean You-tab navigation state; do not depend on the
+                // previous tab/page stack or on a later manual You tap.
+                if (window.AppNavigation) {
+                    AppNavigation.stack = [{ type: 'tab', id: 'you' }];
+                    AppNavigation._fresh = true;
+                    AppNavigation.syncUI();
                 }
+
                 currentChannelData = null;
                 const switchedChannelSnap = await db.ref('channels/' + user.uid).once('value');
                 if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
+
                 currentChannelData = switchedChannelSnap.val() || null;
                 try {
                     if (currentChannelData) {
@@ -1709,16 +1711,28 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
                         localStorage.removeItem('flaynity_channel_cache:' + user.uid);
                     }
                 } catch (e) {}
+
+                // Invalidate any generic You-tab load started during syncUI so
+                // it cannot race this account-switch render.
+                window.__flaynityYouLoadToken = (window.__flaynityYouLoadToken || 0) + 1;
+                const youWrap = document.getElementById('channel-action-box');
+                if (youWrap) renderYouTabWithData(currentChannelData, user, youWrap);
+
                 if (currentChannelData) {
-                    // Render the new UID's profile and images without requiring another You tap.
-                    initYouTabUI();
                     openViewChannelPage();
                 } else {
-                    initYouTabUI();
+                    // New account has no channel yet: keep the You tab visible
+                    // and render the signed-in user's own profile/create-channel state.
+                    if (youWrap) renderYouTabWithData(null, user, youWrap);
                 }
             } catch (switchRefreshError) {
                 console.error('New account You page refresh failed:', switchRefreshError);
-                try { AppNavigation.pushTab('you'); } catch (e) {}
+                try {
+                    if (window.AppNavigation) {
+                        AppNavigation.stack = [{ type: 'tab', id: 'you' }];
+                        AppNavigation.syncUI();
+                    }
+                } catch (e) {}
                 try { initYouTabUI(); } catch (e) {}
             }
         }

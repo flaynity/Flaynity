@@ -7736,10 +7736,14 @@ function openChannelSettingsPage() {
 function openViewChannelPage() {
     ensureLiveUploadStyles();
     playUI('click');
+    const activeUid = auth.currentUser && auth.currentUser.uid;
     let data = currentChannelData;
+    if (!activeUid) return;
+    // Never render a channel object belonging to a different signed-in account.
+    if (data && data.uid && data.uid !== activeUid && data.userId && data.userId !== activeUid) data = null;
     if (!data && !navigator.onLine) {
         try {
-            const cached = localStorage.getItem('flaynity_user_session_cache');
+            const cached = localStorage.getItem('flaynity_channel_cache:' + activeUid);
             if (cached) data = JSON.parse(cached);
         } catch (e) {}
         if (data) currentChannelData = data;

@@ -5892,7 +5892,10 @@ const AppNavigation = {
         // scroll controller immediately when the active tab changes.
         window.dispatchEvent(new Event('flaynity-tab-changed'));
 
-        if (activeTab === 'you') initYouTabUI();
+        if (activeTab === 'you') {
+            const signedInUid = auth && auth.currentUser ? auth.currentUser.uid : '';
+            if (!signedInUid || window.__flaynityYouPreloadedUid !== signedInUid) initYouTabUI();
+        }
         // Opening/closing a Comment or Download modal must never rebuild the
         // Feels swiper. Rebuilding replaces the DOM and makes the current Feels
         // disappear or jump to another item. Build only when the Feels DOM is
@@ -7254,6 +7257,7 @@ function initYouTabUI() {
             const cached = localStorage.getItem('flaynity_channel_cache:' + uid);
             currentChannelData = cached ? JSON.parse(cached) : null;
         } catch (e) { currentChannelData = null; }
+        window.__flaynityYouPreloadedUid = uid;
         if (isCurrent()) {
             if (currentChannelData) {
                 renderYouTabWithData(currentChannelData, user, wrap);
@@ -7284,6 +7288,7 @@ function initYouTabUI() {
             if (!isCurrent()) return;
             const data = snapshot.val() || null;
             currentChannelData = data;
+            window.__flaynityYouPreloadedUid = uid;
             try {
                 if (data) localStorage.setItem('flaynity_channel_cache:' + uid, JSON.stringify(data));
                 else localStorage.removeItem('flaynity_channel_cache:' + uid);
@@ -7298,6 +7303,7 @@ function initYouTabUI() {
                 if (value) cached = JSON.parse(value);
             } catch (e) {}
             currentChannelData = cached;
+            window.__flaynityYouPreloadedUid = uid;
             renderYouTabWithData(cached, user, wrap);
         });
 }
@@ -7309,7 +7315,13 @@ function cacheChannelImageOffline(url, storageKey) {
         try { localStorage.setItem(storageKey, url); } catch (e) {}
         return;
     }
-    try { localStorage.setItem(storageKey + '_url', url); } catch (e) {}
+    try {
+        const previousUrl = localStorage.getItem(storageKey + '_url');
+        const previousImage = localStorage.getItem(storageKey);
+        // Reuse the existing channel image cache when the URL has not changed.
+        if (previousUrl === url && (previousImage || previousUrl)) return;
+        localStorage.setItem(storageKey + '_url', url);
+    } catch (e) {}
     fetch(url, { method: 'GET', mode: 'cors', cache: 'force-cache' })
         .then(response => {
             if (!response.ok) throw new Error('Image download failed');
@@ -12746,6 +12758,12 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
         if (typeof initSearchEvents === "function") initSearchEvents();
     }
     window.addEventListener("flaynity-pages-ready", initAfterInjection);
+    // Warm the You/Channel screen in the background while the user stays on Home.
+    window.addEventListener("flaynity-pages-ready", function preloadYouTabInBackground() {
+        const activeNav = document.querySelector('.nav-item.active');
+        const signedInUid = auth && auth.currentUser ? auth.currentUser.uid : '';
+        if (signedInUid && (!activeNav || activeNav.id === 'nav-home')) initYouTabUI();
+    }, { once: true });
     window.addEventListener("flaynity-dom-ready", initAfterInjection);
     window.addEventListener("flaynity-tab-changed", initAfterInjection);
     document.addEventListener("DOMContentLoaded", initAfterInjection);

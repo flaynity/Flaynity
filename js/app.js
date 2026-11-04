@@ -7456,24 +7456,13 @@ function handleViewChannelMenu() {
 
 function openCreateChannelPage() {
     playUI('click');
-    tempCreateAvatarUrl = "";
-    const avatarImg = document.getElementById('create-avatar-img');
-    const placeholder = document.getElementById('create-avatar-placeholder');
-    const chName = document.getElementById('create-channel-name');
-    const chHandle = document.getElementById('create-channel-handle');
-    const counter = document.getElementById('create-name-counter');
-    const feedback = document.getElementById('create-handle-feedback');
-    const submitBtn = document.getElementById('btn-submit-create');
-
-    if (avatarImg) avatarImg.style.display = 'none';
-    if (placeholder) placeholder.style.display = 'block';
-    if (chName) chName.value = "";
-    if (chHandle) chHandle.value = "";
-    if (counter) counter.innerText = "0";
-    if (feedback) feedback.innerHTML = "";
-    if (submitBtn) submitBtn.disabled = true;
-
-    AppNavigation.pushPage('create-channel-page');
+    // Use the standalone first-run Create Channel flow, not the legacy
+    // "Enter Your Information" page embedded in pages/you.html.
+    if (typeof window.showCreateChannelPage === 'function') {
+        window.showCreateChannelPage(true);
+    } else {
+        showNotification('Create Channel is loading. Please try again.', 'error');
+    }
 }
 
 function triggerAvatarSelection(mode) {

@@ -7854,17 +7854,32 @@ function openViewChannelPage() {
     const viewSub = document.getElementById('view-sub-count');
 
     if (viewTitle) viewTitle.innerText = data.channelName;
-    // Read image URLs from the cached channel record, including older field names.
-    let cachedBannerUrl = data.bannerUrl || data.channelBannerUrl || data.banner || data.channelBanner || '';
-    let cachedAvatarUrl = data.avatarUrl || data.channelImageUrl || data.profileImageUrl || data.photoURL || '';
+    // Keep the Firebase image URLs separate from the downloaded offline copies.
+    // The source URL is needed to detect a changed Banner/Avatar and download it.
+    const channelBannerSourceUrl = data.bannerUrl || data.channelBannerUrl || data.banner || data.channelBanner || '';
+    const channelAvatarSourceUrl = data.avatarUrl || data.channelImageUrl || data.profileImageUrl || data.photoURL || '';
+    let cachedBannerUrl = channelBannerSourceUrl;
+    let cachedAvatarUrl = channelAvatarSourceUrl;
     try {
-        // Prefer downloaded image data for reliable offline rendering.
-        cachedBannerUrl = localStorage.getItem('flaynity_cached_channel_banner:' + auth.currentUser.uid) || cachedBannerUrl || localStorage.getItem('flaynity_cached_channel_banner_url:' + auth.currentUser.uid) || '';
-        cachedAvatarUrl = localStorage.getItem('flaynity_cached_channel_avatar:' + auth.currentUser.uid) || cachedAvatarUrl || localStorage.getItem('flaynity_cached_channel_avatar_url:' + auth.currentUser.uid) || '';
+        const savedBanner = localStorage.getItem('flaynity_cached_channel_banner:' + activeUid) || '';
+        const savedAvatar = localStorage.getItem('flaynity_cached_channel_avatar:' + activeUid) || '';
+        const savedBannerSource = localStorage.getItem('flaynity_cached_channel_banner_url:' + activeUid) || '';
+        const savedAvatarSource = localStorage.getItem('flaynity_cached_channel_avatar_url:' + activeUid) || '';
+
+        // Offline: show downloaded image bytes first. Online: show the latest
+        // Firebase URL, while retaining the previous cached copy as a fallback.
+        if (!navigator.onLine) {
+            cachedBannerUrl = savedBanner || savedBannerSource || channelBannerSourceUrl;
+            cachedAvatarUrl = savedAvatar || savedAvatarSource || channelAvatarSourceUrl;
+        } else {
+            cachedBannerUrl = channelBannerSourceUrl || savedBanner || savedBannerSource;
+            cachedAvatarUrl = channelAvatarSourceUrl || savedAvatar || savedAvatarSource;
+        }
     } catch (e) {}
     if (navigator.onLine) {
-        cacheChannelImageOffline(cachedBannerUrl, 'flaynity_cached_channel_banner:' + activeUid);
-        cacheChannelImageOffline(cachedAvatarUrl, 'flaynity_cached_channel_avatar:' + activeUid);
+        // Always pass the original Firebase URL, never a data:image cache entry.
+        cacheChannelImageOffline(channelBannerSourceUrl, 'flaynity_cached_channel_banner:' + activeUid);
+        cacheChannelImageOffline(channelAvatarSourceUrl, 'flaynity_cached_channel_avatar:' + activeUid);
     }
     if (viewBanner) {
         viewBanner.src = cachedBannerUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop";

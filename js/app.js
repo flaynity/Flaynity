@@ -7098,8 +7098,25 @@ async function switchTab(tabId) {
         const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
         if (!user) return;
 
+        // The You/Channel data and its images are prepared while Home is open.
+        // Reuse the in-memory result first, then the account-scoped offline cache.
+        // This prevents a Firebase round-trip every time the You tab is tapped.
         let channel = null;
-        if (navigator.onLine) {
+        if (currentChannelData &&
+            (!currentChannelData.uid || currentChannelData.uid === user.uid) &&
+            (!currentChannelData.userId || currentChannelData.userId === user.uid)) {
+            channel = currentChannelData;
+        }
+
+        if (!channel) {
+            try {
+                const cached = localStorage.getItem('flaynity_channel_cache:' + user.uid);
+                if (cached) channel = JSON.parse(cached);
+            } catch (e) {}
+        }
+
+        // Only fetch from Firebase when no prepared or offline-cached channel exists.
+        if (!channel && navigator.onLine) {
             try {
                 const snapshot = await db.ref('channels/' + user.uid).once('value');
                 // Ignore a late response if the user switched accounts meanwhile.
@@ -7112,15 +7129,18 @@ async function switchTab(tabId) {
             } catch (e) {}
         }
 
-        if (!channel) {
-            try {
-                const cached = localStorage.getItem('flaynity_channel_cache:' + user.uid);
-                if (cached) channel = JSON.parse(cached);
-            } catch (e) {}
-        }
+        // Recheck the active account before showing any cached or fetched content.
+        if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
 
         if (channel) {
             currentChannelData = channel;
+            // Keep the latest Banner and Avatar download/cache jobs running.
+            const banner = channel.bannerUrl || channel.channelBannerUrl || channel.banner || channel.channelBanner || '';
+            const avatar = channel.avatarUrl || channel.channelImageUrl || channel.profileImageUrl || channel.photoURL || user.photoURL || '';
+            if (navigator.onLine) {
+                cacheChannelImageOffline(banner, 'flaynity_cached_channel_banner:' + user.uid);
+                cacheChannelImageOffline(avatar, 'flaynity_cached_channel_avatar:' + user.uid);
+            }
             openViewChannelPage();
         } else if (!navigator.onLine) {
             AppNavigation.pushPage('view-channel-page');

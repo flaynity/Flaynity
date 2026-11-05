@@ -7992,7 +7992,7 @@ function renderOfflineChannelPageSkeletons(activeType) {
         const gridId = type === 'videos' ? 'channel-videos-grid' : (type === 'feels' ? 'channel-feels-grid' : 'channel-posts-feed');
         const grid = document.getElementById(gridId);
         if (!grid) return;
-        grid.innerHTML = chSkeletonHTML(type);
+        chShowOffline(type);
     });
     const menuPanel = document.querySelector('#you-quick-menu-overlay .you-quick-menu-panel');
     if (menuPanel && !menuPanel.dataset.offlineSkeletonApplied) {
@@ -8035,12 +8035,14 @@ function switchChannelTab(type) {
     if (contentEl) contentEl.classList.add('active');
 
     if (!navigator.onLine) {
+        // Offline: show the "No internet connection. Tap to retry." state.
+        chShowOffline(type);
         renderOfflineChannelPageSkeletons(type);
-        const gridId = type === 'videos' ? 'channel-videos-grid' : (type === 'feels' ? 'channel-feels-grid' : 'channel-posts-feed');
-        const grid = document.getElementById(gridId);
-        if (grid) grid.innerHTML = chSkeletonHTML(type);
         return;
     }
+
+    // Back online: swap a leftover retry screen for skeletons while data loads.
+    chLeaveOffline(type);
 
     const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
     if (!user) return;
@@ -8091,6 +8093,63 @@ function chSkeletonHTML(type) {
         '<div class="skel-box" style="width:46%;height:11px;margin-top:10px;border-radius:6px;"></div></div></div>'
     ).join('');
 }
+
+// ---------- Offline "No internet connection. Tap to retry." state ----------
+const __CH_RETRY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>';
+
+function chGridId(type) {
+    return type === 'videos' ? 'channel-videos-grid' : (type === 'feels' ? 'channel-feels-grid' : 'channel-posts-feed');
+}
+
+function chOfflineHTML(type) {
+    return '<div class="ch-offline-state">' +
+        '<h3 class="ch-off-title">No internet connection. Tap to retry.</h3>' +
+        '<p class="ch-off-sub">Connect to the internet and try again.</p>' +
+        '<button type="button" class="ch-off-retry" onclick="chRetryTab(\'' + type + '\', this)">' + __CH_RETRY_ICON + '<span>Retry</span></button>' +
+        '</div>';
+}
+
+function chShowOffline(type) {
+    const grid = document.getElementById(chGridId(type));
+    const content = document.getElementById('channel-content-' + type);
+    if (!grid) return;
+    // Already-loaded items from this session stay visible; otherwise show Retry.
+    if (__chState.data[type] && __chState.data[type].length) {
+        if (content) content.classList.remove('ch-offline');
+        chPaint(type);
+        return;
+    }
+    grid.innerHTML = chOfflineHTML(type);
+    if (content) content.classList.add('ch-offline');
+}
+
+function chLeaveOffline(type) {
+    const grid = document.getElementById(chGridId(type));
+    const content = document.getElementById('channel-content-' + type);
+    if (content) content.classList.remove('ch-offline');
+    if (grid && grid.querySelector('.ch-offline-state')) grid.innerHTML = chSkeletonHTML(type);
+}
+
+function chRetryTab(type, btn) {
+    if (typeof playUI === 'function') playUI('click');
+    if (!navigator.onLine) {
+        if (btn) { btn.classList.remove('ch-shake'); void btn.offsetWidth; btn.classList.add('ch-shake'); }
+        if (typeof showNotification === 'function') showNotification('No internet connection', 'error');
+        return;
+    }
+    if (btn) btn.classList.add('ch-loading');
+    switchChannelTab(type);
+    try { if (auth && auth.currentUser) prefetchYouPageData(auth.currentUser.uid); } catch (e) {}
+}
+
+// Connection came back while a retry screen is showing: reload that tab automatically.
+window.addEventListener('online', () => {
+    try {
+        if (document.querySelector('#view-channel-page .channel-tab-content.active .ch-offline-state')) {
+            switchChannelTab(activeChannelTab);
+        }
+    } catch (e) {}
+});
 
 function chSortedList(type) {
     const mode = __chState.sort[type] || 'latest';
@@ -8190,6 +8249,7 @@ function buildChannelPostCard(p, username) {
 
 
 function paintChannelVideos() {
+    { const c = document.getElementById('channel-content-videos'); if (c) c.classList.remove('ch-offline'); }
     const grid = document.getElementById('channel-videos-grid');
     if (!grid) return;
     const list = chSortedList('videos');
@@ -8206,6 +8266,7 @@ function paintChannelVideos() {
 }
 
 function paintChannelFeels() {
+    { const c = document.getElementById('channel-content-feels'); if (c) c.classList.remove('ch-offline'); }
     const grid = document.getElementById('channel-feels-grid');
     if (!grid) return;
     const list = chSortedList('feels');
@@ -8221,6 +8282,7 @@ function paintChannelFeels() {
 }
 
 function paintChannelPosts() {
+    { const c = document.getElementById('channel-content-posts'); if (c) c.classList.remove('ch-offline'); }
     const grid = document.getElementById('channel-posts-feed');
     if (!grid) return;
     const list = chSortedList('posts');

@@ -1534,45 +1534,174 @@ function applyAdminControls() {
                 status.textContent='Channel image selected';
             });
 
-            // Dedicated, animated editor pages for the fields shown on the setup form.
-            const openEditor=(key,title,description,value,kind,save)=>{
-                let page=root.querySelector('#flcc-editor'); if(page)page.remove();
-                page=document.createElement('div');page.id='flcc-editor';
-                page.style.cssText='position:fixed;inset:0;z-index:20;background:#fff;padding:calc(env(safe-area-inset-top,0px) + 22px) 24px 28px;display:flex;flex-direction:column;animation:flccIn .22s ease both;color:#17171b';
-                const input=kind==='textarea'?document.createElement('textarea'):document.createElement('input');
-                input.style.cssText='width:100%;margin-top:28px;border:0;border-radius:16px;background:#f2f2f4;padding:18px;font:500 17px inherit;outline:none;min-height:'+(kind==='textarea'?'180px':'58px');
-                if(kind==='textarea')input.rows=5;else input.type=kind==='date'?'date':'text';
-                input.value=value||'';input.placeholder=description;
-                page.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;font-size:16px"><button type="button" data-cancel style="border:0;background:none;font:inherit">Cancel</button><button type="button" data-save style="border:0;background:none;color:#e81768;font-weight:800;font:inherit">Save</button></div><h1 style="font-size:30px;margin:52px 0 10px;font-weight:900">'+esc(title)+'</h1><p style="font-size:16px;color:#777;line-height:1.5">'+esc(description)+'</p>';
-                page.appendChild(input);const count=document.createElement('div');count.style.cssText='text-align:right;color:#888;margin-top:8px;font-size:13px';page.appendChild(count);
-                const updateCount=()=>{count.textContent=input.value.length+'/'+(key==='bio'?160:key==='name'?30:24);};input.addEventListener('input',updateCount);updateCount();
-                page.querySelector('[data-cancel]').onclick=()=>page.remove();
-                page.querySelector('[data-save]').onclick=async()=>{const val=input.value.trim();if(!val){count.textContent='Please enter a value';return;}await save(val,page.querySelector('[data-save]'),count);};
-                root.appendChild(page);input.focus();
+            // Premium full-screen editor page (Name / Username / Bio / Phone / Country).
+            // Values are kept on the setup form and saved once, when "Create Channel" is pressed.
+            const openEditor=(o)=>{
+                const old=root.querySelector('#flcc-editor'); if(old)old.remove();
+                const page=document.createElement('div'); page.id='flcc-editor';
+                const multi=!!o.multiline, max=o.max||50, start=String(o.value||'').slice(0,max);
+                page.innerHTML=`<style>
+                  #flcc-editor{position:fixed;inset:0;z-index:20;background:#fff;color:#111114;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 18px) 24px calc(env(safe-area-inset-bottom,0px) + 24px);font-family:'Plus Jakarta Sans',sans-serif;animation:feIn .34s cubic-bezier(.22,.9,.3,1) both;overscroll-behavior:none}
+                  @keyframes feIn{from{opacity:0;transform:translateX(34px)}to{opacity:1;transform:none}}
+                  @keyframes feOut{to{opacity:0;transform:translateX(34px)}}
+                  @keyframes feShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+                  @keyframes feSpin{to{transform:rotate(360deg)}}
+                  #flcc-editor *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+                  #flcc-editor .fe-bar{display:flex;justify-content:space-between;align-items:center;min-height:44px}
+                  #flcc-editor .fe-bar button{border:0;background:none;font:500 18px 'Plus Jakarta Sans',sans-serif;padding:8px 2px;transition:color .18s,opacity .18s,transform .12s}
+                  #flcc-editor .fe-cancel{color:#111114}
+                  #flcc-editor .fe-save{color:#f0004f;font-weight:800!important;display:flex;align-items:center;gap:8px}
+                  #flcc-editor .fe-save:disabled{color:#ffa9c0}
+                  #flcc-editor .fe-save:not(:disabled):active,#flcc-editor .fe-cancel:active{transform:scale(.94)}
+                  #flcc-editor .fe-spin{width:15px;height:15px;border:2.5px solid #ffc2d3;border-top-color:#f0004f;border-radius:50%;animation:feSpin .7s linear infinite}
+                  #flcc-editor .fe-title{font-size:34px;letter-spacing:-1px;font-weight:900;margin:44px 0 12px;line-height:1.1}
+                  #flcc-editor .fe-desc{font-size:16.5px;line-height:1.55;color:#5d5d65;margin:0 0 26px;max-width:92%}
+                  #flcc-editor .fe-box{position:relative;background:#f1f1f2;border-radius:18px;border:1.5px solid transparent;transition:border-color .2s,background .2s,box-shadow .2s}
+                  #flcc-editor .fe-box:focus-within{background:#fff;border-color:#f0004f;box-shadow:0 0 0 4px rgba(240,0,79,.09)}
+                  #flcc-editor .fe-box.err{border-color:#e5334d;background:#fff6f7}
+                  #flcc-editor .fe-box.shake{animation:feShake .38s ease}
+                  #flcc-editor .fe-input{display:block;width:100%;border:0;outline:0;background:transparent;font:500 18px 'Plus Jakarta Sans',sans-serif;color:#111114;padding:19px 50px 19px 20px;caret-color:#f0004f;border-radius:18px;resize:none}
+                  #flcc-editor textarea.fe-input{min-height:170px;line-height:1.55}
+                  #flcc-editor .fe-input::placeholder{color:#a3a3aa;font-weight:400}
+                  #flcc-editor .fe-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;border:0;background:#c9c9ce;color:#fff;font-size:16px;line-height:1;display:grid;place-items:center;padding:0}
+                  #flcc-editor textarea ~ .fe-clear{top:18px;transform:none}
+                  #flcc-editor .fe-meta{display:flex;justify-content:space-between;gap:12px;margin-top:11px;font-size:14px;min-height:20px}
+                  #flcc-editor .fe-err{color:#e5334d;font-weight:600}
+                  #flcc-editor .fe-count{color:#8a8a90;margin-left:auto;font-variant-numeric:tabular-nums}
+                  @media(prefers-reduced-motion:reduce){#flcc-editor,#flcc-editor .fe-box.shake{animation:none}}
+                </style>
+                <div class="fe-bar"><button type="button" class="fe-cancel">Cancel</button><button type="button" class="fe-save" disabled>Save</button></div>
+                <h1 class="fe-title">${esc(o.title)}</h1>
+                <p class="fe-desc">${esc(o.desc)}</p>
+                <div class="fe-box">${multi?'<textarea class="fe-input" rows="5"></textarea>':'<input class="fe-input" type="text" autocomplete="off" autocapitalize="none" spellcheck="false">'}<button type="button" class="fe-clear" aria-label="Clear" hidden>×</button></div>
+                <div class="fe-meta"><span class="fe-err" role="alert"></span><span class="fe-count"></span></div>`;
+                root.appendChild(page);
+                const input=page.querySelector('.fe-input'), box=page.querySelector('.fe-box'), saveBtn=page.querySelector('.fe-save'),
+                      clearBtn=page.querySelector('.fe-clear'), errEl=page.querySelector('.fe-err'), count=page.querySelector('.fe-count');
+                input.placeholder=o.placeholder||''; input.maxLength=max; input.value=start;
+                let busy=false;
+                const refresh=()=>{
+                    const v=input.value.trim();
+                    count.textContent=input.value.length+'/'+max;
+                    clearBtn.hidden=!input.value.length;
+                    saveBtn.disabled=busy||(v===String(o.value||'').trim())||(!v&&!o.allowEmpty);
+                };
+                const setErr=(m)=>{errEl.textContent=m||'';box.classList.toggle('err',!!m);if(m){box.classList.remove('shake');void box.offsetWidth;box.classList.add('shake');}};
+                input.addEventListener('input',()=>{
+                    if(o.filter){const f=o.filter(input.value);if(f!==input.value)input.value=f;}
+                    setErr('');refresh();
+                });
+                clearBtn.addEventListener('click',()=>{input.value='';setErr('');refresh();input.focus();});
+                const close=()=>{page.style.animation='feOut .22s ease both';setTimeout(()=>page.remove(),210);};
+                page.querySelector('.fe-cancel').addEventListener('click',close);
+                const save=async()=>{
+                    if(busy||saveBtn.disabled)return;
+                    const val=(o.filter?o.filter(input.value):input.value).trim();
+                    busy=true;saveBtn.innerHTML='<span class="fe-spin"></span>Saving';saveBtn.disabled=true;
+                    let msg='';
+                    try{msg=(o.validate&&await o.validate(val))||'';}catch(e){msg=(e&&e.message)||'Something went wrong. Try again.';}
+                    busy=false;saveBtn.textContent='Save';
+                    if(msg){setErr(msg);refresh();return;}
+                    o.onSave(val);close();
+                };
+                saveBtn.addEventListener('click',save);
+                input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!multi){e.preventDefault();save();}});
+                refresh();
+                setTimeout(()=>{try{input.focus();const l=input.value.length;input.setSelectionRange(l,l);}catch(e){}},240);
             };
-            const persistField=async(field,value,button,count,page)=>{
-                button.disabled=true;button.textContent='Saving…';
-                try{const patch={};patch[field]=value;patch.updatedAt=firebase.database.ServerValue.TIMESTAMP;await db.ref('channels/'+user.uid).update(patch);await db.ref('users/'+user.uid+'/'+field).set(value);page.remove();const el=root.querySelector('#flcc-'+field);if(el)el.value=value;status.textContent='Saved successfully';}
-                catch(e){count.textContent=e.message||'Could not save. Try again.';button.disabled=false;button.textContent='Save';}
-            };
-            root.querySelector('#flcc-name').readOnly=true;root.querySelector('#flcc-handle').readOnly=true;
             const nameField=root.querySelector('#flcc-name'),handleField=root.querySelector('#flcc-handle'),bioField=root.querySelector('#flcc-bio');
-            nameField.addEventListener('click',()=>openEditor('name','Name','Your name can only be changed once every 7 days.',nameField.value,'text',(v,b,ct,p)=>persistField('channelName',v,b,ct,p)));
-            handleField.addEventListener('click',()=>openEditor('handle','Username','Use 3–24 letters, numbers, dots or underscores.',handleField.value,'text',async(v,b,ct,p)=>{
-                const h=v.replace(/^@/,'').toLowerCase();if(!/^[a-z0-9._]{3,24}$/.test(h)){ct.textContent='Use 3–24 letters, numbers, dots or underscores.';return;}
-                b.disabled=true;b.textContent='Checking…';
-                try{const snap=await db.ref('channelHandles/'+h).once('value');if(snap.val()&&snap.val()!==user.uid){ct.textContent='Username is already taken.';b.disabled=false;b.textContent='Save';return;}
-                    const old=handleField.value;const updates={};updates['channelHandles/'+old]=null;updates['channelHandles/'+h]=user.uid;updates['channels/'+user.uid+'/handle']=h;updates['channels/'+user.uid+'/updatedAt']=firebase.database.ServerValue.TIMESTAMP;updates['users/'+user.uid+'/handle']=h;await db.ref().update(updates);handleField.value=h;p.remove();
-                }catch(e){ct.textContent=e.message||'Username check failed.';b.disabled=false;b.textContent='Save';}
-            }));
-            bioField.readOnly=true;bioField.addEventListener('click',()=>openEditor('bio','Bio','You can edit your bio any time.',bioField.value,'textarea',(v,b,ct,p)=>persistField('bio',v,b,ct,p)));
-            const country=root.querySelector('#flcc-country');country.readOnly=true;country.addEventListener('click',()=>{
-                const countries=['Afghanistan','Albania','Algeria','Argentina','Australia','Bangladesh','Brazil','Canada','China','France','Germany','India','Indonesia','Japan','Malaysia','Nepal','Pakistan','Saudi Arabia','Singapore','South Korea','Sri Lanka','United Kingdom','United States'];
-                openEditor('country','Select country or region','Search or enter your country.',country.value,'text',async(v,b,ct,p)=>{await persistField('country',v,b,ct,p);});
-            });
-            root.querySelector('#flcc-category').addEventListener('change',async e=>{try{await db.ref('channels/'+user.uid+'/category').set(e.target.value);}catch(err){status.textContent='Could not save category';}});
-            root.querySelector('#flcc-dob').addEventListener('change',async e=>{try{await db.ref('channels/'+user.uid+'/dateOfBirth').set(e.target.value);}catch(err){status.textContent='Could not save date of birth';}});
-            root.querySelector('#flcc-gender').addEventListener('change',async e=>{try{await db.ref('channels/'+user.uid+'/gender').set(e.target.value);}catch(err){status.textContent='Could not save gender';}});
+            nameField.readOnly=true;handleField.readOnly=true;bioField.readOnly=true;
+            const showSaved=()=>{status.textContent='';};
+            nameField.addEventListener('click',()=>openEditor({title:'Name',desc:'Your name can only be changed once every 7 days.',placeholder:'Add your preferred name',value:nameField.value,max:30,
+                validate:v=>v.length<2?'Name must be at least 2 characters.':'',onSave:v=>{nameField.value=v;showSaved();}}));
+            handleField.addEventListener('click',()=>openEditor({title:'Username',desc:'You can change your username once every 30 days. Changing your username will also change your profile link. Usernames can contain only letters, numbers, underscores and periods.',placeholder:'Username',value:handleField.value,max:24,
+                filter:v=>String(v).replace(/^@/,'').toLowerCase().replace(/[^a-z0-9._]/g,''),
+                validate:async v=>{
+                    if(!/^[a-z0-9._]{3,24}$/.test(v))return 'Use 3–24 letters, numbers, underscores or periods.';
+                    if(v===handleField.value)return '';
+                    try{const snap=await db.ref('channelHandles/'+v).once('value');if(snap.val()&&snap.val()!==user.uid)return 'This username is already taken.';}
+                    catch(e){return 'Could not check this username. Try again.';}
+                    return '';
+                },onSave:v=>{handleField.value=v;showSaved();}}));
+            bioField.addEventListener('click',()=>openEditor({title:'Bio',desc:'You can edit your bio any time.',placeholder:'Write a short description about who you are or what your account is about',value:bioField.value,max:160,multiline:true,allowEmpty:true,
+                onSave:v=>{bioField.value=v;showSaved();}}));
+            const country=root.querySelector('#flcc-country');country.readOnly=true;
+            // Premium "Choose a country" page: 200+ countries (A–Z) with flags, search, "Others" always last.
+            const COUNTRY_DATA='AF:Afghanistan|AL:Albania|DZ:Algeria|AS:American Samoa|AD:Andorra|AO:Angola|AI:Anguilla|AG:Antigua & Barbuda|AR:Argentina|AM:Armenia|AW:Aruba|AU:Australia|AT:Austria|AZ:Azerbaijan|BS:Bahamas|BH:Bahrain|BD:Bangladesh|BB:Barbados|BY:Belarus|BE:Belgium|BZ:Belize|BJ:Benin|BM:Bermuda|BT:Bhutan|BO:Bolivia|BA:Bosnia & Herzegovina|BW:Botswana|BR:Brazil|BN:Brunei|BG:Bulgaria|BF:Burkina Faso|BI:Burundi|KH:Cambodia|CM:Cameroon|CA:Canada|CV:Cape Verde|KY:Cayman Islands|CF:Central African Republic|TD:Chad|CL:Chile|CN:China|CO:Colombia|KM:Comoros|CG:Congo - Brazzaville|CD:Congo - Kinshasa|CR:Costa Rica|CI:Côte d’Ivoire|HR:Croatia|CU:Cuba|CY:Cyprus|CZ:Czechia|DK:Denmark|DJ:Djibouti|DM:Dominica|DO:Dominican Republic|EC:Ecuador|EG:Egypt|SV:El Salvador|GQ:Equatorial Guinea|ER:Eritrea|EE:Estonia|SZ:Eswatini|ET:Ethiopia|FJ:Fiji|FI:Finland|FR:France|GA:Gabon|GM:Gambia|GE:Georgia|DE:Germany|GH:Ghana|GI:Gibraltar|GR:Greece|GL:Greenland|GD:Grenada|GU:Guam|GT:Guatemala|GN:Guinea|GW:Guinea-Bissau|GY:Guyana|HT:Haiti|HN:Honduras|HK:Hong Kong|HU:Hungary|IS:Iceland|IN:India|ID:Indonesia|IR:Iran|IQ:Iraq|IE:Ireland|IL:Israel|IT:Italy|JM:Jamaica|JP:Japan|JO:Jordan|KZ:Kazakhstan|KE:Kenya|KI:Kiribati|XK:Kosovo|KW:Kuwait|KG:Kyrgyzstan|LA:Laos|LV:Latvia|LB:Lebanon|LS:Lesotho|LR:Liberia|LY:Libya|LI:Liechtenstein|LT:Lithuania|LU:Luxembourg|MO:Macao|MG:Madagascar|MW:Malawi|MY:Malaysia|MV:Maldives|ML:Mali|MT:Malta|MR:Mauritania|MU:Mauritius|MX:Mexico|MD:Moldova|MC:Monaco|MN:Mongolia|ME:Montenegro|MA:Morocco|MZ:Mozambique|MM:Myanmar|NA:Namibia|NP:Nepal|NL:Netherlands|NZ:New Zealand|NI:Nicaragua|NE:Niger|NG:Nigeria|KP:North Korea|MK:North Macedonia|NO:Norway|OM:Oman|PK:Pakistan|PS:Palestine|PA:Panama|PG:Papua New Guinea|PY:Paraguay|PE:Peru|PH:Philippines|PL:Poland|PT:Portugal|PR:Puerto Rico|QA:Qatar|RO:Romania|RU:Russia|RW:Rwanda|WS:Samoa|SM:San Marino|SA:Saudi Arabia|SN:Senegal|RS:Serbia|SC:Seychelles|SL:Sierra Leone|SG:Singapore|SK:Slovakia|SI:Slovenia|SB:Solomon Islands|SO:Somalia|ZA:South Africa|KR:South Korea|SS:South Sudan|ES:Spain|LK:Sri Lanka|SD:Sudan|SR:Suriname|SE:Sweden|CH:Switzerland|SY:Syria|TW:Taiwan|TJ:Tajikistan|TZ:Tanzania|TH:Thailand|TL:Timor-Leste|TG:Togo|TO:Tonga|TT:Trinidad & Tobago|TN:Tunisia|TR:Türkiye|TM:Turkmenistan|UG:Uganda|UA:Ukraine|AE:United Arab Emirates|GB:United Kingdom|US:United States|UY:Uruguay|UZ:Uzbekistan|VU:Vanuatu|VA:Vatican City|VE:Venezuela|VN:Vietnam|YE:Yemen|ZM:Zambia|ZW:Zimbabwe';
+            const COUNTRIES=COUNTRY_DATA.split('|').map(x=>{const i=x.indexOf(':');return {code:x.slice(0,i),name:x.slice(i+1)};}).sort((m,n)=>m.name.localeCompare(n.name));
+            const flagOf=c=>String.fromCodePoint(...[...c].map(ch=>127397+ch.charCodeAt(0)));
+            const openCountryPicker=()=>{
+                const old=root.querySelector('#flcc-country-page');if(old)old.remove();
+                const pg=document.createElement('div');pg.id='flcc-country-page';
+                const current=(country.value||'').trim().toLowerCase();
+                pg.innerHTML=`<style>
+                  #flcc-country-page{position:fixed;inset:0;z-index:21;background:#fff;color:#111114;display:flex;flex-direction:column;font-family:'Plus Jakarta Sans',sans-serif;animation:fcIn .34s cubic-bezier(.22,.9,.3,1) both;overscroll-behavior:none}
+                  @keyframes fcIn{from{opacity:0;transform:translateX(34px)}to{opacity:1;transform:none}}
+                  @keyframes fcOut{to{opacity:0;transform:translateX(34px)}}
+                  #flcc-country-page *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+                  #flcc-country-page .fc-head{flex:0 0 auto;display:flex;align-items:center;gap:6px;height:calc(62px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 10px 0;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);position:relative;z-index:2;transition:box-shadow .2s}
+                  #flcc-country-page .fc-head.sc{box-shadow:0 1px 0 #ececef,0 6px 18px rgba(20,20,30,.05)}
+                  #flcc-country-page .fc-ib{width:44px;height:44px;border:0;background:none;border-radius:50%;display:grid;place-items:center;color:#111114;flex:0 0 auto;transition:background .15s}
+                  #flcc-country-page .fc-ib:active{background:#f0f0f2}
+                  #flcc-country-page .fc-ib svg{width:24px;height:24px}
+                  #flcc-country-page .fc-title{flex:1;font-size:20px;font-weight:800;letter-spacing:-.3px;margin-left:8px;white-space:nowrap}
+                  #flcc-country-page .fc-sbox{flex:1;display:none;align-items:center;background:#f1f1f2;border-radius:22px;height:42px;padding:0 14px;margin-left:4px;border:1.5px solid transparent;transition:border-color .2s,background .2s}
+                  #flcc-country-page .fc-sbox:focus-within{background:#fff;border-color:#f0004f}
+                  #flcc-country-page .fc-sbox input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:500 16px 'Plus Jakarta Sans',sans-serif;color:#111114;caret-color:#f0004f}
+                  #flcc-country-page.searching .fc-title{display:none}
+                  #flcc-country-page.searching .fc-sbox{display:flex}
+                  #flcc-country-page .fc-list{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:4px 0 calc(24px + env(safe-area-inset-bottom,0px))}
+                  #flcc-country-page .fc-letter{position:sticky;top:0;background:#fff;padding:14px 24px 6px;font-size:13px;font-weight:800;color:#f0004f;letter-spacing:.6px;z-index:1}
+                  #flcc-country-page .fc-row{display:flex;align-items:center;gap:20px;width:100%;border:0;background:none;text-align:left;padding:0 24px;height:62px;font:500 17.5px 'Plus Jakarta Sans',sans-serif;color:#111114;transition:background .12s}
+                  #flcc-country-page .fc-row:active{background:#f6f6f8}
+                  #flcc-country-page .fc-row.sel{background:#fff3f7;font-weight:800}
+                  #flcc-country-page .fc-flag{flex:0 0 38px;width:38px;text-align:center;font-size:29px;line-height:1;font-family:'Apple Color Emoji','Noto Color Emoji','Segoe UI Emoji',sans-serif}
+                  #flcc-country-page .fc-oth{flex:0 0 38px;width:38px;height:28px;border-radius:7px;background:#f0f0f3;color:#666;display:grid;place-items:center}
+                  #flcc-country-page .fc-nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+                  #flcc-country-page .fc-chk{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:#f0004f;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:900}
+                  #flcc-country-page .fc-sep{height:1px;background:#efeff2;margin:6px 24px}
+                  #flcc-country-page .fc-empty{text-align:center;color:#8a8a92;padding:70px 30px;font-size:15px;line-height:1.6}
+                  @media(prefers-reduced-motion:reduce){#flcc-country-page{animation:none}}
+                </style>
+                <div class="fc-head" id="fc-head">
+                  <button type="button" class="fc-ib" id="fc-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+                  <div class="fc-title">Choose a country</div>
+                  <div class="fc-sbox"><input id="fc-q" type="text" placeholder="Search country" autocomplete="off" spellcheck="false"></div>
+                  <button type="button" class="fc-ib" id="fc-search" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button>
+                </div>
+                <div class="fc-list" id="fc-list"></div>`;
+                root.appendChild(pg);
+                const list=pg.querySelector('#fc-list'),head=pg.querySelector('#fc-head'),q=pg.querySelector('#fc-q'),sBtn=pg.querySelector('#fc-search');
+                const ICON_SEARCH=sBtn.innerHTML,ICON_X='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+                const rowHtml=(c)=>{const sel=current&&c.name.toLowerCase()===current;return '<button type="button" class="fc-row'+(sel?' sel':'')+'" data-code="'+c.code+'" data-name="'+esc(c.name)+'"><span class="fc-flag">'+flagOf(c.code)+'</span><span class="fc-nm">'+esc(c.name)+'</span>'+(sel?'<span class="fc-chk">✓</span>':'')+'</button>';};
+                const othersSel=current==='others';
+                const othersHtml='<div class="fc-sep"></div><button type="button" class="fc-row'+(othersSel?' sel':'')+'" data-code="" data-name="Others"><span class="fc-oth"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span class="fc-nm">Others</span>'+(othersSel?'<span class="fc-chk">✓</span>':'')+'</button>';
+                const render=(term)=>{
+                    const t=(term||'').trim().toLowerCase();
+                    const items=t?COUNTRIES.filter(c=>c.name.toLowerCase().includes(t)):COUNTRIES;
+                    let html='',last='';
+                    items.forEach(c=>{const L=c.name.charAt(0).toUpperCase();if(!t&&L!==last){last=L;html+='<div class="fc-letter">'+L+'</div>';}html+=rowHtml(c);});
+                    const showOthers=!t||'others'.includes(t);
+                    if(!items.length&&!showOthers)html='<div class="fc-empty">No country found for “'+esc(term)+'”.<br>Try another spelling or pick “Others”.</div>';
+                    if(showOthers)html+=othersHtml;
+                    list.innerHTML=html;
+                };
+                render('');
+                const close=()=>{pg.style.animation='fcOut .22s ease both';setTimeout(()=>pg.remove(),210);};
+                const setSearch=(on)=>{pg.classList.toggle('searching',on);sBtn.innerHTML=on?ICON_X:ICON_SEARCH;if(on){setTimeout(()=>q.focus(),30);}else{q.value='';render('');}};
+                sBtn.addEventListener('click',()=>setSearch(!pg.classList.contains('searching')));
+                pg.querySelector('#fc-back').addEventListener('click',()=>{if(pg.classList.contains('searching'))setSearch(false);else close();});
+                q.addEventListener('input',()=>{render(q.value);list.scrollTop=0;});
+                list.addEventListener('scroll',()=>head.classList.toggle('sc',list.scrollTop>4),{passive:true});
+                list.addEventListener('click',e=>{
+                    const r=e.target.closest('.fc-row');if(!r)return;
+                    country.value=r.dataset.name;country.dataset.code=r.dataset.code||'';
+                    status.textContent='';close();
+                });
+                const sel=list.querySelector('.fc-row.sel');
+                if(sel){setTimeout(()=>{list.scrollTop=Math.max(0,sel.offsetTop-list.clientHeight/2+31);},40);}
+            };
+            country.addEventListener('click',openCountryPicker);
             // Whole-row tap targets (name / username / bio / phone / country)
             root.querySelectorAll('.flcc-field, .flcc-info').forEach(row=>{
                 row.addEventListener('click',ev=>{
@@ -1586,7 +1715,7 @@ function applyAdminControls() {
             bindVal('dob','Select date of birth',d=>{try{return new Date(d+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'});}catch(e){return d;}});
             // Phone number (saved together with the channel)
             const phoneField=root.querySelector('#flcc-phone');
-            phoneField.addEventListener('click',()=>openEditor('phone','Phone Number','Add your phone number with country code.',phoneField.value,'text',(v,b,ct,p)=>{phoneField.value=v;p.remove();}));
+            phoneField.addEventListener('click',()=>openEditor({title:'Phone Number',desc:'Add your phone number with country code.',placeholder:'+8801XXXXXXXXX',value:phoneField.value,max:20,allowEmpty:true,filter:v=>String(v).replace(/[^0-9+\s-]/g,''),onSave:v=>{phoneField.value=v;}}));
             root.querySelector('#flcc-back').addEventListener('click',()=>{status.textContent='Complete channel setup to continue.';});
 
             root.querySelector('#flcc-submit').addEventListener('click',async()=>{
@@ -1602,7 +1731,7 @@ function applyAdminControls() {
                     const handleSnap=await db.ref('channelHandles/'+handle).once('value');
                     const claimed=handleSnap.val();
                     if(claimed&&claimed!==user.uid)throw new Error('This username is already taken. Try another one.');
-                    const payload={uid:user.uid,userId:user.uid,channelName:name,handle:handle,bio:root.querySelector('#flcc-bio').value.trim(),category:root.querySelector('#flcc-category').value,email:user.email||'',phone:(root.querySelector('#flcc-phone').value||'').trim(),country:root.querySelector('#flcc-country').value.trim(),dateOfBirth:root.querySelector('#flcc-dob').value,gender:root.querySelector('#flcc-gender').value,avatarUrl:avatarUrl||user.photoURL||'',channelImageUrl:avatarUrl||user.photoURL||'',bannerUrl:bannerUrl,channelBannerUrl:bannerUrl,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP};
+                    const payload={uid:user.uid,userId:user.uid,channelName:name,handle:handle,bio:root.querySelector('#flcc-bio').value.trim(),category:root.querySelector('#flcc-category').value,email:user.email||'',phone:(root.querySelector('#flcc-phone').value||'').trim(),country:root.querySelector('#flcc-country').value.trim(),countryCode:(root.querySelector('#flcc-country').dataset.code||''),dateOfBirth:root.querySelector('#flcc-dob').value,gender:root.querySelector('#flcc-gender').value,avatarUrl:avatarUrl||user.photoURL||'',channelImageUrl:avatarUrl||user.photoURL||'',bannerUrl:bannerUrl,channelBannerUrl:bannerUrl,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP};
                     const updates={};updates['channels/'+user.uid]=payload;updates['users/'+user.uid+'/channelName']=name;updates['users/'+user.uid+'/handle']=handle;updates['users/'+user.uid+'/channelCreated']=true;if(payload.phone)updates['users/'+user.uid+'/phone']=payload.phone;updates['channelHandles/'+handle]=user.uid;
                     await db.ref().update(updates);
                     currentChannelData=payload;

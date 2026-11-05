@@ -1678,6 +1678,7 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         _feedListenersAttached = false;
         // Start fresh listeners for this Firebase UID and redraw account-bound screens immediately.
         startRealtimeFeedsListener();
+        try { prefetchYouPageData(user.uid); } catch (e) {}
         restoreQueueFromLocalStorage();
         try { if (typeof initYouTabUI === 'function') initYouTabUI(); } catch (e) { console.warn('You page refresh failed:', e); }
         try {
@@ -2684,6 +2685,7 @@ function startRealtimeFeedsListener() {
                     if (currentChannelData) {
                         localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
                     }
+                    if (currentChannelData) prefetchYouPageData(currentUser.uid, currentChannelData);
                     const activeNav = document.querySelector('.nav-item.active');
                     if (activeNav && activeNav.id === 'nav-you') {
                         initYouTabUI();
@@ -5892,10 +5894,7 @@ const AppNavigation = {
         // scroll controller immediately when the active tab changes.
         window.dispatchEvent(new Event('flaynity-tab-changed'));
 
-        if (activeTab === 'you') {
-            const signedInUid = auth && auth.currentUser ? auth.currentUser.uid : '';
-            if (!signedInUid || window.__flaynityYouPreloadedUid !== signedInUid) initYouTabUI();
-        }
+        if (activeTab === 'you') initYouTabUI();
         // Opening/closing a Comment or Download modal must never rebuild the
         // Feels swiper. Rebuilding replaces the DOM and makes the current Feels
         // disappear or jump to another item. Build only when the Feels DOM is
@@ -7098,49 +7097,40 @@ async function switchTab(tabId) {
         const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
         if (!user) return;
 
-        // The You/Channel data and its images are prepared while Home is open.
-        // Reuse the in-memory result first, then the account-scoped offline cache.
-        // This prevents a Firebase round-trip every time the You tab is tapped.
+        // 1) Cache first: open the You/Channel page instantly (no waiting, no image reload).
         let channel = null;
-        if (currentChannelData &&
-            (!currentChannelData.uid || currentChannelData.uid === user.uid) &&
-            (!currentChannelData.userId || currentChannelData.userId === user.uid)) {
-            channel = currentChannelData;
-        }
-
-        if (!channel) {
-            try {
-                const cached = localStorage.getItem('flaynity_channel_cache:' + user.uid);
-                if (cached) channel = JSON.parse(cached);
-            } catch (e) {}
-        }
-
-        // Only fetch from Firebase when no prepared or offline-cached channel exists.
-        if (!channel && navigator.onLine) {
-            try {
-                const snapshot = await db.ref('channels/' + user.uid).once('value');
-                // Ignore a late response if the user switched accounts meanwhile.
-                if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
-                channel = snapshot.val() || null;
-                try {
-                    if (channel) localStorage.setItem('flaynity_channel_cache:' + user.uid, JSON.stringify(channel));
-                    else localStorage.removeItem('flaynity_channel_cache:' + user.uid);
-                } catch (e) {}
-            } catch (e) {}
-        }
-
-        // Recheck the active account before showing any cached or fetched content.
-        if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
+        try {
+            const cached = localStorage.getItem('flaynity_channel_cache:' + user.uid);
+            if (cached) channel = JSON.parse(cached);
+        } catch (e) {}
 
         if (channel) {
             currentChannelData = channel;
-            // Keep the latest Banner and Avatar download/cache jobs running.
-            const banner = channel.bannerUrl || channel.channelBannerUrl || channel.banner || channel.channelBanner || '';
-            const avatar = channel.avatarUrl || channel.channelImageUrl || channel.profileImageUrl || channel.photoURL || user.photoURL || '';
+            openViewChannelPage();
+            // 2) Silent background refresh: updates cache + downloads only CHANGED images.
             if (navigator.onLine) {
-                cacheChannelImageOffline(banner, 'flaynity_cached_channel_banner:' + user.uid);
-                cacheChannelImageOffline(avatar, 'flaynity_cached_channel_avatar:' + user.uid);
+                db.ref('channels/' + user.uid).once('value').then(snapshot => {
+                    if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
+                    const fresh = snapshot.val();
+                    if (fresh) { currentChannelData = fresh; prefetchYouPageData(user.uid, fresh); }
+                    else { try { localStorage.removeItem('flaynity_channel_cache:' + user.uid); } catch (e) {} }
+                }).catch(() => {});
             }
+            return;
+        }
+
+        // No cache yet (first ever open): fetch once.
+        if (navigator.onLine) {
+            try {
+                const snapshot = await db.ref('channels/' + user.uid).once('value');
+                if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
+                channel = snapshot.val() || null;
+                if (channel) prefetchYouPageData(user.uid, channel);
+            } catch (e) {}
+        }
+
+        if (channel) {
+            currentChannelData = channel;
             openViewChannelPage();
         } else if (!navigator.onLine) {
             AppNavigation.pushPage('view-channel-page');
@@ -7277,7 +7267,6 @@ function initYouTabUI() {
             const cached = localStorage.getItem('flaynity_channel_cache:' + uid);
             currentChannelData = cached ? JSON.parse(cached) : null;
         } catch (e) { currentChannelData = null; }
-        window.__flaynityYouPreloadedUid = uid;
         if (isCurrent()) {
             if (currentChannelData) {
                 renderYouTabWithData(currentChannelData, user, wrap);
@@ -7308,7 +7297,6 @@ function initYouTabUI() {
             if (!isCurrent()) return;
             const data = snapshot.val() || null;
             currentChannelData = data;
-            window.__flaynityYouPreloadedUid = uid;
             try {
                 if (data) localStorage.setItem('flaynity_channel_cache:' + uid, JSON.stringify(data));
                 else localStorage.removeItem('flaynity_channel_cache:' + uid);
@@ -7323,56 +7311,126 @@ function initYouTabUI() {
                 if (value) cached = JSON.parse(value);
             } catch (e) {}
             currentChannelData = cached;
-            window.__flaynityYouPreloadedUid = uid;
             renderYouTabWithData(cached, user, wrap);
         });
 }
 
-function cacheChannelImageOffline(url, storageKey) {
-    if (!url || typeof url !== 'string' || !navigator.onLine) return;
-    // Keep already embedded image data untouched.
+// ============================================================
+// YOU PAGE BACKGROUND PREFETCH (Channel Banner + Avatar)
+// App খোলার পর Home Page এ থাকা অবস্থাতেই Firebase থেকে Channel Data আনা হয়,
+// Banner/Avatar ডাউনলোড হয়ে localStorage এ সেভ হয়। You Page খুললে আর নতুন করে
+// লোড হয় না, Offline এও সরাসরি দেখায়। শুধু ছবির URL বদলালে আবার ডাউনলোড হবে।
+// ============================================================
+const __flImgInflight = {};
+
+function __flBlobToScaledDataUrl(blob, maxW, mime) {
+    return new Promise((resolve, reject) => {
+        const objUrl = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => {
+            try {
+                const w = img.naturalWidth, h = img.naturalHeight;
+                if (!w || !h) throw new Error('Bad image size');
+                const scale = Math.min(1, maxW / w);
+                const c = document.createElement('canvas');
+                c.width = Math.max(1, Math.round(w * scale));
+                c.height = Math.max(1, Math.round(h * scale));
+                c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+                const out = c.toDataURL(mime, 0.85);
+                URL.revokeObjectURL(objUrl);
+                resolve(out);
+            } catch (e) { URL.revokeObjectURL(objUrl); reject(e); }
+        };
+        img.onerror = () => { URL.revokeObjectURL(objUrl); reject(new Error('Decode failed')); };
+        img.src = objUrl;
+    });
+}
+
+function cacheChannelImageOffline(url, storageKey, maxWidth) {
+    if (!url || typeof url !== 'string') return;
+    const srcKey = storageKey + '_src';
+
+    // Already-embedded image data: just store it.
     if (/^data:image\//i.test(url)) {
-        try {
-            localStorage.setItem(storageKey, url);
-            localStorage.setItem(storageKey + '_url', url);
-        } catch (e) {}
+        try { localStorage.setItem(storageKey, url); localStorage.setItem(srcKey, url.length + ':' + url.slice(-32)); } catch (e) {}
         return;
     }
+    if (!navigator.onLine) return;
+
+    // Same URL already downloaded -> do NOTHING (no re-download on every You open).
     try {
-        const previousUrl = localStorage.getItem(storageKey + '_url');
-        const previousImage = localStorage.getItem(storageKey);
-        // Reuse the cached bytes only when they belong to this exact image URL.
-        if (previousUrl === url && previousImage && /^data:image\//i.test(previousImage)) return;
-        // Do not mark the new URL as cached until its image bytes download successfully.
+        const saved = localStorage.getItem(storageKey);
+        if (saved && saved.startsWith('data:image/') && localStorage.getItem(srcKey) === url) return;
     } catch (e) {}
+
+    if (__flImgInflight[storageKey] === url) return;
+    __flImgInflight[storageKey] = url;
+
+    // Warm the HTTP cache too (works even if the host has no CORS headers).
+    try { const warm = new Image(); warm.decoding = 'async'; warm.src = url; } catch (e) {}
+
+    const isAvatar = /avatar/i.test(storageKey);
+    const limitW = maxWidth || (isAvatar ? 400 : 1280);
+
     fetch(url, { method: 'GET', mode: 'cors', cache: 'force-cache' })
         .then(response => {
             if (!response.ok) throw new Error('Image download failed');
             return response.blob();
         })
-        .then(blob => new Promise((resolve, reject) => {
-            if (!blob || !blob.type || !blob.type.startsWith('image/')) {
-                reject(new Error('Invalid image response'));
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        }))
+        .then(blob => {
+            if (!blob || !blob.type || !blob.type.startsWith('image/')) throw new Error('Invalid image response');
+            const mime = (isAvatar && blob.type === 'image/png') ? 'image/png' : 'image/jpeg';
+            return __flBlobToScaledDataUrl(blob, limitW, mime);
+        })
         .then(dataUrl => {
-            if (typeof dataUrl === 'string' && dataUrl.startsWith('data:image/')) {
-                try {
-                    localStorage.setItem(storageKey, dataUrl);
-                    localStorage.setItem(storageKey + '_url', url);
-                } catch (e) {}
+            if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) return;
+            try {
+                localStorage.setItem(storageKey, dataUrl);
+                localStorage.setItem(srcKey, url);
+            } catch (e) {
+                // Storage full: drop this entry so a half-saved state never remains.
+                try { localStorage.removeItem(storageKey); localStorage.removeItem(srcKey); } catch (e2) {}
             }
         })
         .catch(() => {
-            // The normal URL remains cached; cross-origin hosts that deny fetch
-            // cannot be converted to an offline data URL from this WebView.
-        });
+            // Host denies CORS: the HTTP-cache warm-up above is the best fallback.
+        })
+        .finally(() => { if (__flImgInflight[storageKey] === url) delete __flImgInflight[storageKey]; });
 }
+
+function getCachedChannelImage(uid, kind, fallbackUrl) {
+    try {
+        const v = localStorage.getItem('flaynity_cached_channel_' + kind + ':' + uid);
+        if (v && v.startsWith('data:image/')) return v;
+    } catch (e) {}
+    return fallbackUrl || '';
+}
+
+function prefetchYouPageData(uid, channelData) {
+    if (!uid) return;
+    const apply = (data) => {
+        if (!data) return;
+        try { localStorage.setItem('flaynity_channel_cache:' + uid, JSON.stringify(data)); } catch (e) {}
+        const avatar = data.avatarUrl || data.channelImageUrl || data.profileImageUrl || data.photoURL || '';
+        const banner = data.bannerUrl || data.channelBannerUrl || data.banner || data.channelBanner || '';
+        if (avatar) { try { localStorage.setItem('flaynity_cached_channel_avatar_url:' + uid, avatar); } catch (e) {} }
+        if (banner) { try { localStorage.setItem('flaynity_cached_channel_banner_url:' + uid, banner); } catch (e) {} }
+        cacheChannelImageOffline(avatar, 'flaynity_cached_channel_avatar:' + uid, 400);
+        cacheChannelImageOffline(banner, 'flaynity_cached_channel_banner:' + uid, 1280);
+    };
+    if (channelData) { apply(channelData); return; }
+    if (!navigator.onLine || typeof db === 'undefined') return;
+    db.ref('channels/' + uid).once('value')
+        .then(snap => {
+            if (!auth.currentUser || auth.currentUser.uid !== uid) return;
+            apply(snap.val());
+        })
+        .catch(() => {});
+}
+
+window.addEventListener('online', () => {
+    try { if (auth && auth.currentUser) prefetchYouPageData(auth.currentUser.uid); } catch (e) {}
+});
 
 function renderYouTabWithData(data, user, wrap) {
     const youAvatarLarge = document.getElementById('you-avatar-large');
@@ -7388,17 +7446,17 @@ function renderYouTabWithData(data, user, wrap) {
         // Preserve channel image URLs separately so they survive offline sessions
         // even if the session object is incomplete or auth.currentUser is not restored.
         try {
-            // Embedded image data can be saved immediately. Remote URLs are
-            // recorded by cacheChannelImageOffline only after the download succeeds.
-            if (channelAvatar && /^data:image\//i.test(channelAvatar)) {
-                localStorage.setItem('flaynity_cached_channel_avatar:' + user.uid, channelAvatar);
+            if (channelAvatar) {
+                localStorage.setItem('flaynity_cached_channel_avatar_url:' + user.uid, channelAvatar);
+                if (/^data:image\//i.test(channelAvatar)) localStorage.setItem('flaynity_cached_channel_avatar:' + user.uid, channelAvatar);
             }
-            if (channelBanner && /^data:image\//i.test(channelBanner)) {
-                localStorage.setItem('flaynity_cached_channel_banner:' + user.uid, channelBanner);
+            if (channelBanner) {
+                localStorage.setItem('flaynity_cached_channel_banner_url:' + user.uid, channelBanner);
+                if (/^data:image\//i.test(channelBanner)) localStorage.setItem('flaynity_cached_channel_banner:' + user.uid, channelBanner);
             }
         } catch (e) {}
-        cacheChannelImageOffline(channelAvatar, 'flaynity_cached_channel_avatar:' + user.uid);
-        cacheChannelImageOffline(channelBanner, 'flaynity_cached_channel_banner:' + user.uid);
+        cacheChannelImageOffline(channelAvatar, 'flaynity_cached_channel_avatar:' + user.uid, 400);
+        cacheChannelImageOffline(channelBanner, 'flaynity_cached_channel_banner:' + user.uid, 1280);
 
         if (youFullNameTxt) youFullNameTxt.innerText = channelName;
         if (youEmailTxt) {
@@ -7407,13 +7465,10 @@ function renderYouTabWithData(data, user, wrap) {
             youEmailTxt.style.fontWeight = "800";
         }
 
-        let displayAvatarUrl = channelAvatar;
-        if (!navigator.onLine) {
-            try { displayAvatarUrl = localStorage.getItem('flaynity_cached_channel_avatar:' + user.uid) || ''; } catch (e) { displayAvatarUrl = ''; }
-        }
         if (youAvatarLarge) {
-            if (displayAvatarUrl) {
-                youAvatarLarge.innerHTML = `<img src="${displayAvatarUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+            if (channelAvatar) {
+                const shownAvatar = getCachedChannelImage(user.uid, 'avatar', channelAvatar);
+                youAvatarLarge.innerHTML = `<img src="${shownAvatar}" style="width:100%; height:100%; object-fit:cover;">`;
             } else {
                 youAvatarLarge.innerHTML = channelName.charAt(0).toUpperCase();
             }
@@ -7854,39 +7909,25 @@ function openViewChannelPage() {
     const viewSub = document.getElementById('view-sub-count');
 
     if (viewTitle) viewTitle.innerText = data.channelName;
-    // Keep the Firebase image URLs separate from the downloaded offline copies.
-    // The source URL is needed to detect a changed Banner/Avatar and download it.
-    const channelBannerSourceUrl = data.bannerUrl || data.channelBannerUrl || data.banner || data.channelBanner || '';
-    const channelAvatarSourceUrl = data.avatarUrl || data.channelImageUrl || data.profileImageUrl || data.photoURL || '';
-    let cachedBannerUrl = channelBannerSourceUrl;
-    let cachedAvatarUrl = channelAvatarSourceUrl;
+    // Read image URLs from the cached channel record, including older field names.
+    let cachedBannerUrl = data.bannerUrl || data.channelBannerUrl || data.banner || data.channelBanner || '';
+    let cachedAvatarUrl = data.avatarUrl || data.channelImageUrl || data.profileImageUrl || data.photoURL || '';
     try {
-        const savedBanner = localStorage.getItem('flaynity_cached_channel_banner:' + activeUid) || '';
-        const savedAvatar = localStorage.getItem('flaynity_cached_channel_avatar:' + activeUid) || '';
-        const savedBannerSource = localStorage.getItem('flaynity_cached_channel_banner_url:' + activeUid) || '';
-        const savedAvatarSource = localStorage.getItem('flaynity_cached_channel_avatar_url:' + activeUid) || '';
-
-        // Offline: show downloaded image bytes first. Online: show the latest
-        // Firebase URL, while retaining the previous cached copy as a fallback.
-        if (!navigator.onLine) {
-            cachedBannerUrl = savedBanner || savedBannerSource || channelBannerSourceUrl;
-            cachedAvatarUrl = savedAvatar || savedAvatarSource || channelAvatarSourceUrl;
-        } else {
-            cachedBannerUrl = channelBannerSourceUrl || savedBanner || savedBannerSource;
-            cachedAvatarUrl = channelAvatarSourceUrl || savedAvatar || savedAvatarSource;
-        }
+        // Prefer downloaded image data for reliable offline rendering.
+        cachedBannerUrl = localStorage.getItem('flaynity_cached_channel_banner:' + auth.currentUser.uid) || cachedBannerUrl || localStorage.getItem('flaynity_cached_channel_banner_url:' + auth.currentUser.uid) || '';
+        cachedAvatarUrl = localStorage.getItem('flaynity_cached_channel_avatar:' + auth.currentUser.uid) || cachedAvatarUrl || localStorage.getItem('flaynity_cached_channel_avatar_url:' + auth.currentUser.uid) || '';
     } catch (e) {}
-    if (navigator.onLine) {
-        // Always pass the original Firebase URL, never a data:image cache entry.
-        cacheChannelImageOffline(channelBannerSourceUrl, 'flaynity_cached_channel_banner:' + activeUid);
-        cacheChannelImageOffline(channelAvatarSourceUrl, 'flaynity_cached_channel_avatar:' + activeUid);
-    }
+    // Background prefetch already downloaded the images. This is a no-op when the
+    // saved copy matches the current URL, so opening You never re-downloads.
+    if (navigator.onLine) prefetchYouPageData(activeUid, data);
     if (viewBanner) {
-        viewBanner.src = cachedBannerUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop";
+        const bannerSrc = cachedBannerUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop";
+        if (viewBanner.getAttribute('src') !== bannerSrc) viewBanner.src = bannerSrc;
         viewBanner.style.visibility = 'visible';
     }
     if (viewAvatar) {
-        viewAvatar.src = cachedAvatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop";
+        const avatarSrc = cachedAvatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop";
+        if (viewAvatar.getAttribute('src') !== avatarSrc) viewAvatar.src = avatarSrc;
         viewAvatar.style.visibility = 'visible';
     }
     if (viewName) viewName.innerText = data.channelName;
@@ -12803,16 +12844,6 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
         if (typeof initSearchEvents === "function") initSearchEvents();
     }
     window.addEventListener("flaynity-pages-ready", initAfterInjection);
-    // Warm the You/Channel screen in the background while the user stays on Home.
-    function preloadYouTabInBackground() {
-        const activeNav = document.querySelector('.nav-item.active');
-        const signedInUid = auth && auth.currentUser ? auth.currentUser.uid : '';
-        // Keep Home visible; initYouTabUI only prepares the hidden You tab's
-        // profile/channel data and starts banner/avatar offline caching.
-        if (signedInUid && (!activeNav || activeNav.id === 'nav-home')) initYouTabUI();
-    }
-    window.addEventListener("flaynity-pages-ready", preloadYouTabInBackground);
-    window.addEventListener("flaynity-dom-ready", preloadYouTabInBackground);
     window.addEventListener("flaynity-dom-ready", initAfterInjection);
     window.addEventListener("flaynity-tab-changed", initAfterInjection);
     document.addEventListener("DOMContentLoaded", initAfterInjection);

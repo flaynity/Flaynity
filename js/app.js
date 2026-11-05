@@ -1483,6 +1483,8 @@ function applyAdminControls() {
                 #fl-create-channel .flcc-title{margin-bottom:6px}
                 #fl-create-channel .flcc-sub{margin-bottom:26px}
                 @keyframes flccIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+                #fl-create-channel.flcc-sub-open{background:#fff!important}
+                #fl-create-channel.flcc-sub-open>.flcc-banner,#fl-create-channel.flcc-sub-open>.flcc-sheet{visibility:hidden!important}
                 @media(prefers-reduced-motion:reduce){#fl-create-channel{animation:none}}
               </style>
               <div class="flcc-banner" id="flcc-banner">
@@ -1516,7 +1518,7 @@ function applyAdminControls() {
             // Lock the Create Channel page behind the Name / Username / Bio / Phone / Country pages,
             // so scrolling inside them never moves or reveals the page underneath.
             (function(){
-                const syncLock=()=>{root.style.overflowY=root.querySelector('#flcc-editor,#flcc-country-page,#flcc-phone-page,#flcc-dial-page')?'hidden':'';};
+                const syncLock=()=>{const open=!!root.querySelector('#flcc-editor,#flcc-country-page,#flcc-phone-page,#flcc-dial-page');root.style.overflowY=open?'hidden':'';root.classList.toggle('flcc-sub-open',open);};
                 new MutationObserver(syncLock).observe(root,{childList:true});
                 syncLock();
             })();
@@ -1848,7 +1850,7 @@ function applyAdminControls() {
                 inp.value=init.nat;paint();refresh();
                 // keep the arrow button above the keyboard
                 const vv=window.visualViewport;
-                const fit=()=>{pg.style.height=(vv?vv.height:window.innerHeight)+'px';};
+                const fit=()=>{pg.style.height=(vv?vv.height:window.innerHeight)+'px';pg.style.top=(vv?vv.offsetTop:0)+'px';};
                 if(vv){vv.addEventListener('resize',fit);vv.addEventListener('scroll',fit);}fit();
                 const close=()=>{if(vv){vv.removeEventListener('resize',fit);vv.removeEventListener('scroll',fit);}pg.style.animation='fpOut .22s ease both';setTimeout(()=>pg.remove(),210);};
                 inp.addEventListener('input',()=>{

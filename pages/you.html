@@ -3,30 +3,6 @@
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Flaynity</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
-/* You Profile Card */
-        .profile-card-you {
-            background: var(--surface); 
-            border: 1px solid var(--glass-border);
-            margin: 0 8px 12px 8px !important; 
-            border-radius: 20px !important;
-            padding: 20px 16px 16px 16px !important; 
-            box-shadow: 0 12px 30px rgba(0,0,0,0.04);
-            width: calc(100% - 16px) !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        [data-theme="dark"] .profile-card-you { box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25), 0 0 15px rgba(255, 46, 85, 0.05); }
-        .profile-card-main { display: flex; align-items: center; gap: 14px; }
-        .profile-avatar-large {
-            width: 64px; height: 64px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), #FF7A00); color: white;
-            display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
-            font-weight: 800; overflow: hidden; box-shadow: 0 8px 20px var(--primary-glow);
-            transition: transform 0.3s ease;
-        }
-        .profile-avatar-large img { width: 100%; height: 100%; object-fit: cover; }
-        .profile-info-you h3 { margin: 0 0 4px 0; font-size: 1.2rem; font-weight: 800; color: var(--text-main); }
-        .profile-info-you p { margin: 0; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
-        
         .channel-action-box { margin-top: 14px; border-top: 1px solid var(--glass-border); padding-top: 14px; }
 /* Channel creation now happens automatically on first sign-in in the Home app shell. */
 #channel-action-box .btn-create-channel, #channel-action-box [data-action="create-channel"] { display:none !important; }
@@ -960,16 +936,8 @@
 }
 </style></head><body>
 <div class="tab-content" id="you-tab">
-<div class="profile-card-you">
-<div class="profile-card-main">
-<div class="profile-avatar-large" id="you-avatar-large">U</div>
-<div class="profile-info-you">
-<h3 id="you-fullname-txt"></h3>
-<p id="you-email-txt">...</p>
-</div>
-</div>
-<div class="channel-action-box" id="channel-action-box"></div>
-</div>
+<!-- You profile card removed. Hidden anchor kept only so initYouTabUI() can still load/cache channel data. -->
+<div id="channel-action-box" style="display:none !important;"></div>
 <div class="you-menu premium-service-menu" id="you-premium-service-menu" style="display:none !important;">
 <div class="you-menu-item premium-service-item" onclick="AppNavigation.pushPremiumService('upgrade-pro')">
 <div class="premium-icon-box icon-pro"><i class="fas fa-crown"></i></div>

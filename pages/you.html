@@ -723,6 +723,12 @@
 #view-channel-page .channel-posts-container{padding:0 16px 24px}
 #view-channel-page .ch-empty{grid-column:1 / -1;text-align:center;color:var(--text-muted);margin:24px 16px;font-weight:600}
 
+/* Let the LAST Video / Feel / Post scroll fully above the bottom navigation.
+   The page-content scroller has padding:0, so without this spacer the final
+   cards stay hidden behind the nav bar and cannot be scrolled into view. */
+#view-channel-page .channel-tab-content::after{content:'';display:block;width:100%;height:calc(110px + env(safe-area-inset-bottom, 0px));pointer-events:none}
+#view-channel-page > .page-content{scroll-padding-bottom:calc(110px + env(safe-area-inset-bottom, 0px)) !important}
+
 /* Skeletons that match the new layout */
 #view-channel-page .ch-skel-v{display:flex;gap:14px;align-items:flex-start}
 #view-channel-page .ch-skel-f{aspect-ratio:3/5}

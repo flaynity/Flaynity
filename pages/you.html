@@ -730,6 +730,21 @@
 #view-channel-page .channel-tab-content::after{content:'';display:block;width:100%;height:calc(var(--ch-bottom-gap) + env(safe-area-inset-bottom, 0px));pointer-events:none}
 #view-channel-page > .page-content{scroll-padding-bottom:calc(var(--ch-bottom-gap) + env(safe-area-inset-bottom, 0px)) !important}
 
+/* ===== Offline: "No internet connection. Tap to retry." ===== */
+#view-channel-page .channel-tab-content.ch-offline .ch-sort-row{display:none}
+#view-channel-page .ch-offline-state{grid-column:1 / -1;width:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;text-align:center;padding:72px 28px 24px}
+#view-channel-page .ch-off-title{margin:0 0 14px;max-width:21ch;font-size:1.5rem;line-height:1.3;font-weight:700;color:var(--text-main)}
+#view-channel-page .ch-off-sub{margin:0;font-size:1.12rem;line-height:1.4;color:#6b6b70}
+#view-channel-page .ch-off-retry{margin-top:34px;min-width:178px;height:57px;padding:0 30px;display:inline-flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:999px;background:#f2f2f2;color:#111;font:inherit;font-size:1.3rem;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease,opacity .12s ease}
+#view-channel-page .ch-off-retry:active{transform:scale(.97);opacity:.8}
+#view-channel-page .ch-off-retry svg{width:26px;height:26px;flex:0 0 auto}
+#view-channel-page .ch-off-retry.ch-loading svg{animation:chSpin .8s linear infinite}
+#view-channel-page .ch-off-retry.ch-shake{animation:chShake .35s ease}
+[data-theme="dark"] #view-channel-page .ch-off-retry{background:#2b2b2e;color:#fff}
+[data-theme="dark"] #view-channel-page .ch-off-sub{color:#9a9aa0}
+@keyframes chSpin{to{transform:rotate(360deg)}}
+@keyframes chShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
 /* Skeletons that match the new layout */
 #view-channel-page .ch-skel-v{display:flex;gap:14px;align-items:flex-start}
 #view-channel-page .ch-skel-f{aspect-ratio:3/5}

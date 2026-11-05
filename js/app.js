@@ -7974,10 +7974,7 @@ function renderOfflineChannelPageSkeletons(activeType) {
         const gridId = type === 'videos' ? 'channel-videos-grid' : (type === 'feels' ? 'channel-feels-grid' : 'channel-posts-feed');
         const grid = document.getElementById(gridId);
         if (!grid) return;
-        const count = type === 'videos' ? 4 : (type === 'feels' ? 6 : 3);
-        grid.innerHTML = Array.from({length: count}, () =>
-            '<div class="channel-offline-skeleton"><div class="skel-box" style="width:100%;height:150px;border-radius:12px;"></div><div class="skel-box" style="width:72%;height:12px;margin-top:10px;border-radius:6px;"></div><div class="skel-box" style="width:46%;height:10px;margin-top:7px;border-radius:6px;"></div></div>'
-        ).join('');
+        grid.innerHTML = chSkeletonHTML(type);
     });
     const menuPanel = document.querySelector('#you-quick-menu-overlay .you-quick-menu-panel');
     if (menuPanel && !menuPanel.dataset.offlineSkeletonApplied) {
@@ -8023,12 +8020,7 @@ function switchChannelTab(type) {
         renderOfflineChannelPageSkeletons(type);
         const gridId = type === 'videos' ? 'channel-videos-grid' : (type === 'feels' ? 'channel-feels-grid' : 'channel-posts-feed');
         const grid = document.getElementById(gridId);
-        if (grid) {
-            const count = type === 'videos' ? 4 : (type === 'feels' ? 6 : 3);
-            grid.innerHTML = Array.from({length: count}, () =>
-                '<div class="channel-offline-skeleton"><div class="skel-box" style="width:100%;height:150px;border-radius:12px;"></div><div class="skel-box" style="width:72%;height:12px;margin-top:10px;border-radius:6px;"></div><div class="skel-box" style="width:46%;height:10px;margin-top:7px;border-radius:6px;"></div></div>'
-            ).join('');
-        }
+        if (grid) grid.innerHTML = chSkeletonHTML(type);
         return;
     }
 
@@ -8040,33 +8032,119 @@ function switchChannelTab(type) {
     else if (type === 'posts') renderChannelPosts(targetId);
 }
 
+// ============================================================
+// CHANNEL PAGE: Videos / Feels / Posts  (YouTube-style design)
+// ============================================================
+const __chState = {
+    sort: { videos: 'latest', feels: 'latest', posts: 'latest' },
+    data: { videos: [], feels: [], posts: [] },
+    views: {}
+};
+const __CH_DOTS = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg>';
+
+function chRelTime(ts) {
+    const t = Number(ts) || (ts ? new Date(ts).getTime() : 0);
+    if (!t) return '';
+    const mins = Math.floor((Date.now() - t) / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return mins + ' min ago';
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return hours + 'h ago';
+    const days = Math.floor(hours / 24);
+    if (days < 30) return days + 'd ago';
+    const months = Math.floor(days / 30);
+    if (months < 12) return months + 'mo ago';
+    return Math.floor(days / 365) + 'y ago';
+}
+
+function chSkeletonHTML(type) {
+    if (type === 'feels') {
+        return Array.from({length: 9}, () => '<div class="skel-box ch-skel-f"></div>').join('');
+    }
+    if (type === 'posts') {
+        return Array.from({length: 3}, () =>
+            '<div class="channel-offline-skeleton"><div class="skel-box" style="width:100%;height:150px;border-radius:12px;"></div><div class="skel-box" style="width:72%;height:12px;margin-top:10px;border-radius:6px;"></div></div>'
+        ).join('');
+    }
+    return Array.from({length: 4}, () =>
+        '<div class="ch-skel-v"><div class="skel-box" style="flex:0 0 44%;aspect-ratio:16/9;border-radius:14px;"></div>' +
+        '<div style="flex:1;min-width:0;"><div class="skel-box" style="width:92%;height:13px;border-radius:7px;"></div>' +
+        '<div class="skel-box" style="width:70%;height:13px;margin-top:8px;border-radius:7px;"></div>' +
+        '<div class="skel-box" style="width:46%;height:11px;margin-top:10px;border-radius:6px;"></div></div></div>'
+    ).join('');
+}
+
+function chSortedList(type) {
+    const mode = __chState.sort[type] || 'latest';
+    const arr = (__chState.data[type] || []).slice();
+    const ts = x => Number(x.createdAt) || 0;
+    const score = x => type === 'posts'
+        ? (Number(x.likes) || 0)
+        : (Number(__chState.views[x.id] != null ? __chState.views[x.id] : x.views) || 0);
+    if (mode === 'oldest') arr.sort((a, b) => ts(a) - ts(b));
+    else if (mode === 'popular') arr.sort((a, b) => (score(b) - score(a)) || (ts(b) - ts(a)));
+    else arr.sort((a, b) => ts(b) - ts(a));
+    return arr;
+}
+
+function setChannelSort(type, mode, btn) {
+    if (typeof playUI === 'function') playUI('click');
+    __chState.sort[type] = mode;
+    const row = btn && btn.closest ? btn.closest('.ch-sort-row') : document.querySelector('.ch-sort-row[data-type="' + type + '"]');
+    if (row) row.querySelectorAll('.ch-chip').forEach(c => c.classList.toggle('active', c.dataset.sort === mode));
+    chPaint(type);
+}
+
+function chPaint(type) {
+    if (type === 'videos') paintChannelVideos();
+    else if (type === 'feels') paintChannelFeels();
+    else if (type === 'posts') paintChannelPosts();
+}
+
+let __chRepaintTimer = null;
+function chScheduleRepaint(type) {
+    if (__chState.sort[type] !== 'popular') return;
+    clearTimeout(__chRepaintTimer);
+    __chRepaintTimer = setTimeout(() => chPaint(type), 220);
+}
+
+function chFetchViews(list, labelPrefix, type, suffix) {
+    if (!navigator.onLine) return;
+    list.forEach(m => {
+        db.ref(`movie_stats/${m.id}/views`).once('value', (vSnap) => {
+            const count = Object.keys(vSnap.val() || {}).length;
+            __chState.views[m.id] = count;
+            const label = document.getElementById(labelPrefix + m.id);
+            if (label) label.innerText = formatCount(count) + suffix;
+            chScheduleRepaint(type);
+        });
+    });
+}
+
 function buildChannelVideoCard(v) {
+    const views = formatCount(v.views || 0);
+    const when = chRelTime(v.createdAt);
     return `
-        <div class="channel-video-card-long" onclick="openMoviePage('${v.id}', false)">
-            <div class="video-card-thumb-wrap">
-                <img src="${v.poster}">
-                <span class="video-card-duration">${v.duration || '10:00'}</span>
+        <div class="ch-vcard" onclick="openMoviePage('${v.id}', false)">
+            <div class="ch-vthumb">
+                <img src="${v.poster || ''}" alt="" loading="lazy">
+                <span class="ch-vdur">${escapeHTML(String(v.duration || '10:00'))}</span>
             </div>
-            <div class="video-card-meta-long">
-                <h4>${escapeHTML(v.title)}</h4>
-                <p>
-                    <span id="chan-vid-views-${v.id}">${formatCount(v.views || 0)} Views</span>
-                    <span class="dot-separator">•</span>
-                    <span>${getRelativeTime(v.createdAt)}</span>
-                </p>
+            <div class="ch-vinfo">
+                <h4 class="ch-vtitle">${escapeHTML(v.title || '')}</h4>
+                <p class="ch-vmeta"><span id="chan-vid-views-${v.id}">${views}</span>${when ? ' · ' + when : ''}</p>
             </div>
+            <button type="button" class="ch-more" aria-label="More" onclick="chOpenItemMenu(event,'${v.id}','video')">${__CH_DOTS}</button>
         </div>
     `;
 }
 
 function buildChannelShortCard(s) {
     return `
-        <div class="feels-grid-card" onclick="openMoviePage('${s.id}', false)">
-            <img src="${s.poster}">
-            <div class="feels-grid-views">
-                <i class="fas fa-play"></i>
-                <span id="chan-short-views-${s.id}">${formatCount(s.views || 0)}</span>
-            </div>
+        <div class="ch-fcard" onclick="openMoviePage('${s.id}', false)">
+            <img src="${s.poster || ''}" alt="" loading="lazy">
+            <span class="ch-fviews"><span id="chan-short-views-${s.id}">${formatCount(s.views || 0)}</span> views</span>
+            <button type="button" class="ch-fmore" aria-label="More" onclick="chOpenItemMenu(event,'${s.id}','feel')">${__CH_DOTS}</button>
         </div>
     `;
 }
@@ -8092,53 +8170,66 @@ function buildChannelPostCard(p, username) {
     `;
 }
 
+
+function paintChannelVideos() {
+    const grid = document.getElementById('channel-videos-grid');
+    if (!grid) return;
+    const list = chSortedList('videos');
+    if (!list.length) {
+        grid.innerHTML = '<p class="ch-empty">No uploaded videos yet.</p>';
+    } else {
+        grid.innerHTML = list.map(m => buildChannelVideoCard({
+            id: m.id, title: m.title, duration: m.duration || '10:00',
+            views: __chState.views[m.id] != null ? __chState.views[m.id] : (m.views || 0),
+            poster: m.poster, createdAt: m.createdAt
+        })).join('');
+    }
+    renderChannelUploadQueue('videos');
+}
+
+function paintChannelFeels() {
+    const grid = document.getElementById('channel-feels-grid');
+    if (!grid) return;
+    const list = chSortedList('feels');
+    if (!list.length) {
+        grid.innerHTML = '<p class="ch-empty">No feels uploaded yet.</p>';
+    } else {
+        grid.innerHTML = list.map(m => buildChannelShortCard({
+            id: m.id, poster: m.poster,
+            views: __chState.views[m.id] != null ? __chState.views[m.id] : (m.views || 0)
+        })).join('');
+    }
+    renderChannelUploadQueue('feels');
+}
+
+function paintChannelPosts() {
+    const grid = document.getElementById('channel-posts-feed');
+    if (!grid) return;
+    const list = chSortedList('posts');
+    if (!list.length) {
+        grid.innerHTML = '<p class="ch-empty">No posts yet.</p>';
+        return;
+    }
+    grid.innerHTML = list.map(p => buildChannelPostCard({
+        id: p.id, caption: p.caption, images: p.images || [],
+        likes: p.likes || 0, comments: p.comments || 0, createdAt: p.createdAt
+    }, p.username)).join('');
+}
+
 function renderChannelVideos(userId) {
     const grid = document.getElementById('channel-videos-grid');
     if (!grid) return;
     if (activeChannelVideosListener) { activeChannelVideosListener.off(); }
-    
+
     activeChannelVideosListener = db.ref('admin_panel/movies/user_uploads');
     activeChannelVideosListener.on('value', (snap) => {
         const data = snap.val();
-        if (!data) {
-            grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No uploaded videos yet.</p>`;
-            const vidCount = document.getElementById('view-vid-count');
-            if (vidCount) vidCount.innerText = "0 Videos";
-            renderChannelUploadQueue('videos');
-            return;
-        }
-
-        const list = Object.values(data).filter(m => m.userId === userId && !m.isShort);
+        const list = data ? Object.values(data).filter(m => m && m.userId === userId && !m.isShort) : [];
+        __chState.data.videos = list;
         const vidCount = document.getElementById('view-vid-count');
         if (vidCount) vidCount.innerText = list.length + " Video" + (list.length === 1 ? "" : "s");
-
-        if (list.length === 0) {
-            grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No uploaded videos yet.</p>`;
-            renderChannelUploadQueue('videos');
-            return;
-        }
-
-        grid.innerHTML = list.map(m => buildChannelVideoCard({
-            id: m.id,
-            title: m.title,
-            duration: m.duration || "10:00", 
-            views: 0, 
-            poster: m.poster,
-            createdAt: m.createdAt
-        })).join('');
-
-        renderChannelUploadQueue('videos');
-
-        if(navigator.onLine) {
-            list.forEach(m => {
-                db.ref(`movie_stats/${m.id}/views`).once('value', (vSnap) => {
-                    const viewsObj = vSnap.val() || {};
-                    const count = Object.keys(viewsObj).length;
-                    const label = document.getElementById(`chan-vid-views-${m.id}`);
-                    if (label) label.innerText = formatCount(count) + " Views";
-                });
-            });
-        }
+        paintChannelVideos();
+        chFetchViews(list, 'chan-vid-views-', 'videos', '');
     });
 }
 
@@ -8150,37 +8241,9 @@ function renderChannelFeels(userId) {
     activeChannelFeelsListener = db.ref('admin_panel/movies/feels');
     activeChannelFeelsListener.on('value', (snap) => {
         const data = snap.val();
-        if (!data) {
-            grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No feels uploaded yet.</p>`;
-            renderChannelUploadQueue('feels');
-            return;
-        }
-
-        const list = Object.values(data).filter(m => m.userId === userId);
-        if (list.length === 0) {
-            grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1/-1; margin-top:20px;">No feels uploaded yet.</p>`;
-            renderChannelUploadQueue('feels');
-            return;
-        }
-
-        grid.innerHTML = list.map(m => buildChannelShortCard({
-            id: m.id,
-            poster: m.poster,
-            views: 0
-        })).join('');
-
-        renderChannelUploadQueue('feels');
-
-        if(navigator.onLine) {
-            list.forEach(m => {
-                db.ref(`movie_stats/${m.id}/views`).once('value', (vSnap) => {
-                    const viewsObj = vSnap.val() || {};
-                    const count = Object.keys(viewsObj).length;
-                    const label = document.getElementById(`chan-short-views-${m.id}`);
-                    if (label) label.innerText = formatCount(count);
-                });
-            });
-        }
+        __chState.data.feels = data ? Object.values(data).filter(m => m && m.userId === userId) : [];
+        paintChannelFeels();
+        chFetchViews(__chState.data.feels, 'chan-short-views-', 'feels', '');
     });
 }
 
@@ -8192,26 +8255,54 @@ function renderChannelPosts(userId) {
     activeChannelPostsListener = db.ref('admin_panel/posts');
     activeChannelPostsListener.on('value', (snap) => {
         const data = snap.val();
-        if (!data) {
-            grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No posts yet.</p>`;
-            return;
-        }
-
-        const list = Object.values(data).filter(p => p.userId === userId);
-        if (list.length === 0) {
-            grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No posts yet.</p>`;
-            return;
-        }
-
-        grid.innerHTML = list.map(p => buildChannelPostCard({
-            id: p.id,
-            caption: p.caption,
-            images: p.images || [],
-            likes: 0,
-            comments: 0,
-            createdAt: p.createdAt
-        }, p.username)).join('');
+        __chState.data.posts = data ? Object.values(data).filter(p => p && p.userId === userId) : [];
+        paintChannelPosts();
     });
+}
+
+// ---- ••• popup for channel items (Play / Share / Copy link) ----
+function chCloseItemMenu() {
+    const m = document.getElementById('ch-item-menu');
+    if (m) m.remove();
+    document.removeEventListener('click', chCloseItemMenu, true);
+}
+
+function chOpenItemMenu(ev, id, kind) {
+    if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+    if (typeof playUI === 'function') playUI('click');
+    chCloseItemMenu();
+    const anchor = ev && ev.currentTarget ? ev.currentTarget : null;
+    const r = anchor ? anchor.getBoundingClientRect() : { top: 80, bottom: 110, right: window.innerWidth - 12 };
+    const menu = document.createElement('div');
+    menu.id = 'ch-item-menu';
+    menu.className = 'ch-menu';
+    menu.innerHTML = '<button type="button" data-a="play">Play</button><button type="button" data-a="share">Share</button><button type="button" data-a="copy">Copy link</button>';
+    document.body.appendChild(menu);
+    const w = menu.offsetWidth, ph = menu.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
+    const left = Math.min(Math.max(12, r.right - w), vw - w - 12);
+    let top = r.bottom + 6;
+    if (top + ph > vh - 12) top = Math.max(12, r.top - ph - 6);
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    requestAnimationFrame(() => menu.classList.add('open'));
+    menu.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        e.stopPropagation();
+        const act = btn.dataset.a;
+        chCloseItemMenu();
+        if (act === 'play') { openMoviePage(String(id), false); return; }
+        const pool = (__chState.data.videos || []).concat(__chState.data.feels || []);
+        const item = pool.find(x => String(x.id) === String(id)) || {};
+        if (act === 'share') {
+            const data = { title: item.title || 'Flaynity', text: item.title || 'Flaynity', url: location.href };
+            if (navigator.share) navigator.share(data).catch(() => {});
+            else if (navigator.clipboard) { navigator.clipboard.writeText(location.href); showNotification('Link copied', 'success'); }
+        } else if (act === 'copy') {
+            if (navigator.clipboard) navigator.clipboard.writeText(location.href).then(() => showNotification('Link copied', 'success')).catch(() => {});
+        }
+    });
+    setTimeout(() => document.addEventListener('click', chCloseItemMenu, true), 0);
 }
 
 function toggleFullDescription() {

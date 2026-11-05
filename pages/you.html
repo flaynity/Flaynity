@@ -700,7 +700,7 @@
 #view-channel-page .ch-chip.active{background:rgba(127,127,127,.18);border-color:transparent}
 
 /* Videos: thumbnail left, text right, ••• at far right */
-#view-channel-page .channel-videos-container{display:flex;flex-direction:column;gap:20px;padding:4px 16px 24px}
+#view-channel-page .channel-videos-container{display:flex;flex-direction:column;gap:20px;padding:4px 16px 0}
 #view-channel-page .ch-vcard{display:flex;align-items:flex-start;gap:14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 #view-channel-page .ch-vthumb{position:relative;flex:0 0 44%;width:44%;max-width:240px;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#E2E8F0}
 #view-channel-page .ch-vthumb img{display:block;width:100%;height:100%;object-fit:cover}
@@ -720,14 +720,15 @@
 #view-channel-page .ch-fmore{position:absolute;top:4px;right:2px;z-index:2;width:34px;height:30px;padding:0;border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;filter:drop-shadow(0 1px 3px rgba(0,0,0,.6));-webkit-tap-highlight-color:transparent}
 #view-channel-page .ch-fmore svg{width:22px;height:22px;fill:currentColor}
 #view-channel-page .channel-feels-container .fl-live-upload-card{grid-column:1 / -1 !important;width:auto !important;margin:6px 16px 10px !important}
-#view-channel-page .channel-posts-container{padding:0 16px 24px}
+#view-channel-page .channel-posts-container{padding:0 16px}
 #view-channel-page .ch-empty{grid-column:1 / -1;text-align:center;color:var(--text-muted);margin:24px 16px;font-weight:600}
 
 /* Let the LAST Video / Feel / Post scroll fully above the bottom navigation.
    The page-content scroller has padding:0, so without this spacer the final
    cards stay hidden behind the nav bar and cannot be scrolled into view. */
-#view-channel-page .channel-tab-content::after{content:'';display:block;width:100%;height:calc(110px + env(safe-area-inset-bottom, 0px));pointer-events:none}
-#view-channel-page > .page-content{scroll-padding-bottom:calc(110px + env(safe-area-inset-bottom, 0px)) !important}
+#view-channel-page{--ch-bottom-gap:44px}
+#view-channel-page .channel-tab-content::after{content:'';display:block;width:100%;height:calc(var(--ch-bottom-gap) + env(safe-area-inset-bottom, 0px));pointer-events:none}
+#view-channel-page > .page-content{scroll-padding-bottom:calc(var(--ch-bottom-gap) + env(safe-area-inset-bottom, 0px)) !important}
 
 /* Skeletons that match the new layout */
 #view-channel-page .ch-skel-v{display:flex;gap:14px;align-items:flex-start}
@@ -827,6 +828,29 @@
     flex-shrink: 0;
 }
 
+/* ===== Settings and privacy page (grey page, white rounded cards, grey filled icons) ===== */
+#channel-settings-page { background: #f4f4f4 !important; }
+[data-theme="dark"] #channel-settings-page { background: var(--bg-color) !important; }
+#channel-settings-page .appbar { background: transparent !important; border: 0 !important; box-shadow: none !important; height: 56px !important; flex: 0 0 56px !important; }
+#channel-settings-page .appbar .centered-page-title { display: none !important; }
+#channel-settings-page .appbar-back-btn { background: transparent !important; border: 0 !important; box-shadow: none !important; width: 44px; height: 44px; margin-left: 12px; color: var(--text-main) !important; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; padding: 0; }
+#channel-settings-page .appbar-back-btn i { color: var(--text-main) !important; }
+#channel-settings-page .page-content { padding: 0 10px calc(48px + env(safe-area-inset-bottom, 0px)) !important; }
+#channel-settings-page .cs-big-title { margin: 6px 14px 22px; font-size: 2.15rem; line-height: 1.15; font-weight: 800; letter-spacing: -.3px; color: var(--text-main); }
+#channel-settings-page .settings-card-group { margin: 0 0 18px !important; }
+#channel-settings-page .settings-card-group-title { margin: 0 0 9px 16px !important; font-size: 1rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: #8a8a90; }
+#channel-settings-page .settings-card-box { gap: 0 !important; padding: 6px 0 !important; background: var(--surface, #fff) !important; border-radius: 18px !important; overflow: hidden !important; }
+#channel-settings-page .settings-item { min-height: 58px; padding: 6px 22px 6px 16px !important; gap: 14px; color: var(--text-main); -webkit-tap-highlight-color: transparent; }
+#channel-settings-page .settings-item:active { background: rgba(127,127,127,.10) !important; transform: none; }
+#channel-settings-page .settings-item span { font-size: 1.1rem; font-weight: 600; line-height: 1.25; }
+#channel-settings-page .settings-item .premium-icon-box { width: 28px !important; height: 28px !important; flex: 0 0 28px; background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; color: #9b9ba1 !important; display: flex; align-items: center; justify-content: center; }
+#channel-settings-page .settings-item .premium-icon-box i { font-size: 1.28rem !important; color: #9b9ba1 !important; background: none !important; -webkit-text-fill-color: #9b9ba1 !important; }
+#channel-settings-page .settings-item .premium-icon-box svg { width: 24px; height: 24px; }
+#channel-settings-page .settings-item .icon-verified svg path:first-of-type { fill: #9b9ba1 !important; }
+#channel-settings-page .settings-item .icon-verified svg path:last-of-type { fill: var(--surface, #fff) !important; }
+#channel-settings-page .settings-item .arrow-r { width: 9px; height: 9px; font-size: 0 !important; margin: 0 4px 0 auto; border-top: 2px solid #b3b3b8; border-right: 2px solid #b3b3b8; transform: rotate(45deg); }
+#channel-settings-page .settings-item .arrow-r::before { content: none !important; display: none !important; }
+
 /* Bottom Sheet drawers */
 .bottom-sheet-overlay {
     position: fixed;
@@ -888,57 +912,43 @@
 .sheet-radio-indicator::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #ffffff; display: none; }
 .sheet-option-item.selected .sheet-radio-indicator::after { display: block; }
 
-/* You Page right-side quick menu */
+/* ===== You Page menu drawer (white side panel, outline icons) ===== */
 #you-quick-menu-overlay.you-quick-menu-overlay {
     position: fixed !important; inset: 0 !important; z-index: 2147483000 !important;
     display: none; background: rgba(0,0,0,.42) !important;
     opacity: 0; visibility: hidden; pointer-events: none;
     transition: opacity .24s ease, visibility .24s ease;
-    -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
 }
-#you-quick-menu-overlay.you-quick-menu-overlay.active {
-    display: block !important; opacity: 1; visibility: visible; pointer-events: auto;
-}
+#you-quick-menu-overlay.you-quick-menu-overlay.active { display: block !important; opacity: 1; visibility: visible; pointer-events: auto; }
 #you-quick-menu-overlay .you-quick-menu-panel {
     position: absolute !important; top: 0 !important; right: 0 !important; bottom: 0 !important; left: auto !important;
-    width: min(88vw, 370px) !important; max-width: 370px !important;
+    width: 85vw !important; max-width: 430px !important;
     height: 100% !important; height: 100dvh !important; max-height: none !important;
     overflow-y: auto !important; overscroll-behavior: contain;
-    padding: calc(8px + env(safe-area-inset-top, 0px)) 14px calc(12px + env(safe-area-inset-bottom, 0px));
-    box-sizing: border-box; background: var(--bg-color); color: var(--text-main);
-    border: 1px solid var(--glass-border); border-right: 0 !important;
-    border-radius: 22px 0 0 22px !important;
-    box-shadow: -12px 0 36px rgba(0,0,0,.18);
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 24px calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+    box-sizing: border-box; background: var(--surface, #fff) !important; color: var(--text-main);
+    border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
     transform: translate3d(105%,0,0); transition: transform .30s cubic-bezier(.22,.8,.25,1) !important;
     -webkit-overflow-scrolling: touch; will-change: transform;
 }
 #you-quick-menu-overlay.active .you-quick-menu-panel { transform: translate3d(0,0,0) !important; }
-.you-quick-menu-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin: 0 2px 12px; }
-.you-quick-menu-title { margin:0; font-size:1.22rem; font-weight:850; color:var(--text-main); }
-.you-quick-menu-close {
-    width:40px; height:40px; border:1px solid var(--glass-border); border-radius:13px;
-    display:flex; align-items:center; justify-content:center; color:var(--text-main);
-    background:var(--surface); font-size:1.05rem; cursor:pointer; flex-shrink:0;
-}
-.you-quick-menu-section { margin: 0 0 14px; }
-.you-quick-menu-section-title {
-    margin: 0 8px 9px; color:var(--text-muted); font-size:.72rem; font-weight:850;
-    letter-spacing:1.15px; text-transform:uppercase;
-}
-.you-quick-menu-list { display:flex; flex-direction:column; gap:8px; }
+.you-quick-menu-section { margin: 0; padding: 4px 0 8px; }
+.you-quick-menu-section + .you-quick-menu-section { border-top: 1px solid rgba(127,127,127,.26); margin-top: 8px; padding-top: 12px; }
+.you-quick-menu-section-title { margin: 6px 0 4px; font-size: 1rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: #8a8a90; }
+.you-quick-menu-list { display: flex; flex-direction: column; gap: 0; }
 .you-quick-menu-item {
-    width:100%; box-sizing:border-box; display:flex; align-items:center; gap:12px;
-    padding:9px 12px; min-height:56px; border-radius:15px; border:1px solid var(--glass-border);
-    background:var(--surface); color:var(--text-main); text-align:left; cursor:pointer;
-    transition:transform .18s ease, background .18s ease; font:inherit;
+    width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 18px;
+    min-height: 56px; padding: 0; margin: 0; border: 0; border-radius: 0; background: transparent;
+    color: var(--text-main); text-align: left; cursor: pointer; font: inherit;
+    -webkit-tap-highlight-color: transparent; transition: opacity .15s ease;
 }
-.you-quick-menu-item:active { transform:scale(.975); background:var(--primary-glow); }
-.you-quick-menu-item .premium-icon-box { width:39px; height:39px; border-radius:12px; flex:0 0 39px; }
-.you-quick-menu-item .premium-icon-box i { font-size:1.12rem !important; }
-.you-quick-menu-item .quick-menu-label { flex:1; min-width:0; font-size:.94rem; font-weight:750; }
-.you-quick-menu-item .arrow-r { font-size:.78rem !important; }
+.you-quick-menu-item:active { opacity: .55; background: transparent; transform: none; }
+.you-quick-menu-item .yqm-icon { flex: 0 0 30px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: var(--text-main); }
+.you-quick-menu-item .yqm-ic { width: 29px; height: 29px; display: block; }
+.you-quick-menu-item .quick-menu-label { flex: 1; min-width: 0; font-size: 1.12rem; font-weight: 600; line-height: 1.25; color: var(--text-main); }
+.you-quick-menu-item .yqm-chev { flex: 0 0 auto; width: 9px; height: 9px; margin: 0 5px 0 8px; border-top: 2px solid #b3b3b8; border-right: 2px solid #b3b3b8; transform: rotate(45deg); }
 @media (prefers-reduced-motion: reduce) {
-    .you-quick-menu-overlay, .you-quick-menu-panel, .you-quick-menu-item { transition:none !important; }
+    .you-quick-menu-overlay, .you-quick-menu-panel, .you-quick-menu-item { transition: none !important; }
 }
 </style></head><body>
 <div class="tab-content" id="you-tab">
@@ -1048,46 +1058,13 @@
 
 <!-- You Page right-side menu drawer -->
 <div class="you-quick-menu-overlay" id="you-quick-menu-overlay" onclick="handleYouQuickMenuOverlay(event)" aria-hidden="true">
-  <aside class="you-quick-menu-panel" role="dialog" aria-modal="true" aria-label="Quick menu">
-    <div class="you-quick-menu-head">
-      <h2 class="you-quick-menu-title">Menu</h2>
-      <button class="you-quick-menu-close" type="button" onclick="closeYouQuickMenu()" aria-label="Close menu"><i class="fas fa-xmark"></i></button>
-    </div>
-    <section class="you-quick-menu-section">
-      <h3 class="you-quick-menu-section-title">ACCOUNT</h3>
-      <div class="you-quick-menu-list">
-        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openAnalyticsPage)"><span class="premium-icon-box icon-pro"><i class="fas fa-crown"></i></span><span class="quick-menu-label">Analytics</span><i class="fas fa-chevron-right arrow-r"></i></button>
-        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openEditChannelPage)"><span class="premium-icon-box icon-edit-prof"><i class="fas fa-user-pen"></i></span><span class="quick-menu-label">Edit Channel</span><i class="fas fa-chevron-right arrow-r"></i></button>
-        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openMonetizationPage)"><span class="premium-icon-box icon-earning"><i class="fas fa-sack-dollar"></i></span><span class="quick-menu-label">Flay Earning</span><i class="fas fa-chevron-right arrow-r"></i></button>
-        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openEditChannelPage)"><span class="premium-icon-box icon-edit-prof"><i class="fas fa-user-pen"></i></span><span class="quick-menu-label">Edit Profile</span><i class="fas fa-chevron-right arrow-r"></i></button>
-        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openAccountSwitcher)"><span class="premium-icon-box icon-account"><i class="fas fa-exchange-alt"></i></span><span class="quick-menu-label">Switch Account</span><i class="fas fa-chevron-right arrow-r"></i></button>
-      </div>
-    </section>
-    <section class="you-quick-menu-section">
-      <h3 class="you-quick-menu-section-title">FLAYNITY FEATURES</h3>
-      <div class="you-quick-menu-list">
-        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('flay-verified-badge')})"><span class="premium-icon-box icon-verified"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12.0001 2.37877L14.1539 3.58552L16.634 3.44754L18.0699 5.56844L20.4705 6.30722L20.6724 8.78318L22.4516 10.4287L21.5794 12.7562L22.4516 15.0837L20.6724 16.7292L20.4705 19.2052L18.0699 19.9439L16.634 22.0648L14.1539 21.9269L12.0001 23.1336L9.84628 21.9269L7.36616 22.0648L5.93026 19.9439L3.52968 19.2052L3.32777 16.7292L1.54858 15.0837L2.42079 12.7562L1.54858 10.4287L3.32777 8.78318L3.52968 6.30722L5.93026 5.56844L7.36616 3.44754L9.84628 3.58552Z" fill="#D80E45"></path><path d="M10.8335 15.6881L7.14515 12.0858L8.35483 10.9044L10.8335 13.3253L15.6453 8.625L16.855 9.8064L10.8335 15.6881Z" fill="#FFFFFF"></path></svg></span><span class="quick-menu-label">Flay Verified Badge</span><i class="fas fa-chevron-right arrow-r"></i></button>
-        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('upgrade-pro')})"><span class="premium-icon-box icon-pro"><i class="fas fa-crown"></i></span><span class="quick-menu-label">Upgrade Pro</span><i class="fas fa-chevron-right arrow-r"></i></button>
-        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('boost-content')})"><span class="premium-icon-box icon-boost"><i class="fas fa-rocket"></i></span><span class="quick-menu-label">Boost Content</span><i class="fas fa-chevron-right arrow-r"></i></button>
-        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('flay-pay')})"><span class="premium-icon-box icon-pay"><i class="fas fa-wallet"></i></span><span class="quick-menu-label">Flay Pay</span><i class="fas fa-chevron-right arrow-r"></i></button>
-        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('flay-payout')})"><span class="premium-icon-box" style="background:linear-gradient(135deg,#E8005A 0%,#FF8A3D 100%);color:#FFFFFF;box-shadow:0 4px 14px rgba(232,0,90,.24);"><i class="fas fa-money-bill-transfer"></i></span><span class="quick-menu-label">Flay Payout</span><i class="fas fa-chevron-right arrow-r"></i></button>
-      </div>
-    </section>
-    <section class="you-quick-menu-section">
-      <h3 class="you-quick-menu-section-title">APPEARANCE</h3>
-      <div class="you-quick-menu-list">
-        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){openBottomSheet('sheet-theme')})"><span class="premium-icon-box icon-theme"><i class="fas fa-palette"></i></span><span class="quick-menu-label">Switch Theme</span><i class="fas fa-chevron-right arrow-r"></i></button>
-        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){openBottomSheet('sheet-language')})"><span class="premium-icon-box icon-lang"><i class="fas fa-language"></i></span><span class="quick-menu-label">App Language</span><i class="fas fa-chevron-right arrow-r"></i></button>
-      </div>
-    </section>
-    <section class="you-quick-menu-section">
-      <h3 class="you-quick-menu-section-title">SUPPORT</h3>
-      <div class="you-quick-menu-list">
-        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){openSupportLink('help-center')})"><span class="premium-icon-box icon-help"><i class="fas fa-circle-question"></i></span><span class="quick-menu-label">Help Center</span><i class="fas fa-chevron-right arrow-r"></i></button>
-        <button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openChannelSettingsPage)"><span class="premium-icon-box icon-theme"><i class="fas fa-gear"></i></span><span class="quick-menu-label">Setting</span><i class="fas fa-chevron-right arrow-r"></i></button>
-      </div>
-    </section>
-  </aside>
+  <aside class="you-quick-menu-panel" role="dialog" aria-modal="true" aria-label="Menu">
+<section class="you-quick-menu-section"><h3 class="you-quick-menu-section-title">Account</h3><div class="you-quick-menu-list"><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openAnalyticsPage)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span><span class="quick-menu-label">Analytics</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openEditChannelPage)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 15H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21.378 16.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/></svg></span><span class="quick-menu-label">Edit Channel</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openMonetizationPage)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg></span><span class="quick-menu-label">Flay Earning</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openEditChannelPage)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="quick-menu-label">Edit Profile</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openAccountSwitcher)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg></span><span class="quick-menu-label">Switch Account</span><i class="yqm-chev" aria-hidden="true"></i></button></div></section>
+<section class="you-quick-menu-section"><h3 class="you-quick-menu-section-title">Flaynity features</h3><div class="you-quick-menu-list"><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('flay-verified-badge')})"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg></span><span class="quick-menu-label">Flay Verified Badge</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('upgrade-pro')})"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></svg></span><span class="quick-menu-label">Upgrade Pro</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('boost-content')})"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></span><span class="quick-menu-label">Boost Content</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('flay-pay')})"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg></span><span class="quick-menu-label">Flay Pay</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('flay-payout')})"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg></span><span class="quick-menu-label">Flay Payout</span><i class="yqm-chev" aria-hidden="true"></i></button></div></section>
+<section class="you-quick-menu-section"><h3 class="you-quick-menu-section-title">Appearance</h3><div class="you-quick-menu-list"><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){openBottomSheet('sheet-theme')})"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".6" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".6" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".6" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".6" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg></span><span class="quick-menu-label">Switch Theme</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){openBottomSheet('sheet-language')})"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></span><span class="quick-menu-label">App Language</span><i class="yqm-chev" aria-hidden="true"></i></button></div></section>
+<section class="you-quick-menu-section"><h3 class="you-quick-menu-section-title">Support</h3><div class="you-quick-menu-list"><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){openSupportLink('help-center')})"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span><span class="quick-menu-label">Help Center</span><i class="yqm-chev" aria-hidden="true"></i></button></div></section>
+<section class="you-quick-menu-section"><div class="you-quick-menu-list"><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openChannelSettingsPage)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="quick-menu-label">Settings and privacy</span><i class="yqm-chev" aria-hidden="true"></i></button></div></section>
+</aside>
 </div>
 
 <!-- Settings Page -->
@@ -1097,6 +1074,7 @@
 <h3 class="appbar-title centered-page-title">Setting</h3>
 </header>
 <div class="page-content">
+<h1 class="cs-big-title">Settings and privacy</h1>
 <div class="settings-card-group">
 <div class="settings-card-group-title">Account</div>
 <div class="settings-card-box">

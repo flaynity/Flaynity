@@ -708,36 +708,54 @@
     top: auto !important;
     z-index: 2 !important;
 }
-#view-channel-page .channel-feels-container {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 8px !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    box-sizing: border-box !important;
-    overflow: visible !important;
-}
-#view-channel-page .channel-feels-container .feels-grid-card,
-#view-channel-page .channel-feels-container .short-grid-card {
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    aspect-ratio: 9 / 16 !important;
-    height: auto !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-    overflow: hidden !important;
-    border-radius: 12px !important;
-}
-#view-channel-page .channel-feels-container .feels-grid-card img,
-#view-channel-page .channel-feels-container .short-grid-card img {
-    display: block !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 0 !important;
-    object-fit: cover !important;
-}
+/* ===== Channel page: Videos / Feels / Posts (YouTube-style) ===== */
+#view-channel-page .channel-tabs{display:flex !important;justify-content:flex-start !important;gap:30px;padding:6px 18px 0 !important;border-bottom:none !important;overflow-x:auto;scrollbar-width:none}
+#view-channel-page .channel-tabs::-webkit-scrollbar{display:none}
+#view-channel-page .channel-tab-item,
+#view-channel-page .channel-tab-item.active{flex:0 0 auto !important;display:block !important;text-align:left !important;padding:12px 0 4px !important;font-size:1.1rem;font-weight:600;color:var(--text-muted) !important;border-bottom:none !important;-webkit-tap-highlight-color:transparent}
+#view-channel-page .channel-tab-item.active{color:var(--text-main) !important;font-weight:800}
+#view-channel-page .ch-tab-label{position:relative;display:inline-block;padding-bottom:8px}
+#view-channel-page .channel-tab-item.active .ch-tab-label::after{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;border-radius:3px;background:var(--text-main)}
+#view-channel-page .channel-tab-content{padding:0 !important}
+
+#view-channel-page .ch-sort-row{display:flex;gap:10px;padding:14px 16px 14px;overflow-x:auto;scrollbar-width:none}
+#view-channel-page .ch-sort-row::-webkit-scrollbar{display:none}
+#view-channel-page .ch-chip{flex:0 0 auto;font:inherit;font-size:.98rem;font-weight:600;line-height:1.2;color:var(--text-main);background:transparent;border:1.5px solid rgba(127,127,127,.28);border-radius:14px;padding:9px 20px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s}
+#view-channel-page .ch-chip.active{background:rgba(127,127,127,.18);border-color:transparent}
+
+/* Videos: thumbnail left, text right, ••• at far right */
+#view-channel-page .channel-videos-container{display:flex;flex-direction:column;gap:20px;padding:4px 16px 24px}
+#view-channel-page .ch-vcard{display:flex;align-items:flex-start;gap:14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#view-channel-page .ch-vthumb{position:relative;flex:0 0 44%;width:44%;max-width:240px;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#E2E8F0}
+#view-channel-page .ch-vthumb img{display:block;width:100%;height:100%;object-fit:cover}
+#view-channel-page .ch-vdur{position:absolute;right:8px;bottom:9px;background:rgba(0,0,0,.62);color:#fff;font-size:.82rem;font-weight:700;line-height:1.35;padding:2px 10px;border-radius:14px}
+#view-channel-page .ch-vinfo{flex:1;min-width:0;padding-top:1px}
+#view-channel-page .ch-vtitle{margin:0 0 6px;font-size:1.02rem;font-weight:500;line-height:1.35;color:var(--text-main);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+#view-channel-page .ch-vmeta{margin:0;font-size:.9rem;font-weight:500;color:var(--text-muted)}
+#view-channel-page .ch-more{flex:0 0 auto;width:32px;height:32px;margin:-3px -6px 0 0;padding:0;border:0;background:transparent;color:var(--text-main);display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#view-channel-page .ch-more svg{width:22px;height:22px;fill:currentColor}
+
+/* Feels: edge-to-edge 3-column grid, "N views" bottom-left, ••• top-right */
+#view-channel-page .channel-feels-container{display:grid !important;grid-template-columns:repeat(3,minmax(0,1fr)) !important;gap:2px !important;width:100% !important;max-width:100% !important;min-width:0 !important;padding:0 !important;box-sizing:border-box !important;overflow:hidden !important}
+#view-channel-page .ch-fcard{position:relative;aspect-ratio:3/5;overflow:hidden;background:#E2E8F0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#view-channel-page .ch-fcard img{display:block;width:100%;height:100%;object-fit:cover}
+#view-channel-page .ch-fcard::after{content:'';position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(to top,rgba(0,0,0,.42),rgba(0,0,0,0));pointer-events:none}
+#view-channel-page .ch-fviews{position:absolute;left:10px;bottom:9px;z-index:2;color:#fff;font-size:.95rem;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.65)}
+#view-channel-page .ch-fmore{position:absolute;top:4px;right:2px;z-index:2;width:34px;height:30px;padding:0;border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;filter:drop-shadow(0 1px 3px rgba(0,0,0,.6));-webkit-tap-highlight-color:transparent}
+#view-channel-page .ch-fmore svg{width:22px;height:22px;fill:currentColor}
+#view-channel-page .channel-feels-container .fl-live-upload-card{grid-column:1 / -1 !important;width:auto !important;margin:6px 16px 10px !important}
+#view-channel-page .channel-posts-container{padding:0 16px 24px}
+#view-channel-page .ch-empty{grid-column:1 / -1;text-align:center;color:var(--text-muted);margin:24px 16px;font-weight:600}
+
+/* Skeletons that match the new layout */
+#view-channel-page .ch-skel-v{display:flex;gap:14px;align-items:flex-start}
+#view-channel-page .ch-skel-f{aspect-ratio:3/5}
+
+/* ••• popup (shared) */
+.ch-menu{position:fixed;z-index:100000;min-width:170px;background:var(--surface,#fff);color:var(--text-main,#111);border:1px solid rgba(127,127,127,.22);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.22);padding:6px;opacity:0;transform:scale(.96);transition:opacity .12s,transform .12s}
+.ch-menu.open{opacity:1;transform:scale(1)}
+.ch-menu button{display:block;width:100%;text-align:left;font:inherit;font-size:.98rem;font-weight:600;color:inherit;background:transparent;border:0;border-radius:10px;padding:11px 14px;cursor:pointer}
+.ch-menu button:active{background:rgba(127,127,127,.16)}
 #view-channel-page .channel-tab-content {
     min-width: 0 !important;
     max-width: 100% !important;
@@ -1035,17 +1053,20 @@
 </div>
 
 <div class="channel-tabs">
-<div class="channel-tab-item active" id="tab-channel-videos" onclick="switchChannelTab('videos')" aria-label="Videos" title="Videos"><svg class="channel-tab-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="7" width="24" height="18" rx="4"></rect><path d="M13 12.5 21 16l-8 3.5z" fill="currentColor" stroke="none"></path></svg></div>
-<div class="channel-tab-item" id="tab-channel-feels" onclick="switchChannelTab('feels')" aria-label="Feels" title="Feels"><svg class="channel-tab-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="4" width="22" height="24" rx="6"></rect><path d="M12 4v4h8V4"></path><path d="M13 13l7 4-7 4z" fill="currentColor" stroke="none"></path></svg></div>
-<div class="channel-tab-item" id="tab-channel-posts" onclick="switchChannelTab('posts')" aria-label="Posts" title="Posts"><svg class="channel-tab-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="4.5" y="5" width="23" height="22" rx="4"></rect><circle cx="11" cy="12" r="2.2"></circle><path d="M16 11.5h7M8.5 18h15M8.5 22.5h10"></path></svg></div>
+<div class="channel-tab-item active" id="tab-channel-videos" onclick="switchChannelTab('videos')"><span class="ch-tab-label">Videos</span></div>
+<div class="channel-tab-item" id="tab-channel-feels" onclick="switchChannelTab('feels')"><span class="ch-tab-label">Feels</span></div>
+<div class="channel-tab-item" id="tab-channel-posts" onclick="switchChannelTab('posts')"><span class="ch-tab-label">Posts</span></div>
 </div>
 <div class="channel-tab-content active" id="channel-content-videos">
+<div class="ch-sort-row" data-type="videos"><button type="button" class="ch-chip active" data-sort="latest" onclick="setChannelSort('videos','latest',this)">Latest</button><button type="button" class="ch-chip" data-sort="popular" onclick="setChannelSort('videos','popular',this)">Popular</button><button type="button" class="ch-chip" data-sort="oldest" onclick="setChannelSort('videos','oldest',this)">Oldest</button></div>
 <div class="channel-videos-container" id="channel-videos-grid"></div>
 </div>
 <div class="channel-tab-content" id="channel-content-feels">
+<div class="ch-sort-row" data-type="feels"><button type="button" class="ch-chip active" data-sort="latest" onclick="setChannelSort('feels','latest',this)">Latest</button><button type="button" class="ch-chip" data-sort="popular" onclick="setChannelSort('feels','popular',this)">Popular</button><button type="button" class="ch-chip" data-sort="oldest" onclick="setChannelSort('feels','oldest',this)">Oldest</button></div>
 <div class="channel-feels-container" id="channel-feels-grid"></div>
 </div>
 <div class="channel-tab-content" id="channel-content-posts">
+<div class="ch-sort-row" data-type="posts"><button type="button" class="ch-chip active" data-sort="latest" onclick="setChannelSort('posts','latest',this)">Latest</button><button type="button" class="ch-chip" data-sort="popular" onclick="setChannelSort('posts','popular',this)">Popular</button><button type="button" class="ch-chip" data-sort="oldest" onclick="setChannelSort('posts','oldest',this)">Oldest</button></div>
 <div class="channel-posts-container" id="channel-posts-feed"></div>
 </div>
 </div>

@@ -804,6 +804,8 @@ function getMainScrollTop() {
 }
 
 function isPTRAllowedOnCurrentView() {
+    const _flcc=document.getElementById('fl-create-channel');
+    if (_flcc && _flcc.style.display !== 'none') return false;
     const modalsOpen = document.querySelectorAll('.fullscreen-page[style*="display: flex"], .fullscreen-page[style*="display: block"], .premium-download-modal[style*="display: flex"], #full-movie-page[style*="display: block"], #theme-popup-menu[style*="display: flex"], #full-image-preview-overlay[style*="display: flex"]');
     if (modalsOpen.length > 0) return false;
 
@@ -1454,6 +1456,32 @@ function applyAdminControls() {
                 #fl-create-channel .flcc-submit:active{transform:scale(.985)} #fl-create-channel .flcc-submit:disabled{opacity:.55}
                 #fl-create-channel .flcc-terms{text-align:center;color:#777781;font-size:10.5px;line-height:1.6;margin:12px 12px 0}
                 #fl-create-channel .flcc-status{font-size:12px;text-align:center;color:#777;margin:8px 0;min-height:16px}
+                /* ---- Redesign: rows with chevrons (Name → Gender) ---- */
+                #fl-create-channel{overscroll-behavior:none;overscroll-behavior-y:none;-webkit-overflow-scrolling:touch}
+                #fl-create-channel .flcc-card{background:#fff;border:0;border-radius:22px;padding:6px 0;margin:0 0 20px;box-shadow:0 2px 12px rgba(20,20,30,.035)}
+                #fl-create-channel .flcc-card.flcc-top-card{padding-bottom:30px}
+                #fl-create-channel .flcc-field{position:relative;display:flex;align-items:center;gap:12px;padding:20px 22px;min-height:66px;grid-template-columns:none}
+                #fl-create-channel .flcc-field+.flcc-field{border-top:0}
+                #fl-create-channel .flcc-field.flcc-bio-row{align-items:flex-start;padding:26px 22px}
+                #fl-create-channel .flcc-field>label{flex:0 0 88px;padding:0;font-size:16px;font-weight:500;color:#4a4a52}
+                #fl-create-channel .flcc-field input,#fl-create-channel .flcc-field textarea{flex:1;min-width:0;padding:0;font:800 16.5px 'Plus Jakarta Sans',sans-serif;color:#141418;text-overflow:ellipsis;cursor:pointer;-webkit-tap-highlight-color:transparent}
+                #fl-create-channel .flcc-field textarea{resize:none;overflow:hidden;font-weight:500;font-size:16px;line-height:1.5;min-height:96px;color:#141418}
+                #fl-create-channel .flcc-field textarea::placeholder{color:#9a9aa2;font-weight:500}
+                #fl-create-channel .flcc-chev{flex:0 0 auto;color:#4d4d55;font-size:22px;line-height:1;font-weight:300;pointer-events:none}
+                #fl-create-channel .flcc-field.flcc-bio-row .flcc-chev{align-self:flex-start;margin-top:2px}
+                #fl-create-channel .flcc-section{font-size:15px;color:#7d7d86;margin:0 6px 12px;font-weight:500}
+                #fl-create-channel .flcc-info{position:relative;display:flex;align-items:center;gap:16px;padding:12px 18px;min-height:76px;-webkit-tap-highlight-color:transparent}
+                #fl-create-channel .flcc-card.flcc-basic{padding:0;background:transparent;box-shadow:none;border-radius:0}
+                #fl-create-channel .flcc-card.flcc-basic .flcc-info{background:#fff;border-radius:20px;margin-bottom:10px;box-shadow:0 2px 10px rgba(20,20,30,.03)}
+                #fl-create-channel .flcc-ico{width:40px;height:40px;border-radius:0;background:transparent;color:#ff1f6d;font-size:25px}
+                #fl-create-channel .flcc-info .flcc-txt{flex:1;min-width:0}
+                #fl-create-channel .flcc-info label{display:block;padding:0;color:#111;font-size:15.5px;font-weight:700;line-height:1.25}
+                #fl-create-channel .flcc-info .flcc-val,#fl-create-channel .flcc-info input.flcc-valin{display:block;padding:0;margin-top:3px;font:500 14.5px 'Plus Jakarta Sans',sans-serif;color:#8a8a92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:transparent;border:0;outline:0;width:100%}
+                #fl-create-channel .flcc-info .flcc-val.set{color:#33333a}
+                #fl-create-channel .flcc-info select.flcc-ov,#fl-create-channel .flcc-info input.flcc-ov{position:absolute;inset:0;width:100%;height:100%;opacity:0;z-index:2;padding:0;margin:0;cursor:pointer;font-size:16px}
+                #fl-create-channel .flcc-info .flcc-chev{font-size:22px}
+                #fl-create-channel .flcc-title{margin-bottom:6px}
+                #fl-create-channel .flcc-sub{margin-bottom:26px}
                 @keyframes flccIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
                 @media(prefers-reduced-motion:reduce){#fl-create-channel{animation:none}}
               </style>
@@ -1463,18 +1491,19 @@ function applyAdminControls() {
               <div class="flcc-sheet">
                 <div class="flcc-avatar-wrap"><div class="flcc-avatar" id="flcc-avatar"><span style="font-size:36px;color:#fff"><i class="fa-solid fa-camera"></i></span><button type="button" id="flcc-avatar-pick">Add photo</button></div></div>
                 <h1 class="flcc-title">Create your Channel</h1><p class="flcc-sub">Make your space yours. Add a name, image and a little information to get started.</p>
-                <div class="flcc-card">
-                  <div class="flcc-field"><label for="flcc-name">Name</label><input id="flcc-name" maxlength="50" placeholder="Your channel name" autocomplete="nickname"></div>
-                  <div class="flcc-field"><label for="flcc-handle">Username</label><input id="flcc-handle" maxlength="24" placeholder="yourusername" autocapitalize="none" autocomplete="off"></div>
+                <div class="flcc-card flcc-top-card">
+                  <div class="flcc-field"><label for="flcc-name">Name</label><input id="flcc-name" maxlength="50" placeholder="Your channel name" autocomplete="nickname"><span class="flcc-chev">›</span></div>
+                  <div class="flcc-field"><label for="flcc-handle">Username</label><input id="flcc-handle" maxlength="24" placeholder="yourusername" autocapitalize="none" autocomplete="off"><span class="flcc-chev">›</span></div>
                 </div>
-                <div class="flcc-card"><div class="flcc-field"><label for="flcc-bio">Bio</label><textarea id="flcc-bio" maxlength="180" rows="3" placeholder="Write a short description about who you are or what your account is about"></textarea></div></div>
+                <div class="flcc-card"><div class="flcc-field flcc-bio-row"><label for="flcc-bio">Bio</label><textarea id="flcc-bio" maxlength="180" rows="3" placeholder="Write a short description about who you are or what your account is about"></textarea><span class="flcc-chev">›</span></div></div>
                 <div class="flcc-section">Basic info</div>
-                <div class="flcc-card">
-                  <div class="flcc-info"><span class="flcc-ico"><i class="fa-solid fa-shapes"></i></span><div style="flex:1;min-width:0"><label for="flcc-category">Category</label><select id="flcc-category"><option value="">Select category</option><option>Creator</option><option>Entertainment</option><option>Education</option><option>Gaming</option><option>Music</option><option>Technology</option><option>Business</option><option>Personal</option><option>Other</option></select></div></div>
-                  <div class="flcc-info"><span class="flcc-ico"><i class="fa-regular fa-envelope"></i></span><div style="flex:1;min-width:0"><label>Email</label><input id="flcc-email" type="email" readonly></div></div>
-                  <div class="flcc-info"><span class="flcc-ico"><i class="fa-solid fa-globe"></i></span><div style="flex:1;min-width:0"><label for="flcc-country">Country</label><input id="flcc-country" maxlength="60" placeholder="Select country"></div></div>
-                  <div class="flcc-info"><span class="flcc-ico"><i class="fa-regular fa-calendar"></i></span><div style="flex:1;min-width:0"><label for="flcc-dob">Date of Birth</label><input id="flcc-dob" type="date"></div></div>
-                  <div class="flcc-info"><span class="flcc-ico"><i class="fa-solid fa-venus-mars"></i></span><div style="flex:1;min-width:0"><label for="flcc-gender">Gender</label><select id="flcc-gender"><option value="">Select gender</option><option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option></select></div></div>
+                <div class="flcc-card flcc-basic">
+                  <div class="flcc-info"><span class="flcc-ico"><i class="fa-solid fa-table-cells-large"></i></span><div class="flcc-txt"><label for="flcc-category">Category</label><span class="flcc-val" id="flcc-category-val">Select category</span></div><span class="flcc-chev">›</span><select id="flcc-category" class="flcc-ov"><option value="">Select category</option><option>Creator</option><option>Entertainment</option><option>Education</option><option>Gaming</option><option>Music</option><option>Technology</option><option>Business</option><option>Personal</option><option>Other</option></select></div>
+                  <div class="flcc-info"><span class="flcc-ico"><i class="fa-solid fa-envelope"></i></span><div class="flcc-txt"><label for="flcc-email">Email</label><input id="flcc-email" class="flcc-valin" type="email" readonly></div></div>
+                  <div class="flcc-info"><span class="flcc-ico"><i class="fa-solid fa-phone"></i></span><div class="flcc-txt"><label for="flcc-phone">Phone Number</label><input id="flcc-phone" class="flcc-valin" type="tel" readonly placeholder="Add phone number"></div><span class="flcc-chev">›</span></div>
+                  <div class="flcc-info"><span class="flcc-ico"><i class="fa-solid fa-globe"></i></span><div class="flcc-txt"><label for="flcc-country">Country</label><input id="flcc-country" class="flcc-valin" maxlength="60" placeholder="Select country" readonly></div><span class="flcc-chev">›</span></div>
+                  <div class="flcc-info"><span class="flcc-ico"><i class="fa-regular fa-calendar-days"></i></span><div class="flcc-txt"><label for="flcc-dob">Date of Birth</label><span class="flcc-val" id="flcc-dob-val">Select date of birth</span></div><span class="flcc-chev">›</span><input id="flcc-dob" class="flcc-ov" type="date"></div>
+                  <div class="flcc-info"><span class="flcc-ico"><i class="fa-solid fa-venus-mars"></i></span><div class="flcc-txt"><label for="flcc-gender">Gender</label><span class="flcc-val" id="flcc-gender-val">Select gender</span></div><span class="flcc-chev">›</span><select id="flcc-gender" class="flcc-ov"><option value="">Select gender</option><option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option></select></div>
                 </div>
                 <p class="flcc-status" id="flcc-status" role="status"></p>
                 <button class="flcc-submit" id="flcc-submit" type="button">Create Channel <span style="float:right;margin-right:10px">›</span></button>
@@ -1544,6 +1573,20 @@ function applyAdminControls() {
             root.querySelector('#flcc-category').addEventListener('change',async e=>{try{await db.ref('channels/'+user.uid+'/category').set(e.target.value);}catch(err){status.textContent='Could not save category';}});
             root.querySelector('#flcc-dob').addEventListener('change',async e=>{try{await db.ref('channels/'+user.uid+'/dateOfBirth').set(e.target.value);}catch(err){status.textContent='Could not save date of birth';}});
             root.querySelector('#flcc-gender').addEventListener('change',async e=>{try{await db.ref('channels/'+user.uid+'/gender').set(e.target.value);}catch(err){status.textContent='Could not save gender';}});
+            // Whole-row tap targets (name / username / bio / phone / country)
+            root.querySelectorAll('.flcc-field, .flcc-info').forEach(row=>{
+                row.addEventListener('click',ev=>{
+                    const ctl=row.querySelector('input:not(.flcc-ov),textarea');
+                    if(ctl&&ev.target!==ctl&&!row.querySelector('.flcc-ov'))ctl.click();
+                });
+            });
+            // Show chosen select / date values on the row
+            const bindVal=(id,empty,fmt)=>{const c=root.querySelector('#flcc-'+id),v=root.querySelector('#flcc-'+id+'-val');if(!c||!v)return;c.addEventListener('change',()=>{const val=c.value;v.textContent=val?(fmt?fmt(val):val):empty;v.classList.toggle('set',!!val);});};
+            bindVal('category','Select category');bindVal('gender','Select gender');
+            bindVal('dob','Select date of birth',d=>{try{return new Date(d+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'});}catch(e){return d;}});
+            // Phone number (saved together with the channel)
+            const phoneField=root.querySelector('#flcc-phone');
+            phoneField.addEventListener('click',()=>openEditor('phone','Phone Number','Add your phone number with country code.',phoneField.value,'text',(v,b,ct,p)=>{phoneField.value=v;p.remove();}));
             root.querySelector('#flcc-back').addEventListener('click',()=>{status.textContent='Complete channel setup to continue.';});
 
             root.querySelector('#flcc-submit').addEventListener('click',async()=>{
@@ -1559,12 +1602,12 @@ function applyAdminControls() {
                     const handleSnap=await db.ref('channelHandles/'+handle).once('value');
                     const claimed=handleSnap.val();
                     if(claimed&&claimed!==user.uid)throw new Error('This username is already taken. Try another one.');
-                    const payload={uid:user.uid,userId:user.uid,channelName:name,handle:handle,bio:root.querySelector('#flcc-bio').value.trim(),category:root.querySelector('#flcc-category').value,email:user.email||'',country:root.querySelector('#flcc-country').value.trim(),dateOfBirth:root.querySelector('#flcc-dob').value,gender:root.querySelector('#flcc-gender').value,avatarUrl:avatarUrl||user.photoURL||'',channelImageUrl:avatarUrl||user.photoURL||'',bannerUrl:bannerUrl,channelBannerUrl:bannerUrl,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP};
-                    const updates={};updates['channels/'+user.uid]=payload;updates['users/'+user.uid+'/channelName']=name;updates['users/'+user.uid+'/handle']=handle;updates['users/'+user.uid+'/channelCreated']=true;updates['channelHandles/'+handle]=user.uid;
+                    const payload={uid:user.uid,userId:user.uid,channelName:name,handle:handle,bio:root.querySelector('#flcc-bio').value.trim(),category:root.querySelector('#flcc-category').value,email:user.email||'',phone:(root.querySelector('#flcc-phone').value||'').trim(),country:root.querySelector('#flcc-country').value.trim(),dateOfBirth:root.querySelector('#flcc-dob').value,gender:root.querySelector('#flcc-gender').value,avatarUrl:avatarUrl||user.photoURL||'',channelImageUrl:avatarUrl||user.photoURL||'',bannerUrl:bannerUrl,channelBannerUrl:bannerUrl,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP};
+                    const updates={};updates['channels/'+user.uid]=payload;updates['users/'+user.uid+'/channelName']=name;updates['users/'+user.uid+'/handle']=handle;updates['users/'+user.uid+'/channelCreated']=true;if(payload.phone)updates['users/'+user.uid+'/phone']=payload.phone;updates['channelHandles/'+handle]=user.uid;
                     await db.ref().update(updates);
                     currentChannelData=payload;
                     try{localStorage.setItem('flaynity_channel_cache:'+user.uid,JSON.stringify(payload));localStorage.setItem('flaynity_user_session_cache',JSON.stringify(payload));}catch(e){}
-                    root.remove();
+                    root.remove();document.documentElement.style.overscrollBehaviorY='';document.body.style.overscrollBehaviorY='';
                     if(typeof showNotification==='function')showNotification('Your channel is ready!','success');
                     if(typeof initYouTabUI==='function')initYouTabUI();
                 }catch(err){status.textContent=err.message||'Could not create channel. Please try again.';btn.disabled=false;}
@@ -1572,6 +1615,18 @@ function applyAdminControls() {
         }
         root.style.display='block';
         const email=root.querySelector('#flcc-email');if(email)email.value=user.email||'';
+        const phoneInit=root.querySelector('#flcc-phone');
+        if(phoneInit&&!phoneInit.value){
+            phoneInit.value=user.phoneNumber||'';
+            if(!phoneInit.value){try{db.ref('users/'+user.uid+'/phone').once('value').then(sn=>{if(sn.val()&&!phoneInit.value)phoneInit.value=sn.val();});}catch(e){}}
+        }
+        // Pull-to-refresh OFF while this page is open
+        document.documentElement.style.overscrollBehaviorY='none';document.body.style.overscrollBehaviorY='none';
+        if(!root.__noPTR){root.__noPTR=true;
+            let sy=0;
+            root.addEventListener('touchstart',e=>{sy=e.touches[0].clientY;},{passive:true});
+            root.addEventListener('touchmove',e=>{if(root.scrollTop<=0&&e.touches[0].clientY>sy&&!e.target.closest('#flcc-editor'))e.preventDefault();},{passive:false});
+        }
         const nameInput=root.querySelector('#flcc-name');if(nameInput&&!nameInput.value)nameInput.value=user.displayName||'';
         const handleInput=root.querySelector('#flcc-handle');
         if(handleInput&&!handleInput.value){handleInput.value=String(user.displayName||user.email?.split('@')[0]||'').toLowerCase().replace(/[^a-z0-9._]/g,'').slice(0,24);}

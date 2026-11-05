@@ -5801,6 +5801,17 @@ const AppNavigation = {
     pop: function() {
         if (this.stack.length > 1) {
             const popped = this.stack.pop();
+            // "Your Channel" (view-channel-page) IS the You page. The old You profile
+            // card (Switch Account / name / @handle) must never be shown on Back, so the
+            // 'you' tab entry beneath the channel page is dropped together with it.
+            // Back therefore returns to the page the user came from.
+            if (popped && popped.type === 'page' && popped.id === 'view-channel-page') {
+                const below = this.stack[this.stack.length - 1];
+                if (below && below.type === 'tab' && below.id === 'you') {
+                    if (this.stack.length > 1) this.stack.pop();
+                    else this.stack = [{ type: 'tab', id: 'home' }];
+                }
+            }
             this.syncUI();
             this.updateBridge();
             return popped;
@@ -7088,6 +7099,13 @@ function escapeHTML(str) {
 async function switchTab(tabId) {
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
+
+    // Already on Your Channel and the You icon is tapped again: stay here.
+    // (Pushing another 'you' entry would make Back reveal the same page twice.)
+    if (tabId === 'you') {
+        const cur = AppNavigation.current();
+        if (cur && cur.type === 'page' && cur.id === 'view-channel-page') return;
+    }
 
     // Update the selected bottom-navigation item immediately. Do this before
     // any Firebase request or page navigation so the previous tab cannot stay pink.

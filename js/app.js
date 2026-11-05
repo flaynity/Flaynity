@@ -1516,7 +1516,7 @@ function applyAdminControls() {
             // Lock the Create Channel page behind the Name / Username / Bio / Phone / Country pages,
             // so scrolling inside them never moves or reveals the page underneath.
             (function(){
-                const syncLock=()=>{root.style.overflowY=root.querySelector('#flcc-editor,#flcc-country-page')?'hidden':'';};
+                const syncLock=()=>{root.style.overflowY=root.querySelector('#flcc-editor,#flcc-country-page,#flcc-phone-page,#flcc-dial-page')?'hidden':'';};
                 new MutationObserver(syncLock).observe(root,{childList:true});
                 syncLock();
             })();
@@ -1722,7 +1722,154 @@ function applyAdminControls() {
             bindVal('dob','Select date of birth',d=>{try{return new Date(d+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'});}catch(e){return d;}});
             // Phone number (saved together with the channel)
             const phoneField=root.querySelector('#flcc-phone');
-            phoneField.addEventListener('click',()=>openEditor({title:'Phone Number',desc:'Add your phone number with country code.',placeholder:'+8801XXXXXXXXX',value:phoneField.value,max:20,allowEmpty:true,filter:v=>String(v).replace(/[^0-9+\s-]/g,''),onSave:v=>{phoneField.value=v;}}));
+            // ===== Phone Number — "New Number" page: Country (flag + code) + number, 195+ countries with dial codes =====
+            const DIAL_DATA='AF:93|AL:355|DZ:213|AS:1684|AD:376|AO:244|AI:1264|AG:1268|AR:54|AM:374|AW:297|AU:61|AT:43|AZ:994|BS:1242|BH:973|BD:880|BB:1246|BY:375|BE:32|BZ:501|BJ:229|BM:1441|BT:975|BO:591|BA:387|BW:267|BR:55|BN:673|BG:359|BF:226|BI:257|KH:855|CM:237|CA:1|CV:238|KY:1345|CF:236|TD:235|CL:56|CN:86|CO:57|KM:269|CG:242|CD:243|CR:506|CI:225|HR:385|CU:53|CY:357|CZ:420|DK:45|DJ:253|DM:1767|DO:1809|EC:593|EG:20|SV:503|GQ:240|ER:291|EE:372|SZ:268|ET:251|FJ:679|FI:358|FR:33|GA:241|GM:220|GE:995|DE:49|GH:233|GI:350|GR:30|GL:299|GD:1473|GU:1671|GT:502|GN:224|GW:245|GY:592|HT:509|HN:504|HK:852|HU:36|IS:354|IN:91|ID:62|IR:98|IQ:964|IE:353|IL:972|IT:39|JM:1876|JP:81|JO:962|KZ:7|KE:254|KI:686|XK:383|KW:965|KG:996|LA:856|LV:371|LB:961|LS:266|LR:231|LY:218|LI:423|LT:370|LU:352|MO:853|MG:261|MW:265|MY:60|MV:960|ML:223|MT:356|MR:222|MU:230|MX:52|MD:373|MC:377|MN:976|ME:382|MA:212|MZ:258|MM:95|NA:264|NP:977|NL:31|NZ:64|NI:505|NE:227|NG:234|KP:850|MK:389|NO:47|OM:968|PK:92|PS:970|PA:507|PG:675|PY:595|PE:51|PH:63|PL:48|PT:351|PR:1787|QA:974|RO:40|RU:7|RW:250|WS:685|SM:378|SA:966|SN:221|RS:381|SC:248|SL:232|SG:65|SK:421|SI:386|SB:677|SO:252|ZA:27|KR:82|SS:211|ES:34|LK:94|SD:249|SR:597|SE:46|CH:41|SY:963|TW:886|TJ:992|TZ:255|TH:66|TL:670|TG:228|TO:676|TT:1868|TN:216|TR:90|TM:993|UG:256|UA:380|AE:971|GB:44|US:1|UY:598|UZ:998|VU:678|VA:379|VE:58|VN:84|YE:967|ZM:260|ZW:263';
+            const DIAL={};DIAL_DATA.split('|').forEach(x=>{const i=x.indexOf(':');DIAL[x.slice(0,i)]=x.slice(i+1);});
+            const DIAL_LIST=COUNTRIES.filter(c=>DIAL[c.code]).map(c=>({code:c.code,name:c.name,dial:DIAL[c.code]}));
+            const dialByCode=cc=>DIAL_LIST.find(c=>c.code===cc);
+            const parsePhone=(val)=>{
+                const raw=String(val||'').trim();let sel=null,nat='';
+                if(raw.charAt(0)==='+'){
+                    const digits=raw.replace(/\D/g,'');let best=null;
+                    DIAL_LIST.forEach(c=>{if(digits.indexOf(c.dial)===0){if(!best||c.dial.length>best.dial.length||(c.dial.length===best.dial.length&&(c.code==='US'||c.code==='RU')))best=c;}});
+                    if(best){sel=best;nat=digits.slice(best.dial.length);}
+                }
+                if(!sel){const cn=(country.value||'').trim().toLowerCase();sel=DIAL_LIST.find(c=>c.name.toLowerCase()===cn)||dialByCode('BD');nat=raw.replace(/\D/g,'');}
+                return {sel:sel,nat:nat};
+            };
+            const ARROW_L='<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>';
+            const ARROW_R='<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+            const SEARCH_I='<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>';
+            const CLOSE_I='<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+            // "Choose a country" list: flag · name · dial code (blue), search on top right
+            const openDialPicker=(currentCode,onPick)=>{
+                const old=root.querySelector('#flcc-dial-page');if(old)old.remove();
+                const pg=document.createElement('div');pg.id='flcc-dial-page';
+                pg.innerHTML=`<style>
+                  #flcc-dial-page{position:fixed;inset:0;z-index:23;background:#fff;color:#111114;display:flex;flex-direction:column;font-family:'Plus Jakarta Sans',sans-serif;animation:fdIn .3s cubic-bezier(.22,.9,.3,1) backwards;overscroll-behavior:none}
+                  @keyframes fdIn{from{opacity:0;transform:translateX(34px)}to{opacity:1;transform:none}}
+                  @keyframes fdOut{to{opacity:0;transform:translateX(34px)}}
+                  #flcc-dial-page *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+                  #flcc-dial-page .fd-head{flex:0 0 auto;display:flex;align-items:center;gap:6px;height:calc(62px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 12px 0 10px;background:#fff;position:relative;z-index:2;box-shadow:0 1px 0 #e9e9ed,0 4px 10px rgba(20,20,30,.05)}
+                  #flcc-dial-page .fd-ib{width:44px;height:44px;border:0;background:none;border-radius:50%;display:grid;place-items:center;color:#111114;flex:0 0 auto}
+                  #flcc-dial-page .fd-ib:active{background:#f0f0f2}
+                  #flcc-dial-page .fd-title{flex:1;font-size:21px;font-weight:700;margin-left:14px;white-space:nowrap}
+                  #flcc-dial-page .fd-sbox{flex:1;display:none;align-items:center;background:#f1f1f3;border-radius:22px;height:42px;padding:0 16px;margin-left:4px}
+                  #flcc-dial-page .fd-sbox input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:500 16px 'Plus Jakarta Sans',sans-serif;color:#111114;caret-color:#3d6df2}
+                  #flcc-dial-page.searching .fd-title{display:none}
+                  #flcc-dial-page.searching .fd-sbox{display:flex}
+                  #flcc-dial-page .fd-list{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:2px 0 calc(20px + env(safe-area-inset-bottom,0px))}
+                  #flcc-dial-page .fd-row{display:flex;align-items:center;gap:20px;width:100%;border:0;background:none;text-align:left;padding:0 26px 0 24px;height:62px;font:500 18px 'Plus Jakarta Sans',sans-serif;color:#111114}
+                  #flcc-dial-page .fd-row:active{background:#f5f6fa}
+                  #flcc-dial-page .fd-row.sel{background:#f3f6ff}
+                  #flcc-dial-page .fd-flag{flex:0 0 38px;width:38px;text-align:center;font-size:28px;line-height:1;font-family:'Apple Color Emoji','Noto Color Emoji','Segoe UI Emoji',sans-serif}
+                  #flcc-dial-page .fd-nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+                  #flcc-dial-page .fd-code{flex:0 0 auto;color:#5a82e6;font-weight:500;font-variant-numeric:tabular-nums}
+                  #flcc-dial-page .fd-empty{text-align:center;color:#8a8a92;padding:70px 30px;font-size:15px;line-height:1.6}
+                  @media(prefers-reduced-motion:reduce){#flcc-dial-page{animation:none}}
+                </style>
+                <div class="fd-head">
+                  <button type="button" class="fd-ib" id="fd-back" aria-label="Back">${ARROW_L}</button>
+                  <div class="fd-title">Choose a country</div>
+                  <div class="fd-sbox"><input id="fd-q" type="text" placeholder="Search country or code" autocomplete="off" spellcheck="false"></div>
+                  <button type="button" class="fd-ib" id="fd-search" aria-label="Search">${SEARCH_I}</button>
+                </div>
+                <div class="fd-list" id="fd-list"></div>`;
+                root.appendChild(pg);
+                const list=pg.querySelector('#fd-list'),q=pg.querySelector('#fd-q'),sBtn=pg.querySelector('#fd-search');
+                const render=(term)=>{
+                    const t=(term||'').trim().toLowerCase().replace(/^\+/,'');
+                    const items=t?DIAL_LIST.filter(c=>c.name.toLowerCase().indexOf(t)>-1||c.dial.indexOf(t)===0):DIAL_LIST;
+                    list.innerHTML=items.length?items.map(c=>'<button type="button" class="fd-row'+(c.code===currentCode?' sel':'')+'" data-code="'+c.code+'"><span class="fd-flag">'+flagOf(c.code)+'</span><span class="fd-nm">'+esc(c.name)+'</span><span class="fd-code">+'+c.dial+'</span></button>').join(''):'<div class="fd-empty">No country found.<br>Try another spelling.</div>';
+                };
+                render('');
+                const close=()=>{pg.style.animation='fdOut .2s ease both';setTimeout(()=>pg.remove(),190);};
+                const setSearch=(on)=>{pg.classList.toggle('searching',on);sBtn.innerHTML=on?CLOSE_I:SEARCH_I;if(on){setTimeout(()=>q.focus(),30);}else{q.value='';render('');}};
+                sBtn.addEventListener('click',()=>setSearch(!pg.classList.contains('searching')));
+                pg.querySelector('#fd-back').addEventListener('click',()=>{if(pg.classList.contains('searching'))setSearch(false);else close();});
+                q.addEventListener('input',()=>{render(q.value);list.scrollTop=0;});
+                list.addEventListener('click',e=>{const r=e.target.closest('.fd-row');if(!r)return;const c=dialByCode(r.dataset.code);if(c)onPick(c);close();});
+                const s=list.querySelector('.fd-row.sel');
+                if(s){setTimeout(()=>{list.scrollTop=Math.max(0,s.offsetTop-list.clientHeight/2+31);},40);}
+            };
+
+            // "New Number" page
+            const openPhonePage=()=>{
+                const old=root.querySelector('#flcc-phone-page');if(old)old.remove();
+                const init=parsePhone(phoneField.value);let sel=init.sel;
+                const hadValue=!!String(phoneField.value||'').trim();
+                const pg=document.createElement('div');pg.id='flcc-phone-page';
+                pg.innerHTML=`<style>
+                  #flcc-phone-page{position:fixed;left:0;right:0;top:0;height:100%;z-index:22;background:#fff;color:#111114;display:flex;flex-direction:column;font-family:'Plus Jakarta Sans',sans-serif;padding:calc(env(safe-area-inset-top,0px) + 12px) 0 0;animation:fpIn .32s cubic-bezier(.22,.9,.3,1) backwards;overscroll-behavior:none;overflow:hidden}
+                  @keyframes fpIn{from{opacity:0;transform:translateX(34px)}to{opacity:1;transform:none}}
+                  @keyframes fpOut{to{opacity:0;transform:translateX(34px)}}
+                  @keyframes fpShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+                  #flcc-phone-page *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+                  #flcc-phone-page .fp-back{width:48px;height:48px;margin-left:14px;border:0;background:none;border-radius:50%;display:grid;place-items:center;color:#111114;flex:0 0 auto}
+                  #flcc-phone-page .fp-back:active{background:#f0f0f2}
+                  #flcc-phone-page .fp-title{text-align:center;font-size:26px;font-weight:700;letter-spacing:-.3px;margin:clamp(24px,9vh,80px) 20px 8px}
+                  #flcc-phone-page .fp-sub{text-align:center;color:#7a7a82;font-size:14.5px;line-height:1.5;margin:0 40px 34px}
+                  #flcc-phone-page .fp-fld{position:relative;display:flex;align-items:center;height:64px;margin:0 36px 24px;padding:0 16px;border:1.5px solid #d8d8dd;border-radius:16px;background:#fff;transition:border-color .18s,box-shadow .18s}
+                  #flcc-phone-page .fp-fld .fp-lab{position:absolute;top:-11px;left:14px;padding:0 6px;background:#fff;font-size:14px;line-height:20px;color:#7a7a82;transition:color .18s}
+                  #flcc-phone-page .fp-fld.fp-pick{cursor:pointer}
+                  #flcc-phone-page .fp-fld:focus-within,#flcc-phone-page .fp-fld.fp-pick:active{border-color:#3d6df2;box-shadow:0 0 0 1px #3d6df2}
+                  #flcc-phone-page .fp-fld:focus-within .fp-lab{color:#3d6df2}
+                  #flcc-phone-page .fp-fld.err{border-color:#e5334d;box-shadow:0 0 0 1px #e5334d}
+                  #flcc-phone-page .fp-fld.err .fp-lab{color:#e5334d}
+                  #flcc-phone-page .fp-fld.shake{animation:fpShake .38s ease}
+                  #flcc-phone-page .fp-flag{flex:0 0 40px;font-size:26px;line-height:1;font-family:'Apple Color Emoji','Noto Color Emoji','Segoe UI Emoji',sans-serif}
+                  #flcc-phone-page .fp-cn{flex:1;min-width:0;font-size:20px;font-weight:500;padding-left:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+                  #flcc-phone-page .fp-chev{flex:0 0 auto;color:#8a8a92;display:grid;place-items:center}
+                  #flcc-phone-page .fp-dial{flex:0 0 auto;font-size:20px;font-weight:500;min-width:62px;padding-right:14px;border-right:1.5px solid #d8d8dd;line-height:32px;font-variant-numeric:tabular-nums}
+                  #flcc-phone-page .fp-in{flex:1;min-width:0;border:0;outline:0;background:transparent;font:500 20px 'Plus Jakarta Sans',sans-serif;color:#111114;caret-color:#3d6df2;padding:0 0 0 14px;height:40px;letter-spacing:.3px}
+                  #flcc-phone-page .fp-err{margin:-12px 40px 0;min-height:20px;color:#e5334d;font-size:13.5px;font-weight:600}
+                  #flcc-phone-page .fp-rm{align-self:flex-start;margin:6px 36px 0;border:0;background:none;color:#e5334d;font:600 14px 'Plus Jakarta Sans',sans-serif;padding:8px 4px}
+                  #flcc-phone-page .fp-go{position:absolute;right:30px;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);width:64px;height:64px;border:0;border-radius:50%;background:#4a7dff;color:#fff;display:grid;place-items:center;box-shadow:0 8px 20px rgba(74,125,255,.35);transition:transform .14s,opacity .18s,background .18s}
+                  #flcc-phone-page .fp-go:active{transform:scale(.93)}
+                  #flcc-phone-page .fp-go:disabled{opacity:.45;box-shadow:none}
+                  @media(prefers-reduced-motion:reduce){#flcc-phone-page,#flcc-phone-page .fp-fld.shake{animation:none}}
+                </style>
+                <button type="button" class="fp-back" id="fp-back" aria-label="Back">${ARROW_L}</button>
+                <h1 class="fp-title">New Number</h1>
+                <p class="fp-sub">Choose your country and enter your phone number.</p>
+                <div class="fp-fld fp-pick" id="fp-country"><span class="fp-lab">Country</span><span class="fp-flag" id="fp-flag"></span><span class="fp-cn" id="fp-cn"></span><span class="fp-chev"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span></div>
+                <div class="fp-fld" id="fp-numbox"><span class="fp-lab">Phone number</span><span class="fp-dial" id="fp-dial"></span><input class="fp-in" id="fp-in" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="18"></div>
+                <div class="fp-err" id="fp-err" role="alert"></div>
+                ${hadValue?'<button type="button" class="fp-rm" id="fp-rm">Remove number</button>':''}
+                <button type="button" class="fp-go" id="fp-go" aria-label="Save number" disabled>${ARROW_R}</button>`;
+                root.appendChild(pg);
+                const $=(id)=>pg.querySelector(id);
+                const inp=$('#fp-in'),box=$('#fp-numbox'),errEl=$('#fp-err'),go=$('#fp-go');
+                const paint=()=>{$('#fp-flag').textContent=flagOf(sel.code);$('#fp-cn').textContent=sel.name;$('#fp-dial').textContent='+'+sel.dial;};
+                const nat=()=>inp.value.replace(/\D/g,'').replace(/^0/,'');
+                const refresh=()=>{go.disabled=nat().length<4;};
+                const setErr=(m)=>{errEl.textContent=m||'';box.classList.toggle('err',!!m);if(m){box.classList.remove('shake');void box.offsetWidth;box.classList.add('shake');}};
+                inp.value=init.nat;paint();refresh();
+                // keep the arrow button above the keyboard
+                const vv=window.visualViewport;
+                const fit=()=>{pg.style.height=(vv?vv.height:window.innerHeight)+'px';};
+                if(vv){vv.addEventListener('resize',fit);vv.addEventListener('scroll',fit);}fit();
+                const close=()=>{if(vv){vv.removeEventListener('resize',fit);vv.removeEventListener('scroll',fit);}pg.style.animation='fpOut .22s ease both';setTimeout(()=>pg.remove(),210);};
+                inp.addEventListener('input',()=>{
+                    let v=inp.value;
+                    if(v.trim().charAt(0)==='+'){const p=parsePhone(v);sel=p.sel;paint();v=p.nat;}
+                    inp.value=v.replace(/\D/g,'').slice(0,15);setErr('');refresh();
+                });
+                $('#fp-country').addEventListener('click',()=>{try{inp.blur();}catch(e){}openDialPicker(sel.code,c=>{sel=c;paint();setErr('');setTimeout(()=>{try{inp.focus();}catch(e){}},260);});});
+                const save=()=>{
+                    const n=nat();
+                    if(sel.dial==='880'){if(!/^1[3-9]\d{8}$/.test(n)){setErr('Enter a valid Bangladesh mobile number (e.g. 1712345678).');return;}}
+                    else if(n.length<6||n.length>14){setErr('Enter a valid phone number.');return;}
+                    phoneField.value='+'+sel.dial+n;close();
+                };
+                go.addEventListener('click',save);
+                inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();save();}});
+                $('#fp-back').addEventListener('click',close);
+                const rm=$('#fp-rm');if(rm)rm.addEventListener('click',()=>{phoneField.value='';close();});
+                setTimeout(()=>{try{inp.focus();const l=inp.value.length;inp.setSelectionRange(l,l);}catch(e){}},260);
+            };
+            phoneField.addEventListener('click',openPhonePage);
             root.querySelector('#flcc-back').addEventListener('click',()=>{status.textContent='Complete channel setup to continue.';});
 
             root.querySelector('#flcc-submit').addEventListener('click',async()=>{

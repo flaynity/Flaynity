@@ -471,7 +471,14 @@
             scrollbar-width: none;
         }
         .search-tabs::-webkit-scrollbar { display: none; }
-        #fullscreen-search-page.is-results .search-tabs { display: flex; }
+        #fullscreen-search-page.is-results .search-tabs {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            min-height: 46px;
+            flex: 0 0 auto;
+            z-index: 20;
+        }
         .search-tab-btn {
             flex: 1 0 auto;
             background: none; border: none;
@@ -697,7 +704,7 @@
 
     <div class="search-tabs" id="search-tabs">
         <button class="search-tab-btn active" data-tab="top">Top</button>
-        <button class="search-tab-btn" data-tab="users">Users</button>
+        <button class="search-tab-btn" data-tab="users">User</button>
         <button class="search-tab-btn" data-tab="videos">Videos</button>
         <button class="search-tab-btn" data-tab="photos">Photos</button>
         <button class="search-tab-btn" data-tab="feels">Feels</button>

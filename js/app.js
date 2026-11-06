@@ -11743,7 +11743,8 @@ function renderUserResults(query) {
     list.innerHTML = matched.map(c => {
         const id = String(c.channelId || c.id);
         const subs = Number(c.subscribersCount) || 0;
-        const avatar = c.avatarUrl ? `<img src="${escapeHtml(c.avatarUrl)}" alt="" onerror="this.remove()">` : '';
+        const avatarUrl = c.avatarUrl || c.channelImageUrl || c.profileImageUrl || c.photoURL || c.photoUrl || c.imageUrl || '';
+        const avatar = avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" alt="" loading="eager" onerror="this.remove()">` : '';
         return `
         <div class="user-row" onclick="openSearchedChannel('${escapeHtml(id)}')">
             <div class="user-avatar">${userAvatarFallback()}${avatar}</div>

@@ -1434,8 +1434,10 @@ function applyAdminControls() {
                 #fl-create-channel .flcc-banner{position:relative;width:100%;aspect-ratio:2.35/1;min-height:150px;max-height:260px;background:linear-gradient(135deg,#f9b5cf,#e8d9ff 55%,#ffd7c5);background-size:cover;background-position:center}
                 #fl-create-channel .flcc-banner:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.06),rgba(0,0,0,.28));pointer-events:none}
                 #fl-create-channel .flcc-top{position:absolute;z-index:2;left:18px;right:18px;top:calc(env(safe-area-inset-top,0px) + 14px);display:flex;align-items:center;justify-content:space-between;gap:12px}
-                #fl-create-channel .flcc-back,#fl-create-channel .flcc-change{border:1px solid rgba(255,255,255,.24);background:rgba(20,20,24,.56);color:#fff;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);height:42px;border-radius:24px;padding:0 15px;font:700 13px inherit;display:flex;align-items:center;gap:8px}
-                #fl-create-channel .flcc-change{font-size:13px}
+                #fl-create-channel .flcc-back,#fl-create-channel .flcc-change{border:0;background:rgba(28,28,32,.52);color:#fff;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);height:42px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:transform .15s,background .15s;cursor:pointer}
+                #fl-create-channel .flcc-back{width:42px;padding:0;border-radius:50%}
+                #fl-create-channel .flcc-change{padding:0 20px;border-radius:22px;font:500 15.5px 'Plus Jakarta Sans',sans-serif;letter-spacing:.1px;white-space:nowrap}
+                #fl-create-channel .flcc-back:active,#fl-create-channel .flcc-change:active{transform:scale(.96);background:rgba(28,28,32,.72)}
                 #fl-create-channel .flcc-sheet{position:relative;margin-top:-22px;background:#f7f7f9;border-radius:25px 25px 0 0;padding:0 20px calc(26px + env(safe-area-inset-bottom,0px));min-height:calc(100% - 150px)}
                 #fl-create-channel .flcc-avatar-wrap{height:116px;display:flex;justify-content:center;position:relative;margin-bottom:8px}
                 #fl-create-channel .flcc-avatar{position:relative;margin-top:-54px;width:124px;height:124px;border:4px solid #f7f7f9;border-radius:50%;background:linear-gradient(145deg,#ff2c86,#c30049);display:grid;place-items:center;overflow:hidden;box-shadow:0 8px 22px rgba(25,10,20,.12)}
@@ -1491,7 +1493,7 @@ function applyAdminControls() {
                 @media(prefers-reduced-motion:reduce){#fl-create-channel{animation:none}}
               </style>
               <div class="flcc-banner" id="flcc-banner">
-                <div class="flcc-top"><button class="flcc-back" type="button" id="flcc-back" aria-label="Back">‹</button><button class="flcc-change" type="button" id="flcc-change">Change background</button></div>
+                <div class="flcc-top"><button class="flcc-back" type="button" id="flcc-back" aria-label="Back"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><button class="flcc-change" type="button" id="flcc-change">Change background</button></div>
               </div>
               <div class="flcc-sheet">
                 <div class="flcc-avatar-wrap"><div class="flcc-avatar" id="flcc-avatar"><span style="font-size:36px;color:#fff"><i class="fa-solid fa-camera"></i></span><button type="button" id="flcc-avatar-pick">Add photo</button></div></div>
@@ -1525,6 +1527,37 @@ function applyAdminControls() {
                 const syncLock=()=>{const open=!!root.querySelector('#flcc-editor,#flcc-country-page,#flcc-phone-page,#flcc-dial-page');root.style.overflowY=open?'hidden':'';root.classList.toggle('flcc-sub-open',open);};
                 new MutationObserver(syncLock).observe(root,{childList:true});
                 syncLock();
+            })();
+            // Back navigation: system Back / gesture / on-screen Back always closes the top page and shows the previous one.
+            const notify=(m)=>{try{if(typeof showNotification==='function')showNotification(m,'error');}catch(e){}};
+            const closePage=()=>{document.querySelectorAll('#fl-create-channel').forEach(n=>n.remove());document.documentElement.style.overscrollBehaviorY='';document.body.style.overscrollBehaviorY='';};
+            const nav=(function(){
+                const stack=[];let ignore=0;
+                const push=()=>{try{history.pushState({flcc:1},'');}catch(e){}};
+                const popOne=()=>{ignore++;try{history.back();}catch(e){ignore--;}};
+                const api={
+                    register(closeFn,id){
+                        const dup=stack.find(x=>x.id===id);
+                        const e={closeFn:closeFn,id:id,done:false};
+                        if(dup){dup.done=true;stack.splice(stack.indexOf(dup),1);stack.push(e);return e;} // reuse its history entry
+                        stack.push(e);push();return e;
+                    },
+                    release(e,viaPop){if(e.done)return;e.done=true;const i=stack.indexOf(e);if(i>-1)stack.splice(i,1);if(!viaPop)popOne();},
+                    back(){const top=stack[stack.length-1];if(top){top.closeFn(false);return true;}return false;},
+                    rootDone:false,
+                    dropRoot(){if(api.rootDone)return;api.rootDone=true;popOne();}
+                };
+                push(); // history entry for the Create your Channel page itself
+                const onPop=()=>{
+                    if(ignore>0){ignore--;return;}
+                    if(!document.body.contains(root)){window.removeEventListener('popstate',onPop);return;}
+                    const top=stack[stack.length-1];
+                    if(top){top.closeFn(true);return;}
+                    if(window.__flaynityNeedsChannelBoot){push();notify('Create your channel to continue.');}
+                    else{api.rootDone=true;closePage();}
+                };
+                window.addEventListener('popstate',onPop);
+                return api;
             })();
             const bannerInput=root.querySelector('#flcc-banner-file'), avatarInput=root.querySelector('#flcc-avatar-file');
             const status=root.querySelector('#flcc-status');
@@ -1581,31 +1614,66 @@ function applyAdminControls() {
                   #flcc-editor .fe-meta{display:flex;justify-content:space-between;gap:12px;margin-top:11px;font-size:14px;min-height:20px}
                   #flcc-editor .fe-err{color:#e5334d;font-weight:600}
                   #flcc-editor .fe-count{color:#8a8a90;margin-left:auto;font-variant-numeric:tabular-nums}
+                  #flcc-editor .fe-cur{display:flex;align-items:center;justify-content:space-between;gap:14px;background:#f7f7f9;border:1px solid #ececf0;border-radius:14px;padding:13px 16px;margin:0 0 16px;font-size:14px;color:#6b6b73}
+                  #flcc-editor .fe-cur b{color:#111114;font-weight:700;font-size:15.5px;word-break:break-all;text-align:right}
+                  #flcc-editor .fe-live{display:flex;align-items:center;gap:8px;min-height:24px;margin-top:12px;font-size:14.5px;font-weight:600;color:#6b6b73;line-height:1.35}
+                  #flcc-editor .fe-live[hidden]{display:none}
+                  #flcc-editor .fe-live svg{flex:0 0 21px}
+                  #flcc-editor .fe-live.ok{color:#119a54}
+                  #flcc-editor .fe-live.bad{color:#e5334d}
+                  #flcc-editor .fe-live .fe-sp{flex:0 0 18px;width:18px;height:18px;border:2.5px solid #d9d9de;border-top-color:#f0004f;border-radius:50%;animation:feSpin .7s linear infinite}
                   @media(prefers-reduced-motion:reduce){#flcc-editor,#flcc-editor .fe-box.shake{animation:none}}
                 </style>
                 <div class="fe-bar"><button type="button" class="fe-cancel">Cancel</button><button type="button" class="fe-save" disabled>Save</button></div>
                 <h1 class="fe-title">${esc(o.title)}</h1>
                 <p class="fe-desc">${esc(o.desc)}</p>
+                ${o.current?'<div class="fe-cur"><span>Current handle</span><b>@'+esc(o.current)+'</b></div>':''}
                 <div class="fe-box">${multi?'<textarea class="fe-input" rows="5"></textarea>':'<input class="fe-input" type="text" autocomplete="off" autocapitalize="none" spellcheck="false">'}<button type="button" class="fe-clear" aria-label="Clear" hidden>×</button></div>
+                <div class="fe-live" hidden></div>
                 <div class="fe-meta"><span class="fe-err" role="alert"></span><span class="fe-count"></span></div>`;
                 root.appendChild(page);
                 const input=page.querySelector('.fe-input'), box=page.querySelector('.fe-box'), saveBtn=page.querySelector('.fe-save'),
                       clearBtn=page.querySelector('.fe-clear'), errEl=page.querySelector('.fe-err'), count=page.querySelector('.fe-count');
                 input.placeholder=o.placeholder||''; input.maxLength=max; input.value=start;
                 let busy=false;
+                const liveEl=page.querySelector('.fe-live');
+                let liveState='',liveTok=0,liveTimer=null;
+                const IC_OK='<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M7.8 12.4l2.9 2.9 5.5-6"/></svg>';
+                const IC_BAD='<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M9 9l6 6M15 9l-6 6"/></svg>';
+                const setLive=(state,text)=>{
+                    liveState=state||'';if(!liveEl)return;
+                    if(!state){liveEl.hidden=true;liveEl.className='fe-live';liveEl.innerHTML='';return;}
+                    liveEl.hidden=false;liveEl.className='fe-live '+(state==='ok'?'ok':state==='bad'?'bad':'');
+                    liveEl.innerHTML=(state==='checking'?'<span class="fe-sp"></span>':state==='ok'?IC_OK:IC_BAD)+'<span>'+esc(text)+'</span>';
+                };
+                const runLive=()=>{
+                    if(!o.availCheck)return;
+                    clearTimeout(liveTimer);const tok=++liveTok;
+                    const v=(o.filter?o.filter(input.value):input.value).trim();
+                    if(!v||v===String(o.value||'').trim()){setLive('');refresh();return;}
+                    const bad=o.formatCheck?o.formatCheck(v):'';
+                    if(bad){setLive('bad',bad);refresh();return;}
+                    setLive('checking','Checking availability...');refresh();
+                    liveTimer=setTimeout(async()=>{
+                        let r;try{r=await o.availCheck(v);}catch(e){r={state:'bad',text:'Could not check this handle. Try again.'};}
+                        if(tok!==liveTok)return;
+                        setLive(r.state,r.text);refresh();
+                    },400);
+                };
                 const refresh=()=>{
                     const v=input.value.trim();
                     count.textContent=input.value.length+'/'+max;
                     clearBtn.hidden=!input.value.length;
-                    saveBtn.disabled=busy||(v===String(o.value||'').trim())||(!v&&!o.allowEmpty);
+                    saveBtn.disabled=busy||(v===String(o.value||'').trim())||(!v&&!o.allowEmpty)||(!!o.availCheck&&liveState!=='ok');
                 };
                 const setErr=(m)=>{errEl.textContent=m||'';box.classList.toggle('err',!!m);if(m){box.classList.remove('shake');void box.offsetWidth;box.classList.add('shake');}};
                 input.addEventListener('input',()=>{
                     if(o.filter){const f=o.filter(input.value);if(f!==input.value)input.value=f;}
-                    setErr('');refresh();
+                    setErr('');refresh();runLive();
                 });
                 clearBtn.addEventListener('click',()=>{input.value='';setErr('');refresh();input.focus();});
-                const close=()=>{page.style.animation='feOut .22s ease both';setTimeout(()=>page.remove(),210);};
+                const navEntry=nav.register(v=>close(v),'editor');
+                const close=(viaPop)=>{if(navEntry.done)return;nav.release(navEntry,viaPop===true);page.style.animation='feOut .22s ease both';setTimeout(()=>page.remove(),210);};
                 page.querySelector('.fe-cancel').addEventListener('click',close);
                 const save=async()=>{
                     if(busy||saveBtn.disabled)return;
@@ -1627,8 +1695,18 @@ function applyAdminControls() {
             const showSaved=()=>{status.textContent='';};
             nameField.addEventListener('click',()=>openEditor({title:'Name',desc:'Your name can only be changed once every 7 days.',placeholder:'Add your preferred name',value:nameField.value,max:30,
                 validate:v=>v.length<2?'Name must be at least 2 characters.':'',onSave:v=>{nameField.value=v;showSaved();}}));
-            handleField.addEventListener('click',()=>openEditor({title:'Handle',desc:'You can change your handle once every 30 days. Changing your handle will also change your profile link. Handles can contain only letters, numbers, underscores and periods.',placeholder:'Handle',value:handleField.value,max:24,
-                filter:v=>String(v).replace(/^@/,'').toLowerCase().replace(/[^a-z0-9._]/g,''),
+            handleField.addEventListener('click',()=>openEditor({title:'Handle',desc:'You can change your handle once every 30 days. Changing your handle will also change your profile link. Handles can contain only letters, numbers, underscores and periods.',placeholder:'Handle',value:handleField.value,current:handleField.value,max:24,
+                filter:v=>String(v).replace(/^@/,'').toLowerCase().replace(/\s/g,''),
+                formatCheck:v=>{
+                    if(v.length<3)return 'Invalid handle · at least 3 characters';
+                    if(!/^[a-z0-9._]+$/.test(v))return 'Invalid handle · only letters, numbers, _ and .';
+                    return '';
+                },
+                availCheck:async v=>{
+                    const snap=await db.ref('channelHandles/'+v).once('value');
+                    if(snap.val()&&snap.val()!==user.uid)return {state:'bad',text:'Handle already taken'};
+                    return {state:'ok',text:'Handle available'};
+                },
                 validate:async v=>{
                     if(!/^[a-z0-9._]{3,24}$/.test(v))return 'Use 3–24 letters, numbers, underscores or periods.';
                     if(v===handleField.value)return '';
@@ -1700,7 +1778,8 @@ function applyAdminControls() {
                     list.innerHTML=html;
                 };
                 render('');
-                const close=()=>{pg.style.animation='fcOut .22s ease both';setTimeout(()=>pg.remove(),210);};
+                const navEntry=nav.register(v=>close(v),'country');
+                const close=(viaPop)=>{if(navEntry.done)return;nav.release(navEntry,viaPop===true);pg.style.animation='fcOut .22s ease both';setTimeout(()=>pg.remove(),210);};
                 const setSearch=(on)=>{pg.classList.toggle('searching',on);sBtn.innerHTML=on?ICON_X:ICON_SEARCH;if(on){setTimeout(()=>q.focus(),30);}else{q.value='';render('');}};
                 sBtn.addEventListener('click',()=>setSearch(!pg.classList.contains('searching')));
                 pg.querySelector('#fc-back').addEventListener('click',()=>{if(pg.classList.contains('searching'))setSearch(false);else close();});
@@ -1790,7 +1869,8 @@ function applyAdminControls() {
                     list.innerHTML=items.length?items.map(c=>'<button type="button" class="fd-row'+(c.code===currentCode?' sel':'')+'" data-code="'+c.code+'"><span class="fd-flag">'+flagOf(c.code)+'</span><span class="fd-nm">'+esc(c.name)+'</span><span class="fd-code">+'+c.dial+'</span></button>').join(''):'<div class="fd-empty">No country found.<br>Try another spelling.</div>';
                 };
                 render('');
-                const close=()=>{pg.style.animation='fdOut .2s ease both';setTimeout(()=>pg.remove(),190);};
+                const navEntry=nav.register(v=>close(v),'dial');
+                const close=(viaPop)=>{if(navEntry.done)return;nav.release(navEntry,viaPop===true);pg.style.animation='fdOut .2s ease both';setTimeout(()=>pg.remove(),190);};
                 const setSearch=(on)=>{pg.classList.toggle('searching',on);sBtn.innerHTML=on?CLOSE_I:SEARCH_I;if(on){setTimeout(()=>q.focus(),30);}else{q.value='';render('');}};
                 sBtn.addEventListener('click',()=>setSearch(!pg.classList.contains('searching')));
                 pg.querySelector('#fd-back').addEventListener('click',()=>{if(pg.classList.contains('searching'))setSearch(false);else close();});
@@ -1856,7 +1936,8 @@ function applyAdminControls() {
                 const vv=window.visualViewport;
                 const fit=()=>{pg.style.height=(vv?vv.height:window.innerHeight)+'px';pg.style.top=(vv?vv.offsetTop:0)+'px';};
                 if(vv){vv.addEventListener('resize',fit);vv.addEventListener('scroll',fit);}fit();
-                const close=()=>{if(vv){vv.removeEventListener('resize',fit);vv.removeEventListener('scroll',fit);}pg.style.animation='fpOut .22s ease both';setTimeout(()=>pg.remove(),210);};
+                const navEntry=nav.register(v=>close(v),'phone');
+                const close=(viaPop)=>{if(navEntry.done)return;nav.release(navEntry,viaPop===true);if(vv){vv.removeEventListener('resize',fit);vv.removeEventListener('scroll',fit);}pg.style.animation='fpOut .22s ease both';setTimeout(()=>pg.remove(),210);};
                 inp.addEventListener('input',()=>{
                     let v=inp.value;
                     if(v.trim().charAt(0)==='+'){const p=parsePhone(v);sel=p.sel;paint();v=p.nat;}
@@ -1876,7 +1957,11 @@ function applyAdminControls() {
                 setTimeout(()=>{try{inp.focus();const l=inp.value.length;inp.setSelectionRange(l,l);}catch(e){}},260);
             };
             phoneField.addEventListener('click',openPhonePage);
-            root.querySelector('#flcc-back').addEventListener('click',()=>{status.textContent='Complete channel setup to continue.';});
+            root.querySelector('#flcc-back').addEventListener('click',()=>{
+                if(nav.back())return;
+                if(window.__flaynityNeedsChannelBoot){status.textContent='Complete channel setup to continue.';notify('Create your channel to continue.');return;}
+                closePage();nav.dropRoot();
+            });
 
             // Create Channel stays disabled until EVERY field is completed.
             const submitBtn=root.querySelector('#flcc-submit'),needEl=root.querySelector('#flcc-need');
@@ -1922,7 +2007,7 @@ function applyAdminControls() {
                     try{localStorage.setItem('flaynity_channel_created:'+user.uid,'1');}catch(e){}
                     currentChannelData=payload;
                     try{localStorage.setItem('flaynity_channel_cache:'+user.uid,JSON.stringify(payload));localStorage.setItem('flaynity_user_session_cache',JSON.stringify(payload));}catch(e){}
-                    document.querySelectorAll('#fl-create-channel').forEach(n=>n.remove());document.documentElement.style.overscrollBehaviorY='';document.body.style.overscrollBehaviorY='';
+                    closePage();nav.dropRoot();
                     if(typeof showNotification==='function')showNotification('Your channel is ready!','success');
                     if(window.__flaynityNeedsChannelBoot){
                         // First-run: now start the app (listeners, feeds, Home) for this user.

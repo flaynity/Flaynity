@@ -11457,7 +11457,7 @@ function generateFirebaseSuggestions(query) {
     if (!container) return;
     const lowerQuery = query.toLowerCase();
     const suggestionsSet = new Set();
-    const allItems = [...dbSearchCache.videos, ...dbSearchCache.feels];
+    const allItems = [...dbSearchCache.videos, ...dbSearchCache.feels, ...(typeof allCommunityPosts !== 'undefined' ? allCommunityPosts : [])];
 
     // Starts-with matches first (like TikTok), then "contains" matches
     const starts = [], contains = [];
@@ -11523,70 +11523,202 @@ function executeFinalSearch(keyword) {
     setSearchPanels('results');
     const resultsWrap = document.getElementById('search-results-container');
     if (resultsWrap) resultsWrap.style.display = 'flex';
+    bindSearchResultNav();
 
-    const feelsSec = document.getElementById('search-feels-section');
-    const feelsGrid = document.getElementById('search-feels-results');
-    const videosSec = document.getElementById('search-videos-section');
-    const videosList = document.getElementById('search-videos-results');
     const noResult = document.getElementById('search-no-result');
-    if (!feelsSec || !feelsGrid || !videosSec || !videosList || !noResult) return;
-
-    feelsGrid.innerHTML = '';
-    videosList.innerHTML = '';
+    if (!noResult) return;
     noResult.style.display = 'none';
 
-    const matchedFeels = dbSearchCache.feels.filter(f => `${f.title || ''} ${f.description || ''}`.toLowerCase().includes(query));
-    const matchedVideos = dbSearchCache.videos.filter(v => `${v.title || ''} ${v.description || ''}`.toLowerCase().includes(query));
+    // Same data + same admin switches as the Home feed
+    const src = getSearchSources();
+    const on = (k) => (typeof isAdminFeatureEnabled !== 'function') || isAdminFeatureEnabled(k);
+    const newest = (a, b) => (b.createdAt || b.uploadTime || 0) - (a.createdAt || a.uploadTime || 0);
+    const hit = (item, fields) => {
+        const text = fields.map(f => String(item[f] || '')).join(' ').toLowerCase();
+        return text.includes(query) || text.replace(/\s+/g, '').includes(query.replace(/\s+/g, ''));
+    };
 
-    if (matchedFeels.length > 0) {
-        feelsGrid.innerHTML = matchedFeels.map(item => `
-            <div class="feels-card-9-16" onclick="handleOpenFeel('${escapeHtml(String(item.id))}')">
-                <img src="${escapeHtml(item.thumbnail || item.poster || '')}" alt="" onerror="this.src='assets/placeholder-feel.jpg'">
-                <div class="feels-card-overlay"><h4>${escapeHtml(item.title || 'Untitled Feel')}</h4></div>
-            </div>
-        `).join('');
-    }
+    const videos = on('homeVideosEnabled') ? src.videos.filter(v => hit(v, ['title', 'description', 'username'])).sort(newest) : [];
+    const posts  = on('homePostsEnabled')  ? src.posts.filter(p => hit(p, ['title', 'caption', 'username'])).sort(newest) : [];
+    const feels  = on('homeFeelsEnabled')  ? src.feels.filter(f => hit(f, ['title', 'description', 'username'])).sort(newest) : [];
 
-    if (matchedVideos.length > 0) {
-        videosList.innerHTML = matchedVideos.map(item => `
-            <div class="video-card-16-9" onclick="handleOpenVideo('${escapeHtml(String(item.id))}')">
-                <img class="video-thumb-16-9" src="${escapeHtml(item.thumbnail || item.banner || item.poster || '')}" alt="" onerror="this.src='assets/placeholder-banner.jpg'">
-                <div class="video-info-box">
-                    <div class="video-title-txt">${escapeHtml(item.title || 'Untitled Video')}</div>
-                    <div class="video-meta-txt">${escapeHtml(item.channelName || item.username || 'Flaynity')} • ${escapeHtml(String(item.views || '0'))} views</div>
-                </div>
-            </div>
-        `).join('');
-    }
+    // "Top" tab: Videos + Photos(Posts) + Feels mixed in RANDOM order (shuffled once per search)
+    const mixed = shuffleArray([
+        ...videos.map(d => ({ k: 'v', d })),
+        ...posts.map(d => ({ k: 'p', d })),
+        ...feels.map(d => ({ k: 'f', d }))
+    ]);
+    const topBlocks = [];
+    let feelBuf = [];
+    mixed.forEach(m => {
+        if (m.k === 'f') {
+            feelBuf.push(m.d);
+            if (feelBuf.length === 2) { topBlocks.push({ t: 'f', d: feelBuf }); feelBuf = []; }
+        } else {
+            topBlocks.push({ t: m.k, d: m.d });
+        }
+    });
+    if (feelBuf.length) topBlocks.push({ t: 'f', d: feelBuf });
 
+    searchData = { videos, posts, feels, topBlocks };
     const matchedUsers = renderUserResults(query);
-    searchCounts = { users: matchedUsers, videos: matchedVideos.length, feels: matchedFeels.length };
+    searchCounts = { users: matchedUsers, videos: videos.length, photos: posts.length, feels: feels.length };
     setSearchTab('top');
 }
 
-/* ---------- Results tabs + Users ---------- */
-let searchCounts = { users: 0, videos: 0, feels: 0 };
+/* ---------- Results tabs + Home-style cards ---------- */
+let searchCounts = { users: 0, videos: 0, photos: 0, feels: 0 };
+let searchData = { videos: [], posts: [], feels: [], topBlocks: [] };
 let searchSubRefs = [];
+let searchFeedState = { blocks: [], idx: 0, io: null };
+const SEARCH_CHUNK = 6;
+
+function shuffleArray(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function getSearchSources() {
+    const homeLoaded = typeof allLongVideos !== 'undefined' &&
+        (allLongVideos.length || allFeels.length || allCommunityPosts.length);
+    if (homeLoaded) return { videos: allLongVideos, feels: allFeels, posts: allCommunityPosts };
+    // Fallback if the Home feed has not loaded yet
+    const norm = (it) => ({ ...it, poster: it.poster || it.thumbnail || it.banner || '', createdAt: it.createdAt || it.uploadTime || 0 });
+    return {
+        videos: dbSearchCache.videos.filter(v => !v.isShort && !v.isPost).map(norm),
+        feels: dbSearchCache.feels.map(norm),
+        posts: []
+    };
+}
+
+function searchFeelCard(s) {
+    const id = escapeHtml(String(s.id));
+    return `
+        <div class="short-home-card-2col" onclick="openSearchedFeel('${id}')">
+            <img src="${escapeHtml(s.poster || s.thumbnail || '')}" loading="lazy" alt="">
+            <div class="short-home-meta">
+                <h4 style="font-size:0.85rem;font-weight:800;margin:0 0 2px 0;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(s.title || 'Untitled')}</h4>
+                <p style="font-size:0.7rem;font-weight:700;margin:0;opacity:0.9;"><i class="fas fa-play"></i> <span data-sr-views="${id}">0</span></p>
+            </div>
+        </div>`;
+}
+
+function renderSearchBlock(b) {
+    if (b.t === 'v') return fxBuildLongVideoCard(b.d);
+    if (b.t === 'p') return renderSinglePostSegmentUI(b.d);
+    return `<div class="feels-home-grid-2col sr-feels-grid">${b.d.map(searchFeelCard).join('')}</div>`;
+}
+
+function renderSearchFeedChunk() {
+    const feed = document.getElementById('search-feed-results');
+    const st = searchFeedState;
+    if (!feed || st.idx >= st.blocks.length) return;
+    const slice = st.blocks.slice(st.idx, st.idx + SEARCH_CHUNK);
+    st.idx += SEARCH_CHUNK;
+
+    const uids = new Set();
+    const feelIds = [];
+    let html = '';
+    slice.forEach(b => {
+        if (b.t === 'f') b.d.forEach(s => { if (s.userId) uids.add(s.userId); feelIds.push(String(s.id)); });
+        else if (b.d.userId) uids.add(b.d.userId);
+        if (b.t === 'v') setTimeout(() => fxLoadCardStats(String(b.d.id)), 0);
+        html += renderSearchBlock(b);
+    });
+    feed.insertAdjacentHTML('beforeend', html);
+
+    uids.forEach(uid => { try { bindLiveChannelUI(uid); } catch (e) {} });
+    if (typeof db !== 'undefined' && navigator.onLine) {
+        feelIds.forEach(id => {
+            db.ref(`movie_stats/${id}/views`).once('value', (snap) => {
+                const n = Object.keys(snap.val() || {}).length;
+                feed.querySelectorAll(`[data-sr-views="${id}"]`).forEach(el => { el.textContent = formatCount(n); });
+            });
+        });
+    }
+
+    // re-arm the observer so the next chunk loads if the end is still on screen
+    const sentinel = document.getElementById('search-feed-sentinel');
+    if (st.io && sentinel && st.idx < st.blocks.length) { st.io.unobserve(sentinel); st.io.observe(sentinel); }
+}
 
 function setSearchTab(tab) {
     const wrap = document.getElementById('search-results-container');
     if (!wrap) return;
     wrap.setAttribute('data-tab', tab);
     document.querySelectorAll('#search-tabs .search-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-    const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? 'block' : 'none'; };
+
     const c = searchCounts;
-    show('search-users-section', (tab === 'top' || tab === 'users') && c.users > 0);
-    show('search-feels-section', (tab === 'top' || tab === 'feels') && c.feels > 0);
-    show('search-videos-section', (tab === 'top' || tab === 'videos') && c.videos > 0);
-    const total = tab === 'top' ? c.users + c.videos + c.feels : tab === 'photos' ? 0 : c[tab];
+    const usersSec = document.getElementById('search-users-section');
+    if (usersSec) usersSec.style.display = ((tab === 'top' || tab === 'users') && c.users > 0) ? 'block' : 'none';
+
+    // Pick what the feed shows for this tab
+    let blocks = [];
+    if (tab === 'top') blocks = searchData.topBlocks;
+    else if (tab === 'videos') blocks = searchData.videos.map(d => ({ t: 'v', d }));
+    else if (tab === 'photos') blocks = searchData.posts.map(d => ({ t: 'p', d }));
+    else if (tab === 'feels') {
+        for (let i = 0; i < searchData.feels.length; i += 2) blocks.push({ t: 'f', d: searchData.feels.slice(i, i + 2) });
+    }
+
+    const feed = document.getElementById('search-feed-results');
+    if (feed) feed.innerHTML = '';
+    const st = searchFeelsReset(blocks);
+
+    const total = tab === 'top' ? c.users + c.videos + c.photos + c.feels : tab === 'users' ? c.users : c[tab];
     const nr = document.getElementById('search-no-result');
     if (nr) {
         nr.style.display = total === 0 ? 'block' : 'none';
         const p = nr.querySelector('p');
-        if (p) p.textContent = tab === 'photos' ? 'No photos found' : 'No results found';
+        const labels = { videos: 'No videos found', photos: 'No photos found', feels: 'No feels found', users: 'No users found' };
+        if (p) p.textContent = labels[tab] || 'No results found';
     }
+
+    if (st.blocks.length) renderSearchFeedChunk();
     const page = document.getElementById('fullscreen-search-page');
     if (page) page.scrollTop = 0;
+}
+
+function searchFeelsReset(blocks) {
+    const st = searchFeedState;
+    st.blocks = blocks;
+    st.idx = 0;
+    if (!st.io && 'IntersectionObserver' in window) {
+        const sentinel = document.getElementById('search-feed-sentinel');
+        const root = document.getElementById('fullscreen-search-page');
+        if (sentinel && root) {
+            st.io = new IntersectionObserver((entries) => {
+                if (entries.some(e => e.isIntersecting)) renderSearchFeedChunk();
+            }, { root, rootMargin: '700px 0px' });
+            st.io.observe(sentinel);
+        }
+    }
+    return st;
+}
+
+function openSearchedFeel(feelId) {
+    if (typeof playUI === 'function') playUI('click');
+    closeFullscreenSearch();
+    if (typeof openShortFromHome === 'function') openShortFromHome(feelId);
+    else handleOpenFeel(feelId);
+}
+
+// Tapping a Video / Post card opens it ON TOP of the app, so close the search overlay first.
+// Like / subscribe / hide / menu / share buttons keep working in place.
+function bindSearchResultNav() {
+    const wrap = document.getElementById('search-results-container');
+    if (!wrap || wrap.dataset.navBound) return;
+    wrap.dataset.navBound = '1';
+    wrap.addEventListener('click', (e) => {
+        const t = e.target;
+        if (t.closest('.user-row, .short-home-card-2col')) return;
+        if (t.closest('.post-action-btn-fb, .fx-dislike, .fb-subbtn, .fb-x, .fb-hbtn, .fx-more, .fb-seemore, [onclick*="fbSharePost"]')) return;
+        if (t.closest('.fx-card, .post-card')) closeFullscreenSearch();
+    }, true);
 }
 
 function userAvatarFallback() {

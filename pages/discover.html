@@ -4,117 +4,242 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Flaynity Discover</title>
-    
-    <!-- FontAwesome Icon Library -->
+
+    <!-- FontAwesome Icon Library (still used by the fullscreen search window) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         /* =========================================================
-           DISCOVER TAB & FULLSCREEN SEARCH STYLES (PURE CSS)
+           DISCOVER (EXPLORE) PAGE
+           Search bar -> category chips -> 2-column masonry feed
+           Colors follow your app variables (light + dark), with
+           fallbacks that match the reference design in light mode.
            ========================================================= */
 
-        /* Discover পেজ উপরে উঠানোর জন্য গ্যাপ এডজাস্টমেন্ট */
         #search-tab {
+            --dc-bg: var(--bg-color, #ffffff);
+            --dc-ink: var(--text-main, #161823);
+            --dc-mute: var(--text-muted, #8a8b91);
+            --dc-field: rgba(128, 128, 134, 0.12);   /* search bar + chips */
+            --dc-field-on: rgba(128, 128, 134, 0.26); /* selected chip */
+            --dc-top: 40px;                           /* space for the status bar */
+
             margin-top: 0 !important;
-            padding-top: 0 !important;
-            padding-bottom: 80px;
             position: relative !important;
-            top: 56px !important;
+            top: 0 !important;
+            padding: var(--dc-top) 0 96px 0 !important;
             box-sizing: border-box;
+            background: var(--dc-bg);
+            color: var(--dc-ink);
         }
 
-        /* 1. Discover Search Trigger Bar */
+        /* ---------- 1. Search bar ---------- */
         .discover-search-trigger {
             display: flex;
             align-items: center;
             gap: 12px;
-            background: var(--border-color);
-            padding: 12px 16px;
-            border-radius: 22px;
+            height: 48px;
+            margin: 0 16px 14px;
+            padding: 0 18px 0 16px;
+            background: var(--dc-field);
+            border-radius: 12px;
             cursor: pointer;
-            margin-bottom: 18px;
-            border: 1px solid var(--glass-border);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-tap-highlight-color: transparent;
+            transition: transform .15s ease, background .15s ease;
         }
+        .discover-search-trigger:active { transform: scale(.985); }
 
-        .discover-search-trigger:active {
-            transform: scale(0.98);
-        }
+        .dc-search-ic { flex: 0 0 auto; width: 26px; height: 26px; color: var(--dc-ink); }
 
-        .discover-search-trigger i {
-            color: var(--text-muted);
-            font-size: 1.05rem;
-        }
-
-        .discover-search-trigger span {
+        .dc-search-placeholder {
             flex: 1;
-            color: var(--text-muted);
-            font-size: 0.92rem;
-            font-weight: 600;
+            min-width: 0;
+            font-size: 1.02rem;
+            font-weight: 400;
+            color: var(--dc-mute);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .dc-search-btn {
+            flex: 0 0 auto;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--dc-ink);
+            letter-spacing: .1px;
         }
 
-        .discover-mic-pill {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--surface);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-        }
-
-        /* 2. Trending Quick Tags */
+        /* ---------- 2. Category chips ---------- */
         .discover-tags-row {
             display: flex;
-            gap: 8px;
+            gap: 9px;
+            padding: 0 16px 14px;
             overflow-x: auto;
-            margin-bottom: 22px;
-            padding-bottom: 4px;
             scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
         }
-
-        .discover-tags-row::-webkit-scrollbar {
-            display: none;
-        }
+        .discover-tags-row::-webkit-scrollbar { display: none; }
 
         .discover-tag-chip {
-            padding: 7px 16px;
-            background: var(--surface);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            font-size: 0.82rem;
-            font-weight: 700;
-            color: var(--text-main);
+            flex: 0 0 auto;
+            height: 36px;
+            padding: 0 16px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            border-radius: 18px;
+            background: var(--dc-field);
+            color: var(--dc-ink);
+            font-size: .96rem;
+            font-weight: 500;
             white-space: nowrap;
             cursor: pointer;
-            transition: 0.2s;
+            -webkit-tap-highlight-color: transparent;
+            transition: background .15s ease, transform .12s ease;
+        }
+        .discover-tag-chip:active { transform: scale(.96); }
+        .discover-tag-chip.active { background: var(--dc-field-on); font-weight: 600; }
+
+        /* ---------- 3. Masonry feed (2 columns) ---------- */
+        .discover-feels-grid {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 0 8px;
+            width: 100%;
+            box-sizing: border-box;
+            touch-action: pan-y;
+        }
+        .dc-col {
+            flex: 1 1 0;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
         }
 
-        .discover-tag-chip:active {
-            transform: scale(0.95);
+        .discover-feels-card {
+            position: relative;
+            display: block;
+            min-width: 0;
+            cursor: pointer;
+            color: var(--dc-ink);
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: pan-y;
+        }
+        .discover-feels-card:active .dc-thumb { transform: scale(.985); }
+
+        .dc-thumb {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 8px;
+            background: #1b1b1f;
+            transition: transform .15s ease;
+        }
+        .dc-thumb img,
+        .dc-thumb video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .dc-thumb-ph {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            text-align: center;
+            color: #fff;
+            font-size: .8rem;
+            font-weight: 600;
+            background: linear-gradient(160deg, #3a3a44, #17171b);
+        }
+        .dc-badge {
+            position: absolute;
+            top: 9px;
+            right: 9px;
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, .38);
+            color: #fff;
+        }
+        .dc-badge svg { width: 18px; height: 18px; }
+
+        .discover-feels-caption {
+            margin: 10px 4px 0;
+            font-size: 1.02rem;
+            font-weight: 700;
+            line-height: 1.32;
+            color: var(--dc-ink);
+            overflow-wrap: anywhere;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
-        .discover-tag-chip.active {
-            background: var(--primary);
-            color: #FFFFFF;
-            border-color: var(--primary);
-        }
-
-        /* 3. Section Title */
-        .discover-section-title {
-            font-size: 1.1rem;
-            font-weight: 850;
-            margin: 12px 0 14px;
+        .dc-meta {
             display: flex;
             align-items: center;
             gap: 8px;
-            color: var(--text-main);
+            margin: 9px 4px 0;
+            min-width: 0;
+        }
+        .dc-av {
+            flex: 0 0 auto;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--dc-field-on);
+        }
+        .dc-name {
+            flex: 1;
+            min-width: 0;
+            font-size: .86rem;
+            color: var(--dc-mute);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .dc-like {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: .9rem;
+            color: var(--dc-mute);
+        }
+        .dc-like svg { width: 20px; height: 20px; }
+
+        /* Loading skeleton + empty state */
+        .dc-skel-thumb,
+        .dc-skel-line {
+            background: linear-gradient(100deg, var(--dc-field) 30%, var(--dc-field-on) 50%, var(--dc-field) 70%);
+            background-size: 220% 100%;
+            animation: dc-shimmer 1.3s linear infinite;
+        }
+        .dc-skel-thumb { border-radius: 8px; }
+        .dc-skel-line { height: 12px; border-radius: 6px; margin: 10px 4px 0; }
+        @keyframes dc-shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+        @media (prefers-reduced-motion: reduce) { .dc-skel-thumb, .dc-skel-line { animation: none; } }
+
+        .discover-feels-empty {
+            flex: 1;
+            padding: 60px 20px;
+            text-align: center;
+            font-size: .92rem;
+            color: var(--dc-mute);
         }
 
         /* =========================================================
@@ -126,34 +251,32 @@
             left: 0;
             width: 100vw;
             height: calc(100vh - 35px);
-            background: var(--bg-color);
+            background: var(--bg-color, #fff);
             z-index: 99999;
             display: none;
             flex-direction: column;
             overflow-y: auto;
         }
 
-        /* Top Bar: Back Button | Search Input | Mic & Clear Button */
         .search-topbar {
             position: sticky;
             top: 0;
             left: 0;
             width: 100%;
-            background: var(--surface);
+            background: var(--surface, #fff);
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--border-color);
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-color, rgba(0,0,0,.08));
             z-index: 10;
             box-sizing: border-box;
         }
-
         .search-back-btn {
             background: none;
             border: none;
-            color: var(--text-main);
-            font-size: 1.25rem;
+            color: var(--text-main, #161823);
+            font-size: 1.2rem;
             width: 38px;
             height: 38px;
             border-radius: 50%;
@@ -163,40 +286,26 @@
             cursor: pointer;
             flex-shrink: 0;
         }
+        .search-back-btn:active { background: rgba(128,128,134,.16); }
 
-        .search-back-btn:active {
-            background: var(--border-color);
-        }
-
-        .search-input-wrap {
-            flex: 1;
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
+        .search-input-wrap { flex: 1; position: relative; display: flex; align-items: center; }
         .search-main-input {
             width: 100%;
-            padding: 11px 40px 11px 16px;
-            background: var(--border-color);
+            height: 44px;
+            padding: 0 42px 0 16px;
+            background: rgba(128, 128, 134, 0.12);
             border: 1.5px solid transparent;
-            border-radius: 24px;
-            color: var(--text-main);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 0.95rem;
-            font-weight: 600;
+            border-radius: 12px;
+            color: var(--text-main, #161823);
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 500;
             outline: none;
             box-sizing: border-box;
-            transition: all 0.2s;
+            transition: border-color .2s, background .2s;
         }
+        .search-main-input:focus { background: transparent; border-color: var(--primary, #FE2C55); }
 
-        .search-main-input:focus {
-            background: var(--surface);
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px var(--primary-glow);
-        }
-
-        /* Voice & Clear (X) Action Buttons */
         .search-action-btn {
             position: absolute;
             right: 8px;
@@ -205,110 +314,78 @@
             width: 30px;
             height: 30px;
             border-radius: 50%;
-            color: var(--text-muted);
+            color: var(--text-muted, #8a8b91);
             font-size: 1rem;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
         }
+        .search-action-btn:active { color: var(--primary, #FE2C55); }
 
-        .search-action-btn:active {
-            color: var(--primary);
-        }
-
-        /* 4. Realtime Keywords Suggestion List */
-        .search-suggestions-list {
-            display: flex;
-            flex-direction: column;
-        }
-
+        .search-suggestions-list { display: flex; flex-direction: column; }
         .suggestion-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 14px 18px;
             cursor: pointer;
-            border-bottom: 1px solid var(--border-color);
-            transition: background 0.15s;
+            border-bottom: 1px solid var(--border-color, rgba(0,0,0,.08));
         }
-
-        .suggestion-item:active {
-            background: var(--border-color);
-        }
-
+        .suggestion-item:active { background: rgba(128,128,134,.12); }
         .suggestion-left {
             display: flex;
             align-items: center;
             gap: 14px;
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: var(--text-main);
+            font-size: .95rem;
+            font-weight: 600;
+            color: var(--text-main, #161823);
         }
-
-        .suggestion-left i {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-
+        .suggestion-left i { color: var(--text-muted, #8a8b91); font-size: .85rem; }
         .suggestion-item .arrow-icon {
-            color: var(--text-muted);
-            font-size: 0.85rem;
+            color: var(--text-muted, #8a8b91);
+            font-size: .85rem;
             transform: rotate(-45deg);
         }
 
-        /* =========================================================
-           5. SEARCH RESULTS (FEELS 9:16 & VIDEOS 16:9)
-           ========================================================= */
+        /* ---------- Search results ---------- */
+        .discover-section-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin: 12px 0 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-main, #161823);
+        }
         .search-results-wrapper {
             display: none;
             padding: 16px;
             flex-direction: column;
             gap: 24px;
         }
-
-        /* Feels 9:16 Portrait Ratio Cards */
-        .feels-result-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-        }
-
+        .feels-result-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .feels-card-9-16 {
             aspect-ratio: 9 / 16;
-            border-radius: 14px;
+            border-radius: 8px;
             overflow: hidden;
             position: relative;
             background: #111;
             cursor: pointer;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
             transform: translate3d(0,0,0);
         }
-
-        .feels-card-9-16:active {
-            transform: scale(0.97);
-        }
-
-        .feels-card-9-16 img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
+        .feels-card-9-16:active { transform: scale(.97); }
+        .feels-card-9-16 img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .feels-card-overlay {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+            bottom: 0; left: 0; right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,.85) 0%, transparent 100%);
             padding: 12px 10px;
-            color: #FFFFFF;
+            color: #fff;
         }
-
         .feels-card-overlay h4 {
             margin: 0;
-            font-size: 0.85rem;
+            font-size: .85rem;
             font-weight: 700;
             line-height: 1.3;
             display: -webkit-box;
@@ -317,173 +394,76 @@
             overflow: hidden;
         }
 
-        /* Long Videos 16:9 Widescreen Ratio Cards */
-        .long-video-list {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .video-card-16-9 {
-            background: var(--surface);
-            border-radius: 16px;
-            overflow: hidden;
-            cursor: pointer;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-        }
-
-        .video-card-16-9:active {
-            transform: scale(0.98);
-        }
-
-        .video-thumb-16-9 {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            object-fit: cover;
-            display: block;
-            background: #1a1a1a;
-        }
-
-        .video-info-box {
-            padding: 12px;
-        }
-
+        .long-video-list { display: flex; flex-direction: column; gap: 16px; }
+        .video-card-16-9 { background: var(--surface, #fff); border-radius: 12px; overflow: hidden; cursor: pointer; }
+        .video-card-16-9:active { transform: scale(.98); }
+        .video-thumb-16-9 { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; background: #1a1a1a; }
+        .video-info-box { padding: 10px 4px 4px; }
         .video-title-txt {
-            font-size: 0.95rem;
-            font-weight: 800;
-            color: var(--text-main);
-            margin: 0 0 6px 0;
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .video-meta-txt {
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: var(--text-muted);
-        }
-
-        /* Discover Feels: live Firebase cards, three columns, vertical page scroll */
-        .discover-feels-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            grid-auto-flow: row;
-            gap: 8px;
-            width: 100%;
-            margin: 0 0 18px;
-            align-items: start;
-            align-content: start;
-            height: auto;
-            min-height: 0;
-            max-height: none;
-            overflow: visible;
-            touch-action: pan-y;
-            -webkit-overflow-scrolling: touch;
-        }
-        .discover-feels-card {
-            position: relative;
-            display: block;
-            width: 100%;
-            min-width: 0;
-            aspect-ratio: 9 / 16;
-            overflow: hidden;
-            border-radius: 10px;
-            background: #111;
-            color: #fff;
-            text-decoration: none;
-            touch-action: pan-y;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-        .discover-feels-card img,
-        .discover-feels-card video {
-            display: block;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .discover-feels-card .discover-feels-caption {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            padding: 18px 7px 7px;
-            color: #fff;
-            font-size: 0.72rem;
-            line-height: 1.25;
+            font-size: .98rem;
             font-weight: 700;
-            overflow-wrap: anywhere;
-            background: linear-gradient(transparent, rgba(0,0,0,.82));
+            color: var(--text-main, #161823);
+            margin: 0 0 4px 0;
+            line-height: 1.35;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
-        .discover-feels-empty {
-            grid-column: 1 / -1;
-            color: var(--text-muted);
-            font-size: .85rem;
-            padding: 12px 0 18px;
-            text-align: center;
-        }
-
+        .video-meta-txt { font-size: .8rem; color: var(--text-muted, #8a8b91); }
     </style>
 </head>
 <body>
 
 <!-- =========================================================
-     DISCOVER TAB (REPOSITIONED TO TOP & REDESIGNED)
+     DISCOVER TAB
      ========================================================= -->
 <div class="tab-content" id="search-tab">
-    
-    <!-- Search Trigger Bar (ক্লিক করলে ফুলস্ক্রিন পেজ ওপেন হবে) -->
-    <div class="discover-search-trigger" id="discover-search-trigger">
-        <i class="fas fa-search"></i>
-        <span>Search movies, feels, creators...</span>
-        <div class="discover-mic-pill">
-            <i class="fas fa-microphone"></i>
+
+    <!-- Search bar (tap opens the fullscreen search page) -->
+    <div class="discover-search-trigger" id="discover-search-trigger" role="search">
+        <svg class="dc-search-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true">
+            <circle cx="10.5" cy="10.5" r="7"></circle>
+            <path d="M16 16l5 5"></path>
+        </svg>
+        <span class="dc-search-placeholder">Discover new topics</span>
+        <span class="dc-search-btn">Search</span>
+    </div>
+
+    <!-- Category chips -->
+    <div class="discover-tags-row">
+        <div class="discover-tag-chip active">All</div>
+        <div class="discover-tag-chip">Entertainment</div>
+        <div class="discover-tag-chip">Music</div>
+        <div class="discover-tag-chip">Comedy</div>
+        <div class="discover-tag-chip">Action</div>
+        <div class="discover-tag-chip">Sci-Fi</div>
+        <div class="discover-tag-chip">Trailer</div>
+        <div class="discover-tag-chip">Aura</div>
+    </div>
+
+    <!-- Masonry feed: app.js fills this from Firebase -->
+    <div class="discover-feels-grid" id="discover-feels-grid" data-state="loading" aria-label="Feels">
+        <div class="dc-col">
+            <div class="dc-skel-thumb" style="aspect-ratio:3/4"></div><div class="dc-skel-line"></div><div class="dc-skel-line" style="width:60%"></div>
+            <div class="dc-skel-thumb" style="aspect-ratio:1/1.05"></div><div class="dc-skel-line"></div>
+        </div>
+        <div class="dc-col">
+            <div class="dc-skel-thumb" style="aspect-ratio:1/1.1"></div><div class="dc-skel-line"></div><div class="dc-skel-line" style="width:60%"></div>
+            <div class="dc-skel-thumb" style="aspect-ratio:3/4"></div><div class="dc-skel-line"></div>
         </div>
     </div>
 
-    <!-- Trending Quick Tags -->
-    <div class="discover-tags-row">
-        <div class="discover-tag-chip active"><i class="fas fa-compass"></i> All</div>
-        <div class="discover-tag-chip"><i class="fas fa-fire" style="color:var(--primary);"></i> Aura</div>
-        <div class="discover-tag-chip"><i class="fas fa-bolt" style="color:#FFB300;"></i> Trailer</div>
-        <div class="discover-tag-chip">Action</div>
-        <div class="discover-tag-chip">Sci-Fi</div>
-        <div class="discover-tag-chip">Comedy</div>
-        <div class="discover-tag-chip">Music</div>
-    </div>
-
-    <!-- Discover Section Title -->
-    <div class="discover-section-title">
-        <i class="fas fa-compass" style="color: var(--primary);"></i>
-        <span>Explore Flaynity</span>
-    </div>
-
-    <!-- Feels from Firebase Realtime Database -->
-    <div class="discover-feels-grid" id="discover-feels-grid" aria-label="Feels">
-        <div class="discover-feels-empty">Loading Feels...</div>
-    </div>
-
-    <!-- Default Discover Movie Grid -->
-    <div class="movie-grid" id="search-results">
-        <!-- JS দিয়ে আপনার রেগুলার ডিসকভার কার্ড এখানে রেন্ডার হবে -->
-    </div>
+    <!-- Regular discover cards (kept for your existing JS) -->
+    <div class="movie-grid" id="search-results"></div>
 
 </div>
 
 <!-- =========================================================
-     FULLSCREEN SEARCH PAGE MODAL
+     FULLSCREEN SEARCH PAGE
      ========================================================= -->
 <div id="fullscreen-search-page">
-    
-    <!-- Top Bar: Back | Search Input | Clear (X) & Voice Buttons -->
+
     <div class="search-topbar">
         <button class="search-back-btn" id="search-back-btn" title="Back">
             <i class="fas fa-arrow-left"></i>
@@ -491,49 +471,36 @@
 
         <div class="search-input-wrap">
             <input class="search-main-input" id="search-active-input" type="text" placeholder="Search Flaynity..." autocomplete="off"/>
-            
-            <!-- Clear Button ('X') - কিছু লিখলে শো করানোর জন্য -->
+
             <button class="search-action-btn" id="search-clear-btn" style="display: none;" title="Clear">
                 <i class="fas fa-times"></i>
             </button>
-            
-            <!-- Mic Voice Button - ডিফল্টভাবে শো থাকবে -->
+
             <button class="search-action-btn" id="search-mic-btn" title="Voice Search">
                 <i class="fas fa-microphone"></i>
             </button>
         </div>
     </div>
 
-    <!-- Realtime Keyword Suggestions List Container -->
-    <div class="search-suggestions-list" id="search-suggestions-container">
-        <!-- JS দিয়ে টাইপ করার সময় সাজেশন আইটেম এখানে রেন্ডার হবে -->
-    </div>
+    <div class="search-suggestions-list" id="search-suggestions-container"></div>
 
-    <!-- Search Results Container -->
     <div class="search-results-wrapper" id="search-results-container">
-        
-        <!-- Feels Results (9:16 Portrait Grid) -->
+
         <div id="search-feels-section" style="display: none;">
             <div class="discover-section-title" style="margin: 0 0 12px 0;">
-                <i class="fas fa-bolt" style="color: var(--primary);"></i> Feels
+                <i class="fas fa-bolt" style="color: var(--primary, #FE2C55);"></i> Feels
             </div>
-            <div class="feels-result-grid" id="search-feels-results">
-                <!-- JS দিয়ে 9:16 Feels কার্ডগুলো এখানে রেন্ডার হবে -->
-            </div>
+            <div class="feels-result-grid" id="search-feels-results"></div>
         </div>
 
-        <!-- Long Videos Results (16:9 Widescreen List) -->
         <div id="search-videos-section" style="display: none;">
             <div class="discover-section-title" style="margin: 16px 0 12px 0;">
-                <i class="fas fa-play-circle" style="color: var(--primary);"></i> Videos
+                <i class="fas fa-play-circle" style="color: var(--primary, #FE2C55);"></i> Videos
             </div>
-            <div class="long-video-list" id="search-videos-results">
-                <!-- JS দিয়ে 16:9 Video কার্ডগুলো এখানে রেন্ডার হবে -->
-            </div>
+            <div class="long-video-list" id="search-videos-results"></div>
         </div>
 
-        <!-- No Results Found State -->
-        <div id="search-no-result" style="display: none; text-align: center; padding: 70px 20px; color: var(--text-muted);">
+        <div id="search-no-result" style="display: none; text-align: center; padding: 70px 20px; color: var(--text-muted, #8a8b91);">
             <i class="fas fa-search" style="font-size: 2.5rem; opacity: 0.4; margin-bottom: 12px; display: block;"></i>
             <p style="font-weight: 700; margin: 0;">No results found</p>
         </div>

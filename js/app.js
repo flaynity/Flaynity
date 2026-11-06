@@ -13371,7 +13371,7 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
 })();
 
 
-/* Discover Feels feed — robust initialization after modular page injection. */
+/* Discover (Explore) feed — 2-column masonry cards, live from Firebase. */
 (function () {
     "use strict";
     var FEELS_PATH = "admin_panel/movies/feels";
@@ -13379,6 +13379,11 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
     var boundGrid = null;
     var retryCount = 0;
     var observer = null;
+    var likeCache = {};
+    var RATIOS = [3 / 4, 3 / 4, 1 / 1.05, 3 / 4.1, 1 / 1.2];
+
+    var HEART_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.4s-7.6-4.6-9.2-9.5C1.7 7.5 3.7 4.4 7 4.4c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.3 0 5.3 3.1 4.2 6.5-1.6 4.9-9.2 9.5-9.2 9.5z"/></svg>';
+    var IMAGE_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 2v8.6l3.4-3.4a1 1 0 0 1 1.4 0l3 3 2.2-2.2a1 1 0 0 1 1.4 0L19 14.6V6zm10.2 3.2a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8z"/></svg>';
 
     function pickText(item) {
         return String(item.caption || item.title || item.name || item.description || "").trim();
@@ -13393,8 +13398,132 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
                item.mediaURL || item.fileUrl || item.fileURL || item.downloadUrl || item.downloadURL ||
                item.url || item.video_url || "";
     }
+    function pickName(item) {
+        return String(item.username || item.channelName || item.uploaderName || item.author || item.creator || "").trim();
+    }
+    function pickAvatar(item) {
+        return item.channelAvatar || item.avatarUrl || item.avatar || item.channelImageUrl || item.profileImage || "";
+    }
+    function fmt(n) {
+        n = Number(n) || 0;
+        if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M";
+        if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, "") + "K";
+        return String(n);
+    }
+    function ratioFor(id) {
+        var sum = 0, str = String(id || "");
+        for (var i = 0; i < str.length; i++) sum += str.charCodeAt(i);
+        return RATIOS[sum % RATIOS.length];
+    }
     function showState(grid, message) {
-        if (grid) grid.innerHTML = '<div class="discover-feels-empty">' + message + '</div>';
+        if (!grid) return;
+        grid.dataset.state = "message";
+        grid.innerHTML = "";
+        var box = document.createElement("div");
+        box.className = "discover-feels-empty";
+        box.textContent = message;
+        grid.appendChild(box);
+    }
+    function loadLikes(id, label, fallback) {
+        label.textContent = fmt(fallback);
+        if (likeCache[id] !== undefined) { label.textContent = fmt(likeCache[id]); return; }
+        try {
+            window.firebase.database().ref("movie_stats/" + id + "/likes").once("value", function (snap) {
+                var v = snap.val();
+                var count = v && typeof v === "object" ? Object.keys(v).length : (Number(v) || Number(fallback) || 0);
+                likeCache[id] = count;
+                label.textContent = fmt(count);
+            });
+        } catch (e) {}
+    }
+    function buildCard(id, item, ratio) {
+        var card = document.createElement("div");
+        card.className = "discover-feels-card";
+        card.dataset.id = id;
+
+        var thumb = document.createElement("div");
+        thumb.className = "dc-thumb";
+        thumb.style.aspectRatio = String(ratio);
+        card.appendChild(thumb);
+
+        var caption = pickText(item);
+        var image = pickImage(item);
+        var video = pickVideo(item);
+
+        function addVideo() {
+            var v = document.createElement("video");
+            v.src = video; v.muted = true; v.playsInline = true; v.preload = "metadata";
+            thumb.insertBefore(v, thumb.firstChild);
+        }
+        if (image) {
+            var img = document.createElement("img");
+            img.src = image;
+            img.alt = caption || "Feel";
+            img.loading = "lazy";
+            img.decoding = "async";
+            img.onerror = function () {
+                img.style.display = "none";
+                if (video) addVideo();
+            };
+            thumb.appendChild(img);
+        } else if (video) {
+            addVideo();
+        } else {
+            var ph = document.createElement("div");
+            ph.className = "dc-thumb-ph";
+            ph.textContent = caption || "Feel";
+            thumb.appendChild(ph);
+        }
+        if (!video) {
+            var badge = document.createElement("span");
+            badge.className = "dc-badge";
+            badge.innerHTML = IMAGE_SVG;
+            thumb.appendChild(badge);
+        }
+
+        if (caption) {
+            var title = document.createElement("div");
+            title.className = "discover-feels-caption";
+            title.textContent = caption;
+            card.appendChild(title);
+        }
+
+        var meta = document.createElement("div");
+        meta.className = "dc-meta";
+        var av = pickAvatar(item);
+        if (av) {
+            var avImg = document.createElement("img");
+            avImg.className = "dc-av";
+            avImg.src = av;
+            avImg.alt = "";
+            avImg.loading = "lazy";
+            avImg.onerror = function () { avImg.style.visibility = "hidden"; };
+            meta.appendChild(avImg);
+        } else {
+            var avPh = document.createElement("span");
+            avPh.className = "dc-av";
+            meta.appendChild(avPh);
+        }
+        var name = document.createElement("span");
+        name.className = "dc-name";
+        name.textContent = pickName(item) || "Flaynity";
+        meta.appendChild(name);
+
+        var like = document.createElement("span");
+        like.className = "dc-like";
+        like.innerHTML = HEART_SVG;
+        var count = document.createElement("b");
+        count.style.fontWeight = "500";
+        like.appendChild(count);
+        meta.appendChild(like);
+        card.appendChild(meta);
+        loadLikes(id, count, item.likes);
+
+        card.addEventListener("click", function () {
+            if (typeof playUI === "function") playUI("click");
+            if (typeof openShortFromHome === "function") openShortFromHome(id);
+        });
+        return card;
     }
     function renderFeels(snapshot) {
         var grid = document.getElementById("discover-feels-grid");
@@ -13404,8 +13533,8 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
         var entries = Object.entries(data).filter(function (entry) {
             var item = entry[1] || {};
             var status = String(item.status || item.visibility || "published").toLowerCase();
-            return status !== "hidden" && status !== "deleted" && status !== "draft" &&
-                   item.published !== false && item.isPublished !== false;
+            return status !== "hidden" && status !== "deleted" && status !== "draft" && status !== "scheduled" &&
+                   status !== "private" && item.published !== false && item.isPublished !== false;
         }).sort(function (a, b) {
             var av = Number((a[1] || {}).createdAt || (a[1] || {}).uploadTime || (a[1] || {}).timestamp || 0);
             var bv = Number((b[1] || {}).createdAt || (b[1] || {}).uploadTime || (b[1] || {}).timestamp || 0);
@@ -13415,50 +13544,21 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
             showState(grid, "No Feels available yet");
             return;
         }
+        grid.dataset.state = "ready";
         grid.innerHTML = "";
+        var cols = [document.createElement("div"), document.createElement("div")];
+        cols[0].className = cols[1].className = "dc-col";
+        var heights = [0, 0];
         entries.forEach(function (entry) {
             var item = entry[1] || {};
-            var card = document.createElement("div");
-            card.className = "discover-feels-card";
-            var image = pickImage(item);
-            var video = pickVideo(item);
-            if (image) {
-                var img = document.createElement("img");
-                img.src = image;
-                img.alt = pickText(item) || "Feel";
-                img.loading = "lazy";
-                img.onerror = function () {
-                    if (video) {
-                        var v = document.createElement("video");
-                        v.src = video; v.muted = true; v.playsInline = true; v.preload = "metadata";
-                        card.insertBefore(v, card.firstChild);
-                    } else {
-                        img.style.display = "none";
-                    }
-                };
-                card.appendChild(img);
-            } else if (video) {
-                var vid = document.createElement("video");
-                vid.src = video;
-                vid.muted = true;
-                vid.playsInline = true;
-                vid.preload = "metadata";
-                card.appendChild(vid);
-            } else {
-                var placeholder = document.createElement("div");
-                placeholder.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;padding:8px;text-align:center";
-                placeholder.textContent = pickText(item) || "Feel";
-                card.appendChild(placeholder);
-            }
-            var caption = pickText(item);
-            if (caption) {
-                var label = document.createElement("div");
-                label.className = "discover-feels-caption";
-                label.textContent = caption;
-                card.appendChild(label);
-            }
-            grid.appendChild(card);
+            var id = item.id || entry[0];
+            var ratio = ratioFor(id);
+            var target = heights[0] <= heights[1] ? 0 : 1;
+            cols[target].appendChild(buildCard(id, item, ratio));
+            heights[target] += 1 / ratio + 0.5; // thumbnail height + text block (relative to column width)
         });
+        grid.appendChild(cols[0]);
+        grid.appendChild(cols[1]);
     }
     function connectFeels() {
         var grid = document.getElementById("discover-feels-grid");
@@ -13482,13 +13582,10 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
                 console.error("Discover Feels Firebase error:", error);
                 showState(document.getElementById("discover-feels-grid"), "Unable to load Feels. Check Firebase access.");
             });
-            // Avoid an endless spinner if Firebase never answers (for example, a permission/network error).
+            // Avoid an endless skeleton if Firebase never answers (permission/network error).
             setTimeout(function () {
-                var currentGrid = document.getElementById("discover-feels-grid");
-                if (currentGrid && currentGrid.querySelector(".discover-feels-empty") &&
-                    currentGrid.textContent.indexOf("Loading Feels") !== -1) {
-                    showState(currentGrid, "Connecting to Feels…");
-                }
+                var g = document.getElementById("discover-feels-grid");
+                if (g && g.dataset.state === "loading") showState(g, "Connecting to Feels…");
             }, 8000);
         } catch (error) {
             console.error("Discover Feels initialization error:", error);
@@ -13503,7 +13600,6 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
     window.addEventListener("flaynity-dom-ready", initAfterInjection);
     window.addEventListener("flaynity-tab-changed", initAfterInjection);
     document.addEventListener("DOMContentLoaded", initAfterInjection);
-    // Covers the case where pages-ready fired before this module registered its listener.
     if (document.getElementById("discover-feels-grid")) initAfterInjection();
     if (document.body && typeof MutationObserver !== "undefined") {
         observer = new MutationObserver(function () {

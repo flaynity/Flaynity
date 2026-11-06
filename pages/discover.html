@@ -258,94 +258,195 @@
             overflow-y: auto;
         }
 
+        /* ---------- Search page (TikTok-style) ---------- */
+        #fullscreen-search-page {
+            --sp-field: #f1f1f2;
+            --sp-ink: var(--text-main, #161823);
+            --sp-mute: var(--text-muted, #8a8b91);
+            --sp-accent: var(--primary, #FE2C55);
+            font-family: inherit;
+        }
         .search-topbar {
             position: sticky;
             top: 0;
-            left: 0;
             width: 100%;
-            background: var(--surface, #fff);
+            background: var(--bg-color, #fff);
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
-            border-bottom: 1px solid var(--border-color, rgba(0,0,0,.08));
+            gap: 6px;
+            padding: 8px 12px 8px 6px;
             z-index: 10;
             box-sizing: border-box;
         }
         .search-back-btn {
             background: none;
             border: none;
-            color: var(--text-main, #161823);
-            font-size: 1.2rem;
-            width: 38px;
-            height: 38px;
+            color: var(--sp-ink);
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             flex-shrink: 0;
+            -webkit-tap-highlight-color: transparent;
         }
-        .search-back-btn:active { background: rgba(128,128,134,.16); }
+        .search-back-btn svg { width: 28px; height: 28px; }
+        .search-back-btn:active { background: rgba(128,128,134,.14); }
 
-        .search-input-wrap { flex: 1; position: relative; display: flex; align-items: center; }
-        .search-main-input {
-            width: 100%;
+        .search-input-wrap {
+            flex: 1;
+            min-width: 0;
             height: 44px;
-            padding: 0 42px 0 16px;
-            background: rgba(128, 128, 134, 0.12);
-            border: 1.5px solid transparent;
-            border-radius: 12px;
-            color: var(--text-main, #161823);
-            font-family: inherit;
-            font-size: 1rem;
-            font-weight: 500;
-            outline: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 8px 0 12px;
+            background: var(--sp-field);
+            border-radius: 10px;
             box-sizing: border-box;
-            transition: border-color .2s, background .2s;
         }
-        .search-main-input:focus { background: transparent; border-color: var(--primary, #FE2C55); }
+        .search-input-ic { flex: 0 0 auto; width: 24px; height: 24px; color: var(--sp-ink); }
+        .search-main-input {
+            flex: 1;
+            min-width: 0;
+            height: 100%;
+            padding: 0;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--sp-ink);
+            font-family: inherit;
+            font-size: 1.02rem;
+            font-weight: 400;
+            caret-color: var(--sp-accent);
+        }
+        .search-main-input::placeholder { color: var(--sp-mute); opacity: 1; }
 
         .search-action-btn {
-            position: absolute;
-            right: 8px;
+            flex: 0 0 auto;
             background: none;
             border: none;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            color: var(--text-muted, #8a8b91);
-            font-size: 1rem;
+            padding: 0;
+            width: 28px;
+            height: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
-        .search-action-btn:active { color: var(--primary, #FE2C55); }
+        .search-clear-dot {
+            width: 24px; height: 24px; border-radius: 50%;
+            background: #9a9a9f; color: #fff;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .search-clear-dot svg { width: 12px; height: 12px; }
+        /* mic is kept in the DOM for your JS but not shown (reference has none) */
+        #search-mic-btn { display: none !important; }
 
-        .search-suggestions-list { display: flex; flex-direction: column; }
+        .search-go-btn {
+            flex: 0 0 auto;
+            background: none;
+            border: none;
+            padding: 8px 4px 8px 6px;
+            font-family: inherit;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--sp-accent);
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .search-go-btn:active { opacity: .6; }
+
+        /* ---- Suggestions ---- */
+        .search-suggestions-list { display: flex; flex-direction: column; padding: 4px 0 0; }
         .suggestion-item {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 14px 18px;
+            gap: 16px;
+            padding: 8px 16px;
+            min-height: 48px;
             cursor: pointer;
-            border-bottom: 1px solid var(--border-color, rgba(0,0,0,.08));
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none; user-select: none;
+            -webkit-touch-callout: none;
         }
-        .suggestion-item:active { background: rgba(128,128,134,.12); }
-        .suggestion-left {
+        .suggestion-item:active { background: rgba(128,128,134,.08); }
+        .suggestion-ic {
+            flex: 0 0 auto;
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: var(--sp-field);
+            color: #4b4b50;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .suggestion-ic svg { width: 17px; height: 17px; }
+        .suggestion-text {
+            flex: 1;
+            min-width: 0;
+            font-size: 1.08rem;
+            font-weight: 600;
+            color: var(--sp-ink);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .suggestion-text .hl { color: var(--sp-accent); }
+
+        .search-report-hint {
+            text-align: center;
+            padding: 22px 24px 0;
+            font-size: .95rem;
+            color: var(--sp-mute);
+        }
+
+        /* ---- Recent searches ---- */
+        .recent-wrap { padding: 4px 16px 24px; }
+        .recent-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0 6px;
+        }
+        .recent-title { font-size: 1.3rem; font-weight: 800; color: var(--sp-ink); }
+        .recent-clear {
+            background: none; border: none; padding: 6px 0 6px 12px;
+            font-family: inherit; font-size: 1rem; font-weight: 500;
+            color: var(--sp-mute); cursor: pointer;
+        }
+        .recent-item {
             display: flex;
             align-items: center;
             gap: 14px;
-            font-size: .95rem;
-            font-weight: 600;
-            color: var(--text-main, #161823);
+            min-height: 48px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
-        .suggestion-left i { color: var(--text-muted, #8a8b91); font-size: .85rem; }
-        .suggestion-item .arrow-icon {
-            color: var(--text-muted, #8a8b91);
-            font-size: .85rem;
-            transform: rotate(-45deg);
+        .recent-clock { flex: 0 0 auto; width: 22px; height: 22px; color: #a3a3a8; }
+        .recent-text {
+            flex: 1;
+            min-width: 0;
+            font-size: 1.08rem;
+            font-weight: 600;
+            color: var(--sp-ink);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .recent-x {
+            flex: 0 0 auto;
+            background: none; border: none; padding: 8px 2px 8px 10px;
+            color: #8a8b91; cursor: pointer; display: flex;
+        }
+        .recent-x svg { width: 22px; height: 22px; }
+
+        .dc-toast {
+            position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%);
+            background: rgba(22,24,35,.92); color: #fff;
+            padding: 10px 18px; border-radius: 22px; font-size: .9rem;
+            z-index: 100000; pointer-events: none;
         }
 
         /* ---------- Search results ---------- */
@@ -465,24 +566,32 @@
 <div id="fullscreen-search-page">
 
     <div class="search-topbar">
-        <button class="search-back-btn" id="search-back-btn" title="Back">
-            <i class="fas fa-arrow-left"></i>
+        <button class="search-back-btn" id="search-back-btn" title="Back" aria-label="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4M10.5 5.5 4 12l6.5 6.5"/></svg>
         </button>
 
         <div class="search-input-wrap">
-            <input class="search-main-input" id="search-active-input" type="text" placeholder="Search Flaynity..." autocomplete="off"/>
+            <svg class="search-input-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.8"/><path d="m15.8 15.8 5 5"/></svg>
+            <input class="search-main-input" id="search-active-input" type="text" placeholder="Search" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search"/>
 
-            <button class="search-action-btn" id="search-clear-btn" style="display: none;" title="Clear">
-                <i class="fas fa-times"></i>
+            <button class="search-action-btn" id="search-clear-btn" style="display: none;" title="Clear" aria-label="Clear">
+                <span class="search-clear-dot"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg></span>
             </button>
 
-            <button class="search-action-btn" id="search-mic-btn" title="Voice Search">
+            <button class="search-action-btn" id="search-mic-btn" title="Voice Search" aria-label="Voice Search">
                 <i class="fas fa-microphone"></i>
             </button>
         </div>
+
+        <button class="search-go-btn" id="search-go-btn">Search</button>
     </div>
 
-    <div class="search-suggestions-list" id="search-suggestions-container"></div>
+    <div class="recent-wrap" id="search-recent-container" style="display:none;"></div>
+
+    <div id="search-suggestions-wrap" style="display:none;">
+        <div class="search-suggestions-list" id="search-suggestions-container"></div>
+        <div class="search-report-hint">Press and hold on a suggestion to report it</div>
+    </div>
 
     <div class="search-results-wrapper" id="search-results-container">
 

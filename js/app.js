@@ -1420,7 +1420,9 @@ function applyAdminControls() {
         if (!user) return;
         let channel = null;
         try { const snap = await db.ref('channels/' + user.uid).once('value'); channel = snap.val(); } catch(e) {}
-        if (!force && (channel || window.__flaynityChannelCreatedUid === user.uid)) return;
+        let _localHas = false;
+        try { _localHas = localStorage.getItem('flaynity_channel_created:' + user.uid) === '1' || !!localStorage.getItem('flaynity_channel_cache:' + user.uid); } catch (e) {}
+        if (!force && (channel || _localHas || window.__flaynityChannelCreatedUid === user.uid)) return;
         let root = document.getElementById('fl-create-channel');
         if (!root) {
             root = document.createElement('section');
@@ -1917,6 +1919,7 @@ function applyAdminControls() {
                     const updates={};updates['channels/'+user.uid]=payload;updates['users/'+user.uid+'/channelName']=name;updates['users/'+user.uid+'/handle']=handle;updates['users/'+user.uid+'/channelCreated']=true;if(payload.phone)updates['users/'+user.uid+'/phone']=payload.phone;updates['channelHandles/'+handle]=user.uid;
                     await db.ref().update(updates);
                     window.__flaynityChannelCreatedUid=user.uid;
+                    try{localStorage.setItem('flaynity_channel_created:'+user.uid,'1');}catch(e){}
                     currentChannelData=payload;
                     try{localStorage.setItem('flaynity_channel_cache:'+user.uid,JSON.stringify(payload));localStorage.setItem('flaynity_user_session_cache',JSON.stringify(payload));}catch(e){}
                     document.querySelectorAll('#fl-create-channel').forEach(n=>n.remove());document.documentElement.style.overscrollBehaviorY='';document.body.style.overscrollBehaviorY='';
@@ -2014,8 +2017,18 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         // Users without a channel must create one BEFORE the app is shown (Home never opens first).
         let needsChannel = false;
         try {
-            const channelSnap = await db.ref('channels/' + user.uid).once('value');
-            needsChannel = !channelSnap.exists() && firstData.channelCreated !== true && window.__flaynityChannelCreatedUid !== user.uid && typeof window.showCreateChannelPage === 'function';
+            let hasChannel = firstData.channelCreated === true || window.__flaynityChannelCreatedUid === user.uid;
+            try {
+                if (localStorage.getItem('flaynity_channel_created:' + user.uid) === '1' || localStorage.getItem('flaynity_channel_cache:' + user.uid)) hasChannel = true;
+            } catch (e) {}
+            // Read the channel (twice if it looks missing) so one empty read never shows the page by mistake.
+            for (let i = 0; i < 2 && !hasChannel; i++) {
+                const channelSnap = await db.ref('channels/' + user.uid).once('value');
+                if (channelSnap.exists()) { hasChannel = true; break; }
+                if (i === 0) await new Promise(r => setTimeout(r, 600));
+            }
+            if (hasChannel) { try { localStorage.setItem('flaynity_channel_created:' + user.uid, '1'); } catch (e) {} }
+            needsChannel = !hasChannel && typeof window.showCreateChannelPage === 'function';
         } catch (channelCheckError) { console.warn('Create Channel check failed:', channelCheckError); }
         if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
 

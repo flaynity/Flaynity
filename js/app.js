@@ -11175,6 +11175,7 @@ function flyOnFsChange(){
 let dbSearchCache = {
     videos: [],
     feels: [],
+    channels: [],
     loaded: false
 };
 let searchDebounce = null;
@@ -11226,6 +11227,23 @@ function initSearchEvents() {
         clearBtn.addEventListener('click', () => {
             if (typeof playUI === 'function') playUI('click');
             clearSearchInput();
+        });
+    }
+
+    document.querySelectorAll('#search-tabs .search-tab-btn').forEach(tb => {
+        if (tb.dataset.searchBound) return;
+        tb.dataset.searchBound = '1';
+        tb.addEventListener('click', () => {
+            if (typeof playUI === 'function') playUI('click');
+            setSearchTab(tb.dataset.tab);
+        });
+    });
+    const moreBtn = document.getElementById('search-more-btn');
+    if (moreBtn && !moreBtn.dataset.searchBound) {
+        moreBtn.dataset.searchBound = '1';
+        moreBtn.addEventListener('click', () => {
+            if (typeof playUI === 'function') playUI('click');
+            if (typeof onSearchMoreClick === 'function') onSearchMoreClick();
         });
     }
 
@@ -11284,6 +11302,10 @@ function preloadFirebaseSearchData() {
         });
     }
 
+    db.ref('channels').on('value', (snap) => {
+        const val = snap.val() || {};
+        dbSearchCache.channels = Object.keys(val).map(key => ({ id: key, ...(val[key] || {}) }));
+    });
     bindMerged(videoPaths, 'videos');
     bindMerged(feelPaths, 'feels');
 }
@@ -11355,6 +11377,8 @@ function showSearchToast(msg) {
 }
 
 function setSearchPanels(mode) { // 'recent' | 'suggest' | 'results'
+    const pageEl = document.getElementById('fullscreen-search-page');
+    if (pageEl) pageEl.classList.toggle('is-results', mode === 'results');
     const recent = document.getElementById('search-recent-container');
     const sugWrap = document.getElementById('search-suggestions-wrap');
     const sug = document.getElementById('search-suggestions-container');
@@ -11509,15 +11533,12 @@ function executeFinalSearch(keyword) {
 
     feelsGrid.innerHTML = '';
     videosList.innerHTML = '';
-    feelsSec.style.display = 'none';
-    videosSec.style.display = 'none';
     noResult.style.display = 'none';
 
     const matchedFeels = dbSearchCache.feels.filter(f => `${f.title || ''} ${f.description || ''}`.toLowerCase().includes(query));
     const matchedVideos = dbSearchCache.videos.filter(v => `${v.title || ''} ${v.description || ''}`.toLowerCase().includes(query));
 
     if (matchedFeels.length > 0) {
-        feelsSec.style.display = 'block';
         feelsGrid.innerHTML = matchedFeels.map(item => `
             <div class="feels-card-9-16" onclick="handleOpenFeel('${escapeHtml(String(item.id))}')">
                 <img src="${escapeHtml(item.thumbnail || item.poster || '')}" alt="" onerror="this.src='assets/placeholder-feel.jpg'">
@@ -11527,7 +11548,6 @@ function executeFinalSearch(keyword) {
     }
 
     if (matchedVideos.length > 0) {
-        videosSec.style.display = 'block';
         videosList.innerHTML = matchedVideos.map(item => `
             <div class="video-card-16-9" onclick="handleOpenVideo('${escapeHtml(String(item.id))}')">
                 <img class="video-thumb-16-9" src="${escapeHtml(item.thumbnail || item.banner || item.poster || '')}" alt="" onerror="this.src='assets/placeholder-banner.jpg'">
@@ -11539,7 +11559,96 @@ function executeFinalSearch(keyword) {
         `).join('');
     }
 
-    if (matchedFeels.length === 0 && matchedVideos.length === 0) noResult.style.display = 'block';
+    const matchedUsers = renderUserResults(query);
+    searchCounts = { users: matchedUsers, videos: matchedVideos.length, feels: matchedFeels.length };
+    setSearchTab('top');
+}
+
+/* ---------- Results tabs + Users ---------- */
+let searchCounts = { users: 0, videos: 0, feels: 0 };
+let searchSubRefs = [];
+
+function setSearchTab(tab) {
+    const wrap = document.getElementById('search-results-container');
+    if (!wrap) return;
+    wrap.setAttribute('data-tab', tab);
+    document.querySelectorAll('#search-tabs .search-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? 'block' : 'none'; };
+    const c = searchCounts;
+    show('search-users-section', (tab === 'top' || tab === 'users') && c.users > 0);
+    show('search-feels-section', (tab === 'top' || tab === 'feels') && c.feels > 0);
+    show('search-videos-section', (tab === 'top' || tab === 'videos') && c.videos > 0);
+    const total = tab === 'top' ? c.users + c.videos + c.feels : tab === 'photos' ? 0 : c[tab];
+    const nr = document.getElementById('search-no-result');
+    if (nr) {
+        nr.style.display = total === 0 ? 'block' : 'none';
+        const p = nr.querySelector('p');
+        if (p) p.textContent = tab === 'photos' ? 'No photos found' : 'No results found';
+    }
+    const page = document.getElementById('fullscreen-search-page');
+    if (page) page.scrollTop = 0;
+}
+
+function userAvatarFallback() {
+    return '<svg viewBox="0 0 56 56"><rect width="56" height="56" fill="#e4e4e7"/><circle cx="28" cy="22" r="9" fill="#fff"/><path d="M10 56c0-11 8-17 18-17s18 6 18 17z" fill="#fff"/></svg>';
+}
+
+function renderUserResults(query) {
+    const list = document.getElementById('search-users-results');
+    searchSubRefs.forEach(r => { try { r.off(); } catch (e) {} });
+    searchSubRefs = [];
+    if (!list) return 0;
+    const q = query.toLowerCase();
+    const qCompact = q.replace(/\s+/g, '');
+    const matched = dbSearchCache.channels.filter(c => {
+        const handle = String(c.handle || '').toLowerCase();
+        const name = String(c.channelName || '').toLowerCase();
+        return handle.includes(q) || name.includes(q) ||
+               handle.includes(qCompact) || name.replace(/\s+/g, '').includes(qCompact);
+    }).sort((a, b) => (Number(b.subscribersCount) || 0) - (Number(a.subscribersCount) || 0)).slice(0, 30);
+
+    const myUid = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.uid : null;
+    list.innerHTML = matched.map(c => {
+        const id = String(c.channelId || c.id);
+        const subs = Number(c.subscribersCount) || 0;
+        const avatar = c.avatarUrl ? `<img src="${escapeHtml(c.avatarUrl)}" alt="" onerror="this.remove()">` : '';
+        return `
+        <div class="user-row" onclick="openSearchedChannel('${escapeHtml(id)}')">
+            <div class="user-avatar">${userAvatarFallback()}${avatar}</div>
+            <div class="user-info">
+                <div class="user-handle">${escapeHtml(c.handle || c.channelName || 'user')}</div>
+                <div class="user-name">${escapeHtml(c.channelName || c.handle || '')}</div>
+                <div class="user-subs">${escapeHtml(String(formatCount(subs)))} subscribers</div>
+            </div>
+            ${id === myUid ? '' : `<button class="user-sub-btn" id="user-sub-${escapeHtml(id)}" onclick="event.stopPropagation(); toggleClipSubscribe('${escapeHtml(id)}', this)">Subscribe</button>`}
+        </div>`;
+    }).join('');
+
+    if (myUid && typeof db !== 'undefined') {
+        matched.forEach(c => {
+            const id = String(c.channelId || c.id);
+            if (id === myUid) return;
+            const ref = db.ref(`subscribers/${id}/${myUid}`);
+            ref.on('value', (snap) => {
+                const btn = document.getElementById('user-sub-' + id);
+                if (!btn) return;
+                const on = snap.exists();
+                btn.textContent = on ? 'Subscribed' : 'Subscribe';
+                btn.classList.toggle('subscribed', on);
+            });
+            searchSubRefs.push(ref);
+        });
+    }
+    return matched.length;
+}
+
+function openSearchedChannel(channelId) {
+    if (typeof playUI === 'function') playUI('click');
+    // Hook: define window.openChannelProfile(channelId) in your app to open the public channel page.
+    if (typeof window.openChannelProfile === 'function') {
+        closeFullscreenSearch();
+        window.openChannelProfile(channelId);
+    }
 }
 
 function startVoiceRecognition() {

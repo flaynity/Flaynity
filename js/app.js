@@ -1453,7 +1453,8 @@ function applyAdminControls() {
                 #fl-create-channel .flcc-info label{display:block;padding:0;color:#202027;font-size:13px;font-weight:800}
                 #fl-create-channel .flcc-info select,#fl-create-channel .flcc-info input{padding:5px 0 0;font-size:12.5px;color:#777}
                 #fl-create-channel .flcc-submit{width:100%;height:57px;border:0;border-radius:30px;background:linear-gradient(100deg,#ff2b83,#f0004f);color:#fff;font:800 16px 'Plus Jakarta Sans',sans-serif;margin:12px 0 0;box-shadow:0 8px 20px rgba(240,0,79,.18);transition:transform .16s,opacity .16s}
-                #fl-create-channel .flcc-submit:active{transform:scale(.985)} #fl-create-channel .flcc-submit:disabled{opacity:.55}
+                #fl-create-channel .flcc-submit:active{transform:scale(.985)} #fl-create-channel .flcc-submit:disabled{opacity:.45;box-shadow:none;cursor:not-allowed}
+                #fl-create-channel .flcc-need{font-size:12.5px;font-weight:600;text-align:center;color:#e5334d;margin:12px 6px 0;min-height:16px;line-height:1.45}
                 #fl-create-channel .flcc-terms{text-align:center;color:#777781;font-size:10.5px;line-height:1.6;margin:12px 12px 0}
                 #fl-create-channel .flcc-status{font-size:12px;text-align:center;color:#777;margin:8px 0;min-height:16px}
                 /* ---- Redesign: rows with chevrons (Name → Gender) ---- */
@@ -1508,7 +1509,8 @@ function applyAdminControls() {
                   <div class="flcc-info"><span class="flcc-ico"><i class="fa-solid fa-venus-mars"></i></span><div class="flcc-txt"><label for="flcc-gender">Gender</label><span class="flcc-val" id="flcc-gender-val">Select gender</span></div><span class="flcc-chev">›</span><select id="flcc-gender" class="flcc-ov"><option value="">Select gender</option><option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option></select></div>
                 </div>
                 <p class="flcc-status" id="flcc-status" role="status"></p>
-                <button class="flcc-submit" id="flcc-submit" type="button">Create Channel <span style="float:right;margin-right:10px">›</span></button>
+                <p class="flcc-need" id="flcc-need"></p>
+                <button class="flcc-submit" id="flcc-submit" type="button" disabled>Create Channel <span style="float:right;margin-right:10px">›</span></button>
                 <p class="flcc-terms">By creating a channel, you agree to our Terms of Service and Privacy Policy.</p>
               </div>
               <input id="flcc-banner-file" type="file" accept="image/*" hidden>
@@ -1623,7 +1625,7 @@ function applyAdminControls() {
             const showSaved=()=>{status.textContent='';};
             nameField.addEventListener('click',()=>openEditor({title:'Name',desc:'Your name can only be changed once every 7 days.',placeholder:'Add your preferred name',value:nameField.value,max:30,
                 validate:v=>v.length<2?'Name must be at least 2 characters.':'',onSave:v=>{nameField.value=v;showSaved();}}));
-            handleField.addEventListener('click',()=>openEditor({title:'Username',desc:'You can change your username once every 30 days. Changing your username will also change your profile link. Usernames can contain only letters, numbers, underscores and periods.',placeholder:'Username',value:handleField.value,max:24,
+            handleField.addEventListener('click',()=>openEditor({title:'Username',desc:'',placeholder:'Username',value:handleField.value,max:24,
                 filter:v=>String(v).replace(/^@/,'').toLowerCase().replace(/[^a-z0-9._]/g,''),
                 validate:async v=>{
                     if(!/^[a-z0-9._]{3,24}$/.test(v))return 'Use 3–24 letters, numbers, underscores or periods.';
@@ -1632,7 +1634,7 @@ function applyAdminControls() {
                     catch(e){return 'Could not check this username. Try again.';}
                     return '';
                 },onSave:v=>{handleField.value=v;showSaved();}}));
-            bioField.addEventListener('click',()=>openEditor({title:'Bio',desc:'You can edit your bio any time.',placeholder:'Write a short description about who you are or what your account is about',value:bioField.value,max:160,multiline:true,allowEmpty:true,
+            bioField.addEventListener('click',()=>openEditor({title:'Bio',desc:'',placeholder:'Write a short description about who you are or what your account is about',value:bioField.value,max:160,multiline:true,allowEmpty:true,
                 onSave:v=>{bioField.value=v;showSaved();}}));
             const country=root.querySelector('#flcc-country');country.readOnly=true;
             // Premium "Choose a country" page: 200+ countries (A–Z) with flags, search, "Others" always last.
@@ -1874,12 +1876,36 @@ function applyAdminControls() {
             phoneField.addEventListener('click',openPhonePage);
             root.querySelector('#flcc-back').addEventListener('click',()=>{status.textContent='Complete channel setup to continue.';});
 
+            // Create Channel stays disabled until EVERY field is completed.
+            const submitBtn=root.querySelector('#flcc-submit'),needEl=root.querySelector('#flcc-need');
+            let saving=false;
+            const missingList=()=>{
+                const m=[],v=id=>String((root.querySelector(id)||{}).value||'').trim();
+                if(!bannerFile)m.push('Background');
+                if(!avatarFile)m.push('Photo');
+                if(v('#flcc-name').length<2)m.push('Name');
+                if(!/^[a-z0-9._]{3,24}$/.test(v('#flcc-handle').replace(/^@/,'').toLowerCase()))m.push('Username');
+                if(!v('#flcc-bio'))m.push('Bio');
+                if(!v('#flcc-category'))m.push('Category');
+                if(!v('#flcc-phone'))m.push('Phone Number');
+                if(!v('#flcc-country'))m.push('Country');
+                const dob=v('#flcc-dob');
+                if(!dob||isNaN(Date.parse(dob))||dob>new Date().toISOString().slice(0,10))m.push('Date of Birth');
+                if(!v('#flcc-gender'))m.push('Gender');
+                return m;
+            };
+            const updateSubmit=()=>{if(saving)return;const m=missingList();submitBtn.disabled=m.length>0;needEl.textContent=m.length?'Still needed: '+m.join(', '):'';};
+            updateSubmit();
+            ['change','input','click'].forEach(ev=>root.addEventListener(ev,()=>setTimeout(updateSubmit,0),true));
+            const gateTimer=setInterval(()=>{if(!document.body.contains(root)){clearInterval(gateTimer);return;}updateSubmit();},250);
+
             root.querySelector('#flcc-submit').addEventListener('click',async()=>{
+                if(missingList().length){updateSubmit();return;}
                 const name=root.querySelector('#flcc-name').value.trim();
                 const handle=root.querySelector('#flcc-handle').value.trim().replace(/^@/,'').toLowerCase();
                 if(name.length<2){status.textContent='Enter a channel name (at least 2 characters).';return;}
                 if(!/^[a-z0-9._]{3,24}$/.test(handle)){status.textContent='Username must be 3–24 characters: letters, numbers, dot or underscore.';return;}
-                const btn=root.querySelector('#flcc-submit');btn.disabled=true;status.textContent='Saving your channel…';
+                const btn=root.querySelector('#flcc-submit');saving=true;btn.disabled=true;needEl.textContent='';status.textContent='Saving your channel…';
                 try{
                     let bannerUrl='',avatarUrl='';
                     if(bannerFile){if(typeof uploadImageToR2!=='function')throw new Error('Image upload service is unavailable.');bannerUrl=await uploadImageToR2(bannerFile,'channel-banners');}
@@ -1894,8 +1920,12 @@ function applyAdminControls() {
                     try{localStorage.setItem('flaynity_channel_cache:'+user.uid,JSON.stringify(payload));localStorage.setItem('flaynity_user_session_cache',JSON.stringify(payload));}catch(e){}
                     root.remove();document.documentElement.style.overscrollBehaviorY='';document.body.style.overscrollBehaviorY='';
                     if(typeof showNotification==='function')showNotification('Your channel is ready!','success');
-                    if(typeof initYouTabUI==='function')initYouTabUI();
-                }catch(err){status.textContent=err.message||'Could not create channel. Please try again.';btn.disabled=false;}
+                    if(window.__flaynityNeedsChannelBoot){
+                        // First-run: now start the app (listeners, feeds, Home) for this user.
+                        window.__flaynityNeedsChannelBoot=false;
+                        if(typeof window.__flaynityAuthHandler==='function'&&auth.currentUser)window.__flaynityAuthHandler(auth.currentUser);else location.reload();
+                    }else if(typeof initYouTabUI==='function')initYouTabUI();
+                }catch(err){status.textContent=err.message||'Could not create channel. Please try again.';saving=false;updateSubmit();}
             });
         }
         root.style.display='block';
@@ -1980,6 +2010,14 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
             return;
         }
 
+        // Users without a channel must create one BEFORE the app is shown (Home never opens first).
+        let needsChannel = false;
+        try {
+            const channelSnap = await db.ref('channels/' + user.uid).once('value');
+            needsChannel = !channelSnap.exists() && typeof window.showCreateChannelPage === 'function';
+        } catch (channelCheckError) { console.warn('Create Channel check failed:', channelCheckError); }
+        if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
+
         document.body.classList.remove('auth-active');
         if (typeof window.__flaynityHideOnboarding === 'function') {
             window.__flaynityHideOnboarding();
@@ -1987,15 +2025,15 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         const authScr = document.getElementById('auth-screen');
         const appScr = document.getElementById('app-screen');
         if (authScr) authScr.style.display = 'none';
+        if (needsChannel) {
+            // Keep the app hidden. The app starts only after the channel is created.
+            if (appScr) appScr.style.display = 'none';
+            window.__flaynityNeedsChannelBoot = true;
+            await window.showCreateChannelPage();
+            return;
+        }
+        window.__flaynityNeedsChannelBoot = false;
         if (appScr) appScr.style.display = 'block';
-
-        // First-time users must create a channel before continuing in the app.
-        try {
-            const channelSnap = await db.ref('channels/' + user.uid).once('value');
-            if (!channelSnap.exists() && typeof window.showCreateChannelPage === 'function') {
-                window.showCreateChannelPage();
-            }
-        } catch (channelCheckError) { console.warn('Create Channel check failed:', channelCheckError); }
 
         saveAccountToList(user);
         attachAdminControlListener();
@@ -2446,11 +2484,13 @@ window.authEmailSignup = async function () {
 
     window.vfContinue = function () {
         try { playUI('click'); } catch (e) {}
-        const v = $('au-verify'); if (v) v.classList.remove('active');
         done = false;
+        const hideVerify = () => { const v = $('au-verify'); if (v) v.classList.remove('active'); };
         if (typeof window.__flaynityAuthHandler === 'function' && auth.currentUser) {
-            window.__flaynityAuthHandler(auth.currentUser);
-        } else { location.reload(); }
+            // Keep the verify page until the next page (Create your Channel) is on screen.
+            Promise.resolve(window.__flaynityAuthHandler(auth.currentUser)).then(hideVerify, hideVerify);
+            setTimeout(hideVerify, 6000);
+        } else { hideVerify(); location.reload(); }
     };
 
     // Back arrow: cancel sign-up (the unverified account is removed so the email can be reused).

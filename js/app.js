@@ -1496,9 +1496,9 @@ function applyAdminControls() {
                 <h1 class="flcc-title">Create your Channel</h1><p class="flcc-sub">Make your space yours. Add a name, image and a little information to get started.</p>
                 <div class="flcc-card flcc-top-card">
                   <div class="flcc-field"><label for="flcc-name">Name</label><input id="flcc-name" maxlength="50" placeholder="Your channel name" autocomplete="nickname"><span class="flcc-chev">›</span></div>
-                  <div class="flcc-field"><label for="flcc-handle">Username</label><input id="flcc-handle" maxlength="24" placeholder="yourusername" autocapitalize="none" autocomplete="off"><span class="flcc-chev">›</span></div>
+                  <div class="flcc-field"><label for="flcc-handle">Handle</label><input id="flcc-handle" maxlength="24" placeholder="yourhandle" autocapitalize="none" autocomplete="off"><span class="flcc-chev">›</span></div>
                 </div>
-                <div class="flcc-card"><div class="flcc-field flcc-bio-row"><label for="flcc-bio">Bio</label><textarea id="flcc-bio" maxlength="180" rows="3" placeholder="Write a short description about who you are or what your account is about"></textarea><span class="flcc-chev">›</span></div></div>
+                <div class="flcc-card"><div class="flcc-field flcc-bio-row"><label for="flcc-bio">Description</label><textarea id="flcc-bio" maxlength="180" rows="3" placeholder="Write a short description about who you are or what your account is about"></textarea><span class="flcc-chev">›</span></div></div>
                 <div class="flcc-section">Basic info</div>
                 <div class="flcc-card flcc-basic">
                   <div class="flcc-info"><span class="flcc-ico"><i class="fa-solid fa-table-cells-large"></i></span><div class="flcc-txt"><label for="flcc-category">Category</label><span class="flcc-val" id="flcc-category-val">Select category</span></div><span class="flcc-chev">›</span><select id="flcc-category" class="flcc-ov"><option value="">Select category</option><option>Creator</option><option>Entertainment</option><option>Education</option><option>Gaming</option><option>Music</option><option>Technology</option><option>Business</option><option>Personal</option><option>Other</option></select></div>
@@ -1625,16 +1625,16 @@ function applyAdminControls() {
             const showSaved=()=>{status.textContent='';};
             nameField.addEventListener('click',()=>openEditor({title:'Name',desc:'Your name can only be changed once every 7 days.',placeholder:'Add your preferred name',value:nameField.value,max:30,
                 validate:v=>v.length<2?'Name must be at least 2 characters.':'',onSave:v=>{nameField.value=v;showSaved();}}));
-            handleField.addEventListener('click',()=>openEditor({title:'Username',desc:'',placeholder:'Username',value:handleField.value,max:24,
+            handleField.addEventListener('click',()=>openEditor({title:'Handle',desc:'You can change your handle once every 30 days. Changing your handle will also change your profile link. Handles can contain only letters, numbers, underscores and periods.',placeholder:'Handle',value:handleField.value,max:24,
                 filter:v=>String(v).replace(/^@/,'').toLowerCase().replace(/[^a-z0-9._]/g,''),
                 validate:async v=>{
                     if(!/^[a-z0-9._]{3,24}$/.test(v))return 'Use 3–24 letters, numbers, underscores or periods.';
                     if(v===handleField.value)return '';
-                    try{const snap=await db.ref('channelHandles/'+v).once('value');if(snap.val()&&snap.val()!==user.uid)return 'This username is already taken.';}
-                    catch(e){return 'Could not check this username. Try again.';}
+                    try{const snap=await db.ref('channelHandles/'+v).once('value');if(snap.val()&&snap.val()!==user.uid)return 'This handle is already taken.';}
+                    catch(e){return 'Could not check this handle. Try again.';}
                     return '';
                 },onSave:v=>{handleField.value=v;showSaved();}}));
-            bioField.addEventListener('click',()=>openEditor({title:'Bio',desc:'',placeholder:'Write a short description about who you are or what your account is about',value:bioField.value,max:160,multiline:true,allowEmpty:true,
+            bioField.addEventListener('click',()=>openEditor({title:'Description',desc:'You can edit your description any time.',placeholder:'Write a short description about who you are or what your account is about',value:bioField.value,max:160,multiline:true,allowEmpty:true,
                 onSave:v=>{bioField.value=v;showSaved();}}));
             const country=root.querySelector('#flcc-country');country.readOnly=true;
             // Premium "Choose a country" page: 200+ countries (A–Z) with flags, search, "Others" always last.
@@ -1884,8 +1884,8 @@ function applyAdminControls() {
                 if(!bannerFile)m.push('Background');
                 if(!avatarFile)m.push('Photo');
                 if(v('#flcc-name').length<2)m.push('Name');
-                if(!/^[a-z0-9._]{3,24}$/.test(v('#flcc-handle').replace(/^@/,'').toLowerCase()))m.push('Username');
-                if(!v('#flcc-bio'))m.push('Bio');
+                if(!/^[a-z0-9._]{3,24}$/.test(v('#flcc-handle').replace(/^@/,'').toLowerCase()))m.push('Handle');
+                if(!v('#flcc-bio'))m.push('Description');
                 if(!v('#flcc-category'))m.push('Category');
                 if(!v('#flcc-phone'))m.push('Phone Number');
                 if(!v('#flcc-country'))m.push('Country');
@@ -1904,7 +1904,7 @@ function applyAdminControls() {
                 const name=root.querySelector('#flcc-name').value.trim();
                 const handle=root.querySelector('#flcc-handle').value.trim().replace(/^@/,'').toLowerCase();
                 if(name.length<2){status.textContent='Enter a channel name (at least 2 characters).';return;}
-                if(!/^[a-z0-9._]{3,24}$/.test(handle)){status.textContent='Username must be 3–24 characters: letters, numbers, dot or underscore.';return;}
+                if(!/^[a-z0-9._]{3,24}$/.test(handle)){status.textContent='Handle must be 3–24 characters: letters, numbers, dot or underscore.';return;}
                 const btn=root.querySelector('#flcc-submit');saving=true;btn.disabled=true;needEl.textContent='';status.textContent='Saving your channel…';
                 try{
                     let bannerUrl='',avatarUrl='';
@@ -1912,8 +1912,8 @@ function applyAdminControls() {
                     if(avatarFile){if(typeof uploadImageToR2!=='function')throw new Error('Image upload service is unavailable.');avatarUrl=await uploadImageToR2(avatarFile,'channel-images');}
                     const handleSnap=await db.ref('channelHandles/'+handle).once('value');
                     const claimed=handleSnap.val();
-                    if(claimed&&claimed!==user.uid)throw new Error('This username is already taken. Try another one.');
-                    const payload={uid:user.uid,userId:user.uid,channelName:name,handle:handle,bio:root.querySelector('#flcc-bio').value.trim(),category:root.querySelector('#flcc-category').value,email:user.email||'',phone:(root.querySelector('#flcc-phone').value||'').trim(),country:root.querySelector('#flcc-country').value.trim(),countryCode:(root.querySelector('#flcc-country').dataset.code||''),dateOfBirth:root.querySelector('#flcc-dob').value,gender:root.querySelector('#flcc-gender').value,avatarUrl:avatarUrl||user.photoURL||'',channelImageUrl:avatarUrl||user.photoURL||'',bannerUrl:bannerUrl,channelBannerUrl:bannerUrl,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP};
+                    if(claimed&&claimed!==user.uid)throw new Error('This handle is already taken. Try another one.');
+                    const payload={uid:user.uid,userId:user.uid,channelName:name,handle:handle,description:root.querySelector('#flcc-bio').value.trim(),bio:root.querySelector('#flcc-bio').value.trim(),category:root.querySelector('#flcc-category').value,email:user.email||'',phone:(root.querySelector('#flcc-phone').value||'').trim(),country:root.querySelector('#flcc-country').value.trim(),countryCode:(root.querySelector('#flcc-country').dataset.code||''),dateOfBirth:root.querySelector('#flcc-dob').value,gender:root.querySelector('#flcc-gender').value,avatarUrl:avatarUrl||user.photoURL||'',channelImageUrl:avatarUrl||user.photoURL||'',bannerUrl:bannerUrl,channelBannerUrl:bannerUrl,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP};
                     const updates={};updates['channels/'+user.uid]=payload;updates['users/'+user.uid+'/channelName']=name;updates['users/'+user.uid+'/handle']=handle;updates['users/'+user.uid+'/channelCreated']=true;if(payload.phone)updates['users/'+user.uid+'/phone']=payload.phone;updates['channelHandles/'+handle]=user.uid;
                     await db.ref().update(updates);
                     currentChannelData=payload;

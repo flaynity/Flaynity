@@ -11229,6 +11229,16 @@ function initSearchEvents() {
         });
     }
 
+    const goBtn = document.getElementById('search-go-btn');
+    if (goBtn && !goBtn.dataset.searchBound) {
+        goBtn.dataset.searchBound = '1';
+        goBtn.addEventListener('click', () => {
+            if (typeof playUI === 'function') playUI('click');
+            const inp = document.getElementById('search-active-input');
+            if (inp) executeFinalSearch(inp.value);
+        });
+    }
+
     const micBtn = document.getElementById('search-mic-btn');
     if (micBtn && !micBtn.dataset.searchBound) {
         micBtn.dataset.searchBound = '1';
@@ -11278,11 +11288,99 @@ function preloadFirebaseSearchData() {
     bindMerged(feelPaths, 'feels');
 }
 
+/* ---------- Recent searches (stored on device) ---------- */
+const RECENT_SEARCH_KEY = 'flaynity_recent_searches';
+const SEARCH_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.8"/><path d="m15.8 15.8 5 5"/></svg>';
+const CLOCK_ICON_SVG = '<svg class="recent-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M12 6.8V12l3.4 2.2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const X_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 5l14 14M19 5 5 19"/></svg>';
+
+function getRecentSearches() {
+    try {
+        const list = JSON.parse(localStorage.getItem(RECENT_SEARCH_KEY) || '[]');
+        return Array.isArray(list) ? list : [];
+    } catch (e) { return []; }
+}
+function saveRecentSearches(list) {
+    try { localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(list.slice(0, 20))); } catch (e) {}
+}
+function addRecentSearch(keyword) {
+    const k = String(keyword || '').trim();
+    if (!k) return;
+    const list = getRecentSearches().filter(x => x.toLowerCase() !== k.toLowerCase());
+    list.unshift(k);
+    saveRecentSearches(list);
+}
+function removeRecentSearch(index) {
+    const list = getRecentSearches();
+    list.splice(index, 1);
+    saveRecentSearches(list);
+    renderRecentSearches();
+}
+function clearAllRecentSearches() {
+    saveRecentSearches([]);
+    renderRecentSearches();
+}
+function selectRecentSearch(index) {
+    const k = getRecentSearches()[index];
+    if (k) selectSuggestedKeyword(k);
+}
+function renderRecentSearches() {
+    const box = document.getElementById('search-recent-container');
+    if (!box) return;
+    const list = getRecentSearches();
+    if (!list.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    box.style.display = 'block';
+    box.innerHTML = `
+        <div class="recent-head">
+            <span class="recent-title">Recent searches</span>
+            <button class="recent-clear" onclick="clearAllRecentSearches()">Clear all</button>
+        </div>
+        ${list.map((k, i) => `
+            <div class="recent-item" onclick="selectRecentSearch(${i})">
+                ${CLOCK_ICON_SVG}
+                <span class="recent-text">${escapeHtml(k)}</span>
+                <button class="recent-x" aria-label="Remove" onclick="event.stopPropagation(); removeRecentSearch(${i})">${X_ICON_SVG}</button>
+            </div>`).join('')}
+    `;
+}
+
+function showSearchToast(msg) {
+    const old = document.querySelector('.dc-toast');
+    if (old) old.remove();
+    const t = document.createElement('div');
+    t.className = 'dc-toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 1800);
+}
+
+function setSearchPanels(mode) { // 'recent' | 'suggest' | 'results'
+    const recent = document.getElementById('search-recent-container');
+    const sugWrap = document.getElementById('search-suggestions-wrap');
+    const sug = document.getElementById('search-suggestions-container');
+    const res = document.getElementById('search-results-container');
+    if (mode === 'recent') {
+        renderRecentSearches();
+        if (sugWrap) sugWrap.style.display = 'none';
+        if (sug) sug.innerHTML = '';
+        if (res) res.style.display = 'none';
+    } else if (mode === 'suggest') {
+        if (recent) recent.style.display = 'none';
+        if (sugWrap) sugWrap.style.display = 'block';
+        if (res) res.style.display = 'none';
+    } else {
+        if (recent) recent.style.display = 'none';
+        if (sugWrap) sugWrap.style.display = 'none';
+        if (sug) sug.innerHTML = '';
+    }
+}
+
 function openFullscreenSearch(withVoice = false) {
     const page = document.getElementById('fullscreen-search-page');
     const input = document.getElementById('search-active-input');
     if (!page) return;
     page.style.display = 'flex';
+    setSearchPanels('recent');
     if (input) input.focus();
     if (withVoice) startVoiceRecognition();
 }
@@ -11292,30 +11390,24 @@ function closeFullscreenSearch() {
     if (!page) return;
     page.style.display = 'none';
     clearSearchInput(false);
-    const suggestionsWrap = document.getElementById('search-suggestions-container');
-    const resultsWrap = document.getElementById('search-results-container');
-    if (suggestionsWrap) suggestionsWrap.innerHTML = '';
-    if (resultsWrap) resultsWrap.style.display = 'none';
+    setSearchPanels('recent');
+    const recent = document.getElementById('search-recent-container');
+    if (recent) recent.style.display = 'none';
 }
 
 function handleSearchInput(query) {
     const clearBtn = document.getElementById('search-clear-btn');
-    const micBtn = document.getElementById('search-mic-btn');
-    const suggestionsWrap = document.getElementById('search-suggestions-container');
-    const resultsWrap = document.getElementById('search-results-container');
     const trimmed = query.trim();
 
     if (trimmed.length > 0) {
         if (clearBtn) clearBtn.style.display = 'flex';
-        if (micBtn) micBtn.style.display = 'none';
-        if (resultsWrap) resultsWrap.style.display = 'none';
+        setSearchPanels('suggest');
         clearTimeout(searchDebounce);
-        searchDebounce = setTimeout(() => generateFirebaseSuggestions(trimmed), 250);
+        searchDebounce = setTimeout(() => generateFirebaseSuggestions(trimmed), 120);
     } else {
         if (clearBtn) clearBtn.style.display = 'none';
-        if (micBtn) micBtn.style.display = 'flex';
-        if (suggestionsWrap) suggestionsWrap.innerHTML = '';
-        if (resultsWrap) resultsWrap.style.display = 'none';
+        clearTimeout(searchDebounce);
+        setSearchPanels('recent');
     }
 }
 
@@ -11328,6 +11420,14 @@ function clearSearchInput(refocus = true) {
     }
 }
 
+function highlightSuggestion(keyword, query) {
+    const idx = keyword.toLowerCase().indexOf(query.toLowerCase());
+    if (idx < 0) return escapeHtml(keyword);
+    return escapeHtml(keyword.slice(0, idx)) +
+        '<span class="hl">' + escapeHtml(keyword.slice(idx, idx + query.length)) + '</span>' +
+        escapeHtml(keyword.slice(idx + query.length));
+}
+
 function generateFirebaseSuggestions(query) {
     const container = document.getElementById('search-suggestions-container');
     if (!container) return;
@@ -11335,50 +11435,69 @@ function generateFirebaseSuggestions(query) {
     const suggestionsSet = new Set();
     const allItems = [...dbSearchCache.videos, ...dbSearchCache.feels];
 
+    // Starts-with matches first (like TikTok), then "contains" matches
+    const starts = [], contains = [];
     allItems.forEach(item => {
         const title = String(item.title || '').trim();
         const desc = String(item.description || '').trim();
-        const fullText = `${title} ${desc}`.toLowerCase();
-        if (fullText.includes(lowerQuery)) {
-            if (title) suggestionsSet.add(title);
-            if (title.toLowerCase().startsWith(lowerQuery)) suggestionsSet.add(title);
-            else {
-                suggestionsSet.add(`${query} Video`);
-                suggestionsSet.add(`${query} Feels`);
-                suggestionsSet.add(`New ${query}`);
-            }
-        }
+        if (!title) return;
+        if (title.toLowerCase().startsWith(lowerQuery)) starts.push(title);
+        else if (`${title} ${desc}`.toLowerCase().includes(lowerQuery)) contains.push(title);
     });
+    [...starts, ...contains].forEach(t => suggestionsSet.add(t));
 
-    if (suggestionsSet.size === 0) {
-        suggestionsSet.add(query);
-        suggestionsSet.add(`${query} Video`);
-        suggestionsSet.add(`${query} Song`);
-        suggestionsSet.add(`${query} Feels`);
+    if (suggestionsSet.size < 6) {
+        [`${query} video`, `${query} song`, `${query} feels`, `${query} viral`, `${query} new`]
+            .forEach(s => { if (suggestionsSet.size < 10) suggestionsSet.add(s); });
     }
 
-    const finalList = Array.from(suggestionsSet).slice(0, 8);
+    const finalList = Array.from(suggestionsSet).slice(0, 10);
     container.innerHTML = finalList.map(keyword => `
-        <div class="suggestion-item" onclick="selectSuggestedKeyword('${escapeHtml(keyword)}')">
-            <div class="suggestion-left"><i class="fas fa-search"></i><span>${escapeHtml(keyword)}</span></div>
-            <i class="fas fa-arrow-up arrow-icon"></i>
+        <div class="suggestion-item" data-kw="${escapeHtml(keyword)}">
+            <span class="suggestion-ic">${SEARCH_ICON_SVG}</span>
+            <span class="suggestion-text">${highlightSuggestion(keyword, query)}</span>
         </div>
     `).join('');
+
+    // tap = search, long-press = report (hides the suggestion)
+    container.querySelectorAll('.suggestion-item').forEach(el => {
+        let timer = null, longPressed = false;
+        const start = () => {
+            longPressed = false;
+            timer = setTimeout(() => {
+                longPressed = true;
+                el.remove();
+                showSearchToast('Thanks for your report');
+            }, 550);
+        };
+        const cancel = () => clearTimeout(timer);
+        el.addEventListener('touchstart', start, { passive: true });
+        el.addEventListener('touchend', cancel);
+        el.addEventListener('touchmove', cancel, { passive: true });
+        el.addEventListener('touchcancel', cancel);
+        el.addEventListener('contextmenu', e => e.preventDefault());
+        el.addEventListener('click', () => {
+            if (longPressed) { longPressed = false; return; }
+            selectSuggestedKeyword(el.getAttribute('data-kw'));
+        });
+    });
 }
 
 function selectSuggestedKeyword(keyword) {
     if (typeof playUI === 'function') playUI('click');
     const input = document.getElementById('search-active-input');
-    if (input) input.value = keyword;
+    if (input) { input.value = keyword; input.blur(); }
+    const clearBtn = document.getElementById('search-clear-btn');
+    if (clearBtn) clearBtn.style.display = 'flex';
     executeFinalSearch(keyword);
 }
 
 function executeFinalSearch(keyword) {
     const query = String(keyword || '').trim().toLowerCase();
     if (!query) return;
-    const suggestionsWrap = document.getElementById('search-suggestions-container');
+    addRecentSearch(String(keyword).trim());
+    setSearchPanels('results');
     const resultsWrap = document.getElementById('search-results-container');
-    if (suggestionsWrap) suggestionsWrap.innerHTML = '';
     if (resultsWrap) resultsWrap.style.display = 'flex';
 
     const feelsSec = document.getElementById('search-feels-section');

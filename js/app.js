@@ -1420,7 +1420,7 @@ function applyAdminControls() {
         if (!user) return;
         let channel = null;
         try { const snap = await db.ref('channels/' + user.uid).once('value'); channel = snap.val(); } catch(e) {}
-        if (channel && !force) return;
+        if (!force && (channel || window.__flaynityChannelCreatedUid === user.uid)) return;
         let root = document.getElementById('fl-create-channel');
         if (!root) {
             root = document.createElement('section');
@@ -1916,9 +1916,10 @@ function applyAdminControls() {
                     const payload={uid:user.uid,userId:user.uid,channelName:name,handle:handle,description:root.querySelector('#flcc-bio').value.trim(),bio:root.querySelector('#flcc-bio').value.trim(),category:root.querySelector('#flcc-category').value,email:user.email||'',phone:(root.querySelector('#flcc-phone').value||'').trim(),country:root.querySelector('#flcc-country').value.trim(),countryCode:(root.querySelector('#flcc-country').dataset.code||''),dateOfBirth:root.querySelector('#flcc-dob').value,gender:root.querySelector('#flcc-gender').value,avatarUrl:avatarUrl||user.photoURL||'',channelImageUrl:avatarUrl||user.photoURL||'',bannerUrl:bannerUrl,channelBannerUrl:bannerUrl,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP};
                     const updates={};updates['channels/'+user.uid]=payload;updates['users/'+user.uid+'/channelName']=name;updates['users/'+user.uid+'/handle']=handle;updates['users/'+user.uid+'/channelCreated']=true;if(payload.phone)updates['users/'+user.uid+'/phone']=payload.phone;updates['channelHandles/'+handle]=user.uid;
                     await db.ref().update(updates);
+                    window.__flaynityChannelCreatedUid=user.uid;
                     currentChannelData=payload;
                     try{localStorage.setItem('flaynity_channel_cache:'+user.uid,JSON.stringify(payload));localStorage.setItem('flaynity_user_session_cache',JSON.stringify(payload));}catch(e){}
-                    root.remove();document.documentElement.style.overscrollBehaviorY='';document.body.style.overscrollBehaviorY='';
+                    document.querySelectorAll('#fl-create-channel').forEach(n=>n.remove());document.documentElement.style.overscrollBehaviorY='';document.body.style.overscrollBehaviorY='';
                     if(typeof showNotification==='function')showNotification('Your channel is ready!','success');
                     if(window.__flaynityNeedsChannelBoot){
                         // First-run: now start the app (listeners, feeds, Home) for this user.
@@ -2014,7 +2015,7 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         let needsChannel = false;
         try {
             const channelSnap = await db.ref('channels/' + user.uid).once('value');
-            needsChannel = !channelSnap.exists() && typeof window.showCreateChannelPage === 'function';
+            needsChannel = !channelSnap.exists() && firstData.channelCreated !== true && window.__flaynityChannelCreatedUid !== user.uid && typeof window.showCreateChannelPage === 'function';
         } catch (channelCheckError) { console.warn('Create Channel check failed:', channelCheckError); }
         if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
 
@@ -7951,6 +7952,12 @@ function handleViewChannelMenu() {
 
 function openCreateChannelPage() {
     playUI('click');
+    const _u = (typeof auth !== 'undefined') ? auth.currentUser : null;
+    if (_u && (currentChannelData || window.__flaynityChannelCreatedUid === _u.uid)) {
+        // Channel already exists: never show Create your Channel again.
+        try { if (typeof initYouTabUI === 'function') initYouTabUI(); } catch (e) {}
+        return;
+    }
     // Use the standalone first-run Create Channel flow, not the legacy
     // "Enter Your Information" page embedded in pages/you.html.
     if (typeof window.showCreateChannelPage === 'function') {

@@ -169,6 +169,20 @@
 .ce-tool:active{background:#2a2a2a}
 .ce-sheet{position:absolute;left:0;right:0;bottom:0;height:58vw;background:#141414;border-radius:4vw 4vw 0 0;z-index:70;display:none;flex-direction:column;padding-bottom:max(2vw,env(safe-area-inset-bottom,0px))}
 .ce-sheet.show{display:flex}
+/* Effects browser: isolated styles, leaving other editor sheets unchanged */
+.ce-sheet.ce-effects-expanded{height:88vh;height:88dvh;max-height:920px}
+.ce-sheet.ce-effects-expanded .ce-sh-b{display:block;overflow-y:auto;padding:0 3.5vw 4vw}
+.ce-effects-search{width:100%;height:11vw;max-height:48px;min-height:40px;border:1px solid #383838;border-radius:3vw;background:#242424;color:#fff;padding:0 4vw;font-size:3.8vw;outline:none;margin:1vw 0 3vw;box-sizing:border-box}
+.ce-effects-search:focus{border-color:#FE2C55}
+.ce-effects-cats{display:flex;gap:2vw;overflow-x:auto;white-space:nowrap;padding:0 0 3vw;scrollbar-width:none}
+.ce-effects-cats::-webkit-scrollbar{display:none}
+.ce-effects-cats .ce-chip{flex:none;padding:2.2vw 3.5vw;font-size:3.3vw}
+.ce-effects-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3vw 2.5vw;padding-bottom:3vw}
+.ce-effect-card{min-width:0;border:1px solid #303030;background:#202020;border-radius:2.6vw;padding:2vw;display:flex;flex-direction:column;align-items:center;gap:1.5vw;color:#fff;font-size:3.1vw;font-weight:600;text-align:center;overflow:hidden}
+.ce-effect-card.on{border:2px solid #FE2C55;background:#302027}
+.ce-effect-thumb{width:100%;aspect-ratio:1.35;border-radius:1.8vw;background:linear-gradient(135deg,#193b58,#e6a5a1 48%,#f6d86b);display:flex;align-items:center;justify-content:center;font-size:7vw;color:rgba(255,255,255,.9);text-shadow:0 2px 8px #000;overflow:hidden}
+.ce-effect-name{width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ce-effects-empty{grid-column:1/-1;text-align:center;color:#999;padding:8vw 0;font-size:3.6vw}
 .ce-sh-h{display:flex;align-items:center;justify-content:space-between;padding:3vw 4vw;font-size:4.2vw;font-weight:700}
 .ce-sh-h button{background:none;border:none;padding:0;width:8vw;height:8vw;display:flex;align-items:center;justify-content:center}
 #short-editor-page .ce-sh-h svg{width:6vw;height:6vw;stroke-width:2.4}
@@ -717,6 +731,42 @@ function svg(k){return '<svg viewBox="0 0 24 24">'+IC[k]+'</svg>'}
 var PLAY='<svg viewBox="0 0 24 24"><path d="M7 3.500v17l14-8.500z"/></svg>',PAUSE='<svg viewBox="0 0 24 24"><path d="M6.500 4h4v16h-4zM13.500 4h4v16h-4z"/></svg>';
 var FILTERS={'Original':'','Vivid':'saturate(1.4) contrast(1.1)','Warm':'sepia(.25) saturate(1.2) hue-rotate(-10deg)','Cool':'saturate(1.1) hue-rotate(15deg) brightness(1.03)','Fade':'contrast(.85) brightness(1.1) saturate(.8)','B&W':'grayscale(1) contrast(1.1)','Sepia':'sepia(.8)','Dramatic':'contrast(1.35) saturate(1.2) brightness(.9)','Pastel':'brightness(1.12) saturate(.7) contrast(.9)'};
 var EFFECTS={'None':'','Blur':'blur(3px)','Glow':'brightness(1.2) contrast(.95) blur(.6px)','VHS':'sepia(.35) hue-rotate(-20deg) saturate(1.6) contrast(1.1)','Noir':'grayscale(1) contrast(1.5) brightness(.9)','Neon':'saturate(2.2) contrast(1.2) hue-rotate(20deg)','Invert':'invert(1)','Vignette':'@vig'};
+/* 120 named video presets. These are real CSS video filters and are also
+   rendered by the existing canvas export pipeline. */
+var EFFECT_CATEGORIES={
+ 'Trending':['Golden Hour','Soft Focus','Crisp Pop','Moody Blue','Peach Glow','Urban Fade','Fresh Green','Sun Kissed','Clean Bright','Deep Tone'],
+ 'Retro':['Retro Film','Vintage Rose','Old Camera','Faded Memories','Warm Nostalgia','Dusty Film','Classic 70s','Analog Warmth','Retro Summer','Sepia Story'],
+ 'Cinematic':['Cinema Teal','Hollywood','Dark Cinema','Epic Contrast','Film Drama','Silver Screen','Movie Warmth','Blue Steel','Wide Drama','Night Scene'],
+ 'Color':['Vivid Color','Candy Pop','Aqua Blue','Coral Pink','Purple Haze','Lime Punch','Ruby Red','Ocean Tone','Amber Glow','Color Boost'],
+ 'Dreamy':['Dream Glow','Cloud Soft','Fairy Dust','Pastel Dream','Silk Skin','Pink Mist','Soft Bloom','Heavenly','Rose Cloud','Luminous'],
+ 'Glitch':['Digital Glitch','Cyber Neon','Electric Blue','Acid RGB','Cyberpunk','Matrix Green','Laser Pink','Chromatic','Future Shock','Pixel Heat'],
+ 'Light':['Light Leak','Sun Flare','Bright Day','Golden Light','White Glow','Warm Beam','Soft Light','High Key','Summer Shine','Flash Pop'],
+ 'Vintage':['Classic Vintage','Old Portrait','Matte Vintage','Brown Fade','Polaroid Warm','Antique','Rustic Film','Faded Paper','Vintage Cool','Heritage'],
+ 'Mono':['Pure Mono','Noir Black','Soft Mono','High Contrast B&W','Silver Gray','Matte Mono','Classic Noir','Darkroom','Mono Fade','Portrait Mono'],
+ 'Party':['Disco','Neon Party','Electric','Festival','Hot Pink','Laser Club','Glow Party','Color Burst','Night Pop','Vibrant Night'],
+ 'Nature':['Forest Green','Autumn Leaf','Ocean Breeze','Blue Sky','Earth Tone','Spring Fresh','Desert Warm','Mountain Air','Flower Bloom','Natural Soft'],
+ 'Basic':['Brighten','Deep Contrast','Soft Contrast','Cool Tone','Warm Tone','Desaturate','Saturation Plus','Fade Out','Sharp Look','Smooth Look']
+};
+var EFFECT_FILTERS={
+ 'Trending':['saturate(1.35) contrast(1.08)','brightness(1.12) saturate(1.12) blur(.25px)','contrast(1.22) saturate(1.25)','hue-rotate(12deg) saturate(1.2) brightness(.96)','sepia(.18) saturate(1.3) brightness(1.08)','contrast(.9) saturate(.85) brightness(1.08)','hue-rotate(35deg) saturate(1.25)','sepia(.12) saturate(1.35) brightness(1.12)','brightness(1.16) contrast(1.04)','contrast(1.28) saturate(.9) brightness(.92)'],
+ 'Retro':['sepia(.45) contrast(1.15)','sepia(.25) hue-rotate(-12deg) saturate(1.15)','sepia(.6) contrast(1.1) brightness(.95)','sepia(.35) contrast(.85) brightness(1.1)','sepia(.3) saturate(1.25)','sepia(.5) contrast(.9)','sepia(.4) saturate(.85) contrast(1.15)','sepia(.22) brightness(1.08) contrast(1.12)','sepia(.16) saturate(1.4) brightness(1.08)','sepia(.72) contrast(1.05)'],
+ 'Cinematic':['hue-rotate(165deg) saturate(1.2) contrast(1.15)','contrast(1.3) saturate(1.08) brightness(.92)','contrast(1.35) brightness(.82) saturate(.85)','contrast(1.4) saturate(1.15)','contrast(1.25) saturate(.8) sepia(.12)','grayscale(.7) contrast(1.3)','sepia(.2) contrast(1.22) saturate(1.1)','hue-rotate(190deg) saturate(.9) contrast(1.2)','contrast(1.32) brightness(.88)','hue-rotate(205deg) brightness(.82) contrast(1.25)'],
+ 'Color':['saturate(1.65) contrast(1.08)','saturate(1.8) brightness(1.04)','hue-rotate(165deg) saturate(1.5)','hue-rotate(320deg) saturate(1.35)','hue-rotate(245deg) saturate(1.4)','hue-rotate(55deg) saturate(1.6)','hue-rotate(345deg) saturate(1.6)','hue-rotate(185deg) saturate(1.3)','sepia(.25) saturate(1.5)','saturate(1.9) contrast(1.12)'],
+ 'Dreamy':['brightness(1.12) saturate(1.2) blur(.5px)','brightness(1.15) contrast(.88) blur(.7px)','brightness(1.12) saturate(1.25) sepia(.08)','brightness(1.1) saturate(.8) contrast(.9)','brightness(1.08) saturate(1.08) blur(.3px)','hue-rotate(325deg) brightness(1.12) saturate(1.1)','brightness(1.16) contrast(.9) blur(.4px)','brightness(1.2) saturate(.9)','sepia(.12) brightness(1.14) saturate(1.15)','brightness(1.18) contrast(1.08)'],
+ 'Glitch':['hue-rotate(35deg) saturate(1.8) contrast(1.2)','saturate(2.2) hue-rotate(190deg) contrast(1.2)','hue-rotate(180deg) saturate(1.8)','hue-rotate(280deg) saturate(2)','hue-rotate(220deg) saturate(1.7) contrast(1.2)','hue-rotate(80deg) saturate(1.7)','hue-rotate(320deg) saturate(2)','saturate(1.8) contrast(1.25) hue-rotate(15deg)','invert(.12) saturate(1.8) hue-rotate(180deg)','contrast(1.35) saturate(1.9)'],
+ 'Light':['brightness(1.18) saturate(1.1)','sepia(.2) brightness(1.2)','brightness(1.25) contrast(1.05)','sepia(.25) brightness(1.15) saturate(1.2)','brightness(1.3) contrast(.92)','sepia(.15) brightness(1.18)','brightness(1.14) contrast(.92)','brightness(1.22) saturate(.85)','brightness(1.2) saturate(1.25)','brightness(1.28) contrast(1.12)'],
+ 'Vintage':['sepia(.35) contrast(.95) saturate(.85)','sepia(.5) brightness(1.02)','contrast(.85) saturate(.75) brightness(1.08)','sepia(.4) hue-rotate(-8deg)','sepia(.25) saturate(1.15) brightness(1.08)','sepia(.65) contrast(.9)','sepia(.3) contrast(1.05) saturate(.8)','sepia(.45) brightness(1.1)','sepia(.15) hue-rotate(15deg) contrast(.9)','sepia(.38) saturate(.9) contrast(1.08)'],
+ 'Mono':['grayscale(1)','grayscale(1) contrast(1.35)','grayscale(.85) brightness(1.08)','grayscale(1) contrast(1.6)','grayscale(1) contrast(1.15) brightness(1.05)','grayscale(1) contrast(.85)','grayscale(1) contrast(1.4) brightness(.9)','grayscale(1) brightness(.92)','grayscale(1) contrast(.9) brightness(1.08)','grayscale(.9) contrast(1.2)'],
+ 'Party':['saturate(1.9) contrast(1.15)','hue-rotate(280deg) saturate(1.8)','saturate(2) contrast(1.25)','hue-rotate(35deg) saturate(1.7)','hue-rotate(320deg) saturate(1.8)','hue-rotate(190deg) saturate(2)','saturate(1.8) brightness(1.15)','saturate(2.1) contrast(1.1)','hue-rotate(250deg) contrast(1.2)','saturate(1.7) brightness(.9) contrast(1.2)'],
+ 'Nature':['hue-rotate(25deg) saturate(1.2)','sepia(.18) hue-rotate(8deg) saturate(1.2)','hue-rotate(175deg) saturate(1.15)','saturate(1.25) brightness(1.08)','sepia(.22) saturate(.95)','hue-rotate(45deg) saturate(1.25) brightness(1.05)','sepia(.3) saturate(1.1)','hue-rotate(190deg) brightness(1.08)','saturate(1.35) hue-rotate(12deg)','brightness(1.08) saturate(.9) contrast(.95)'],
+ 'Basic':['brightness(1.15)','contrast(1.25)','contrast(.9)','hue-rotate(12deg) saturate(1.05)','sepia(.18) saturate(1.08)','saturate(.2)','saturate(1.5)','contrast(.85) brightness(1.08)','contrast(1.15) saturate(1.08)','brightness(1.05) contrast(.95)']
+};
+var effectCategory='All',effectSearch='';
+Object.keys(EFFECT_CATEGORIES).forEach(function(cat){EFFECT_CATEGORIES[cat].forEach(function(name,i){EFFECTS[name]=EFFECT_FILTERS[cat][i]})});
+function effectNames(){return ['None'].concat(Object.keys(EFFECT_CATEGORIES).reduce(function(a,c){return a.concat(EFFECT_CATEGORIES[c])},[]))}
+function renderEffectGrid(){var g=$('ce-effects-grid');if(!g)return;var names=effectNames().filter(function(n){var ok=effectCategory==='All'||n==='None'||EFFECT_CATEGORIES[effectCategory].indexOf(n)>-1;return ok&&n.toLowerCase().indexOf(effectSearch.toLowerCase())>-1});g.innerHTML=names.length?names.map(function(n){var f=EFFECTS[n]||'';return '<button class="ce-effect-card'+(S.effect===n?' on':'')+'" data-k="effect" data-v="'+esc(n)+'"><span class="ce-effect-thumb" style="filter:'+f.replace(/"/g,'')+'">✦</span><span class="ce-effect-name">'+esc(n)+'</span></button>'}).join(''):'<div class="ce-effects-empty">No effects found</div>'}
+function renderEffectsPanel(){var cats=['All'].concat(Object.keys(EFFECT_CATEGORIES));return '<input class="ce-effects-search" id="ce-effect-search" type="search" placeholder="Search 120+ effects and presets..." value="'+esc(effectSearch)+'"><div class="ce-effects-cats">'+cats.map(function(c){return '<button class="ce-chip'+(effectCategory===c?' on':'')+'" data-k="effectcat" data-v="'+esc(c)+'">'+esc(c)+'</button>'}).join('')+'</div><div class="ce-effects-grid" id="ce-effects-grid"></div>'}
+
 var MAGIC={'None':'','Auto enhance':'contrast(1.12) saturate(1.2) brightness(1.05)','Cinematic':'contrast(1.2) saturate(.9) sepia(.15)@bars','Dreamy':'brightness(1.1) blur(1px) saturate(1.2)','Retro':'sepia(.5) contrast(.9) brightness(1.05)'};
 var EMOJI=['😀','😂','😍','🥰','😎','🤩','😭','😡','🔥','💯','❤️','💔','👍','👏','🙏','🎉','✨','⭐','🌈','🎵','💥','👑','🚀','🌹'];
 var COLORS=['#ffffff','#FE2C55','#ffd60a','#30d158','#0a84ff','#000000'];
@@ -842,7 +892,7 @@ function chips(map,cur,key){return Object.keys(map).map(function(k){return '<but
 function slider(l,id,min,max,val){return '<div class="ce-sl"><b>'+l+'</b><input type="range" id="'+id+'" min="'+min+'" max="'+max+'" value="'+val+'"><em id="'+id+'v">'+val+'</em></div>'}
 function openSheet(k){var sh=$('ce-sheet'),b=$('ce-sh-b'),t='',h='';sh.dataset.k=k;
  if(k==='filters'){t='Filters';h=Object.keys(FILTERS).map(function(n){return '<button class="ce-chip'+(n===S.filter?' on':'')+'" data-k="filter" data-v="'+esc(n)+'"><i style="background:linear-gradient(135deg,#c96,#69c);filter:'+(FILTERS[n]||'none')+'"></i>'+esc(n)+'</button>'}).join('')}
- else if(k==='effects'){t='Effects';h=chips(EFFECTS,S.effect,'effect')}
+ else if(k==='effects'){t='Effects';h=renderEffectsPanel()}
  else if(k==='magic'){t='Magic';h=chips(MAGIC,S.magic,'magic')}
  else if(k==='stickers'){t='Stickers';h=EMOJI.map(function(e){return '<button class="ce-emo" data-k="emoji" data-v="'+e+'">'+e+'</button>'}).join('')}
  else if(k==='adjust'){t='Adjust';var a=S.adj;h=slider('Brightness','ad-b',-60,60,a.b)+slider('Contrast','ad-c',-60,60,a.c)+slider('Saturation','ad-s',-100,100,a.s)+slider('Hue','ad-h',-180,180,a.h)+slider('Blur','ad-bl',0,10,a.bl)+'<button class="ce-chip" data-k="adjreset">Reset</button>'}
@@ -852,12 +902,15 @@ function openSheet(k){var sh=$('ce-sheet'),b=$('ce-sh-b'),t='',h='';sh.dataset.k
  else if(k==='sound'){t='Sound';h='<button class="ce-chip" data-k="pickaudio">'+svg('mus').replace('<svg','<svg width="20" height="20"')+' Add from device</button>';if(S.audio)h+='<button class="ce-chip" data-k="rmaudio">Remove sound</button>'+slider('Music volume','av',0,100,S.audio.vol)}
  else if(k==='item'){var it=S.items[selItem];if(!it)return;t=it.type==='img'?'Overlay':it.type==='sticker'?'Sticker':'Text';
   h='<button class="ce-chip" data-k="itsz" data-v="-1">Size −</button><button class="ce-chip" data-k="itsz" data-v="1">Size +</button><button class="ce-chip" data-k="itdur" data-v="-1">Time −</button><button class="ce-chip" data-k="itdur" data-v="1">Time +</button><button class="ce-chip" data-k="ithere">Start here</button>'+(it.type==='text'?'<button class="ce-chip" data-k="itcol">Color</button><button class="ce-chip" data-k="itbg">Background</button><button class="ce-chip" data-k="itedit">Edit text</button>':'')+'<button class="ce-chip" data-k="itdup">Duplicate</button><button class="ce-chip" data-k="itdel">Delete</button>'}
- $('ce-sh-t').textContent=t;b.innerHTML=h;sh.classList.add('show')}
-window.ceCloseSheet=function(){$('ce-sheet').classList.remove('show');selItem=-1;buildTL();renderItems()};
+ $('ce-sh-t').textContent=t;b.innerHTML=h;sh.classList.toggle('ce-effects-expanded',k==='effects');sh.classList.add('show');if(k==='effects')renderEffectGrid()}
+window.ceCloseSheet=function(){$('ce-sheet').classList.remove('show','ce-effects-expanded');selItem=-1;buildTL();renderItems()};
+function renderEffectsPanelState(){var cats=$('ce-effects-cats');var panel=$('ce-sh-b');if(!panel)return;var active=panel.querySelectorAll('[data-k=effectcat]');active.forEach(function(x){x.classList.toggle('on',x.dataset.v===effectCategory)});renderEffectGrid()}
 function bindSheet(){var b=$('ce-sh-b');
+ b.addEventListener('input',function(e){if(e.target&&e.target.id==='ce-effect-search'){effectSearch=e.target.value;renderEffectGrid();return}});
  b.addEventListener('click',function(e){var c=e.target.closest('[data-k]');if(!c)return;var k=c.dataset.k,v2=c.dataset.v,it=S.items[selItem];
   if(k==='filter'){S.filter=v2;commit();applyFX();openSheet('filters')}
-  else if(k==='effect'){S.effect=v2;commit();applyFX();openSheet('effects')}
+  else if(k==='effectcat'){effectCategory=v2;renderEffectsPanelState()}
+  else if(k==='effect'){S.effect=v2;commit();applyFX();renderEffectGrid()}
   else if(k==='magic'){S.magic=v2;commit();applyFX();openSheet('magic')}
   else if(k==='emoji'){$('ce-sheet').classList.remove('show');addItem({type:'sticker',text:v2,size:16})}
   else if(k==='adjreset'){S.adj={b:0,c:0,s:0,h:0,bl:0};commit();applyFX();openSheet('adjust')}
@@ -912,7 +965,7 @@ function ceOpen(){
  var pv=$('short-preview-el');if(!pv||!pv.src)return;pv.pause();
  v=$('ce-video');stage=$('ce-stage');ov=$('ce-ov');sc=$('ce-scroll');inner=$('ce-inner');
  if(!window.__ceBound){bindSheet();bindInputs();bindTL();window.addEventListener('resize',function(){if(S&&$('short-editor-page').style.display!=='none'){layout();buildTL()}});window.__ceBound=1}
- srcs=[];curSrc=-1;T=0;ci=0;zoom=1;selSeg=-1;selItem=-1;fs=false;$('short-editor-page').classList.remove('fs');$('ce-sheet').classList.remove('show');
+ srcs=[];curSrc=-1;T=0;ci=0;zoom=1;selSeg=-1;selItem=-1;fs=false;$('short-editor-page').classList.remove('fs');$('ce-sheet').classList.remove('show','ce-effects-expanded');effectCategory='All';effectSearch='';
  S=dflt();hist=[];hi=-1;mainBar();
  addSrc(pv.currentSrc||pv.src,function(si){if(si<0){note('Could not open video');return}S.segs=[{src:si,start:0,end:srcs[si].dur,speed:1,vol:100}];commit();AppNavigation.pushPage('short-editor-page');
   setSrc(si,function(){v.currentTime=0;buildAudio();buildTL();layout();applyFX();ui()});setTimeout(function(){layout();buildTL();ui()},80)})}

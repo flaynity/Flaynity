@@ -151,10 +151,9 @@
 .ce-seg:not(.sel) .ce-cl{left:.55vw;right:.55vw;border-right:0;border-radius:2.2vw}
 .ce-trb{position:absolute;top:14.05vw;width:7.8vw;height:7.8vw;margin-left:-3.9vw;border-radius:2.2vw;background:#fff;border:none;padding:0;display:flex;align-items:center;justify-content:center;color:#9a9a9a;z-index:8}
 .ce-trb.on{color:#000}
-#short-editor-page .ce-trb svg{width:4.9vw;height:4.9vw;fill:currentColor;stroke:currentColor;stroke-width:1.6}
+#short-editor-page .ce-trb svg{width:5.2vw;height:3.7vw;fill:currentColor;stroke:currentColor;stroke-width:5;stroke-linejoin:round}
 .ce-plusi{position:absolute;top:12.95vw;width:10vw;height:10vw;border-radius:2.6vw;background:#fff;border:none;padding:0;display:flex;align-items:center;justify-content:center;z-index:8}
 #short-editor-page .ce-plusi svg{width:7vw;height:7vw;stroke:#000;stroke-width:2.6;fill:none}
-.ce-plus{display:none!important}
 .ce-rord{position:absolute;left:0;right:0;top:0;bottom:0;background:#000;z-index:35;display:none;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .ce-rord::-webkit-scrollbar{display:none}
 #short-editor-page.ro .ce-rord{display:block}
@@ -846,8 +845,7 @@ function buildTL(){
  var aw=S.audio?Math.min(S.audio.dur||tt,tt)*P:Math.max(tt*P,vw()*60);
  h+='<div class="ce-row'+(S.audio?' aud':'')+'" id="ce-arow" style="left:'+W/2+'px;top:28.8vw;width:'+aw+'px">'+svg('mus')+'<span>'+(S.audio?esc(S.audio.name):'Add sound')+'</span></div>';
  S.items.forEach(function(it,i){var left=W/2+it.start*P,w=Math.max(it.dur*P,vw()*10);h+='<div class="ce-row ov'+(i===selItem?' sel':'')+'" data-oi="'+i+'" style="left:'+left+'px;top:'+(43+i*8.6)+'vw;width:'+w+'px">'+(it.type==='img'?'🖼':esc((it.text||'').slice(0,14)))+'</div>'});
- S.segs.forEach(function(g,i){if(i<1||i===selSeg||i===selSeg+1)return;h+='<button class="ce-trb'+(g.tr?' on':'')+'" data-ti="'+i+'" style="left:'+(W/2+o[i]*P)+'px" aria-label="Transition"><svg viewBox="0 0 24 24"><path d="M3 5v14l8-7zM21 5v14l-8-7z"/></svg></button>'});
- h+='<button class="ce-plusi" id="ce-plusi" style="left:'+(W/2+tt*P+vw()*1.6)+'px" aria-label="Add clip"><svg viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg></button>';
+ S.segs.forEach(function(g,i){if(i<1||i===selSeg||i===selSeg+1)return;h+='<button class="ce-trb'+(g.tr?' on':'')+'" data-ti="'+i+'" style="left:'+(W/2+o[i]*P)+'px" aria-label="Transition"><svg viewBox="0 0 56 40"><path d="M5 5v30l21-15zM51 5v30L30 20z"/></svg></button>'});
  h+=fxRows(P,W);inner.innerHTML=h;
  $('ce-arow').onclick=function(){openSheet('sound')};
  $('ce-vol').style.color=S.mute?'#555':'#9a9a9a';$('ce-vol').innerHTML='<svg viewBox="0 0 24 24">'+IC.vol+(S.mute?'<path d="M3 3l18 18" stroke="#fff"/>':'')+'</svg>';
@@ -1232,7 +1230,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 function tgt(){return selSeg>=0?selSeg:ci}
 function act(f){switch(f){
  case 'edit':selSeg=ci;selFx=-1;selItem=-1;buildTL();editBar();break;case 'back':selSeg=-1;buildTL();mainBar();break;
- case 'split':var o=offs(),i=segAt(T),g=S.segs[i],st=g.start+(T-o[i])*g.speed;if(st<=g.start+.15||st>=g.end-.15){note('Move the playhead inside a clip');break}var b=JSON.parse(JSON.stringify(g));b.tr=null;g.end=st;b.start=st;S.segs.splice(i+1,0,b);selSeg=-1;commit();buildTL();break;
+ case 'split':var o=offs(),i=segAt(T),g=S.segs[i],st=g.start+(T-o[i])*g.speed;if(st<=g.start+.15||st>=g.end-.15){note('Move the playhead inside a clip');break}var b=JSON.parse(JSON.stringify(g));b.tr=null;g.end=st;b.start=st;S.segs.splice(i+1,0,b);selSeg=i+1;commit();buildTL();break;
  case 'delete':if(selFx>=0){S.fx.splice(selFx,1);selFx=-1;commit();buildTL();renderItems();break}if(S.segs.length<2){note('At least one clip is required');break}var t0=T;S.segs.splice(tgt(),1);selSeg=-1;commit();buildTL();mainBar();seek(Math.min(t0,total()));break;
  case 'speed':openSheet('speed');break;case 'volume':openSheet('volume');break;
  case 'rotate':S.rot=(S.rot+90)%360;commit();layout();buildTL();break;

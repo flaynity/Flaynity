@@ -817,10 +817,10 @@ function buildTL(){
  var steps=[1,2,5,10,30,60,120,300],st=10;for(var i=0;i<steps.length;i++){if(steps[i]*P>=vw()*14){st=steps[i];break}}
  for(var t=0;t<=tt+st;t+=st)h+='<div class="ce-rl" style="left:'+(W/2+t*P)+'px">'+fmt(t)+'</div>';
  var cellW=vw()*16.7;
- S.segs.forEach(function(g,i){var w=sdur(g)*P,n=Math.ceil(w/cellW),sl=i===selSeg,hw=Math.min(vw()*6.9,w*.4);h+='<div class="ce-seg'+(sl?' sel':'')+'" data-i="'+i+'" style="left:'+(W/2+o[i]*P)+'px;width:'+w+'px">'+(sl?'<div class="ce-sf"></div>':'')+'<div class="ce-cl">';
+ S.segs.forEach(function(g,i){var w=sdur(g)*P,n=Math.ceil(w/cellW),sl=i===selSeg,hw=vw()*6.9;h+='<div class="ce-seg'+(sl?' sel':'')+'" data-i="'+i+'" style="left:'+(W/2+o[i]*P)+'px;width:'+w+'px">'+(sl?'<div class="ce-sf" style="left:-'+hw+'px;right:-'+hw+'px"></div>':'')+'<div class="ce-cl">';
   for(var j=0;j<n;j++){var stt=g.start+(j*cellW/P+cellW/P/2)*g.speed,sr=srcs[g.src],k=Math.min(Math.floor(stt/sr.step),Math.ceil(sr.dur/sr.step)-1);h+='<div class="ce-cell" data-si="'+g.src+'" data-k="'+k+'" style="left:'+j*cellW+'px'+(sr.thumbs[k]?';background-image:url('+sr.thumbs[k]+')':'')+'"></div>'}
-  h+='</div>';var fl=(g.frz?'❄ ':'')+(g.rev?'⏪ ':'');if(sl)h+='<div class="ce-badge" style="left:'+(hw+vw())+'px">'+fl+(g.speed!==1?g.speed+'x · ':'')+fdur(sdur(g))+'</div>';else if(g.speed!==1||g.rev||g.frz)h+='<div class="ce-badge">'+fl+(g.speed!==1?g.speed+'x':'')+'</div>';
-  if(sl){var cvL='<svg viewBox="0 0 12 24"><path d="M9 4 3 12l6 8"/></svg>',cvR='<svg viewBox="0 0 12 24"><path d="M3 4l6 8-6 8"/></svg>';h+='<div class="ce-h l" data-h="l" style="width:'+hw+'px">'+cvL+'</div><div class="ce-h r" data-h="r" style="width:'+hw+'px">'+cvR+'</div>'}
+  h+='</div>';var fl=(g.frz?'❄ ':'')+(g.rev?'⏪ ':'');if(sl)h+='<div class="ce-badge" style="left:'+(vw()*1.2)+'px">'+fl+(g.speed!==1?g.speed+'x · ':'')+fdur(sdur(g))+'</div>';else if(g.speed!==1||g.rev||g.frz)h+='<div class="ce-badge">'+fl+(g.speed!==1?g.speed+'x':'')+'</div>';
+  if(sl){var cvL='<svg viewBox="0 0 12 24"><path d="M9 4 3 12l6 8"/></svg>',cvR='<svg viewBox="0 0 12 24"><path d="M3 4l6 8-6 8"/></svg>';h+='<div class="ce-h l" data-h="l" style="width:'+hw+'px;left:-'+hw+'px">'+cvL+'</div><div class="ce-h r" data-h="r" style="width:'+hw+'px;right:-'+hw+'px">'+cvR+'</div>'}
   h+='</div>'});
  var aw=S.audio?Math.min(S.audio.dur||tt,tt)*P:Math.max(tt*P,vw()*60);
  h+='<div class="ce-row'+(S.audio?' aud':'')+'" id="ce-arow" style="left:'+W/2+'px;top:28.8vw;width:'+aw+'px">'+svg('mus')+'<span>'+(S.audio?esc(S.audio.name):'Add sound')+'</span></div>';

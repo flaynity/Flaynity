@@ -149,7 +149,7 @@
 .ce-cell{position:absolute;top:0;height:100%;width:16.7vw;background:#2a2a2a center/cover no-repeat}
 .ce-seg.sel{z-index:5}
 .ce-seg:not(.sel) .ce-cl{left:.55vw;right:.55vw;border-right:0;border-radius:2.2vw}
-.ce-trb{position:absolute;top:14.05vw;width:7.8vw;height:7.8vw;margin-left:-3.9vw;border-radius:2.2vw;background:#fff;border:none;padding:0;display:flex;align-items:center;justify-content:center;color:#9a9a9a;z-index:8}
+.ce-trb{position:absolute;top:14.05vw;width:7.8vw;height:7.8vw;margin-left:-3.9vw;border-radius:2.1vw;background:#fff;border:none;padding:0;display:flex;align-items:center;justify-content:center;color:#000;z-index:8}
 .ce-trb.on{color:#000}
 #short-editor-page .ce-trb svg{width:5.2vw;height:3.7vw;fill:currentColor;stroke:currentColor;stroke-width:5;stroke-linejoin:round}
 .ce-plusi{position:absolute;top:12.95vw;width:10vw;height:10vw;border-radius:2.6vw;background:#fff;border:none;padding:0;display:flex;align-items:center;justify-content:center;z-index:8}
@@ -845,7 +845,7 @@ function buildTL(){
  var aw=S.audio?Math.min(S.audio.dur||tt,tt)*P:Math.max(tt*P,vw()*60);
  h+='<div class="ce-row'+(S.audio?' aud':'')+'" id="ce-arow" style="left:'+W/2+'px;top:28.8vw;width:'+aw+'px">'+svg('mus')+'<span>'+(S.audio?esc(S.audio.name):'Add sound')+'</span></div>';
  S.items.forEach(function(it,i){var left=W/2+it.start*P,w=Math.max(it.dur*P,vw()*10);h+='<div class="ce-row ov'+(i===selItem?' sel':'')+'" data-oi="'+i+'" style="left:'+left+'px;top:'+(43+i*8.6)+'vw;width:'+w+'px">'+(it.type==='img'?'🖼':esc((it.text||'').slice(0,14)))+'</div>'});
- S.segs.forEach(function(g,i){if(i<1||i===selSeg||i===selSeg+1)return;h+='<button class="ce-trb'+(g.tr?' on':'')+'" data-ti="'+i+'" style="left:'+(W/2+o[i]*P)+'px" aria-label="Transition"><svg viewBox="0 0 56 40"><path d="M5 5v30l21-15zM51 5v30L30 20z"/></svg></button>'});
+ S.segs.forEach(function(g,i){if(i<1||i===selSeg||i===selSeg+1)return;h+='<button class="ce-trb'+(g.tr?' on':'')+'" data-ti="'+i+'" style="left:'+(W/2+o[i]*P)+'px" aria-label="Transition"><svg viewBox="0 0 56 40"><path d="M5 5v30l19-15zM51 5v30L32 20z"/></svg></button>'});
  h+=fxRows(P,W);inner.innerHTML=h;
  $('ce-arow').onclick=function(){openSheet('sound')};
  $('ce-vol').style.color=S.mute?'#555':'#9a9a9a';$('ce-vol').innerHTML='<svg viewBox="0 0 24 24">'+IC.vol+(S.mute?'<path d="M3 3l18 18" stroke="#fff"/>':'')+'</svg>';

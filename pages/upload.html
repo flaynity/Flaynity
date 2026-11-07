@@ -642,7 +642,12 @@
 </div>
 
 
-<script>
+
+
+<!-- Page JS. Kept as inert text because the modular page loader (DOMParser + cloneNode)
+     never executes <script> tags; the tiny <img> below runs it once the page is mounted. -->
+<script type="text/plain" id="upload-page-js">
+
 /* TikTok-style Feels preview helpers (kept in upload.html) */
 function toggleTkTools() {
     var t = document.getElementById('tk-tools');
@@ -677,8 +682,8 @@ function fitShortPreviewVideo() {
     window.addEventListener('resize', fitShortPreviewVideo);
     window.addEventListener('orientationchange', fitShortPreviewVideo);
 })();
-</script>
-<script>
+
+
 /* ===== CapCut-style Feels Editor (all code lives in upload.html) ===== */
 (function(){
 var $=function(i){return document.getElementById(i)};
@@ -956,7 +961,10 @@ async function exportEdit(){
   $('ce-prog').classList.remove('show');AppNavigation.pop();pv.play&&pv.play().catch(function(){});
  }catch(err){$('ce-prog').classList.remove('show');note('Export failed on this device')}}
 })();
-</script>
 
+</script>
+<img alt="" width="0" height="0" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none"
+ src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+ onload="if(!window.__uploadPageJsBooted){window.__uploadPageJsBooted=1;try{var s=document.createElement('script');s.textContent=document.getElementById('upload-page-js').textContent;document.head.appendChild(s);}catch(e){console.error(e)}}this.remove()">
 </body>
 </html>

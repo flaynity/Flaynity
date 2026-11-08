@@ -3339,13 +3339,16 @@ function buildHomeFeed() {
             container.innerHTML = getHomeSkeletonHTML();
             return;
         }
+        inlineAdBeginRender();
         posts.slice(0, postRenderLimit).forEach(p => {
             if (p.userId) uniqueUserIds.add(p.userId);
             html += renderSinglePostSegmentUI(p);
+            html += inlineAdAfterPost();
         });
         container.innerHTML = html;
         ensureHomePostScrollFlow();
         pipAdScanPosts();
+        inlineAdSchedule();
         posts.slice(0, postRenderLimit).forEach(p => {
             registerPostReactionsListener(p.id);
         });
@@ -3364,6 +3367,7 @@ function buildHomeFeed() {
     }
 
     let postsToBind = [];
+    inlineAdBeginRender();
 
     while (longIdx < longs.length || shortIdx < feels.length || postIdx < posts.length) {
         if (shortIdx < feels.length) {
@@ -3385,6 +3389,7 @@ function buildHomeFeed() {
             postIdx++;
             if (singlePost.userId) uniqueUserIds.add(singlePost.userId);
             html += renderSinglePostSegmentUI(singlePost);
+            html += inlineAdAfterPost();
             postsToBind.push(singlePost.id);
         }
     }
@@ -3392,6 +3397,7 @@ function buildHomeFeed() {
     container.innerHTML = html;
     ensureHomePostScrollFlow();
     pipAdScanPosts();
+    inlineAdSchedule();
     postsToBind.forEach(postId => registerPostReactionsListener(postId));
     uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
 }
@@ -14221,8 +14227,9 @@ const pipAdCountedPosts = new Set();     // every post is counted only once, eve
 let pipAdObserver = null;
 let pipAdScanTimer = null;
 
+const PIP_FLOATING_ENABLED = false;   // the ad now sits INSIDE the Posts feed (inline ad below); set true for the floating window again
 function pipAdAvailable() {
-    return !!(window.AndroidBridge && typeof window.AndroidBridge.showPipAd === 'function');
+    return PIP_FLOATING_ENABLED && !!(window.AndroidBridge && typeof window.AndroidBridge.showPipAd === 'function');
 }
 function pipAdNextGap() {
     return PIP_AD_MIN_GAP + Math.floor(Math.random() * (PIP_AD_MAX_GAP - PIP_AD_MIN_GAP + 1));
@@ -14273,3 +14280,72 @@ window.onPipAdState = function (state) {
         pipAdActive = false;
     }
 };
+
+
+// =========================================================
+// INLINE POST ADS (AdMob native video card between posts, via AndroidBridge)
+// An empty "slot" is drawn after every 3-4 posts. MainActivity.java draws the real ad exactly on top of the slot,
+// so this code only has to tell it where each visible slot is while the page scrolls.
+// =========================================================
+const INLINE_AD_MIN_GAP = 3;     // ad after at least 3 posts
+const INLINE_AD_MAX_GAP = 4;     // ad after at most 4 posts
+const INLINE_AD_INFO_H = 100;    // text area under the video in px (same value as INLINE_AD_INFO_DP in MainActivity.java)
+const inlineAdGaps = [];         // gap of every slot is chosen once, so the feed does not jump when it is drawn again
+let inlineAdOrdinal = 0;         // n-th slot of the current draw: it keeps its ad when the feed is drawn again
+let inlineAdPostCount = 0;
+let inlineAdRaf = 0;
+let inlineAdHadVisible = false;
+
+function inlineAdAvailable() {
+    return !!(window.AndroidBridge && typeof window.AndroidBridge.updateInlineAds === 'function');
+}
+function inlineAdGapFor(n) {
+    if (inlineAdGaps[n] === undefined) {
+        inlineAdGaps[n] = INLINE_AD_MIN_GAP + Math.floor(Math.random() * (INLINE_AD_MAX_GAP - INLINE_AD_MIN_GAP + 1));
+    }
+    return inlineAdGaps[n];
+}
+function inlineAdBeginRender() { inlineAdOrdinal = 0; inlineAdPostCount = 0; }
+// Returns the slot HTML when it is time for an ad (call right after a post), otherwise ''
+function inlineAdAfterPost() {
+    if (!inlineAdAvailable()) return '';
+    inlineAdPostCount++;
+    if (inlineAdPostCount < inlineAdGapFor(inlineAdOrdinal)) return '';
+    inlineAdPostCount = 0;
+    const id = 'inline-ad-' + (inlineAdOrdinal++);
+    const w = Math.round(document.documentElement.clientWidth || window.innerWidth || 360);
+    const h = Math.round(w * 9 / 16) + INLINE_AD_INFO_H;
+    return `<div class="inline-ad-slot" id="${id}" style="width:calc(100% + 32px);margin:0 -16px;height:${h}px;background:var(--fb-line,rgba(128,128,128,.12));"></div>`;
+}
+function inlineAdSchedule() {
+    if (!inlineAdRaf) inlineAdRaf = requestAnimationFrame(inlineAdSync);
+}
+// Tells the app which slots are on screen. A slot that is covered (another page / sheet on top) is left out.
+function inlineAdSync() {
+    inlineAdRaf = 0;
+    if (!inlineAdAvailable()) return;
+    const out = [];
+    const slots = document.querySelectorAll('.inline-ad-slot');
+    const hdr = document.getElementById('global-category-chips');
+    const nav = document.querySelector('.bottom-nav');
+    const clipTop = hdr ? Math.max(0, hdr.getBoundingClientRect().bottom) : 0;
+    const clipBottom = nav ? nav.getBoundingClientRect().top : window.innerHeight;
+    slots.forEach(el => {
+        const r = el.getBoundingClientRect();
+        if (!r.width || !r.height || r.bottom <= clipTop || r.top >= clipBottom) return;
+        const vTop = Math.max(r.top, clipTop), vBot = Math.min(r.bottom, clipBottom);
+        const cx = r.left + r.width / 2;
+        for (const f of [0.15, 0.5, 0.85]) {
+            const hit = document.elementFromPoint(cx, vTop + (vBot - vTop) * f);
+            if (hit !== el) return;
+        }
+        out.push({ id: el.id, x: r.left, y: r.top, w: r.width, h: r.height });
+    });
+    if (!out.length && !inlineAdHadVisible) return;   // nothing on screen and nothing to hide
+    inlineAdHadVisible = out.length > 0;
+    try { window.AndroidBridge.updateInlineAds(JSON.stringify({ ct: clipTop, cb: clipBottom, s: out })); } catch (e) {}
+}
+window.addEventListener('scroll', inlineAdSchedule, { passive: true, capture: true });
+window.addEventListener('touchmove', inlineAdSchedule, { passive: true, capture: true });
+window.addEventListener('resize', inlineAdSchedule);
+setInterval(inlineAdSchedule, 300);   // images loading / tabs changing move the slots without a scroll

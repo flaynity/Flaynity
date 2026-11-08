@@ -280,6 +280,7 @@ function __flaynityReady(fn) {
     try {
         let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
         document.documentElement.setAttribute('data-theme', pref);
+        try { if (window.AndroidBridge && typeof window.AndroidBridge.setAppTheme === 'function') window.AndroidBridge.setAppTheme(pref); } catch (e2) {}
     } catch (e) {}
 })();
 
@@ -542,6 +543,8 @@ window.addEventListener('flaynity-dom-ready', stabilizeInitialOfflineHomeSkeleto
 function applyTheme() {
     let pref = localStorage.getItem('flaynity-theme-pref') || 'light';
     document.documentElement.setAttribute('data-theme', pref);
+    // tell Android the REAL app theme (ad details sheet follows it)
+    try { if (window.AndroidBridge && typeof window.AndroidBridge.setAppTheme === 'function') window.AndroidBridge.setAppTheme(pref); } catch (e) {}
     try { if (typeof window.__flaynityUpdateStatusBar === 'function') { window.__flaynityUpdateStatusBar(); setTimeout(window.__flaynityUpdateStatusBar, 350); } } catch (e) {}
     
     const themeBtns = document.querySelectorAll('.appbar-theme-btn');
@@ -6487,6 +6490,7 @@ const AppNavigation = {
         } else {
             document.body.style.overflow = 'auto';
             try { lvCancelAd(); } catch (e) {}
+            try { if (flyLandscape) flySetLandscape(false); } catch (e) {}
             const container = document.getElementById('video-player-container');
             if (container) container.innerHTML = '';
             if (!activeModals.includes('comment-modal')) {
@@ -7665,6 +7669,7 @@ async function switchTab(tabId) {
         try { window.AndroidBridge.hideFeelsAd(); } catch (e) {}
     }
     try { if (lvAdShowing) lvCancelAd(); } catch (e) {}
+    try { if (flyLandscape) flySetLandscape(false); } catch (e) {}
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
 
@@ -11202,6 +11207,7 @@ function flyInitPlayer(link){
     const poster=document.getElementById('fly-poster');
     if(!v) return;
     flyCurrentSpeed=1; flySeekAccumRight=0; flySeekAccumLeft=0;
+    flyApplyLandscapeUI(flyLandscape); // next video keeps landscape
 
     if(poster && currentActiveMovie){ poster.src=currentActiveMovie.poster||currentActiveMovie.banner||''; poster.style.display='block'; poster.style.objectFit='contain'; }
 
@@ -11354,7 +11360,26 @@ function flySetQuality(height,label,e){
 }
 
 /* ---------- Fullscreen (শুধু player landscape) ---------- */
+let flyLandscape=false;
+function flyApplyLandscapeUI(on){
+    const wrap=document.getElementById('fly-player-wrap');
+    if(wrap) wrap.classList.toggle('fly-landscape-on',!!on);
+    document.body.classList.toggle('fly-landscape',!!on);
+    const icon=document.getElementById('fly-fs-icon'); if(icon) icon.className=on?'fas fa-compress':'fas fa-expand';
+}
+function flySetLandscape(on){
+    flyLandscape=!!on;
+    flyApplyLandscapeUI(flyLandscape);
+    try{ window.AndroidBridge.setPlayerLandscape(flyLandscape); }catch(e){}
+    flyResetHideTimer();
+}
+// Called by MainActivity.java when Back is pressed while the player is landscape
+window.flyOnLandscapeChanged=function(on){ flyLandscape=!!on; flyApplyLandscapeUI(flyLandscape); };
 function flyToggleFullscreen(){
+    if(window.AndroidBridge && typeof window.AndroidBridge.setPlayerLandscape==='function'){ flySetLandscape(!flyLandscape); return; }
+    flyToggleFullscreenLegacy();
+}
+function flyToggleFullscreenLegacy(){
     const wrap=document.getElementById('fly-player-wrap'); if(!wrap) return;
     const fsEl=document.fullscreenElement||document.webkitFullscreenElement;
     if(!fsEl){

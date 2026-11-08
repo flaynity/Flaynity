@@ -4633,7 +4633,7 @@ function initFeelsAdObserver() {
             document.querySelectorAll('#feels-swiper-container video').forEach(v => { try { v.pause(); } catch (e) {} });
             // Lets the previous/next Feels start again normally after the ad
             currentActiveFeelsIdx = -1;
-            try { window.AndroidBridge.showFeelsAd(); } catch (e) { window.onFeelsAdFinished('error'); }
+            try { window.AndroidBridge.showFeelsAd(feelsFeedMode); } catch (e) { window.onFeelsAdFinished('error'); }
         });
     }, { threshold: 0.6 });
     adSlides.forEach(s => feelsAdObserver.observe(s));
@@ -4645,7 +4645,7 @@ window.onFeelsAdFinished = function (result) {
     feelsAdShowing = false;
     const slide = feelsAdCurrentSlide;
     feelsAdCurrentSlide = null;
-    if (!slide) return;
+    if (!slide || result === 'abort') return; // 'abort' = user changed tab / feed mode while the ad was open
     let goNext;
     if (result === 'swiped_up') goNext = true;
     else if (result === 'swiped_down') goNext = false;
@@ -7651,6 +7651,11 @@ function escapeHTML(str) {
 // NAVIGATION & DISCOVER TAB
 // =========================================
 async function switchTab(tabId) {
+    // The Feels ad overlay is drawn by the app: close it when the user taps another bottom-nav tab
+    if (typeof feelsAdShowing !== 'undefined' && feelsAdShowing) {
+        feelsAdShowing = false; feelsAdCurrentSlide = null;
+        try { window.AndroidBridge.hideFeelsAd(); } catch (e) {}
+    }
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
 

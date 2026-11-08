@@ -4591,6 +4591,61 @@ function fitFeelsTitles(attempt = 0) {
 }
 window.addEventListener('resize', () => { try { fitFeelsTitles(); } catch (e) {} });
 
+// =========================================================
+// FEELS ADS (AdMob Interstitial via AndroidBridge) - an ad slide every 2-3 Feels.
+// While the ad slide is active ALL Feels videos are paused (nothing plays under the ad).
+// =========================================================
+const FEELS_AD_MIN_GAP = 2;   // ad after at least 2 Feels
+const FEELS_AD_MAX_GAP = 3;   // ad after at most 3 Feels
+let feelsAdObserver = null;
+let feelsAdShowing = false;
+let feelsAdCurrentSlide = null;
+
+function feelsAdsAvailable() {
+    return !!(window.AndroidBridge && typeof window.AndroidBridge.showFeelsAd === 'function');
+}
+function feelsNextAdGap() {
+    return FEELS_AD_MIN_GAP + Math.floor(Math.random() * (FEELS_AD_MAX_GAP - FEELS_AD_MIN_GAP + 1));
+}
+function feelsAdSlideHTML(n) {
+    return `<div class="feels-ad-slide" id="feels-ad-${n}" style="height:100%;width:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;">
+        <div style="font-size:12px;font-weight:800;letter-spacing:1px;padding:3px 9px;border:1px solid rgba(255,255,255,.55);border-radius:4px;opacity:.85;">AD</div>
+        <div style="margin-top:14px;font-size:14px;opacity:.7;">Swipe up to continue</div>
+    </div>`;
+}
+function initFeelsAdObserver() {
+    if (feelsAdObserver) { feelsAdObserver.disconnect(); feelsAdObserver = null; }
+    const adSlides = document.querySelectorAll('#feels-swiper-container .feels-ad-slide');
+    if (!adSlides.length || !feelsAdsAvailable()) return;
+    feelsAdObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting || feelsAdShowing) return;
+            if (entry.target.dataset.shown === '1') return; // this ad slide was already shown once
+            const feelsTab = document.getElementById('feels-tab');
+            if (feelsTab && !feelsTab.classList.contains('active')) return;
+            feelsAdShowing = true;
+            feelsAdCurrentSlide = entry.target;
+            // Nothing from Feels may play while the ad is on screen
+            document.querySelectorAll('#feels-swiper-container video').forEach(v => { try { v.pause(); } catch (e) {} });
+            // Lets the previous/next Feels start again normally after the ad
+            currentActiveFeelsIdx = -1;
+            try { window.AndroidBridge.showFeelsAd(); } catch (e) { window.onFeelsAdFinished('error'); }
+        });
+    }, { threshold: 0.6 });
+    adSlides.forEach(s => feelsAdObserver.observe(s));
+}
+// Called by MainActivity.java when the ad is closed / failed / was not ready
+window.onFeelsAdFinished = function (result) {
+    feelsAdShowing = false;
+    const slide = feelsAdCurrentSlide;
+    feelsAdCurrentSlide = null;
+    if (!slide) return;
+    slide.dataset.shown = '1';
+    const swiper = slide.closest('.feels-swiper');
+    const next = slide.nextElementSibling;
+    if (swiper && next) scrollFeelsToSlide(swiper, next, 'smooth');
+};
+
 function buildFeelsPage() {
     const container = document.getElementById('feels-swiper-container');
     if (!container) return;
@@ -4610,7 +4665,10 @@ function buildFeelsPage() {
     }
 
     let html = '';
-    activeFeelsList.forEach(s => {
+    const feelsAdsOn = feelsAdsAvailable();
+    let feelsAdCountdown = feelsNextAdGap();
+    let feelsAdSeq = 0;
+    activeFeelsList.forEach((s, feelIdx) => {
         const isLikedId = `short-like-btn-${s.id}`;
         const likesCountId = `short-likes-count-${s.id}`;
         const commentsCountId = `short-comments-count-${s.id}`;
@@ -4694,6 +4752,13 @@ function buildFeelsPage() {
                 </div>
             </div>
         `;
+
+        // Ad slide after every 2-3 Feels (never after the last one)
+        feelsAdCountdown--;
+        if (feelsAdsOn && feelsAdCountdown <= 0 && feelIdx < activeFeelsList.length - 1) {
+            html += feelsAdSlideHTML(++feelsAdSeq);
+            feelsAdCountdown = feelsNextAdGap();
+        }
 
         db.ref(`movie_stats/${s.id}`).on('value', (snapshot) => {
             const stats = snapshot.val() || {};
@@ -4793,6 +4858,7 @@ function buildFeelsPage() {
     }
 
     initFeelsObserver();
+    initFeelsAdObserver();
     setupDoubleTapListeners();
     bindFeelsVideoEvents();
     requestAnimationFrame(() => fitFeelsTitles());

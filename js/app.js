@@ -14289,7 +14289,7 @@ window.onPipAdState = function (state) {
 // =========================================================
 const INLINE_AD_MIN_GAP = 3;     // ad after at least 3 posts
 const INLINE_AD_MAX_GAP = 4;     // ad after at most 4 posts
-const INLINE_AD_INFO_H = 100;    // text area under the video in px (same value as INLINE_AD_INFO_DP in MainActivity.java)
+const INLINE_AD_INFO_H = 190;    // everything under the video + the card margins, in px (same value as INLINE_AD_INFO_DP in MainActivity.java)
 const inlineAdGaps = [];         // gap of every slot is chosen once, so the feed does not jump when it is drawn again
 let inlineAdOrdinal = 0;         // n-th slot of the current draw: it keeps its ad when the feed is drawn again
 let inlineAdPostCount = 0;
@@ -14314,8 +14314,8 @@ function inlineAdAfterPost() {
     inlineAdPostCount = 0;
     const id = 'inline-ad-' + (inlineAdOrdinal++);
     const w = Math.round(document.documentElement.clientWidth || window.innerWidth || 360);
-    const h = Math.round(w * 9 / 16) + INLINE_AD_INFO_H;
-    return `<div class="inline-ad-slot" id="${id}" style="width:calc(100% + 32px);margin:0 -16px;height:${h}px;background:var(--fb-line,rgba(128,128,128,.12));"></div>`;
+    const h = Math.round((w - 24) * 9 / 16) + INLINE_AD_INFO_H;   // the card has 12px side margins
+    return `<div class="inline-ad-slot" id="${id}" style="width:calc(100% + 32px);margin:0 -16px;height:${h}px;background:var(--bg-color,transparent);"></div>`;
 }
 function inlineAdSchedule() {
     if (!inlineAdRaf) inlineAdRaf = requestAnimationFrame(inlineAdSync);

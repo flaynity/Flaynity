@@ -3254,6 +3254,7 @@ function selectCategoryChip(category, el) {
     document.querySelectorAll('.chip-item').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
     activeHomeCategory = category;
+    if (category !== 'Posts' && category !== 'All') { try { pipAdHide(); } catch (e) {} }
 
     const homeTab = document.getElementById('home-tab');
     if (homeTab && !homeTab.classList.contains('active')) {
@@ -3344,6 +3345,7 @@ function buildHomeFeed() {
         });
         container.innerHTML = html;
         ensureHomePostScrollFlow();
+        pipAdScanPosts();
         posts.slice(0, postRenderLimit).forEach(p => {
             registerPostReactionsListener(p.id);
         });
@@ -3389,6 +3391,7 @@ function buildHomeFeed() {
 
     container.innerHTML = html;
     ensureHomePostScrollFlow();
+    pipAdScanPosts();
     postsToBind.forEach(postId => registerPostReactionsListener(postId));
     uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
 }
@@ -6317,6 +6320,7 @@ const AppNavigation = {
     },
 
     pushPage: function(pageId) {
+        try { pipAdHide(); } catch (e) {}
         const current = this.current();
         if (current && current.type === 'page' && current.id === pageId) {
             return;
@@ -7669,6 +7673,7 @@ async function switchTab(tabId) {
         try { window.AndroidBridge.hideFeelsAd(); } catch (e) {}
     }
     try { if (lvAdShowing) lvCancelAd(); } catch (e) {}
+    try { pipAdHide(); } catch (e) {}
     try { if (flyLandscape) flySetLandscape(false); } catch (e) {}
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
@@ -14200,3 +14205,71 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
     }
     setTimeout(initAfterInjection, 0);
 })();
+
+
+// =========================================================
+// PICTURE-IN-PICTURE AD (AdMob native video via AndroidBridge)
+// While the user scrolls the Posts feed: after every 3-4 NEW posts, MainActivity.java shows a small
+// floating video ad (bottom-right, draggable, with a close button). Counting starts again after each ad.
+// =========================================================
+const PIP_AD_MIN_GAP = 3;   // ad after at least 3 posts
+const PIP_AD_MAX_GAP = 4;   // ad after at most 4 posts
+let pipAdActive = false;                 // a floating ad is on screen right now
+let pipAdCount = 0;                      // new posts seen since the last ad
+let pipAdNeed = PIP_AD_MIN_GAP + Math.floor(Math.random() * (PIP_AD_MAX_GAP - PIP_AD_MIN_GAP + 1));
+const pipAdCountedPosts = new Set();     // every post is counted only once, even if the feed is re-drawn
+let pipAdObserver = null;
+let pipAdScanTimer = null;
+
+function pipAdAvailable() {
+    return !!(window.AndroidBridge && typeof window.AndroidBridge.showPipAd === 'function');
+}
+function pipAdNextGap() {
+    return PIP_AD_MIN_GAP + Math.floor(Math.random() * (PIP_AD_MAX_GAP - PIP_AD_MIN_GAP + 1));
+}
+function pipAdOnPostVisible(el) {
+    const id = el && el.id;
+    if (!id || pipAdCountedPosts.has(id)) return;
+    pipAdCountedPosts.add(id);
+    pipAdCount++;
+    if (!pipAdActive && pipAdCount >= pipAdNeed) {
+        try { window.AndroidBridge.showPipAd(); } catch (e) {}
+    }
+}
+// Called after the feed is drawn: watch every post card of the Home feed
+function pipAdScanPosts() {
+    if (!pipAdAvailable() || typeof IntersectionObserver === 'undefined') return;
+    clearTimeout(pipAdScanTimer);
+    pipAdScanTimer = setTimeout(() => {
+        if (!pipAdObserver) {
+            pipAdObserver = new IntersectionObserver((entries) => {
+                entries.forEach(en => {
+                    if (!en.isIntersecting) return;
+                    pipAdObserver.unobserve(en.target);
+                    pipAdOnPostVisible(en.target);
+                });
+            }, { threshold: 0.35 });
+        }
+        document.querySelectorAll('#home-feed-container .post-card.fb-post').forEach(el => {
+            if (!pipAdCountedPosts.has(el.id)) pipAdObserver.observe(el);
+        });
+    }, 80);
+}
+// Close the floating ad (user left the Posts feed)
+function pipAdHide() {
+    if (!pipAdActive) return;
+    pipAdActive = false;
+    try { window.AndroidBridge.hidePipAd(); } catch (e) {}
+}
+// Called by MainActivity.java: shown | closed | completed | not_ready | failed
+window.onPipAdState = function (state) {
+    if (state === 'shown') {
+        pipAdActive = true;
+        pipAdCount = 0;               // count 3-4 new posts again
+        pipAdNeed = pipAdNextGap();
+    } else {
+        // closed / completed -> ready for the next round.
+        // not_ready / failed -> the count stays, so the next new post tries again.
+        pipAdActive = false;
+    }
+};

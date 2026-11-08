@@ -4600,6 +4600,7 @@ const FEELS_AD_MAX_GAP = 3;   // ad after at most 3 Feels
 let feelsAdObserver = null;
 let feelsAdShowing = false;
 let feelsAdCurrentSlide = null;
+let feelsAdEnterDir = 'down';
 
 function feelsAdsAvailable() {
     return !!(window.AndroidBridge && typeof window.AndroidBridge.showFeelsAd === 'function');
@@ -4608,10 +4609,13 @@ function feelsNextAdGap() {
     return FEELS_AD_MIN_GAP + Math.floor(Math.random() * (FEELS_AD_MAX_GAP - FEELS_AD_MIN_GAP + 1));
 }
 function feelsAdSlideHTML(n) {
-    return `<div class="feels-ad-slide" id="feels-ad-${n}" style="height:100%;width:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;">
-        <div style="font-size:12px;font-weight:800;letter-spacing:1px;padding:3px 9px;border:1px solid rgba(255,255,255,.55);border-radius:4px;opacity:.85;">AD</div>
-        <div style="margin-top:14px;font-size:14px;opacity:.7;">Swipe up to continue</div>
-    </div>`;
+    // Empty black slide: the real ad is drawn by the app (native overlay) while this slide is active
+    return `<div class="feels-ad-slide" id="feels-ad-${n}" style="height:100%;width:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;background:#000;"></div>`;
+}
+// 'down' = user arrived from the Feels above (continue to the next one), 'up' = arrived from below
+function feelsAdEnterDirection(slide) {
+    const swiper = slide.closest('.feels-swiper');
+    return (swiper && slide.offsetTop < swiper.scrollTop) ? 'up' : 'down';
 }
 function initFeelsAdObserver() {
     if (feelsAdObserver) { feelsAdObserver.disconnect(); feelsAdObserver = null; }
@@ -4620,11 +4624,11 @@ function initFeelsAdObserver() {
     feelsAdObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (!entry.isIntersecting || feelsAdShowing) return;
-            if (entry.target.dataset.shown === '1') return; // this ad slide was already shown once
             const feelsTab = document.getElementById('feels-tab');
             if (feelsTab && !feelsTab.classList.contains('active')) return;
             feelsAdShowing = true;
             feelsAdCurrentSlide = entry.target;
+            feelsAdEnterDir = feelsAdEnterDirection(entry.target);
             // Nothing from Feels may play while the ad is on screen
             document.querySelectorAll('#feels-swiper-container video').forEach(v => { try { v.pause(); } catch (e) {} });
             // Lets the previous/next Feels start again normally after the ad
@@ -4634,16 +4638,21 @@ function initFeelsAdObserver() {
     }, { threshold: 0.6 });
     adSlides.forEach(s => feelsAdObserver.observe(s));
 }
-// Called by MainActivity.java when the ad is closed / failed / was not ready
+// Called by MainActivity.java: 'swiped_up' -> next Feels, 'swiped_down' -> previous Feels,
+// anything else (back / not ready / failed) -> keep going the way the user was already scrolling.
+// The ad slide stays in the feed, so scrolling back to it plays an ad again.
 window.onFeelsAdFinished = function (result) {
     feelsAdShowing = false;
     const slide = feelsAdCurrentSlide;
     feelsAdCurrentSlide = null;
     if (!slide) return;
-    slide.dataset.shown = '1';
+    let goNext;
+    if (result === 'swiped_up') goNext = true;
+    else if (result === 'swiped_down') goNext = false;
+    else goNext = (feelsAdEnterDir !== 'up');
     const swiper = slide.closest('.feels-swiper');
-    const next = slide.nextElementSibling;
-    if (swiper && next) scrollFeelsToSlide(swiper, next, 'smooth');
+    const target = goNext ? slide.nextElementSibling : slide.previousElementSibling;
+    if (swiper && target && target.classList.contains('short-slide')) scrollFeelsToSlide(swiper, target, 'smooth');
 };
 
 function buildFeelsPage() {

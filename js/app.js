@@ -6486,6 +6486,7 @@ const AppNavigation = {
             }
         } else {
             document.body.style.overflow = 'auto';
+            try { lvCancelAd(); } catch (e) {}
             const container = document.getElementById('video-player-container');
             if (container) container.innerHTML = '';
             if (!activeModals.includes('comment-modal')) {
@@ -6624,16 +6625,23 @@ function startVideoPlayer() {
 
     container.style.display = 'block';
 
-    // YouTube/TMDB trailers → iframe (আগের মতোই, unchanged)
-    if (link.includes('youtube.com') || link.includes('youtu.be')) {
-        const ytId = extractVideoID(link);
-        container.innerHTML = `<iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1&modestbranding=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
-        return;
-    }
+    // Long-video ads: pre-roll first, the video starts only after the ad is finished / skipped
+    const lvSessionId = lvBeginVideo();
+    const beginPlayback = () => {
+        if (lvSessionId !== lvSession) return;
 
-    // Flaynity CDN direct MP4 → custom YouTube-style player
-    container.innerHTML = flyBuildPlayerHTML();
-    flyInitPlayer(link);
+        // YouTube/TMDB trailers → iframe (আগের মতোই, unchanged)
+        if (link.includes('youtube.com') || link.includes('youtu.be')) {
+            const ytId = extractVideoID(link);
+            container.innerHTML = `<iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1&modestbranding=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+            return;
+        }
+
+        // Flaynity CDN direct MP4 → custom YouTube-style player
+        container.innerHTML = flyBuildPlayerHTML();
+        flyInitPlayer(link);
+    };
+    lvRunPreroll(lvSessionId, beginPlayback);
 }
 
 function playNextRecommendedVideo() {
@@ -7656,6 +7664,7 @@ async function switchTab(tabId) {
         feelsAdShowing = false; feelsAdCurrentSlide = null;
         try { window.AndroidBridge.hideFeelsAd(); } catch (e) {}
     }
+    try { if (lvAdShowing) lvCancelAd(); } catch (e) {}
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
 
@@ -11005,6 +11014,122 @@ function closeUploadManager() {
 }
 
 
+
+// =========================================================
+// LONG VIDEO ADS (AdMob native video via AndroidBridge)
+// Pre-roll : before every 2nd-3rd video (LV_AD_MIN_GAP..LV_AD_MAX_GAP)
+// Mid-roll : videos >= 8 min, every 5 min, max 3 per video
+// The ad is drawn by the app exactly over the 16:9 player. Video starts / resumes after it.
+// =========================================================
+const LV_AD_MIN_GAP = 2;          // set both to 1 => pre-roll before EVERY video
+const LV_AD_MAX_GAP = 3;
+const LV_MID_MIN_DURATION = 480;  // seconds (8 min)
+const LV_MID_INTERVAL = 300;      // seconds (5 min)
+const LV_MID_MAX = 3;
+
+let lvAdShowing = false;
+let lvAdCallback = null;
+let lvSession = 0;
+let lvPlayCount = 0;
+let lvPrerollGap = LV_AD_MIN_GAP + Math.floor(Math.random() * (LV_AD_MAX_GAP - LV_AD_MIN_GAP + 1));
+let lvMidCues = [];
+let lvMidDone = {};
+
+function lvRandGap() {
+    return LV_AD_MIN_GAP + Math.floor(Math.random() * (LV_AD_MAX_GAP - LV_AD_MIN_GAP + 1));
+}
+function lvAdsAvailable() {
+    return !!(window.AndroidBridge && typeof window.AndroidBridge.showLongVideoAd === 'function');
+}
+function lvAdWasShown(res) { return res === 'completed' || res === 'skipped'; }
+
+function lvRequestAd(kind, done) {
+    if (!lvAdsAvailable() || lvAdShowing) { done('unavailable'); return; }
+    const c = document.getElementById('video-player-container');
+    const top = c ? c.getBoundingClientRect().top : 0;
+    lvAdShowing = true;
+    lvAdCallback = done;
+    try { window.AndroidBridge.showLongVideoAd(kind, top); }
+    catch (e) { window.onLongVideoAdFinished('error'); }
+}
+
+// Called by MainActivity.java: completed | skipped | back | not_ready | failed
+window.onLongVideoAdFinished = function (result) {
+    lvAdShowing = false;
+    const cb = lvAdCallback;
+    lvAdCallback = null;
+    if (cb) cb(result);
+};
+
+// Drops any pending / visible ad (page closed, tab changed, new video opened)
+function lvCancelAd() {
+    lvSession++;
+    lvAdCallback = null;
+    if (lvAdShowing) {
+        lvAdShowing = false;
+        try { window.AndroidBridge.hideLongVideoAd(); } catch (e) {}
+    }
+}
+
+function lvBeginVideo() {
+    lvCancelAd();
+    lvMidCues = [];
+    lvMidDone = {};
+    return lvSession;
+}
+
+function lvRunPreroll(session, startFn) {
+    lvPlayCount++;
+    if (!lvAdsAvailable() || lvPlayCount < lvPrerollGap) { startFn(); return; }
+    // wait for the watch-page slide-up animation so the ad lines up exactly with the 16:9 player
+    setTimeout(() => {
+        if (session !== lvSession) return;
+        lvRequestAd('preroll', (res) => {
+            if (session !== lvSession) return;
+            if (lvAdWasShown(res)) { lvPlayCount = 0; lvPrerollGap = lvRandGap(); }
+            if (res === 'back') { executeBackAction(); return; }
+            startFn();
+        });
+    }, 450);
+}
+
+function lvSetupMidRoll(v) {
+    if (v.dataset.lvMid === '1') return;
+    v.dataset.lvMid = '1';
+    lvMidCues = [];
+    lvMidDone = {};
+    const dur = v.duration;
+    if (!lvAdsAvailable() || !dur || !isFinite(dur) || dur < LV_MID_MIN_DURATION) return;
+    for (let t = LV_MID_INTERVAL; t < dur - 60 && lvMidCues.length < LV_MID_MAX; t += LV_MID_INTERVAL) lvMidCues.push(t);
+}
+
+function lvCheckMidRoll(v) {
+    if (lvAdShowing || !lvMidCues.length || v.paused || v.seeking) return;
+    const t = v.currentTime;
+    let cue = null;
+    lvMidCues.forEach(c => { if (!lvMidDone[c] && t >= c) cue = c; });
+    if (cue === null) return;
+    lvMidCues.forEach(c => { if (c <= cue) lvMidDone[c] = true; });
+
+    const session = lvSession;
+    try { v.pause(); } catch (e) {}
+    const fs = document.fullscreenElement || document.webkitFullscreenElement;
+    const go = () => {
+        if (session !== lvSession) return;
+        lvRequestAd('midroll', (res) => {
+            if (session !== lvSession) return;
+            if (res === 'back') { executeBackAction(); return; }
+            try { v.play().catch(() => {}); } catch (e) {}
+        });
+    };
+    if (fs) {
+        try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {}
+        setTimeout(go, 350);
+    } else {
+        go();
+    }
+}
+
 // =========================================================
 // FLAYNITY YOUTUBE-STYLE LONG VIDEO PLAYER ENGINE
 // =========================================================
@@ -11093,8 +11218,8 @@ function flyInitPlayer(link){
     v.oncanplay=()=>flyShowBuffering(false);
     v.onplay=flyUpdatePlayIcon;
     v.onpause=()=>{flyUpdatePlayIcon(); flyShowControls();};
-    v.ontimeupdate=flyUpdateProgress;
-    v.onloadedmetadata=()=>{ flyUpdateProgress(); flyBuildQualityMenu(); };
+    v.ontimeupdate=()=>{ flyUpdateProgress(); lvCheckMidRoll(v); };
+    v.onloadedmetadata=()=>{ flyUpdateProgress(); flyBuildQualityMenu(); lvSetupMidRoll(v); };
     v.onprogress=flyUpdateProgress;
     v.onended=()=>playNextRecommendedVideo();
 

@@ -14289,7 +14289,8 @@ window.onPipAdState = function (state) {
 // =========================================================
 const INLINE_AD_MIN_GAP = 3;     // ad after at least 3 posts
 const INLINE_AD_MAX_GAP = 4;     // ad after at most 4 posts
-const INLINE_AD_INFO_H = 190;    // everything under the video + the card margins, in px (same value as INLINE_AD_INFO_DP in MainActivity.java)
+const INLINE_AD_INFO_H = 210;    // everything under the square media + the card margins, in px (same value as INLINE_AD_INFO_DP in MainActivity.java)
+const INLINE_AD_MEDIA_RATIO = 1; // media height / width (1 = square)
 const inlineAdGaps = [];         // gap of every slot is chosen once, so the feed does not jump when it is drawn again
 let inlineAdOrdinal = 0;         // n-th slot of the current draw: it keeps its ad when the feed is drawn again
 let inlineAdPostCount = 0;
@@ -14314,7 +14315,7 @@ function inlineAdAfterPost() {
     inlineAdPostCount = 0;
     const id = 'inline-ad-' + (inlineAdOrdinal++);
     const w = Math.round(document.documentElement.clientWidth || window.innerWidth || 360);
-    const h = Math.round((w - 24) * 9 / 16) + INLINE_AD_INFO_H;   // the card has 12px side margins
+    const h = Math.round(w * INLINE_AD_MEDIA_RATIO) + INLINE_AD_INFO_H;
     return `<div class="inline-ad-slot" id="${id}" style="width:calc(100% + 32px);margin:0 -16px;height:${h}px;background:var(--bg-color,transparent);"></div>`;
 }
 function inlineAdSchedule() {
@@ -14328,24 +14329,34 @@ function inlineAdSync() {
     const slots = document.querySelectorAll('.inline-ad-slot');
     const hdr = document.getElementById('global-category-chips');
     const nav = document.querySelector('.bottom-nav');
+    const vh = window.innerHeight;
     const clipTop = hdr ? Math.max(0, hdr.getBoundingClientRect().bottom) : 0;
-    const clipBottom = nav ? nav.getBoundingClientRect().top : window.innerHeight;
+    const clipBottom = nav ? nav.getBoundingClientRect().top : vh;
+    const pageY = window.pageYOffset || document.documentElement.scrollTop || 0;
     slots.forEach(el => {
         const r = el.getBoundingClientRect();
-        if (!r.width || !r.height || r.bottom <= clipTop || r.top >= clipBottom) return;
+        if (!r.width || !r.height) return;                 // tab not visible
+        if (r.bottom < -vh || r.top > vh * 2) return;      // far away: not needed yet
         const vTop = Math.max(r.top, clipTop), vBot = Math.min(r.bottom, clipBottom);
-        const cx = r.left + r.width / 2;
-        for (const f of [0.15, 0.5, 0.85]) {
-            const hit = document.elementFromPoint(cx, vTop + (vBot - vTop) * f);
-            if (hit !== el) return;
+        if (vBot - vTop > 2) {                              // on screen: skip it when another page / sheet covers it
+            const cx = r.left + r.width / 2;
+            for (const f of [0.15, 0.5, 0.85]) {
+                const hit = document.elementFromPoint(cx, vTop + (vBot - vTop) * f);
+                if (hit !== el) return;
+            }
         }
-        out.push({ id: el.id, x: r.left, y: r.top, w: r.width, h: r.height });
+        // y = distance from the top of the PAGE: the app scrolls the ad with the WebView's own scroll offset
+        out.push({ id: el.id, x: r.left, y: r.top + pageY, w: r.width, h: r.height });
     });
     if (!out.length && !inlineAdHadVisible) return;   // nothing on screen and nothing to hide
     inlineAdHadVisible = out.length > 0;
     try { window.AndroidBridge.updateInlineAds(JSON.stringify({ ct: clipTop, cb: clipBottom, s: out })); } catch (e) {}
 }
-window.addEventListener('scroll', inlineAdSchedule, { passive: true, capture: true });
-window.addEventListener('touchmove', inlineAdSchedule, { passive: true, capture: true });
+let inlineAdThrottle = 0;
+function inlineAdScheduleSoon() {   // scrolling only needs an occasional re-check (new slots coming near, covered slots)
+    if (inlineAdThrottle) return;
+    inlineAdThrottle = setTimeout(() => { inlineAdThrottle = 0; inlineAdSchedule(); }, 150);
+}
+window.addEventListener('scroll', inlineAdScheduleSoon, { passive: true, capture: true });
 window.addEventListener('resize', inlineAdSchedule);
 setInterval(inlineAdSchedule, 300);   // images loading / tabs changing move the slots without a scroll

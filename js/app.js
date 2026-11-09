@@ -14289,13 +14289,17 @@ window.onPipAdState = function (state) {
 // =========================================================
 const INLINE_AD_MIN_GAP = 3;     // ad after at least 3 posts
 const INLINE_AD_MAX_GAP = 4;     // ad after at most 4 posts
-const INLINE_AD_INFO_H = 210;    // everything under the square media + the card margins, in px (same value as INLINE_AD_INFO_DP in MainActivity.java)
+const INLINE_AD_INFO_H = 216;    // everything under the square media + the card margins, in px (same value as INLINE_AD_INFO_DP in MainActivity.java)
+const INLINE_AD_SIDE = 10;       // card side margin in px (same value as INLINE_AD_SIDE_DP in MainActivity.java)
 const INLINE_AD_MEDIA_RATIO = 1; // media height / width (1 = square)
 const inlineAdGaps = [];         // gap of every slot is chosen once, so the feed does not jump when it is drawn again
 let inlineAdOrdinal = 0;         // n-th slot of the current draw: it keeps its ad when the feed is drawn again
 let inlineAdPostCount = 0;
 let inlineAdRaf = 0;
-let inlineAdHadVisible = false;
+let inlineAdHadVisible = false;   // the app is showing ads right now
+let inlineAdScrolling = false;    // the page is moving: the real ads are hidden, the placeholder cards move with the posts
+let inlineAdIdleTimer = 0;
+let inlineAdLastJson = '';
 
 function inlineAdAvailable() {
     return !!(window.AndroidBridge && typeof window.AndroidBridge.updateInlineAds === 'function');
@@ -14306,7 +14310,17 @@ function inlineAdGapFor(n) {
     }
     return inlineAdGaps[n];
 }
-function inlineAdBeginRender() { inlineAdOrdinal = 0; inlineAdPostCount = 0; }
+function inlineAdBeginRender() {
+    inlineAdOrdinal = 0; inlineAdPostCount = 0;
+    inlineAdHideNow();   // the feed is redrawn: the old positions are wrong until the next measurement
+}
+function inlineAdHideNow() {
+    if (inlineAdHadVisible) {
+        inlineAdHadVisible = false;
+        try { window.AndroidBridge.hideInlineAds(); } catch (e) {}
+    }
+    inlineAdLastJson = '';
+}
 // Returns the slot HTML when it is time for an ad (call right after a post), otherwise ''
 function inlineAdAfterPost() {
     if (!inlineAdAvailable()) return '';
@@ -14315,8 +14329,15 @@ function inlineAdAfterPost() {
     inlineAdPostCount = 0;
     const id = 'inline-ad-' + (inlineAdOrdinal++);
     const w = Math.round(document.documentElement.clientWidth || window.innerWidth || 360);
-    const h = Math.round(w * INLINE_AD_MEDIA_RATIO) + INLINE_AD_INFO_H;
-    return `<div class="inline-ad-slot" id="${id}" style="width:calc(100% + 32px);margin:0 -16px;height:${h}px;background:var(--bg-color,transparent);"></div>`;
+    const h = Math.round((w - 2 * INLINE_AD_SIDE) * INLINE_AD_MEDIA_RATIO) + INLINE_AD_INFO_H;
+    const sk = 'background:rgba(128,128,128,.16);border-radius:6px;';
+    // The slot is a placeholder card (what the user sees while scrolling). The real ad is laid exactly on top of it when the page stands still.
+    return `<div class="inline-ad-slot" id="${id}" style="width:calc(100% + 32px);margin:0 -16px;height:${h}px;box-sizing:border-box;padding:8px ${INLINE_AD_SIDE}px;background:var(--bg-color,transparent);">`
+        + `<div style="height:100%;border-radius:18px;overflow:hidden;background:rgba(128,128,128,.10);border:1px solid rgba(128,128,128,.22);box-sizing:border-box;display:flex;flex-direction:column;">`
+        + `<div style="height:${w - 2 * INLINE_AD_SIDE}px;background:rgba(128,128,128,.14);flex:none;"></div>`
+        + `<div style="padding:16px;display:flex;gap:14px;"><div style="width:54px;height:54px;border-radius:50%;flex:none;${sk}"></div>`
+        + `<div style="flex:1;"><div style="height:18px;width:60%;${sk}"></div><div style="height:12px;width:90%;margin-top:10px;${sk}"></div><div style="height:12px;width:70%;margin-top:8px;${sk}"></div></div></div>`
+        + `</div></div>`;
 }
 function inlineAdSchedule() {
     if (!inlineAdRaf) inlineAdRaf = requestAnimationFrame(inlineAdSync);
@@ -14324,15 +14345,22 @@ function inlineAdSchedule() {
 // Tells the app which slots are on screen. A slot that is covered (another page / sheet on top) is left out.
 function inlineAdSync() {
     inlineAdRaf = 0;
-    if (!inlineAdAvailable()) return;
+    if (!inlineAdAvailable() || inlineAdScrolling) return;   // never measure while the page moves
     const out = [];
     const slots = document.querySelectorAll('.inline-ad-slot');
     const hdr = document.getElementById('global-category-chips');
     const nav = document.querySelector('.bottom-nav');
-    const vh = window.innerHeight;
-    const clipTop = hdr ? Math.max(0, hdr.getBoundingClientRect().bottom) : 0;
+    const vh = window.innerHeight, vw = window.innerWidth;
+    // the header only clips the ad when it is really on screen (it can be hidden while scrolling)
+    let clipTop = 0;
+    if (hdr) {
+        const hr = hdr.getBoundingClientRect();
+        if (hr.bottom > 0) {
+            const probe = document.elementFromPoint(vw / 2, Math.max(1, hr.bottom - 3));
+            if (probe && hdr.contains(probe)) clipTop = hr.bottom;
+        }
+    }
     const clipBottom = nav ? nav.getBoundingClientRect().top : vh;
-    const pageY = window.pageYOffset || document.documentElement.scrollTop || 0;
     slots.forEach(el => {
         const r = el.getBoundingClientRect();
         if (!r.width || !r.height) return;                 // tab not visible
@@ -14342,21 +14370,28 @@ function inlineAdSync() {
             const cx = r.left + r.width / 2;
             for (const f of [0.15, 0.5, 0.85]) {
                 const hit = document.elementFromPoint(cx, vTop + (vBot - vTop) * f);
-                if (hit !== el) return;
+                if (hit !== el && !el.contains(hit)) return;
             }
         }
-        // y = distance from the top of the PAGE: the app scrolls the ad with the WebView's own scroll offset
-        out.push({ id: el.id, x: r.left, y: r.top + pageY, w: r.width, h: r.height });
+        out.push({ id: el.id, x: Math.round(r.left * 10) / 10, y: Math.round(r.top * 10) / 10, w: Math.round(r.width * 10) / 10, h: Math.round(r.height * 10) / 10 });
     });
     if (!out.length && !inlineAdHadVisible) return;   // nothing on screen and nothing to hide
+    const json = JSON.stringify({ ct: clipTop, cb: clipBottom, s: out });
+    if (json === inlineAdLastJson && inlineAdHadVisible) return;   // nothing changed
+    inlineAdLastJson = json;
     inlineAdHadVisible = out.length > 0;
-    try { window.AndroidBridge.updateInlineAds(JSON.stringify({ ct: clipTop, cb: clipBottom, s: out })); } catch (e) {}
+    try { window.AndroidBridge.updateInlineAds(json); } catch (e) {}
 }
-let inlineAdThrottle = 0;
-function inlineAdScheduleSoon() {   // scrolling only needs an occasional re-check (new slots coming near, covered slots)
-    if (inlineAdThrottle) return;
-    inlineAdThrottle = setTimeout(() => { inlineAdThrottle = 0; inlineAdSchedule(); }, 150);
+// While the page scrolls the real ad is hidden (the placeholder card scrolls with the posts, no shaking).
+// When the page stands still for a moment, the exact position is measured and the ad is laid on top of its placeholder.
+function inlineAdOnScroll() {
+    if (!inlineAdScrolling) {
+        inlineAdScrolling = true;
+        inlineAdHideNow();
+    }
+    clearTimeout(inlineAdIdleTimer);
+    inlineAdIdleTimer = setTimeout(() => { inlineAdScrolling = false; inlineAdSchedule(); }, 160);
 }
-window.addEventListener('scroll', inlineAdScheduleSoon, { passive: true, capture: true });
+window.addEventListener('scroll', inlineAdOnScroll, { passive: true, capture: true });
 window.addEventListener('resize', inlineAdSchedule);
 setInterval(inlineAdSchedule, 300);   // images loading / tabs changing move the slots without a scroll

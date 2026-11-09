@@ -3349,6 +3349,7 @@ function buildHomeFeed() {
         ensureHomePostScrollFlow();
         pipAdScanPosts();
         inlineAdSchedule();
+        webAdAfterRender();
         posts.slice(0, postRenderLimit).forEach(p => {
             registerPostReactionsListener(p.id);
         });
@@ -3398,6 +3399,7 @@ function buildHomeFeed() {
     ensureHomePostScrollFlow();
     pipAdScanPosts();
     inlineAdSchedule();
+    webAdAfterRender();
     postsToBind.forEach(postId => registerPostReactionsListener(postId));
     uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
 }
@@ -14301,8 +14303,9 @@ let inlineAdScrolling = false;    // the page is moving: the real ads are hidden
 let inlineAdIdleTimer = 0;
 let inlineAdLastJson = '';
 
+const INLINE_NATIVE_ENABLED = false;   // old overlay cards (could not follow the scroll). The ads are page cards now: WEB AD CARDS below
 function inlineAdAvailable() {
-    return !!(window.AndroidBridge && typeof window.AndroidBridge.updateInlineAds === 'function');
+    return INLINE_NATIVE_ENABLED && !!(window.AndroidBridge && typeof window.AndroidBridge.updateInlineAds === 'function');
 }
 function inlineAdGapFor(n) {
     if (inlineAdGaps[n] === undefined) {
@@ -14321,23 +14324,13 @@ function inlineAdHideNow() {
     }
     inlineAdLastJson = '';
 }
-// Returns the slot HTML when it is time for an ad (call right after a post), otherwise ''
+// Returns the ad card HTML when it is time for an ad (call right after a post), otherwise ''
 function inlineAdAfterPost() {
-    if (!inlineAdAvailable()) return '';
+    if (!webAdAvailable()) return '';
     inlineAdPostCount++;
     if (inlineAdPostCount < inlineAdGapFor(inlineAdOrdinal)) return '';
     inlineAdPostCount = 0;
-    const id = 'inline-ad-' + (inlineAdOrdinal++);
-    const w = Math.round(document.documentElement.clientWidth || window.innerWidth || 360);
-    const h = Math.round((w - 2 * INLINE_AD_SIDE) * INLINE_AD_MEDIA_RATIO) + INLINE_AD_INFO_H;
-    const sk = 'background:rgba(128,128,128,.16);border-radius:6px;';
-    // The slot is a placeholder card (what the user sees while scrolling). The real ad is laid exactly on top of it when the page stands still.
-    return `<div class="inline-ad-slot" id="${id}" style="width:calc(100% + 32px);margin:0 -16px;height:${h}px;box-sizing:border-box;padding:8px ${INLINE_AD_SIDE}px;background:var(--bg-color,transparent);">`
-        + `<div style="height:100%;border-radius:18px;overflow:hidden;background:rgba(128,128,128,.10);border:1px solid rgba(128,128,128,.22);box-sizing:border-box;display:flex;flex-direction:column;">`
-        + `<div style="height:${w - 2 * INLINE_AD_SIDE}px;background:rgba(128,128,128,.14);flex:none;"></div>`
-        + `<div style="padding:16px;display:flex;gap:14px;"><div style="width:54px;height:54px;border-radius:50%;flex:none;${sk}"></div>`
-        + `<div style="flex:1;"><div style="height:18px;width:60%;${sk}"></div><div style="height:12px;width:90%;margin-top:10px;${sk}"></div><div style="height:12px;width:70%;margin-top:8px;${sk}"></div></div></div>`
-        + `</div></div>`;
+    return webAdCardHTML(inlineAdOrdinal++);
 }
 function inlineAdSchedule() {
     if (!inlineAdRaf) inlineAdRaf = requestAnimationFrame(inlineAdSync);
@@ -14395,3 +14388,77 @@ function inlineAdOnScroll() {
 window.addEventListener('scroll', inlineAdOnScroll, { passive: true, capture: true });
 window.addEventListener('resize', inlineAdSchedule);
 setInterval(inlineAdSchedule, 300);   // images loading / tabs changing move the slots without a scroll
+
+
+// =========================================================
+// WEB AD CARDS  (Google Publisher Tag ad INSIDE the page)
+// The ad is a normal part of the page, drawn by the WebView itself, so it scrolls exactly together with the posts:
+// no overlay, no skeleton, no hiding. It sits in its own post-like card after every 3-4 posts.
+// MainActivity.java registers the WebView with the Google Mobile Ads SDK (MobileAds.registerWebView).
+// =========================================================
+const WEBAD_UNIT = '/6355419/Travel/Europe/France/Paris';   // GOOGLE TEST ad unit (300x250). Put your real Ad Manager / AdSense unit here later.
+const WEBAD_SIZE = [300, 250];
+let webAdSeq = 0;
+let webAdSlots = [];
+let webAdGptReady = false;
+let webAdGptFailed = false;
+let webAdTimer = 0;
+
+function webAdAvailable() {
+    return !!window.AndroidBridge && !webAdGptFailed;
+}
+function webAdCardHTML(k) {
+    return `<div class="web-ad-card" data-k="${k}" style="width:calc(100% + 32px);margin:0 -16px;padding:8px 10px;box-sizing:border-box;background:var(--bg-color);">`
+        + `<div style="background:var(--surface);border:1px solid var(--glass-border,rgba(128,128,128,.25));border-radius:20px;padding:14px 0 16px;overflow:hidden;">`
+        + `<div style="padding:0 16px 10px;font-size:.75rem;font-weight:800;letter-spacing:.06em;color:var(--text-muted);">SPONSORED</div>`
+        + `<div class="web-ad-host" style="display:flex;justify-content:center;min-height:${WEBAD_SIZE[1]}px;"></div>`
+        + `</div></div>`;
+}
+function webAdLoadGpt() {
+    if (window.__webAdGptRequested) return;
+    window.__webAdGptRequested = true;
+    window.googletag = window.googletag || { cmd: [] };
+    const sc = document.createElement('script');
+    sc.async = true;
+    sc.crossOrigin = 'anonymous';
+    sc.src = 'https://securepubads.g.doubleclick.net/tag/js/gpt.js';
+    sc.onerror = () => {   // offline / blocked: no empty cards
+        webAdGptFailed = true;
+        document.querySelectorAll('.web-ad-card').forEach(c => { c.style.display = 'none'; });
+    };
+    document.head.appendChild(sc);
+    googletag.cmd.push(() => {
+        googletag.pubads().addEventListener('slotRenderEnded', (ev) => {
+            try {
+                const el = document.getElementById(ev.slot.getSlotElementId());
+                const card = el && el.closest('.web-ad-card');
+                if (card) card.style.display = ev.isEmpty ? 'none' : '';   // no ad: the card disappears
+            } catch (e) {}
+        });
+        googletag.enableServices();
+        webAdGptReady = true;
+    });
+}
+// Called after the feed was drawn: every ad card gets its own fresh ad slot
+function webAdAfterRender() {
+    if (!webAdAvailable()) return;
+    clearTimeout(webAdTimer);
+    webAdTimer = setTimeout(() => {
+        const cards = document.querySelectorAll('#home-feed-container .web-ad-card');
+        webAdLoadGpt();
+        googletag.cmd.push(() => {
+            if (webAdSlots.length) { try { googletag.destroySlots(webAdSlots); } catch (e) {} webAdSlots = []; }
+            cards.forEach(card => {
+                const host = card.querySelector('.web-ad-host');
+                if (!host) return;
+                const id = 'web-ad-slot-' + (++webAdSeq);
+                host.innerHTML = '<div id="' + id + '" style="width:' + WEBAD_SIZE[0] + 'px;height:' + WEBAD_SIZE[1] + 'px;"></div>';
+                const slot = googletag.defineSlot(WEBAD_UNIT, WEBAD_SIZE, id);
+                if (!slot) return;
+                slot.addService(googletag.pubads());
+                webAdSlots.push(slot);
+                googletag.display(id);
+            });
+        });
+    }, 250);   // the feed can be drawn several times in a row: ask for ads only once it settled
+}

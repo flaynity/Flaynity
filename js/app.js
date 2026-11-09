@@ -14229,7 +14229,7 @@ const pipAdCountedPosts = new Set();     // every post is counted only once, eve
 let pipAdObserver = null;
 let pipAdScanTimer = null;
 
-const PIP_FLOATING_ENABLED = false;   // the ad now sits INSIDE the Posts feed (inline ad below); set true for the floating window again
+const PIP_FLOATING_ENABLED = true;    // STICKY native AdMob card (above the bottom bar) after 3-4 posts, see MainActivity.java
 function pipAdAvailable() {
     return PIP_FLOATING_ENABLED && !!(window.AndroidBridge && typeof window.AndroidBridge.showPipAd === 'function');
 }
@@ -14410,8 +14410,9 @@ let webAdGptReady = false;
 let webAdGptFailed = false;
 let webAdTimer = 0;
 
+const WEBAD_ENABLED = false;   // set true when your AdSense site is approved: page ad cards between the posts (they scroll with the posts)
 function webAdAvailable() {
-    return !!window.AndroidBridge && !webAdGptFailed;
+    return WEBAD_ENABLED && !!window.AndroidBridge && !webAdGptFailed;
 }
 function webAdCardHTML(k) {
     return `<div class="web-ad-card" data-k="${k}" style="width:calc(100% + 32px);margin:0 -16px;padding:8px 10px;box-sizing:border-box;background:var(--bg-color);">`

@@ -14398,6 +14398,12 @@ setInterval(inlineAdSchedule, 300);   // images loading / tabs changing move the
 // =========================================================
 const WEBAD_UNIT = '/6355419/Travel/Europe/France/Paris';   // GOOGLE TEST ad unit (300x250). Put your real Ad Manager / AdSense unit here later.
 const WEBAD_SIZE = [300, 250];
+// ---- AdSense (your real ads). Fill these two lines from your AdSense account; until then the Google test ad above is used. ----
+// ADSENSE_CLIENT : AdSense > Account > Account information > Publisher ID   (looks like ca-pub-1234567890123456)
+// ADSENSE_SLOT   : AdSense > Ads > By ad unit > create a "Display ad" > copy data-ad-slot (a number like 1234567890)
+const ADSENSE_CLIENT = 'ca-pub-3200255969875766';
+const ADSENSE_SLOT = '3911892983';
+function webAdUseAdsense() { return /^ca-pub-\d{10,}$/.test(ADSENSE_CLIENT) && /^\d{6,}$/.test(ADSENSE_SLOT); }
 let webAdSeq = 0;
 let webAdSlots = [];
 let webAdGptReady = false;
@@ -14443,6 +14449,7 @@ function webAdLoadGpt() {
 function webAdAfterRender() {
     if (!webAdAvailable()) return;
     clearTimeout(webAdTimer);
+    if (webAdUseAdsense()) { webAdTimer = setTimeout(webAdAdsenseRender, 250); return; }
     webAdTimer = setTimeout(() => {
         const cards = document.querySelectorAll('#home-feed-container .web-ad-card');
         webAdLoadGpt();
@@ -14461,4 +14468,30 @@ function webAdAfterRender() {
             });
         });
     }, 250);   // the feed can be drawn several times in a row: ask for ads only once it settled
+}
+
+// ---- AdSense version of the same page card ----
+function webAdAdsenseRender() {
+    if (!window.__webAdAdsenseLoaded) {
+        window.__webAdAdsenseLoaded = true;
+        const sc = document.createElement('script');
+        sc.async = true;
+        sc.crossOrigin = 'anonymous';
+        sc.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_CLIENT;
+        sc.onerror = () => { webAdGptFailed = true; document.querySelectorAll('.web-ad-card').forEach(c => { c.style.display = 'none'; }); };
+        document.head.appendChild(sc);
+    }
+    document.querySelectorAll('#home-feed-container .web-ad-card').forEach(card => {
+        const host = card.querySelector('.web-ad-host');
+        if (!host) return;
+        host.innerHTML = '<ins class="adsbygoogle" style="display:block;width:100%;min-height:' + WEBAD_SIZE[1] + 'px;" '
+            + 'data-ad-client="' + ADSENSE_CLIENT + '" data-ad-slot="' + ADSENSE_SLOT + '" '
+            + 'data-ad-format="auto" data-full-width-responsive="true"></ins>';
+        try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+        // no ad (site not approved yet / no fill): the card disappears, no empty box
+        setTimeout(() => {
+            const ins = host.querySelector('ins.adsbygoogle');
+            if (ins && ins.getAttribute('data-ad-status') !== 'filled') card.style.display = 'none';
+        }, 6000);
+    });
 }

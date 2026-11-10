@@ -157,7 +157,7 @@ function __flaynityReady(fn) {
 
     function isHomeTabActive() {
         var active = document.querySelector(".nav-item.active");
-        if (active && active.id) return active.id === "nav-home";
+        if (active && active.id) return active.id === "nav-home" || active.id === "nav-posts";
         return true;
     }
 
@@ -178,9 +178,6 @@ function __flaynityReady(fn) {
         state.frame = 0;
         var nav = findNav();
         if (!nav) return;
-        // The Posts tab has its own smooth auto-hide controller (below).
-        var _a = document.querySelector(".nav-item.active");
-        if (_a && _a.id === "nav-posts") return;
         var y = Math.max(0, Math.min(state.height, state.offset));
         nav.style.webkitTransform = "translate3d(0," + y.toFixed(2) + "px,0)";
         nav.style.transform = "translate3d(0," + y.toFixed(2) + "px,0)";
@@ -201,7 +198,7 @@ function __flaynityReady(fn) {
         var y = getScrollY();
         if (!nav) { state.lastY = y; return; }
 
-        // Only Home is allowed to move the bottom navigation here. All other tabs
+        // Only Home and Posts are allowed to move the bottom navigation. All other tabs
         // keep it locked at its normal position regardless of page scrolling.
         if (!isHomeTabActive()) {
             state.offset = 0;
@@ -303,87 +300,6 @@ function __flaynityReady(fn) {
     }
 
     __flaynityReady(start);
-})();
-
-/* Posts tab: smooth auto-hide of the top bar and the bottom navigation.
-   Scrolling down slides BOTH out (top bar up, nav down); scrolling up (or
-   being at the top) slides BOTH back to their original place. Movement is a
-   single CSS transition, so it never jitters. */
-(function () {
-    "use strict";
-    var EASE = "transform .32s cubic-bezier(.22,.8,.24,1)";
-    var hidden = false, lastY = 0, acc = 0, frame = 0, wasPosts = false;
-
-    function scrollY() {
-        return Math.max(
-            Number(window.scrollY || 0),
-            Number(document.documentElement && document.documentElement.scrollTop || 0),
-            Number(document.body && document.body.scrollTop || 0)
-        );
-    }
-    function onPosts() {
-        var a = document.querySelector(".nav-item.active");
-        return !!(a && a.id === "nav-posts");
-    }
-    function els() {
-        return {
-            nav: document.querySelector("#app-screen .bottom-nav") || document.querySelector(".bottom-nav"),
-            header: document.querySelector("header")
-        };
-    }
-    function apply(hide) {
-        var e = els();
-        if (e.nav) {
-            e.nav.style.transition = EASE;
-            e.nav.style.willChange = "transform";
-            e.nav.style.transform = hide ? "translate3d(0,110%,0)" : "translate3d(0,0,0)";
-        }
-        if (e.header) {
-            e.header.style.transition = EASE;
-            e.header.style.willChange = "transform";
-            e.header.style.transform = hide ? "translate3d(0,-100%,0)" : "translate3d(0,0,0)";
-        }
-        hidden = hide;
-    }
-    function release() {
-        // Leaving Posts: hand the nav/header back untouched.
-        var e = els();
-        if (e.nav) { e.nav.style.transition = "none"; e.nav.style.transform = "translate3d(0,0px,0)"; }
-        if (e.header) { e.header.style.transition = ""; e.header.style.transform = ""; }
-        hidden = false; acc = 0;
-    }
-    function step() {
-        frame = 0;
-        if (!onPosts()) return;
-        var y = scrollY();
-        var d = y - lastY;
-        lastY = y;
-        if (y <= 8) { acc = 0; if (hidden) apply(false); return; }
-        if (!d) return;
-        // accumulate distance in one direction so tiny jitters are ignored
-        if ((acc > 0 && d < 0) || (acc < 0 && d > 0)) acc = 0;
-        acc += d;
-        if (acc > 14 && y > 70 && !hidden) { apply(true); acc = 0; }
-        else if (acc < -10 && hidden) { apply(false); acc = 0; }
-    }
-    function onScroll() {
-        if (!onPosts()) { if (wasPosts) { wasPosts = false; release(); } return; }
-        wasPosts = true;
-        if (!frame) frame = window.requestAnimationFrame(step);
-    }
-    function onTab() {
-        if (onPosts()) {
-            wasPosts = true; lastY = scrollY(); acc = 0;
-            apply(false);
-        } else if (wasPosts) {
-            wasPosts = false; release();
-        }
-    }
-    __flaynityReady(function () {
-        window.addEventListener("scroll", onScroll, { passive: true });
-        window.addEventListener("flaynity-tab-changed", onTab);
-        window.addEventListener("flaynity-pages-ready", onTab);
-    });
 })();
 
 (function() {
@@ -7921,9 +7837,6 @@ function adjustHeaderForActiveTab(tabId) {
     const actions = header.querySelector('.header-actions');
     const chips = document.getElementById('global-category-chips');
 
-    // Only the Posts tab auto-hides the top bar; every other tab gets it back normal.
-    if (tabId !== 'posts') { header.style.transform = ''; header.style.transition = ''; }
-
     // Discover page uses its own search UI, so remove the global app top bar
     // (Logo, Flaynity name, header search button and theme switch) from Discover.
     if (tabId === 'search') {
@@ -7950,11 +7863,11 @@ function adjustHeaderForActiveTab(tabId) {
         document.body.style.paddingBottom = '50px';
     }
 
-    // Posts page: top bar is fixed and slides away/back with the scroll direction (auto-hide). The
+    // Posts page: same top bar as Home (it scrolls away with the feed). The
     // category chips belong to Home only; #posts-tab keeps its own 82px offset.
     if (tabId === 'posts') {
         document.body.style.paddingTop = '0px';
-        header.style.position = 'fixed';
+        header.style.position = 'absolute';
         header.style.top = '0px';
         if (chips) chips.style.display = 'none';
         const homeTabForPosts = document.getElementById('home-tab');

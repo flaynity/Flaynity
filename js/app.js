@@ -449,7 +449,7 @@ function renderAllSkeletons() {
         home.classList.add('offline-skeleton-active');
         home.style.width = '100%';
         home.style.minWidth = '0';
-        home.style.minHeight = 'calc(100vh - 126px)';
+        home.style.minHeight = 'calc(100vh - 82px)';
         home.style.boxSizing = 'border-box';
         home.style.overflow = 'visible';
         home.innerHTML = getHomeSkeletonHTML();
@@ -7885,9 +7885,9 @@ function adjustHeaderForActiveTab(tabId) {
             chips.style.top = '82px';
         }
         const homeTab = document.getElementById('home-tab');
-        if (homeTab) homeTab.style.paddingTop = '126px';
+        if (homeTab) homeTab.style.paddingTop = '82px';
     } else {
-        document.body.style.paddingTop = '126px';
+        document.body.style.paddingTop = '82px';
         const homeTab = document.getElementById('home-tab');
         if (homeTab) homeTab.style.paddingTop = '0px';
         header.style.position = 'fixed';

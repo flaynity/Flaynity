@@ -7871,6 +7871,12 @@ function adjustHeaderForActiveTab(tabId) {
         if (brand) brand.style.display = 'flex';
         if (actions) {
             actions.innerHTML = `
+                <button id="appbar-create-btn" onclick="openCreateBottomSheet(); playUI('click')" aria-label="Upload" title="Upload" style="background: none; border: none; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
+                    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="3" width="18" height="18" rx="5.5"></rect>
+                        <path d="M12 7.8v8.4M7.8 12h8.4"></path>
+                    </svg>
+                </button>
                 <button onclick="switchTab('search')" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
                     <i class="fas fa-search"></i>
                 </button>

@@ -11,18 +11,50 @@
    the shared .post-card.fb-post full-bleed styling matches Home exactly. */
 #posts-tab { padding-top: 82px; padding-bottom: 0; }
 
+/* ---------- "What's on your mind?" composer ---------- */
+.px-compose {
+    margin: 0 -16px;
+    width: calc(100% + 32px);
+    box-sizing: border-box;
+    padding: 12px 16px 6px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+}
+.px-me {
+    flex: 0 0 40px; width: 40px; height: 40px;
+    border-radius: 50%; overflow: hidden;
+    background: linear-gradient(135deg, var(--primary), #FF7A00);
+}
+.px-input {
+    flex: 1 1 auto; min-width: 0; height: 46px;
+    display: flex; align-items: center;
+    padding: 0 18px;
+    border: 1.5px solid var(--border-color);
+    border-radius: 999px;
+    font-size: 1rem; font-weight: 500;
+    color: var(--text-main);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.px-input:active { opacity: .7; }
+.px-pic { flex: 0 0 auto; display: flex; padding: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.px-pic svg { width: 26px; height: 26px; display: block; }
+
 /* ---------- Feels card row (horizontal scroll, edge to edge) ---------- */
 .px-feels {
     margin: 0 -16px;
     width: calc(100% + 32px);
-    padding: 12px 0 14px;
+    padding: 8px 0 14px;
     background: var(--surface);
     border-bottom: 6px solid var(--fb-line, var(--border-color));
 }
 .px-feels-strip {
     display: flex;
     gap: 8px;
-    padding: 0 12px;
+    padding: 0 18px;
+    scroll-padding-left: 18px;
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
@@ -99,6 +131,15 @@
 </style>
 
 <div class="tab-content" id="posts-tab">
+    <!-- What's on your mind? -->
+    <div class="px-compose" id="posts-compose">
+        <div class="px-me" id="posts-me"></div>
+        <div class="px-input" id="posts-compose-input">What's on your mind?</div>
+        <div class="px-pic" id="posts-compose-pic" aria-label="Add photo">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" fill="#3FB950"/><circle cx="8.6" cy="8.6" r="2" fill="#fff"/><path d="M4 18.5l4.6-5.2 3.2 3.4 3.1-4.2 5.1 6z" fill="#fff"/></svg>
+        </div>
+    </div>
+
     <!-- Feels card row -->
     <div class="px-feels" id="posts-feels-wrap" style="display:none;">
         <div class="px-feels-strip" id="posts-feels-strip"></div>
@@ -256,9 +297,34 @@
         observer.observe(s);
     }
 
+    /* ---------------- composer ---------------- */
+    function renderComposer() {
+        var me = $('posts-me');
+        if (!me) return;
+        var uid = null;
+        try { uid = auth.currentUser && auth.currentUser.uid; } catch (e) {}
+        if (!uid) return;
+        me.className = 'px-me live-avatar-' + uid;
+        try { bindLiveChannelUI(uid); } catch (e) {}
+    }
+    function openComposer() {
+        if (typeof openCreateBottomSheet !== 'function') return;
+        openCreateBottomSheet();
+        try {
+            var studio = document.getElementById('premium-upload-studio');
+            if (studio && studio.style.display === 'flex' && typeof switchUploadMode === 'function') switchUploadMode('post');
+        } catch (e) {}
+    }
+    ['posts-compose-input', 'posts-compose-pic'].forEach(function (id) {
+        var el = $(id);
+        if (el) el.addEventListener('click', openComposer);
+    });
+    try { auth.onAuthStateChanged(function () { renderComposer(); }); } catch (e) {}
+
     /* ---------------- refresh / hooks ---------------- */
     function refresh() {
         if (!isActive()) return;
+        renderComposer();
         renderFeels();
         renderPosts();
     }

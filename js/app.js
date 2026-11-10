@@ -4636,7 +4636,11 @@ function initFeelsAdObserver() {
             document.querySelectorAll('#feels-swiper-container video').forEach(v => { try { v.pause(); } catch (e) {} });
             // Lets the previous/next Feels start again normally after the ad
             currentActiveFeelsIdx = -1;
-            try { window.AndroidBridge.showFeelsAd(feelsFeedMode); } catch (e) { window.onFeelsAdFinished('error'); }
+            try {
+                // the slide id is passed so this slide always gets the SAME ad (and it replays from the start)
+                if (typeof window.AndroidBridge.showFeelsAdSlot === 'function') window.AndroidBridge.showFeelsAdSlot(feelsFeedMode, entry.target.id);
+                else window.AndroidBridge.showFeelsAd(feelsFeedMode);
+            } catch (e) { window.onFeelsAdFinished('error'); }
         });
     }, { threshold: 0.6 });
     adSlides.forEach(s => feelsAdObserver.observe(s));

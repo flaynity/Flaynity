@@ -601,6 +601,10 @@
 
 
         /* Home and You use the slightly larger reference-icon scale. */
+        /* Posts icon: slightly larger so it matches the other bottom-nav icons */
+        #nav-posts .nav-icon-svg { width: 32px !important; height: 32px !important; }
+        #nav-posts .nav-icon-container { width: 32px; height: 32px; }
+
         #nav-home .nav-icon-svg {
             width: 45px !important;
             height: 45px !important;
@@ -2113,12 +2117,18 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 <div class="nav-item" id="nav-posts" onclick="switchTab('posts')">
 <div class="nav-icon-container">
 <svg class="nav-icon-svg icon-unselected" viewBox="0 0 32 32" aria-hidden="true">
-<path d="M8.2 5.7H23.8Q26.8 5.7 25.4 8.35L17.5 23.2Q16 26 14.5 23.2L6.6 8.35Q5.2 5.7 8.2 5.7Z"></path>
-<path d="M19.6 9.9L11.2 15.6"></path>
+<rect x="3.5" y="3.5" width="25" height="25" rx="6.5"></rect>
+<circle cx="10.2" cy="10.8" r="1.5" fill="currentColor" stroke="none"></circle>
+<path d="M15.2 10.8h8.6"></path>
+<path d="M9.2 17.2h14.6"></path>
+<path d="M9.2 22.4h8.2"></path>
 </svg>
 <svg class="nav-icon-svg icon-selected" viewBox="0 0 32 32" aria-hidden="true">
-<path d="M8.2 5.7H23.8Q26.8 5.7 25.4 8.35L17.5 23.2Q16 26 14.5 23.2L6.6 8.35Q5.2 5.7 8.2 5.7Z"></path>
-<path d="M19.6 9.9L11.2 15.6"></path>
+<rect x="3.5" y="3.5" width="25" height="25" rx="6.5"></rect>
+<circle cx="10.2" cy="10.8" r="1.5" fill="currentColor" stroke="none"></circle>
+<path d="M15.2 10.8h8.6"></path>
+<path d="M9.2 17.2h14.6"></path>
+<path d="M9.2 22.4h8.2"></path>
 </svg>
 </div>
 <span class="nav-label">Posts</span>

@@ -3254,7 +3254,6 @@ function selectCategoryChip(category, el) {
     document.querySelectorAll('.chip-item').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
     activeHomeCategory = category;
-    if (category !== 'Posts' && category !== 'All') { try { pipAdHide(); } catch (e) {} }
 
     const homeTab = document.getElementById('home-tab');
     if (homeTab && !homeTab.classList.contains('active')) {
@@ -3339,17 +3338,12 @@ function buildHomeFeed() {
             container.innerHTML = getHomeSkeletonHTML();
             return;
         }
-        inlineAdBeginRender();
         posts.slice(0, postRenderLimit).forEach(p => {
             if (p.userId) uniqueUserIds.add(p.userId);
             html += renderSinglePostSegmentUI(p);
-            html += inlineAdAfterPost();
         });
         container.innerHTML = html;
         ensureHomePostScrollFlow();
-        pipAdScanPosts();
-        inlineAdSchedule();
-        webAdAfterRender();
         posts.slice(0, postRenderLimit).forEach(p => {
             registerPostReactionsListener(p.id);
         });
@@ -3368,7 +3362,6 @@ function buildHomeFeed() {
     }
 
     let postsToBind = [];
-    inlineAdBeginRender();
 
     while (longIdx < longs.length || shortIdx < feels.length || postIdx < posts.length) {
         if (shortIdx < feels.length) {
@@ -3390,16 +3383,12 @@ function buildHomeFeed() {
             postIdx++;
             if (singlePost.userId) uniqueUserIds.add(singlePost.userId);
             html += renderSinglePostSegmentUI(singlePost);
-            html += inlineAdAfterPost();
             postsToBind.push(singlePost.id);
         }
     }
 
     container.innerHTML = html;
     ensureHomePostScrollFlow();
-    pipAdScanPosts();
-    inlineAdSchedule();
-    webAdAfterRender();
     postsToBind.forEach(postId => registerPostReactionsListener(postId));
     uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
 }
@@ -4652,6 +4641,53 @@ function initFeelsAdObserver() {
     }, { threshold: 0.6 });
     adSlides.forEach(s => feelsAdObserver.observe(s));
 }
+// --- Ad swipe follows the finger (like normal Feels) ---
+// MainActivity.java moves the native ad overlay with the finger and calls these, so the Feels feed under the ad
+// is scrolled by the SAME distance: the next/previous Feels slides in together with the ad and starts playing.
+let feelsAdDragSwiper = null, feelsAdDragBase = 0, feelsAdDragPrevSnap = '', feelsAdDragPrevBehavior = '', feelsAdDragRaf = 0;
+
+function feelsAdDragEnd() {
+    if (feelsAdDragRaf) { cancelAnimationFrame(feelsAdDragRaf); feelsAdDragRaf = 0; }
+    const sw = feelsAdDragSwiper;
+    feelsAdDragSwiper = null;
+    if (!sw) return;
+    sw.style.scrollSnapType = feelsAdDragPrevSnap;
+    sw.style.scrollBehavior = feelsAdDragPrevBehavior;
+}
+function feelsAdAnimateScroll(sw, to, ms, done) {
+    if (feelsAdDragRaf) { cancelAnimationFrame(feelsAdDragRaf); feelsAdDragRaf = 0; }
+    const from = sw.scrollTop, t0 = performance.now();
+    function step(now) {
+        const p = Math.min(1, Math.max(0, (now - t0) / ms));
+        const e = 1 - Math.pow(1 - p, 3);              // easeOutCubic = Android DecelerateInterpolator(1.5)
+        sw.scrollTop = from + (to - from) * e;
+        if (p < 1) feelsAdDragRaf = requestAnimationFrame(step);
+        else { feelsAdDragRaf = 0; if (done) done(); }
+    }
+    feelsAdDragRaf = requestAnimationFrame(step);
+}
+window.feelsAdDragStart = function () {
+    const slide = feelsAdCurrentSlide;
+    const sw = slide && slide.closest('.feels-swiper');
+    if (!sw) return;
+    feelsAdDragEnd();
+    feelsAdDragSwiper = sw;
+    feelsAdDragBase = slide.offsetTop;
+    feelsAdDragPrevSnap = sw.style.scrollSnapType;
+    feelsAdDragPrevBehavior = sw.style.scrollBehavior;
+    sw.style.scrollSnapType = 'none';       // no snapping while the finger is down
+    sw.style.scrollBehavior = 'auto';       // no CSS smooth-scroll lag
+};
+window.feelsAdDragMove = function (dy) {
+    if (!feelsAdDragSwiper) return;
+    feelsAdDragSwiper.scrollTop = feelsAdDragBase - dy;   // finger up (dy < 0) -> next Feels comes in
+};
+window.feelsAdDragCancel = function (ms) {
+    const sw = feelsAdDragSwiper;
+    if (!sw) return;
+    feelsAdAnimateScroll(sw, feelsAdDragBase, ms || 160, feelsAdDragEnd);   // short swipe: spring back to the ad
+};
+
 // Called by MainActivity.java: 'swiped_up' -> next Feels, 'swiped_down' -> previous Feels,
 // anything else (back / not ready / failed) -> keep going the way the user was already scrolling.
 // The ad slide stays in the feed, so scrolling back to it plays an ad again.
@@ -4659,14 +4695,25 @@ window.onFeelsAdFinished = function (result) {
     feelsAdShowing = false;
     const slide = feelsAdCurrentSlide;
     feelsAdCurrentSlide = null;
-    if (!slide || result === 'abort') return; // 'abort' = user changed tab / feed mode while the ad was open
+    if (!slide || result === 'abort') { feelsAdDragEnd(); return; } // 'abort' = user changed tab / feed mode while the ad was open
     let goNext;
     if (result === 'swiped_up') goNext = true;
     else if (result === 'swiped_down') goNext = false;
     else goNext = (feelsAdEnterDir !== 'up');
     const swiper = slide.closest('.feels-swiper');
     const target = goNext ? slide.nextElementSibling : slide.previousElementSibling;
-    if (swiper && target && target.classList.contains('short-slide')) scrollFeelsToSlide(swiper, target, 'smooth');
+    const validTarget = swiper && target && target.classList.contains('short-slide');
+    if (feelsAdDragSwiper && feelsAdDragSwiper === swiper) {
+        // finger-driven swipe: finish the move with the same time/curve as the ad flying out (no black gap)
+        if (validTarget && (result === 'swiped_up' || result === 'swiped_down')) {
+            feelsAdAnimateScroll(swiper, target.offsetTop, 220, feelsAdDragEnd);
+        } else {
+            feelsAdAnimateScroll(swiper, slide.offsetTop, 160, feelsAdDragEnd);
+        }
+        return;
+    }
+    feelsAdDragEnd();
+    if (validTarget) scrollFeelsToSlide(swiper, target, 'smooth');
 };
 
 function buildFeelsPage() {
@@ -6328,7 +6375,6 @@ const AppNavigation = {
     },
 
     pushPage: function(pageId) {
-        try { pipAdHide(); } catch (e) {}
         const current = this.current();
         if (current && current.type === 'page' && current.id === pageId) {
             return;
@@ -7681,7 +7727,6 @@ async function switchTab(tabId) {
         try { window.AndroidBridge.hideFeelsAd(); } catch (e) {}
     }
     try { if (lvAdShowing) lvCancelAd(); } catch (e) {}
-    try { pipAdHide(); } catch (e) {}
     try { if (flyLandscape) flySetLandscape(false); } catch (e) {}
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
@@ -14213,286 +14258,3 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
     }
     setTimeout(initAfterInjection, 0);
 })();
-
-
-// =========================================================
-// PICTURE-IN-PICTURE AD (AdMob native video via AndroidBridge)
-// While the user scrolls the Posts feed: after every 3-4 NEW posts, MainActivity.java shows a small
-// floating video ad (bottom-right, draggable, with a close button). Counting starts again after each ad.
-// =========================================================
-const PIP_AD_MIN_GAP = 3;   // ad after at least 3 posts
-const PIP_AD_MAX_GAP = 4;   // ad after at most 4 posts
-let pipAdActive = false;                 // a floating ad is on screen right now
-let pipAdCount = 0;                      // new posts seen since the last ad
-let pipAdNeed = PIP_AD_MIN_GAP + Math.floor(Math.random() * (PIP_AD_MAX_GAP - PIP_AD_MIN_GAP + 1));
-const pipAdCountedPosts = new Set();     // every post is counted only once, even if the feed is re-drawn
-let pipAdObserver = null;
-let pipAdScanTimer = null;
-
-const PIP_FLOATING_ENABLED = true;    // STICKY native AdMob card (above the bottom bar) after 3-4 posts, see MainActivity.java
-function pipAdAvailable() {
-    return PIP_FLOATING_ENABLED && !!(window.AndroidBridge && typeof window.AndroidBridge.showPipAd === 'function');
-}
-function pipAdNextGap() {
-    return PIP_AD_MIN_GAP + Math.floor(Math.random() * (PIP_AD_MAX_GAP - PIP_AD_MIN_GAP + 1));
-}
-function pipAdOnPostVisible(el) {
-    const id = el && el.id;
-    if (!id || pipAdCountedPosts.has(id)) return;
-    pipAdCountedPosts.add(id);
-    pipAdCount++;
-    if (!pipAdActive && pipAdCount >= pipAdNeed) {
-        try { window.AndroidBridge.showPipAd(); } catch (e) {}
-    }
-}
-// Called after the feed is drawn: watch every post card of the Home feed
-function pipAdScanPosts() {
-    if (!pipAdAvailable() || typeof IntersectionObserver === 'undefined') return;
-    clearTimeout(pipAdScanTimer);
-    pipAdScanTimer = setTimeout(() => {
-        if (!pipAdObserver) {
-            pipAdObserver = new IntersectionObserver((entries) => {
-                entries.forEach(en => {
-                    if (!en.isIntersecting) return;
-                    pipAdObserver.unobserve(en.target);
-                    pipAdOnPostVisible(en.target);
-                });
-            }, { threshold: 0.35 });
-        }
-        document.querySelectorAll('#home-feed-container .post-card.fb-post').forEach(el => {
-            if (!pipAdCountedPosts.has(el.id)) pipAdObserver.observe(el);
-        });
-    }, 80);
-}
-// Close the floating ad (user left the Posts feed)
-function pipAdHide() {
-    if (!pipAdActive) return;
-    pipAdActive = false;
-    try { window.AndroidBridge.hidePipAd(); } catch (e) {}
-}
-// Called by MainActivity.java: shown | closed | completed | not_ready | failed
-window.onPipAdState = function (state) {
-    if (state === 'shown') {
-        pipAdActive = true;
-        pipAdCount = 0;               // count 3-4 new posts again
-        pipAdNeed = pipAdNextGap();
-    } else {
-        // closed / completed -> ready for the next round.
-        // not_ready / failed -> the count stays, so the next new post tries again.
-        pipAdActive = false;
-    }
-};
-
-
-// =========================================================
-// INLINE POST ADS (AdMob native video card between posts, via AndroidBridge)
-// An empty "slot" is drawn after every 3-4 posts. MainActivity.java draws the real ad exactly on top of the slot,
-// so this code only has to tell it where each visible slot is while the page scrolls.
-// =========================================================
-const INLINE_AD_MIN_GAP = 3;     // ad after at least 3 posts
-const INLINE_AD_MAX_GAP = 4;     // ad after at most 4 posts
-const INLINE_AD_INFO_H = 216;    // everything under the square media + the card margins, in px (same value as INLINE_AD_INFO_DP in MainActivity.java)
-const INLINE_AD_SIDE = 10;       // card side margin in px (same value as INLINE_AD_SIDE_DP in MainActivity.java)
-const INLINE_AD_MEDIA_RATIO = 1; // media height / width (1 = square)
-const inlineAdGaps = [];         // gap of every slot is chosen once, so the feed does not jump when it is drawn again
-let inlineAdOrdinal = 0;         // n-th slot of the current draw: it keeps its ad when the feed is drawn again
-let inlineAdPostCount = 0;
-let inlineAdRaf = 0;
-let inlineAdHadVisible = false;   // the app is showing ads right now
-let inlineAdScrolling = false;    // the page is moving: the real ads are hidden, the placeholder cards move with the posts
-let inlineAdIdleTimer = 0;
-let inlineAdLastJson = '';
-
-const INLINE_NATIVE_ENABLED = false;   // old overlay cards (could not follow the scroll). The ads are page cards now: WEB AD CARDS below
-function inlineAdAvailable() {
-    return INLINE_NATIVE_ENABLED && !!(window.AndroidBridge && typeof window.AndroidBridge.updateInlineAds === 'function');
-}
-function inlineAdGapFor(n) {
-    if (inlineAdGaps[n] === undefined) {
-        inlineAdGaps[n] = INLINE_AD_MIN_GAP + Math.floor(Math.random() * (INLINE_AD_MAX_GAP - INLINE_AD_MIN_GAP + 1));
-    }
-    return inlineAdGaps[n];
-}
-function inlineAdBeginRender() {
-    inlineAdOrdinal = 0; inlineAdPostCount = 0;
-    inlineAdHideNow();   // the feed is redrawn: the old positions are wrong until the next measurement
-}
-function inlineAdHideNow() {
-    if (inlineAdHadVisible) {
-        inlineAdHadVisible = false;
-        try { window.AndroidBridge.hideInlineAds(); } catch (e) {}
-    }
-    inlineAdLastJson = '';
-}
-// Returns the ad card HTML when it is time for an ad (call right after a post), otherwise ''
-function inlineAdAfterPost() {
-    if (!webAdAvailable()) return '';
-    inlineAdPostCount++;
-    if (inlineAdPostCount < inlineAdGapFor(inlineAdOrdinal)) return '';
-    inlineAdPostCount = 0;
-    return webAdCardHTML(inlineAdOrdinal++);
-}
-function inlineAdSchedule() {
-    if (!inlineAdRaf) inlineAdRaf = requestAnimationFrame(inlineAdSync);
-}
-// Tells the app which slots are on screen. A slot that is covered (another page / sheet on top) is left out.
-function inlineAdSync() {
-    inlineAdRaf = 0;
-    if (!inlineAdAvailable() || inlineAdScrolling) return;   // never measure while the page moves
-    const out = [];
-    const slots = document.querySelectorAll('.inline-ad-slot');
-    const hdr = document.getElementById('global-category-chips');
-    const nav = document.querySelector('.bottom-nav');
-    const vh = window.innerHeight, vw = window.innerWidth;
-    // the header only clips the ad when it is really on screen (it can be hidden while scrolling)
-    let clipTop = 0;
-    if (hdr) {
-        const hr = hdr.getBoundingClientRect();
-        if (hr.bottom > 0) {
-            const probe = document.elementFromPoint(vw / 2, Math.max(1, hr.bottom - 3));
-            if (probe && hdr.contains(probe)) clipTop = hr.bottom;
-        }
-    }
-    const clipBottom = nav ? nav.getBoundingClientRect().top : vh;
-    slots.forEach(el => {
-        const r = el.getBoundingClientRect();
-        if (!r.width || !r.height) return;                 // tab not visible
-        if (r.bottom < -vh || r.top > vh * 2) return;      // far away: not needed yet
-        const vTop = Math.max(r.top, clipTop), vBot = Math.min(r.bottom, clipBottom);
-        if (vBot - vTop > 2) {                              // on screen: skip it when another page / sheet covers it
-            const cx = r.left + r.width / 2;
-            for (const f of [0.15, 0.5, 0.85]) {
-                const hit = document.elementFromPoint(cx, vTop + (vBot - vTop) * f);
-                if (hit !== el && !el.contains(hit)) return;
-            }
-        }
-        out.push({ id: el.id, x: Math.round(r.left * 10) / 10, y: Math.round(r.top * 10) / 10, w: Math.round(r.width * 10) / 10, h: Math.round(r.height * 10) / 10 });
-    });
-    if (!out.length && !inlineAdHadVisible) return;   // nothing on screen and nothing to hide
-    const json = JSON.stringify({ ct: clipTop, cb: clipBottom, s: out });
-    if (json === inlineAdLastJson && inlineAdHadVisible) return;   // nothing changed
-    inlineAdLastJson = json;
-    inlineAdHadVisible = out.length > 0;
-    try { window.AndroidBridge.updateInlineAds(json); } catch (e) {}
-}
-// While the page scrolls the real ad is hidden (the placeholder card scrolls with the posts, no shaking).
-// When the page stands still for a moment, the exact position is measured and the ad is laid on top of its placeholder.
-function inlineAdOnScroll() {
-    if (!inlineAdScrolling) {
-        inlineAdScrolling = true;
-        inlineAdHideNow();
-    }
-    clearTimeout(inlineAdIdleTimer);
-    inlineAdIdleTimer = setTimeout(() => { inlineAdScrolling = false; inlineAdSchedule(); }, 160);
-}
-window.addEventListener('scroll', inlineAdOnScroll, { passive: true, capture: true });
-window.addEventListener('resize', inlineAdSchedule);
-setInterval(inlineAdSchedule, 300);   // images loading / tabs changing move the slots without a scroll
-
-
-// =========================================================
-// WEB AD CARDS  (Google Publisher Tag ad INSIDE the page)
-// The ad is a normal part of the page, drawn by the WebView itself, so it scrolls exactly together with the posts:
-// no overlay, no skeleton, no hiding. It sits in its own post-like card after every 3-4 posts.
-// MainActivity.java registers the WebView with the Google Mobile Ads SDK (MobileAds.registerWebView).
-// =========================================================
-const WEBAD_UNIT = '/6355419/Travel/Europe/France/Paris';   // GOOGLE TEST ad unit (300x250). Put your real Ad Manager / AdSense unit here later.
-const WEBAD_SIZE = [300, 250];
-// ---- AdSense (your real ads). Fill these two lines from your AdSense account; until then the Google test ad above is used. ----
-// ADSENSE_CLIENT : AdSense > Account > Account information > Publisher ID   (looks like ca-pub-1234567890123456)
-// ADSENSE_SLOT   : AdSense > Ads > By ad unit > create a "Display ad" > copy data-ad-slot (a number like 1234567890)
-const ADSENSE_CLIENT = 'ca-pub-3200255969875766';
-const ADSENSE_SLOT = '3911892983';
-function webAdUseAdsense() { return /^ca-pub-\d{10,}$/.test(ADSENSE_CLIENT) && /^\d{6,}$/.test(ADSENSE_SLOT); }
-let webAdSeq = 0;
-let webAdSlots = [];
-let webAdGptReady = false;
-let webAdGptFailed = false;
-let webAdTimer = 0;
-
-const WEBAD_ENABLED = false;   // set true when your AdSense site is approved: page ad cards between the posts (they scroll with the posts)
-function webAdAvailable() {
-    return WEBAD_ENABLED && !!window.AndroidBridge && !webAdGptFailed;
-}
-function webAdCardHTML(k) {
-    return `<div class="web-ad-card" data-k="${k}" style="width:calc(100% + 32px);margin:0 -16px;padding:8px 10px;box-sizing:border-box;background:var(--bg-color);">`
-        + `<div style="background:var(--surface);border:1px solid var(--glass-border,rgba(128,128,128,.25));border-radius:20px;padding:14px 0 16px;overflow:hidden;">`
-        + `<div style="padding:0 16px 10px;font-size:.75rem;font-weight:800;letter-spacing:.06em;color:var(--text-muted);">SPONSORED</div>`
-        + `<div class="web-ad-host" style="display:flex;justify-content:center;min-height:${WEBAD_SIZE[1]}px;"></div>`
-        + `</div></div>`;
-}
-function webAdLoadGpt() {
-    if (window.__webAdGptRequested) return;
-    window.__webAdGptRequested = true;
-    window.googletag = window.googletag || { cmd: [] };
-    const sc = document.createElement('script');
-    sc.async = true;
-    sc.crossOrigin = 'anonymous';
-    sc.src = 'https://securepubads.g.doubleclick.net/tag/js/gpt.js';
-    sc.onerror = () => {   // offline / blocked: no empty cards
-        webAdGptFailed = true;
-        document.querySelectorAll('.web-ad-card').forEach(c => { c.style.display = 'none'; });
-    };
-    document.head.appendChild(sc);
-    googletag.cmd.push(() => {
-        googletag.pubads().addEventListener('slotRenderEnded', (ev) => {
-            try {
-                const el = document.getElementById(ev.slot.getSlotElementId());
-                const card = el && el.closest('.web-ad-card');
-                if (card) card.style.display = ev.isEmpty ? 'none' : '';   // no ad: the card disappears
-            } catch (e) {}
-        });
-        googletag.enableServices();
-        webAdGptReady = true;
-    });
-}
-// Called after the feed was drawn: every ad card gets its own fresh ad slot
-function webAdAfterRender() {
-    if (!webAdAvailable()) return;
-    clearTimeout(webAdTimer);
-    if (webAdUseAdsense()) { webAdTimer = setTimeout(webAdAdsenseRender, 250); return; }
-    webAdTimer = setTimeout(() => {
-        const cards = document.querySelectorAll('#home-feed-container .web-ad-card');
-        webAdLoadGpt();
-        googletag.cmd.push(() => {
-            if (webAdSlots.length) { try { googletag.destroySlots(webAdSlots); } catch (e) {} webAdSlots = []; }
-            cards.forEach(card => {
-                const host = card.querySelector('.web-ad-host');
-                if (!host) return;
-                const id = 'web-ad-slot-' + (++webAdSeq);
-                host.innerHTML = '<div id="' + id + '" style="width:' + WEBAD_SIZE[0] + 'px;height:' + WEBAD_SIZE[1] + 'px;"></div>';
-                const slot = googletag.defineSlot(WEBAD_UNIT, WEBAD_SIZE, id);
-                if (!slot) return;
-                slot.addService(googletag.pubads());
-                webAdSlots.push(slot);
-                googletag.display(id);
-            });
-        });
-    }, 250);   // the feed can be drawn several times in a row: ask for ads only once it settled
-}
-
-// ---- AdSense version of the same page card ----
-function webAdAdsenseRender() {
-    if (!window.__webAdAdsenseLoaded) {
-        window.__webAdAdsenseLoaded = true;
-        const sc = document.createElement('script');
-        sc.async = true;
-        sc.crossOrigin = 'anonymous';
-        sc.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_CLIENT;
-        sc.onerror = () => { webAdGptFailed = true; document.querySelectorAll('.web-ad-card').forEach(c => { c.style.display = 'none'; }); };
-        document.head.appendChild(sc);
-    }
-    document.querySelectorAll('#home-feed-container .web-ad-card').forEach(card => {
-        const host = card.querySelector('.web-ad-host');
-        if (!host) return;
-        host.innerHTML = '<ins class="adsbygoogle" style="display:block;width:100%;min-height:' + WEBAD_SIZE[1] + 'px;" '
-            + 'data-ad-client="' + ADSENSE_CLIENT + '" data-ad-slot="' + ADSENSE_SLOT + '" '
-            + 'data-ad-format="auto" data-full-width-responsive="true"></ins>';
-        try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
-        // no ad (site not approved yet / no fill): the card disappears, no empty box
-        setTimeout(() => {
-            const ins = host.querySelector('ins.adsbygoogle');
-            if (ins && ins.getAttribute('data-ad-status') !== 'filled') card.style.display = 'none';
-        }, 6000);
-    });
-}

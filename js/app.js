@@ -157,7 +157,7 @@ function __flaynityReady(fn) {
 
     function isHomeTabActive() {
         var active = document.querySelector(".nav-item.active");
-        if (active && active.id) return active.id === "nav-home";
+        if (active && active.id) return active.id === "nav-home" || active.id === "nav-posts";
         return true;
     }
 
@@ -198,7 +198,7 @@ function __flaynityReady(fn) {
         var y = getScrollY();
         if (!nav) { state.lastY = y; return; }
 
-        // Only Home is allowed to move the bottom navigation. All other tabs
+        // Only Home and Posts are allowed to move the bottom navigation. All other tabs
         // keep it locked at its normal position regardless of page scrolling.
         if (!isHomeTabActive()) {
             state.offset = 0;

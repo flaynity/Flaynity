@@ -1,6 +1,6 @@
 /* Flaynity Modular Loader — serial page loading + offline cache */
 (async function () {
-    const pageFiles = [["home","pages/home.html"],["feels","pages/feels.html"],["upload","pages/upload.html"],["discover","pages/discover.html"],["you","pages/you.html"]];
+    const pageFiles = [["home","pages/home.html"],["feels","pages/feels.html"],["posts","pages/posts.html"],["upload","pages/upload.html"],["discover","pages/discover.html"],["you","pages/you.html"]];
     const CACHE_PREFIX = "flaynity-page-cache-v1:";
 
     function addPageStyle(doc, name) {
@@ -28,11 +28,36 @@
         }
     }
 
+    // Pages listed here are single-file pages (HTML + CSS + JS). Their inline
+    // <script> is run once, right after the page is mounted. (Scripts parsed by
+    // DOMParser never execute on their own.)
+    const SELF_SCRIPTED_PAGES = new Set(["posts"]);
+    const pendingPageScripts = {};
+
     async function loadPage(name, url) {
         const text = await getPageSource(name, url);
         const doc = new DOMParser().parseFromString(text, "text/html");
         addPageStyle(doc, name);
-        return Array.from(doc.body.children).map(el => el.cloneNode(true));
+        const nodes = Array.from(doc.body.children).map(el => el.cloneNode(true));
+        if (SELF_SCRIPTED_PAGES.has(name)) {
+            pendingPageScripts[name] = Array.from(doc.querySelectorAll("script")).map(s => s.textContent);
+            return nodes.filter(n => n.tagName !== "SCRIPT");
+        }
+        return nodes;
+    }
+
+    function runPageScripts(name) {
+        const scripts = pendingPageScripts[name] || [];
+        delete pendingPageScripts[name];
+        scripts.forEach(code => {
+            try {
+                const el = document.createElement("script");
+                el.setAttribute("data-flaynity-page-js", name);
+                el.textContent = code;
+                document.body.appendChild(el);
+                el.remove();
+            } catch (e) { console.error("Flaynity page script error (" + name + "):", e); }
+        });
     }
 
     function showOfflineCachedApp() {
@@ -88,8 +113,9 @@
                 const remaining = await Promise.all(
                     pageFiles.slice(1).map(async ([name, url]) => [name, await loadPage(name, url)])
                 );
-                for (const [, nodes] of remaining) {
+                for (const [pageName, nodes] of remaining) {
                     for (const node of nodes) appScreen.appendChild(node);
+                    runPageScripts(pageName);
                 }
                 window.dispatchEvent(new Event('flaynity-pages-ready'));
             } catch (e) {
@@ -1295,7 +1321,7 @@ function cleanupUserSessionData() {
         else el.textContent = '';
         if (el.style && (id.includes('banner') || id.includes('avatar'))) el.style.backgroundImage = '';
     });
-    ['home-feed-container','feels-swiper-container','search-results','you-posts-container',
+    ['home-feed-container','posts-feed-container','posts-feels-strip','feels-swiper-container','search-results','you-posts-container',
      'you-videos-container','you-feels-container','channel-posts-container','channel-videos-container',
      'channel-feels-container','notifications-list','inbox-list','manager-items-list'].forEach(id => {
         const el = document.getElementById(id); if (el) el.innerHTML = '';
@@ -4216,8 +4242,7 @@ function renderSinglePostSegmentUI(post) {
 
     if (auth.currentUser && navigator.onLine && !isOwn) {
         db.ref(`subscribers/${post.userId}/${auth.currentUser.uid}`).on('value', (snapshot) => {
-            const btn = document.getElementById(subBtnId);
-            if (btn) {
+            document.querySelectorAll(`[id="${subBtnId}"]`).forEach(btn => {
                 if (snapshot.exists()) {
                     btn.innerText = "Subscribed";
                     btn.classList.add('subbed');
@@ -4225,7 +4250,7 @@ function renderSinglePostSegmentUI(post) {
                     btn.innerText = "Subscribe";
                     btn.classList.remove('subbed');
                 }
-            }
+            });
         });
     }
 
@@ -4293,10 +4318,18 @@ function renderSinglePostSegmentUI(post) {
     `;
 }
 
+// A post card can exist on Home and on the Posts page at once (same ids):
+// act on the copy the user can actually see.
+function fbPickVisible(id) {
+    const all = document.querySelectorAll(`[id="${id}"]`);
+    for (const el of all) { if (el.getClientRects().length) return el; }
+    return all[0] || null;
+}
+
 function togglePostTitleExpand(postId) {
     playUI('click');
-    const el = document.getElementById(`post-caption-${postId}`);
-    const btn = document.getElementById(`post-more-${postId}`);
+    const el = fbPickVisible(`post-caption-${postId}`);
+    const btn = fbPickVisible(`post-more-${postId}`);
     if (!el) return;
     const clamped = el.classList.toggle('fb-clamp');
     if (btn) btn.style.display = clamped ? 'inline' : 'none';
@@ -4304,8 +4337,9 @@ function togglePostTitleExpand(postId) {
 
 function fbHidePost(postId) {
     playUI('click');
-    const el = document.getElementById(`post-card-${postId}`);
+    const el = fbPickVisible(`post-card-${postId}`);
     _fbHiddenPosts.add(String(postId));
+    document.querySelectorAll(`[id="post-card-${postId}"]`).forEach(c => { if (c !== el) c.remove(); });
     if (!el) return;
     el.style.height = el.offsetHeight + 'px';
     el.style.overflow = 'hidden';
@@ -7829,10 +7863,19 @@ function adjustHeaderForActiveTab(tabId) {
         document.body.style.paddingBottom = '50px';
     }
 
-    // Home feed: keep the header/category bar at their original on-screen
-    // coordinates, but make them normal document-flow elements so native
-    // scrolling moves them with the feed at exactly the user's scroll speed.
-    if (tabId === 'home') {
+    // Posts page: same top bar as Home (it scrolls away with the feed). The
+    // category chips belong to Home only; #posts-tab keeps its own 82px offset.
+    if (tabId === 'posts') {
+        document.body.style.paddingTop = '0px';
+        header.style.position = 'absolute';
+        header.style.top = '0px';
+        if (chips) chips.style.display = 'none';
+        const homeTabForPosts = document.getElementById('home-tab');
+        if (homeTabForPosts) homeTabForPosts.style.paddingTop = '0px';
+    } else if (tabId === 'home') {
+        // Home feed: keep the header/category bar at their original on-screen
+        // coordinates, but make them normal document-flow elements so native
+        // scrolling moves them with the feed at exactly the user's scroll speed.
         document.body.style.paddingTop = '0px';
         header.style.position = 'absolute';
         header.style.top = '0px';

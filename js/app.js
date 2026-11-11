@@ -4129,13 +4129,10 @@ try { auth.onAuthStateChanged(() => { document.querySelectorAll('.fb-subbtn[data
 // "… more" appears only when the caption really needs more than 2 lines.
 function fxFitCaptions() {
     document.querySelectorAll('.fx-cap:not([data-fit])').forEach(c => {
-        if (!c.clientWidth) return;
-        const lineHeight = parseFloat(getComputedStyle(c).lineHeight) || 22;
-        c.classList.add('fx-measuring');
-        const fullHeight = c.scrollHeight;
-        c.classList.remove('fx-measuring');
+        const t = c.querySelector('.fx-cap-t');
+        if (!t || !t.clientWidth) return;
         c.dataset.fit = '1';
-        if (fullHeight > (lineHeight * 2) + 2) c.classList.add('fx-over');
+        if (t.scrollHeight > t.clientHeight + 2) c.classList.add('fx-over');
     });
 }
 function fxExpandCaption(btn) {
@@ -4162,9 +4159,8 @@ function fxBuildLongVideoCard(v) {
     // Same reaction system as Community Posts (hold the like button => emoji picker).
     setTimeout(() => { try { registerPostReactionsListener(id); fxListenDislike(id); fxBindSub(uid); fxFitCaptions(); } catch (e) {} }, 0);
     setTimeout(fxFitCaptions, 250);
-    const title = String(v.title || '').trim();
-    const desc = String(v.description || '').trim();
-    const caption = escapeHTML(title) + (desc && desc.toLowerCase() !== title.toLowerCase() ? '\n' + escapeHTML(desc) : '');
+    const desc = (v.description || '').trim();
+    const caption = escapeHTML(String(v.title || '').trim()) + (desc ? '\n' + escapeHTML(desc) : '');
     return `
         <div class="fx-card long-video-feed-card" data-fx-id="${id}" data-fx-uid="${uid}" onclick="openMoviePage('${id}', false)">
             <div class="fx-body">

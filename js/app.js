@@ -10758,11 +10758,13 @@ function handlePremiumImagesSelected(e) {
 
 // =====================================================================
 // CUSTOM MEDIA PICKER (Android WebView app)
-// The device gallery is read natively (MainActivity -> MediaStore) and shown in the
-// "Post / All / Videos / Photos" grid. In a normal browser it falls back to <input type="file">.
+// The device gallery is read natively (MainActivity -> MediaStore).
+// Video / Feels tab = videos only, Post tab = images only. Light / Dark follows the app theme.
+// In a normal browser it falls back to <input type="file">.
 // =====================================================================
-const MP = { mode: 'post', tab: 'all', album: 'all', albumName: 'All', only: 'videos',
-             offset: 0, loading: false, end: false, count: 0, token: '', open: false, picking: false, awaitingPerm: false };
+const MP = { mode: 'post', only: 'videos', tab: 'videos', album: 'all', albumName: 'Recents', view: 'grid',
+             offset: 0, loading: false, end: false, count: 0, token: '', open: false, picking: false,
+             awaitingPerm: false, inited: false, hideTimer: null };
 const MP_PAGE = 60;
 const MP_HOST = 'https://flaynity-media.local';
 
@@ -10770,6 +10772,39 @@ function mpBridge() {
     return (window.AndroidBridge && typeof window.AndroidBridge.getMediaList === 'function') ? window.AndroidBridge : null;
 }
 function mpEl(id) { return document.getElementById(id); }
+function mpU() { return window.innerWidth / 1080; }      // 1 screenshot pixel in CSS px
+
+// status bar strip of the picker is black -> white status bar icons while it is open
+function mpStatusBar(open) {
+    try {
+        if (open) { const b = window.AndroidBridge; if (b && b.setStatusBarTheme) b.setStatusBarTheme('dark'); }
+        else if (typeof window.__flaynityUpdateStatusBar === 'function') {
+            window.__flaynityUpdateStatusBar(); setTimeout(window.__flaynityUpdateStatusBar, 300);
+        }
+    } catch (e) {}
+}
+
+// listeners are attached the first time the picker opens (the DOM is surely ready then)
+function mpInit() {
+    if (MP.inited) return;
+    const grid = mpEl('mp-grid');
+    if (!grid) return;
+    MP.inited = true;
+    grid.addEventListener('scroll', mpOnScroll, { passive: true });
+    grid.addEventListener('click', (e) => {
+        const cell = e.target.closest ? e.target.closest('.mp-cell') : null;
+        if (cell) mpPick(cell);
+    });
+    mpEl('mp-albums').addEventListener('click', (e) => {
+        const r = e.target.closest ? e.target.closest('.mp-arow') : null;
+        if (r) mpSelectAlbum(r.dataset.id, r.dataset.name);
+    });
+    mpEl('mp-tabs').addEventListener('click', (e) => {
+        const t = e.target.closest ? e.target.closest('.mp-tab') : null;
+        if (!t || t.dataset.t === MP.tab) return;
+        MP.tab = t.dataset.t; mpRenderTabs(); mpLoad(true);
+    });
+}
 
 function openMediaPicker(mode) {          // mode: 'video' | 'short' | 'post'
     const b = mpBridge();
@@ -10779,21 +10814,23 @@ function openMediaPicker(mode) {          // mode: 'video' | 'short' | 'post'
         return;
     }
     if (MP.open) return;
+    mpInit();
     MP.mode = mode;
     MP.only = mode === 'post' ? 'photos' : 'videos';   // Video / Feels = videos only, Post = images only
     MP.tab = MP.only;
-    MP.album = 'all'; MP.albumName = 'All';
-    mpEl('mp-title').textContent = mode === 'video' ? 'Video' : mode === 'short' ? 'Feels' : 'Post';
-    mpEl('mp-album-name').textContent = 'All';
+    MP.album = 'all'; MP.albumName = 'Recents'; MP.view = 'grid';
+    mpEl('mp-album-name').textContent = 'Recents';
+    mpEl('mp-box').classList.remove('albums');
+    mpEl('mp-albums').classList.remove('show');
+    mpEl('mp-busy').classList.remove('show');
     mpRenderTabs();
     mpEl('mp-grid').innerHTML = '';
-    mpEl('mp-sheet').classList.remove('show');
-    mpEl('mp-busy').classList.remove('show');
 
     const el = mpEl('media-picker');
     el.style.display = 'flex';
     requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
     MP.open = true;
+    mpStatusBar(true);
     try { b.setMediaPickerOpen(true); } catch (e) {}
 
     if (b.hasMediaPermission()) mpLoad(true);
@@ -10802,11 +10839,13 @@ function openMediaPicker(mode) {          // mode: 'video' | 'short' | 'post'
 
 function closeMediaPicker(silent) {
     if (!MP.open) return false;
+    if (!silent && MP.view === 'albums') { mpHideAlbums(); return true; }     // Back inside the album list
     MP.open = false;
     try { const b = mpBridge(); if (b) b.setMediaPickerOpen(false); } catch (e) {}
     const el = mpEl('media-picker');
     el.classList.remove('show');
     setTimeout(() => { if (!MP.open) el.style.display = 'none'; }, 260);
+    mpStatusBar(false);
     // user pressed X / Back in the Video or Post tab: go back to the Feels camera instead of an empty page
     if (!silent && MP.mode !== 'short' && typeof currentUploadMode !== 'undefined' && currentUploadMode === MP.mode) {
         try { switchUploadMode('short'); } catch (e) {}
@@ -10846,40 +10885,44 @@ document.addEventListener('visibilitychange', () => {      // coming back from t
     }
 });
 
-// ---------- tabs / albums ----------
+// ---------- tab / albums ----------
 function mpRenderTabs() {
-    const list = [[MP.only, MP.only === 'videos' ? 'Videos' : 'Photos']];
-    mpEl('mp-tabs').innerHTML = list.map(t => '<button class="mp-tab' + (t[0] === MP.tab ? ' on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</button>').join('');
+    mpEl('mp-tabs').innerHTML = '<button class="mp-tab" data-t="' + MP.only + '">' + (MP.only === 'videos' ? 'Videos' : 'Photos') + '</button>';
 }
-document.addEventListener('click', (e) => {
-    const t = e.target.closest && e.target.closest('#mp-tabs .mp-tab');
-    if (!t || !MP.open) return;
-    if (t.dataset.t === MP.tab) return;
-    MP.tab = t.dataset.t;
-    mpRenderTabs();
-    mpLoad(true);
-});
 
-function mpOpenAlbums() {
-    const b = mpBridge(); if (!b) return;
+function mpToggleAlbums() { if (MP.view === 'albums') mpHideAlbums(); else mpShowAlbums(); }
+
+function mpShowAlbums() {
+    const b = mpBridge(); if (!b || !MP.token) return;
     let list = [];
     try { list = JSON.parse(b.getMediaAlbums(MP.only)); } catch (e) {}
     const total = list.reduce((s, a) => s + a.count, 0);
-    const rows = [{ id: 'all', name: 'All', count: total }].concat(list);
     const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const thumb = (id, v) => MP_HOST + '/thumb/' + id + '?k=' + (v ? 'v' : 'i') + '&t=' + MP.token;
+    const rows = [];
+    if (list.length) rows.push({ id: 'all', name: 'Recents', count: total, cover: list[0].cover, cv: list[0].cv });
+    list.forEach(a => rows.push(a));
     mpEl('mp-albums').innerHTML = rows.map(a =>
-        '<button class="mp-arow' + (a.id === MP.album ? ' on' : '') + '" data-id="' + esc(a.id) + '" data-name="' + esc(a.name) + '"><span>' + esc(a.name) + '</span><span>' + a.count + '</span></button>').join('');
-    mpEl('mp-sheet').classList.add('show');
+        '<button class="mp-arow" data-id="' + esc(a.id) + '" data-name="' + esc(a.name) + '">' +
+        '<img class="mp-athumb" decoding="async" alt="" src="' + thumb(a.cover, a.cv) + '" onerror="this.style.visibility=\'hidden\'">' +
+        '<div class="mp-atxt"><div class="mp-aname">' + esc(a.name) + '</div><div class="mp-acount">' + a.count + '</div></div></button>').join('');
+    mpEl('mp-albums').scrollTop = 0;
+    mpEl('mp-albums').classList.add('show');
+    mpEl('mp-box').classList.add('albums');
+    MP.view = 'albums';
 }
-function mpCloseAlbums() { mpEl('mp-sheet').classList.remove('show'); }
-document.addEventListener('click', (e) => {
-    const r = e.target.closest && e.target.closest('#mp-albums .mp-arow');
-    if (!r) return;
-    MP.album = r.dataset.id; MP.albumName = r.dataset.name;
-    mpEl('mp-album-name').textContent = MP.albumName;
-    mpCloseAlbums();
+function mpHideAlbums() {
+    mpEl('mp-albums').classList.remove('show');
+    mpEl('mp-box').classList.remove('albums');
+    MP.view = 'grid';
+}
+function mpSelectAlbum(id, name) {
+    mpHideAlbums();
+    if (id === MP.album) return;
+    MP.album = id; MP.albumName = name;
+    mpEl('mp-album-name').textContent = name;
     mpLoad(true);
-});
+}
 
 // ---------- grid ----------
 function mpDur(ms) {
@@ -10888,6 +10931,39 @@ function mpDur(ms) {
     const m = Math.floor(s / 60); s %= 60;
     const p = n => String(n).padStart(2, '0');
     return h ? h + ':' + p(m) + ':' + p(s) : p(m) + ':' + p(s);
+}
+function mpDateLabel(sec) {
+    const d = new Date(sec * 1000), n = new Date();
+    const sod = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const diff = Math.round((sod(n) - sod(d)) / 86400000);
+    if (diff <= 0) return 'Today';
+    if (diff === 1) return 'Yesterday';
+    const o = { month: 'short', day: 'numeric' };
+    if (d.getFullYear() !== n.getFullYear()) o.year = 'numeric';
+    return d.toLocaleDateString('en-US', o);
+}
+
+// scroll indicator + date chip ("Today") while scrolling, and endless loading
+function mpOnScroll() {
+    const g = mpEl('mp-grid');
+    if (g.scrollTop + g.clientHeight > g.scrollHeight - 1500) mpLoad(false);
+    mpIndicator();
+}
+function mpIndicator() {
+    const g = mpEl('mp-grid'), sb = mpEl('mp-sb'), chip = mpEl('mp-chip');
+    const sh = g.scrollHeight, ch = g.clientHeight;
+    if (sh <= ch + 10 || !g.children.length) return;
+    const th = Math.max(100 * mpU(), ch * ch / sh);
+    const top = (g.scrollTop / (sh - ch)) * (ch - th);
+    sb.style.height = th + 'px'; sb.style.transform = 'translateY(' + top + 'px)'; sb.style.opacity = 1;
+    const first = g.children[0];
+    const rowH = g.children[3] ? g.children[3].offsetTop - first.offsetTop : first.offsetHeight;
+    const idx = Math.min(g.children.length - 1, Math.max(0, Math.floor(g.scrollTop / (rowH || 1))) * 3);
+    const t = +g.children[idx].dataset.t;
+    if (t) chip.textContent = mpDateLabel(t);
+    chip.style.transform = 'translateY(' + top + 'px)'; chip.style.opacity = t ? 1 : 0;
+    clearTimeout(MP.hideTimer);
+    MP.hideTimer = setTimeout(() => { sb.style.opacity = 0; chip.style.opacity = 0; }, 1000);
 }
 
 function mpLoad(reset) {
@@ -10905,15 +10981,16 @@ function mpLoad(reset) {
         let res = null;
         try { res = JSON.parse(b.getMediaList(myTab, myAlbum, MP.offset, MP_PAGE)); } catch (e) {}
         MP.loading = false;
-        if (!MP.open || myTab !== MP.tab || myAlbum !== MP.album) return;   // user changed tab meanwhile
+        if (!MP.open || myTab !== MP.tab || myAlbum !== MP.album) return;   // user changed tab / album meanwhile
         if (!res) { MP.end = true; if (!MP.count) mpState('Could not load your gallery.'); return; }
         MP.token = res.token;
+        const first = MP.count === 0;
         const frag = document.createDocumentFragment();
         res.items.forEach(it => {
             const cell = document.createElement('div');
             cell.className = 'mp-cell';
             cell.dataset.id = it.id; cell.dataset.k = it.v ? 'v' : 'i';
-            cell.dataset.n = it.n || ''; cell.dataset.m = it.m || '';
+            cell.dataset.n = it.n || ''; cell.dataset.m = it.m || ''; cell.dataset.t = it.t || '';
             const img = new Image();
             img.decoding = 'async'; img.loading = 'lazy'; img.alt = ''; img.draggable = false;
             img.onerror = () => { img.style.visibility = 'hidden'; };
@@ -10932,21 +11009,11 @@ function mpLoad(reset) {
         MP.end = !!res.end;
         if (!MP.count) mpState(MP.only === 'videos' ? 'No videos found' : 'No photos found');
         else if (!MP.end && grid.scrollHeight <= grid.clientHeight + 300) mpLoad(false);   // screen not full yet
+        else if (first) mpIndicator();
     }, 0);
 }
-document.addEventListener('DOMContentLoaded', () => {
-    const grid = mpEl('mp-grid');
-    if (!grid) return;
-    grid.addEventListener('scroll', () => {
-        if (grid.scrollTop + grid.clientHeight > grid.scrollHeight - 1500) mpLoad(false);
-    }, { passive: true });
-    grid.addEventListener('click', (e) => {
-        const cell = e.target.closest('.mp-cell');
-        if (cell) mpPick(cell);
-    });
-});
 
-// ---------- pick: native file -> File object -> existing upload flow ----------
+// ---------- pick: native file -> File object -> existing preview pages ----------
 async function mpPick(cell) {
     if (MP.picking) return;
     MP.picking = true;
@@ -10954,8 +11021,9 @@ async function mpPick(cell) {
     try {
         const isVideo = cell.dataset.k === 'v';
         const res = await fetch(MP_HOST + '/file/' + cell.dataset.id + '?k=' + cell.dataset.k + '&t=' + MP.token);
-        if (!res.ok) throw new Error('read failed');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const blob = await res.blob();
+        if (!blob.size) throw new Error('empty file');
         const name = cell.dataset.n || ((isVideo ? 'video_' : 'image_') + Date.now() + (isVideo ? '.mp4' : '.jpg'));
         const type = cell.dataset.m || blob.type || (isVideo ? 'video/mp4' : 'image/jpeg');
         const file = new File([blob], name, { type: type, lastModified: Date.now() });
@@ -10967,7 +11035,8 @@ async function mpPick(cell) {
             handlePremiumImagesSelected({ target: { files: [file] } });
         }
     } catch (err) {
-        if (typeof showNotification === 'function') showNotification('Could not open this file. Please try another.', 'error');
+        console.error('MediaPicker pick failed', err);
+        if (typeof showNotification === 'function') showNotification('Could not open this file (' + ((err && err.message) || err) + ')', 'error');
     } finally {
         MP.picking = false;
         mpEl('mp-busy').classList.remove('show');

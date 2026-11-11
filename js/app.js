@@ -10752,6 +10752,220 @@ function handlePremiumImagesSelected(e) {
     AppNavigation.pushPage('post-preview-page');
 }
 
+// =====================================================================
+// CUSTOM MEDIA PICKER (Android WebView app)
+// The device gallery is read natively (MainActivity -> MediaStore) and shown in the
+// "Post / All / Videos / Photos" grid. In a normal browser it falls back to <input type="file">.
+// =====================================================================
+const MP = { mode: 'post', tab: 'all', album: 'all', albumName: 'All', videoOnly: false,
+             offset: 0, loading: false, end: false, count: 0, token: '', open: false, picking: false, awaitingPerm: false };
+const MP_PAGE = 60;
+const MP_HOST = 'https://flaynity-media.local';
+
+function mpBridge() {
+    return (window.AndroidBridge && typeof window.AndroidBridge.getMediaList === 'function') ? window.AndroidBridge : null;
+}
+function mpEl(id) { return document.getElementById(id); }
+
+function openMediaPicker(mode) {          // mode: 'video' | 'short' | 'post'
+    const b = mpBridge();
+    if (!b) {                              // normal browser: old file input
+        const id = mode === 'video' ? 'video-file-input' : mode === 'short' ? 'short-file-input' : 'post-image-input';
+        const inp = mpEl(id); if (inp) inp.click();
+        return;
+    }
+    if (MP.open) return;
+    MP.mode = mode;
+    MP.videoOnly = mode !== 'post';
+    MP.tab = MP.videoOnly ? 'videos' : 'all';
+    MP.album = 'all'; MP.albumName = 'All';
+    mpEl('mp-title').textContent = mode === 'video' ? 'Video' : mode === 'short' ? 'Feels' : 'Post';
+    mpEl('mp-album-name').textContent = 'All';
+    mpRenderTabs();
+    mpEl('mp-grid').innerHTML = '';
+    mpEl('mp-sheet').classList.remove('show');
+    mpEl('mp-busy').classList.remove('show');
+
+    const el = mpEl('media-picker');
+    el.style.display = 'flex';
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+    MP.open = true;
+    try { b.setMediaPickerOpen(true); } catch (e) {}
+
+    if (b.hasMediaPermission()) mpLoad(true);
+    else mpAskPermission();
+}
+
+function closeMediaPicker(silent) {
+    if (!MP.open) return false;
+    MP.open = false;
+    try { const b = mpBridge(); if (b) b.setMediaPickerOpen(false); } catch (e) {}
+    const el = mpEl('media-picker');
+    el.classList.remove('show');
+    setTimeout(() => { if (!MP.open) el.style.display = 'none'; }, 260);
+    return true;
+}
+window.closeMediaPicker = closeMediaPicker;
+
+// ---------- permission ----------
+function mpState(msg, btnText, btnFn) {
+    const st = mpEl('mp-state'), btn = mpEl('mp-state-btn');
+    if (!msg) { st.classList.remove('show'); return; }
+    mpEl('mp-state-msg').textContent = msg;
+    if (btnText) { btn.textContent = btnText; btn.onclick = btnFn; btn.style.display = ''; }
+    else btn.style.display = 'none';
+    st.classList.add('show');
+}
+function mpAskPermission() {
+    MP.awaitingPerm = true;
+    mpState('Allow access to your photos and videos to choose from your gallery.', 'Allow access', () => {
+        const b = mpBridge(); if (b) b.requestMediaPermission();
+    });
+}
+window.onMediaPermissionResult = function (granted) {
+    if (!MP.open) return;
+    if (granted) { MP.awaitingPerm = false; mpLoad(true); }
+    else {
+        mpState('Permission denied. Turn on Photos and videos access in the app settings.', 'Open settings', () => {
+            const b = mpBridge(); if (b) b.openAppSettings();
+        });
+    }
+};
+document.addEventListener('visibilitychange', () => {      // coming back from the settings screen
+    const b = mpBridge();
+    if (!document.hidden && MP.open && MP.awaitingPerm && b && b.hasMediaPermission()) {
+        MP.awaitingPerm = false; mpLoad(true);
+    }
+});
+
+// ---------- tabs / albums ----------
+function mpRenderTabs() {
+    const list = MP.videoOnly ? [['videos', 'Videos']] : [['all', 'All'], ['videos', 'Videos'], ['photos', 'Photos']];
+    mpEl('mp-tabs').innerHTML = list.map(t => '<button class="mp-tab' + (t[0] === MP.tab ? ' on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</button>').join('');
+}
+document.addEventListener('click', (e) => {
+    const t = e.target.closest && e.target.closest('#mp-tabs .mp-tab');
+    if (!t || !MP.open) return;
+    if (t.dataset.t === MP.tab) return;
+    MP.tab = t.dataset.t;
+    mpRenderTabs();
+    mpLoad(true);
+});
+
+function mpOpenAlbums() {
+    const b = mpBridge(); if (!b) return;
+    let list = [];
+    try { list = JSON.parse(b.getMediaAlbums(MP.videoOnly ? 'videos' : 'all')); } catch (e) {}
+    const total = list.reduce((s, a) => s + a.count, 0);
+    const rows = [{ id: 'all', name: 'All', count: total }].concat(list);
+    const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    mpEl('mp-albums').innerHTML = rows.map(a =>
+        '<button class="mp-arow' + (a.id === MP.album ? ' on' : '') + '" data-id="' + esc(a.id) + '" data-name="' + esc(a.name) + '"><span>' + esc(a.name) + '</span><span>' + a.count + '</span></button>').join('');
+    mpEl('mp-sheet').classList.add('show');
+}
+function mpCloseAlbums() { mpEl('mp-sheet').classList.remove('show'); }
+document.addEventListener('click', (e) => {
+    const r = e.target.closest && e.target.closest('#mp-albums .mp-arow');
+    if (!r) return;
+    MP.album = r.dataset.id; MP.albumName = r.dataset.name;
+    mpEl('mp-album-name').textContent = MP.albumName;
+    mpCloseAlbums();
+    mpLoad(true);
+});
+
+// ---------- grid ----------
+function mpDur(ms) {
+    let s = Math.round((ms || 0) / 1000);
+    const h = Math.floor(s / 3600); s %= 3600;
+    const m = Math.floor(s / 60); s %= 60;
+    const p = n => String(n).padStart(2, '0');
+    return h ? h + ':' + p(m) + ':' + p(s) : p(m) + ':' + p(s);
+}
+
+function mpLoad(reset) {
+    const b = mpBridge(); if (!b) return;
+    const grid = mpEl('mp-grid');
+    if (reset) {
+        MP.offset = 0; MP.end = false; MP.count = 0; MP.loading = false;
+        grid.innerHTML = ''; grid.scrollTop = 0;
+        mpState('');
+    }
+    if (MP.loading || MP.end) return;
+    MP.loading = true;
+    const myTab = MP.tab, myAlbum = MP.album;
+    setTimeout(() => {                       // let the UI paint first, the native query is synchronous
+        let res = null;
+        try { res = JSON.parse(b.getMediaList(myTab, myAlbum, MP.offset, MP_PAGE)); } catch (e) {}
+        MP.loading = false;
+        if (!MP.open || myTab !== MP.tab || myAlbum !== MP.album) return;   // user changed tab meanwhile
+        if (!res) { MP.end = true; if (!MP.count) mpState('Could not load your gallery.'); return; }
+        MP.token = res.token;
+        const frag = document.createDocumentFragment();
+        res.items.forEach(it => {
+            const cell = document.createElement('div');
+            cell.className = 'mp-cell';
+            cell.dataset.id = it.id; cell.dataset.k = it.v ? 'v' : 'i';
+            cell.dataset.n = it.n || ''; cell.dataset.m = it.m || '';
+            const img = new Image();
+            img.decoding = 'async'; img.loading = 'lazy'; img.alt = ''; img.draggable = false;
+            img.onerror = () => { img.style.visibility = 'hidden'; };
+            img.src = MP_HOST + '/thumb/' + it.id + '?k=' + (it.v ? 'v' : 'i') + '&t=' + MP.token;
+            cell.appendChild(img);
+            if (it.v) {
+                const d = document.createElement('span');
+                d.className = 'mp-dur'; d.textContent = mpDur(it.d);
+                cell.appendChild(d);
+            }
+            frag.appendChild(cell);
+        });
+        grid.appendChild(frag);
+        MP.count += res.items.length;
+        MP.offset += res.items.length;
+        MP.end = !!res.end;
+        if (!MP.count) mpState(MP.videoOnly ? 'No videos found' : 'No photos or videos found');
+        else if (!MP.end && grid.scrollHeight <= grid.clientHeight + 300) mpLoad(false);   // screen not full yet
+    }, 0);
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const grid = mpEl('mp-grid');
+    if (!grid) return;
+    grid.addEventListener('scroll', () => {
+        if (grid.scrollTop + grid.clientHeight > grid.scrollHeight - 1500) mpLoad(false);
+    }, { passive: true });
+    grid.addEventListener('click', (e) => {
+        const cell = e.target.closest('.mp-cell');
+        if (cell) mpPick(cell);
+    });
+});
+
+// ---------- pick: native file -> File object -> existing upload flow ----------
+async function mpPick(cell) {
+    if (MP.picking) return;
+    MP.picking = true;
+    mpEl('mp-busy').classList.add('show');
+    try {
+        const isVideo = cell.dataset.k === 'v';
+        const res = await fetch(MP_HOST + '/file/' + cell.dataset.id + '?k=' + cell.dataset.k + '&t=' + MP.token);
+        if (!res.ok) throw new Error('read failed');
+        const blob = await res.blob();
+        const name = cell.dataset.n || ((isVideo ? 'video_' : 'image_') + Date.now() + (isVideo ? '.mp4' : '.jpg'));
+        const type = cell.dataset.m || blob.type || (isVideo ? 'video/mp4' : 'image/jpeg');
+        const file = new File([blob], name, { type: type, lastModified: Date.now() });
+        closeMediaPicker(true);
+        if (isVideo) {
+            isShortFromCamera = false;     // picked from the gallery, not recorded
+            handlePremiumFileSelected({ target: { files: [file] } }, MP.mode === 'short' ? 'video-short' : 'video-long');
+        } else {
+            handlePremiumImagesSelected({ target: { files: [file] } });
+        }
+    } catch (err) {
+        if (typeof showNotification === 'function') showNotification('Could not open this file. Please try another.', 'error');
+    } finally {
+        MP.picking = false;
+        mpEl('mp-busy').classList.remove('show');
+    }
+}
+
 function captureFrameAndDuration(file) {
     return new Promise((resolve, reject) => {
         const video = document.createElement('video');

@@ -3113,9 +3113,7 @@ function startRealtimeFeedsListener() {
                 } else {
                     allLongVideos.forEach(v => {
                         const titleEl = document.querySelector(`.long-video-feed-card[onclick*="${v.id}"] .long-video-title`);
-                        if (titleEl) titleEl.textContent = fxTitleTwoLines(v.title);
-                        const vcCap = document.querySelector(`.vc-card[data-fx-id="${v.id}"] .vc-cap`);
-                        if (vcCap && vcCap.textContent !== String(v.title || '').trim()) { vcCap.textContent = String(v.title || '').trim(); vcMarkClamp(); }
+                        if (titleEl) titleEl.textContent = (v.title || '') + (v.description ? '\n' + v.description : '');
                     });
                 }
             } catch (e) {}
@@ -4106,156 +4104,84 @@ function fxPreviewTick() {
         raf = requestAnimationFrame(() => { raf = 0; fxPreviewTick(); });
     }, { capture: true, passive: true });
     document.addEventListener('visibilitychange', fxPreviewTick);
-    setInterval(fxPreviewTick, 400);
+    setInterval(() => { fxPreviewTick(); fxFitCaptions(); }, 400);
 })();
 
-// =========================================================
-// HOME LONG VIDEO CARD — Facebook-style post look (ring avatar, Subscribe pill,
-// caption "… more", heart / comment / share, views, reaction badges)
-// Used ONLY by the Home feed. Watch-page related list & search keep fxBuildLongVideoCard.
-// =========================================================
-const VC_HEART = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/></svg>';
-const VC_COMMENT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>';
-const VC_EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>';
-const _vcSubState = {};
-const _vcSubBound = {};
+// ---- Facebook-style card helpers ----
+const FX_HEART_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>';
 
-function vcPaintSub(uid) {
-    const on = !!_vcSubState[uid];
-    document.querySelectorAll(`.vc-sub-${uid}`).forEach(btn => {
-        btn.innerText = on ? 'Subscribed' : 'Subscribe';
-        btn.classList.toggle('subbed', on);
-    });
-}
-
-function vcBindSub(uid) {
+// Subscribe pill (same as the Community Post header). One live listener per channel.
+const _fxSubBound = {};
+function fxBindSub(uid) {
     if (!uid || typeof auth === 'undefined' || !auth.currentUser || !navigator.onLine) return;
-    const me = auth.currentUser.uid;
-    if (_vcSubBound[uid] === me) { vcPaintSub(uid); return; }
-    _vcSubBound[uid] = me;
-    db.ref(`subscribers/${uid}/${me}`).on('value', snap => {
-        _vcSubState[uid] = snap.exists();
-        vcPaintSub(uid);
+    const key = uid + '_' + auth.currentUser.uid;
+    if (_fxSubBound[key]) return;
+    _fxSubBound[key] = true;
+    db.ref(`subscribers/${uid}/${auth.currentUser.uid}`).on('value', snap => {
+        document.querySelectorAll(`.fx-sub-${CSS.escape(uid)}`).forEach(btn => {
+            btn.innerText = snap.exists() ? 'Subscribed' : 'Subscribe';
+            btn.classList.toggle('subbed', snap.exists());
+        });
     });
 }
+try { auth.onAuthStateChanged(() => { document.querySelectorAll('.fb-subbtn[data-fx-uid]').forEach(b => fxBindSub(b.dataset.fxUid)); }); } catch (e) {}
 
-// show "… more" only when the caption really needs more than 2 lines
-function vcMarkClamp() {
-    document.querySelectorAll('#home-feed-container .vc-cap:not(.vc-open)').forEach(el => {
-        const wrap = el.parentElement;
-        if (!wrap) return;
-        wrap.classList.toggle('vc-over', el.scrollHeight > el.clientHeight + 2);
+// "… more" appears only when the caption really needs more than 2 lines.
+function fxFitCaptions() {
+    document.querySelectorAll('.fx-cap:not([data-fit])').forEach(c => {
+        const t = c.querySelector('.fx-cap-t');
+        if (!t || !t.clientWidth) return;
+        c.dataset.fit = '1';
+        if (t.scrollHeight > t.clientHeight + 2) c.classList.add('fx-over');
     });
 }
-
-function vcExpandCaption(id, btn) {
-    const card = btn.closest('.vc-card');
-    const cap = card && card.querySelector('.vc-cap');
-    if (cap) cap.classList.add('vc-open');
-    if (card) card.querySelector('.vc-cap-wrap').classList.remove('vc-over');
+function fxExpandCaption(btn) {
+    const c = btn.closest('.fx-cap');
+    if (c) c.classList.add('fx-open');
 }
-
-function vcShare(id) {
+function fxShareVideo(id) {
     if (typeof playUI === 'function') playUI('click');
     const v = (typeof allLongVideos !== 'undefined') ? allLongVideos.find(x => String(x.id) === String(id)) : null;
     const data = { title: (v && v.title) || 'Flaynity', text: (v && v.title) || 'Flaynity', url: location.href };
     if (navigator.share) { navigator.share(data).catch(() => {}); }
     else if (navigator.clipboard) { navigator.clipboard.writeText(location.href); if (typeof showNotification === 'function') showNotification('Link copied', 'success'); }
 }
-
-async function vcOpenComments(id) {
-    await openMoviePage(id, false);
-    setTimeout(() => {
-        try { if (currentActiveMovie && String(currentActiveMovie.id) === String(id)) openCommentModal(); } catch (e) {}
-    }, 450);
-}
-
-function vcBuildHomeCard(v) {
-    const id = String(v.id);
-    const uid = v.userId || '';
-    const isOwn = !!(typeof auth !== 'undefined' && auth.currentUser && uid && auth.currentUser.uid === uid);
-    setTimeout(() => {
-        try { registerPostReactionsListener(id); fxListenDislike(id); } catch (e) {}
-        if (!isOwn) vcBindSub(uid);
-        vcPaintSub(uid);
-    }, 0);
-    [80, 400, 1200].forEach(t => setTimeout(vcMarkClamp, t));
-    const title = String(v.title || '').trim();
-    return `
-        <div class="fx-card vc-card" data-fx-id="${id}" data-fx-uid="${uid}" onclick="openMoviePage('${id}', false)">
-            <div class="vc-head">
-                <div class="vc-ring"><div class="vc-av live-avatar-${uid}"></div></div>
-                <div class="vc-who">
-                    <div class="vc-name live-username-${uid}">${escapeHTML(v.username || 'Flaynity User')}</div>
-                    <div class="vc-sub"><span>${fbTimeShort(v.createdAt)}</span><span class="vc-dot">·</span><i class="fas fa-globe-americas"></i></div>
-                </div>
-                ${isOwn ? '' : `<button class="vc-subbtn vc-sub-${uid}" onclick="event.stopPropagation(); toggleClipSubscribe('${uid}', this)">Subscribe</button>`}
-                <button class="vc-dots" aria-label="More" onclick="event.stopPropagation(); fxOpenVideoMenu('${id}', this);">${FB_DOTS_SVG}</button>
-            </div>
-            ${title ? `<div class="vc-cap-wrap">
-                <div class="vc-cap">${escapeHTML(title)}</div>
-                <button class="vc-more" onclick="event.stopPropagation(); vcExpandCaption('${id}', this)">… more</button>
-            </div>` : ''}
-            <div class="fx-thumb long-video-thumb-container">
-                <img src="${v.poster || ''}" loading="lazy" alt="" draggable="false">
-                <span class="fx-dur long-video-duration">${v.duration || '10:00'}</span>
-            </div>
-            <div class="vc-foot">
-                <div class="vc-act">
-                    <button id="post-love-btn-${id}" class="vc-ico post-action-btn-fb"
-                            onmousedown="startReactionTimer('${id}', event)"
-                            ontouchstart="startReactionTimer('${id}', event)"
-                            onmouseup="clearReactionTimer('${id}', event)"
-                            ontouchend="clearReactionTimer('${id}', event)"
-                            onclick="event.stopPropagation(); handleLoveSingleClick('${id}')" aria-label="React">
-                        <span class="love-icon-element" id="love-icon-${id}">${VC_HEART}</span>
-                    </button>
-                    <span id="love-text-${id}" style="display:none">Love</span>
-                    <span id="post-total-reactions-${id}" class="vc-count" onclick="event.stopPropagation(); openReactedPeoplePage('${id}')">0</span>
-                </div>
-                <div class="vc-act" onclick="event.stopPropagation(); vcOpenComments('${id}')">
-                    <span class="vc-ico">${VC_COMMENT}</span>
-                    <span id="post-total-comments-${id}" class="vc-count">0</span>
-                </div>
-                <div class="vc-act" onclick="event.stopPropagation(); vcShare('${id}')">
-                    <span class="vc-ico">${FB_SHARE_SVG}</span>
-                </div>
-                <div class="vc-spacer"></div>
-                <div class="vc-act vc-views">
-                    <span class="vc-ico">${VC_EYE}</span>
-                    <span class="vc-count" data-fx-vnum="${id}">0</span>
-                </div>
-                <span id="post-top-emojis-${id}" class="fb-badges vc-badges" onclick="event.stopPropagation(); openReactedPeoplePage('${id}')"></span>
-            </div>
-        </div>`;
+// Comment icon on a card: open the video, then its comments.
+async function fxOpenVideoComments(id) {
+    try { await openMoviePage(id, false); } catch (e) { return; }
+    setTimeout(() => { try { openCommentModal(); } catch (e) {} }, 350);
 }
 
 function fxBuildLongVideoCard(v) {
     const id = String(v.id);
     const uid = v.userId || '';
+    const isOwn = !!(typeof auth !== 'undefined' && auth.currentUser && auth.currentUser.uid === uid);
     // Same reaction system as Community Posts (hold the like button => emoji picker).
-    setTimeout(() => { try { registerPostReactionsListener(id); fxListenDislike(id); } catch (e) {} }, 0);
+    setTimeout(() => { try { registerPostReactionsListener(id); fxListenDislike(id); fxBindSub(uid); fxFitCaptions(); } catch (e) {} }, 0);
+    setTimeout(fxFitCaptions, 250);
+    const desc = (v.description || '').trim();
+    const caption = escapeHTML(String(v.title || '').trim()) + (desc ? '\n' + escapeHTML(desc) : '');
     return `
         <div class="fx-card long-video-feed-card" data-fx-id="${id}" data-fx-uid="${uid}" onclick="openMoviePage('${id}', false)">
-            <div class="fx-thumb long-video-thumb-container">
-                <img src="${v.poster || ''}" loading="lazy" alt="" draggable="false">
-                <span class="fx-dur long-video-duration">${v.duration || '10:00'}</span>
-            </div>
             <div class="fx-body">
                 <div class="fx-head">
-                    <div class="fx-av live-avatar-${uid}"></div>
+                    <div class="fx-ring"><div class="fx-ring-in"><div class="fx-av live-avatar-${uid}"></div></div></div>
                     <div class="fx-txt">
-                        <h4 class="fx-title long-video-title">${escapeHTML(fxTitleTwoLines(v.title))}</h4>
                         <div class="fx-channel live-username-${uid}">${escapeHTML(v.username || 'Flaynity User')}</div>
+                        <div class="fx-sub"><span>${fbTimeShort(v.createdAt)}</span><span class="fb-dot">·</span><i class="fas fa-globe-americas"></i></div>
                     </div>
-                    <button class="fx-more" aria-label="More" onclick="event.stopPropagation(); fxOpenVideoMenu('${id}', this);">${FX_ICON.dots}</button>
+                    ${isOwn ? '' : `<button class="fb-subbtn fx-sub-${uid}" data-fx-uid="${uid}" onclick="event.stopPropagation(); toggleClipSubscribe('${uid}', this)">Subscribe</button>`}
+                    <button class="fx-more" aria-label="More" onclick="event.stopPropagation(); fxOpenVideoMenu('${id}', this);">${FB_DOTS_SVG}</button>
                 </div>
-                <div class="fx-stats">
-                    <span class="fx-stat">${FX_ICON.eye}<span data-fx-views="${id}">0 Views</span></span>
-                    <span class="fx-sep"></span>
-                    <span class="fx-stat">${FX_ICON.clock}<span>${getRelativeTime(v.createdAt)}</span></span>
+                <div class="fx-cap">
+                    <div class="fx-cap-t long-video-title">${caption}</div>
+                    <button class="fx-cap-more" onclick="event.stopPropagation(); fxExpandCaption(this)">… more</button>
                 </div>
-                <div class="fx-actions">
+                <div class="fx-thumb long-video-thumb-container">
+                    <img src="${v.poster || ''}" loading="lazy" alt="" draggable="false">
+                    <span class="fx-dur long-video-duration">${v.duration || '10:00'}</span>
+                </div>
+                <div class="fx-foot">
                     <div class="fx-act">
                         <button id="post-love-btn-${id}" class="fx-ico post-action-btn-fb"
                                 onmousedown="startReactionTimer('${id}', event)"
@@ -4263,19 +4189,24 @@ function fxBuildLongVideoCard(v) {
                                 onmouseup="clearReactionTimer('${id}', event)"
                                 ontouchend="clearReactionTimer('${id}', event)"
                                 onclick="event.stopPropagation(); handleLoveSingleClick('${id}')" aria-label="React">
-                            <span class="love-icon-element" id="love-icon-${id}">${FB_LIKE_SVG}</span>
+                            <span class="love-icon-element" id="love-icon-${id}" data-fx-heart="1">${FX_HEART_SVG}</span>
                         </button>
                         <span id="love-text-${id}" style="display:none">Love</span>
                         <span id="post-total-reactions-${id}" class="fx-count" onclick="event.stopPropagation(); openReactedPeoplePage('${id}')">0</span>
                     </div>
-                    <div class="fx-act">
-                        <button class="fx-ico fx-dislike" data-fx-dislike="${id}" aria-label="Dislike"
-                                onclick="event.stopPropagation(); fxToggleDislike('${id}')">
-                            <span class="love-icon-element">${FB_LIKE_SVG}</span>
-                        </button>
+                    <div class="fx-act" onclick="event.stopPropagation(); fxOpenVideoComments('${id}')">
+                        <span class="fx-ico">${FB_COMMENT_SVG}</span>
+                        <span id="post-total-comments-${id}" class="fx-count">0</span>
+                    </div>
+                    <div class="fx-act fx-share" onclick="event.stopPropagation(); fxShareVideo('${id}')">
+                        <span class="fx-ico">${FB_SHARE_SVG}</span>
+                    </div>
+                    <div class="fx-spacer"></div>
+                    <div class="fx-act fx-views">
+                        <span class="fx-ico">${FX_ICON.eye}</span>
+                        <span class="fx-count" data-fx-views="${id}">0</span>
                     </div>
                     <span id="post-top-emojis-${id}" class="fx-badges" onclick="event.stopPropagation(); openReactedPeoplePage('${id}')"></span>
-                    <button class="fx-watch" onclick="event.stopPropagation(); openMoviePage('${id}', false)">${FX_ICON.play}<span>Watch Now</span></button>
                 </div>
             </div>
         </div>`;
@@ -4284,10 +4215,8 @@ function fxBuildLongVideoCard(v) {
 function fxLoadCardStats(id) {
     if (!navigator.onLine || typeof db === 'undefined') return;
     db.ref(`movie_stats/${id}/views`).once('value', s => {
-        const txt = formatCount(Object.keys(s.val() || {}).length) + ' Views';
+        const txt = String(formatCount(Object.keys(s.val() || {}).length));
         document.querySelectorAll(`[data-fx-views="${id}"]`).forEach(el => { el.textContent = txt; });
-        const num = formatCount(Object.keys(s.val() || {}).length);
-        document.querySelectorAll(`[data-fx-vnum="${id}"]`).forEach(el => { el.textContent = num; });
     });
 }
 
@@ -4295,7 +4224,7 @@ function renderLongVideosSegmentUI(segmentLongs) {
     if (!segmentLongs || segmentLongs.length === 0) return '';
     let html = '';
     segmentLongs.forEach(v => {
-        html += vcBuildHomeCard(v);
+        html += fxBuildLongVideoCard(v);
         setTimeout(() => fxLoadCardStats(String(v.id)), 0);
     });
     return html;
@@ -9972,7 +9901,7 @@ function paintPostReactions(postId) {
                 loveIcon.innerHTML = fbRxSvg(myReact.type);
                 loveIcon.style.fontSize = '1.25rem';
             } else {
-                loveIcon.innerHTML = loveIcon.closest('.vc-card') ? VC_HEART : FB_LIKE_SVG;
+                loveIcon.innerHTML = loveIcon.dataset.fxHeart ? FX_HEART_SVG : FB_LIKE_SVG;
                 loveIcon.style.fontSize = '';
             }
         });
@@ -12566,7 +12495,7 @@ function bindSearchResultNav() {
     wrap.addEventListener('click', (e) => {
         const t = e.target;
         if (t.closest('.user-row, .short-home-card-2col')) return;
-        if (t.closest('.post-action-btn-fb, .fx-dislike, .fb-subbtn, .fb-x, .fb-hbtn, .fx-more, .fb-seemore, [onclick*="fbSharePost"]')) return;
+        if (t.closest('.post-action-btn-fb, .fx-dislike, .fb-subbtn, .fb-x, .fb-hbtn, .fx-more, .fx-cap-more, .fx-share, .fb-seemore, [onclick*="fbSharePost"]')) return;
         if (t.closest('.fx-card, .post-card')) closeFullscreenSearch();
     }, true);
 }

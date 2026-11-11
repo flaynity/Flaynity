@@ -6750,7 +6750,7 @@ function flyEnsureMiniPlayerStyle() {
     const style = document.createElement('style');
     style.id = 'fly-mini-player-style';
     style.textContent = `
-        #fly-mini-player-overlay{position:fixed;right:12px;bottom:calc(64px + env(safe-area-inset-bottom,0px));width:min(48vw,340px);aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;z-index:5005;box-shadow:0 5px 18px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.14);}
+        #fly-mini-player-overlay{position:fixed;right:12px;bottom:calc(64px + env(safe-area-inset-bottom,0px));width:min(48vw,340px);aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;z-index:5005;box-shadow:0 5px 18px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.14);touch-action:none;user-select:none;-webkit-user-select:none;}
         #fly-mini-player-overlay #video-player-container{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;display:block!important;z-index:1!important;background:#000;}
         #fly-mini-player-overlay #video-player-container video,#fly-mini-player-overlay #video-player-container iframe{width:100%!important;height:100%!important;object-fit:contain;background:#000;}
         #fly-mini-player-overlay .fly-mini-actions{position:absolute;right:5px;top:5px;z-index:20;display:flex;gap:5px;}
@@ -6784,7 +6784,67 @@ function flyEnterMiniPlayer() {
     container.style.cssText = 'position:absolute!important;inset:0!important;width:100%!important;height:100%!important;display:block!important;z-index:1!important;background:#000!important;border:0!important;';
     flyMiniPlayerOverlay = overlay;
 
-    overlay.querySelector('.fly-mini-expand').addEventListener('click', flyRestoreFullPlayer);
+    const expandButton = overlay.querySelector('.fly-mini-expand');
+    let miniDrag = null;
+    let miniWasDragged = false;
+    expandButton.addEventListener('click', function(e) {
+        if (miniWasDragged) { e.preventDefault(); e.stopPropagation(); miniWasDragged = false; return; }
+        flyRestoreFullPlayer();
+    });
+
+    // Drag the mini player anywhere on the Home screen, then dock it to
+    // the nearest of the four screen corners.
+    overlay.addEventListener('pointerdown', function(e) {
+        if (e.target.closest('.fly-mini-actions')) return;
+        const rect = overlay.getBoundingClientRect();
+        miniDrag = {
+            pointerId: e.pointerId,
+            startX: e.clientX,
+            startY: e.clientY,
+            left: rect.left,
+            top: rect.top,
+            moved: false
+        };
+        try { overlay.setPointerCapture(e.pointerId); } catch(err) {}
+    });
+    overlay.addEventListener('pointermove', function(e) {
+        if (!miniDrag || miniDrag.pointerId !== e.pointerId) return;
+        const dx = e.clientX - miniDrag.startX;
+        const dy = e.clientY - miniDrag.startY;
+        if (!miniDrag.moved && Math.abs(dx) + Math.abs(dy) > 7) {
+            miniDrag.moved = true;
+            miniWasDragged = true;
+        }
+        if (!miniDrag.moved) return;
+        e.preventDefault();
+        const maxLeft = Math.max(0, window.innerWidth - overlay.offsetWidth);
+        const maxTop = Math.max(0, window.innerHeight - overlay.offsetHeight);
+        const left = Math.max(0, Math.min(maxLeft, miniDrag.left + dx));
+        const top = Math.max(0, Math.min(maxTop, miniDrag.top + dy));
+        overlay.style.left = left + 'px';
+        overlay.style.top = top + 'px';
+        overlay.style.right = 'auto';
+        overlay.style.bottom = 'auto';
+    });
+    function finishMiniDrag(e) {
+        if (!miniDrag || (e && miniDrag.pointerId !== e.pointerId)) return;
+        const wasMoved = miniDrag.moved;
+        miniDrag = null;
+        if (!wasMoved) return;
+        const maxLeft = Math.max(0, window.innerWidth - overlay.offsetWidth);
+        const maxTop = Math.max(0, window.innerHeight - overlay.offsetHeight);
+        const rect = overlay.getBoundingClientRect();
+        const left = rect.left + rect.width / 2 < window.innerWidth / 2 ? 10 : maxLeft - 10;
+        const top = rect.top + rect.height / 2 < window.innerHeight / 2 ? 10 : maxTop - 10;
+        overlay.style.left = Math.max(0, Math.min(maxLeft, left)) + 'px';
+        overlay.style.top = Math.max(0, Math.min(maxTop, top)) + 'px';
+        overlay.style.right = 'auto';
+        overlay.style.bottom = 'auto';
+        setTimeout(function(){ miniWasDragged = false; }, 250);
+    }
+    overlay.addEventListener('pointerup', finishMiniDrag);
+    overlay.addEventListener('pointercancel', finishMiniDrag);
+
     overlay.querySelector('.fly-mini-pause').addEventListener('click', function(e) {
         e.stopPropagation();
         const v = container.querySelector('video');

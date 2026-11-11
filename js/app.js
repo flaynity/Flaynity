@@ -6383,6 +6383,24 @@ const AppNavigation = {
     _viewPage: null,
     _fresh: false,
 
+    // element id of a stack page (the upload studio has no "-page" suffix)
+    _pid: function(id) {
+        return (id === 'full-movie-page' || id === 'premium-upload-studio') ? id : (id.endsWith('-page') ? id : id + '-page');
+    },
+
+    // Close the whole upload flow at once (after publish) so Back never lands on an old upload page
+    popUploadFlow: function() {
+        const ids = ['premium-upload-studio', 'video-preview-page', 'short-preview-page', 'post-preview-page',
+                     'video-details-page', 'short-details-page', 'post-details-page', 'short-editor-page'];
+        window.__uploadStudioResume = null;
+        while (this.stack.length > 1) {
+            const top = this.stack[this.stack.length - 1];
+            if (top.type === 'page' && ids.indexOf(top.id) > -1) this.stack.pop(); else break;
+        }
+        this.syncUI();
+        this.updateBridge();
+    },
+
     // Remember every scroll position of the view that is on screen right now.
     _collectScroll: function(root, out) {
         if (!root || !root.getClientRects().length) return;
@@ -6396,7 +6414,7 @@ const AppNavigation = {
             rec.win = window.pageYOffset || document.documentElement.scrollTop || 0;
             if (this._viewTab !== 'feels') this._collectScroll(document.getElementById(this._viewTab + '-tab'), rec.els);
         } else {
-            const pid = this._viewPage === 'full-movie-page' ? 'full-movie-page' : (this._viewPage.endsWith('-page') ? this._viewPage : this._viewPage + '-page');
+            const pid = this._pid(this._viewPage);
             this._collectScroll(document.getElementById(pid), rec.els);
         }
         this._mem[this._view] = rec;
@@ -6506,7 +6524,7 @@ const AppNavigation = {
         const newViewKey = activeTab + '|' + (activePage || '');
         try { this._saveScroll(); } catch (e) {}
         const keepIds = new Set(activeModals);
-        if (activePage) keepIds.add(activePage === 'full-movie-page' ? 'full-movie-page' : (activePage.endsWith('-page') ? activePage : activePage + '-page'));
+        if (activePage) keepIds.add(this._pid(activePage));
 
         document.querySelectorAll('.fullscreen-page').forEach(el => {
             el.classList.remove('you-direct-page');
@@ -6575,7 +6593,7 @@ const AppNavigation = {
                 if (moviePage) moviePage.style.display = 'block';
                 document.body.style.overflow = 'hidden';
             } else {
-                const targetId = activePage.endsWith('-page') ? activePage : (activePage + '-page');
+                const targetId = this._pid(activePage);
                 const pageEl = document.getElementById(targetId);
                 if (pageEl) pageEl.style.display = 'flex';
                 else {
@@ -6609,6 +6627,13 @@ const AppNavigation = {
             }
         });
         if (typeof fbcmRestoreScroll === 'function') fbcmRestoreScroll();
+
+        // Upload studio lives in the back stack: stop the camera when it is covered / closed,
+        // and bring the previous screen (camera / media picker) back when it is shown again.
+        try {
+            if (activePage === 'premium-upload-studio') { if (typeof window.__uploadStudioShown === 'function') window.__uploadStudioShown(); }
+            else if (typeof window.__uploadStudioHidden === 'function') window.__uploadStudioHidden();
+        } catch (e) {}
 
         // Come back to exactly where the user was (Home feed, Play Page, any page).
         this._view = newViewKey; this._viewTab = activeTab; this._viewPage = activePage;
@@ -10050,6 +10075,31 @@ let currentVisibilityTarget = null;
 window.openCreateBottomSheet = openPremiumUploadStudio;
 window.closeCreateBottomSheet = closePremiumUploadStudio;
 
+let studioIsShown = false;
+
+// The studio is a real page in the back stack, so Back from Preview / Details returns to it.
+window.__uploadStudioShown = function() {
+    studioIsShown = true;
+    const r = window.__uploadStudioResume;
+    if (!r) return;
+    window.__uploadStudioResume = null;
+    // Returning from a preview page: restore the screen the user came from
+    setTimeout(() => {
+        try {
+            switchUploadMode(r.mode);                                   // Feels = camera, Video / Post = media picker
+            if (r.mode === 'short' && r.picker) openMediaPicker('short'); // Feels picked from the gallery
+        } catch (e) {}
+    }, 0);
+};
+window.__uploadStudioHidden = function() {
+    if (!studioIsShown) return;
+    studioIsShown = false;
+    // Closing the studio while recording must discard the clip, not open a preview
+    try { if (shortMediaRecorder) shortMediaRecorder.onstop = () => {}; } catch (e) {}
+    try { stopCameraRecording(); } catch (e) {}
+    try { stopShortCamera(); } catch (e) {}
+};
+
 function openPremiumUploadStudio() {
     playUI('click');
     if (!currentChannelData) {
@@ -10062,12 +10112,10 @@ function openPremiumUploadStudio() {
     }
     const studio = document.getElementById('premium-upload-studio');
     if (studio) {
+        studio.style.opacity = 1;
+        window.__uploadStudioResume = null;
+        AppNavigation.pushPage('premium-upload-studio');
         studio.style.display = 'flex';
-        studio.style.opacity = 0;
-        requestAnimationFrame(() => {
-            studio.style.transition = 'opacity 0.3s ease';
-            studio.style.opacity = 1;
-        });
         setupModeSliderSwipe();
         switchUploadMode('short');
     }
@@ -10076,14 +10124,16 @@ function openPremiumUploadStudio() {
 function closePremiumUploadStudio() {
     playUI('click');
     document.querySelectorAll('#video-preview-el, #short-preview-el').forEach(v => v.pause()); // Background play fix
+    const cur = AppNavigation.current();
+    if (cur && cur.type === 'page' && cur.id === 'premium-upload-studio') {
+        AppNavigation.pop();           // hides the studio and stops the camera (see __uploadStudioHidden)
+        return;
+    }
     const studio = document.getElementById('premium-upload-studio');
     if (studio) {
-        studio.style.opacity = 0;
-        setTimeout(() => {
-            studio.style.display = 'none';
-            stopCameraRecording(); // Stop if recording
-            stopShortCamera();
-        }, 300);
+        studio.style.display = 'none';
+        stopCameraRecording();
+        stopShortCamera();
     }
 }
 
@@ -10651,7 +10701,7 @@ function triggerShortDownloadLocal() {
 // VALIDATION & CORE PROCESSING (Auto Short Rule)
 // ---------------------------------------------------------
 async function handlePremiumFileSelected(e, type) {
-    const file = e.target && e.target.files ? e.target.files[0] : (e.files ? e.files[0] : null);
+    let file = e.target && e.target.files ? e.target.files[0] : (e.files ? e.files[0] : null);
     if (!file) return;
 
     if (!isShortFromCamera && type === 'video-short') {
@@ -10705,23 +10755,31 @@ async function handlePremiumFileSelected(e, type) {
     }
 
     currentUploadFile = file;
-    showNotification("Processing Video...", "success");
 
-    try {
-        currentUploadFrameMeta = await captureFrameAndDuration(file);
-    } catch (err) {
-        currentUploadFrameMeta = { duration: 60, dataUrl: "", blob: null };
+    // Thumbnail + duration are prepared in the background; the preview opens immediately.
+    currentUploadFrameMeta = null;
+    window.__uploadMetaPromise = Promise.race([
+        captureFrameAndDuration(file),
+        new Promise(res => setTimeout(() => res(null), 10000))
+    ]).catch(() => null).then(m => {
+        const meta = m || { duration: 60, dataUrl: "", blob: null };
+        if (currentUploadFile === file) currentUploadFrameMeta = meta;
+        return meta;
+    });
+
+    // Only a Long Video needs its duration up front (under 3 min = Short). Metadata read is instant.
+    if (type === 'video-long') {
+        const d = await quickVideoDuration(file);
+        if (isFinite(d) && d < 180) {
+            showNotification("Video < 3 min! Automatically switching to Short format.", "success");
+            type = 'video-short';
+            isShortFromCamera = false;
+        }
     }
 
-    // Auto switch to short if duration is less than 3 minutes (180s)
-    if (type === 'video-long' && currentUploadFrameMeta.duration < 180) {
-        showNotification("Video < 3 min! Automatically switching to Short format.", "success");
-        type = 'video-short';
-        isShortFromCamera = false;
-    }
+    // Remember where the user came from so Back returns to the camera / media picker
+    window.__uploadStudioResume = { mode: currentUploadMode, picker: !!mpBridge() && !isShortFromCamera };
 
-    closePremiumUploadStudio(); 
-    
     if (type === 'video-short') {
         const vidEl = document.getElementById('short-preview-el');
         if (vidEl) {
@@ -10744,11 +10802,32 @@ async function handlePremiumFileSelected(e, type) {
     }
 }
 
+function quickVideoDuration(file) {
+    return new Promise(resolve => {
+        const v = document.createElement('video');
+        const url = URL.createObjectURL(file);
+        let done = false;
+        const fin = (d) => {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            v.removeAttribute('src');
+            try { URL.revokeObjectURL(url); } catch (e) {}
+            resolve(d);
+        };
+        const timer = setTimeout(() => fin(NaN), 4000);
+        v.preload = 'metadata';
+        v.onloadedmetadata = () => fin(v.duration);
+        v.onerror = () => fin(NaN);
+        v.src = url;
+    });
+}
+
 function handlePremiumImagesSelected(e) {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
     currentUploadFile = files[0];
-    closePremiumUploadStudio();
+    window.__uploadStudioResume = { mode: currentUploadMode, picker: !!mpBridge() };
     
     const imgEl = document.getElementById('post-preview-img');
     if (imgEl) imgEl.src = URL.createObjectURL(currentUploadFile);
@@ -10806,17 +10885,23 @@ function mpInit() {
     });
 }
 
-function openMediaPicker(mode) {          // mode: 'video' | 'short' | 'post'
+// mode: 'video' | 'short' | 'post'  (upload tabs)
+//       'thumb'                     (Custom Thumbnail on the Add Details pages, photos)
+//       'ed-video' | 'ed-rpl'       (Feels editor: add clip / replace clip, videos)
+//       'ed-image'                  (Feels editor: overlay image, photos)
+const MP_PHOTO_MODES = ['post', 'thumb', 'ed-image'];
+const MP_INPUT_IDS = { video: 'video-file-input', short: 'short-file-input', post: 'post-image-input',
+                       thumb: 'custom-thumb-input', 'ed-video': 'ce-in-video', 'ed-rpl': 'ce-in-rpl', 'ed-image': 'ce-in-image' };
+function openMediaPicker(mode) {
     const b = mpBridge();
     if (!b) {                              // normal browser: old file input
-        const id = mode === 'video' ? 'video-file-input' : mode === 'short' ? 'short-file-input' : 'post-image-input';
-        const inp = mpEl(id); if (inp) inp.click();
+        const inp = mpEl(MP_INPUT_IDS[mode] || 'post-image-input'); if (inp) inp.click();
         return;
     }
     if (MP.open) return;
     mpInit();
     MP.mode = mode;
-    MP.only = mode === 'post' ? 'photos' : 'videos';   // Video / Feels = videos only, Post = images only
+    MP.only = MP_PHOTO_MODES.indexOf(mode) > -1 ? 'photos' : 'videos';   // Video / Feels = videos only, Post / thumbnail / overlay = images only
     MP.tab = MP.only;
     MP.album = 'all'; MP.albumName = 'Recents'; MP.view = 'grid';
     mpEl('mp-album-name').textContent = 'Recents';
@@ -11027,10 +11112,16 @@ async function mpPick(cell) {
         const name = cell.dataset.n || ((isVideo ? 'video_' : 'image_') + Date.now() + (isVideo ? '.mp4' : '.jpg'));
         const type = cell.dataset.m || blob.type || (isVideo ? 'video/mp4' : 'image/jpeg');
         const file = new File([blob], name, { type: type, lastModified: Date.now() });
+        const pickMode = MP.mode;
         closeMediaPicker(true);
-        if (isVideo) {
+        if (pickMode === 'thumb') {
+            handleCustomThumbSelected({ target: { files: [file] } });
+        } else if (pickMode === 'ed-video' || pickMode === 'ed-rpl' || pickMode === 'ed-image') {
+            const inp = mpEl(MP_INPUT_IDS[pickMode]);          // the editor's own handler (set in upload.html)
+            if (inp && typeof inp.onchange === 'function') inp.onchange({ target: { files: [file], value: '' } });
+        } else if (isVideo) {
             isShortFromCamera = false;     // picked from the gallery, not recorded
-            handlePremiumFileSelected({ target: { files: [file] } }, MP.mode === 'short' ? 'video-short' : 'video-long');
+            handlePremiumFileSelected({ target: { files: [file] } }, pickMode === 'short' ? 'video-short' : 'video-long');
         } else {
             handlePremiumImagesSelected({ target: { files: [file] } });
         }
@@ -11180,10 +11271,12 @@ function togglePremiumPreviewPlay(vidId, iconId) {
     }
 }
 
-function gotoPremiumUploadDetails(type) {
+async function gotoPremiumUploadDetails(type) {
     playUI('click');
     document.querySelectorAll('#video-preview-el, #short-preview-el').forEach(v => v.pause()); // Background play fix
-    AppNavigation.pop(); 
+    // thumbnail / duration are prepared in the background after the preview opens
+    if (type !== 'post' && window.__uploadMetaPromise) { try { await window.__uploadMetaPromise; } catch (e) {} }
+    // The preview page stays in the back stack, so Back from Details returns to it
     
     if (type === 'video') {
         const thumb = document.getElementById('vd-thumb');
@@ -11321,7 +11414,7 @@ async function publishPremiumVideoOrShort(modeType) {
     uploadQueue.push(queueItem);
     saveQueueStateToLocalStorage(); 
     
-    AppNavigation.pop();
+    AppNavigation.popUploadFlow();
     showNotification("Upload started", "success");
     openViewChannelPage();
     setTimeout(() => {
@@ -11387,7 +11480,7 @@ async function publishPremiumPostAction() {
         await db.ref(`admin_panel/posts/${postPayload.id}`).set(postPayload);
         
         showNotification("Community Post published successfully!", "success");
-        AppNavigation.pop(); 
+        AppNavigation.popUploadFlow(); 
         buildHomeFeed();
     } catch (err) {
         showNotification("Failed to publish: " + err.message, "error");

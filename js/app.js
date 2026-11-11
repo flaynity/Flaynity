@@ -4129,10 +4129,9 @@ try { auth.onAuthStateChanged(() => { document.querySelectorAll('.fb-subbtn[data
 // "… more" appears only when the caption really needs more than 2 lines.
 function fxFitCaptions() {
     document.querySelectorAll('.fx-cap:not([data-fit])').forEach(c => {
-        const t = c.querySelector('.fx-cap-t');
-        if (!t || !t.clientWidth) return;
+        if (!c.clientWidth) return;
         c.dataset.fit = '1';
-        if (t.scrollHeight > t.clientHeight + 2) c.classList.add('fx-over');
+        if (c.scrollHeight > c.clientHeight + 2) c.classList.add('fx-over');
     });
 }
 function fxExpandCaption(btn) {

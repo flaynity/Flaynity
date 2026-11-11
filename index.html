@@ -20,6 +20,8 @@
 <meta name="google-adsense-account" content="ca-pub-3200255969875766">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style id="flaynity-launch-base">html{background:#0F0F0F}</style>
+<link rel="preload" as="image" href="assets/flaynity-logo.png">
 <title>Flaynity</title>
 <meta name="theme-color" content="#FFFFFF" id="flaynity-theme-color">
 <meta name="msapplication-navbutton-color" content="#FFFFFF" id="flaynity-ms-theme-color">
@@ -42,72 +44,241 @@
 
 <style id="flaynity-startup-splash-style">
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
+</style>
+
+<!-- ===== Flaynity App Open Animation (2.5s) =====
+     Stage 1  0-650ms     dark #0F0F0F, logo scales + fades in at the exact centre
+     Stage 2  650-1500ms  background -> white, logo moves left, "Flaynity" appears on the right
+     Stage 3  1500-2500ms circular brand-colour expansion from the centre (clip-path)
+     Then the overlay holds until Home is really ready (max 6s) and fades out. -->
+<style id="flaynity-launch-style">
     #flaynity-startup-splash {
-        position: fixed; inset: 0; width: 100vw; height: 100vh; min-height: 100dvh;
-        z-index: 2147483647; background: #0F0F0F; display: block; opacity: 1;
-        visibility: visible; overflow: hidden; pointer-events: auto;
+        --fs-brand: #D80E45;           /* same as --primary in home.html */
+        --fs-dark: #0F0F0F;
+        --fs-LB: clamp(96px, 28vmin, 140px);   /* logo size in stage 1 */
+        --fs-k: .55;                           /* logo scale used in the brand lockup */
+        --fs-L: calc(var(--fs-LB) * var(--fs-k));
+        --fs-G: calc(var(--fs-L) * .22);
+        --fs-wx: calc((var(--fs-L) + var(--fs-G)) / 2);
+        --fs-sx: calc(var(--fs-L) * 1.7);      /* fallback, JS measures the exact value */
+        position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+        z-index: 2147483647; background: var(--fs-dark);
+        overflow: hidden; opacity: 1; visibility: visible;
+        pointer-events: auto; touch-action: none;
+        -webkit-user-select: none; user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        transition: opacity .26s ease .06s;
     }
-    #flaynity-startup-splash img {
-        position: absolute; inset: 0; width: 100%; height: 100%; display: block;
-        object-fit: cover; opacity: 0; visibility: hidden;
-        -webkit-transform: translateZ(0); transform: translateZ(0);
+    #flaynity-startup-splash > * { position: absolute; margin: 0; }
+
+    #flaynity-startup-splash .fs-white {
+        top: 0; right: 0; bottom: 0; left: 0; background: #FFFFFF;
+        opacity: 0; visibility: hidden;
+        animation: fsWhite 450ms cubic-bezier(.4, 0, .2, 1) 650ms both;
     }
-    #flaynity-startup-splash.image-ready img { opacity: 1; visibility: visible; }
+    #flaynity-startup-splash .fs-logo {
+        left: 50%; top: 50%; width: var(--fs-LB); height: var(--fs-LB);
+        margin: calc(var(--fs-LB) / -2) 0 0 calc(var(--fs-LB) / -2);
+        opacity: 0; transform: translate3d(0, 0, 0) scale(.6);
+        animation: fsLogo 1300ms linear 0ms both;
+    }
+    #flaynity-startup-splash .fs-logo img {
+        display: block; width: 100%; height: 100%; object-fit: contain;
+        border-radius: 22.5%; pointer-events: none; -webkit-user-drag: none;
+    }
+    #flaynity-startup-splash .fs-word {
+        left: 50%; top: 50%; white-space: nowrap; line-height: 1;
+        font-family: 'Plus Jakarta Sans', -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        font-weight: 900; font-size: calc(var(--fs-L) * .74); letter-spacing: -.025em;
+        color: #0F0F0F; opacity: 0;
+        transform: translate3d(calc(-50% + var(--fs-wx)), -50%, 0);
+        animation: fsWord 600ms cubic-bezier(.22, 1, .36, 1) 900ms both;
+    }
+    #flaynity-startup-splash .fs-burst {
+        top: 0; right: 0; bottom: 0; left: 0; background: var(--fs-brand);
+        visibility: hidden; opacity: 0;
+    }
+
+    @keyframes fsWhite {
+        from { opacity: 0; visibility: hidden; }
+        1%   { visibility: visible; }
+        to   { opacity: 1; visibility: visible; }
+    }
+    @keyframes fsLogo {
+        0%   { opacity: 0; transform: translate3d(0, 0, 0) scale(.6); animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
+        43%  { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+        50%  { opacity: 1; transform: translate3d(0, 0, 0) scale(1); animation-timing-function: cubic-bezier(.3, .8, .25, 1); }
+        100% { opacity: 1; transform: translate3d(calc(var(--fs-sx) * -1), 0, 0) scale(var(--fs-k)); }
+    }
+    @keyframes fsWord {
+        from { opacity: 0; transform: translate3d(calc(-50% + var(--fs-wx) - .35em), -50%, 0) scale(.94); }
+        to   { opacity: 1; transform: translate3d(calc(-50% + var(--fs-wx)), -50%, 0) scale(1); }
+    }
+    @keyframes fsBurst {
+        from { -webkit-clip-path: circle(0px at 50% 50%); clip-path: circle(0px at 50% 50%); }
+        to   { -webkit-clip-path: circle(76% at 50% 50%); clip-path: circle(76% at 50% 50%); }
+    }
+    @keyframes fsBurstFade {
+        from { opacity: 0; visibility: visible; }
+        to   { opacity: 1; visibility: visible; }
+    }
+    @supports ((clip-path: circle(0px at 50% 50%)) or (-webkit-clip-path: circle(0px at 50% 50%))) {
+        #flaynity-startup-splash .fs-burst {
+            visibility: visible; opacity: 1;
+            animation: fsBurst 1000ms cubic-bezier(.7, 0, .2, 1) 1500ms both;
+        }
+    }
+    @supports not ((clip-path: circle(0px at 50% 50%)) or (-webkit-clip-path: circle(0px at 50% 50%))) {
+        #flaynity-startup-splash .fs-burst { animation: fsBurstFade 1000ms ease-in-out 1500ms both; }
+    }
+
+    #flaynity-startup-splash.is-revealing { opacity: 0; pointer-events: none; }
     #flaynity-startup-splash.is-hidden { display: none !important; }
+
+    /* The timeline starts only when the logo is decoded (set by JS). */
+    #flaynity-startup-splash:not(.go) > * { animation-play-state: paused; }
+
+    @media (prefers-reduced-motion: reduce) {
+        #flaynity-startup-splash { transition: none; }
+        #flaynity-startup-splash .fs-white { animation: none; opacity: 1; visibility: visible; }
+        #flaynity-startup-splash .fs-logo { animation: none; opacity: 1; transform: translate3d(calc(var(--fs-sx) * -1), 0, 0) scale(var(--fs-k)); }
+        #flaynity-startup-splash .fs-word { animation: none; opacity: 1; }
+        #flaynity-startup-splash .fs-burst { display: none; }
+        #flaynity-startup-splash:not(.go) .fs-logo,
+        #flaynity-startup-splash:not(.go) .fs-word { opacity: 0; }
+    }
 </style>
 
 <div id="flaynity-startup-splash" aria-hidden="true">
-    <img id="flaynity-startup-splash-image" alt="" draggable="false">
+    <div class="fs-white"></div>
+    <div class="fs-word">Flaynity</div>
+    <div class="fs-logo"><img src="assets/flaynity-logo.png" alt="" draggable="false" decoding="sync"></div>
+    <div class="fs-burst"></div>
 </div>
 <script>
 (function () {
     'use strict';
-    const splash = document.getElementById('flaynity-startup-splash');
-    const image = document.getElementById('flaynity-startup-splash-image');
-    const imageUrl = 'assets/loading-image.jpg';
-    const cacheName = 'flaynity-startup-image-v2';
-    const STARTUP_DURATION = 3500;
-    const startupStartedAt = Date.now();
+    if (window.__flaynityLaunchAnimation) return;      // never run twice
+    window.__flaynityLaunchAnimation = true;
 
-    function showLoadedImage(src) {
-        if (!image || !splash) return;
-        image.onload = function () { splash.classList.add('image-ready'); };
-        image.onerror = function () {};
-        image.src = src;
-        if (image.complete && image.naturalWidth > 0) splash.classList.add('image-ready');
-    }
-    async function loadCachedSplashImage() {
+    var splash = document.getElementById('flaynity-startup-splash');
+    if (!splash) return;
+
+    var T_STAGES = 2500;      // full animation length
+    var T_REDUCED = 700;      // reduced-motion: short static brand screen
+    var T_MAX = 6000;         // never keep the user waiting longer than this
+    var FADE_OUT = 400;       // reveal fade + safety margin
+
+    var t0 = Date.now(), startAt = 0;
+    var started = false, finished = false, animDone = false, domReady = false;
+    var reduced = false;
+    try { reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+
+    var logoBox = splash.querySelector('.fs-logo');
+    var logoImg = splash.querySelector('.fs-logo img');
+    var word = splash.querySelector('.fs-word');
+    var burst = splash.querySelector('.fs-burst');
+
+    var themeMeta = document.getElementById('flaynity-theme-color');
+    var themeOriginal = themeMeta ? themeMeta.getAttribute('content') : null;
+    function setTheme(c) { try { if (themeMeta && !finished) themeMeta.setAttribute('content', c); } catch (e) {} }
+
+    // Exact horizontal distance between the centred logo and its place in the lockup.
+    function measure() {
         try {
-            if (!('caches' in window)) return false;
-            const cache = await caches.open(cacheName);
-            const cached = await cache.match(imageUrl);
-            if (!cached) return false;
-            const blob = await cached.blob();
-            showLoadedImage(URL.createObjectURL(blob));
-            return true;
-        } catch (e) { return false; }
-    }
-    async function cacheSplashImage() {
-        try {
-            if (!navigator.onLine || !('caches' in window)) return;
-            const cache = await caches.open(cacheName);
-            const response = await fetch(imageUrl, { cache: 'reload' });
-            if (response.ok) await cache.put(imageUrl, response.clone());
+            var LB = logoBox.offsetWidth, W = word.offsetWidth;
+            if (!LB || !W) return;
+            var cs = window.getComputedStyle(splash);
+            var k = parseFloat(cs.getPropertyValue('--fs-k')) || 0.55;
+            var L = LB * k, G = L * 0.22;
+            splash.style.setProperty('--fs-sx', ((G + W) / 2) + 'px');
         } catch (e) {}
     }
-    showLoadedImage(imageUrl);
-    loadCachedSplashImage().then(function (cached) {
-        if (!cached && navigator.onLine) showLoadedImage(imageUrl);
-    });
-    cacheSplashImage();
-    window.__flaynitySplashHideAt = startupStartedAt + STARTUP_DURATION;
-    window.__flaynityHideStartupSplash = function () {
-        const remaining = Math.max(0, window.__flaynitySplashHideAt - Date.now());
-        setTimeout(function () {
-            if (splash) splash.classList.add('is-hidden');
-        }, remaining);
-    };
-    window.__flaynityHideStartupSplash();
+
+    // Read-only check that the real app surface is on screen (Home, Onboarding or an auth state).
+    function surfaceReady() {
+        try {
+            if (window.__flaynityNeedsChannelBoot === true) return true;
+            if (document.body && document.body.classList.contains('auth-active')) return true;
+            var a = document.getElementById('app-screen');
+            if (a && window.getComputedStyle(a).display !== 'none') return true;
+        } catch (e) {}
+        return false;
+    }
+
+    function hideNow() {
+        try { splash.classList.add('is-hidden'); } catch (e) {}
+        try { if (splash.parentNode) splash.parentNode.removeChild(splash); } catch (e) {}
+        ['flaynity-launch-style', 'flaynity-launch-base'].forEach(function (id) {
+            try { var n = document.getElementById(id); if (n && n.parentNode) n.parentNode.removeChild(n); } catch (e) {}
+        });
+    }
+
+    function reveal() {
+        if (finished) return;
+        finished = true;
+        clearInterval(poll);
+        try { if (themeMeta && themeOriginal !== null) themeMeta.setAttribute('content', themeOriginal); } catch (e) {}
+        splash.classList.add('is-revealing');            // fades out; also lets Onboarding mount underneath
+        setTimeout(hideNow, reduced ? 0 : FADE_OUT);
+    }
+
+    function evaluate() {
+        if (finished) return;
+        var now = Date.now();
+        if (now - t0 >= T_MAX) { reveal(); return; }      // safety timeout (e.g. loader error page)
+        if (started && !animDone && now - startAt >= (reduced ? T_REDUCED : T_STAGES + 150)) animDone = true;
+        if (animDone && domReady && surfaceReady()) reveal();
+    }
+    var poll = setInterval(evaluate, 80);
+
+    function go() {
+        if (started) return;
+        started = true;
+        startAt = Date.now();
+        measure();
+        splash.classList.add('go');
+        setTheme('#0F0F0F');
+        if (!reduced) {
+            setTimeout(function () { setTheme('#FFFFFF'); }, 650);
+            setTimeout(function () { setTheme('#D80E45'); }, 2000);
+        } else {
+            setTheme('#FFFFFF');
+        }
+    }
+
+    try {
+        if (burst) burst.addEventListener('animationend', function () { animDone = true; evaluate(); });
+        splash.addEventListener('touchmove', function (e) { e.preventDefault(); }, { passive: false });
+
+        measure();
+        window.addEventListener('resize', measure);
+        window.addEventListener('orientationchange', measure);
+        if (document.fonts) {
+            if (document.fonts.ready) document.fonts.ready.then(measure);
+            if (document.fonts.load) document.fonts.load('900 1em "Plus Jakarta Sans"').then(measure, function () {});
+        }
+        setTimeout(measure, 400);
+        setTimeout(measure, 620);
+
+        // Start the timeline as soon as the logo is decoded (or failed / 300ms passed).
+        var once = function () { go(); };
+        if (logoImg && logoImg.complete) {
+            if (logoImg.decode) logoImg.decode().then(once, once); else once();
+        } else if (logoImg) {
+            logoImg.addEventListener('load', once);
+            logoImg.addEventListener('error', once);
+        } else { once(); }
+        setTimeout(once, 300);
+
+        window.addEventListener('flaynity-dom-ready', function () { domReady = true; evaluate(); });
+    } catch (err) {
+        // Never block the app because of the animation.
+        finished = true; clearInterval(poll); hideNow();
+    }
+
+    // Kept for app.js: it calls this when its startup code has run. It only re-checks readiness.
+    window.__flaynityHideStartupSplash = function () { try { evaluate(); } catch (e) {} };
 })();
 </script>
 
@@ -256,8 +427,8 @@
     }
     async function show() {
         pendingShow = true;
-        // Never reveal onboarding underneath the startup splash.
-        while (splash && !splash.classList.contains('is-hidden')) {
+        // Never reveal onboarding underneath the startup splash (it may mount while the splash fades out).
+        while (splash && !splash.classList.contains('is-hidden') && !splash.classList.contains('is-revealing')) {
             await new Promise(function (resolve) { setTimeout(resolve, 60); });
         }
         await preloadPromise;

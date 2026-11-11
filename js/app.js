@@ -6465,7 +6465,11 @@ const AppNavigation = {
     _saveScroll: function() {
         const rec = { win: null, els: [] };
         if (!this._viewPage) {
-            rec.win = window.pageYOffset || document.documentElement.scrollTop || 0;
+            rec.win = Math.max(
+                Number(window.pageYOffset || window.scrollY || 0),
+                Number(document.documentElement && document.documentElement.scrollTop || 0),
+                Number(document.body && document.body.scrollTop || 0)
+            );
             if (this._viewTab !== 'feels') this._collectScroll(document.getElementById(this._viewTab + '-tab'), rec.els);
         } else {
             const pid = this._pid(this._viewPage);

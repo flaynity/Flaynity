@@ -46,15 +46,20 @@
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
 </style>
 
-<!-- ===== Flaynity App Open Animation (2.5s) =====
-     Stage 1  0-650ms     dark #0F0F0F, logo scales + fades in at the exact centre
-     Stage 2  650-1500ms  background -> white, logo moves left, "Flaynity" appears on the right
-     Stage 3  1500-2500ms circular brand-colour expansion from the centre (clip-path)
-     Then the overlay holds until Home is really ready (max 6s) and fades out. -->
+<!-- ===== Flaynity App Open Animation v2 (2.7s) =====
+     Stage 1  0-650ms     dark stage, brand glow pulses, logo focuses in while a ring draws around it
+     Stage 2  650-1900ms  stage -> light (or dark-surface when the user theme is dark), logo slides left,
+                          "Flaynity" rises in letter by letter, then "Connect. Share. Grow." follows
+     Stage 3  1850-2700ms circular brand-colour expansion from the centre (clip-path)
+     Then the overlay holds until Home is really ready (max 6s). If that takes longer than the animation,
+     three loading dots appear on the brand screen. Then it fades out. -->
 <style id="flaynity-launch-style">
     #flaynity-startup-splash {
         --fs-brand: #D80E45;           /* same as --primary in home.html */
+        --fs-brand-lt: #FF4D7A;
         --fs-dark: #0F0F0F;
+        --fs-surface: #FFFFFF;         /* stage 2 background (light theme) */
+        --fs-ink: #0F0F0F;             /* wordmark colour */
         --fs-LB: clamp(96px, 28vmin, 140px);   /* logo size in stage 1 */
         --fs-k: .55;                           /* logo scale used in the brand lockup */
         --fs-L: calc(var(--fs-LB) * var(--fs-k));
@@ -69,12 +74,33 @@
         -webkit-tap-highlight-color: transparent;
         transition: opacity .26s ease .06s;
     }
+    #flaynity-startup-splash.fs-dark { --fs-surface: #161618; --fs-ink: #FFFFFF; }
     #flaynity-startup-splash > * { position: absolute; margin: 0; }
 
+    /* Stage 1: soft brand glow behind the logo */
+    #flaynity-startup-splash .fs-glow {
+        left: 50%; top: 50%; width: calc(var(--fs-LB) * 3); height: calc(var(--fs-LB) * 3);
+        margin: calc(var(--fs-LB) * -1.5) 0 0 calc(var(--fs-LB) * -1.5); border-radius: 50%;
+        background: radial-gradient(circle, rgba(216,14,69,.55) 0%, rgba(216,14,69,.18) 38%, rgba(216,14,69,0) 68%);
+        opacity: 0; animation: fsGlow 1000ms ease-out 0ms both;
+    }
     #flaynity-startup-splash .fs-white {
-        top: 0; right: 0; bottom: 0; left: 0; background: #FFFFFF;
+        top: 0; right: 0; bottom: 0; left: 0; background: var(--fs-surface);
         opacity: 0; visibility: hidden;
         animation: fsWhite 450ms cubic-bezier(.4, 0, .2, 1) 650ms both;
+    }
+    /* Stage 1: progress ring that draws around the logo, then pulses out */
+    #flaynity-startup-splash .fs-ring {
+        left: 50%; top: 50%; width: calc(var(--fs-LB) * 1.36); height: calc(var(--fs-LB) * 1.36);
+        margin: calc(var(--fs-LB) * -.68) 0 0 calc(var(--fs-LB) * -.68);
+        opacity: 0; animation: fsRing 1000ms linear 0ms both; pointer-events: none;
+    }
+    #flaynity-startup-splash .fs-ring svg { display: block; width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+    #flaynity-startup-splash .fs-ring circle { fill: none; stroke-width: 1.6; stroke-linecap: round; }
+    #flaynity-startup-splash .fs-ring .trk { stroke: rgba(255,255,255,.09); }
+    #flaynity-startup-splash .fs-ring .arc {
+        stroke: var(--fs-brand-lt); stroke-dasharray: 100; stroke-dashoffset: 100;
+        animation: fsArc 650ms cubic-bezier(.3, .7, .2, 1) 120ms both;
     }
     #flaynity-startup-splash .fs-logo {
         left: 50%; top: 50%; width: var(--fs-LB); height: var(--fs-LB);
@@ -85,35 +111,79 @@
     #flaynity-startup-splash .fs-logo img {
         display: block; width: 100%; height: 100%; object-fit: contain;
         border-radius: 22.5%; pointer-events: none; -webkit-user-drag: none;
+        box-shadow: 0 10px 32px rgba(216,14,69,.35);
     }
     #flaynity-startup-splash .fs-word {
         left: 50%; top: 50%; white-space: nowrap; line-height: 1;
         font-family: 'Plus Jakarta Sans', -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         font-weight: 900; font-size: calc(var(--fs-L) * .74); letter-spacing: -.025em;
-        color: #0F0F0F; opacity: 0;
+        color: var(--fs-ink);
         transform: translate3d(calc(-50% + var(--fs-wx)), -50%, 0);
-        animation: fsWord 600ms cubic-bezier(.22, 1, .36, 1) 900ms both;
     }
+    #flaynity-startup-splash .fs-word i {
+        display: inline-block; font-style: normal; opacity: 0;
+        animation: fsLetter 560ms cubic-bezier(.22, 1, .36, 1) calc(850ms + var(--i) * 35ms) both;
+    }
+    #flaynity-startup-splash .fs-tag {
+        left: 50%; top: 50%; white-space: nowrap; line-height: 1; text-align: center;
+        font-family: 'Plus Jakarta Sans', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+        font-weight: 600; font-size: max(12px, calc(var(--fs-L) * .2)); letter-spacing: .04em;
+        color: var(--fs-ink);
+        transform: translate3d(-50%, calc(var(--fs-L) * .5 + 20px), 0);
+    }
+    #flaynity-startup-splash .fs-tag span {
+        display: inline-block; margin: 0 .35em; opacity: 0;
+        animation: fsTag 450ms cubic-bezier(.22, 1, .36, 1) calc(1250ms + var(--t) * 100ms) both;
+    }
+    #flaynity-startup-splash .fs-tag b { color: var(--fs-brand); font-weight: 800; }
     #flaynity-startup-splash .fs-burst {
         top: 0; right: 0; bottom: 0; left: 0; background: var(--fs-brand);
         visibility: hidden; opacity: 0;
     }
+    /* Shown only when the app needs longer than the animation */
+    #flaynity-startup-splash .fs-wait {
+        left: 50%; bottom: calc(max(24px, env(safe-area-inset-bottom, 0px)) + 12vh);
+        display: flex; gap: 8px; transform: translateX(-50%); opacity: 0; transition: opacity .3s ease;
+    }
+    #flaynity-startup-splash .fs-wait i { width: 7px; height: 7px; border-radius: 50%; background: #fff; opacity: .35; }
+    #flaynity-startup-splash.is-waiting .fs-wait { opacity: 1; }
+    #flaynity-startup-splash.is-waiting .fs-wait i { animation: fsDot 900ms ease-in-out infinite both; }
+    #flaynity-startup-splash.is-waiting .fs-wait i:nth-child(2) { animation-delay: 150ms; }
+    #flaynity-startup-splash.is-waiting .fs-wait i:nth-child(3) { animation-delay: 300ms; }
 
+    @keyframes fsGlow {
+        0%   { opacity: 0; transform: scale(.6); }
+        40%  { opacity: 1; transform: scale(1); }
+        100% { opacity: 0; transform: scale(1.25); }
+    }
     @keyframes fsWhite {
         from { opacity: 0; visibility: hidden; }
         1%   { visibility: visible; }
         to   { opacity: 1; visibility: visible; }
     }
+    @keyframes fsRing {
+        0%   { opacity: 0; transform: scale(.9); }
+        10%  { opacity: 1; transform: scale(1); }
+        65%  { opacity: 1; transform: scale(1); }
+        100% { opacity: 0; transform: scale(1.3); }
+    }
+    @keyframes fsArc { to { stroke-dashoffset: 0; } }
     @keyframes fsLogo {
-        0%   { opacity: 0; transform: translate3d(0, 0, 0) scale(.6); animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
-        43%  { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
-        50%  { opacity: 1; transform: translate3d(0, 0, 0) scale(1); animation-timing-function: cubic-bezier(.3, .8, .25, 1); }
-        100% { opacity: 1; transform: translate3d(calc(var(--fs-sx) * -1), 0, 0) scale(var(--fs-k)); }
+        0%   { opacity: 0; filter: blur(10px); transform: translate3d(0, 0, 0) scale(.6); animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
+        32%  { opacity: 1; filter: blur(0); transform: translate3d(0, 0, 0) scale(1.06); animation-timing-function: ease-in-out; }
+        43%  { opacity: 1; filter: blur(0); transform: translate3d(0, 0, 0) scale(1); }
+        50%  { opacity: 1; filter: blur(0); transform: translate3d(0, 0, 0) scale(1); animation-timing-function: cubic-bezier(.3, .8, .25, 1); }
+        100% { opacity: 1; filter: blur(0); transform: translate3d(calc(var(--fs-sx) * -1), 0, 0) scale(var(--fs-k)); }
     }
-    @keyframes fsWord {
-        from { opacity: 0; transform: translate3d(calc(-50% + var(--fs-wx) - .35em), -50%, 0) scale(.94); }
-        to   { opacity: 1; transform: translate3d(calc(-50% + var(--fs-wx)), -50%, 0) scale(1); }
+    @keyframes fsLetter {
+        from { opacity: 0; filter: blur(6px); transform: translate3d(0, .45em, 0); }
+        to   { opacity: 1; filter: blur(0);   transform: translate3d(0, 0, 0); }
     }
+    @keyframes fsTag {
+        from { opacity: 0; transform: translate3d(0, 8px, 0); }
+        to   { opacity: .6; transform: translate3d(0, 0, 0); }
+    }
+    @keyframes fsDot { 0%, 100% { opacity: .35; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-5px); } }
     @keyframes fsBurst {
         from { -webkit-clip-path: circle(0px at 50% 50%); clip-path: circle(0px at 50% 50%); }
         to   { -webkit-clip-path: circle(76% at 50% 50%); clip-path: circle(76% at 50% 50%); }
@@ -125,35 +195,42 @@
     @supports ((clip-path: circle(0px at 50% 50%)) or (-webkit-clip-path: circle(0px at 50% 50%))) {
         #flaynity-startup-splash .fs-burst {
             visibility: visible; opacity: 1;
-            animation: fsBurst 1000ms cubic-bezier(.7, 0, .2, 1) 1500ms both;
+            animation: fsBurst 850ms cubic-bezier(.7, 0, .2, 1) 1850ms both;
         }
     }
     @supports not ((clip-path: circle(0px at 50% 50%)) or (-webkit-clip-path: circle(0px at 50% 50%))) {
-        #flaynity-startup-splash .fs-burst { animation: fsBurstFade 1000ms ease-in-out 1500ms both; }
+        #flaynity-startup-splash .fs-burst { animation: fsBurstFade 850ms ease-in-out 1850ms both; }
     }
 
     #flaynity-startup-splash.is-revealing { opacity: 0; pointer-events: none; }
     #flaynity-startup-splash.is-hidden { display: none !important; }
 
     /* The timeline starts only when the logo is decoded (set by JS). */
-    #flaynity-startup-splash:not(.go) > * { animation-play-state: paused; }
+    #flaynity-startup-splash:not(.go) * { animation-play-state: paused; }
 
     @media (prefers-reduced-motion: reduce) {
         #flaynity-startup-splash { transition: none; }
+        #flaynity-startup-splash .fs-glow, #flaynity-startup-splash .fs-ring, #flaynity-startup-splash .fs-burst { display: none; }
         #flaynity-startup-splash .fs-white { animation: none; opacity: 1; visibility: visible; }
         #flaynity-startup-splash .fs-logo { animation: none; opacity: 1; transform: translate3d(calc(var(--fs-sx) * -1), 0, 0) scale(var(--fs-k)); }
-        #flaynity-startup-splash .fs-word { animation: none; opacity: 1; }
-        #flaynity-startup-splash .fs-burst { display: none; }
+        #flaynity-startup-splash .fs-word i { animation: none; opacity: 1; }
+        #flaynity-startup-splash .fs-tag span { animation: none; opacity: .6; }
+        #flaynity-startup-splash.is-waiting .fs-wait i { animation: none; opacity: .8; }
         #flaynity-startup-splash:not(.go) .fs-logo,
-        #flaynity-startup-splash:not(.go) .fs-word { opacity: 0; }
+        #flaynity-startup-splash:not(.go) .fs-word,
+        #flaynity-startup-splash:not(.go) .fs-tag { opacity: 0; }
     }
 </style>
 
 <div id="flaynity-startup-splash" aria-hidden="true">
+    <div class="fs-glow"></div>
     <div class="fs-white"></div>
-    <div class="fs-word">Flaynity</div>
+    <div class="fs-ring"><svg viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="48"></circle><circle class="arc" cx="50" cy="50" r="48" pathLength="100"></circle></svg></div>
+    <div class="fs-word"><i style="--i:0">F</i><i style="--i:1">l</i><i style="--i:2">a</i><i style="--i:3">y</i><i style="--i:4">n</i><i style="--i:5">i</i><i style="--i:6">t</i><i style="--i:7">y</i></div>
+    <div class="fs-tag"><span style="--t:0">Connect<b>.</b></span><span style="--t:1">Share<b>.</b></span><span style="--t:2">Grow<b>.</b></span></div>
     <div class="fs-logo"><img src="assets/flaynity-logo.png" alt="" draggable="false" decoding="sync"></div>
     <div class="fs-burst"></div>
+    <div class="fs-wait"><i></i><i></i><i></i></div>
 </div>
 <script>
 (function () {
@@ -164,14 +241,16 @@
     var splash = document.getElementById('flaynity-startup-splash');
     if (!splash) return;
 
-    var T_STAGES = 2500;      // full animation length
+    var T_STAGES = 2700;      // full animation length
     var T_REDUCED = 700;      // reduced-motion: short static brand screen
     var T_MAX = 6000;         // never keep the user waiting longer than this
     var FADE_OUT = 400;       // reveal fade + safety margin
 
     var t0 = Date.now(), startAt = 0;
     var started = false, finished = false, animDone = false, domReady = false;
-    var reduced = false;
+    var reduced = false, darkPref = false;
+    try { darkPref = localStorage.getItem('flaynity-theme-pref') === 'dark'; if (darkPref) splash.classList.add('fs-dark'); } catch (e) {}
+    var surfaceColor = darkPref ? '#161618' : '#FFFFFF';
     try { reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
 
     var logoBox = splash.querySelector('.fs-logo');
@@ -229,6 +308,7 @@
         if (now - t0 >= T_MAX) { reveal(); return; }      // safety timeout (e.g. loader error page)
         if (started && !animDone && now - startAt >= (reduced ? T_REDUCED : T_STAGES + 150)) animDone = true;
         if (animDone && domReady && surfaceReady()) reveal();
+        else if (animDone) splash.classList.add('is-waiting');   // app needs longer: show loading dots
     }
     var poll = setInterval(evaluate, 80);
 
@@ -240,10 +320,10 @@
         splash.classList.add('go');
         setTheme('#0F0F0F');
         if (!reduced) {
-            setTimeout(function () { setTheme('#FFFFFF'); }, 650);
-            setTimeout(function () { setTheme('#D80E45'); }, 2000);
+            setTimeout(function () { setTheme(surfaceColor); }, 650);
+            setTimeout(function () { setTheme('#D80E45'); }, 2050);
         } else {
-            setTheme('#FFFFFF');
+            setTheme(surfaceColor);
         }
     }
 

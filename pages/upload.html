@@ -312,14 +312,13 @@
 .mp-album{flex:none;align-self:flex-start;margin-top:calc(var(--u)*48);height:calc(var(--u)*108);padding:0 0 0 calc(var(--u)*48);display:flex;align-items:center;background:none;border:0;color:#fff;font-size:calc(var(--u)*48);font-weight:700}
 .mp-album svg{width:calc(var(--u)*60);height:calc(var(--u)*60);margin-left:calc(var(--u)*3)}
 .mp-tabs{flex:none;display:flex;margin-top:calc(var(--u)*30);height:calc(var(--u)*118)}
-.mp-tab{flex:1;position:relative;background:none;border:0;padding:calc(var(--u)*28) 0 0;color:#fff;font-size:calc(var(--u)*40);line-height:calc(var(--u)*48);font-weight:600;text-align:center;display:block}
+.mp-tab{flex:0 0 33.3333%;position:relative;background:none;border:0;padding:calc(var(--u)*28) 0 0;color:#fff;font-size:calc(var(--u)*40);line-height:calc(var(--u)*48);font-weight:600;text-align:center;display:block}
 .mp-tab.on{font-weight:700}
 .mp-tab.on::after{content:"";position:absolute;left:calc(var(--u)*35);right:calc(var(--u)*35);bottom:0;height:calc(var(--u)*5);background:#fff}
 .mp-body{position:relative;flex:1;min-height:0;display:flex}
-.mp-grid{flex:1;overflow-y:auto;overscroll-behavior:contain;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:calc(var(--u)*2);align-content:start;padding-bottom:env(safe-area-inset-bottom,0px);scrollbar-width:none}
+.mp-grid{flex:1;overflow-y:auto;overscroll-behavior:contain;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:calc(var(--u)*2);grid-auto-rows:calc((100vw - var(--u)*4) / 3);align-content:start;padding-bottom:env(safe-area-inset-bottom,0px);scrollbar-width:none}
 .mp-grid::-webkit-scrollbar{display:none}
 .mp-cell{position:relative;overflow:hidden;background:#1a1a1a}
-.mp-cell::before{content:"";display:block;padding-top:100%}
 .mp-cell img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;-webkit-user-drag:none;pointer-events:none}
 .mp-cell:active img{opacity:.75}
 .mp-dur{position:absolute;right:calc(var(--u)*23);bottom:calc(var(--u)*14);font-size:calc(var(--u)*36);line-height:1.2;font-weight:600;color:rgba(255,255,255,.93);text-shadow:0 1px 3px rgba(0,0,0,.75);font-variant-numeric:tabular-nums;pointer-events:none}

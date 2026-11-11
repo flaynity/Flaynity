@@ -6429,6 +6429,9 @@ function __flaynityOpenPremiumService(serviceId) {
 // =========================================================
 // HIGH PERFORMANCE UNIVERSAL BACK NAVIGATION ENGINE
 // =========================================================
+// Let AppNavigation restore the exact feed position instead of the WebView's
+// automatic history restoration when a player page is closed.
+try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
 const AppNavigation = {
     stack: [{ type: 'tab', id: 'home' }],
     _mem: {},
@@ -6479,6 +6482,8 @@ const AppNavigation = {
     },
 
     pushTab: function(tabId) {
+        // Capture the currently visible feed before changing the navigation stack.
+        try { this._saveScroll(); } catch (e) {}
         const current = this.current();
         if (current && current.type === 'tab' && current.id === tabId) {
             return;
@@ -6489,6 +6494,8 @@ const AppNavigation = {
     },
 
     pushPage: function(pageId) {
+        // Save the source tab/page before the player or another full page covers it.
+        try { this._saveScroll(); } catch (e) {}
         const current = this.current();
         if (current && current.type === 'page' && current.id === pageId) {
             return;
@@ -6699,14 +6706,20 @@ const AppNavigation = {
         const rec = this._mem[newViewKey];
         if (rec) {
             const apply = () => {
-                if (!activePage && rec.win != null) { try { window.scrollTo(0, rec.win); } catch (e) {} }
+                if (!activePage && rec.win != null) {
+                    const y = Math.max(0, Number(rec.win) || 0);
+                    try { window.scrollTo(0, y); } catch (e) {}
+                    try { document.documentElement.scrollTop = y; } catch (e) {}
+                    try { document.body.scrollTop = y; } catch (e) {}
+                }
                 rec.els.forEach(([el, top]) => {
                     if (el.isConnected && el.getClientRects().length && Math.abs(el.scrollTop - top) > 1) el.scrollTop = top;
                 });
             };
             apply();
-            requestAnimationFrame(apply);
+            requestAnimationFrame(() => requestAnimationFrame(apply));
             setTimeout(apply, 120);
+            setTimeout(apply, 350);
         }
     },
 

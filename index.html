@@ -20,6 +20,8 @@
 <meta name="google-adsense-account" content="ca-pub-3200255969875766">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style id="flaynity-launch-base">html{background:#0F0F0F}</style>
+<link rel="preload" as="image" href="assets/flaynity-logo.png">
 <title>Flaynity</title>
 <meta name="theme-color" content="#FFFFFF" id="flaynity-theme-color">
 <meta name="msapplication-navbutton-color" content="#FFFFFF" id="flaynity-ms-theme-color">
@@ -40,313 +42,243 @@
 </head>
 <body>
 
-<!-- =====================================================================
-     FLAYNITY APP OPEN ANIMATION  (replaces the old image-based startup splash)
-     Same element id (#flaynity-startup-splash), same ".is-hidden" class and the same
-     window.__flaynityHideStartupSplash / __flaynitySplashHideAt hooks as before, so the
-     onboarding gate below and app.js keep working without any change.
-     Stage 1  0-650ms     dark #0F0F0F, logo scales/fades in (centered, rounded square)
-     Stage 2  650-1500ms  background dark -> white, logo shrinks left, "Flaynity" appears right
-     Stage 3  1500-2500ms brand-colour circle expands from the centre and covers the screen
-     Then the overlay is removed and the app underneath is revealed.
-     ===================================================================== -->
 <style id="flaynity-startup-splash-style">
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
-    /* keeps the canvas dark while the splash runs (class is removed when the splash ends) */
-    html.fl-splash-active { background: #0F0F0F; }
+</style>
 
+<!-- ===== Flaynity App Open Animation (2.5s) =====
+     Stage 1  0-650ms     dark #0F0F0F, logo scales + fades in at the exact centre
+     Stage 2  650-1500ms  background -> white, logo moves left, "Flaynity" appears on the right
+     Stage 3  1500-2500ms circular brand-colour expansion from the centre (clip-path)
+     Then the overlay holds until Home is really ready (max 6s) and fades out. -->
+<style id="flaynity-launch-style">
     #flaynity-startup-splash {
-        position: fixed; top: 0; right: 0; bottom: 0; left: 0; width: 100%; height: 100%;
-        z-index: 2147483647; background: #0F0F0F; overflow: hidden; display: block;
-        opacity: 1; visibility: visible; pointer-events: auto; touch-action: none;
-        -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
-        transition: opacity .2s ease;
-        /* design tokens (sizes/offsets are refined by JS for the real screen size) */
-        --fs-brand: #D80E45;          /* Flaynity primary colour (same as --primary in home.html) */
-        --fs-logo: 108px;
-        --fs-s2: .58;
-        --fs-lx: 0px; --fs-nx: 0px; --fs-n0: 0px;
-        --fs-d: 1200px; --fs-s0: .05;
+        --fs-brand: #D80E45;           /* same as --primary in home.html */
+        --fs-dark: #0F0F0F;
+        --fs-LB: clamp(96px, 28vmin, 140px);   /* logo size in stage 1 */
+        --fs-k: .55;                           /* logo scale used in the brand lockup */
+        --fs-L: calc(var(--fs-LB) * var(--fs-k));
+        --fs-G: calc(var(--fs-L) * .22);
+        --fs-wx: calc((var(--fs-L) + var(--fs-G)) / 2);
+        --fs-sx: calc(var(--fs-L) * 1.7);      /* fallback, JS measures the exact value */
+        position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+        z-index: 2147483647; background: var(--fs-dark);
+        overflow: hidden; opacity: 1; visibility: visible;
+        pointer-events: auto; touch-action: none;
+        -webkit-user-select: none; user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        transition: opacity .26s ease .06s;
     }
-    #flaynity-startup-splash.fs-fade { opacity: 0; }
-    #flaynity-startup-splash.is-hidden { display: none !important; }
+    #flaynity-startup-splash > * { position: absolute; margin: 0; }
 
     #flaynity-startup-splash .fs-white {
-        position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: #FFFFFF; opacity: 0;
+        top: 0; right: 0; bottom: 0; left: 0; background: #FFFFFF;
+        opacity: 0; visibility: hidden;
+        animation: fsWhite 450ms cubic-bezier(.4, 0, .2, 1) 650ms both;
     }
     #flaynity-startup-splash .fs-logo {
-        position: absolute; left: 50%; top: 50%;
-        width: var(--fs-logo); height: var(--fs-logo);
-        border-radius: 22.5%; overflow: hidden; opacity: 0; z-index: 2;
-        transform: translate3d(-50%, -50%, 0) scale(.62);
+        left: 50%; top: 50%; width: var(--fs-LB); height: var(--fs-LB);
+        margin: calc(var(--fs-LB) / -2) 0 0 calc(var(--fs-LB) / -2);
+        opacity: 0; transform: translate3d(0, 0, 0) scale(.6);
+        animation: fsLogo 1300ms linear 0ms both;
     }
     #flaynity-startup-splash .fs-logo img {
         display: block; width: 100%; height: 100%; object-fit: contain;
-        pointer-events: none; -webkit-user-drag: none;
+        border-radius: 22.5%; pointer-events: none; -webkit-user-drag: none;
     }
-    #flaynity-startup-splash .fs-name {
-        position: absolute; left: 50%; top: 50%; margin: 0; padding: 0; white-space: nowrap; line-height: 1;
+    #flaynity-startup-splash .fs-word {
+        left: 50%; top: 50%; white-space: nowrap; line-height: 1;
         font-family: 'Plus Jakarta Sans', -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-        font-weight: 900; font-size: 40px; letter-spacing: -0.5px; color: #111111; opacity: 0; z-index: 1;
-        transform: translate3d(-50%, -50%, 0) scale(.94);
+        font-weight: 900; font-size: calc(var(--fs-L) * .74); letter-spacing: -.025em;
+        color: #0F0F0F; opacity: 0;
+        transform: translate3d(calc(-50% + var(--fs-wx)), -50%, 0);
+        animation: fsWord 600ms cubic-bezier(.22, 1, .36, 1) 900ms both;
     }
-    #flaynity-startup-splash.fs-no-logo .fs-logo { display: none; }
-    #flaynity-startup-splash .fs-circle {
-        position: absolute; left: 50%; top: 50%;
-        width: var(--fs-d); height: var(--fs-d); margin: 0;
-        border-radius: 50%; background: var(--fs-brand); visibility: hidden; z-index: 3;   /* above logo + name: it covers them as it grows */
-        transform: translate3d(-50%, -50%, 0) scale(var(--fs-s0));
-    }
-
-    /* ---- Stage 1 + 2 : one 1500ms keyframe set per element (compositor-driven, no JS needed) ---- */
-    #flaynity-startup-splash.fl-play .fs-white { animation: flsWhite .45s cubic-bezier(.4, 0, .2, 1) .65s forwards; }
-    #flaynity-startup-splash.fl-play .fs-logo  { animation: flsLogo 1.5s linear forwards; }
-    #flaynity-startup-splash.fl-play .fs-name  { animation: flsNameMove 1.5s linear forwards, flsNameFade 1.5s linear forwards; }
-    @keyframes flsWhite { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes flsLogo {
-        0%      { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(.62); animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
-        43.33%  { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(1);   animation-timing-function: cubic-bezier(.65, 0, .35, 1); }
-        90%, 100% { opacity: 1; transform: translate3d(calc(-50% + var(--fs-lx)), -50%, 0) scale(var(--fs-s2)); }
-    }
-    /* the brand name slides out from behind the logo while the logo moves left */
-    @keyframes flsNameMove {
-        0%, 43.33% { transform: translate3d(calc(-50% + var(--fs-n0)), -50%, 0) scale(.94); animation-timing-function: cubic-bezier(.65, 0, .35, 1); }
-        90%, 100%  { transform: translate3d(calc(-50% + var(--fs-nx)), -50%, 0) scale(1); }
-    }
-    @keyframes flsNameFade {
-        0%, 50% { opacity: 0; animation-timing-function: cubic-bezier(.3, 0, .2, 1); }
-        86%, 100% { opacity: 1; }
+    #flaynity-startup-splash .fs-burst {
+        top: 0; right: 0; bottom: 0; left: 0; background: var(--fs-brand);
+        visibility: hidden; opacity: 0;
     }
 
-    /* ---- Stage 3 : circular colour expansion (transform: scale, GPU friendly) ---- */
-    #flaynity-startup-splash.fl-expand .fs-circle {
-        visibility: visible;
-        animation: flsExpand 1s cubic-bezier(.65, 0, .25, 1) forwards;
+    @keyframes fsWhite {
+        from { opacity: 0; visibility: hidden; }
+        1%   { visibility: visible; }
+        to   { opacity: 1; visibility: visible; }
     }
-    @keyframes flsExpand {
-        from { transform: translate3d(-50%, -50%, 0) scale(var(--fs-s0)); }
-        to   { transform: translate3d(-50%, -50%, 0) scale(1); }
+    @keyframes fsLogo {
+        0%   { opacity: 0; transform: translate3d(0, 0, 0) scale(.6); animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
+        43%  { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+        50%  { opacity: 1; transform: translate3d(0, 0, 0) scale(1); animation-timing-function: cubic-bezier(.3, .8, .25, 1); }
+        100% { opacity: 1; transform: translate3d(calc(var(--fs-sx) * -1), 0, 0) scale(var(--fs-k)); }
+    }
+    @keyframes fsWord {
+        from { opacity: 0; transform: translate3d(calc(-50% + var(--fs-wx) - .35em), -50%, 0) scale(.94); }
+        to   { opacity: 1; transform: translate3d(calc(-50% + var(--fs-wx)), -50%, 0) scale(1); }
+    }
+    @keyframes fsBurst {
+        from { -webkit-clip-path: circle(0px at 50% 50%); clip-path: circle(0px at 50% 50%); }
+        to   { -webkit-clip-path: circle(76% at 50% 50%); clip-path: circle(76% at 50% 50%); }
+    }
+    @keyframes fsBurstFade {
+        from { opacity: 0; visibility: visible; }
+        to   { opacity: 1; visibility: visible; }
+    }
+    @supports ((clip-path: circle(0px at 50% 50%)) or (-webkit-clip-path: circle(0px at 50% 50%))) {
+        #flaynity-startup-splash .fs-burst {
+            visibility: visible; opacity: 1;
+            animation: fsBurst 1000ms cubic-bezier(.7, 0, .2, 1) 1500ms both;
+        }
+    }
+    @supports not ((clip-path: circle(0px at 50% 50%)) or (-webkit-clip-path: circle(0px at 50% 50%))) {
+        #flaynity-startup-splash .fs-burst { animation: fsBurstFade 1000ms ease-in-out 1500ms both; }
     }
 
-    /* ---- Reduced motion: static brand lock-up, then a short fade (no movement) ---- */
+    #flaynity-startup-splash.is-revealing { opacity: 0; pointer-events: none; }
+    #flaynity-startup-splash.is-hidden { display: none !important; }
+
+    /* The timeline starts only when the logo is decoded (set by JS). */
+    #flaynity-startup-splash:not(.go) > * { animation-play-state: paused; }
+
     @media (prefers-reduced-motion: reduce) {
-        #flaynity-startup-splash { transition-duration: .15s; }
-        #flaynity-startup-splash.fl-play .fs-white { animation: none; opacity: 1; }
-        #flaynity-startup-splash.fl-play .fs-logo {
-            animation: none; opacity: 1; transform: translate3d(calc(-50% + var(--fs-lx)), -50%, 0) scale(var(--fs-s2));
-        }
-        #flaynity-startup-splash.fl-play .fs-name {
-            animation: none; opacity: 1; transform: translate3d(calc(-50% + var(--fs-nx)), -50%, 0) scale(1);
-        }
-        #flaynity-startup-splash .fs-circle { display: none; }
+        #flaynity-startup-splash { transition: none; }
+        #flaynity-startup-splash .fs-white { animation: none; opacity: 1; visibility: visible; }
+        #flaynity-startup-splash .fs-logo { animation: none; opacity: 1; transform: translate3d(calc(var(--fs-sx) * -1), 0, 0) scale(var(--fs-k)); }
+        #flaynity-startup-splash .fs-word { animation: none; opacity: 1; }
+        #flaynity-startup-splash .fs-burst { display: none; }
+        #flaynity-startup-splash:not(.go) .fs-logo,
+        #flaynity-startup-splash:not(.go) .fs-word { opacity: 0; }
     }
 </style>
 
 <div id="flaynity-startup-splash" aria-hidden="true">
     <div class="fs-white"></div>
-    <div class="fs-logo"><img id="flaynity-startup-splash-logo" src="assets/flaynity-logo.png" alt="" draggable="false" decoding="sync"></div>
-    <div class="fs-name" id="flaynity-startup-splash-name">Flaynity</div>
-    <div class="fs-circle"></div>
+    <div class="fs-word">Flaynity</div>
+    <div class="fs-logo"><img src="assets/flaynity-logo.png" alt="" draggable="false" decoding="sync"></div>
+    <div class="fs-burst"></div>
 </div>
 <script>
 (function () {
     'use strict';
-    // Never run the animation twice in the same page load.
-    if (window.__flaynitySplashStarted) return;
-    window.__flaynitySplashStarted = true;
+    if (window.__flaynityLaunchAnimation) return;      // never run twice
+    window.__flaynityLaunchAnimation = true;
 
     var splash = document.getElementById('flaynity-startup-splash');
     if (!splash) return;
-    var root = document.documentElement;
-    var styleEl = document.getElementById('flaynity-startup-splash-style');
-    var logoImg = document.getElementById('flaynity-startup-splash-logo');
-    var nameEl = document.getElementById('flaynity-startup-splash-name');
-    var circle = splash.querySelector('.fs-circle');
 
-    var BRAND_END = 1500;      // stage 2 ends / stage 3 may start
-    var EXPAND_MS = 1000;      // stage 3 length  (1500 -> 2500)
-    var READY_WAIT_MAX = 4500; // if the app is not ready by then, expand anyway
-    var HARD_CAP = 8000;       // never keep the user on the splash longer than this
-    var FADE_MS = 200;
-    var S2 = 0.58;             // logo scale in stage 2
+    var T_STAGES = 2500;      // full animation length
+    var T_REDUCED = 700;      // reduced-motion: short static brand screen
+    var T_MAX = 6000;         // never keep the user waiting longer than this
+    var FADE_OUT = 400;       // reveal fade + safety margin
 
-    var reduce = false;
-    try { reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+    var t0 = Date.now(), startAt = 0;
+    var started = false, finished = false, animDone = false, domReady = false;
+    var reduced = false;
+    try { reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
 
-    var t0 = 0, started = false, covered = false, done = false;
-    var now = function () { return (window.performance && performance.now) ? performance.now() : Date.now(); };
+    var logoBox = splash.querySelector('.fs-logo');
+    var logoImg = splash.querySelector('.fs-logo img');
+    var word = splash.querySelector('.fs-word');
+    var burst = splash.querySelector('.fs-burst');
 
-    root.classList.add('fl-splash-active');
+    var themeMeta = document.getElementById('flaynity-theme-color');
+    var themeOriginal = themeMeta ? themeMeta.getAttribute('content') : null;
+    function setTheme(c) { try { if (themeMeta && !finished) themeMeta.setAttribute('content', c); } catch (e) {} }
 
-    // ---- lock the page underneath: no taps, no scroll, no pull-to-refresh while the splash is up ----
-    function block(e) { try { e.preventDefault(); } catch (err) {} }
-    try {
-        splash.addEventListener('touchmove', block, { passive: false });
-        splash.addEventListener('wheel', block, { passive: false });
-        splash.addEventListener('contextmenu', block);
-    } catch (e) {}
-
-    // ---- "is the real app visible underneath?" (signed in / signed out / offline cached / gate screens) ----
-    function isReady() {
+    // Exact horizontal distance between the centred logo and its place in the lockup.
+    function measure() {
         try {
-            if (window.__flaynityOfflineSessionActive || window.__flaynityNeedsChannelBoot) return true;
-            var b = document.body;
-            if (b && b.classList.contains('auth-active')) return true;          // signed out, verify-code gate, banned
+            var LB = logoBox.offsetWidth, W = word.offsetWidth;
+            if (!LB || !W) return;
+            var cs = window.getComputedStyle(splash);
+            var k = parseFloat(cs.getPropertyValue('--fs-k')) || 0.55;
+            var L = LB * k, G = L * 0.22;
+            splash.style.setProperty('--fs-sx', ((G + W) / 2) + 'px');
+        } catch (e) {}
+    }
+
+    // Read-only check that the real app surface is on screen (Home, Onboarding or an auth state).
+    function surfaceReady() {
+        try {
+            if (window.__flaynityNeedsChannelBoot === true) return true;
+            if (document.body && document.body.classList.contains('auth-active')) return true;
             var a = document.getElementById('app-screen');
-            if (a && window.getComputedStyle(a).display !== 'none') return true; // signed-in app (or offline session)
+            if (a && window.getComputedStyle(a).display !== 'none') return true;
         } catch (e) {}
         return false;
     }
-    function appVisible() {
-        try {
-            var a = document.getElementById('app-screen');
-            return !!(a && window.getComputedStyle(a).display !== 'none');
-        } catch (e) { return false; }
+
+    function hideNow() {
+        try { splash.classList.add('is-hidden'); } catch (e) {}
+        try { if (splash.parentNode) splash.parentNode.removeChild(splash); } catch (e) {}
+        ['flaynity-launch-style', 'flaynity-launch-base'].forEach(function (id) {
+            try { var n = document.getElementById(id); if (n && n.parentNode) n.parentNode.removeChild(n); } catch (e) {}
+        });
     }
 
-    // ---- sizes for this screen (all values are px, so no modern-CSS functions are needed) ----
-    function layout() {
-        try {
-            var w = window.innerWidth || root.clientWidth || 360;
-            var h = window.innerHeight || root.clientHeight || 640;
-            var hasLogo = !splash.classList.contains('fs-no-logo');
-            var logo = Math.round(Math.max(84, Math.min(120, Math.min(w, h) * 0.3)));
-            var scaled = logo * S2;
-            var gap = Math.round(scaled * 0.24);
-            var fs = Math.max(26, Math.round(scaled * 0.68));
-            nameEl.style.fontSize = fs + 'px';
-            var nameW = nameEl.offsetWidth;
-            var total = hasLogo ? scaled + gap + nameW : nameW;
-            var maxW = w * 0.88;
-            if (total > maxW) {                                   // very narrow screens: shrink the text a bit
-                fs = Math.max(20, Math.floor(fs * maxW / total));
-                nameEl.style.fontSize = fs + 'px';
-                nameW = nameEl.offsetWidth;
-                total = hasLogo ? scaled + gap + nameW : nameW;
-            }
-            var st = splash.style;
-            st.setProperty('--fs-logo', logo + 'px');
-            st.setProperty('--fs-s2', String(S2));
-            st.setProperty('--fs-lx', (hasLogo ? (-total + scaled) / 2 : 0).toFixed(2) + 'px');
-            st.setProperty('--fs-nx', (hasLogo ? (total - nameW) / 2 : 0).toFixed(2) + 'px');
-            st.setProperty('--fs-n0', (hasLogo ? nameW / 2 : 0).toFixed(2) + 'px');   // name starts hidden behind the logo
-        } catch (e) {}
-    }
-    function layoutCircle() {
-        try {
-            var w = window.innerWidth || root.clientWidth || 360;
-            var h = window.innerHeight || root.clientHeight || 640;
-            var d = Math.ceil(Math.sqrt(w * w + h * h)) + 4;      // reaches the farthest corner from the centre
-            splash.style.setProperty('--fs-d', d + 'px');
-            splash.style.setProperty('--fs-s0', String(Math.max(0.02, 56 / d)));
-        } catch (e) {}
-    }
-
-    // ---- finish ----
-    function cleanup() {
-        root.classList.remove('fl-splash-active');
-        try {
-            splash.removeEventListener('touchmove', block);
-            splash.removeEventListener('wheel', block);
-            splash.removeEventListener('contextmenu', block);
-        } catch (e) {}
-        setTimeout(function () {
-            try { if (splash.parentNode) splash.parentNode.removeChild(splash); } catch (e) {}
-            try { if (styleEl && styleEl.parentNode) styleEl.parentNode.removeChild(styleEl); } catch (e) {}
-        }, 150);
-    }
-    function hide() {
-        if (done) return;
-        done = true;
-        splash.classList.add('is-hidden');   // the onboarding gate below waits for exactly this class
-        cleanup();
-    }
     function reveal() {
-        if (done) return;
-        if (appVisible()) {                  // signed-in app: short cross-fade from the brand colour into the app
-            splash.classList.add('fs-fade');
-            setTimeout(hide, FADE_MS + 30);
-        } else {                             // onboarding / auth gate is revealed by its own code the moment we hide
-            hide();
-        }
+        if (finished) return;
+        finished = true;
+        clearInterval(poll);
+        try { if (themeMeta && themeOriginal !== null) themeMeta.setAttribute('content', themeOriginal); } catch (e) {}
+        splash.classList.add('is-revealing');            // fades out; also lets Onboarding mount underneath
+        setTimeout(hideNow, reduced ? 0 : FADE_OUT);
     }
 
-    // ---- stage 3 ----
-    function afterCover() {
-        if (covered) return;
-        covered = true;
-        (function waitUnderlying() {
-            if (done) return;
-            if (isReady() || now() - t0 >= HARD_CAP) reveal();
-            else setTimeout(waitUnderlying, 50);
-        })();
+    function evaluate() {
+        if (finished) return;
+        var now = Date.now();
+        if (now - t0 >= T_MAX) { reveal(); return; }      // safety timeout (e.g. loader error page)
+        if (started && !animDone && now - startAt >= (reduced ? T_REDUCED : T_STAGES + 150)) animDone = true;
+        if (animDone && domReady && surfaceReady()) reveal();
     }
-    function startExpand() {
-        if (done) return;
-        layoutCircle();
-        splash.classList.add('fl-expand');
-        try { circle.addEventListener('animationend', afterCover); } catch (e) {}
-        setTimeout(afterCover, EXPAND_MS + 60);
-    }
-    function afterBrand() {
-        (function waitReady() {
-            if (done) return;
-            if (isReady() || now() - t0 >= READY_WAIT_MAX) startExpand();
-            else setTimeout(waitReady, 50);
-        })();
-    }
+    var poll = setInterval(evaluate, 80);
 
-    // ---- start ----
-    function start() {
+    function go() {
         if (started) return;
         started = true;
-        layout();
-        t0 = now();
-        splash.classList.add('fl-play');
-        if (reduce) {
-            setTimeout(function () {
-                (function waitReduced() {
-                    if (done) return;
-                    if (isReady() || now() - t0 >= READY_WAIT_MAX) reveal();
-                    else setTimeout(waitReduced, 50);
-                })();
-            }, 450);
+        startAt = Date.now();
+        measure();
+        splash.classList.add('go');
+        setTheme('#0F0F0F');
+        if (!reduced) {
+            setTimeout(function () { setTheme('#FFFFFF'); }, 650);
+            setTimeout(function () { setTheme('#D80E45'); }, 2000);
         } else {
-            setTimeout(afterBrand, BRAND_END);
+            setTheme('#FFFFFF');
         }
     }
 
     try {
-        // Logo missing? Keep the brand reveal with the name only (no substitute logo is ever drawn).
-        if (logoImg) {
-            logoImg.addEventListener('error', function () { splash.classList.add('fs-no-logo'); layout(); });
-            if (logoImg.complete && logoImg.naturalWidth === 0 && logoImg.getAttribute('src')) splash.classList.add('fs-no-logo');
-        }
-        layout();
-        // Re-measure once the brand font is available so the lock-up stays perfectly centred.
-        try {
-            if (document.fonts && document.fonts.load) {
-                document.fonts.load('900 40px "Plus Jakarta Sans"').then(layout, function () {});
-                if (document.fonts.ready) document.fonts.ready.then(layout, function () {});
-            }
-        } catch (e) {}
-        // First frame of the dark splash is painted before the timeline starts (no jump, no flash).
-        if (window.requestAnimationFrame) {
-            window.requestAnimationFrame(function () { window.requestAnimationFrame(start); });
-            setTimeout(start, 250);          // safety net if rAF is throttled while the WebView is paused
-        } else {
-            setTimeout(start, 30);
-        }
-    } catch (e) {
-        // Any unexpected error: never leave the user stuck behind the overlay.
-        setTimeout(hide, 800);
-    }
-    // Absolute watchdog.
-    setTimeout(function () { if (!done) hide(); }, HARD_CAP + 2000);
+        if (burst) burst.addEventListener('animationend', function () { animDone = true; evaluate(); });
+        splash.addEventListener('touchmove', function (e) { e.preventDefault(); }, { passive: false });
 
-    // ---- compatibility hooks used by the existing code (app.js calls __flaynityHideStartupSplash) ----
-    window.__flaynitySplashHideAt = Date.now() + BRAND_END + EXPAND_MS;
-    window.__flaynityHideStartupSplash = function () { /* timing is owned by the animation above */ };
+        measure();
+        window.addEventListener('resize', measure);
+        window.addEventListener('orientationchange', measure);
+        if (document.fonts) {
+            if (document.fonts.ready) document.fonts.ready.then(measure);
+            if (document.fonts.load) document.fonts.load('900 1em "Plus Jakarta Sans"').then(measure, function () {});
+        }
+        setTimeout(measure, 400);
+        setTimeout(measure, 620);
+
+        // Start the timeline as soon as the logo is decoded (or failed / 300ms passed).
+        var once = function () { go(); };
+        if (logoImg && logoImg.complete) {
+            if (logoImg.decode) logoImg.decode().then(once, once); else once();
+        } else if (logoImg) {
+            logoImg.addEventListener('load', once);
+            logoImg.addEventListener('error', once);
+        } else { once(); }
+        setTimeout(once, 300);
+
+        window.addEventListener('flaynity-dom-ready', function () { domReady = true; evaluate(); });
+    } catch (err) {
+        // Never block the app because of the animation.
+        finished = true; clearInterval(poll); hideNow();
+    }
+
+    // Kept for app.js: it calls this when its startup code has run. It only re-checks readiness.
+    window.__flaynityHideStartupSplash = function () { try { evaluate(); } catch (e) {} };
 })();
 </script>
 
@@ -495,8 +427,8 @@
     }
     async function show() {
         pendingShow = true;
-        // Never reveal onboarding underneath the startup splash.
-        while (splash && !splash.classList.contains('is-hidden')) {
+        // Never reveal onboarding underneath the startup splash (it may mount while the splash fades out).
+        while (splash && !splash.classList.contains('is-hidden') && !splash.classList.contains('is-revealing')) {
             await new Promise(function (resolve) { setTimeout(resolve, 60); });
         }
         await preloadPromise;

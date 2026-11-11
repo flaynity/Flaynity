@@ -581,7 +581,7 @@ html[data-theme="dark"] #media-picker{--bg:#0f0f0f;--fg:#ffffff;--pill:#2a2a2a;-
         <div class="ce-rord" id="ce-rord"></div>
     </div>
     <button class="ce-vol" id="ce-vol" onclick="ceToggleMute()" aria-label="Original sound"></button>
-    <button class="ce-plus" onclick="document.getElementById('ce-in-video').click()" aria-label="Add clip"><svg viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg></button>
+    <button class="ce-plus" onclick="openMediaPicker('ed-video')" aria-label="Add clip"><svg viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg></button>
 
     <div class="ce-bar" id="ce-bar"></div>
 
@@ -627,7 +627,7 @@ html[data-theme="dark"] #media-picker{--bg:#0f0f0f;--fg:#ffffff;--pill:#2a2a2a;-
     <div style="flex: 1; overflow-y: auto; padding: 20px;">
         <div style="width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; position: relative; overflow: hidden; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
             <img id="vd-thumb" src="" style="width: 100%; height: 100%; object-fit: cover;" />
-            <button onclick="document.getElementById('custom-thumb-input').click()" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 8px 16px; border-radius: 12px; border: none; font-size: 0.85rem; font-weight: 800; cursor: pointer; backdrop-filter: blur(4px);"><i class="fas fa-image"></i> Custom Thumbnail</button>
+            <button onclick="openMediaPicker('thumb')" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 8px 16px; border-radius: 12px; border: none; font-size: 0.85rem; font-weight: 800; cursor: pointer; backdrop-filter: blur(4px);"><i class="fas fa-image"></i> Custom Thumbnail</button>
         </div>
         
         <div class="form-group">
@@ -673,7 +673,7 @@ html[data-theme="dark"] #media-picker{--bg:#0f0f0f;--fg:#ffffff;--pill:#2a2a2a;-
         <div style="display: flex; gap: 16px; margin-bottom: 24px;">
             <div style="width: 100px; aspect-ratio: 9/16; background: #000; border-radius: 12px; position: relative; overflow: hidden; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                 <img id="sd-thumb" src="" style="width: 100%; height: 100%; object-fit: cover;" />
-                <button onclick="document.getElementById('custom-thumb-input').click()" style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.6); color: white; padding: 6px 8px; border-radius: 8px; border: none; font-size: 0.75rem; cursor: pointer;"><i class="fas fa-image"></i> Custom</button>
+                <button onclick="openMediaPicker('thumb')" style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.6); color: white; padding: 6px 8px; border-radius: 8px; border: none; font-size: 0.75rem; cursor: pointer;"><i class="fas fa-image"></i> Custom</button>
             </div>
             
             <div style="flex: 1; position: relative;">
@@ -1347,8 +1347,8 @@ function act(f){switch(f){
  case 'sound':openSheet('sound');break;
  case 'text':askText('Add text','',function(t){addItem({type:'text',text:t})});break;
  case 'caption':askText('Add caption','',function(t){addItem({type:'text',text:t,y:82,size:6,bg:true,dur:Math.max(1,Math.min(4,total()-T))})});break;
- case 'overlay':$('ce-in-image').click();break;
- case 'replace':$('ce-in-rpl').click();break;
+ case 'overlay':openMediaPicker('ed-image');break;
+ case 'replace':openMediaPicker('ed-rpl');break;
  case 'crop':case 'opacity':case 'anim':case 'cutout':case 'bg':case 'mask':case 'retouch':case 'nr':openSheet(f);break;
  case 'copy':var ci2=tgt(),cc=JSON.parse(JSON.stringify(S.segs[ci2]));S.segs.splice(ci2+1,0,cc);selSeg=ci2+1;commit();buildTL();seek(offs()[ci2+1]);ok('Clip copied');break;
  case 'reverse':var ri=tgt(),rg=S.segs[ri];if(rg.frz){note('Freeze clips cannot be reversed');break}rg.rev=!rg.rev;commit();buildTL();seek(offs()[ri]);play();ok(rg.rev?'Reversed (muted)':'Reverse off');break;
@@ -1529,7 +1529,7 @@ function bindTL(){
  sc.addEventListener('touchstart',function(e){if(e.touches.length===2){d0=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);z0=zoom}},{passive:true});
  sc.addEventListener('touchmove',function(e){if(e.touches.length===2&&d0){e.preventDefault();var d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);zoom=Math.max(.06,Math.min(4,z0*d/d0));buildTL()}},{passive:false});
  sc.addEventListener('touchend',function(){d0=0});
- inner.addEventListener('click',function(e){if(lpFired){lpFired=false;return}var tb=e.target.closest('.ce-trb');if(tb){openTr(+tb.dataset.ti);return}if(e.target.closest('.ce-plusi')){$('ce-in-video').click();return}var s=e.target.closest('.ce-seg'),r=e.target.closest('.ce-row.ov');var lr=e.target.closest('.ce-lay');if(lr){layTap(lr);return}if(r){selItem=+r.dataset.oi;selFx=-1;if(selSeg>=0){selSeg=-1;mainBar()}buildTL();openSheet('item');return}if(e.target.closest('.ce-h'))return;if(s){var i=+s.dataset.i;if(selSeg!==i||layMode){selSeg=i;selFx=-1;selFl=-1;selItem=-1;layMode='';buildTL();editBar()}}else if(!e.target.closest('.ce-row')){if(layMode){selFx=-1;selFl=-1;layMode='';buildTL();mainBar()}else if(selSeg>=0||selFx>=0||selFl>=0||$('ce-bar').classList.contains('ed')){selSeg=-1;selFx=-1;selFl=-1;buildTL();mainBar()}}});
+ inner.addEventListener('click',function(e){if(lpFired){lpFired=false;return}var tb=e.target.closest('.ce-trb');if(tb){openTr(+tb.dataset.ti);return}if(e.target.closest('.ce-plusi')){openMediaPicker('ed-video');return}var s=e.target.closest('.ce-seg'),r=e.target.closest('.ce-row.ov');var lr=e.target.closest('.ce-lay');if(lr){layTap(lr);return}if(r){selItem=+r.dataset.oi;selFx=-1;if(selSeg>=0){selSeg=-1;mainBar()}buildTL();openSheet('item');return}if(e.target.closest('.ce-h'))return;if(s){var i=+s.dataset.i;if(selSeg!==i||layMode){selSeg=i;selFx=-1;selFl=-1;selItem=-1;layMode='';buildTL();editBar()}}else if(!e.target.closest('.ce-row')){if(layMode){selFx=-1;selFl=-1;layMode='';buildTL();mainBar()}else if(selSeg>=0||selFx>=0||selFl>=0||$('ce-bar').classList.contains('ed')){selSeg=-1;selFx=-1;selFl=-1;buildTL();mainBar()}}});
  $('ce-sh-b').addEventListener('change',function(e){if(e.target.id==='fl-int')commit()});
  inner.addEventListener('pointerdown',function(e){var h=e.target.closest('.ce-lh');if(!h)return;e.preventDefault();e.stopPropagation();var wr=h.closest('.ce-lay'),L=layById(+wr.dataset.id);if(!L)return;var f=L.o,x0=e.clientX,P=pps(),s0=f.start,d0=f.dur,left=h.dataset.h==='l',tt=total(),arr=L.k==='e'?S.fx:S.fl,maxEnd=tt,minSt=0,hitF=false;
   arr.forEach(function(o){if(o===f||o.ln!==f.ln)return;if(o.start>=s0+d0-1e-6)maxEnd=Math.min(maxEnd,o.start);if(o.start+o.dur<=s0+1e-6)minSt=Math.max(minSt,o.start+o.dur)});

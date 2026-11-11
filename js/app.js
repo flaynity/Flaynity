@@ -10116,12 +10116,16 @@ function switchUploadMode(mode) {
         slider.style.transform = `translateX(${offset}px)`;
     }
     
-    document.getElementById('upload-video-view').style.display = mode === 'video' ? 'flex' : 'none';
+    // Video / Post tab: the media picker opens directly (the old Browse Device / Pick Image boxes are only a fallback outside the app)
+    const hasNativePicker = !!(window.AndroidBridge && typeof window.AndroidBridge.getMediaList === 'function');
+    document.getElementById('upload-video-view').style.display = (mode === 'video' && !hasNativePicker) ? 'flex' : 'none';
     document.getElementById('upload-short-view').style.display = mode === 'short' ? 'flex' : 'none';
-    document.getElementById('upload-post-view').style.display = mode === 'post' ? 'flex' : 'none';
+    document.getElementById('upload-post-view').style.display = (mode === 'post' && !hasNativePicker) ? 'flex' : 'none';
 
     if (mode === 'short') startShortCamera();
     else stopShortCamera();
+
+    if (hasNativePicker && (mode === 'video' || mode === 'post')) openMediaPicker(mode);
 }
 
 function setupModeSliderSwipe() {
@@ -10757,7 +10761,7 @@ function handlePremiumImagesSelected(e) {
 // The device gallery is read natively (MainActivity -> MediaStore) and shown in the
 // "Post / All / Videos / Photos" grid. In a normal browser it falls back to <input type="file">.
 // =====================================================================
-const MP = { mode: 'post', tab: 'all', album: 'all', albumName: 'All', videoOnly: false,
+const MP = { mode: 'post', tab: 'all', album: 'all', albumName: 'All', only: 'videos',
              offset: 0, loading: false, end: false, count: 0, token: '', open: false, picking: false, awaitingPerm: false };
 const MP_PAGE = 60;
 const MP_HOST = 'https://flaynity-media.local';
@@ -10776,8 +10780,8 @@ function openMediaPicker(mode) {          // mode: 'video' | 'short' | 'post'
     }
     if (MP.open) return;
     MP.mode = mode;
-    MP.videoOnly = mode !== 'post';
-    MP.tab = MP.videoOnly ? 'videos' : 'all';
+    MP.only = mode === 'post' ? 'photos' : 'videos';   // Video / Feels = videos only, Post = images only
+    MP.tab = MP.only;
     MP.album = 'all'; MP.albumName = 'All';
     mpEl('mp-title').textContent = mode === 'video' ? 'Video' : mode === 'short' ? 'Feels' : 'Post';
     mpEl('mp-album-name').textContent = 'All';
@@ -10803,6 +10807,10 @@ function closeMediaPicker(silent) {
     const el = mpEl('media-picker');
     el.classList.remove('show');
     setTimeout(() => { if (!MP.open) el.style.display = 'none'; }, 260);
+    // user pressed X / Back in the Video or Post tab: go back to the Feels camera instead of an empty page
+    if (!silent && MP.mode !== 'short' && typeof currentUploadMode !== 'undefined' && currentUploadMode === MP.mode) {
+        try { switchUploadMode('short'); } catch (e) {}
+    }
     return true;
 }
 window.closeMediaPicker = closeMediaPicker;
@@ -10840,7 +10848,7 @@ document.addEventListener('visibilitychange', () => {      // coming back from t
 
 // ---------- tabs / albums ----------
 function mpRenderTabs() {
-    const list = MP.videoOnly ? [['videos', 'Videos']] : [['all', 'All'], ['videos', 'Videos'], ['photos', 'Photos']];
+    const list = [[MP.only, MP.only === 'videos' ? 'Videos' : 'Photos']];
     mpEl('mp-tabs').innerHTML = list.map(t => '<button class="mp-tab' + (t[0] === MP.tab ? ' on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</button>').join('');
 }
 document.addEventListener('click', (e) => {
@@ -10855,7 +10863,7 @@ document.addEventListener('click', (e) => {
 function mpOpenAlbums() {
     const b = mpBridge(); if (!b) return;
     let list = [];
-    try { list = JSON.parse(b.getMediaAlbums(MP.videoOnly ? 'videos' : 'all')); } catch (e) {}
+    try { list = JSON.parse(b.getMediaAlbums(MP.only)); } catch (e) {}
     const total = list.reduce((s, a) => s + a.count, 0);
     const rows = [{ id: 'all', name: 'All', count: total }].concat(list);
     const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -10922,7 +10930,7 @@ function mpLoad(reset) {
         MP.count += res.items.length;
         MP.offset += res.items.length;
         MP.end = !!res.end;
-        if (!MP.count) mpState(MP.videoOnly ? 'No videos found' : 'No photos or videos found');
+        if (!MP.count) mpState(MP.only === 'videos' ? 'No videos found' : 'No photos found');
         else if (!MP.end && grid.scrollHeight <= grid.clientHeight + 300) mpLoad(false);   // screen not full yet
     }, 0);
 }

@@ -297,6 +297,50 @@
 .ce-prog.show{display:flex}
 .ce-prog .bar{width:70vw;height:2vw;background:#333;border-radius:2vw;overflow:hidden}.ce-prog .bar i{display:block;height:100%;width:0;background:#FE2C55}
 .ce-prog button{background:#333;border:none;border-radius:6vw;padding:2.6vw 7vw;font-size:4vw;font-weight:700}
+
+/* =======================================================
+   CUSTOM MEDIA PICKER  (every size = screenshot pixels * --u, so it scales exactly on any phone)
+======================================================= */
+#media-picker{--u:calc(100vw / 1049);position:fixed;inset:0;z-index:10050;background:#000;color:#fff;display:none;flex-direction:column;font-family:Roboto,"Segoe UI",system-ui,-apple-system,sans-serif;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;transform:translateY(100%);transition:transform .25s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+#media-picker.show{transform:none}
+#media-picker button{font-family:inherit;cursor:pointer}
+.mp-status{flex:none;height:max(env(safe-area-inset-top,0px),calc(var(--u)*140))}
+.mp-head{position:relative;flex:none;height:calc(var(--u)*74);display:flex;align-items:center;justify-content:center}
+.mp-x{position:absolute;left:calc(var(--u)*40);top:50%;transform:translateY(-50%);width:calc(var(--u)*84);height:calc(var(--u)*84);background:none;border:0;padding:0;display:flex;align-items:center;justify-content:center;color:#fff}
+.mp-x svg{width:calc(var(--u)*68);height:calc(var(--u)*68)}
+.mp-title{font-size:calc(var(--u)*48);font-weight:700;line-height:1}
+.mp-album{flex:none;align-self:flex-start;margin-top:calc(var(--u)*48);height:calc(var(--u)*108);padding:0 0 0 calc(var(--u)*48);display:flex;align-items:center;background:none;border:0;color:#fff;font-size:calc(var(--u)*48);font-weight:700}
+.mp-album svg{width:calc(var(--u)*60);height:calc(var(--u)*60);margin-left:calc(var(--u)*3)}
+.mp-tabs{flex:none;display:flex;margin-top:calc(var(--u)*30);height:calc(var(--u)*118)}
+.mp-tab{flex:1;position:relative;background:none;border:0;padding:calc(var(--u)*28) 0 0;color:#fff;font-size:calc(var(--u)*40);line-height:calc(var(--u)*48);font-weight:600;text-align:center;display:block}
+.mp-tab.on{font-weight:700}
+.mp-tab.on::after{content:"";position:absolute;left:calc(var(--u)*35);right:calc(var(--u)*35);bottom:0;height:calc(var(--u)*5);background:#fff}
+.mp-body{position:relative;flex:1;min-height:0;display:flex}
+.mp-grid{flex:1;overflow-y:auto;overscroll-behavior:contain;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:calc(var(--u)*2);align-content:start;padding-bottom:env(safe-area-inset-bottom,0px);scrollbar-width:none}
+.mp-grid::-webkit-scrollbar{display:none}
+.mp-cell{position:relative;overflow:hidden;background:#1a1a1a}
+.mp-cell::before{content:"";display:block;padding-top:100%}
+.mp-cell img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;-webkit-user-drag:none;pointer-events:none}
+.mp-cell:active img{opacity:.75}
+.mp-dur{position:absolute;right:calc(var(--u)*23);bottom:calc(var(--u)*14);font-size:calc(var(--u)*36);line-height:1.2;font-weight:600;color:rgba(255,255,255,.93);text-shadow:0 1px 3px rgba(0,0,0,.75);font-variant-numeric:tabular-nums;pointer-events:none}
+.mp-state{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 calc(var(--u)*90);gap:calc(var(--u)*36);background:#000}
+.mp-state.show{display:flex}
+.mp-state p{margin:0;font-size:calc(var(--u)*40);line-height:1.35;font-weight:600;color:#cfcfcf}
+.mp-btn{background:var(--primary,#FF2E55);color:#fff;border:0;border-radius:calc(var(--u)*80);padding:calc(var(--u)*34) calc(var(--u)*80);font-size:calc(var(--u)*40);font-weight:800}
+.mp-btn:active{transform:scale(.96)}
+.mp-sheet{position:absolute;inset:0;z-index:5;display:none;background:rgba(0,0,0,.6)}
+.mp-sheet.show{display:block}
+.mp-panel{position:absolute;left:0;right:0;bottom:0;max-height:70%;display:flex;flex-direction:column;background:#1c1c1e;border-radius:calc(var(--u)*48) calc(var(--u)*48) 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+.mp-sheet-h{flex:none;font-size:calc(var(--u)*44);font-weight:700;padding:calc(var(--u)*44) calc(var(--u)*48) calc(var(--u)*20)}
+.mp-albums{overflow-y:auto}
+.mp-arow{display:flex;justify-content:space-between;align-items:center;gap:calc(var(--u)*24);width:100%;background:none;border:0;color:#fff;text-align:left;padding:calc(var(--u)*34) calc(var(--u)*48);font-size:calc(var(--u)*42);font-weight:600}
+.mp-arow span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mp-arow span:last-child{color:#8e8e93;font-weight:500;flex:none}
+.mp-arow.on span:first-child{color:var(--primary,#FF2E55)}
+.mp-busy{position:absolute;inset:0;z-index:6;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
+.mp-busy.show{display:flex}
+.mp-spin{width:calc(var(--u)*110);height:calc(var(--u)*110);border-radius:50%;border:calc(var(--u)*10) solid rgba(255,255,255,.25);border-top-color:#fff;animation:mpspin .8s linear infinite}
+@keyframes mpspin{to{transform:rotate(360deg)}}
 </style>
 </head>
 
@@ -306,6 +350,27 @@
 <input accept="video/mp4" id="short-file-input" onchange="handlePremiumFileSelected(event, 'video-short')" style="display:none;" type="file"/>
 <input accept="image/jpeg, image/png, image/webp, image/gif" id="post-image-input" multiple="" onchange="handlePremiumImagesSelected(event)" style="display:none;" type="file"/>
 <input accept="image/jpeg, image/png, image/webp" id="custom-thumb-input" onchange="handleCustomThumbSelected(event)" style="display:none;" type="file"/>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━
+   CUSTOM MEDIA PICKER (opened by openMediaPicker(), data comes from Android MediaStore)
+━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="media-picker">
+    <div class="mp-status"></div>
+    <div class="mp-head">
+        <button class="mp-x" onclick="closeMediaPicker()" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 5L19 19M19 5L5 19"/></svg></button>
+        <div class="mp-title" id="mp-title">Post</div>
+    </div>
+    <button class="mp-album" id="mp-album-btn" onclick="mpOpenAlbums()"><span id="mp-album-name">All</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5L12 16.5L20 8.5"/></svg></button>
+    <div class="mp-tabs" id="mp-tabs"></div>
+    <div class="mp-body">
+        <div class="mp-grid" id="mp-grid"></div>
+        <div class="mp-state" id="mp-state"><p id="mp-state-msg"></p><button class="mp-btn" id="mp-state-btn" style="display:none"></button></div>
+    </div>
+    <div class="mp-sheet" id="mp-sheet" onclick="if(event.target===this)mpCloseAlbums()">
+        <div class="mp-panel"><div class="mp-sheet-h">Albums</div><div class="mp-albums" id="mp-albums"></div></div>
+    </div>
+    <div class="mp-busy" id="mp-busy"><div class="mp-spin"></div></div>
+</div>
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━
    1. PREMIUM BLACK UPLOAD STUDIO
@@ -322,7 +387,7 @@
         <div style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
             <i class="fas fa-upload" style="font-size: 3.5rem; color: rgba(255,255,255,0.4); margin-bottom: 24px;"></i>
             <p style="color: #ccc; font-size: 0.95rem; font-weight: 600; margin-bottom: 30px;">Select a Long Video</p>
-            <button class="studio-btn" onclick="document.getElementById('video-file-input').click()">Browse Device</button>
+            <button class="studio-btn" onclick="openMediaPicker('video')">Browse Device</button>
         </div>
     </div>
 
@@ -350,7 +415,7 @@
 
         <!-- Bottom Record Controls (Shifted Upwards) -->
         <div id="camera-bottom-bar" style="position: absolute; bottom: 130px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; z-index: 110;">
-            <button id="btn-cam-gallery" onclick="document.getElementById('short-file-input').click()" style="position: absolute; left: 30px; background: rgba(0,0,0,0.5); color: white; border: none; width: 48px; height: 48px; border-radius: 12px; font-size: 1.2rem; cursor: pointer; backdrop-filter: blur(4px);"><i class="fas fa-image"></i></button>
+            <button id="btn-cam-gallery" onclick="openMediaPicker('short')" style="position: absolute; left: 30px; background: rgba(0,0,0,0.5); color: white; border: none; width: 48px; height: 48px; border-radius: 12px; font-size: 1.2rem; cursor: pointer; backdrop-filter: blur(4px);"><i class="fas fa-image"></i></button>
             
             <!-- Robust Tap and Hold Record Button -->
             <div id="record-btn-outer" style="width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; display: flex; align-items: center; justify-content: center; cursor: pointer; touch-action: none; background: rgba(0,0,0,0.2);">
@@ -364,7 +429,7 @@
         <div style="text-align: center; width: 100%;">
             <i class="fas fa-pen-square" style="font-size: 3.5rem; color: rgba(255,255,255,0.4); margin-bottom: 24px;"></i>
             <p style="color: #ccc; font-size: 0.95rem; font-weight: 600; margin-bottom: 30px;">Create a Community Post</p>
-            <button class="studio-btn" onclick="document.getElementById('post-image-input').click()"><i class="fas fa-image"></i> Pick Image</button>
+            <button class="studio-btn" onclick="openMediaPicker('post')"><i class="fas fa-image"></i> Pick Image</button>
         </div>
     </div>
 

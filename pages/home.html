@@ -1338,6 +1338,10 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 #full-movie-page .comment-preview-text{font-size:14px;}
 .wp-pager i{width:7px;height:7px;}
 .wp-pager i:first-child{width:14px;}
+/* Play Page covers the status-bar area completely (Home must never show through there) */
+#full-movie-page{top:0!important;}
+#full-movie-page::before{content:"";display:block;height:env(safe-area-inset-top,0px);background:#0F0F0F;position:sticky;top:0;z-index:61;}
+#full-movie-page .wp-stage{top:env(safe-area-inset-top,0px);}
 
 /* ===== FLAYNITY PREMIUM LONG VIDEO CARD (shared: Home + Watch Page) ===== */
 :root{--fx-card:#FFFFFF;--fx-card-border:rgba(0,0,0,.10);--fx-chip:rgba(0,0,0,.05);}

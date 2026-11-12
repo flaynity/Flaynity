@@ -466,12 +466,34 @@
     filter: none !important; text-shadow: none !important; box-shadow: none !important; -webkit-filter: none !important;
 }
 .short-action-label-tiktok { text-shadow: none !important; }
+
+/* ===== Like / Comment / Save / Share = solid SVG icons (same as reference image) ===== */
+.fx-ic { display:flex !important; align-items:center; justify-content:center; font-style:normal; color:#fff !important; line-height:0; }
+.fx-ic svg { width:38px; height:38px; display:block; fill:currentColor; overflow:visible; }
+.short-action-btn-tiktok, .short-action-btn-tiktok-other { height:44px !important; }
+.short-action-btn-tiktok i.fx-ic.liked { color:#FE2C55 !important; animation: tiktokHeartPop .35s cubic-bezier(.175,.885,.32,1.5) forwards; }
+.short-action-btn-tiktok-other i.fx-ic.saved { color:#FFC107 !important; }
+
+/* ===== Auto button (left side of the screen, same row as For You) ===== */
+.feels-auto-btn {
+    position: fixed; left: 12px; top: calc(env(safe-area-inset-top, 0px) + 16px); z-index: 31;
+    height: 28px; padding: 0 11px 0 9px; border-radius: 14px; border: 1px solid rgba(255,255,255,.3);
+    background: rgba(0,0,0,.28); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    color: #fff; font-size: 13px; font-weight: 700; letter-spacing: .2px;
+    display: flex; align-items: center; gap: 6px; cursor: pointer;
+    -webkit-tap-highlight-color: transparent; transition: background .2s, border-color .2s, transform .15s;
+}
+.feels-auto-btn:active { transform: scale(.93); }
+.feels-auto-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.55); transition: background .2s, box-shadow .2s; }
+.feels-auto-btn.on { background: #FE2C55; border-color: #FE2C55; }
+.feels-auto-btn.on .feels-auto-dot { background: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,.28); }
 </style></head><body>
 <div class="tab-content" id="feels-tab" style="padding:0;">
 <div class="feels-mode-switch" role="tablist" aria-label="Feels feed">
 <button type="button" class="feels-mode-btn active" data-mode="for-you" role="tab" aria-selected="true" onclick="setFeelsFeedMode('for-you')">For You</button>
 <button type="button" class="feels-mode-btn" data-mode="subscribe" role="tab" aria-selected="false" onclick="setFeelsFeedMode('subscribe')">Subscribe</button>
 </div>
+<button type="button" id="feels-auto-btn" class="feels-auto-btn" aria-label="Auto scroll" aria-pressed="false" onclick="toggleFeelsAuto()"><span class="feels-auto-dot"></span><span>Auto</span></button>
 <button type="button" class="feels-search-btn" aria-label="Search" onclick="switchTab('discover')"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="7"></circle><path d="M16 16l5 5"></path></svg></button>
 <div id="feels-swiper-container" style="height:100%; width:100%;"></div>
 </div>

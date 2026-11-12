@@ -1,4 +1,6 @@
 /* Flaynity Modular Loader — serial page loading + offline cache */
+// The WebView must never restore scroll on its own: AppNavigation saves/restores it (multi-step).
+try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
 (async function () {
     const pageFiles = [["home","pages/home.html"],["feels","pages/feels.html"],["posts","pages/posts.html"],["upload","pages/upload.html"],["discover","pages/discover.html"],["you","pages/you.html"]];
     const CACHE_PREFIX = "flaynity-page-cache-v1:";
@@ -3720,6 +3722,13 @@ function fxOpenVideoMenu(videoId, anchor) {
     const root = fxEnsureMenu();
     _fxmVideoId = String(videoId);
     const pop = root.querySelector('#fxm-pop');
+    pop.querySelectorAll('[data-a="dislike"]').forEach(n => n.remove());
+    if (anchor && anchor.closest && anchor.closest('#full-movie-page')) {
+        const dl = document.createElement('button');
+        dl.type = 'button'; dl.className = 'fxm-item'; dl.dataset.a = 'dislike';
+        dl.innerHTML = '<span class="fxm-ic"><svg viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></span><span class="fxm-tx">Dislike</span>';
+        pop.insertBefore(dl, pop.firstChild);
+    }
     root.classList.remove('open', 'closing');
     AppNavigation.pushModal('fx-video-menu');
     pop.style.visibility = 'hidden';
@@ -3756,6 +3765,7 @@ function fxMenuAction(action) {
     const id = _fxmVideoId;
     const v = (typeof allLongVideos !== 'undefined') ? allLongVideos.find(x => String(x.id) === String(id)) : null;
     fxCloseVideoMenu(() => {
+        if (action === 'dislike') { try { toggleMovieDislike(); } catch (e) {} return; }
         if (!v) return;
         if (action === 'download') {
             const raw = v.videoLink || v.videoUrl;
@@ -4441,6 +4451,7 @@ function playFeelsSlide(shortId, resetTime = true) {
 }
 
 function openShortFromHome(shortId) {
+    AppNavigation.rememberHome();   // save Home scroll BEFORE the Feels tab is shown
     const targetId = String(shortId);
     // Lock the exact Home Feels before navigation so the first slide cannot
     // become active while the Feels tab is being shown/rebuilt.
@@ -6436,6 +6447,10 @@ const AppNavigation = {
     _viewTab: 'home',
     _viewPage: null,
     _fresh: false,
+    _homeY: 0,
+    _restoring: false,
+    _restoreToken: 0,
+    _mvTimer: null,
 
     // element id of a stack page (the upload studio has no "-page" suffix)
     _pid: function(id) {
@@ -6462,10 +6477,61 @@ const AppNavigation = {
         root.querySelectorAll('*').forEach(n => nodes.push(n));
         nodes.forEach(n => { if (n.scrollTop > 0) out.push([n, n.scrollTop]); });
     },
+    _homeVisible: function() {
+        const t = document.getElementById('home-tab');
+        return !!(t && t.getClientRects().length);
+    },
+    // Save Home's scroll position BEFORE a video / Feels is opened (the page may collapse right after).
+    rememberHome: function() {
+        try { if (this._view === 'home|' && this._homeVisible()) this._saveScroll(); } catch (e) {}
+    },
+    // Multi-step restore: now, next frames, then a few timed retries (the feed may still be laying out).
+    // Stops as soon as the user scrolls by hand.
+    _restoreRec: function(rec, activePage, viewKey) {
+        const self = this;
+        const token = ++this._restoreToken;
+        this._restoring = true;
+        let done = false, ro = null;
+        const evs = ['touchmove', 'wheel', 'keydown'];
+        const finish = () => {
+            if (done) return;
+            done = true;
+            if (token === self._restoreToken) self._restoring = false;
+            evs.forEach(e => window.removeEventListener(e, finish, true));
+            if (ro) { try { ro.disconnect(); } catch (e) {} }
+        };
+        evs.forEach(e => window.addEventListener(e, finish, { capture: true, passive: true }));
+        const apply = () => {
+            if (done || token !== self._restoreToken || self._view !== viewKey) { finish(); return; }
+            if (!activePage && rec.win != null) {
+                const cur = window.pageYOffset || document.documentElement.scrollTop || 0;
+                if (Math.abs(cur - rec.win) > 1) {
+                    try { window.scrollTo({ top: rec.win, left: 0, behavior: 'instant' }); }
+                    catch (e) { try { window.scrollTo(0, rec.win); } catch (e2) {} }
+                }
+            }
+            rec.els.forEach(([el, top]) => {
+                if (el.isConnected && el.getClientRects().length && Math.abs(el.scrollTop - top) > 1) el.scrollTop = top;
+            });
+        };
+        apply();
+        requestAnimationFrame(() => { apply(); requestAnimationFrame(apply); });
+        [30, 80, 160, 300, 500, 800, 1200].forEach(ms => setTimeout(apply, ms));
+        try {
+            const feed = document.getElementById('home-feed-container');
+            if (!activePage && feed && window.ResizeObserver) { ro = new ResizeObserver(apply); ro.observe(feed); }
+        } catch (e) {}
+        setTimeout(finish, 1350);
+    },
     _saveScroll: function() {
         const rec = { win: null, els: [] };
         if (!this._viewPage) {
-            rec.win = window.pageYOffset || document.documentElement.scrollTop || 0;
+            let y = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+            if (this._viewTab === 'home') {
+                if (this._homeVisible()) this._homeY = y;            // live value
+                else if (!y && this._homeY > 0) y = this._homeY;     // page already collapsed -> last known value
+            }
+            rec.win = y;
             if (this._viewTab !== 'feels') this._collectScroll(document.getElementById(this._viewTab + '-tab'), rec.els);
         } else {
             const pid = this._pid(this._viewPage);
@@ -6479,6 +6545,7 @@ const AppNavigation = {
         if (current && current.type === 'tab' && current.id === tabId) {
             return;
         }
+        this.rememberHome();
         this.stack.push({ type: 'tab', id: tabId });
         this.syncUI();
         this.updateBridge();
@@ -6489,6 +6556,7 @@ const AppNavigation = {
         if (current && current.type === 'page' && current.id === pageId) {
             return;
         }
+        this.rememberHome();
         this.stack.push({ type: 'page', id: pageId });
         this._fresh = true;
         this.syncUI();
@@ -6589,7 +6657,18 @@ const AppNavigation = {
             if (!keepIds.has(el.id)) el.style.display = 'none';
         });
         const moviePage = document.getElementById('full-movie-page');
-        if (moviePage && !keepIds.has('full-movie-page')) moviePage.style.display = 'none';
+        if (moviePage && !keepIds.has('full-movie-page')) {
+            if (moviePage.classList.contains('wp-closing')) {
+                // already sliding down
+            } else if (!activePage && getComputedStyle(moviePage).display !== 'none') {
+                // Back to a tab: slide the Play Page down (Home is already visible underneath)
+                moviePage.classList.add('wp-closing');
+                clearTimeout(this._mvTimer);
+                this._mvTimer = setTimeout(() => { moviePage.style.display = 'none'; moviePage.classList.remove('wp-closing'); }, 230);
+            } else {
+                moviePage.style.display = 'none';
+            }
+        }
         
         const themeMenu = document.getElementById('theme-popup-menu');
         if (themeMenu) themeMenu.style.display = 'none';
@@ -6621,7 +6700,15 @@ const AppNavigation = {
         // A fullscreen sub-page must cover the active tab immediately, even
         // while a premium service page is being fetched/created asynchronously.
         // Otherwise the previous You page briefly shows behind the destination.
-        if (tabEl && !activePage) tabEl.classList.add('active');
+        const _keepTabUnder = (activePage === 'full-movie-page' && activeTab !== 'feels');
+        if (tabEl && (!activePage || _keepTabUnder)) {
+            // Coming back from the Play Page / Feels: show the tab without replaying its fade-in
+            if (!activePage && (this._viewPage === 'full-movie-page' || this._viewTab === 'feels') && this._mem[newViewKey]) {
+                tabEl.style.animationDuration = '0s';
+                setTimeout(() => { tabEl.style.animationDuration = ''; }, 480);
+            }
+            tabEl.classList.add('active');
+        }
         if (navEl) navEl.classList.add('active');
 
         adjustHeaderForActiveTab(activeTab);
@@ -6644,7 +6731,8 @@ const AppNavigation = {
 
         if (activePage) {
             if (activePage === 'full-movie-page') {
-                if (moviePage) moviePage.style.display = 'block';
+                clearTimeout(this._mvTimer);
+                if (moviePage) { moviePage.classList.remove('wp-closing'); moviePage.style.display = 'block'; }
                 document.body.style.overflow = 'hidden';
             } else {
                 const targetId = this._pid(activePage);
@@ -6693,17 +6781,7 @@ const AppNavigation = {
         this._view = newViewKey; this._viewTab = activeTab; this._viewPage = activePage;
         if (this._fresh) { delete this._mem[newViewKey]; this._fresh = false; }
         const rec = this._mem[newViewKey];
-        if (rec) {
-            const apply = () => {
-                if (!activePage && rec.win != null) { try { window.scrollTo(0, rec.win); } catch (e) {} }
-                rec.els.forEach(([el, top]) => {
-                    if (el.isConnected && el.getClientRects().length && Math.abs(el.scrollTop - top) > 1) el.scrollTop = top;
-                });
-            };
-            apply();
-            requestAnimationFrame(apply);
-            setTimeout(apply, 120);
-        }
+        if (rec) this._restoreRec(rec, activePage, newViewKey);
     },
 
     updateBridge: function() {
@@ -6714,6 +6792,14 @@ const AppNavigation = {
     }
 };
 
+// Keep the last real Home scroll position (used if the page collapses before we can read it).
+window.addEventListener('scroll', function () {
+    try {
+        if (AppNavigation._restoring || AppNavigation._view !== 'home|' || !AppNavigation._homeVisible()) return;
+        AppNavigation._homeY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    } catch (e) {}
+}, { passive: true });
+
 function executeBackAction() {
     AppNavigation.pop();
 }
@@ -6722,6 +6808,7 @@ function executeBackAction() {
 // MOVIE DETAILS, STATISTICS & COMMENTS
 // =========================================================
 async function openMoviePage(id, isTMDB = false) {
+    AppNavigation.rememberHome();   // save Home scroll BEFORE anything else happens
     playUI('click');
     if (!navigator.onLine) {
          showNotification("Offline. Cannot play Long Videos.", "error");
@@ -6777,14 +6864,49 @@ async function openMoviePage(id, isTMDB = false) {
     // Show the watch page before starting playback. Android WebView can reject
     // autoplay/play() when the video element is still inside a display:none page.
     delete _fxPlayLikeInit[currentActiveMovie.id];
+    wpResetDetailsCard(currentActiveMovie);
     AppNavigation.pushPage('full-movie-page');
     const _mvPage = document.getElementById('full-movie-page');
     if (_mvPage) _mvPage.scrollTop = 0; // a new video always starts at the top
-    
-    startVideoPlayer();
-    registerViewAndListen(currentActiveMovie.id);
-    try { registerPostReactionsListener(String(currentActiveMovie.id)); fxListenDislike(String(currentActiveMovie.id)); } catch (e) {}
-    loadChannelMetaForWatchPage(currentActiveMovie.userId || currentActiveMovie.channelId);
+
+    // Let the first frames of the slide-up animation paint before the heavy player / data work starts,
+    // so the page glides in smoothly (no jump / stutter).
+    const _mv = currentActiveMovie;
+    const _boot = () => {
+        if (currentActiveMovie !== _mv) return;
+        if (!AppNavigation.stack.some(i => i.id === 'full-movie-page')) return; // user already went back
+        startVideoPlayer();
+        registerViewAndListen(_mv.id);
+        try { registerPostReactionsListener(String(_mv.id)); fxListenDislike(String(_mv.id)); } catch (e) {}
+        loadChannelMetaForWatchPage(_mv.userId || _mv.channelId);
+    };
+    requestAnimationFrame(() => requestAnimationFrame(_boot));
+}
+
+// Clear the previous video's numbers so the details card never flashes old data.
+function wpResetDetailsCard(m) {
+    try {
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+        set('movie-like-count', '0');
+        set('movie-comment-count', '0');
+        set('movie-detail-views', '0');
+        set('movie-detail-upload-time', (m && m.createdAt) ? wpShortTime(m.createdAt) : 'just now');
+        const av = document.getElementById('movie-channel-avatar');
+        if (av) av.removeAttribute('src');
+        const sb = document.getElementById('movie-subscribe-btn');
+        if (sb) { sb.innerText = 'Subscribe'; sb.style.background = ''; sb.style.color = ''; }
+        const wb = document.querySelector('#full-movie-page .wp-badges');
+        if (wb) { wb.innerHTML = ''; wb.id = 'post-top-emojis-' + String(m.id); } // painted by paintPostReactions()
+        const lb = document.getElementById('movie-like-btn');
+        if (lb) lb.classList.remove('active', 'wp-rx-on');
+    } catch (e) {}
+}
+function wpOpenMenu(btn) {
+    if (!currentActiveMovie) return;
+    fxOpenVideoMenu(String(currentActiveMovie.id), btn);
+}
+function wpOpenReacted() {
+    if (currentActiveMovie) openReactedPeoplePage(String(currentActiveMovie.id));
 }
 
 function startVideoPlayer() {
@@ -6907,7 +7029,7 @@ function registerViewAndListen(movieId) {
 
         const viewsEl = document.getElementById('movie-detail-views');
 
-        if (viewsEl) viewsEl.innerText = formatCount(totalViews) + " views";
+        if (viewsEl) viewsEl.innerText = formatCount(totalViews);
 
         const uidNow = auth.currentUser ? auth.currentUser.uid : null;
         _fxMovieLikes[movieId] = likesObj;
@@ -7722,6 +7844,8 @@ function updateCommentPreviewCard(commentsObj) {
     const comments = Object.values(commentsObj).sort((a,b) => b.timestamp - a.timestamp);
     
     if (countEl) countEl.innerText = formatCount(comments.length);
+    const _mcc = document.getElementById('movie-comment-count');
+    if (_mcc) _mcc.innerText = formatCount(comments.length);
 
     if (comments.length === 0) {
         if (avatarEl) avatarEl.innerHTML = '<i class="far fa-comment" style="color: var(--text-muted);"></i>';

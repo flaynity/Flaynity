@@ -1,3 +1,10 @@
+/* Feels action icons (Like / Comment / Save / Share) - solid white SVG set */
+window.FEELS_ICONS = {
+  heart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.6c-.5 0-1-.2-1.4-.6C6.100 17.400 2 13.900 2 9.300 2 6.100 4.500 3.600 7.600 3.600c1.800 0 3.500.9 4.400 2.300.9-1.400 2.600-2.300 4.400-2.300 3.100 0 5.600 2.500 5.600 5.700 0 4.600-4.100 8.100-8.600 11.700-.4.400-.9.600-1.400.6z"/></svg>',
+  comment: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2.500C6.200 2.500 1.800 6.200 1.800 10.800c0 2.100.9 4 2.500 5.400-.1 1.500-.7 2.900-1.700 4.100 2.500-.2 4.500-1.100 5.800-2.300.9.200 1.800.3 2.800.3 5.800 0 10.200-3.700 10.200-8.500S17.800 2.500 12 2.500zM7.500 9.300a1.600 1.600 0 1 0 0 3.200 1.600 1.600 0 0 0 0-3.200zm4.500 0a1.600 1.600 0 1 0 0 3.200 1.600 1.600 0 0 0 0-3.200zm4.500 0a1.600 1.600 0 1 0 0 3.200 1.600 1.600 0 0 0 0-3.200z"/><path d="M2.600 20.300c1.300-.1 2.700-.6 3.800-1.400l-2.600-2.100c-.1 1.300-.6 2.500-1.200 3.500z" fill-opacity=".55"/></svg>',
+  save: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.600 2.500h10.800A1.600 1.600 0 0 1 19 4.100v17.100a.5.500 0 0 1-.8.400L12 17.200l-6.200 4.400a.5.500 0 0 1-.8-.4V4.100A1.600 1.600 0 0 1 6.600 2.500z"/></svg>',
+  share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.200 3.300l8.100 7.300a1.100 1.100 0 0 1 0 1.600l-8.100 7.300a.8.800 0 0 1-1.300-.6v-4.100c-5.100-.1-8.600 1.700-10.600 5.800-.1-6.600 3.400-11.200 10.600-11.900V3.900a.8.800 0 0 1 1.300-.6z"/></svg>'
+};
 /* Flaynity Modular Loader — serial page loading + offline cache */
 // The WebView must never restore scroll on its own: AppNavigation saves/restores it (multi-step).
 try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
@@ -4555,6 +4562,36 @@ function scrollFeelsToSlide(swiper, slide, behavior = 'auto') {
     }
 }
 
+// ---------- Feels "Auto" button: when ON, next Feels opens by itself when the video ends ----------
+function isFeelsAutoOn() { try { return localStorage.getItem('flaynity_feels_auto') === '1'; } catch (e) { return false; } }
+function updateFeelsAutoBtn() {
+    const b = document.getElementById('feels-auto-btn');
+    if (!b) return;
+    const on = isFeelsAutoOn();
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+}
+function toggleFeelsAuto() {
+    const next = !isFeelsAutoOn();
+    try { localStorage.setItem('flaynity_feels_auto', next ? '1' : '0'); } catch (e) {}
+    try { triggerFeelsHaptic(10); } catch (e) {}
+    updateFeelsAutoBtn();
+    try { showNotification(next ? 'Auto scroll ON' : 'Auto scroll OFF', 'success'); } catch (e) {}
+}
+function feelsAutoAdvance(slide, video) {
+    if (!isFeelsAutoOn() || !video || !video.duration || !isFinite(video.duration)) return;
+    const left = video.duration - video.currentTime;
+    if (left > 1) { slide._autoAdv = false; return; }       // re-arm after the loop restarts
+    if (left > 0.35 || slide._autoAdv) return;
+    const next = slide.nextElementSibling;
+    const swiper = slide.closest('.feels-swiper');
+    if (!next || !swiper) return;                            // last Feels: keep looping
+    slide._autoAdv = true;
+    try { swiper.scrollTo({ top: next.offsetTop, behavior: 'smooth' }); } catch (e) { swiper.scrollTop = next.offsetTop; }
+}
+document.addEventListener('DOMContentLoaded', updateFeelsAutoBtn);
+setTimeout(updateFeelsAutoBtn, 0);
+
 function setFeelsFeedMode(mode) {
     const nextMode = mode === 'subscribe' ? 'subscribe' : 'for-you';
     if (feelsFeedMode === nextMode) {
@@ -4615,6 +4652,7 @@ function setFeelsFeedMode(mode) {
 }
 
 function updateFeelsModeButtons() {
+    updateFeelsAutoBtn();
     document.querySelectorAll('.feels-mode-btn').forEach(btn => {
         const active = btn.dataset.mode === feelsFeedMode;
         btn.classList.toggle('active', active);
@@ -4881,28 +4919,28 @@ function buildFeelsPage() {
 
                     <div class="short-action-container">
                         <button class="short-action-btn-tiktok" id="${isLikedId}" onclick="toggleShortLike('${s.id}')">
-                            <i class="fas fa-heart${isLocallyLiked ? ' liked' : ''}"></i>
+                            <i class="fx-ic${isLocallyLiked ? ' liked' : ''}">${window.FEELS_ICONS.heart}</i>
                         </button>
                         <div class="short-action-label-tiktok" id="${likesCountId}">${formatCount(cachedStats.likes)}</div>
                     </div>
 
                     <div class="short-action-container">
                         <button class="short-action-btn-tiktok-other" onclick="openFeelsComments('${s.id}', event)">
-                            <i class="fas fa-comment-dots"></i>
+                            <i class="fx-ic">${window.FEELS_ICONS.comment}</i>
                         </button>
                         <div class="short-action-label-tiktok" id="${commentsCountId}">${formatCount(cachedStats.comments)}</div>
                     </div>
 
                     <div class="short-action-container">
                         <button class="short-action-btn-tiktok-other" id="short-save-btn-${s.id}" aria-label="Save" onclick="toggleShortSave('${s.id}', event)">
-                            <i class="fas fa-bookmark${(feelsSavedByUser[s.id] ? ' saved' : '')}"></i>
+                            <i class="fx-ic${(feelsSavedByUser[s.id] ? ' saved' : '')}">${window.FEELS_ICONS.save}</i>
                         </button>
                         <div class="short-action-label-tiktok" id="short-saves-count-${s.id}">${formatCount(cachedStats.saves || 0)}</div>
                     </div>
 
                     <div class="short-action-container">
                         <button class="short-action-btn-tiktok-other" aria-label="Share" onclick="shareFeels('${s.id}', event)">
-                            <i class="fas fa-share"></i>
+                            <i class="fx-ic">${window.FEELS_ICONS.share}</i>
                         </button>
                         <div class="short-action-label-tiktok" id="short-shares-count-${s.id}">Share</div>
                     </div>
@@ -4956,7 +4994,7 @@ function buildFeelsPage() {
                 const saved = !!(auth.currentUser && savesObj[auth.currentUser.uid]);
                 const sic = saveBtn.querySelector('i');
                 if (sic) sic.classList.toggle('saved', saved);
-                else saveBtn.innerHTML = `<i class="fas fa-bookmark${saved ? ' saved' : ''}"></i>`;
+                else saveBtn.innerHTML = `<i class="fx-ic${saved ? ' saved' : ''}">${window.FEELS_ICONS.save}</i>`;
             }
 
             try {
@@ -4975,7 +5013,7 @@ function buildFeelsPage() {
                 const liked = !!likesObj[auth.currentUser.uid];
                 const ic = likeBtn.querySelector('i');
                 if (ic) ic.classList.toggle('liked', liked);
-                else likeBtn.innerHTML = `<i class="fas fa-heart${liked ? ' liked' : ''}"></i>`;
+                else likeBtn.innerHTML = `<i class="fx-ic${liked ? ' liked' : ''}">${window.FEELS_ICONS.heart}</i>`;
             }
         });
 
@@ -5485,9 +5523,9 @@ function updateLikesDOMOffline(shortId) {
         
         if (likeBtn) {
             if (isLocallyLiked) {
-                likeBtn.innerHTML = `<i class="fas fa-heart liked"></i>`;
+                likeBtn.innerHTML = `<i class="fx-ic liked">${window.FEELS_ICONS.heart}</i>`;
             } else {
-                likeBtn.innerHTML = `<i class="fas fa-heart"></i>`;
+                likeBtn.innerHTML = `<i class="fx-ic">${window.FEELS_ICONS.heart}</i>`;
             }
         }
     } catch (e) {}
@@ -6321,6 +6359,7 @@ function initFeelsObserver() {
                             const percentage = (video.currentTime / video.duration) * 100;
                             if (progressBar) progressBar.style.width = `${percentage}%`;
                         }
+                        feelsAutoAdvance(entry.target, video);
                     };
                 } else {
                     video.pause();

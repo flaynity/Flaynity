@@ -6715,18 +6715,34 @@ const AppNavigation = {
             const apply = () => {
                 if (!activePage && rec.win != null) {
                     const y = Math.max(0, Number(rec.win) || 0);
+                    const html = document.documentElement;
+                    const body = document.body;
+                    // Prevent CSS smooth-scrolling and scroll anchoring from
+                    // animating or correcting the restored feed position.
+                    const oldHtmlBehavior = html.style.scrollBehavior;
+                    const oldBodyBehavior = body.style.scrollBehavior;
+                    const oldAnchor = html.style.overflowAnchor;
+                    html.style.scrollBehavior = 'auto';
+                    body.style.scrollBehavior = 'auto';
+                    html.style.overflowAnchor = 'none';
                     try { window.scrollTo(0, y); } catch (e) {}
-                    try { document.documentElement.scrollTop = y; } catch (e) {}
-                    try { document.body.scrollTop = y; } catch (e) {}
+                    html.scrollTop = y;
+                    body.scrollTop = y;
+                    requestAnimationFrame(() => {
+                        html.style.scrollBehavior = oldHtmlBehavior;
+                        body.style.scrollBehavior = oldBodyBehavior;
+                        html.style.overflowAnchor = oldAnchor;
+                    });
                 }
                 rec.els.forEach(([el, top]) => {
-                    if (el.isConnected && el.getClientRects().length && Math.abs(el.scrollTop - top) > 1) el.scrollTop = top;
+                    if (el.isConnected && el.getClientRects().length && Math.abs(el.scrollTop - top) > 1) {
+                        el.style.scrollBehavior = 'auto';
+                        el.scrollTop = top;
+                    }
                 });
             };
-            apply();
+            // Restore only after the destination tab has been made visible.
             requestAnimationFrame(() => requestAnimationFrame(apply));
-            setTimeout(apply, 120);
-            setTimeout(apply, 350);
         }
     },
 
@@ -6737,6 +6753,27 @@ const AppNavigation = {
         }
     }
 };
+
+// Keep the latest Home/other tab window position even when navigation happens
+// immediately after a fling or touch scroll.
+let flyNavScrollCaptureQueued = false;
+window.addEventListener('scroll', function() {
+    if (flyNavScrollCaptureQueued) return;
+    flyNavScrollCaptureQueued = true;
+    requestAnimationFrame(function() {
+        flyNavScrollCaptureQueued = false;
+        try {
+            if (AppNavigation && !AppNavigation._viewPage) {
+                const y = Math.max(Number(window.pageYOffset || window.scrollY || 0),
+                    Number(document.documentElement.scrollTop || 0),
+                    Number(document.body.scrollTop || 0));
+                const rec = AppNavigation._mem[AppNavigation._view] || { win: 0, els: [] };
+                rec.win = y;
+                AppNavigation._mem[AppNavigation._view] = rec;
+            }
+        } catch (e) {}
+    });
+}, { passive: true });
 
 // =========================================================
 // FLOATING LONG-VIDEO MINI PLAYER (PiP-style in-app player)
@@ -6750,7 +6787,7 @@ function flyEnsureMiniPlayerStyle() {
     const style = document.createElement('style');
     style.id = 'fly-mini-player-style';
     style.textContent = `
-        #fly-mini-player-overlay{position:fixed;right:12px;bottom:calc(64px + env(safe-area-inset-bottom,0px));width:min(48vw,340px);aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;z-index:5005;box-shadow:0 5px 18px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.14);touch-action:none;user-select:none;-webkit-user-select:none;}
+        #fly-mini-player-overlay{position:fixed;right:12px;bottom:calc(64px + env(safe-area-inset-bottom,0px));width:min(48vw,340px);aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;z-index:5005;box-shadow:0 5px 18px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.14);touch-action:none;user-select:none;-webkit-user-select:none;will-change:transform;}
         #fly-mini-player-overlay #video-player-container{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;display:block!important;z-index:1!important;background:#000;}
         #fly-mini-player-overlay #video-player-container video,#fly-mini-player-overlay #video-player-container iframe{width:100%!important;height:100%!important;object-fit:contain;background:#000;}
         #fly-mini-player-overlay .fly-mini-actions{position:absolute;right:5px;top:5px;z-index:20;display:flex;gap:5px;}
@@ -6787,16 +6824,24 @@ function flyEnterMiniPlayer() {
     const expandButton = overlay.querySelector('.fly-mini-expand');
     let miniDrag = null;
     let miniWasDragged = false;
+    let miniMoveFrame = 0;
+    let pendingMiniX = 0;
+    let pendingMiniY = 0;
+
     expandButton.addEventListener('click', function(e) {
         if (miniWasDragged) { e.preventDefault(); e.stopPropagation(); miniWasDragged = false; return; }
         flyRestoreFullPlayer();
     });
 
-    // Drag the mini player anywhere on the Home screen, then dock it to
-    // the nearest of the four screen corners.
+    // Free drag: keep the exact release position. Never snap to screen corners.
     overlay.addEventListener('pointerdown', function(e) {
         if (e.target.closest('.fly-mini-actions')) return;
         const rect = overlay.getBoundingClientRect();
+        overlay.style.left = rect.left + 'px';
+        overlay.style.top = rect.top + 'px';
+        overlay.style.right = 'auto';
+        overlay.style.bottom = 'auto';
+        overlay.style.transform = 'translate3d(0,0,0)';
         miniDrag = {
             pointerId: e.pointerId,
             startX: e.clientX,
@@ -6807,40 +6852,63 @@ function flyEnterMiniPlayer() {
         };
         try { overlay.setPointerCapture(e.pointerId); } catch(err) {}
     });
+
     overlay.addEventListener('pointermove', function(e) {
         if (!miniDrag || miniDrag.pointerId !== e.pointerId) return;
         const dx = e.clientX - miniDrag.startX;
         const dy = e.clientY - miniDrag.startY;
-        if (!miniDrag.moved && Math.abs(dx) + Math.abs(dy) > 7) {
+        if (!miniDrag.moved && Math.abs(dx) + Math.abs(dy) > 5) {
             miniDrag.moved = true;
             miniWasDragged = true;
         }
         if (!miniDrag.moved) return;
         e.preventDefault();
-        const maxLeft = Math.max(0, window.innerWidth - overlay.offsetWidth);
-        const maxTop = Math.max(0, window.innerHeight - overlay.offsetHeight);
-        const left = Math.max(0, Math.min(maxLeft, miniDrag.left + dx));
-        const top = Math.max(0, Math.min(maxTop, miniDrag.top + dy));
-        overlay.style.left = left + 'px';
-        overlay.style.top = top + 'px';
-        overlay.style.right = 'auto';
-        overlay.style.bottom = 'auto';
+
+        const width = overlay.offsetWidth;
+        const height = overlay.offsetHeight;
+        const viewport = window.visualViewport;
+        const viewLeft = viewport ? Math.max(0, viewport.offsetLeft) : 0;
+        const viewTop = viewport ? Math.max(0, viewport.offsetTop) : 0;
+        const viewRight = viewport ? Math.min(window.innerWidth, viewLeft + viewport.width) : window.innerWidth;
+        const viewBottom = viewport ? Math.min(window.innerHeight, viewTop + viewport.height) : window.innerHeight;
+        const header = document.querySelector('header');
+        const bottomNav = document.querySelector('#app-screen .bottom-nav, .bottom-nav');
+        const minTop = Math.max(viewTop + 8, header && header.getClientRects().length ? header.getBoundingClientRect().bottom + 6 : viewTop + 8);
+        const maxBottom = bottomNav && bottomNav.getClientRects().length ? Math.min(viewBottom - 8, bottomNav.getBoundingClientRect().top - 8) : viewBottom - 8;
+        const minLeft = viewLeft + 8;
+        const maxLeft = Math.max(minLeft, viewRight - width - 8);
+        const minY = Math.min(minTop, Math.max(viewTop + 8, maxBottom - height));
+        const maxY = Math.max(minY, maxBottom - height);
+        const left = Math.max(minLeft, Math.min(maxLeft, miniDrag.left + dx));
+        const top = Math.max(minY, Math.min(maxY, miniDrag.top + dy));
+
+        pendingMiniX = left - miniDrag.left;
+        pendingMiniY = top - miniDrag.top;
+        if (!miniMoveFrame) {
+            miniMoveFrame = requestAnimationFrame(function() {
+                overlay.style.transform = 'translate3d(' + pendingMiniX + 'px,' + pendingMiniY + 'px,0)';
+                miniMoveFrame = 0;
+            });
+        }
     });
+
     function finishMiniDrag(e) {
         if (!miniDrag || (e && miniDrag.pointerId !== e.pointerId)) return;
-        const wasMoved = miniDrag.moved;
+        const drag = miniDrag;
         miniDrag = null;
-        if (!wasMoved) return;
-        const maxLeft = Math.max(0, window.innerWidth - overlay.offsetWidth);
-        const maxTop = Math.max(0, window.innerHeight - overlay.offsetHeight);
+        if (!drag.moved) return;
+
+        if (miniMoveFrame) {
+            cancelAnimationFrame(miniMoveFrame);
+            miniMoveFrame = 0;
+            overlay.style.transform = 'translate3d(' + pendingMiniX + 'px,' + pendingMiniY + 'px,0)';
+        }
         const rect = overlay.getBoundingClientRect();
-        const left = rect.left + rect.width / 2 < window.innerWidth / 2 ? 10 : maxLeft - 10;
-        const top = rect.top + rect.height / 2 < window.innerHeight / 2 ? 10 : maxTop - 10;
-        overlay.style.left = Math.max(0, Math.min(maxLeft, left)) + 'px';
-        overlay.style.top = Math.max(0, Math.min(maxTop, top)) + 'px';
-        overlay.style.right = 'auto';
-        overlay.style.bottom = 'auto';
-        setTimeout(function(){ miniWasDragged = false; }, 250);
+        overlay.style.left = rect.left + 'px';
+        overlay.style.top = rect.top + 'px';
+        overlay.style.transform = 'translate3d(0,0,0)';
+        // Keep the exact position where the user released the player.
+        setTimeout(function(){ miniWasDragged = false; }, 350);
     }
     overlay.addEventListener('pointerup', finishMiniDrag);
     overlay.addEventListener('pointercancel', finishMiniDrag);

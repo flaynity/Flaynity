@@ -4562,36 +4562,6 @@ function scrollFeelsToSlide(swiper, slide, behavior = 'auto') {
     }
 }
 
-// ---------- Feels "Auto" button: when ON, next Feels opens by itself when the video ends ----------
-function isFeelsAutoOn() { try { return localStorage.getItem('flaynity_feels_auto') === '1'; } catch (e) { return false; } }
-function updateFeelsAutoBtn() {
-    const b = document.getElementById('feels-auto-btn');
-    if (!b) return;
-    const on = isFeelsAutoOn();
-    b.classList.toggle('on', on);
-    b.setAttribute('aria-pressed', on ? 'true' : 'false');
-}
-function toggleFeelsAuto() {
-    const next = !isFeelsAutoOn();
-    try { localStorage.setItem('flaynity_feels_auto', next ? '1' : '0'); } catch (e) {}
-    try { triggerFeelsHaptic(10); } catch (e) {}
-    updateFeelsAutoBtn();
-    try { showNotification(next ? 'Auto scroll ON' : 'Auto scroll OFF', 'success'); } catch (e) {}
-}
-function feelsAutoAdvance(slide, video) {
-    if (!isFeelsAutoOn() || !video || !video.duration || !isFinite(video.duration)) return;
-    const left = video.duration - video.currentTime;
-    if (left > 1) { slide._autoAdv = false; return; }       // re-arm after the loop restarts
-    if (left > 0.35 || slide._autoAdv) return;
-    const next = slide.nextElementSibling;
-    const swiper = slide.closest('.feels-swiper');
-    if (!next || !swiper) return;                            // last Feels: keep looping
-    slide._autoAdv = true;
-    try { swiper.scrollTo({ top: next.offsetTop, behavior: 'smooth' }); } catch (e) { swiper.scrollTop = next.offsetTop; }
-}
-document.addEventListener('DOMContentLoaded', updateFeelsAutoBtn);
-setTimeout(updateFeelsAutoBtn, 0);
-
 function setFeelsFeedMode(mode) {
     const nextMode = mode === 'subscribe' ? 'subscribe' : 'for-you';
     if (feelsFeedMode === nextMode) {
@@ -4652,7 +4622,6 @@ function setFeelsFeedMode(mode) {
 }
 
 function updateFeelsModeButtons() {
-    updateFeelsAutoBtn();
     document.querySelectorAll('.feels-mode-btn').forEach(btn => {
         const active = btn.dataset.mode === feelsFeedMode;
         btn.classList.toggle('active', active);
@@ -4905,6 +4874,10 @@ function buildFeelsPage() {
                     <div class="short-progress-bar" id="short-progress-bar-${s.id}"></div>
                 </div>
 
+                    <div class="short-quality-pill">
+                        <button type="button" class="short-quality-btn" aria-label="Video quality" onclick="openFeelsQualitySheet('${s.id}', event)"><span class="short-quality-label">${feelsQualityLabel()}</span><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+                    </div>
+
                 <div class="short-right-actions">
                     <div class="short-channel-action">
                         <div class="short-channel-ring">
@@ -4945,9 +4918,6 @@ function buildFeelsPage() {
                         <div class="short-action-label-tiktok" id="short-shares-count-${s.id}">Share</div>
                     </div>
 
-                    <div class="short-quality-pill">
-                        <button type="button" class="short-quality-btn" aria-label="Video quality" onclick="openFeelsQualitySheet('${s.id}', event)"><span class="short-quality-label">${feelsQualityLabel()}</span><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
-                    </div>
                     <div class="music-disc-container">
                         <div class="music-disc-inner live-disc-avatar-${s.userId || s.channelId}" id="music-disc-${s.id}">
                             <img src="${s.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
@@ -5114,7 +5084,7 @@ function setupDoubleTapListeners() {
     let clickTimer = null;
     document.querySelectorAll('.short-slide').forEach(slide => {
         slide.addEventListener('click', (e) => {
-            if (e.target.closest('.short-right-actions') || e.target.closest('.short-bottom-info') || e.target.closest('.short-progress-container')) {
+            if (e.target.closest('.short-right-actions') || e.target.closest('.short-quality-pill') || e.target.closest('.short-bottom-info') || e.target.closest('.short-progress-container')) {
                 return;
             }
             const video = slide.querySelector('video');
@@ -6359,7 +6329,6 @@ function initFeelsObserver() {
                             const percentage = (video.currentTime / video.duration) * 100;
                             if (progressBar) progressBar.style.width = `${percentage}%`;
                         }
-                        feelsAutoAdvance(entry.target, video);
                     };
                 } else {
                     video.pause();

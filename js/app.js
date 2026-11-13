@@ -2474,7 +2474,7 @@ window.authEmailSignup = async function () {
         del: (k) => { try { localStorage.removeItem(k); } catch (e) {} }
     };
     // Cloudflare Worker URL (no trailing slash). Replace after deploying the worker.
-    const VF_API = 'https://flaynity-verify.flaynity.workers.dev';
+    const VF_API = 'https://authorization.flaynity.indevs.in';
     const fn = (name) => async (data) => {
         const user = auth.currentUser;
         if (!user) { const e = new Error('Please sign in first.'); e.code = 'functions/unauthenticated'; throw e; }

@@ -473,10 +473,15 @@
 .short-action-btn-tiktok i.fx-ic.liked { color:#FE2C55 !important; animation: tiktokHeartPop .35s cubic-bezier(.175,.885,.32,1.5) forwards; }
 .short-action-btn-tiktok-other i.fx-ic.saved { color:#FFC107 !important; }
 
-/* ===== Video quality "Auto" button: top-left, same row as For You ===== */
-.short-quality-pill { position:absolute !important; left:12px; top:calc(env(safe-area-inset-top, 0px) + 16px); margin:0 !important; z-index:31; }
-.short-quality-btn { height:28px; padding:0 10px !important; font-size:13px !important; border-radius:14px !important; background:rgba(0,0,0,.28) !important; }
-.short-slide.scrubbing .short-quality-pill { opacity:0; transition:opacity .15s; }
+/* ===== Settings icon: fixed on the top-left, does NOT scroll with the Feels (same as For You) ===== */
+.feels-settings-btn {
+    position: fixed; left: 14px; top: calc(env(safe-area-inset-top, 0px) + 10px); z-index: 31;
+    width: 40px; height: 40px; border: 0; background: transparent; color: #fff; padding: 0;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    -webkit-tap-highlight-color: transparent; filter: drop-shadow(0 1px 3px rgba(0,0,0,.55));
+}
+.feels-settings-btn svg { width: 26px; height: 26px; }
+.feels-settings-btn:active { transform: scale(.88); }
 
 /* ===== Tighter spacing between action buttons ===== */
 .short-right-actions { gap:4px !important; }
@@ -485,12 +490,21 @@
 .fx-ic svg { width:40px; height:40px; }
 .short-action-label-tiktok { font-size:13px !important; font-weight:700 !important; margin-top:0 !important; line-height:1.15 !important; }
 .music-disc-container { margin-top:4px !important; }
+
+/* ===== Feels description open: video shrinks to the top, overlays fade (no jump) ===== */
+.short-video-el { transition: transform .38s cubic-bezier(.22,1,.36,1); will-change: transform; }
+.short-slide .short-right-actions, .short-slide .short-bottom-info, .short-slide .short-progress-container { transition: opacity .2s ease; }
+#feels-tab.fds-open .feels-mode-switch, #feels-tab.fds-open .feels-search-btn, #feels-tab.fds-open .feels-settings-btn { opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+#feels-tab.fds-open .feels-swiper { overflow: hidden !important; }
+.short-slide.fds-open .short-right-actions, .short-slide.fds-open .short-bottom-info, .short-slide.fds-open .short-progress-container, .short-slide.fds-open .short-play-pause-overlay { opacity: 0 !important; pointer-events: none; }
+.short-slide.fds-open::after { opacity: 0; transition: opacity .2s ease; }
 </style></head><body>
 <div class="tab-content" id="feels-tab" style="padding:0;">
 <div class="feels-mode-switch" role="tablist" aria-label="Feels feed">
 <button type="button" class="feels-mode-btn active" data-mode="for-you" role="tab" aria-selected="true" onclick="setFeelsFeedMode('for-you')">For You</button>
 <button type="button" class="feels-mode-btn" data-mode="subscribe" role="tab" aria-selected="false" onclick="setFeelsFeedMode('subscribe')">Subscribe</button>
 </div>
+<button type="button" id="feels-settings-btn" class="feels-settings-btn" aria-label="Settings" onclick="openFeelsSettingsTop(event)"><svg viewBox="0 0 24 24"  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15z"/></svg></button>
 <button type="button" class="feels-search-btn" aria-label="Search" onclick="switchTab('discover')"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="7"></circle><path d="M16 16l5 5"></path></svg></button>
 <div id="feels-swiper-container" style="height:100%; width:100%;"></div>
 </div>

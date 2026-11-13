@@ -492,7 +492,8 @@
 .music-disc-container { margin-top:4px !important; }
 
 /* ===== Feels description open: video shrinks to the top, overlays fade (no jump) ===== */
-.short-video-el { transition: transform .38s cubic-bezier(.22,1,.36,1); will-change: transform; }
+.short-slide { padding-top: env(safe-area-inset-top, 0px) !important; box-sizing: border-box !important; }
+.short-video-el { transition: transform .38s cubic-bezier(.22,1,.36,1); object-fit: contain !important; }
 .short-slide .short-right-actions, .short-slide .short-bottom-info, .short-slide .short-progress-container { transition: opacity .2s ease; }
 #feels-tab.fds-open .feels-mode-switch, #feels-tab.fds-open .feels-search-btn, #feels-tab.fds-open .feels-settings-btn { opacity: 0; pointer-events: none; transition: opacity .2s ease; }
 #feels-tab.fds-open .feels-swiper { overflow: hidden !important; }

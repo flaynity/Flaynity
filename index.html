@@ -25,6 +25,82 @@
 <title>Flaynity</title>
 <meta name="theme-color" content="#FFFFFF" id="flaynity-theme-color">
 <meta name="msapplication-navbutton-color" content="#FFFFFF" id="flaynity-ms-theme-color">
+
+<script id="flaynity-brand-asset-cache">
+(function () {
+    'use strict';
+    var assets = [
+        { key: 'flaynity_brand_name_dark_v1', url: 'assets/name.dark.png', selector: '.brand-name-dark' },
+        { key: 'flaynity_brand_name_light_v1', url: 'assets/name.light.png', selector: '.brand-name-light' }
+    ];
+
+    function applyCachedBrandImages(root) {
+        var scope = root && root.querySelectorAll ? root : document;
+        assets.forEach(function (asset) {
+            var dataUrl = null;
+            try { dataUrl = localStorage.getItem(asset.key); } catch (e) {}
+            if (!dataUrl) return;
+            var nodes = [];
+            if (scope.matches && scope.matches(asset.selector)) nodes.push(scope);
+            if (scope.querySelectorAll) nodes = nodes.concat(Array.prototype.slice.call(scope.querySelectorAll(asset.selector)));
+            nodes.forEach(function (img) {
+                if (img.getAttribute('src') !== dataUrl) img.setAttribute('src', dataUrl);
+            });
+        });
+    }
+
+    function toDataUrl(blob) {
+        return new Promise(function (resolve, reject) {
+            var reader = new FileReader();
+            reader.onload = function () { resolve(reader.result); };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    function cacheAsset(asset) {
+        var cached = null;
+        try { cached = localStorage.getItem(asset.key); } catch (e) {}
+        if (cached) return Promise.resolve(cached);
+        if (!navigator.onLine || typeof fetch !== 'function') return Promise.resolve(null);
+        return fetch(asset.url, { cache: 'force-cache' })
+            .then(function (response) {
+                if (!response.ok) throw new Error('Brand image download failed: ' + asset.url);
+                return response.blob();
+            })
+            .then(toDataUrl)
+            .then(function (dataUrl) {
+                try { localStorage.setItem(asset.key, dataUrl); } catch (e) {
+                    console.warn('Unable to save Flaynity brand image in localStorage:', e);
+                    return null;
+                }
+                applyCachedBrandImages(document);
+                return dataUrl;
+            })
+            .catch(function (error) {
+                console.warn('Flaynity brand image cache:', error);
+                return null;
+            });
+    }
+
+    window.FlaynityBrandAssets = {
+        apply: applyCachedBrandImages,
+        ready: Promise.all(assets.map(cacheAsset))
+    };
+
+    applyCachedBrandImages(document);
+    if (window.MutationObserver && document.documentElement) {
+        new MutationObserver(function (records) {
+            records.forEach(function (record) {
+                record.addedNodes.forEach(function (node) {
+                    if (node.nodeType === 1) applyCachedBrandImages(node);
+                });
+            });
+        }).observe(document.documentElement, { childList: true, subtree: true });
+    }
+})();
+</script>
+
 <script>
 (function () {
     try {

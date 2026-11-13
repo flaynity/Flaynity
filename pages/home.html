@@ -375,6 +375,10 @@
         
         .brand { color: var(--text-main); font-size: 1.3rem; font-weight: 900; margin: 0; display: flex; align-items: center; gap: 8px; }
         .brand span { color: var(--primary); }
+        .brand .brand-name-image { display: block; width: auto; height: 26px; max-width: 132px; object-fit: contain; }
+        .brand .brand-name-dark { display: none; }
+        [data-theme="dark"] .brand .brand-name-light { display: none; }
+        [data-theme="dark"] .brand .brand-name-dark { display: block; }
         .header-avatar { width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), #FF7A00); color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; cursor: pointer; overflow: hidden; border: 1px solid rgba(0,0,0,0.05); }
         .header-avatar img { width: 100%; height: 100%; object-fit: cover;}
 
@@ -1899,8 +1903,8 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 </div>
 <header>
 <div class="brand" id="brand-appbar">
-<img src="../assets/flaynity-logo.png" alt="Flaynity" style="width:28px;height:28px;object-fit:contain;border-radius:7px;display:block;">
-<span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 900; font-size: 1.35rem; color: var(--text-main); letter-spacing: -0.5px;">Flaynity</span>
+<img class="brand-name-image brand-name-light" src="../assets/name.light.png" alt="Flaynity">
+<img class="brand-name-image brand-name-dark" src="../assets/name.dark.png" alt="Flaynity">
 </div>
 <div class="header-actions" id="appbar-actions-wrap" style="display: flex; align-items: center; gap: 14px;">
 <button id="appbar-create-btn" onclick="openCreateBottomSheet(); playUI('click')" aria-label="Upload" title="Upload" style="background: none; border: none; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">

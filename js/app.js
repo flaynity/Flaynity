@@ -5131,12 +5131,12 @@ function ttqEnsure() {
     .fds-scroll{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:2px 18px calc(30px + env(safe-area-inset-bottom,0px));touch-action:pan-y}
     .fds-head{display:flex;align-items:flex-start;gap:10px}
     .fds-title{flex:1 1 auto;margin:0;font-size:20px;line-height:1.42;font-weight:800;letter-spacing:-.2px;word-break:break-word;color:#fff}
-    .fds-tag{color:#ff3d7f;font-weight:700}
+    .fds-tag{color:#D80E45;font-weight:700}
     .fds-x{flex:0 0 auto;width:36px;height:36px;border:0;border-radius:50%;background:rgba(255,255,255,.09);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
     .fds-x:active{background:rgba(255,255,255,.2)}
     .fds-x svg{width:20px;height:20px;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;fill:none}
     .fds-chan{display:flex;align-items:center;gap:12px;margin:16px 0 18px;padding:10px 12px;border-radius:18px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.07)}
-    .fds-av{width:40px;height:40px;border-radius:50%;object-fit:cover;background:#222;flex:0 0 auto;box-shadow:0 0 0 2px #0f0f11,0 0 0 4px #ff3d7f}
+    .fds-av{width:40px;height:40px;border-radius:50%;object-fit:cover;background:#222;flex:0 0 auto;box-shadow:0 0 0 2px #0f0f11,0 0 0 4px #D80E45}
     .fds-cname{font-size:16.5px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .fds-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:0 0 20px}
     .fds-stat{text-align:center;padding:12px 6px;border-radius:16px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.07);min-width:0}
@@ -14973,7 +14973,7 @@ function fdsEnsure() {
 }
 function fdsTagify(text) {
     return escapeHTML(String(text || '')).replace(/(?<!&)#[\p{L}\p{N}_]+/gu,
-        m => `<span class="fds-tag" style="color:#ff3d7f !important;-webkit-text-fill-color:#ff3d7f;font-weight:700">${m}</span>`);
+        m => `<span class="fds-tag app-hashtag" style="color:#D80E45 !important;-webkit-text-fill-color:#D80E45;font-weight:700">${m}</span>`);
 }
 function fdsVideoFit(slide, on) {
     const v = slide && slide.querySelector('.short-video-el');
@@ -15091,3 +15091,65 @@ function closeFeelsDescSheet() {
         else el.style.display = 'none';
     }, 230);
 }
+
+
+// =========================================================
+// App-wide hashtags: any #tag the user writes (titles, descriptions, posts, comments...) is shown in #D80E45
+// =========================================================
+(function appHashtagColor() {
+    const COLOR = '#D80E45';
+    const st = document.createElement('style');
+    st.textContent = `.app-hashtag{color:${COLOR} !important;-webkit-text-fill-color:${COLOR} !important;}`;
+    (document.head || document.documentElement).appendChild(st);
+
+    const RE = /(?<![&#\/=])#[\p{L}_][\p{L}\p{N}_]*/gu;
+    const SKIP = /^(SCRIPT|STYLE|TEXTAREA|INPUT|OPTION|SELECT|TITLE|NOSCRIPT|CODE)$/;
+
+    function processText(node) {
+        const t = node.nodeValue;
+        if (!t || t.indexOf('#') < 0) return;
+        const p = node.parentElement;
+        if (!p || SKIP.test(p.tagName) || p instanceof SVGElement) return;
+        if (p.closest('.app-hashtag,[contenteditable="true"],[data-no-hashtag]')) return;
+        RE.lastIndex = 0;
+        let last = 0, m, frag = null;
+        while ((m = RE.exec(t)) !== null) {
+            if (!frag) frag = document.createDocumentFragment();
+            if (m.index > last) frag.appendChild(document.createTextNode(t.slice(last, m.index)));
+            const sp = document.createElement('span');
+            sp.className = 'app-hashtag';
+            sp.textContent = m[0];
+            frag.appendChild(sp);
+            last = m.index + m[0].length;
+        }
+        if (!frag) return;
+        if (last < t.length) frag.appendChild(document.createTextNode(t.slice(last)));
+        node.parentNode.replaceChild(frag, node);
+    }
+    function processTree(root) {
+        if (root.nodeType === 3) { processText(root); return; }
+        if (root.nodeType !== 1 || SKIP.test(root.tagName)) return;
+        const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        const list = []; let n;
+        while ((n = w.nextNode())) { if (n.nodeValue && n.nodeValue.indexOf('#') >= 0) list.push(n); }
+        list.forEach(processText);
+    }
+
+    let queue = new Set(), scheduled = false;
+    function flush() {
+        scheduled = false;
+        const items = Array.from(queue); queue = new Set();
+        items.forEach(n => { if (n.isConnected) processTree(n); });
+    }
+    function start() {
+        processTree(document.body);
+        new MutationObserver(recs => {
+            for (const r of recs) {
+                if (r.type === 'characterData') queue.add(r.target);
+                else r.addedNodes.forEach(n => queue.add(n));
+            }
+            if (!scheduled) { scheduled = true; requestAnimationFrame(flush); }
+        }).observe(document.body, { childList: true, subtree: true, characterData: true });
+    }
+    if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+})();

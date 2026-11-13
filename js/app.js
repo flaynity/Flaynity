@@ -14896,13 +14896,12 @@ function openFeelsSettingsTop(event) {
 }
 
 // =========================================================
-// Feels: 9:16 videos fill the screen (status bar -> bottom navigation)
+// Feels: every video keeps its original aspect ratio (9:16 fills status-bar-bottom -> bottom navigation)
 // =========================================================
 function feelsApplyVideoFit(v) {
-    if (!v || !v.videoWidth || !v.videoHeight) return;
-    const r = v.videoWidth / v.videoHeight;
-    const vertical = r >= 0.5 && r <= 0.6;               // 9:16 = 0.5625
-    v.style.setProperty('object-fit', vertical ? 'cover' : 'contain', 'important');
+    if (!v) return;
+    v.style.setProperty('object-fit', 'contain', 'important');   // original aspect ratio, never cropped / stretched
+    v.style.setProperty('object-position', 'center', 'important');
 }
 ['loadedmetadata', 'loadeddata', 'resize'].forEach(ev => {
     document.addEventListener(ev, e => {
@@ -14967,10 +14966,12 @@ function fdsVideoFit(slide, on) {
     if (!v) return;
     if (!on) { v.style.setProperty('transform', 'none', 'important'); return; }
     const H = slide.clientHeight || 1;
-    const top = window.innerHeight * 0.38;                 // top edge of the sheet
-    const sc = Math.min(1, (top - 12) / H);
-    const ty = top / 2 - H / 2;                            // centre inside the free area
-    v.style.setProperty('transform', `translateY(${ty}px) scale(${sc})`, 'important');
+    const P = parseFloat(getComputedStyle(slide).paddingTop) || 0;   // status bar gap
+    const Hc = Math.max(1, H - P);                                   // video box height
+    const top = window.innerHeight * 0.38;                           // top edge of the sheet
+    const sc = Math.min(1, (top - P - 10) / Hc);
+    const ty = (top - H) / 2;                                        // centre of free area (P..top)
+    v.style.setProperty('transform', `translate3d(0,${ty}px,0) scale(${sc})`, 'important');
 }
 function fdsCleanup() {
     const tab = document.getElementById('feels-tab');

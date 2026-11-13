@@ -5142,12 +5142,10 @@ function ttqEnsure() {
     .fds-stat{text-align:center;padding:12px 6px;border-radius:16px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.07);min-width:0}
     .fds-stat b{display:block;font-size:19px;font-weight:800;line-height:1.2;color:#fff}
     .fds-stat span{display:block;font-size:12.5px;letter-spacing:.3px;color:rgba(255,255,255,.58);margin-top:3px}
-    .fds-label{display:flex;align-items:center;gap:8px;margin:0 2px 10px;font-size:13px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;color:rgba(255,255,255,.7)}
-    .fds-label:before{content:"";width:4px;height:16px;border-radius:2px;background:linear-gradient(180deg,#ff6a95,#ff2d55)}
-    .fds-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:16px 18px;font-size:15.5px;line-height:1.65;color:rgba(255,255,255,.92);white-space:pre-wrap;word-break:break-word;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .fds-card{background:#2b201c;border-radius:20px;padding:16px 18px;font-size:16px;line-height:1.45;color:#fff;white-space:pre-wrap;word-break:break-word;cursor:pointer;-webkit-tap-highlight-color:transparent}
     .fds-card .fds-body{display:block}
-    .fds-card.collapsed .fds-body{max-height:calc(1.65em * 6);overflow:hidden;-webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent)}
-    .fds-card .fds-more{display:none;margin-top:8px;font-size:14px;font-weight:800;color:#ff3d7f}
+    .fds-card.collapsed .fds-body{max-height:calc(1.45em * 6);overflow:hidden}
+    .fds-card .fds-more{display:none;font-weight:700;margin-top:2px}
     .fds-card.has-more .fds-more{display:block}
     .fds-empty{color:rgba(255,255,255,.5);font-style:italic}
     `;
@@ -14974,7 +14972,8 @@ function fdsEnsure() {
     return el;
 }
 function fdsTagify(text) {
-    return escapeHTML(String(text || '')).replace(/(?<!&)#[\w\u0980-\u09FF]+/g, m => `<span class="fds-tag">${m}</span>`);
+    return escapeHTML(String(text || '')).replace(/(?<!&)#[\p{L}\p{N}_]+/gu,
+        m => `<span class="fds-tag" style="color:#ff3d7f !important;-webkit-text-fill-color:#ff3d7f;font-weight:700">${m}</span>`);
 }
 function fdsVideoFit(slide, on) {
     const v = slide && slide.querySelector('.short-video-el');
@@ -15023,7 +15022,6 @@ function openFeelsDescSheet(shortId) {
             <div class="fds-stat"><b id="fds-views">—</b><span>Views</span></div>
             <div class="fds-stat"><b>${dMain}</b><span>${dYear}</span></div>
           </div>
-          <div class="fds-label">Description</div>
           <div class="fds-card collapsed" id="fds-card"><span class="fds-body${desc ? '' : ' fds-empty'}">${desc ? fdsTagify(desc) : 'No description provided.'}</span><span class="fds-more">...more</span></div>
         </div>
       </div>`;

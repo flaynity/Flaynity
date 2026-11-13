@@ -2473,51 +2473,31 @@ window.authEmailSignup = async function () {
         set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
         del: (k) => { try { localStorage.removeItem(k); } catch (e) {} }
     };
-    // Prefer the custom authorization domain, then fall back to the deployed
-    // workers.dev hostname if DNS, SSL, or custom-domain routing is unavailable.
-    const VF_APIS = [
-        'https://authorization.flaynity.indevs.in',
-        'https://flaynity-verify.flaynity.workers.dev'
-    ];
+    // Use only the custom authorization domain for email verification.
+    const VF_API = 'https://authorization.flaynity.indevs.in';
     const fn = (name) => async (data) => {
         const user = auth.currentUser;
         if (!user) { const e = new Error('Please sign in first.'); e.code = 'functions/unauthenticated'; throw e; }
         const token = await user.getIdToken();
-        let lastNetworkError = null;
-
-        for (const base of VF_APIS) {
-            let res, j = {};
-            try {
-                res = await fetch(base + '/' + name, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify(data || {})
-                });
-                j = await res.json().catch(() => ({}));
-            } catch (netErr) {
-                lastNetworkError = netErr;
-                continue;
-            }
-
-            // A missing route or temporary Worker failure may be specific to
-            // the custom domain, so try the workers.dev endpoint as a fallback.
-            if (res.status === 404 || res.status === 502 || res.status === 503 || res.status === 504) {
-                lastNetworkError = new Error(j.error || ('Verification endpoint returned HTTP ' + res.status));
-                continue;
-            }
-            if (!res.ok || j.ok === false) {
-                const e = new Error(j.error || 'Something went wrong.');
-                e.code = 'functions/' + (j.code || 'error');
-                throw e;
-            }
-            return j;
+        let res, j = {};
+        try {
+            res = await fetch(VF_API + '/' + name, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify(data || {})
+            });
+            j = await res.json().catch(() => ({}));
+        } catch (netErr) {
+            const e = new Error('Unable to reach the verification server. Please check your connection and try again.');
+            e.code = 'functions/unavailable';
+            throw e;
         }
-
-        const e = new Error(lastNetworkError
-            ? 'Unable to reach the verification server. Please try again in a moment.'
-            : 'Verification server is unavailable. Please try again later.');
-        e.code = 'functions/unavailable';
-        throw e;
+        if (!res.ok || j.ok === false) {
+            const e = new Error(j.error || ('Verification server returned HTTP ' + res.status));
+            e.code = 'functions/' + (j.code || 'error');
+            throw e;
+        }
+        return j;
     };
 
     function setError(msg) {

@@ -4654,7 +4654,6 @@ function openFeelsDescription(shortId, event) {
     const s = allFeels.find(item => String(item.id) === String(shortId));
     if (!s) return;
     currentActiveMovie = s;
-    keepFeelsVideoActive(s.id);
     openShortDescBottomSheet(s.id);
 }
 function openFeelsComments(shortId, event) {
@@ -4874,9 +4873,6 @@ function buildFeelsPage() {
                     <div class="short-progress-bar" id="short-progress-bar-${s.id}"></div>
                 </div>
 
-                    <div class="short-quality-pill">
-                        <button type="button" class="short-quality-btn" aria-label="Video quality" onclick="openFeelsQualitySheet('${s.id}', event)"><span class="short-quality-label">${feelsQualityLabel()}</span><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
-                    </div>
 
                 <div class="short-right-actions">
                     <div class="short-channel-action">
@@ -5320,9 +5316,7 @@ function openShortDescBottomSheet(shortId) {
     const s = allFeels.find(item => String(item.id) === String(shortId));
     if (!s) return;
     currentActiveMovie = s;
-    keepFeelsVideoActive(s.id);
-    openMoreDescriptionSheet();          // same Description page as Long Video
-    requestAnimationFrame(() => keepFeelsVideoActive(s.id));
+    openFeelsDescSheet(s.id);            // YouTube-style Feels description (no jump, video keeps playing)
 }
 
 function openShortDescBottomSheetLegacy(shortId) {
@@ -14881,3 +14875,198 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
     }
     setTimeout(initAfterInjection, 0);
 })();
+
+
+// =========================================================
+// Feels: Settings icon (fixed) -> opens the current Feels' quality page
+// =========================================================
+function feelsCurrentSlideId() {
+    const sw = document.querySelector('#feels-swiper-container .feels-swiper');
+    if (!sw) return null;
+    const top = sw.getBoundingClientRect().top;
+    let best = null, bd = Infinity;
+    sw.querySelectorAll('.short-slide').forEach(sl => {
+        const d = Math.abs(sl.getBoundingClientRect().top - top);
+        if (d < bd) { bd = d; best = sl; }
+    });
+    return best ? (best.dataset.shortid || null) : null;
+}
+function openFeelsSettingsTop(event) {
+    openFeelsQualitySheet(feelsCurrentSlideId(), event);
+}
+
+// =========================================================
+// Feels: 9:16 videos fill the screen (status bar -> bottom navigation)
+// =========================================================
+function feelsApplyVideoFit(v) {
+    if (!v || !v.videoWidth || !v.videoHeight) return;
+    const r = v.videoWidth / v.videoHeight;
+    const vertical = r >= 0.5 && r <= 0.6;               // 9:16 = 0.5625
+    v.style.setProperty('object-fit', vertical ? 'cover' : 'contain', 'important');
+}
+['loadedmetadata', 'loadeddata', 'resize'].forEach(ev => {
+    document.addEventListener(ev, e => {
+        if (e.target && e.target.classList && e.target.classList.contains('short-video-el')) feelsApplyVideoFit(e.target);
+    }, true);
+});
+setInterval(() => {                                       // covers videos that were ready before the listener
+    document.querySelectorAll('.short-video-el').forEach(v => { if (v.readyState >= 1 && !v._fitDone) { v._fitDone = true; feelsApplyVideoFit(v); } });
+}, 1200);
+
+// =========================================================
+// Feels description sheet (YouTube Shorts style)
+// =========================================================
+let _fdsSlideId = null;
+function fdsEnsure() {
+    let el = document.getElementById('feels-desc-sheet');
+    if (el) return el;
+    const st = document.createElement('style');
+    st.textContent = `
+    #feels-desc-sheet{position:fixed;inset:0;z-index:3000;display:none;align-items:flex-end;justify-content:center;background:transparent}
+    #feels-desc-sheet .fds-catch{position:absolute;left:0;right:0;top:0;height:38vh}
+    #feels-desc-sheet .fds-sheet{position:relative;width:100%;height:62vh;box-sizing:border-box;background:#121212;color:#fff;border-radius:20px 20px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -8px 30px rgba(0,0,0,.45);animation:fdsUp .38s cubic-bezier(.22,1,.36,1);will-change:transform;touch-action:none}
+    #feels-desc-sheet .fds-sheet.closing{animation:fdsDown .24s ease-in forwards}
+    @keyframes fdsUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    @keyframes fdsDown{from{transform:translateY(0)}to{transform:translateY(100%)}}
+    .fds-grab{flex:0 0 auto;padding:12px 0 10px;display:flex;justify-content:center;cursor:grab}
+    .fds-grab span{width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,.35)}
+    .fds-scroll{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:0 18px calc(28px + env(safe-area-inset-bottom,0px));touch-action:pan-y}
+    .fds-head{display:flex;align-items:flex-start;gap:12px;padding-top:6px}
+    .fds-title{flex:1 1 auto;margin:0;font-size:21px;line-height:1.38;font-weight:800;letter-spacing:-.2px;word-break:break-word}
+    .fds-title .fds-tag{color:#3ea6ff}
+    .fds-x{flex:0 0 auto;width:40px;height:40px;margin-top:-4px;border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .fds-x svg{width:26px;height:26px;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;fill:none}
+    .fds-chan{display:flex;align-items:center;gap:12px;margin:18px 0 20px}
+    .fds-av{width:38px;height:38px;border-radius:50%;object-fit:cover;background:#222;flex:0 0 auto}
+    .fds-cname{font-size:17px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fds-stats{display:flex;justify-content:space-around;text-align:center;margin:0 0 22px}
+    .fds-stat{flex:1 1 0;min-width:0}
+    .fds-stat b{display:block;font-size:20px;font-weight:800;line-height:1.2}
+    .fds-stat span{display:block;font-size:14px;color:rgba(255,255,255,.62);margin-top:3px}
+    .fds-card{background:#2b201c;border-radius:20px;padding:16px 18px;font-size:16px;line-height:1.45;white-space:pre-wrap;word-break:break-word;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .fds-card .fds-body{display:block}
+    .fds-card.collapsed .fds-body{max-height:calc(1.45em * 6);overflow:hidden}
+    .fds-card .fds-tag{color:#3ea6ff}
+    .fds-card .fds-more{display:none;font-weight:700;margin-top:2px}
+    .fds-card.collapsed.has-more .fds-more{display:block}
+    `;
+    document.head.appendChild(st);
+    el = document.createElement('div');
+    el.id = 'feels-desc-sheet';
+    el.className = 'premium-download-modal';
+    document.body.appendChild(el);
+    // clean up whenever the page is hidden (also by the Android Back button)
+    new MutationObserver(() => { if (el.style.display === 'none') fdsCleanup(); }).observe(el, { attributes: true, attributeFilter: ['style'] });
+    return el;
+}
+function fdsTagify(text) {
+    return escapeHTML(String(text || '')).replace(/(?<!&)#[\w\u0980-\u09FF]+/g, m => `<span class="fds-tag">${m}</span>`);
+}
+function fdsVideoFit(slide, on) {
+    const v = slide && slide.querySelector('.short-video-el');
+    if (!v) return;
+    if (!on) { v.style.setProperty('transform', 'none', 'important'); return; }
+    const H = slide.clientHeight || 1;
+    const top = window.innerHeight * 0.38;                 // top edge of the sheet
+    const sc = Math.min(1, (top - 12) / H);
+    const ty = top / 2 - H / 2;                            // centre inside the free area
+    v.style.setProperty('transform', `translateY(${ty}px) scale(${sc})`, 'important');
+}
+function fdsCleanup() {
+    const tab = document.getElementById('feels-tab');
+    if (tab) tab.classList.remove('fds-open');
+    document.querySelectorAll('.short-slide.fds-open').forEach(sl => { sl.classList.remove('fds-open'); fdsVideoFit(sl, false); });
+    _fdsSlideId = null;
+}
+function openFeelsDescSheet(shortId) {
+    const s = allFeels.find(item => String(item.id) === String(shortId));
+    if (!s) return;
+    const slide = document.getElementById(`slide-short-${shortId}`);
+    const el = fdsEnsure();
+    _fdsSlideId = String(shortId);
+
+    const disc = document.querySelector(`#music-disc-${shortId} img`);
+    const avatar = (disc && disc.getAttribute('src')) || s.channelAvatar || '';
+    const cname = s.channelName || s.username || 'Flaynity';
+    const ts = s.createdAt ? new Date(s.createdAt) : new Date();
+    const dMain = ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const dYear = String(ts.getFullYear());
+    const likeEl = document.getElementById(`short-likes-count-${shortId}`);
+    const desc = String(s.description || '').trim();
+
+    el.innerHTML = `<div class="fds-catch"></div>
+      <div class="fds-sheet">
+        <div class="fds-grab"><span></span></div>
+        <div class="fds-scroll">
+          <div class="fds-head"><h2 class="fds-title">${fdsTagify(s.title || 'Feels')}</h2>
+            <button type="button" class="fds-x" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button></div>
+          <div class="fds-chan">${avatar ? `<img class="fds-av" src="${escapeHTML(avatar)}" alt="">` : '<span class="fds-av"></span>'}<span class="fds-cname">${escapeHTML(String(cname))}</span></div>
+          <div class="fds-stats">
+            <div class="fds-stat"><b id="fds-likes">${likeEl ? likeEl.textContent : '0'}</b><span>Likes</span></div>
+            <div class="fds-stat"><b id="fds-views">—</b><span>Views</span></div>
+            <div class="fds-stat"><b>${dMain}</b><span>${dYear}</span></div>
+          </div>
+          <div class="fds-card collapsed" id="fds-card"><span class="fds-body">${desc ? fdsTagify(desc) : 'No description provided.'}</span><span class="fds-more">...more</span></div>
+        </div>
+      </div>`;
+
+    const sheet = el.querySelector('.fds-sheet');
+    const close = () => closeFeelsDescSheet();
+    el.querySelector('.fds-catch').addEventListener('click', close);
+    el.querySelector('.fds-x').addEventListener('click', close);
+    const card = el.querySelector('#fds-card');
+    card.addEventListener('click', () => card.classList.remove('collapsed'));
+
+    // drag the handle / header down to close
+    let sy = 0, dy = 0, drag = false;
+    const grab = el.querySelector('.fds-grab');
+    grab.addEventListener('touchstart', e => { sy = e.touches[0].clientY; dy = 0; drag = true; sheet.style.animation = 'none'; sheet.style.transition = 'none'; }, { passive: true });
+    grab.addEventListener('touchmove', e => { if (!drag) return; dy = Math.max(0, e.touches[0].clientY - sy); sheet.style.transform = `translateY(${dy}px)`; }, { passive: true });
+    grab.addEventListener('touchend', () => {
+        if (!drag) return; drag = false;
+        if (dy > 90) { sheet.style.transform = ''; close(); }
+        else { sheet.style.transition = 'transform .2s ease'; sheet.style.transform = 'translateY(0)'; }
+    });
+
+    // video shrinks to the top while it keeps playing; overlays fade out
+    const tab = document.getElementById('feels-tab');
+    if (tab) tab.classList.add('fds-open');
+    if (slide) {
+        slide.classList.add('fds-open');
+        fdsVideoFit(slide, true);
+        const v = slide.querySelector('video');
+        if (v && v.paused) v.play().catch(() => {});
+    }
+    AppNavigation.pushModal('feels-desc-sheet');
+
+    // "...more" only when the text is really longer than the collapsed box
+    requestAnimationFrame(() => {
+        const body = card.querySelector('.fds-body');
+        if (body && body.scrollHeight > body.clientHeight + 2) card.classList.add('has-more');
+        else card.classList.remove('collapsed');
+    });
+
+    if (navigator.onLine) {
+        db.ref(`movie_stats/${shortId}`).once('value', snap => {
+            const st = snap.val() || {};
+            const v = document.getElementById('fds-views'); const l = document.getElementById('fds-likes');
+            if (v) v.textContent = formatCount(Object.keys(st.views || {}).length);
+            if (l) l.textContent = formatCount(Object.keys(st.likes || {}).length);
+        });
+    }
+}
+function closeFeelsDescSheet() {
+    const el = document.getElementById('feels-desc-sheet');
+    if (!el) return;
+    const sheet = el.querySelector('.fds-sheet');
+    const slide = _fdsSlideId ? document.getElementById(`slide-short-${_fdsSlideId}`) : null;
+    if (slide) { slide.classList.remove('fds-open'); fdsVideoFit(slide, false); }
+    const tab = document.getElementById('feels-tab');
+    if (tab) tab.classList.remove('fds-open');
+    if (sheet) { sheet.style.transform = ''; sheet.style.animation = ''; sheet.classList.add('closing'); }
+    setTimeout(() => {
+        const cur = AppNavigation.current();
+        if (cur && cur.id === 'feels-desc-sheet') AppNavigation.pop();
+        else el.style.display = 'none';
+    }, 230);
+}

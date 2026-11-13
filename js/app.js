@@ -14902,6 +14902,11 @@ function feelsApplyVideoFit(v) {
     if (!v) return;
     v.style.setProperty('object-fit', 'contain', 'important');   // original aspect ratio, never cropped / stretched
     v.style.setProperty('object-position', 'center', 'important');
+    const slide = v.closest('.short-slide');
+    if (slide && v.videoWidth && v.videoHeight) {
+        const r = v.videoWidth / v.videoHeight;
+        slide.classList.toggle('short-vertical', r >= 0.5 && r <= 0.6);   // 9:16 -> small gap above bottom navigation
+    }
 }
 ['loadedmetadata', 'loadeddata', 'resize'].forEach(ev => {
     document.addEventListener(ev, e => {
@@ -14967,10 +14972,11 @@ function fdsVideoFit(slide, on) {
     if (!on) { v.style.setProperty('transform', 'none', 'important'); return; }
     const H = slide.clientHeight || 1;
     const P = parseFloat(getComputedStyle(slide).paddingTop) || 0;   // status bar gap
-    const Hc = Math.max(1, H - P);                                   // video box height
+    const Pb = parseFloat(getComputedStyle(slide).paddingBottom) || 0; // gap above bottom navigation
+    const Hc = Math.max(1, H - P - Pb);                              // video box height
     const top = window.innerHeight * 0.38;                           // top edge of the sheet
     const sc = Math.min(1, (top - P - 10) / Hc);
-    const ty = (top - H) / 2;                                        // centre of free area (P..top)
+    const ty = (top - H + Pb) / 2;                                   // centre of free area (P..top)
     v.style.setProperty('transform', `translate3d(0,${ty}px,0) scale(${sc})`, 'important');
 }
 function fdsCleanup() {

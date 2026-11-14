@@ -20,7 +20,7 @@
 <meta name="google-adsense-account" content="ca-pub-3200255969875766">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<style id="flaynity-launch-base">html{background:#09090D}</style>
+<style id="flaynity-launch-base">html{background:#07070B}</style>
 <link rel="preload" as="image" href="assets/flaynity-logo.png">
 <title>Flaynity</title>
 <meta name="theme-color" content="#FFFFFF" id="flaynity-theme-color">
@@ -122,25 +122,25 @@
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
 </style>
 
-<!-- ===== Flaynity App Open Animation v3 — Premium Luminous Aura (~2.3s) =====
-     Stage 1  0-680ms     Obsidian studio backdrop, dual ambient aura, architectural SVG ring sweep,
-                          tactile icon emergence + diagonal glass sheen glint
-     Stage 2  620-1480ms  Radial iris illuminates into theme surface (Light / Dark),
-                          logo glides cleanly into centered lockup, "Flaynity" rises through masked baseline
-     Stage 3  1240-1950ms Gradient hairline divider blooms, "Connect • Share • Grow" settles cleanly
-     Wait     2300ms+     If app boot is still pending, seamless shimmer progress beam appears without cutting
-     Reveal               Smooth spatial zoom-dissolve straight into Home or Onboarding -->
+<!-- ===== Flaynity App Open Animation v4 — 3D Kinetic Prism & Motion Graphics (~2.55s) =====
+     Stage 1  0-700ms     Deep space studio, live 3D Canvas vortex & orbital comet ribbons,
+                          multi-axis 3D gyroscope rings, 3D extruded prism logo swoop + impact shockwave
+     Stage 2  660-1500ms  Luminous radial surface bloom (Light / Dark theme),
+                          logo performs 3D bank-tilt glide into lockup, "Flaynity" flips up in 3D masked slots
+     Stage 3  1280-2050ms Gradient rule with travelling light spark + 3D tagline rise
+     Wait     2550ms+     Gentle 3D levitation + bokeh canvas + shimmer bar if app boot continues
+     Reveal               3D Z-axis fly-through zoom-dissolve into Home or Onboarding -->
 <style id="flaynity-launch-style">
     #flaynity-startup-splash {
         --fs-brand: #D80E45;
         --fs-brand-2: #FF2D87;
         --fs-brand-3: #A855F7;
-        --fs-dark: #09090D;
+        --fs-dark: #07070B;
         --fs-surface: #FFFFFF;
         --fs-ink: #111116;
-        --fs-muted: rgba(17, 17, 22, 0.62);
+        --fs-muted: rgba(17, 17, 22, 0.64);
         --fs-track: rgba(17, 17, 22, 0.08);
-        --fs-LB: clamp(86px, 24vmin, 120px);
+        --fs-LB: clamp(88px, 24vmin, 122px);
         --fs-k: 0.54;
         --fs-L: calc(var(--fs-LB) * var(--fs-k));
         --fs-gap: calc(var(--fs-L) * 0.25);
@@ -154,13 +154,13 @@
         pointer-events: auto; touch-action: none;
         -webkit-user-select: none; user-select: none;
         -webkit-tap-highlight-color: transparent;
-        transition: opacity 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+        transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     }
     #flaynity-startup-splash.fs-dark {
-        --fs-surface: #0E0E12;
+        --fs-surface: #0C0C10;
         --fs-ink: #FFFFFF;
-        --fs-muted: rgba(255, 255, 255, 0.66);
-        --fs-track: rgba(255, 255, 255, 0.12);
+        --fs-muted: rgba(255, 255, 255, 0.68);
+        --fs-track: rgba(255, 255, 255, 0.13);
     }
     #flaynity-startup-splash *,
     #flaynity-startup-splash *::before,
@@ -168,17 +168,22 @@
         box-sizing: border-box;
     }
 
-    /* GPU compositor promotion for 60/90/120Hz lock */
+    /* GPU compositor promotion */
     #flaynity-startup-splash .fs-orb,
     #flaynity-startup-splash .fs-surface,
     #flaynity-startup-splash .fs-iris,
-    #flaynity-startup-splash .fs-ring,
+    #flaynity-startup-splash .fs-gyro,
+    #flaynity-startup-splash .fs-g-ring,
+    #flaynity-startup-splash .fs-stage,
+    #flaynity-startup-splash .fs-center,
     #flaynity-startup-splash .fs-logo,
-    #flaynity-startup-splash .fs-logo-glow,
-    #flaynity-startup-splash .fs-logo-card,
+    #flaynity-startup-splash .fs-slab,
+    #flaynity-startup-splash .fs-logo-aura,
+    #flaynity-startup-splash .fs-glass-rim,
     #flaynity-startup-splash .fs-sheen,
     #flaynity-startup-splash .fs-ch i,
     #flaynity-startup-splash .fs-divider,
+    #flaynity-startup-splash .fs-divider-spark,
     #flaynity-startup-splash .fs-tag span,
     #flaynity-startup-splash .fs-tag b,
     #flaynity-startup-splash .fs-wait,
@@ -187,207 +192,274 @@
         backface-visibility: hidden;
     }
 
-    /* Stage 1: Studio dark backdrop & soft radial aura orbs */
+    /* Studio dark aura + volumetric vignette */
     #flaynity-startup-splash .fs-stage-bg {
-        position: absolute; inset: 0;
-        pointer-events: none;
+        position: absolute; inset: 0; pointer-events: none;
     }
     #flaynity-startup-splash .fs-vignette {
         position: absolute; inset: 0;
-        background: radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.03) 0%, rgba(0, 0, 0, 0.45) 100%);
+        background: radial-gradient(circle at 50% 48%, rgba(255, 45, 135, 0.05) 0%, rgba(7, 7, 11, 0.55) 65%, #040407 100%);
     }
     #flaynity-startup-splash .fs-orb {
         position: absolute; left: 50%; top: 50%; border-radius: 50%; pointer-events: none;
     }
     #flaynity-startup-splash .fs-orb-a {
-        width: calc(var(--fs-LB) * 4.4); height: calc(var(--fs-LB) * 4.4);
-        margin: calc(var(--fs-LB) * -2.2) 0 0 calc(var(--fs-LB) * -2.2);
-        background: radial-gradient(circle, rgba(216, 14, 69, 0.42) 0%, rgba(255, 45, 135, 0.14) 38%, rgba(216, 14, 69, 0) 70%);
+        width: calc(var(--fs-LB) * 4.8); height: calc(var(--fs-LB) * 4.8);
+        margin: calc(var(--fs-LB) * -2.4) 0 0 calc(var(--fs-LB) * -2.4);
+        background: radial-gradient(circle, rgba(216, 14, 69, 0.48) 0%, rgba(255, 45, 135, 0.16) 36%, rgba(216, 14, 69, 0) 70%);
         opacity: 0;
-        animation: fsOrbA 1050ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both;
+        animation: fsOrbA 1150ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both;
     }
     #flaynity-startup-splash .fs-orb-b {
-        width: calc(var(--fs-LB) * 3.8); height: calc(var(--fs-LB) * 3.8);
-        margin: calc(var(--fs-LB) * -2.05) 0 0 calc(var(--fs-LB) * -1.55);
-        background: radial-gradient(circle, rgba(168, 85, 247, 0.24) 0%, rgba(168, 85, 247, 0.06) 44%, rgba(168, 85, 247, 0) 72%);
+        width: calc(var(--fs-LB) * 4.2); height: calc(var(--fs-LB) * 4.2);
+        margin: calc(var(--fs-LB) * -2.2) 0 0 calc(var(--fs-LB) * -1.7);
+        background: radial-gradient(circle, rgba(168, 85, 247, 0.28) 0%, rgba(124, 58, 237, 0.08) 44%, rgba(168, 85, 247, 0) 72%);
         opacity: 0;
-        animation: fsOrbB 1050ms ease-out 80ms both;
+        animation: fsOrbB 1150ms ease-out 70ms both;
     }
 
-    /* Stage 2: Adaptive Light/Dark surface illumination */
+    /* Stage 2: Theme-adaptive illuminated canvas */
     #flaynity-startup-splash .fs-surface {
         position: absolute; inset: 0;
         background: var(--fs-surface);
         opacity: 0;
-        animation: fsSurface 520ms cubic-bezier(0.32, 0, 0.2, 1) 620ms both;
+        animation: fsSurface 560ms cubic-bezier(0.32, 0, 0.2, 1) 660ms both;
     }
     #flaynity-startup-splash .fs-ambient {
         position: absolute; border-radius: 50%; pointer-events: none;
     }
     #flaynity-startup-splash .fs-ambient-tr {
-        right: -18vmax; top: -18vmax; width: 64vmax; height: 64vmax;
-        background: radial-gradient(circle, rgba(255, 45, 135, 0.085) 0%, rgba(255, 45, 135, 0) 68%);
+        right: -18vmax; top: -18vmax; width: 68vmax; height: 68vmax;
+        background: radial-gradient(circle, rgba(255, 45, 135, 0.095) 0%, rgba(255, 45, 135, 0) 68%);
     }
     #flaynity-startup-splash .fs-ambient-bl {
-        left: -20vmax; bottom: -20vmax; width: 66vmax; height: 66vmax;
-        background: radial-gradient(circle, rgba(168, 85, 247, 0.075) 0%, rgba(168, 85, 247, 0) 68%);
+        left: -20vmax; bottom: -20vmax; width: 70vmax; height: 70vmax;
+        background: radial-gradient(circle, rgba(168, 85, 247, 0.085) 0%, rgba(168, 85, 247, 0) 68%);
     }
     #flaynity-startup-splash.fs-dark .fs-ambient-tr {
-        background: radial-gradient(circle, rgba(216, 14, 69, 0.16) 0%, rgba(216, 14, 69, 0) 68%);
+        background: radial-gradient(circle, rgba(216, 14, 69, 0.18) 0%, rgba(216, 14, 69, 0) 68%);
     }
     #flaynity-startup-splash.fs-dark .fs-ambient-bl {
-        background: radial-gradient(circle, rgba(168, 85, 247, 0.13) 0%, rgba(168, 85, 247, 0) 68%);
+        background: radial-gradient(circle, rgba(168, 85, 247, 0.14) 0%, rgba(168, 85, 247, 0) 68%);
     }
     #flaynity-startup-splash .fs-iris {
         position: absolute; left: 50%; top: 50%;
-        width: 140vmax; height: 140vmax; margin: -70vmax 0 0 -70vmax;
+        width: 145vmax; height: 145vmax; margin: -72.5vmax 0 0 -72.5vmax;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(255, 45, 135, 0.14) 0%, rgba(216, 14, 69, 0.05) 35%, rgba(255, 255, 255, 0) 68%);
+        background: radial-gradient(circle, rgba(255, 45, 135, 0.20) 0%, rgba(216, 14, 69, 0.06) 34%, rgba(255, 255, 255, 0) 68%);
         opacity: 0;
-        animation: fsIris 720ms cubic-bezier(0.22, 1, 0.36, 1) 600ms both;
+        animation: fsIris 760ms cubic-bezier(0.22, 1, 0.36, 1) 620ms both;
     }
 
-    /* Stage 1: Architectural gradient orbital ring */
-    #flaynity-startup-splash .fs-ring {
-        position: absolute; left: 50%; top: 50%;
-        width: calc(var(--fs-LB) * 1.44); height: calc(var(--fs-LB) * 1.44);
-        margin: calc(var(--fs-LB) * -0.72) 0 0 calc(var(--fs-LB) * -0.72);
-        pointer-events: none; opacity: 0;
-        animation: fsRing 820ms cubic-bezier(0.22, 1, 0.36, 1) 60ms both;
-    }
-    #flaynity-startup-splash .fs-ring svg {
-        display: block; width: 100%; height: 100%;
-        transform: rotate(-90deg); overflow: visible;
-    }
-    #flaynity-startup-splash .fs-ring circle {
-        fill: none; stroke-linecap: round;
-    }
-    #flaynity-startup-splash .fs-ring .trk {
-        stroke: rgba(255, 255, 255, 0.07);
-        stroke-width: 1.25;
-    }
-    #flaynity-startup-splash .fs-ring .arc {
-        stroke: url(#fsRingGrad);
-        stroke-width: 1.7;
-        stroke-dasharray: 100;
-        stroke-dashoffset: 100;
-        animation: fsRingDraw 680ms cubic-bezier(0.4, 0, 0.2, 1) 80ms both;
+    /* Live 3D Particle, Comet Trail & Motion Graphics Canvas */
+    #flaynity-startup-splash #fs-3d-canvas {
+        position: absolute; inset: 0;
+        width: 100%; height: 100%;
+        pointer-events: none;
+        display: block;
     }
 
-    /* Centered brand composition */
+    /* True 3D Perspective Stage */
     #flaynity-startup-splash .fs-stage {
         position: absolute; inset: 0;
         display: flex; align-items: center; justify-content: center;
         padding: 0 20px; pointer-events: none;
-        transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+        perspective: 1100px;
+        perspective-origin: 50% 50%;
+        transform-style: preserve-3d;
+        transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease;
     }
+
+    /* 3D Gyroscope Orbital Rings orbiting around (0,0,0) */
+    #flaynity-startup-splash .fs-gyro {
+        position: absolute; left: 50%; top: 50%;
+        width: calc(var(--fs-LB) * 2.05); height: calc(var(--fs-LB) * 2.05);
+        margin: calc(var(--fs-LB) * -1.025) 0 0 calc(var(--fs-LB) * -1.025);
+        transform-style: preserve-3d;
+        pointer-events: none;
+        opacity: 0;
+        animation: fsGyroMaster 1040ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both;
+    }
+    #flaynity-startup-splash .fs-g-ring {
+        position: absolute; inset: 0;
+        border-radius: 50%;
+        transform-style: preserve-3d;
+    }
+    #flaynity-startup-splash .fs-g-ring-1 {
+        border: 1.5px solid rgba(255, 77, 138, 0.65);
+        box-shadow: 0 0 18px rgba(255, 45, 135, 0.35), inset 0 0 14px rgba(255, 45, 135, 0.18);
+        animation: fsGyro1 1040ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both;
+    }
+    #flaynity-startup-splash .fs-g-ring-2 {
+        inset: 10%;
+        border: 1.5px solid rgba(168, 85, 247, 0.62);
+        box-shadow: 0 0 16px rgba(168, 85, 247, 0.32);
+        animation: fsGyro2 1040ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both;
+    }
+    #flaynity-startup-splash .fs-g-ring-3 {
+        inset: -8%;
+        border: 1px dashed rgba(255, 255, 255, 0.24);
+        animation: fsGyro3 1060ms cubic-bezier(0.22, 1, 0.36, 1) 60ms both;
+    }
+    #flaynity-startup-splash .fs-g-node {
+        position: absolute; top: -3px; left: 50%; width: 6px; height: 6px;
+        margin-left: -3px; border-radius: 50%;
+        background: #FFFFFF;
+        box-shadow: 0 0 12px #FF2D87, 0 0 22px #FF2D87;
+    }
+    #flaynity-startup-splash .fs-g-ring-2 .fs-g-node {
+        top: auto; bottom: -3px;
+        box-shadow: 0 0 12px #A855F7, 0 0 22px #A855F7;
+    }
+
+    /* Centered 3D Lockup Container */
     #flaynity-startup-splash .fs-center {
         position: relative;
         display: inline-flex; align-items: center; justify-content: center;
+        transform-style: preserve-3d;
+    }
+    #flaynity-startup-splash.is-waiting .fs-center {
+        animation: fsWaitFloat 3.6s ease-in-out infinite;
     }
     #flaynity-startup-splash .fs-lockup {
         display: inline-flex; align-items: center; gap: var(--fs-gap);
+        transform-style: preserve-3d;
     }
     #flaynity-startup-splash .fs-logo-slot {
         position: relative;
         width: var(--fs-L); height: var(--fs-L);
         flex: 0 0 auto;
+        transform-style: preserve-3d;
     }
+
+    /* 3D Extruded Logo Prism Card */
     #flaynity-startup-splash .fs-logo {
         position: absolute; left: 50%; top: 50%;
         width: var(--fs-LB); height: var(--fs-LB);
         margin: calc(var(--fs-LB) / -2) 0 0 calc(var(--fs-LB) / -2);
+        transform-style: preserve-3d;
         opacity: 0;
-        transform: translate3d(var(--fs-sx), 0, 0) scale(0.74);
-        animation: fsLogo 1360ms linear 0ms both;
+        transform: translate3d(var(--fs-sx), 0, -240px) rotateX(36deg) rotateY(-46deg) rotateZ(-14deg) scale(0.42);
+        animation: fsLogo3D 1480ms linear 0ms both;
     }
-    #flaynity-startup-splash .fs-logo-glow {
-        position: absolute; inset: -18%; border-radius: 32%;
-        background: radial-gradient(circle, rgba(216, 14, 69, 0.52) 0%, rgba(255, 45, 135, 0.18) 48%, rgba(216, 14, 69, 0) 74%);
+    #flaynity-startup-splash .fs-logo-aura {
+        position: absolute; inset: -22%; border-radius: 32%;
+        background: radial-gradient(circle, rgba(216, 14, 69, 0.58) 0%, rgba(255, 45, 135, 0.22) 45%, rgba(216, 14, 69, 0) 74%);
+        transform: translate3d(0, 0, -28px);
         opacity: 0;
-        animation: fsLogoGlow 1360ms ease-out 0ms both;
+        animation: fsAura 1480ms ease-out 0ms both;
+    }
+    #flaynity-startup-splash .fs-slab {
+        position: absolute; inset: 0; border-radius: 23%;
+        pointer-events: none;
+        animation: fsSlabFade 1480ms ease-out 0ms both;
+    }
+    #flaynity-startup-splash .fs-slab-back {
+        background: linear-gradient(145deg, #4d061c 0%, #240826 100%);
+        transform: translate3d(0, 0, -10px);
+    }
+    #flaynity-startup-splash .fs-slab-mid {
+        background: linear-gradient(145deg, #9f0b38 0%, #5e114c 100%);
+        transform: translate3d(0, 0, -5px);
     }
     #flaynity-startup-splash .fs-logo-card {
         position: relative; width: 100%; height: 100%;
         border-radius: 23%; overflow: hidden;
-        box-shadow: 0 18px 42px -10px rgba(216, 14, 69, 0.42), 0 8px 20px rgba(0, 0, 0, 0.22);
-    }
-    #flaynity-startup-splash .fs-logo-card::after {
-        content: ""; position: absolute; inset: 0; border-radius: 23%;
-        border: 1px solid rgba(255, 255, 255, 0.24);
-        pointer-events: none;
+        transform: translate3d(0, 0, 0);
+        box-shadow: 0 20px 44px -10px rgba(216, 14, 69, 0.45), 0 8px 20px rgba(0, 0, 0, 0.24);
     }
     #flaynity-startup-splash .fs-logo-card img {
         display: block; width: 100%; height: 100%; object-fit: contain;
         border-radius: 22.5%; pointer-events: none; -webkit-user-drag: none;
     }
+    #flaynity-startup-splash .fs-glass-rim {
+        position: absolute; inset: 0; border-radius: 23.5%;
+        border: 1.5px solid rgba(255, 255, 255, 0.34);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0) 46%);
+        transform: translate3d(0, 0, 10px);
+        pointer-events: none;
+        animation: fsRim 1480ms ease-out 0ms both;
+    }
     #flaynity-startup-splash .fs-sheen {
-        position: absolute; top: -25%; left: -65%; width: 46%; height: 150%;
-        background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.56) 50%, rgba(255, 255, 255, 0) 100%);
-        transform: skewX(-20deg) translate3d(0, 0, 0);
+        position: absolute; top: -25%; left: -70%; width: 48%; height: 150%;
+        background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.68) 50%, rgba(255, 255, 255, 0) 100%);
+        transform: skewX(-22deg) translate3d(0, 0, 0);
         opacity: 0; pointer-events: none;
-        animation: fsSheen 720ms cubic-bezier(0.4, 0, 0.2, 1) 340ms both;
+        animation: fsSheen 720ms cubic-bezier(0.4, 0, 0.2, 1) 460ms both;
     }
 
-    /* Masked baseline wordmark reveal */
+    /* 3D Masked Baseline Wordmark */
     #flaynity-startup-splash .fs-word {
         display: inline-flex; align-items: baseline; white-space: nowrap;
         font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
         font-weight: 800; font-size: calc(var(--fs-L) * 0.78);
         line-height: 1; letter-spacing: -0.03em;
         color: var(--fs-ink);
+        transform-style: preserve-3d;
     }
     #flaynity-startup-splash .fs-ch {
         display: inline-block; overflow: hidden;
-        padding: 0.06em 0 0.18em;
-        margin: -0.06em 0 -0.18em;
+        padding: 0.08em 0.02em 0.18em;
+        margin: -0.08em -0.02em -0.18em;
+        perspective: 520px;
     }
     #flaynity-startup-splash .fs-ch i {
         display: inline-block; font-style: normal;
-        opacity: 0; transform: translate3d(0, 108%, 0);
-        animation: fsLetter 520ms cubic-bezier(0.22, 1, 0.36, 1) calc(840ms + var(--i) * 34ms) both;
+        transform-origin: 50% 80%;
+        opacity: 0;
+        transform: translate3d(0, 105%, -26px) rotateX(-62deg);
+        animation: fsLetter3D 560ms cubic-bezier(0.22, 1, 0.36, 1) calc(900ms + var(--i) * 36ms) both;
     }
 
-    /* Secondary editorial lockup details below */
+    /* Kinetic Gradient Rule & 3D Tagline */
     #flaynity-startup-splash .fs-meta {
         position: absolute; top: calc(100% + 16px); left: 50%;
         transform: translateX(-50%);
         display: flex; flex-direction: column; align-items: center;
         white-space: nowrap;
+        transform-style: preserve-3d;
     }
     #flaynity-startup-splash .fs-divider {
-        width: 34px; height: 2.5px; border-radius: 999px;
+        position: relative; overflow: hidden;
+        width: 44px; height: 2.5px; border-radius: 999px;
         background: linear-gradient(90deg, var(--fs-brand) 0%, var(--fs-brand-2) 55%, var(--fs-brand-3) 100%);
         opacity: 0; transform: scaleX(0);
-        animation: fsDivider 460ms cubic-bezier(0.22, 1, 0.36, 1) 1220ms both;
+        animation: fsDivider 480ms cubic-bezier(0.22, 1, 0.36, 1) 1280ms both;
+    }
+    #flaynity-startup-splash .fs-divider-spark {
+        position: absolute; top: 0; left: -45%; width: 45%; height: 100%;
+        background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,0) 100%);
+        animation: fsSparkSweep 900ms cubic-bezier(0.4, 0, 0.2, 1) 1520ms both;
     }
     #flaynity-startup-splash .fs-tag {
         margin-top: 13px;
         display: inline-flex; align-items: center; gap: 9px;
         font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
         font-weight: 600; font-size: max(12px, calc(var(--fs-L) * 0.215));
-        letter-spacing: 0.04em; line-height: 1;
+        letter-spacing: 0.045em; line-height: 1;
         color: var(--fs-muted);
+        perspective: 500px;
     }
     #flaynity-startup-splash .fs-tag span {
-        display: inline-block; opacity: 0; transform: translate3d(0, 10px, 0);
-        animation: fsTag 460ms cubic-bezier(0.22, 1, 0.36, 1) calc(1340ms + var(--t) * 85ms) both;
+        display: inline-block; opacity: 0;
+        transform: translate3d(0, 12px, -16px) rotateX(-42deg);
+        animation: fsTag3D 480ms cubic-bezier(0.22, 1, 0.36, 1) calc(1400ms + var(--t) * 90ms) both;
     }
     #flaynity-startup-splash .fs-tag b {
         font-weight: 800; font-size: 0.85em;
         color: var(--fs-brand-2);
-        display: inline-block; opacity: 0; transform: scale(0.4);
-        animation: fsDotIn 420ms cubic-bezier(0.22, 1, 0.36, 1) calc(1400ms + var(--t) * 85ms) both;
+        display: inline-block; opacity: 0; transform: scale(0.3);
+        animation: fsDotIn 420ms cubic-bezier(0.22, 1, 0.36, 1) calc(1460ms + var(--t) * 90ms) both;
     }
 
-    /* Seamless shimmer bar when app needs extra boot time */
+    /* Seamless Wait Progress Beam */
     #flaynity-startup-splash .fs-wait {
         margin-top: 22px;
-        opacity: 0; transform: translate3d(0, 5px, 0);
+        opacity: 0; transform: translate3d(0, 6px, 0);
         transition: opacity 0.36s ease, transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
     }
     #flaynity-startup-splash .fs-wait-track {
-        width: 124px; height: 3px; border-radius: 999px; overflow: hidden;
+        width: 128px; height: 3px; border-radius: 999px; overflow: hidden;
         background: var(--fs-track);
     }
     #flaynity-startup-splash .fs-wait-beam {
@@ -401,119 +473,148 @@
     #flaynity-startup-splash.is-waiting .fs-wait-beam {
         animation: fsWaitBeam 1.25s cubic-bezier(0.4, 0, 0.2, 1) infinite;
     }
-    #flaynity-startup-splash.is-waiting .fs-logo-card {
-        animation: fsWaitPulse 2.4s ease-in-out infinite;
-    }
     #flaynity-startup-splash.is-waiting .fs-sheen {
-        animation: fsSheenWait 2.4s cubic-bezier(0.4, 0, 0.2, 1) 0.25s infinite;
+        animation: fsSheenWait 2.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s infinite;
     }
 
+    /* Keyframes */
     @keyframes fsOrbA {
-        0%   { opacity: 0; transform: scale(0.7); }
-        42%  { opacity: 1; transform: scale(1.04); }
-        100% { opacity: 0; transform: scale(1.22); }
+        0%   { opacity: 0; transform: scale(0.65); }
+        40%  { opacity: 1; transform: scale(1.06); }
+        100% { opacity: 0; transform: scale(1.26); }
     }
     @keyframes fsOrbB {
-        0%   { opacity: 0; transform: scale(0.75); }
-        45%  { opacity: 0.9; transform: scale(1); }
-        100% { opacity: 0; transform: scale(1.18); }
+        0%   { opacity: 0; transform: scale(0.7); }
+        42%  { opacity: 0.92; transform: scale(1.02); }
+        100% { opacity: 0; transform: scale(1.22); }
     }
     @keyframes fsSurface {
         from { opacity: 0; }
         to   { opacity: 1; }
     }
     @keyframes fsIris {
-        0%   { opacity: 0; transform: scale(0.18); }
+        0%   { opacity: 0; transform: scale(0.16); }
         40%  { opacity: 1; }
-        100% { opacity: 0; transform: scale(1.2); }
+        100% { opacity: 0; transform: scale(1.22); }
     }
-    @keyframes fsRing {
-        0%   { opacity: 0; transform: scale(0.86); }
-        20%  { opacity: 1; transform: scale(1); }
-        68%  { opacity: 1; transform: scale(1.02); }
-        100% { opacity: 0; transform: scale(1.24); }
+    @keyframes fsGyroMaster {
+        0%   { opacity: 0; transform: scale(0.55); }
+        22%  { opacity: 1; transform: scale(1); }
+        68%  { opacity: 0.95; transform: scale(1.06); }
+        100% { opacity: 0; transform: scale(1.48); }
     }
-    @keyframes fsRingDraw {
-        0%   { stroke-dashoffset: 100; }
-        100% { stroke-dashoffset: 0; }
+    @keyframes fsGyro1 {
+        0%   { transform: rotateX(74deg) rotateY(-28deg) rotateZ(0deg); }
+        100% { transform: rotateX(66deg) rotateY(-12deg) rotateZ(310deg); }
     }
-    @keyframes fsLogo {
-        0%   { opacity: 0; transform: translate3d(var(--fs-sx), 0, 0) scale(0.74); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
-        32%  { opacity: 1; transform: translate3d(var(--fs-sx), 0, 0) scale(1.035); animation-timing-function: ease-in-out; }
-        44%  { opacity: 1; transform: translate3d(var(--fs-sx), 0, 0) scale(1); }
-        53%  { opacity: 1; transform: translate3d(var(--fs-sx), 0, 0) scale(1); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
-        100% { opacity: 1; transform: translate3d(0, 0, 0) scale(var(--fs-k)); }
+    @keyframes fsGyro2 {
+        0%   { transform: rotateX(-64deg) rotateY(32deg) rotateZ(340deg); }
+        100% { transform: rotateX(-52deg) rotateY(16deg) rotateZ(30deg); }
     }
-    @keyframes fsLogoGlow {
-        0%   { opacity: 0; transform: scale(0.75); }
-        34%  { opacity: 0.95; transform: scale(1.08); }
-        54%  { opacity: 0.85; transform: scale(1); }
-        100% { opacity: 0.32; transform: scale(0.95); }
+    @keyframes fsGyro3 {
+        0%   { transform: rotateX(24deg) rotateY(18deg) rotateZ(0deg) scale(0.85); }
+        100% { transform: rotateX(12deg) rotateY(8deg) rotateZ(150deg) scale(1.22); }
+    }
+    @keyframes fsLogo3D {
+        0%   { opacity: 0; transform: translate3d(var(--fs-sx), 0, -240px) rotateX(36deg) rotateY(-46deg) rotateZ(-14deg) scale(0.42); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+        26%  { opacity: 1; transform: translate3d(var(--fs-sx), 0, 44px) rotateX(-9deg) rotateY(14deg) rotateZ(3deg) scale(1.06); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+        40%  { opacity: 1; transform: translate3d(var(--fs-sx), 0, 0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1); }
+        52%  { opacity: 1; transform: translate3d(var(--fs-sx), 0, 0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1); animation-timing-function: cubic-bezier(0.32, 0.72, 0.25, 1); }
+        74%  { opacity: 1; transform: translate3d(calc(var(--fs-sx) * 0.44), 0, 28px) rotateX(5deg) rotateY(-22deg) rotateZ(-2deg) scale(0.76); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+        100% { opacity: 1; transform: translate3d(0px, 0, 0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(var(--fs-k)); }
+    }
+    @keyframes fsAura {
+        0%   { opacity: 0; transform: translate3d(0, 0, -28px) scale(0.7); }
+        35%  { opacity: 0.98; transform: translate3d(0, 0, -28px) scale(1.1); }
+        55%  { opacity: 0.85; transform: translate3d(0, 0, -28px) scale(1); }
+        100% { opacity: 0.34; transform: translate3d(0, 0, -28px) scale(0.95); }
+    }
+    @keyframes fsSlabFade {
+        0%, 72% { opacity: 1; }
+        100%    { opacity: 0; }
+    }
+    @keyframes fsRim {
+        0%, 60% { opacity: 0.95; }
+        100%    { opacity: 0.35; }
     }
     @keyframes fsSheen {
-        0%   { opacity: 0; transform: skewX(-20deg) translate3d(0, 0, 0); }
-        20%  { opacity: 1; }
-        80%  { opacity: 1; }
-        100% { opacity: 0; transform: skewX(-20deg) translate3d(460%, 0, 0); }
+        0%   { opacity: 0; transform: skewX(-22deg) translate3d(0, 0, 0); }
+        18%  { opacity: 1; }
+        82%  { opacity: 1; }
+        100% { opacity: 0; transform: skewX(-22deg) translate3d(470%, 0, 0); }
     }
     @keyframes fsSheenWait {
-        0%   { opacity: 0; transform: skewX(-20deg) translate3d(0, 0, 0); }
+        0%   { opacity: 0; transform: skewX(-22deg) translate3d(0, 0, 0); }
         12%  { opacity: 0.9; }
         42%  { opacity: 0.9; }
-        55%  { opacity: 0; transform: skewX(-20deg) translate3d(460%, 0, 0); }
-        100% { opacity: 0; transform: skewX(-20deg) translate3d(460%, 0, 0); }
+        55%  { opacity: 0; transform: skewX(-22deg) translate3d(470%, 0, 0); }
+        100% { opacity: 0; transform: skewX(-22deg) translate3d(470%, 0, 0); }
     }
-    @keyframes fsLetter {
-        0%   { opacity: 0; transform: translate3d(0, 108%, 0); }
-        100% { opacity: 1; transform: translate3d(0, 0, 0); }
+    @keyframes fsLetter3D {
+        0%   { opacity: 0; transform: translate3d(0, 105%, -26px) rotateX(-62deg); }
+        100% { opacity: 1; transform: translate3d(0, 0, 0) rotateX(0deg); }
     }
     @keyframes fsDivider {
         0%   { opacity: 0; transform: scaleX(0); }
-        100% { opacity: 0.9; transform: scaleX(1); }
+        100% { opacity: 0.95; transform: scaleX(1); }
     }
-    @keyframes fsTag {
-        0%   { opacity: 0; transform: translate3d(0, 10px, 0); }
-        100% { opacity: 1; transform: translate3d(0, 0, 0); }
+    @keyframes fsSparkSweep {
+        0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+        20%  { opacity: 1; }
+        85%  { opacity: 1; }
+        100% { transform: translate3d(380%, 0, 0); opacity: 0; }
+    }
+    @keyframes fsTag3D {
+        0%   { opacity: 0; transform: translate3d(0, 12px, -16px) rotateX(-42deg); }
+        100% { opacity: 1; transform: translate3d(0, 0, 0) rotateX(0deg); }
     }
     @keyframes fsDotIn {
-        0%   { opacity: 0; transform: scale(0.35); }
-        100% { opacity: 0.92; transform: scale(1); }
+        0%   { opacity: 0; transform: scale(0.3); }
+        100% { opacity: 0.95; transform: scale(1); }
     }
     @keyframes fsWaitBeam {
         0%   { transform: translate3d(-115%, 0, 0); }
         100% { transform: translate3d(215%, 0, 0); }
     }
-    @keyframes fsWaitPulse {
-        0%, 100% { transform: scale(1); }
-        50%      { transform: scale(1.035); }
+    @keyframes fsWaitFloat {
+        0%, 100% { transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg); }
+        25%      { transform: translate3d(0, -3px, 6px) rotateX(2.5deg) rotateY(-3deg); }
+        50%      { transform: translate3d(0, 0, 10px) rotateX(0deg) rotateY(0deg); }
+        75%      { transform: translate3d(0, 2px, 6px) rotateX(-2deg) rotateY(3deg); }
     }
 
+    /* 3D Z-Axis Spatial Exit */
     #flaynity-startup-splash.is-revealing {
         opacity: 0; pointer-events: none;
     }
     #flaynity-startup-splash.is-revealing .fs-stage {
-        transform: scale(1.045); opacity: 0;
+        transform: translate3d(0, 0, 160px) scale(1.06);
+        opacity: 0;
     }
     #flaynity-startup-splash.is-hidden { display: none !important; }
 
-    /* Timeline stays paused until logo & initial fonts are ready */
+    /* Hold paused until image & fonts settle */
     #flaynity-startup-splash:not(.go) * { animation-play-state: paused; }
 
     @media (prefers-reduced-motion: reduce) {
         #flaynity-startup-splash,
         #flaynity-startup-splash .fs-stage { transition: none; }
+        #flaynity-startup-splash #fs-3d-canvas,
         #flaynity-startup-splash .fs-orb,
-        #flaynity-startup-splash .fs-ring,
+        #flaynity-startup-splash .fs-gyro,
         #flaynity-startup-splash .fs-iris,
+        #flaynity-startup-splash .fs-slab,
+        #flaynity-startup-splash .fs-divider-spark,
         #flaynity-startup-splash .fs-sheen { display: none; }
         #flaynity-startup-splash .fs-surface { animation: none; opacity: 1; }
         #flaynity-startup-splash .fs-logo { animation: none; opacity: 1; transform: translate3d(0, 0, 0) scale(var(--fs-k)); }
-        #flaynity-startup-splash .fs-logo-glow { animation: none; opacity: 0.32; }
+        #flaynity-startup-splash .fs-logo-aura { animation: none; opacity: 0.32; }
+        #flaynity-startup-splash .fs-glass-rim { animation: none; opacity: 0.35; }
         #flaynity-startup-splash .fs-ch i { animation: none; opacity: 1; transform: none; }
-        #flaynity-startup-splash .fs-divider { animation: none; opacity: 0.9; transform: scaleX(1); }
+        #flaynity-startup-splash .fs-divider { animation: none; opacity: 0.92; transform: scaleX(1); }
         #flaynity-startup-splash .fs-tag span { animation: none; opacity: 1; transform: none; }
         #flaynity-startup-splash .fs-tag b { animation: none; opacity: 0.92; transform: none; }
-        #flaynity-startup-splash.is-waiting .fs-logo-card,
+        #flaynity-startup-splash.is-waiting .fs-center,
         #flaynity-startup-splash.is-waiting .fs-wait-beam { animation: none; }
         #flaynity-startup-splash.is-waiting .fs-wait-beam { transform: translate3d(38%, 0, 0); opacity: 0.85; }
         #flaynity-startup-splash:not(.go) .fs-stage { opacity: 0; }
@@ -533,37 +634,34 @@
         <div class="fs-iris"></div>
     </div>
 
-    <div class="fs-ring">
-        <svg viewBox="0 0 100 100">
-            <defs>
-                <linearGradient id="fsRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#FF7AA8"/>
-                    <stop offset="50%" stop-color="#D80E45"/>
-                    <stop offset="100%" stop-color="#A855F7"/>
-                </linearGradient>
-            </defs>
-            <circle class="trk" cx="50" cy="50" r="47.5"></circle>
-            <circle class="arc" cx="50" cy="50" r="47.5" pathLength="100"></circle>
-        </svg>
-    </div>
+    <canvas id="fs-3d-canvas"></canvas>
 
     <div class="fs-stage">
+        <div class="fs-gyro">
+            <div class="fs-g-ring fs-g-ring-1"><span class="fs-g-node"></span></div>
+            <div class="fs-g-ring fs-g-ring-2"><span class="fs-g-node"></span></div>
+            <div class="fs-g-ring fs-g-ring-3"></div>
+        </div>
+
         <div class="fs-center">
             <div class="fs-lockup">
                 <div class="fs-logo-slot">
                     <div class="fs-logo">
-                        <div class="fs-logo-glow"></div>
+                        <div class="fs-logo-aura"></div>
+                        <div class="fs-slab fs-slab-back"></div>
+                        <div class="fs-slab fs-slab-mid"></div>
                         <div class="fs-logo-card">
                             <img src="assets/flaynity-logo.png" alt="" draggable="false" decoding="sync">
                             <div class="fs-sheen"></div>
                         </div>
+                        <div class="fs-glass-rim"></div>
                     </div>
                 </div>
                 <div class="fs-word" aria-hidden="true"><span class="fs-ch" style="--i:0"><i>F</i></span><span class="fs-ch" style="--i:1"><i>l</i></span><span class="fs-ch" style="--i:2"><i>a</i></span><span class="fs-ch" style="--i:3"><i>y</i></span><span class="fs-ch" style="--i:4"><i>n</i></span><span class="fs-ch" style="--i:5"><i>i</i></span><span class="fs-ch" style="--i:6"><i>t</i></span><span class="fs-ch" style="--i:7"><i>y</i></span></div>
             </div>
 
             <div class="fs-meta">
-                <div class="fs-divider"></div>
+                <div class="fs-divider"><div class="fs-divider-spark"></div></div>
                 <div class="fs-tag">
                     <span style="--t:0">Connect</span><b style="--t:0">&bull;</b><span style="--t:1">Share</span><b style="--t:1">&bull;</b><span style="--t:2">Grow</span>
                 </div>
@@ -583,22 +681,23 @@
     var splash = document.getElementById('flaynity-startup-splash');
     if (!splash) return;
 
-    var T_STAGES = 2300;
+    var T_STAGES = 2550;
     var T_REDUCED = 650;
     var T_MAX = 6000;
-    var FADE_OUT = 380;
+    var FADE_OUT = 420;
 
     var t0 = Date.now(), startAt = 0;
     var started = false, finished = false, animDone = false, domReady = false;
     var reduced = false, darkPref = false;
     try { darkPref = localStorage.getItem('flaynity-theme-pref') === 'dark'; if (darkPref) splash.classList.add('fs-dark'); } catch (e) {}
-    var surfaceColor = darkPref ? '#0E0E12' : '#FFFFFF';
+    var surfaceColor = darkPref ? '#0C0C10' : '#FFFFFF';
     try { reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
 
     var lockup = splash.querySelector('.fs-lockup');
     var slot = splash.querySelector('.fs-logo-slot');
     var logoImg = splash.querySelector('.fs-logo-card img');
     var lastTag = splash.querySelector('.fs-tag span:last-child');
+    var canvas = document.getElementById('fs-3d-canvas');
 
     var themeMeta = document.getElementById('flaynity-theme-color');
     var themeOriginal = themeMeta ? themeMeta.getAttribute('content') : null;
@@ -607,7 +706,7 @@
     var lastSx = -1;
     function measure() {
         try {
-            if (finished || (started && Date.now() - startAt > 620)) return;
+            if (finished || (started && Date.now() - startAt > 650)) return;
             if (!lockup || !slot) return;
             var lr = lockup.getBoundingClientRect();
             var sr = slot.getBoundingClientRect();
@@ -618,6 +717,215 @@
                 splash.style.setProperty('--fs-sx', sx.toFixed(2) + 'px');
             }
         } catch (e) {}
+    }
+
+    /* ===== Real-Time 3D Motion Graphics Canvas Engine ===== */
+    var rafId = 0;
+    var canvasStopped = false;
+    function stopCanvas() {
+        canvasStopped = true;
+        if (rafId) {
+            cancelAnimationFrame(rafId);
+            rafId = 0;
+        }
+    }
+
+    function startCanvasEngine() {
+        if (reduced || !canvas || !canvas.getContext) return;
+        var ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        var W = 0, H = 0, CX = 0, CY = 0, minDim = 360, dpr = 1;
+        function resizeCanvas() {
+            dpr = Math.min(window.devicePixelRatio || 1, 2);
+            W = window.innerWidth || document.documentElement.clientWidth || 360;
+            H = window.innerHeight || document.documentElement.clientHeight || 640;
+            CX = W * 0.5;
+            CY = H * 0.5;
+            minDim = Math.min(W, H);
+            canvas.width = Math.round(W * dpr);
+            canvas.height = Math.round(H * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        var palette = ['#D80E45', '#FF2D87', '#A855F7', '#FF7AA8', '#FFFFFF'];
+        var particles = [];
+        var i;
+        for (i = 0; i < 64; i++) {
+            particles.push({
+                angle: Math.random() * Math.PI * 2,
+                radius: 0.14 + Math.random() * 0.42,
+                yOff: (Math.random() - 0.5) * 0.46,
+                z: -160 + Math.random() * 340,
+                speed: (0.008 + Math.random() * 0.016) * (Math.random() > 0.25 ? 1 : -1),
+                zSpeed: 0.4 + Math.random() * 1.1,
+                size: 1.2 + Math.random() * 2.4,
+                color: palette[i % palette.length],
+                alpha: 0.35 + Math.random() * 0.55
+            });
+        }
+
+        // Two 3D comet orbital ribbons
+        var comets = [
+            { r: 0.23, tiltX: 1.05, tiltY: -0.38, angle: 0.2, speed: 0.085, color: '#FF2D87', trail: [] },
+            { r: 0.26, tiltX: -0.92, tiltY: 0.46, angle: 3.4, speed: -0.075, color: '#A855F7', trail: [] }
+        ];
+
+        // Radial motion graphics speed streaks
+        var rays = [];
+        for (i = 0; i < 14; i++) {
+            rays.push({
+                a: (i / 14) * Math.PI * 2 + (Math.random() - 0.5) * 0.14,
+                len: 0.08 + Math.random() * 0.1,
+                w: 1.2 + Math.random() * 1.4,
+                color: i % 2 === 0 ? '#FF2D87' : '#A855F7'
+            });
+        }
+
+        var focal = 520;
+        var prevTime = performance.now();
+
+        function project3D(x, y, z) {
+            var denom = focal + z;
+            if (denom < 40) denom = 40;
+            var s = focal / denom;
+            return { x: CX + x * s, y: CY + y * s, s: s };
+        }
+
+        function tick(now) {
+            if (canvasStopped) return;
+            var dt = Math.min(0.05, (now - prevTime) / 1000 || 0.016);
+            prevTime = now;
+
+            var elapsed = started ? (Date.now() - startAt) : 0;
+            var lightSurfaceFade = Math.max(0, Math.min(1, (elapsed - 660) / 480));
+            var isLightTheme = !darkPref && lightSurfaceFade > 0.45;
+
+            ctx.clearRect(0, 0, W, H);
+
+            // 1. 3D Comet Ribbons (Stage 1 -> dissolve smoothly into Stage 2)
+            var cometVis = 1 - Math.max(0, Math.min(1, (elapsed - 680) / 420));
+            if (cometVis > 0.01) {
+                for (var cIdx = 0; cIdx < comets.length; cIdx++) {
+                    var cm = comets[cIdx];
+                    cm.angle += cm.speed * (dt * 60);
+                    var expand = 1 + Math.max(0, (elapsed - 620) / 500) * 0.65;
+                    var rad = cm.r * minDim * expand;
+
+                    var rx = Math.cos(cm.angle) * rad;
+                    var ry = Math.sin(cm.angle) * rad;
+                    // 3D rotation (tiltX, tiltY)
+                    var y1 = ry * Math.cos(cm.tiltX);
+                    var z1 = ry * Math.sin(cm.tiltX);
+                    var x2 = rx * Math.cos(cm.tiltY) + z1 * Math.sin(cm.tiltY);
+                    var z2 = -rx * Math.sin(cm.tiltY) + z1 * Math.cos(cm.tiltY);
+
+                    var pt = project3D(x2, y1, z2);
+                    cm.trail.push({ x: pt.x, y: pt.y, s: pt.s });
+                    if (cm.trail.length > 22) cm.trail.shift();
+
+                    for (var tIdx = 1; tIdx < cm.trail.length; tIdx++) {
+                        var p0 = cm.trail[tIdx - 1];
+                        var p1 = cm.trail[tIdx];
+                        var frac = tIdx / cm.trail.length;
+                        ctx.beginPath();
+                        ctx.moveTo(p0.x, p0.y);
+                        ctx.lineTo(p1.x, p1.y);
+                        ctx.strokeStyle = cm.color;
+                        ctx.globalAlpha = frac * frac * 0.72 * cometVis;
+                        ctx.lineWidth = Math.max(0.8, 3.2 * frac * p1.s);
+                        ctx.lineCap = 'round';
+                        ctx.stroke();
+                    }
+
+                    // Glowing comet head
+                    var head = cm.trail[cm.trail.length - 1];
+                    if (head) {
+                        ctx.beginPath();
+                        ctx.arc(head.x, head.y, 3.4 * head.s, 0, Math.PI * 2);
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.globalAlpha = 0.92 * cometVis;
+                        ctx.fill();
+                    }
+                }
+            }
+
+            // 2. Impact Shockwave & Motion Graphics Speed Lines (t = 550ms - 1150ms)
+            if (elapsed >= 540 && elapsed <= 1220) {
+                var sp = (elapsed - 540) / 620;
+                if (sp >= 0 && sp <= 1) {
+                    var easeOut = 1 - Math.pow(1 - sp, 3);
+                    var ringR = minDim * (0.10 + easeOut * 0.38);
+                    ctx.beginPath();
+                    ctx.arc(CX, CY, ringR, 0, Math.PI * 2);
+                    ctx.strokeStyle = isLightTheme ? '#D80E45' : '#FF4D8D';
+                    ctx.lineWidth = (1 - easeOut) * 3.5 + 0.5;
+                    ctx.globalAlpha = (1 - sp) * 0.65;
+                    ctx.stroke();
+
+                    // Second inner shockwave
+                    if (sp > 0.12) {
+                        var sp2 = (sp - 0.12) / 0.88;
+                        var e2 = 1 - Math.pow(1 - sp2, 3);
+                        ctx.beginPath();
+                        ctx.arc(CX, CY, minDim * (0.08 + e2 * 0.30), 0, Math.PI * 2);
+                        ctx.strokeStyle = '#A855F7';
+                        ctx.lineWidth = (1 - e2) * 2.2;
+                        ctx.globalAlpha = (1 - sp2) * 0.45;
+                        ctx.stroke();
+                    }
+
+                    // Radial speed-lines burst
+                    for (var rIdx = 0; rIdx < rays.length; rIdx++) {
+                        var ryObj = rays[rIdx];
+                        var rStart = minDim * (0.11 + easeOut * 0.25);
+                        var rEnd = rStart + minDim * ryObj.len * (1 - sp * 0.65);
+                        ctx.beginPath();
+                        ctx.moveTo(CX + Math.cos(ryObj.a) * rStart, CY + Math.sin(ryObj.a) * rStart);
+                        ctx.lineTo(CX + Math.cos(ryObj.a) * rEnd, CY + Math.sin(ryObj.a) * rEnd);
+                        ctx.strokeStyle = ryObj.color;
+                        ctx.lineWidth = ryObj.w * (1 - sp * 0.5);
+                        ctx.lineCap = 'round';
+                        ctx.globalAlpha = (1 - sp) * 0.72;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // 3. 3D Vortex Particles -> Ambient Bokeh Float
+            var vortexFactor = 1 - lightSurfaceFade * 0.68;
+            for (var pIdx = 0; pIdx < particles.length; pIdx++) {
+                var p = particles[pIdx];
+                p.angle += p.speed * (0.35 + vortexFactor * 0.9) * (dt * 60);
+                p.z -= p.zSpeed * (0.4 + vortexFactor * 0.9) * (dt * 60);
+                if (p.z < -210) p.z = 210;
+
+                var dist = p.radius * minDim * (1 + lightSurfaceFade * 0.55);
+                var px3 = Math.cos(p.angle) * dist;
+                var pz3 = p.z + Math.sin(p.angle) * dist * 0.55;
+                var py3 = p.yOff * minDim + Math.sin(p.angle * 1.5) * 18;
+
+                var proj = project3D(px3, py3, pz3);
+                if (proj.x < -20 || proj.x > W + 20 || proj.y < -20 || proj.y > H + 20) continue;
+
+                var pColor = p.color;
+                if (isLightTheme && pColor === '#FFFFFF') pColor = '#FF2D87';
+                var pAlpha = p.alpha * (isLightTheme ? 0.28 : (0.58 - lightSurfaceFade * 0.2));
+
+                ctx.beginPath();
+                ctx.arc(proj.x, proj.y, Math.max(0.7, p.size * proj.s), 0, Math.PI * 2);
+                ctx.fillStyle = pColor;
+                ctx.globalAlpha = Math.max(0.05, pAlpha * Math.min(1, proj.s));
+                ctx.fill();
+            }
+
+            ctx.globalAlpha = 1;
+            rafId = requestAnimationFrame(tick);
+        }
+
+        rafId = requestAnimationFrame(tick);
     }
 
     function surfaceReady() {
@@ -631,6 +939,7 @@
     }
 
     function hideNow() {
+        stopCanvas();
         try { splash.classList.add('is-hidden'); } catch (e) {}
         try { if (splash.parentNode) splash.parentNode.removeChild(splash); } catch (e) {}
         ['flaynity-launch-style', 'flaynity-launch-base'].forEach(function (id) {
@@ -663,9 +972,10 @@
         startAt = Date.now();
         measure();
         splash.classList.add('go');
-        setTheme('#09090D');
+        startCanvasEngine();
+        setTheme('#07070B');
         if (!reduced) {
-            setTimeout(function () { setTheme(surfaceColor); }, 640);
+            setTimeout(function () { setTheme(surfaceColor); }, 680);
         } else {
             setTheme(surfaceColor);
         }
@@ -673,7 +983,7 @@
 
     try {
         if (lastTag) lastTag.addEventListener('animationend', function () {
-            setTimeout(function () { animDone = true; evaluate(); }, 280);
+            setTimeout(function () { animDone = true; evaluate(); }, 460);
         });
         splash.addEventListener('touchmove', function (e) { e.preventDefault(); }, { passive: false });
 

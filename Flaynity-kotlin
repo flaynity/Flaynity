@@ -1,0 +1,3832 @@
+FLAYNITY — MASTER DEVELOPMENT PROMPT
+
+ROLE
+
+You are the lead software architect, senior Flutter engineer, Android engineer, iOS engineer, backend engineer, database architect, media-streaming engineer, security engineer, UI/UX engineer, QA engineer, and release engineer responsible for rebuilding the Flaynity platform.
+
+Your task is to rebuild Flaynity as a production-ready multi-platform application for:
+
+1. Android
+2. iOS
+3. Web
+
+The final product must be a real application, not a prototype, mockup, demo, or partially functional UI.
+
+---
+
+1. CRITICAL IMPLEMENTATION RULE
+
+The existing Flaynity application/source files that will be provided to you are the PRIMARY REFERENCE/SOURCE OF TRUTH for:
+
+- Existing features
+- Existing UI/UX
+- Existing navigation
+- Existing user flows
+- Existing business behavior
+- Existing Firebase data flows
+- Existing media behavior
+- Existing terminology
+- Existing visual identity
+- Existing interactions
+- Existing page relationships
+
+However:
+
+DO NOT simply convert the existing Web App line-by-line.
+
+The existing application may contain:
+
+- HTML
+- CSS
+- JavaScript
+- WebView-specific implementation
+- Sketchware-specific code
+- Browser-specific logic
+
+These are reference materials only.
+
+The new implementation must be rebuilt natively using Flutter/Dart.
+
+---
+
+2. ABSOLUTELY FORBIDDEN IMPLEMENTATION
+
+The new Android, iOS, and Web applications MUST NOT be implemented as:
+
+- HTML/CSS/JS Web App
+- Android WebView
+- iOS WKWebView wrapper
+- Website wrapper
+- iframe
+- Embedded website
+- JavaScript-based UI
+- HTML-based UI
+- CSS-based UI
+- "WebView inside Flutter"
+- simple conversion of HTML into Flutter widgets
+
+Flutter must be the actual application UI framework.
+
+---
+
+3. TARGET ARCHITECTURE
+
+Use a Flutter-first cross-platform architecture.
+
+Android
+
+Primary:
+
+- Flutter
+- Dart
+
+Native Android only where platform-specific functionality is required:
+
+- Kotlin
+- Android APIs
+- Media services
+- Background upload
+- Camera integration
+- Android permissions
+- Google Sign-In integration
+- Play Integrity where appropriate
+- Notifications
+- Haptics
+- Account picker
+- File/media picker
+- Native performance optimization
+
+iOS
+
+Primary:
+
+- Flutter
+- Dart
+
+Native iOS only where platform-specific functionality is required:
+
+- Swift
+- AVFoundation
+- Photos framework
+- Camera
+- Background tasks
+- Apple platform permissions
+- Haptics
+- Sign-in integration where required
+- App Attest/DeviceCheck where appropriate
+
+Web
+
+Use:
+
+- Flutter Web
+- Dart
+
+Do NOT turn the Flutter Web version into a traditional HTML/CSS/JS application.
+
+---
+
+4. DEVELOPMENT PRINCIPLE
+
+Build the system as a shared Flutter architecture with platform-specific implementations only when necessary.
+
+Prefer:
+
+Shared Dart:
+
+- Models
+- Repositories
+- Firebase services
+- Authentication
+- State management
+- Business rules
+- UI components
+- Theme system
+- Navigation
+- Feed logic
+- Reaction logic
+- Subscription logic
+- Comments
+- Search
+- Analytics
+- Upload state
+- Media metadata
+- Offline caching
+
+Platform-specific:
+
+- Android Kotlin
+- iOS Swift
+
+only where Flutter/plugin capabilities are insufficient or platform-specific behavior is required.
+
+---
+
+5. EXISTING SOURCE AUDIT
+
+Before writing the final application code:
+
+1. Inspect ALL provided existing Flaynity source files.
+2. Inspect ALL folders.
+3. Inspect ALL assets.
+4. Inspect existing Firebase configuration.
+5. Inspect database paths.
+6. Inspect Firebase listeners.
+7. Inspect authentication flows.
+8. Inspect upload flows.
+9. Inspect media URLs.
+10. Inspect Cloudflare/R2 integration.
+11. Inspect page navigation.
+12. Inspect settings.
+13. Inspect existing UI behavior.
+14. Inspect existing responsive behavior.
+15. Inspect all existing features.
+
+Create an internal feature inventory.
+
+Map:
+
+Existing Feature → New Flutter Implementation
+
+Do not silently omit an existing feature.
+
+If an existing implementation is technically unsuitable for native Flutter, reproduce its USER-VISIBLE BEHAVIOR using proper native Flutter architecture.
+
+---
+
+6. NO UNAUTHORIZED FEATURE DELETION
+
+Do not delete functionality simply because the old implementation is inconvenient.
+
+Do not remove:
+
+- Existing features
+- Existing Firebase functionality
+- Existing navigation
+- Existing data flows
+- Existing media functionality
+- Existing business logic
+
+unless the requirements explicitly say to remove or replace them.
+
+If requirements conflict with the old implementation:
+
+The NEW requirements take priority.
+
+If no conflict exists:
+
+Preserve the existing behavior.
+
+---
+
+7. DESIGN SYSTEM
+
+The entire application must use a premium deep color system.
+
+Do NOT use random weak, washed-out, or pale colors.
+
+---
+
+8. LIGHT THEME
+
+Use:
+
+bg-color: #FFFFFF
+surface: #FFFFFF
+primary: #D80E45
+primary-glow: rgba(255, 46, 85, 0.12)
+text-main: #000000
+text-muted: #555555
+card-bg: #FFFFFF
+glass-bg: rgba(255, 255, 255, 0.95)
+glass-border: rgba(0, 0, 0, 0.08)
+success: #00C853
+download: #007AFF
+border-color: #EEEEEE
+skeleton-base: #E0E0E0
+skeleton-shimmer: rgba(255, 255, 255, 0.6)
+
+Secondary text must use a carefully selected deep neutral instead of pale gray.
+
+---
+
+9. DARK THEME
+
+Use:
+
+bg-color: #0F0F0F
+surface: #0F0F0F
+primary: #D80E45
+primary-glow: rgba(255, 46, 85, 0.15)
+text-main: #FFFFFF
+text-muted: #AAAAAA
+card-bg: #0F0F0F
+glass-bg: rgba(0, 0, 0, 0.95)
+glass-border: rgba(255, 255, 255, 0.15)
+border-color: #222222
+skeleton-base: #212121
+skeleton-shimmer: rgba(255, 255, 255, 0.08)
+
+Use deep/high-contrast colors throughout.
+
+Accent:
+
+Flaynity premium pink/red:
+
+#D80E45
+
+Avoid:
+
+- Excessive gradients
+- Cheap neon effects
+- Overly colorful UI
+- Weak contrast
+- Random accent colors
+
+The UI must remain:
+
+- Premium
+- Deep
+- High contrast
+- Consistent
+- Accessible
+
+---
+
+10. MATERIAL DESIGN
+
+Use modern Material Design principles, preferably Material 3 where appropriate.
+
+Do not make the application look like a generic Material template.
+
+Flaynity must maintain its own visual identity.
+
+Animations should be:
+
+- Smooth
+- Minimal
+- Premium
+- Responsive
+- Purposeful
+
+Avoid excessive animation.
+
+---
+
+11. CORE NAVIGATION
+
+Bottom navigation contains exactly five destinations:
+
+1. Home
+2. Feels
+3. Upload
+4. Discover
+5. You
+
+Upload must be represented as a premium center floating "+" action.
+
+Navigation must support:
+
+- Active state
+- Back navigation
+- Deep page navigation
+- State preservation
+- Offline state
+- Online reconnection
+- No duplicate listeners
+- No unnecessary page reloads
+
+Use a proper navigation architecture.
+
+Do not recreate entire pages unnecessarily when navigating back.
+
+---
+
+12. AUTHENTICATION
+
+Use:
+
+Sign in with Google
+
+The main authentication action must be:
+
+Sign in with Google
+
+The same authentication flow handles:
+
+- New user registration
+- Existing user login
+
+After successful authentication store/update:
+
+- UID
+- Google display name
+- Email
+- Google profile image
+- Created date
+- Last login
+
+Authentication must persist between launches.
+
+Never store sensitive authentication credentials manually.
+
+---
+
+13. OFFLINE-FIRST ARCHITECTURE
+
+Implement a real offline-first architecture.
+
+When offline:
+
+- Detect immediately
+- Preserve authentication
+- Preserve cached feed metadata
+- Preserve previously loaded content
+- Preserve user state where appropriate
+- Avoid infinite retries
+- Do not crash
+- Do not show fake demo data
+- Do not fabricate missing content
+
+When network returns:
+
+Automatically:
+
+- Reconnect Firebase
+- Restart required listeners
+- Detect new content
+- Synchronize metadata
+- Update Home
+- Update Feels
+- Update Posts
+- Update Channel
+- Update Watch Page
+
+No manual refresh should be required.
+
+Use controlled exponential backoff.
+
+---
+
+14. FIREBASE REALTIME DATABASE
+
+Major application data must remain connected to Firebase Realtime Database where the existing architecture/requirements specify RTDB.
+
+Use listeners for:
+
+- Videos
+- Feels
+- Posts
+- Users
+- Channels
+- Likes
+- Reactions
+- Comments
+- Subscribers
+- Views
+- Upload status
+- Channel analytics
+
+Listener requirements:
+
+- No duplicate listeners
+- Proper lifecycle management
+- Cancel listeners when no longer needed
+- Avoid unnecessary global listeners
+- Avoid downloading entire database
+- Use indexed queries
+- Paginate where appropriate
+- Use denormalized counters carefully
+- Use atomic updates/transactions for counters
+- Secure all database access with Firebase Security Rules
+
+---
+
+15. DATA ARCHITECTURE
+
+Use repository/service architecture.
+
+Recommended layers:
+
+Presentation
+↓
+State Management
+↓
+Domain / Use Cases
+↓
+Repositories
+↓
+Firebase / Storage / CDN / APIs
+
+Do not put all Firebase logic inside UI widgets.
+
+Separate:
+
+- Authentication
+- Users
+- Channels
+- Videos
+- Feels
+- Posts
+- Comments
+- Reactions
+- Subscriptions
+- Search
+- Upload
+- Analytics
+- Settings
+- Media
+- Notifications
+
+---
+
+16. HOME PAGE
+
+Design:
+
+- Premium
+- Light by default
+- White/deep light background
+- Flaynity pink accent
+- Bold typography
+- Clean cards
+- Material 3 principles
+- Smooth skeleton loading
+
+Everything must begin below the Android status bar on Android.
+
+Respect platform safe areas on iOS.
+
+---
+
+17. HOME TOP BAR
+
+Top-left:
+
+Flaynity logo + text:
+
+Flaynity
+
+Top-right:
+
+- Search
+- Theme Switch
+
+No unnecessary elements.
+
+---
+
+18. HOME CATEGORY CHIPS
+
+Exactly:
+
+- All
+- Posts
+- Feels
+
+Exactly three equal-width chips.
+
+No horizontal scrolling.
+
+Each occupies approximately one-third of screen width.
+
+Selected:
+
+- Black background
+- White text
+
+Unselected:
+
+- Deep light-gray background
+- Black text
+
+Smooth transition.
+
+---
+
+19. HOME ALL FEED
+
+Use repeating content pattern:
+
+6 Feels
+↓
+10 Long Videos
+↓
+1 Post
+↓
+6 Feels
+↓
+10 Long Videos
+↓
+1 Post
+↓
+repeat
+
+Use realtime Firebase data.
+
+Do not unnecessarily duplicate the same content.
+
+---
+
+20. FEELS GRID
+
+Two columns.
+
+Initial batch:
+
+6 Feels.
+
+Ratio:
+
+2:3
+
+Each card:
+
+- Thumbnail
+- One-line title
+- Rounded corners
+- Equal spacing
+
+Click:
+
+Open Feels Player.
+
+---
+
+21. LONG VIDEO CARD
+
+Each long video displays:
+
+- 16:9 thumbnail
+- Full available width
+- Duration
+- One-line title
+- Channel image
+- Channel name
+- Views
+- Upload time
+
+Click:
+
+Open Video Watch Page.
+
+---
+
+22. VIDEO WATCH PAGE
+
+Player at top.
+
+Requirements:
+
+- 16:9
+- Full width
+- No rounded corners
+- Black loading background
+- Skeleton
+- Buffer animation
+- Responsive playback
+
+Use a proper production media player.
+
+Do not implement fake playback.
+
+---
+
+23. VIDEO INFORMATION
+
+Below player:
+
+Premium white/card surface.
+
+Title:
+
+- One line
+- Bold
+- Ellipsis
+
+Metadata:
+
+- Channel handle
+- Likes
+- Views
+- Upload time
+- More
+
+---
+
+24. VIDEO MORE BOTTOM SHEET
+
+Show:
+
+- Full title
+- Likes
+- Views
+- Upload time
+- Full description
+
+Bottom sheet:
+
+- Rounded top corners
+- Drag handle
+- Swipe down
+- Close
+- Scrollable
+
+---
+
+25. VIDEO ACTIONS
+
+Order:
+
+1. Channel Avatar
+2. Subscribe
+3. Like
+4. Dislike
+5. Download
+
+Subscribe:
+
+- Black pill
+- White text
+- Animated
+
+Like:
+
+- Outline → filled
+- Instant count update
+
+Dislike:
+
+- Animated outline
+
+Download:
+
+- Rounded button
+- Download icon
+- Material ripple
+
+---
+
+26. SUBSCRIPTION SYSTEM
+
+Store subscriptions securely in Firebase.
+
+Prevent duplicate subscription.
+
+Support:
+
+- Subscribe
+- Unsubscribe
+- Subscriber count
+- Realtime synchronization
+
+Display correct subscriber count everywhere.
+
+Use atomic updates/transactions or server-side aggregation where required.
+
+---
+
+27. COMMENTS
+
+Comment preview:
+
+- Comments title
+- Count
+- Last user avatar
+- Last comment
+- One-line preview
+
+Click:
+
+Open full Comments interface.
+
+Comments must use Firebase Realtime Database.
+
+---
+
+28. RECOMMENDED FEED
+
+Below comments:
+
+- Long Videos
+- Feels
+
+Use infinite scrolling.
+
+Do not load the entire database at once.
+
+---
+
+29. FEELS CATEGORY
+
+Only Feels.
+
+Two-column grid.
+
+No:
+
+- Long videos
+- Posts
+
+Use infinite scrolling.
+
+---
+
+30. POSTS CATEGORY
+
+Only Community Posts.
+
+Use a professional Facebook-inspired feed while maintaining Flaynity's own visual identity.
+
+---
+
+31. POST
+
+Header:
+
+- Avatar
+- User name
+- Subscribe
+- Upload time
+
+Title:
+
+Maximum two lines.
+
+If longer:
+
+...more
+
+Click expands full title.
+
+---
+
+32. POST IMAGE
+
+Ratio:
+
+3:4
+
+Full width.
+
+Rounded corners.
+
+High quality.
+
+Click:
+
+Full-screen image viewer.
+
+Top-left:
+
+X close.
+
+Support up to five images per post.
+
+Use appropriate grid layouts.
+
+---
+
+33. POST REACTIONS
+
+Display top three reactions.
+
+Example:
+
+❤️ 👍 🥰
+
+Then:
+
+- Reaction count
+- Comments count
+
+Use real Firebase data.
+
+---
+
+34. REACTION SYSTEM
+
+Supported:
+
+- Love
+- Like
+- Care
+- Haha
+- Wow
+- Sad
+- Angry
+
+Long press Love:
+
+Open reaction picker.
+
+Each user can have one active reaction per post.
+
+Changing reaction must correctly update:
+
+- Previous reaction count
+- New reaction count
+- User reaction state
+
+Use atomic/transactional updates.
+
+---
+
+35. REACTION ANIMATION
+
+Implement:
+
+- Bounce
+- Floating reaction
+- Scale
+- Spring
+- Fade
+
+Animations must remain friendly and premium.
+
+---
+
+36. ALL PEOPLE REACTED
+
+Click reaction icons/count.
+
+Open:
+
+All People Reacted
+
+Top:
+
+Back button
+
+Center:
+
+All People Reacted
+
+Chips:
+
+- All
+- Love
+- Like
+- Care
+- Haha
+- Wow
+- Sad
+- Angry
+
+Show counts.
+
+Horizontal scrolling allowed on this page.
+
+Selected:
+
+Black/white.
+
+Unselected:
+
+Deep light-gray/black.
+
+---
+
+37. REACTED USERS
+
+Each row:
+
+- Avatar
+- User name
+- Reaction
+
+Use realtime Firebase listener.
+
+Paginate if necessary.
+
+---
+
+38. FEELS PAGE
+
+Create a true vertical Feels experience.
+
+No traditional top app bar.
+
+Use a 9:16-style vertical video experience.
+
+However, NEVER force uploaded media into 9:16.
+
+Preserve original aspect ratio.
+
+Support:
+
+- 9:16
+- 16:9
+- 1:1
+- 4:3
+- 3:4
+- 5:8
+- Other ratios
+
+Never stretch video.
+
+Use smart fitting such as contain/cover depending on requirements.
+
+Center media correctly.
+
+---
+
+39. FEELS PLAYER
+
+Auto play.
+
+Swipe up:
+
+Next Feels.
+
+Swipe down:
+
+Previous Feels.
+
+Preload nearby content.
+
+Avoid excessive memory usage.
+
+Dispose players outside the active preload window.
+
+---
+
+40. FEELS ACTIONS
+
+Right side icons:
+
+- Channel Image
+- Like
+- Comment
+- Share
+- Rotating music disc
+
+Icons only.
+
+No text beside action icons.
+
+---
+
+41. FEELS CHANNEL SUBSCRIBE
+
+Channel image contains:
+
+Before subscription:
+
+- Channel image
+- Red "+" icon
+
+When user taps "+":
+
+- Subscribe
+- Show red Tik icon as transitional subscribed indicator where specified
+- Apply smooth animation
+- Haptic feedback
+
+After subscription is confirmed:
+
+- Hide "+" icon
+- Hide red Tik icon
+- Show only channel image
+
+IMPORTANT:
+
+If the user was ALREADY subscribed before the Feels opened:
+
+Do NOT show:
+
+- Red "+"
+- Red Tik icon
+
+Show only:
+
+- Channel image
+
+Subscription state MUST be checked from Firebase Realtime Database.
+
+Requirements:
+
+- Smooth animation
+- Haptic feedback
+- High quality
+- Minimal UI
+- Light visual treatment
+- No unnecessary effects
+
+---
+
+42. FEELS LIKE
+
+Before Like:
+
+Show filled white heart.
+
+After Like:
+
+Show filled red heart.
+
+Requirements:
+
+- High quality
+- Minimal
+- Smooth
+- Correct persistent user state
+
+Like state must not reset when navigating between feeds.
+
+---
+
+43. FEELS PLAY/PAUSE
+
+Single tap:
+
+Pause.
+
+Show centered Material Pause icon.
+
+Fade automatically.
+
+Second tap:
+
+Resume from exact paused timestamp.
+
+Show Play icon.
+
+No text.
+
+---
+
+44. FEELS BUFFERING
+
+When:
+
+- Slow network
+- Disconnect
+- Empty buffer
+
+Show centered circular loading indicator.
+
+Black background.
+
+When ready:
+
+Automatically hide.
+
+Do not show unnecessary error screen.
+
+If playback genuinely fails, show a meaningful retry state rather than fake success.
+
+---
+
+45. MUSIC DISC
+
+Rotate while playing.
+
+Pause rotation when video pauses.
+
+Resume when playback resumes.
+
+Animation must be smooth.
+
+---
+
+46. DOUBLE TAP LIKE
+
+Double tap:
+
+- Red heart animation
+- Add like if not already liked
+- Haptic feedback where supported
+- Smooth animation
+
+Never increment the count multiple times for one persistent user state.
+
+Use server/database state as the source of truth.
+
+---
+
+47. FEELS INFORMATION
+
+Bottom:
+
+- Channel name, maximum approximately 25 visible characters
+- One-line title
+
+Click title:
+
+Expand:
+
+- Full title
+- Hashtags
+- Likes
+- Views
+- Upload time
+- Full description
+
+Click again:
+
+Collapse.
+
+---
+
+48. UPLOAD PAGE
+
+Rebuild Upload completely as a native Flutter experience.
+
+Design inspiration may come from modern YouTube mobile upload workflows, but the visual implementation must remain original to Flaynity.
+
+Bottom Upload Sheet:
+
+- Video
+- Feels
+- Post
+
+Selected option centered.
+
+Support:
+
+- Tap selection
+- Drag selection
+
+Use:
+
+- Backdrop blur
+- Rounded corners
+- Spring animation
+- Material motion
+
+---
+
+49. VIDEO UPLOAD
+
+Open native device video picker/gallery.
+
+Show:
+
+- Video grid
+- Close
+- Videos dropdown
+- Duration badge
+- Lazy loading
+- Thumbnail generation
+- Responsive layout
+
+After selection:
+
+Open Video Preview.
+
+---
+
+50. VIDEO PREVIEW
+
+Top:
+
+Back
+
+Display video preview.
+
+Controls:
+
+- Play
+- Pause
+- Double-tap seek
+
+Bottom:
+
+- Current duration
+- Next
+
+---
+
+51. VIDEO DETAILS
+
+Fields:
+
+- Auto-generated thumbnail
+- Custom thumbnail
+- Title maximum 100 characters
+- Live character counter
+- Description maximum 5000 characters
+- Visibility bottom popup
+- Publish
+- Private
+- Schedule Publish
+- Hide likes
+
+All controls must actually work.
+
+---
+
+52. VIDEO UPLOAD ENGINE
+
+Support:
+
+- Progress
+- Pause
+- Resume
+- Cancel
+- Retry
+- Auto retry
+- Chunk/multipart upload where supported
+- Upload speed
+- Remaining time
+- Success animation
+- Background-friendly behavior
+
+Do not unnecessarily lose upload state.
+
+Upload state should survive temporary network failures.
+
+---
+
+53. VIDEO METADATA
+
+Firebase Realtime Database stores metadata.
+
+Example:
+
+videos/
+  videoId/
+    uid
+    channelId
+    username
+    profilePhoto
+    title
+    description
+    thumbnailUrl
+    cdnVideoUrl
+    duration
+    views
+    likes
+    comments
+    shares
+    createdAt
+    visibility
+    status
+    tags
+    category
+
+Design scalable indexes and query structures.
+
+Never expose sensitive server-side credentials.
+
+---
+
+54. MEDIA STORAGE
+
+Use Cloudflare R2/CDN or the existing approved media architecture.
+
+The application must NOT expose permanent privileged storage credentials.
+
+Use secure upload authorization.
+
+Where appropriate:
+
+- Signed upload URLs
+- Signed download URLs
+- Short-lived media URLs
+- Authenticated media access
+
+Firebase stores metadata and appropriate media references.
+
+---
+
+55. VIDEO STREAMING
+
+Implement production-grade media streaming.
+
+Support:
+
+- CDN delivery
+- HTTP Range
+- Buffering
+- Preloading
+- Appropriate caching
+- Adaptive quality where available
+- HLS/DASH where backend pipeline supports it
+
+Long videos should support:
+
+- 1080p
+- 720p
+- 480p
+- 360p
+- 144p
+
+Do not force the client to download the entire video before playback.
+
+---
+
+56. FEELS PRELOADING
+
+Preload nearby Feels for smooth scrolling.
+
+Target approximately the next 20 Feels where device/network/memory conditions allow.
+
+Do not blindly preload 20 full-resolution videos if doing so causes:
+
+- Memory pressure
+- Excessive data consumption
+- Battery drain
+
+Use intelligent adaptive preloading based on:
+
+- Network
+- Data saver
+- Device capability
+- Memory
+- Current position
+
+---
+
+57. FEELS CREATION
+
+When Feels is selected:
+
+Request camera permissions.
+
+Camera UI:
+
+- Recording timer
+- Close
+- Add sound
+- Switch camera
+- Flash
+- Timer
+- 3s
+- 10s
+- 20s
+- Duration
+- 15s
+- 30s
+- 60s
+- 3m
+- Speed
+- Filters
+- Effects
+- Countdown
+
+Bottom:
+
+- Gallery
+- Record
+
+Record:
+
+Start.
+
+Hold:
+
+Record.
+
+Release:
+
+Stop.
+
+Show progress ring.
+
+Use real platform camera capabilities.
+
+---
+
+58. FEELS EDITOR
+
+Provide:
+
+- Trim
+- Split
+- Crop
+- Rotate
+- Speed
+- Text
+- Emoji
+- Music
+- Effects
+- Thumbnail
+
+IMPORTANT:
+
+Every feature visibly presented to the user must either:
+
+1. Actually work, or
+2. Be implemented using a valid platform-supported mechanism.
+
+Never create fake buttons.
+
+---
+
+59. FEELS DETAILS
+
+Fields:
+
+- Auto-generated thumbnail
+- Custom thumbnail
+- Title maximum 100 characters
+- Live character counter
+- Description maximum 5000 characters
+- Visibility bottom popup
+- Publish
+- Private
+- Schedule Publish
+- Hide likes
+
+Publish.
+
+Save metadata to Firebase.
+
+---
+
+60. POST CREATION
+
+Open native photo picker/gallery.
+
+Show:
+
+- Photo grid
+- Responsive layout
+
+Select:
+
+Open Photo Preview.
+
+---
+
+61. PHOTO PREVIEW
+
+Top:
+
+Back
+
+Photo preview.
+
+Next button.
+
+---
+
+62. PHOTO DETAILS
+
+Fields:
+
+- Title maximum 50 characters
+- Live character counter
+- Visibility bottom popup
+- Publish
+- Private
+- Schedule Publish
+
+Publish button.
+
+---
+
+63. DISCOVER PAGE
+
+Top header:
+
+Discover
+
+Search box:
+
+Full width.
+
+Placeholder:
+
+Search...
+
+Below:
+
+Category chips:
+
+- AI
+- Gaming
+- News
+- Music
+- Feels
+- Movie
+
+Below categories:
+
+Firebase realtime Feels.
+
+Card ratio:
+
+9:16.
+
+The Feels cards should be displayed in a vertically scrollable discovery experience.
+
+The layout may use multiple horizontal rows/sections while preserving a natural vertical scroll.
+
+Design must match Flaynity premium visual language.
+
+---
+
+64. SEARCH PAGE
+
+When Search is clicked:
+
+Open a new full-screen Search page.
+
+Top:
+
+- Back button
+- Search box
+- Voice button
+
+Back:
+
+Close Search page and return to Discover.
+
+When search text is empty:
+
+Show Voice button.
+
+When search text exists:
+
+Hide Voice button.
+
+Show X clear button in its place.
+
+Click X:
+
+Clear search.
+
+---
+
+65. SEARCH SUGGESTIONS
+
+When user types:
+
+Search Firebase Realtime Database for related keywords across:
+
+- Feels
+- Videos
+- Titles
+- Descriptions
+
+Example:
+
+User enters:
+
+Aura
+
+Possible Firebase-derived suggestions:
+
+Aura Video
+New Aura
+Aura Song
+Aura Music
+
+IMPORTANT:
+
+These suggestions must be generated from real Firebase data.
+
+Do not hard-code fake search suggestions.
+
+Click keyword:
+
+Show related:
+
+- Feels
+- Videos
+
+Use:
+
+Feels:
+
+9:16 cards.
+
+Videos:
+
+16:9 cards.
+
+Use a Home-style content presentation.
+
+---
+
+66. YOU ACCOUNT
+
+After successful Google Sign-In:
+
+You navigation icon uses user's Google/Gmail profile image.
+
+You page displays:
+
+- Google avatar
+- Full name
+- Email
+
+If no channel:
+
+Create a Channel
+
+If channel exists:
+
+Open:
+
+Channel Page
+
+---
+
+67. YOU PAGE
+
+Top AppBar:
+
+No back button.
+
+Right:
+
+Account Switch button.
+
+Account Switch:
+
+Show device/login-available Google accounts where supported.
+
+Allow:
+
+- Switch account
+- Add account
+
+Use native platform capabilities rather than fake account switching.
+
+---
+
+68. PROFILE SECTION
+
+Show:
+
+- Avatar
+- Full name
+- Email
+
+If no channel:
+
+Create a Channel.
+
+If channel exists:
+
+Directly open Channel Page.
+
+---
+
+69. CREATE CHANNEL
+
+Open a new page.
+
+Top:
+
+- Back
+- Center title
+
+Title:
+
+Enter Your Information
+
+---
+
+70. CHANNEL AVATAR
+
+Support:
+
+- Camera
+- Gallery
+- Crop
+
+Upload to R2.
+
+Save final URL/reference in Firebase.
+
+---
+
+71. CHANNEL NAME
+
+Editable.
+
+Maximum:
+
+100 characters.
+
+---
+
+72. CHANNEL HANDLE
+
+Live availability check.
+
+Rules:
+
+- Unique
+- Lowercase letters
+- Numbers
+- Underscore
+- No spaces
+- No duplicate handles
+
+States:
+
+Available:
+
+✓ Handle Available
+
+Taken:
+
+✕ Handle Already Taken
+
+Invalid:
+
+✕ Invalid Handle
+
+Use Firebase validation.
+
+Avoid race-condition duplicate handles through:
+
+- Secure Firebase Rules
+- Transactional reservation
+- Server-side validation where appropriate
+
+The client check alone is NOT sufficient.
+
+---
+
+73. CHANNEL CATEGORY
+
+Premium dropdown.
+
+Categories:
+
+- Entertainment
+- Gaming
+- Education
+- Music
+- Comedy
+- Sports
+- AI
+- Technology
+- Travel
+- Lifestyle
+- Food
+- Science
+- Pets
+- Movies
+- Animation
+- Kids
+- Fashion
+- Business
+- Health
+- Vlogs
+- Others
+
+---
+
+74. CREATE CHANNEL ACTION
+
+Validate everything.
+
+Create channel in Firebase.
+
+Then automatically open View Channel.
+
+Do not create duplicate channels on repeated taps.
+
+Use loading/disabled state during creation.
+
+---
+
+75. CHANNEL PAGE
+
+Start below the status bar/safe area.
+
+Banner:
+
+16:9.
+
+Banner top/right:
+
+Settings icon.
+
+Below:
+
+- Avatar
+- Channel name
+- Handle
+- Subscribers
+- Videos
+
+---
+
+76. CHANNEL DESCRIPTION
+
+Show short description.
+
+More button expands full description.
+
+---
+
+77. CHANNEL ACTIONS
+
+Buttons:
+
+- Analytics
+- Edit Channel
+
+---
+
+78. CHANNEL TABS
+
+Exactly:
+
+- Videos
+- Feels
+- Posts
+
+---
+
+79. CHANNEL VIDEOS
+
+Show:
+
+- Thumbnail
+- Title
+- Views
+- Upload date
+- Duration
+
+---
+
+80. CHANNEL FEELS
+
+Two-column grid.
+
+Ratio:
+
+2:3.
+
+Show:
+
+- Thumbnail
+- Views
+
+---
+
+81. CHANNEL POSTS
+
+Show:
+
+- Image
+- Title
+- Likes
+- Comments
+- Upload date
+
+Image ratio:
+
+3:4.
+
+Full width.
+
+Rounded.
+
+Full-screen preview.
+
+---
+
+82. ANALYTICS
+
+Open Analytics page.
+
+Top:
+
+Back
+
+Center:
+
+Analytics
+
+Use real Firebase data.
+
+Never use demo statistics.
+
+---
+
+83. ANALYTICS OVERVIEW
+
+Show:
+
+- Avatar
+- Subscribers
+- Total Videos
+- Total Feels
+- Total Posts
+- Total Views
+- Total Likes
+- Total Comments
+- Watch Time
+- Estimated Revenue
+
+Time range:
+
+- Last 28 Days
+- Last 90 Days
+- Last 365 Days
+
+All values must come from real data.
+
+If revenue is not actually available:
+
+Show:
+
+Future Support
+
+Do NOT invent revenue.
+
+---
+
+84. ANALYTICS CARDS
+
+Cards:
+
+- Estimated Revenue
+- Views
+- Subscribers
+- Likes
+- Comments
+- Watch Time
+
+Use real data.
+
+---
+
+85. EDIT CHANNEL
+
+Top:
+
+Back
+
+Center:
+
+Edit Channel
+
+---
+
+86. CHANNEL BANNER
+
+Support:
+
+- Upload
+- Crop
+
+Recommended:
+
+16:9.
+
+Store final image in R2.
+
+---
+
+87. CHANNEL AVATAR
+
+Support:
+
+- Camera
+- Gallery
+- Crop
+- Preview
+
+Store in R2.
+
+---
+
+88. EDIT CHANNEL INFORMATION
+
+Editable:
+
+- Channel Name
+- Handle
+- Description
+- Category
+
+Handle:
+
+- Unique
+- Live validation
+
+Description:
+
+Maximum 250 words.
+
+Live counter.
+
+---
+
+89. CHANNEL SETTINGS
+
+Click Settings icon.
+
+Open a NEW full page.
+
+Do NOT use a right-side slide-in settings panel.
+
+Top:
+
+Back button.
+
+Center:
+
+Setting
+
+Use card sections.
+
+Inside each card, every action must use a premium icon/button design.
+
+---
+
+90. SETTINGS — ACCOUNT
+
+Card title:
+
+Account
+
+Items:
+
+- Flay Earning
+- Edit Profile
+- Switch Account
+
+---
+
+91. SETTINGS — APPEARANCE
+
+Card title:
+
+Appearance
+
+Items:
+
+- Switch Theme
+- App Language
+- Data Saver
+
+---
+
+92. SETTINGS — FLAYNITY FEATURES
+
+Card title:
+
+Flaynity Features
+
+Items:
+
+- Upgrade Pro
+- Flay Verified Badge
+- Flay Ads
+- Boost Content
+- Flay Pay
+
+---
+
+93. SETTINGS — PRIVACY
+
+Card title:
+
+Privacy
+
+Items:
+
+- Private Account
+- Who Can See My Content
+- Who Can Comment
+- Who Can Subscribe Me
+- Who Can Like Me
+
+---
+
+94. SETTINGS — CONTENT & PLAYBACK
+
+Card title:
+
+Content & Playback
+
+Items:
+
+- Download Settings
+- Content Quality
+- Autoplay
+
+---
+
+95. SETTINGS — SUPPORT
+
+Card title:
+
+Support
+
+Items:
+
+- Help Center
+- Report a Problem
+- Terms of Service
+- Privacy Policy
+- Cookie Policy
+- Copyright & DMCA
+- Monetization Policy
+- Community Guidelines
+- Creator Policy
+- Third-Party Technologies
+- About Flaynity
+
+---
+
+96. SETTINGS POPUPS
+
+Clicking settings options should open a bottom popup/sheet.
+
+User must be able to select an option.
+
+Use:
+
+- Rounded top corners
+- Drag handle
+- Smooth animation
+- Proper accessibility
+- Selected state
+- Save state
+- Close on selection where appropriate
+
+---
+
+97. SWITCH THEME
+
+Options:
+
+- Light Theme
+- Dark Theme
+
+Theme preference must persist.
+
+---
+
+98. APP LANGUAGE
+
+Options:
+
+- 🇧🇩 বাংলা
+- 🇱🇷 English
+- العربية 🇸🇦
+- 🇪🇸 Español
+- 🇫🇷 Français
+- 🇮🇳 हिन्दी
+- اردو 🇵🇰
+
+Use proper localization architecture.
+
+Do not hard-code translated strings throughout widgets.
+
+Use localization files.
+
+---
+
+99. DATA SAVER
+
+Display:
+
+Video quality
+
+Manage your default video quality and the amount of cellular data you use with the following options.
+
+Options:
+
+Optimized
+Adjust videos to network conditions
+
+Data saver
+Use up to 50% less data by reducing video quality
+
+The setting must actually affect media behavior where possible.
+
+---
+
+100. PRIVATE ACCOUNT
+
+Options:
+
+- Public
+- Private
+
+Save user preference securely.
+
+---
+
+101. WHO CAN SEE MY CONTENT
+
+Options:
+
+- Public
+- Only me
+
+Enforce this at backend/database authorization level.
+
+Do not rely only on client-side hiding.
+
+---
+
+102. WHO CAN COMMENT
+
+Options:
+
+- Public
+- Only me
+
+Enforce through backend/security rules.
+
+---
+
+103. WHO CAN SUBSCRIBE ME
+
+Options:
+
+- Public
+- Only me
+
+Enforce through backend/security rules.
+
+---
+
+104. WHO CAN LIKE ME
+
+Options:
+
+- Public
+- Only me
+
+Enforce through backend/security rules.
+
+---
+
+105. DOWNLOAD SETTINGS
+
+Options:
+
+- ON
+- OFF
+
+Use actual download permission/state.
+
+Do not expose unauthorized downloadable media.
+
+---
+
+106. CONTENT QUALITY
+
+Options:
+
+- Auto
+- 360p
+- 480p
+- 720p
+- 1080p
+
+Apply to supported media playback.
+
+---
+
+107. AUTOPLAY
+
+Options:
+
+- ON
+- OFF
+
+Apply to actual media behavior.
+
+---
+
+108. STATUS BAR AND SAFE AREAS
+
+Android:
+
+- Status bar must remain visible where required.
+- Light theme: dark status bar icons.
+- Dark theme: light status bar icons.
+- App content begins correctly below status bar.
+
+iOS:
+
+Respect:
+
+- Safe areas
+- Notch
+- Dynamic Island
+- Home indicator
+
+Web:
+
+Respect responsive browser viewport.
+
+---
+
+109. RESPONSIVE DESIGN
+
+The same application must work across:
+
+- Android phones
+- Android tablets
+- iPhones
+- iPads
+- Desktop Web
+- Tablet Web
+- Mobile Web
+
+Do not simply stretch mobile UI across desktop.
+
+Create responsive layouts.
+
+---
+
+110. ACCESSIBILITY
+
+Support:
+
+- Sufficient contrast
+- Semantic labels
+- Screen readers where practical
+- Large text where practical
+- Touch targets
+- Keyboard navigation on Web
+- Focus states on Web
+- Reduced motion where supported
+
+Do not sacrifice accessibility for visual effects.
+
+---
+
+111. SECURITY ARCHITECTURE
+
+Security is a core requirement.
+
+Never place sensitive secrets inside:
+
+- Flutter source
+- Dart source
+- Kotlin source
+- Swift source
+- Web bundle
+- Firebase client config beyond what Firebase officially exposes
+- Assets
+- Environment files committed to source control
+
+Assume any client-side value can eventually be extracted.
+
+---
+
+112. SERVER-SIDE SECURITY
+
+Privileged operations must be server-side.
+
+Examples:
+
+- Payment verification
+- Premium entitlement
+- Monetization
+- Earning calculations
+- Admin permissions
+- Sensitive analytics
+- Secure media authorization
+- Signed URL generation
+- Sensitive business rules
+- Fraud detection
+- Rate limiting
+- Account enforcement
+
+Do not trust the client.
+
+---
+
+113. FIREBASE SECURITY
+
+Implement proper Firebase Security Rules.
+
+Protect:
+
+- User data
+- Channel data
+- Private content
+- Likes
+- Reactions
+- Comments
+- Subscribers
+- Analytics
+- Upload state
+- Premium information
+
+Prevent:
+
+- Unauthorized writes
+- User impersonation
+- Counter manipulation
+- Duplicate subscriptions
+- Duplicate reactions
+- Unauthorized private-content access
+
+---
+
+114. MEDIA SECURITY
+
+Use:
+
+- Short-lived signed URLs
+- Authenticated access
+- CDN authorization
+- Secure upload URLs
+
+Do not expose permanent private R2 credentials.
+
+---
+
+115. ANDROID SECURITY
+
+Release builds should use appropriate:
+
+- R8
+- ProGuard rules
+- Minification
+- Resource shrinking
+- Obfuscation
+- Signed release builds
+- Debug logging removal
+- Secure networking
+- Play Integrity where appropriate
+- Anti-tamper checks where appropriate
+
+Do not leave:
+
+- Debug endpoints
+- Test credentials
+- API secrets
+- Development backdoors
+- Admin bypasses
+
+in production.
+
+---
+
+116. IOS SECURITY
+
+Use appropriate:
+
+- Release optimization
+- Secure storage
+- Keychain where required
+- App Attest where appropriate
+- DeviceCheck where appropriate
+- Secure networking
+- Production configuration separation
+
+Do not store secrets inside the app.
+
+---
+
+117. WEB SECURITY
+
+Flutter Web must:
+
+- Never expose privileged secrets
+- Use secure backend authorization
+- Use HTTPS
+- Support security headers where hosting permits
+- Use CSP where appropriate
+- Use rate limiting server-side
+- Use secure Firebase rules
+- Avoid unsafe HTML rendering
+- Sanitize user-generated content where applicable
+
+---
+
+118. CODE PROTECTION
+
+Understand:
+
+No client application can be made 100% impossible to reverse engineer.
+
+The goal is:
+
+1. Make code significantly harder to understand.
+2. Prevent modified clients from bypassing backend authorization.
+3. Keep secrets server-side.
+4. Minimize useful information available through reverse engineering.
+5. Obfuscate release code where platform tooling supports it.
+
+Never claim "100% unbreakable".
+
+---
+
+119. PERFORMANCE
+
+Optimize:
+
+- Startup
+- Feed scrolling
+- Video playback
+- Image loading
+- Firebase listeners
+- Memory
+- Battery
+- Network usage
+- Web rendering
+
+Use:
+
+- Lazy loading
+- Pagination
+- Caching
+- Thumbnail optimization
+- CDN
+- Player lifecycle management
+- Image resizing
+- Efficient rebuilds
+- Background work only when needed
+
+---
+
+120. STATE MANAGEMENT
+
+Use a professional scalable state-management architecture.
+
+Do not allow:
+
+- Global mutable state everywhere
+- Firebase logic directly in UI
+- Duplicate listeners
+- Memory leaks
+- Repeated API calls
+- Unnecessary rebuilds
+
+Choose an appropriate Flutter state management approach and use it consistently.
+
+---
+
+121. ERROR HANDLING
+
+Every network/media/database operation must have proper states:
+
+- Loading
+- Success
+- Empty
+- Offline
+- Retry
+- Error
+
+Do not show raw exceptions to users.
+
+Do not silently swallow important errors.
+
+Log useful diagnostics in development only.
+
+Remove sensitive debug logging from production.
+
+---
+
+122. NO FAKE DATA
+
+This is extremely important.
+
+Do NOT use:
+
+- Fake users
+- Fake likes
+- Fake views
+- Fake subscribers
+- Fake comments
+- Fake revenue
+- Fake analytics
+- Fake search results
+- Fake videos
+- Fake channels
+- Hard-coded production-looking data
+
+If Firebase has no data:
+
+Show a proper empty state.
+
+---
+
+123. NO FAKE BUTTONS
+
+Every visible button must:
+
+- Work
+- Open its intended screen
+- Perform its intended action
+- Or be clearly unavailable with a meaningful explanation
+
+Never create UI elements merely to make the app look complete.
+
+---
+
+124. DATABASE DESIGN
+
+Before implementation, analyze the current Firebase structure.
+
+If improvements are required:
+
+Create a migration-compatible structure.
+
+Do not break existing data unnecessarily.
+
+Use appropriate indexes.
+
+Use pagination.
+
+Use denormalization where needed for Firebase performance.
+
+Maintain clear references between:
+
+users
+channels
+videos
+feels
+posts
+comments
+likes
+reactions
+subscriptions
+analytics
+uploads
+
+---
+
+125. REALTIME COUNTERS
+
+Counters such as:
+
+- Likes
+- Views
+- Comments
+- Subscribers
+- Reactions
+
+must be handled safely.
+
+Avoid client-only increment logic.
+
+Use:
+
+- Transactions
+- Atomic updates
+- Server-side validation
+- Cloud Functions/backend where appropriate
+
+to reduce race conditions.
+
+---
+
+126. VIEW COUNTS
+
+Do not allow unlimited client-side view manipulation.
+
+Design a reasonable server-side view counting mechanism.
+
+Avoid counting:
+
+- Every playback rebuild
+- Every page rebuild
+- Every navigation event
+
+as a new view.
+
+---
+
+127. UPLOAD ARCHITECTURE
+
+Preferred architecture:
+
+Client
+↓
+Secure upload authorization
+↓
+Cloudflare R2
+↓
+Media processing/encoding
+↓
+CDN
+↓
+Firebase metadata
+
+Do not upload large media through Firebase Realtime Database.
+
+---
+
+128. MEDIA PROCESSING
+
+Where supported by backend:
+
+Generate:
+
+- Original
+- 1080p
+- 720p
+- 480p
+- 360p
+- 144p
+- Thumbnail
+- Preview/optimized assets
+- HLS/DASH manifests
+
+Store processing state in Firebase.
+
+Example:
+
+processing
+uploading
+encoding
+ready
+failed
+
+---
+
+129. UPLOAD STATUS
+
+Users should see:
+
+- Upload progress
+- Processing progress where available
+- Success
+- Failure
+- Retry
+
+Do not falsely display "Published" before the content is actually ready.
+
+---
+
+130. SEARCH ARCHITECTURE
+
+Search should scale.
+
+Do not download all Firebase content to the client just to search locally.
+
+Use:
+
+- Indexed data
+- Search backend where appropriate
+- Server-side query
+- Firebase indexing
+- Search service if required
+
+Use the current Flaynity backend/data architecture as the first reference.
+
+---
+
+131. NOTIFICATIONS
+
+If notifications exist in the existing application/source:
+
+Preserve and rebuild them using native Flutter/platform functionality.
+
+Do not remove existing notification behavior unless explicitly requested.
+
+---
+
+132. ACCOUNT SWITCHING
+
+Account switching must correctly handle:
+
+- Firebase auth state
+- User profile
+- Channel
+- Subscriptions
+- Likes
+- Reactions
+- Feed personalization
+- Cached state
+
+Never leak one account's state into another.
+
+Clear or namespace account-specific caches.
+
+---
+
+133. CACHE MANAGEMENT
+
+Use controlled caching.
+
+Cache:
+
+- Feed metadata
+- Thumbnails
+- Appropriate user/channel data
+- Settings
+- Recently viewed metadata
+
+Do not cache sensitive/private data insecurely.
+
+Do not allow unlimited cache growth.
+
+---
+
+134. BACK NAVIGATION
+
+Back navigation must be predictable.
+
+Examples:
+
+Search:
+
+Back → Discover
+
+Create Channel:
+
+Back → You
+
+Settings:
+
+Back → Channel
+
+Analytics:
+
+Back → Channel
+
+Comments:
+
+Back → Watch/Feels
+
+Image viewer:
+
+Back/X → Previous page
+
+Do not unexpectedly reset feed position.
+
+---
+
+135. FEED STATE PRESERVATION
+
+When leaving a feed and returning:
+
+Preserve where practical:
+
+- Scroll position
+- Selected category
+- Loaded items
+- Current filter
+- Playback state where appropriate
+
+Do not unnecessarily reload everything.
+
+---
+
+136. FEELS STATE
+
+When interacting with:
+
+- Comments
+- Share
+- Channel
+- Subscribe
+- Like
+
+Do not unexpectedly change the current playing Feels.
+
+Maintain current playback state where appropriate.
+
+---
+
+137. DESIGN QUALITY
+
+The application must look like a professional premium social media platform.
+
+Avoid:
+
+- Generic template appearance
+- Cheap gradients
+- Excessive shadows
+- Excessive rounded boxes
+- Excessive animations
+- Random colors
+- Tiny touch targets
+- Inconsistent spacing
+- Inconsistent icon styles
+
+Maintain a consistent:
+
+- 4/8-point spacing system
+- Typography hierarchy
+- Icon sizing
+- Border radius system
+- Elevation system
+- Motion system
+
+---
+
+138. ICONS
+
+Use a consistent icon family.
+
+Prefer:
+
+- Material Symbols
+- Material Icons
+- Appropriate platform-native icons
+
+Do not mix random icon styles.
+
+For important Flaynity-specific icons, use custom vector assets where necessary.
+
+---
+
+139. HAPTICS
+
+Use haptic feedback where supported for:
+
+- Subscribe
+- Like
+- Reaction
+- Tab switching
+- Important actions
+
+Respect platform capabilities.
+
+Never make haptics excessive.
+
+---
+
+140. PLATFORM DIFFERENCES
+
+Do not force Android-specific behavior onto iOS.
+
+Do not force iOS-specific behavior onto Android.
+
+Examples:
+
+Android:
+
+- Back navigation
+- Google account picker
+- Play Integrity
+- Android media picker
+
+iOS:
+
+- Swipe-back conventions
+- Safe areas
+- Photos picker
+- AVFoundation
+- App Attest where appropriate
+
+Web:
+
+- Mouse
+- Keyboard
+- Browser navigation
+- Responsive layouts
+
+---
+
+141. TESTING
+
+Create automated and manual tests.
+
+Test:
+
+Authentication:
+
+- New login
+- Existing login
+- Logout
+- Re-login
+- Account switching
+
+Feed:
+
+- Home
+- Feels
+- Posts
+- Infinite scroll
+- Offline
+- Reconnection
+
+Media:
+
+- Playback
+- Pause
+- Resume
+- Buffering
+- Seeking
+- Quality switching
+- Preloading
+
+Interactions:
+
+- Like
+- Unlike
+- Subscribe
+- Unsubscribe
+- Reaction
+- Comments
+- Share
+
+Upload:
+
+- Video
+- Feels
+- Post
+- Pause
+- Resume
+- Retry
+- Cancel
+- Network failure
+
+Channel:
+
+- Create
+- Edit
+- Handle
+- Avatar
+- Banner
+- Analytics
+
+Settings:
+
+- Theme
+- Language
+- Data Saver
+- Privacy
+- Content Quality
+- Autoplay
+
+---
+
+142. OFFLINE TESTING
+
+Explicitly test:
+
+1. Open app online.
+2. Load Home.
+3. Disable network.
+4. Navigate.
+5. Close/reopen.
+6. Restore network.
+7. Verify Firebase reconnects.
+8. Verify data updates.
+9. Verify no duplicate listeners.
+10. Verify no crash.
+
+---
+
+143. SECURITY TESTING
+
+Test:
+
+- Unauthorized database writes
+- Unauthorized private content access
+- Modified client requests
+- Duplicate reactions
+- Duplicate subscriptions
+- Counter manipulation
+- Expired media URLs
+- Invalid upload requests
+- Privilege escalation
+- Admin-only endpoints
+- Rate limits
+
+---
+
+144. PERFORMANCE TESTING
+
+Test on:
+
+- Low-end Android
+- Mid-range Android
+- High-end Android
+- iPhone
+- iPad
+- Desktop Web
+- Slow network
+- Fast network
+- Data saver
+- Offline
+
+Monitor:
+
+- Startup
+- FPS
+- Memory
+- CPU
+- Battery
+- Network
+- Player buffering
+
+---
+
+145. RELEASE BUILD
+
+Produce proper release configurations.
+
+Android:
+
+- Release APK
+- Release AAB
+- Signing configuration
+- R8
+- ProGuard
+- Resource shrinking
+- Minification
+
+iOS:
+
+- Release configuration
+- Archive-ready project
+
+Web:
+
+- Production Flutter Web build
+
+Never include development secrets.
+
+---
+
+146. ENVIRONMENT CONFIGURATION
+
+Separate:
+
+development
+staging
+production
+
+where practical.
+
+Never commit:
+
+- Private keys
+- Service account JSON
+- R2 secret keys
+- Admin credentials
+- Payment secrets
+- AI API keys
+
+---
+
+147. ADMIN/BACKEND
+
+If existing Flaynity source includes admin functionality:
+
+Inspect it.
+
+Preserve its required capabilities.
+
+Do not move privileged admin operations into the client.
+
+Admin authorization must be server-side.
+
+---
+
+148. AI/API INTEGRATIONS
+
+If future AI functionality is required:
+
+Never put AI provider API keys inside:
+
+- Flutter
+- Android
+- iOS
+- Web
+
+Use:
+
+Client
+↓
+Authenticated backend
+↓
+AI provider
+
+---
+
+149. CODE ORGANIZATION
+
+Use a maintainable project structure similar to:
+
+flaynity/
+├── android/
+├── ios/
+├── web/
+├── lib/
+│   ├── core/
+│   ├── config/
+│   ├── theme/
+│   ├── routing/
+│   ├── localization/
+│   ├── models/
+│   ├── services/
+│   ├── repositories/
+│   ├── domain/
+│   ├── state/
+│   ├── features/
+│   │   ├── auth/
+│   │   ├── home/
+│   │   ├── feels/
+│   │   ├── upload/
+│   │   ├── discover/
+│   │   ├── search/
+│   │   ├── you/
+│   │   ├── channel/
+│   │   ├── analytics/
+│   │   ├── comments/
+│   │   ├── posts/
+│   │   └── settings/
+│   ├── widgets/
+│   └── main.dart/
+├── test/
+└── integration_test/
+
+Adapt the structure to the actual architecture if a better production structure is justified.
+
+---
+
+150. FLUTTER CODE QUALITY
+
+Use:
+
+- Strong typing
+- Null safety
+- Small reusable widgets
+- Clear naming
+- Dependency injection where appropriate
+- Repository abstraction
+- Testable services
+- No unnecessary global state
+- No giant single-file application
+- No duplicate logic
+
+---
+
+151. UI COMPONENT SYSTEM
+
+Create reusable components for:
+
+- App bars
+- Bottom navigation
+- Cards
+- Buttons
+- Chips
+- Bottom sheets
+- Dialogs
+- Skeleton loaders
+- Video cards
+- Feels cards
+- Post cards
+- Avatar
+- Reaction picker
+- Comment rows
+- Settings cards
+- Premium icons
+- Loading indicators
+- Empty states
+- Error states
+
+---
+
+152. CONTENT SAFETY AND USER-GENERATED CONTENT
+
+All user-generated content must be treated as untrusted input.
+
+Protect against:
+
+- Malicious text
+- Unsafe links
+- Injection
+- Excessively large data
+- Abuse of uploads
+- Spam
+
+Use server-side validation.
+
+---
+
+153. PRIVACY
+
+Do not expose private user information unnecessarily.
+
+Respect:
+
+- Private account
+- Content visibility
+- Comment permissions
+- Like permissions
+- Subscription permissions
+
+Client UI must reflect server-authoritative permissions.
+
+---
+
+154. IMPORTANT SOURCE-OF-TRUTH RULE
+
+When requirements and existing source differ:
+
+Priority:
+
+1. Explicit new requirements
+2. Security requirements
+3. Platform requirements
+4. Existing Flaynity behavior
+5. Existing implementation details
+
+Never preserve an insecure implementation merely because it exists in the old Web App.
+
+---
+
+155. DO NOT ASK TO REWRITE THE REQUIREMENTS
+
+The supplied requirements are the specification.
+
+You must analyze them and implement them.
+
+If something is genuinely technically impossible on one platform:
+
+- Identify the exact limitation
+- Implement the closest platform-correct behavior
+- Keep the user-visible experience as close as reasonably possible
+- Do not silently delete the feature
+
+---
+
+156. DEVELOPMENT WORKFLOW
+
+Follow this order.
+
+PHASE 1 — SOURCE AUDIT
+
+Inspect every provided source file.
+
+Create:
+
+Feature Inventory
+Navigation Map
+Firebase Data Map
+Media Map
+UI Component Map
+Authentication Map
+Settings Map
+Platform Dependency Map
+
+Do not start blindly coding.
+
+---
+
+PHASE 2 — ARCHITECTURE
+
+Design:
+
+- Flutter architecture
+- State management
+- Repository architecture
+- Firebase architecture
+- R2/CDN architecture
+- Media architecture
+- Offline architecture
+- Authentication
+- Security
+- Navigation
+
+---
+
+PHASE 3 — DESIGN SYSTEM
+
+Implement:
+
+- Colors
+- Typography
+- Spacing
+- Icons
+- Cards
+- Buttons
+- Chips
+- Bottom sheets
+- Animations
+- Light theme
+- Dark theme
+
+---
+
+PHASE 4 — CORE SERVICES
+
+Implement:
+
+- Firebase
+- Authentication
+- RTDB
+- Storage/CDN
+- Connectivity
+- Cache
+- Media
+- Upload
+- Localization
+
+---
+
+PHASE 5 — CORE NAVIGATION
+
+Implement:
+
+- Home
+- Feels
+- Upload
+- Discover
+- You
+
+Then deep navigation.
+
+---
+
+PHASE 6 — CONTENT SYSTEM
+
+Implement:
+
+- Videos
+- Feels
+- Posts
+- Comments
+- Likes
+- Reactions
+- Subscriptions
+- Views
+- Search
+
+---
+
+PHASE 7 — CREATION SYSTEM
+
+Implement:
+
+- Video upload
+- Feels camera
+- Feels editor
+- Post creation
+- Channel creation
+- Channel editing
+
+---
+
+PHASE 8 — CHANNEL SYSTEM
+
+Implement:
+
+- Channel
+- Banner
+- Avatar
+- Handle
+- Tabs
+- Analytics
+- Settings
+
+---
+
+PHASE 9 — OFFLINE
+
+Implement:
+
+- Cache
+- Offline UI
+- Reconnection
+- Listener recovery
+- Upload recovery
+
+---
+
+PHASE 10 — SECURITY
+
+Implement:
+
+- Firebase Rules
+- Backend authorization
+- Signed URLs
+- R8
+- Obfuscation
+- Platform integrity
+- Secure storage
+- Production configuration
+
+---
+
+PHASE 11 — TESTING
+
+Run:
+
+- Unit tests
+- Widget tests
+- Integration tests
+- Firebase tests
+- Security tests
+- Offline tests
+- Performance tests
+
+---
+
+PHASE 12 — RELEASE
+
+Prepare:
+
+Android:
+
+AAB
+APK
+
+iOS:
+
+Archive-ready release
+
+Web:
+
+Production Flutter Web build
+
+---
+
+157. AGENT BEHAVIOR
+
+You are not allowed to:
+
+- Delete working features without reason
+- Replace real Firebase data with fake data
+- Replace R2/CDN with local assets
+- Create fake buttons
+- Create placeholder analytics
+- Hard-code user data
+- Hard-code likes/views/subscribers
+- Use WebView
+- Implement the new application as HTML/CSS/JS
+- Put secrets inside client code
+- Ignore offline requirements
+- Ignore security
+- Ignore platform differences
+
+---
+
+158. WHEN A REQUIREMENT IS AMBIGUOUS
+
+Use the existing Flaynity source code as the reference.
+
+If still ambiguous:
+
+Choose the implementation that:
+
+1. Preserves existing behavior.
+2. Matches the Flaynity design system.
+3. Is secure.
+4. Is scalable.
+5. Is platform-correct.
+6. Does not introduce unnecessary complexity.
+
+Do not invent unrelated features.
+
+---
+
+159. FINAL QUALITY STANDARD
+
+The final application must feel like a real production social-media platform.
+
+It must not feel like:
+
+- An AI-generated demo
+- A template
+- A WebView
+- A converted website
+- A collection of fake screens
+
+It must provide real:
+
+- Authentication
+- Firebase data
+- Realtime updates
+- Video playback
+- Upload
+- Feels
+- Posts
+- Reactions
+- Comments
+- Subscriptions
+- Search
+- Channels
+- Analytics
+- Settings
+- Offline behavior
+- CDN media delivery
+
+---
+
+160. FINAL VALIDATION
+
+Before declaring the project complete, verify:
+
+Authentication
+
+- Google login works
+- User persistence works
+- Account switching works
+
+Navigation
+
+- Five destinations work
+- Deep navigation works
+- Back navigation works
+- State preservation works
+
+Firebase
+
+- RTDB works
+- Listeners are cleaned
+- No duplicate listeners
+- Security rules work
+
+Home
+
+- All
+- Posts
+- Feels
+- Feed pattern
+- Infinite loading
+
+Videos
+
+- Watch page
+- Playback
+- Buffering
+- Quality
+- Comments
+- Subscribe
+- Like
+- Dislike
+- Download
+
+Feels
+
+- Vertical player
+- Auto play
+- Swipe
+- Pause/resume
+- Like
+- Double-tap like
+- Subscribe
+- Comments
+- Share
+- Music disc
+- Preloading
+
+Posts
+
+- Creation
+- Images
+- Reactions
+- Comments
+- Reaction users
+
+Upload
+
+- Video
+- Feels
+- Post
+- Progress
+- Retry
+- Cancel
+- Resume
+
+Channel
+
+- Create
+- Edit
+- Handle
+- Avatar
+- Banner
+- Tabs
+- Analytics
+
+Settings
+
+- Theme
+- Language
+- Data saver
+- Privacy
+- Download
+- Content quality
+- Autoplay
+- Support pages
+
+Offline
+
+- Offline detection
+- Cache
+- Reconnection
+- Listener recovery
+
+Security
+
+- No secrets
+- Firebase rules
+- Backend authorization
+- Signed media access
+- Release obfuscation
+
+Platforms
+
+- Android
+- iOS
+- Web
+
+---
+
+161. FINAL OUTPUT REQUIREMENT
+
+When development is complete, provide:
+
+1. Final project structure.
+2. Important architecture explanation.
+3. Firebase structure.
+4. R2/CDN structure.
+5. Required backend functions/services.
+6. Required environment variables.
+7. Android build instructions.
+8. iOS build instructions.
+9. Web build instructions.
+10. Firebase Security Rules.
+11. Database indexes.
+12. Release security checklist.
+13. Testing checklist.
+14. Known platform limitations, if any.
+
+Do not claim completion if critical features are still fake, placeholder, or non-functional.
+
+---
+
+162. MOST IMPORTANT RULE
+
+The final product is:
+
+FLAYNITY
+=
+Flutter/Dart native application
++
+Android Kotlin integrations
++
+iOS Swift integrations
++
+Flutter Web
++
+Firebase
++
+Cloudflare R2/CDN
++
+Secure backend
++
+Offline-first architecture
++
+Production media streaming
++
+High-quality premium UI/UX
+
+It is NOT:
+
+HTML/CSS/JS
++
+WebView
++
+Website wrapper
+
+The existing Web App is the REFERENCE.
+
+The new Flutter application is the FINAL PRODUCT.
+
+Reconstruct the application faithfully, improve the architecture where necessary, preserve all required behavior, and produce production-quality Android, iOS, and Web applications.
+
+END OF MASTER PROMPT

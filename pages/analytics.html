@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Flaynity Analytics</title>
+<style>
+/* ===== Flaynity Analytics — single file page (HTML + CSS + JS) ===== */
+.an-page, .an-sheet-wrap {
+  --an-p: var(--primary, #f0004f);
+  --an-bg: var(--bg-color, #ffffff);
+  --an-sf: var(--surface, #ffffff);
+  --an-tx: var(--text-main, #121216);
+  --an-mu: var(--text-muted, #74747e);
+  --an-bd: var(--glass-border, #efeff3);
+  --an-soft: #fff0f4;
+  --an-soft2: #ffd9e3;
+  --an-ok: #14a44d;
+  --an-bad: #e11d48;
+  --an-track: #f4f4f7;
+}
+[data-theme="dark"] .an-page, [data-theme="dark"] .an-sheet-wrap {
+  --an-soft: rgba(240, 0, 79, .14);
+  --an-soft2: rgba(240, 0, 79, .30);
+  --an-track: rgba(255, 255, 255, .08);
+}
+.an-page {
+  display: none; position: fixed; inset: 0; z-index: 1520; flex-direction: column;
+  background: var(--an-bg); color: var(--an-tx); box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  padding-top: env(safe-area-inset-top, 0px); overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+.an-page *, .an-sheet-wrap * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+.an-page button { font-family: inherit; cursor: pointer; border: 0; background: none; color: inherit; padding: 0; }
+.an-head { flex: 0 0 56px; display: flex; align-items: center; justify-content: center; position: relative; padding: 0 12px; }
+.an-head h1 { margin: 0; font-size: 1.12rem; font-weight: 800; letter-spacing: -.2px; }
+.an-back { position: absolute; left: 6px; top: 6px; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; }
+.an-back:active { background: var(--an-soft); }
+.an-hrange { position: absolute; right: 14px; font-size: .74rem; font-weight: 700; color: var(--an-mu); }
+.an-tabs { flex: 0 0 auto; display: flex; gap: 8px; padding: 4px 14px 12px; overflow-x: auto; scrollbar-width: none; }
+.an-tabs::-webkit-scrollbar { display: none; }
+.an-tab { flex: 1 0 auto; padding: 10px 16px; border-radius: 999px; background: var(--an-track); color: var(--an-tx); font-weight: 700; font-size: .86rem; white-space: nowrap; transition: background .18s, color .18s; }
+.an-tab.on { background: var(--an-p); color: #fff; box-shadow: 0 6px 16px rgba(240, 0, 79, .28); }
+.an-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 4px 14px calc(28px + env(safe-area-inset-bottom, 0px)); }
+.an-card { background: var(--an-sf); border: 1px solid var(--an-bd); border-radius: 20px; padding: 16px; margin-bottom: 12px; box-shadow: 0 6px 20px rgba(20, 20, 40, .035); }
+.an-card h3 { margin: 0; font-size: .98rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+.an-ico { width: 30px; height: 30px; border-radius: 50%; background: var(--an-soft); color: var(--an-p); display: grid; place-items: center; flex: 0 0 30px; }
+.an-ico svg { width: 17px; height: 17px; }
+.an-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.an-seeall { font-size: .72rem; font-weight: 700; color: var(--an-tx); display: inline-flex; align-items: center; gap: 2px; }
+.an-seeall svg { width: 12px; height: 12px; }
+.an-mu { color: var(--an-mu); }
+.an-chan { display: flex; align-items: center; gap: 12px; padding: 4px 2px 12px; }
+.an-av { width: 54px; height: 54px; border-radius: 50%; object-fit: cover; background: var(--an-p); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 1.3rem; overflow: hidden; flex: 0 0 54px; }
+.an-av img { width: 100%; height: 100%; object-fit: cover; }
+.an-chan b { display: block; font-size: 1.12rem; font-weight: 800; }
+.an-chan small { color: var(--an-mu); font-weight: 600; font-size: .8rem; }
+.an-chan > div { flex: 1; min-width: 0; }
+.an-chan b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.an-rangebtn { background: var(--an-soft); color: var(--an-tx); font-weight: 700; font-size: .76rem; padding: 8px 10px; border-radius: 10px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.an-rangebtn svg { width: 12px; height: 12px; }
+.an-rev { background: var(--an-soft); border: 0; border-left: 4px solid var(--an-p); border-radius: 16px; padding: 14px 14px 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.an-rev small { font-size: .78rem; color: var(--an-mu); font-weight: 600; display: block; }
+.an-rev strong { display: block; font-size: 1.7rem; font-weight: 900; letter-spacing: -.5px; margin: 2px 0 4px; }
+.an-btn { background: var(--an-p); color: #fff !important; font-weight: 800; font-size: .8rem; padding: 11px 14px; border-radius: 12px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 8px 18px rgba(240, 0, 79, .28); white-space: nowrap; }
+.an-btn svg { width: 13px; height: 13px; }
+.an-btn:active { transform: scale(.96); }
+.an-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-bottom: 12px; padding: 2px 0; }
+.an-chips::-webkit-scrollbar { display: none; }
+.an-chip { flex: 0 0 auto; padding: 9px 14px; border-radius: 999px; background: var(--an-track); font-weight: 700; font-size: .78rem; display: inline-flex; align-items: center; gap: 4px; }
+.an-chip.on { background: var(--an-p); color: #fff; }
+.an-chip svg { width: 11px; height: 11px; }
+.an-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.an-stat { background: var(--an-sf); border: 1px solid var(--an-bd); border-radius: 18px; padding: 14px; display: flex; gap: 10px; align-items: flex-start; text-align: left; width: 100%; box-shadow: 0 4px 14px rgba(20, 20, 40, .03); }
+.an-stat .an-ico { width: 34px; height: 34px; flex-basis: 34px; }
+.an-stat small { display: block; font-size: .78rem; color: var(--an-mu); font-weight: 600; }
+.an-stat strong { display: block; font-size: 1.32rem; font-weight: 800; line-height: 1.25; }
+.an-stat > div { min-width: 0; }
+.an-tr { font-size: .72rem; font-weight: 800; display: inline-flex; align-items: center; gap: 2px; }
+.an-tr svg { width: 11px; height: 11px; }
+.an-tr.up { color: var(--an-ok); } .an-tr.down { color: var(--an-bad); } .an-tr.flat { color: var(--an-mu); }
+.an-sel { appearance: none; -webkit-appearance: none; border: 0; background: transparent; color: var(--an-tx); font-weight: 700; font-size: .78rem; font-family: inherit; padding: 4px 16px 4px 6px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 2px center; background-size: 12px; }
+.an-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+.an-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.an-two .an-card { margin: 0; padding: 12px; }
+.an-two h3 { font-size: .84rem; }
+.an-mini { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
+.an-thumb { width: 62px; height: 62px; border-radius: 12px; background: linear-gradient(135deg, #ff5c8a, #f0004f); object-fit: cover; flex: 0 0 62px; display: grid; place-items: center; color: #fff; overflow: hidden; }
+.an-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.an-thumb svg { width: 24px; height: 24px; }
+.an-bar { height: 5px; border-radius: 4px; background: var(--an-track); overflow: hidden; margin-top: 6px; }
+.an-bar i { display: block; height: 100%; border-radius: 4px; background: var(--an-p); transition: width .5s cubic-bezier(.2, .8, .2, 1); }
+.an-big { font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; line-height: 1.1; margin: 8px 0 6px; }
+.an-metric { display: flex; justify-content: space-between; gap: 8px; align-items: flex-end; }
+.an-metric svg.an-sp { width: 52%; height: 72px; flex: 0 0 52%; }
+.an-legend { display: flex; flex-direction: column; gap: 9px; font-size: .84rem; font-weight: 600; flex: 1; min-width: 0; }
+.an-legend > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.an-legend span.l { display: flex; align-items: center; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.an-legend b { font-weight: 800; }
+.an-donutrow { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
+.an-donut { width: 112px; height: 112px; flex: 0 0 112px; }
+.an-chart { width: 100%; height: auto; display: block; overflow: visible; }
+.an-chart text { font-size: 9.5px; fill: var(--an-mu); font-family: inherit; font-weight: 600; }
+.an-map { width: 100%; height: auto; display: block; }
+.an-loc { display: flex; align-items: center; gap: 8px; font-size: .78rem; font-weight: 600; margin: 7px 0; }
+.an-loc .f { font-size: 1.05rem; width: 22px; text-align: center; }
+.an-loc .n { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.an-loc b { font-weight: 800; }
+.an-hbar { display: grid; grid-template-columns: 54px 1fr 46px; gap: 8px; align-items: center; font-size: .78rem; font-weight: 700; margin: 10px 0; }
+.an-hbar .t { height: 7px; border-radius: 4px; background: var(--an-track); overflow: hidden; }
+.an-hbar .t i { display: block; height: 100%; background: var(--an-p); border-radius: 4px; }
+.an-hbar b { text-align: right; }
+.an-cols { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; height: 150px; margin-top: 12px; padding-top: 22px; }
+.an-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 5px; font-size: .72rem; font-weight: 700; }
+.an-col i { display: block; width: 100%; max-width: 34px; border-radius: 5px 5px 0 0; background: linear-gradient(180deg, #ff5c8a, var(--an-p)); min-height: 3px; transition: height .5s cubic-bezier(.2, .8, .2, 1); }
+.an-col span { color: var(--an-mu); font-size: .68rem; }
+.an-empty { text-align: center; color: var(--an-mu); font-weight: 600; font-size: .84rem; padding: 22px 8px; }
+.an-grow { display: flex; align-items: center; gap: 12px; background: var(--an-soft); border-radius: 16px; padding: 12px 14px; margin-top: 4px; }
+.an-grow .an-ico { width: 38px; height: 38px; flex-basis: 38px; background: transparent; }
+.an-grow .an-ico svg { width: 28px; height: 28px; }
+.an-grow b { display: block; font-size: .9rem; } .an-grow small { color: var(--an-mu); font-size: .72rem; font-weight: 600; line-height: 1.3; display: block; }
+.an-grow > div { flex: 1; min-width: 0; }
+.an-item { display: flex; gap: 10px; align-items: flex-start; padding: 14px 0; border-bottom: 1px solid var(--an-bd); }
+.an-item:last-child { border-bottom: 0; }
+.an-rank { position: absolute; top: -6px; left: -6px; width: 22px; height: 22px; border-radius: 50%; background: var(--an-p); color: #fff; font-size: .72rem; font-weight: 800; display: grid; place-items: center; border: 2px solid var(--an-sf); z-index: 1; }
+.an-ithumb { position: relative; width: 98px; height: 70px; flex: 0 0 98px; }
+.an-ithumb .an-thumb { width: 98px; height: 70px; border-radius: 12px; flex-basis: 98px; }
+.an-ibody { flex: 1; min-width: 0; }
+.an-ibody b { display: block; font-size: .95rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.an-ibody small { color: var(--an-mu); font-size: .76rem; font-weight: 600; }
+.an-ibody .s { display: flex; align-items: center; gap: 12px; margin-top: 5px; font-size: .8rem; font-weight: 800; flex-wrap: wrap; }
+.an-ibody .s span { display: inline-flex; align-items: center; gap: 4px; }
+.an-ibody .s svg { width: 14px; height: 14px; color: var(--an-p); }
+.an-dots { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--an-mu); flex: 0 0 32px; }
+.an-dots svg { width: 18px; height: 18px; }
+.an-more { width: 100%; padding: 14px; border-radius: 14px; background: var(--an-soft); color: var(--an-tx); font-weight: 800; font-size: .86rem; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px; }
+.an-more svg { width: 14px; height: 14px; }
+.an-det { background: var(--an-soft); border-radius: 12px; padding: 10px 12px; margin: -6px 0 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: .78rem; font-weight: 600; }
+.an-det b { font-weight: 800; }
+.an-sheet-wrap { position: fixed; inset: 0; z-index: 1700; display: none; align-items: flex-end; justify-content: center; background: rgba(10, 10, 20, .45); }
+.an-sheet-wrap.on { display: flex; }
+.an-sheet { width: 100%; max-width: 560px; background: var(--an-sf); color: var(--an-tx); border-radius: 24px 24px 0 0; padding: 12px 18px calc(22px + env(safe-area-inset-bottom, 0px)); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; animation: anUp .24s cubic-bezier(.2, .9, .3, 1); max-height: 82vh; overflow-y: auto; }
+@keyframes anUp { from { transform: translateY(40px); opacity: .4; } to { transform: none; opacity: 1; } }
+.an-grab { width: 40px; height: 4px; border-radius: 3px; background: var(--an-bd); margin: 0 auto 14px; }
+.an-sheet h4 { margin: 0 0 12px; font-size: 1.05rem; font-weight: 800; }
+.an-opt { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 14px 4px; border-bottom: 1px solid var(--an-bd); font-weight: 700; font-size: .94rem; text-align: left; background: none; border-left: 0; border-right: 0; border-top: 0; color: inherit; font-family: inherit; cursor: pointer; }
+.an-opt.on { color: var(--an-p); }
+.an-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 6px 0 16px; }
+.an-dates label { font-size: .76rem; font-weight: 700; color: var(--an-mu); display: block; }
+.an-dates input { width: 100%; margin-top: 6px; padding: 12px; border-radius: 12px; border: 1px solid var(--an-bd); background: var(--an-bg); color: var(--an-tx); font-weight: 600; font-size: .9rem; font-family: inherit; }
+.an-tip { display: flex; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--an-bd); font-size: .88rem; font-weight: 600; line-height: 1.45; }
+.an-tip:last-child { border: 0; }
+.an-tip .an-ico { margin-top: 1px; }
+.an-off { background: #fff4e5; color: #8a5300; font-size: .76rem; font-weight: 700; border-radius: 10px; padding: 8px 12px; margin-bottom: 10px; display: none; }
+.an-note { font-size: .7rem; color: var(--an-mu); font-weight: 600; margin-top: 8px; }
+.an-kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.an-kpi .an-card { margin: 0; }
+.an-kpi small { color: var(--an-mu); font-weight: 700; font-size: .76rem; }
+.an-kpi strong { display: block; font-size: 1.5rem; font-weight: 800; margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<!-- 1) ANALYTICS (main) -->
+<section class="fullscreen-page an-page" id="analytics-page">
+  <header class="an-head"><button class="an-back" data-an="back" aria-label="Back"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><h1>Analytics</h1></header>
+  <div class="an-scroll" id="an-main"></div>
+</section>
+
+<!-- 2) ANALYTICS DETAILS (Overview / Reach / Engagement / Audience) -->
+<section class="fullscreen-page an-page" id="analytics-details-page">
+  <header class="an-head"><button class="an-back" data-an="back" aria-label="Back"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><h1>Analytics</h1></header>
+  <div class="an-tabs" id="an-dtabs"></div>
+  <div class="an-scroll" id="an-details"></div>
+</section>
+
+<!-- 3) TOP CONTENT -->
+<section class="fullscreen-page an-page" id="analytics-top-page">
+  <header class="an-head"><button class="an-back" data-an="back" aria-label="Back"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><h1>Top Content</h1></header>
+  <div class="an-tabs" id="an-ttabs"></div>
+  <div class="an-scroll" id="an-top"></div>
+</section>
+
+<!-- 4) AUDIENCE -->
+<section class="fullscreen-page an-page" id="analytics-audience-page">
+  <header class="an-head"><button class="an-back" data-an="back" aria-label="Back"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><h1>Audience</h1></header>
+  <div class="an-tabs" id="an-atabs"></div>
+  <div class="an-scroll" id="an-aud"></div>
+</section>
+
+<!-- Bottom sheet (range menu, custom dates, tips, item actions) -->
+<div class="an-sheet-wrap" id="an-sheet-wrap" data-an="sheet-bg"><div class="an-sheet" id="an-sheet"></div></div>
+
+<script>
+(function () {
+'use strict';
+if (window.__flayAnalyticsInit) return;
+window.__flayAnalyticsInit = true;
+
+/* ---------- helpers ---------- */
+var DAY = 864e5;
+var PAGES = ['analytics-page', 'analytics-details-page', 'analytics-top-page', 'analytics-audience-page'];
+var $ = function (id) { return document.getElementById(id); };
+function DB() { return (typeof db !== 'undefined' && db) || firebase.database(); }
+function UID() { try { var a = (typeof auth !== 'undefined' && auth) || firebase.auth(); return a.currentUser ? a.currentUser.uid : null; } catch (e) { return null; } }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function fmt(n) {
+  n = Number(n) || 0;
+  if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1e4) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+  return String(Math.round(n * 10) / 10);
+}
+function pctS(v) { return (Math.round(v * 10) / 10) + '%'; }
+function dateS(t) { return t ? new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''; }
+function shortD(t) { return new Date(t).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }); }
+function keys(o) { return o && typeof o === 'object' ? Object.keys(o) : []; }
+
+var IC = {
+  eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  users: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5c3 .2 5 2 5 4.5"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  thumb: '<path d="M7 11v9H4v-9h3zM9 20V11l4-8c1.6 0 2.5 1.2 2.2 2.8L14.9 9H20c1 0 1.8.9 1.6 1.9l-1.4 7.4c-.2 1-1 1.7-2 1.7H9z" fill="currentColor"/>',
+  comment: '<path d="M4 5h16v11H9l-5 4V5z" fill="currentColor"/>',
+  play: '<rect x="3" y="5" width="18" height="14" rx="3" fill="currentColor"/><path d="M10 9.5v5l4.5-2.5z" fill="#fff" stroke="none"/>',
+  trophy: '<path d="M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M12 14v4M8 20h8"/>',
+  bulb: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
+  crown: '<path d="M3 8l4 4 5-7 5 7 4-4-2 11H5L3 8z" fill="currentColor"/>',
+  chev: '<path d="M9 6l6 6-6 6"/>',
+  down: '<path d="M6 9l6 6 6-6"/>',
+  up: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  dn: '<path d="M12 5v14M6 13l6 6 6-6"/>',
+  flat: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  dots: '<circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/>',
+  bars: '<path d="M5 20V10M12 20V4M19 20v-7"/>',
+  img: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/>',
+  feels: '<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10.5 9v6l5-3z" fill="currentColor"/>',
+  check: '<path d="M5 12l5 5 9-10"/>'
+};
+function ic(n, s) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' + (s ? ' width="' + s + '" height="' + s + '"' : '') + '>' + IC[n] + '</svg>'; }
+function icoBox(n) { return '<span class="an-ico">' + ic(n) + '</span>'; }
+
+/* ---------- state ---------- */
+var S = {
+  uid: null, live: false, ch: null, raw: { video: {}, feel: {}, post: {} }, items: {}, stats: {}, comments: {}, reacts: {}, subs: {},
+  profiles: {}, pending: {}, range: '28', cStart: 0, cEnd: 0, metric: 'views', dTab: 'overview', tTab: 'video', tShown: 5, aTab: 'overview', openItem: null, loaded: {}, pushT: null
+};
+var LIS = {}; // key -> {q, fn}
+var timer = null;
+
+function listen(key, q, fn) { unlisten(key); LIS[key] = { q: q, fn: fn }; q.on('value', fn, function () {}); }
+function unlisten(key) { var l = LIS[key]; if (l) { try { l.q.off('value', l.fn); } catch (e) {} delete LIS[key]; } }
+function unlistenAll() { Object.keys(LIS).forEach(unlisten); }
+function sched() { clearTimeout(timer); timer = setTimeout(render, 140); }
+
+/* ---------- Firebase realtime ---------- */
+function start() {
+  if (S.live) return;
+  S.uid = UID(); if (!S.uid) return;
+  S.live = true;
+  var uid = S.uid, d = DB();
+  listen('ch', d.ref('channels/' + uid), function (s) { S.ch = s.val() || {}; S.loaded.ch = 1; sched(); });
+  listen('subs', d.ref('subscribers/' + uid), function (s) { S.subs = s.val() || {}; sched(); });
+  listen('t:video', d.ref('admin_panel/movies/user_uploads').orderByChild('userId').equalTo(uid), function (s) { S.raw.video = s.val() || {}; S.loaded.video = 1; rebuild(); });
+  listen('t:feel', d.ref('admin_panel/movies/feels').orderByChild('userId').equalTo(uid), function (s) { S.raw.feel = s.val() || {}; S.loaded.feel = 1; rebuild(); });
+  listen('t:post', d.ref('admin_panel/posts').orderByChild('userId').equalTo(uid), function (s) { S.raw.post = s.val() || {}; S.loaded.post = 1; rebuild(); });
+}
+function stop() {
+  if (!S.live) return;
+  S.live = false; unlistenAll(); clearTimeout(timer); clearTimeout(S.pushT);
+  S.stats = {}; S.comments = {}; S.reacts = {}; S.loaded = {};
+}
+function rebuild() {
+  var now = Date.now(), items = {};
+  ['video', 'feel', 'post'].forEach(function (type) {
+    var o = S.raw[type];
+    keys(o).forEach(function (k) {
+      var m = o[k]; if (!m || typeof m !== 'object') return;
+      if (m.userId && m.userId !== S.uid) return;
+      if (type === 'video' && m.isShort) return;
+      if (m.status === 'scheduled' && Number(m.scheduledTime) > now) return;
+      var id = String(m.id || k);
+      var thumb = m.thumbUrl || m.poster || m.banner || m.imageUrl || (m.images && m.images[0]) || '';
+      items[id] = { id: id, type: type, title: m.title || (type === 'post' ? 'Community Post' : 'Untitled'), thumb: thumb, created: Number(m.createdAt || m.uploadTime || 0), duration: m.duration || '' };
+    });
+  });
+  S.items = items;
+  var d = DB();
+  Object.keys(items).forEach(function (id) {
+    if (!LIS['st:' + id]) {
+      listen('st:' + id, d.ref('movie_stats/' + id), function (s) { S.stats[id] = s.val() || {}; sched(); });
+      listen('cm:' + id, d.ref('movie_comments/' + id), function (s) { S.comments[id] = s.val() || {}; sched(); });
+      if (items[id].type === 'post') listen('rx:' + id, d.ref('post_reactions/' + id), function (s) { S.reacts[id] = s.val() || {}; sched(); });
+    }
+  });
+  Object.keys(LIS).forEach(function (k) {
+    var m = /^(st|cm|rx):(.+)$/.exec(k);
+    if (m && !items[m[2]]) { unlisten(k); delete S.stats[m[2]]; delete S.comments[m[2]]; delete S.reacts[m[2]]; }
+  });
+  sched();
+}
+
+/* ---------- range ---------- */
+function bounds() {
+  var n = new Date(), end = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1).getTime(), start;
+  if (S.range === 'custom' && S.cStart && S.cEnd) { start = S.cStart; end = S.cEnd; }
+  else start = end - (+S.range || 28) * DAY;
+  var len = end - start;
+  return { start: start, end: end, pStart: start - len, pEnd: start, len: len, days: Math.round(len / DAY) };
+}
+function rangeLabel(b) {
+  if (S.range === 'custom') return shortD(b.start) + ' – ' + shortD(b.end - DAY);
+  return 'Last ' + S.range + ' Days';
+}
+function prevLabel(b) { return S.range === 'custom' ? 'previous period' : 'previous ' + S.range + ' days'; }
+
+/* ---------- viewer profiles (gender / age / country) ---------- */
+function ageOf(dob) {
+  if (!dob) return null; var t = Date.parse(dob); if (isNaN(t)) return null;
+  var a = Math.floor((Date.now() - t) / (365.25 * DAY)); return a >= 0 && a < 110 ? a : null;
+}
+function fetchProfiles(uids) {
+  var need = uids.filter(function (u) { return !(u in S.profiles) && !S.pending[u]; });
+  if (!need.length) return;
+  need.forEach(function (u) { S.pending[u] = 1; });
+  var d = DB(), i = 0;
+  (function next() {
+    var chunk = need.slice(i, i + 25); i += 25; if (!chunk.length) return;
+    Promise.all(chunk.map(function (u) {
+      return d.ref('channels/' + u).once('value').then(function (s) {
+        var v = s.val();
+        S.profiles[u] = v ? { g: String(v.gender || '').toLowerCase(), age: ageOf(v.dateOfBirth), cc: String(v.countryCode || '').toUpperCase(), c: v.country || '' } : null;
+      }).catch(function () { S.profiles[u] = null; }).then(function () { delete S.pending[u]; });
+    })).then(function () { sched(); next(); });
+  })();
+}
+
+/* ---------- compute ---------- */
+var SRC = { feels: 'Feels', channel: 'Channel Pages', home: 'Home Feed', discover: 'Discover', posts: 'Posts Feed', external: 'External', other: 'Others' };
+function collect() {
+  var E = { views: [], likes: [], comments: [], subs: [] };
+  Object.keys(S.items).forEach(function (id) {
+    var it = S.items[id], st = S.stats[id] || {}, vt = st.viewTimes || {}, vs = st.viewSources || {};
+    keys(st.views).forEach(function (u) { E.views.push({ id: id, uid: u, type: it.type, t: Number(vt[u]) || it.created, src: vs[u] || 'other' }); });
+    var l = {}; keys(st.likes).forEach(function (u) { l[u] = 1; });
+    if (it.type === 'post') keys(S.reacts[id]).forEach(function (u) { l[u] = 1; });
+    keys(l).forEach(function (u) { E.likes.push({ id: id, type: it.type, t: it.created }); });
+    var cm = S.comments[id] || {};
+    keys(cm).forEach(function (k) { var c = cm[k]; if (c && typeof c === 'object') E.comments.push({ id: id, type: it.type, t: Number(c.timestamp) || it.created }); });
+  });
+  keys(S.subs).forEach(function (u) { var v = S.subs[u]; E.subs.push({ t: typeof v === 'number' ? v : 0 }); });
+  return E;
+}
+function inR(t, a, b) { return t >= a && t < b; }
+function period(E, a, b) {
+  var v = E.views.filter(function (e) { return inR(e.t, a, b); });
+  var longV = v.filter(function (e) { return e.type === 'video'; }).length, feelV = v.filter(function (e) { return e.type === 'feel'; }).length;
+  var uniq = {}; v.forEach(function (e) { uniq[e.uid] = 1; });
+  return {
+    views: v.length, vEvents: v, uniq: keys(uniq), longV: longV, feelV: feelV,
+    likes: E.likes.filter(function (e) { return inR(e.t, a, b); }).length,
+    comments: E.comments.filter(function (e) { return inR(e.t, a, b); }).length,
+    subs: E.subs.filter(function (e) { return e.t && inR(e.t, a, b); }).length,
+    watch: longV * 3.5,
+    revenue: (longV / 1000) * 0.30 + (feelV / 1000) * 0.15,
+    created: Object.keys(S.items).filter(function (id) { return inR(S.items[id].created, a, b); }).length
+  };
+}
+function buckets(b) {
+  var step = b.days <= 31 ? 1 : b.days <= 120 ? 7 : 30, out = [];
+  for (var t = b.start; t < b.end; t += step * DAY) out.push({ t0: t, t1: Math.min(t + step * DAY, b.end), label: shortD(t) });
+  return out;
+}
+function series(E, b, metric) {
+  var bk = buckets(b), src = metric === 'likes' ? E.likes : metric === 'comments' ? E.comments : E.views;
+  return {
+    labels: bk.map(function (x) { return x.label; }),
+    vals: bk.map(function (x) {
+      var c = 0;
+      src.forEach(function (e) { if (inR(e.t, x.t0, x.t1) && (metric !== 'watch' || e.type === 'video')) c++; });
+      return metric === 'watch' ? Math.round(c * 3.5 * 10) / 10 : c;
+    })
+  };
+}
+function compute() {
+  var b = bounds(), E = collect(), cur = period(E, b.start, b.end), prev = period(E, b.pStart, b.pEnd);
+  var all = period(E, 0, Date.now() + DAY * 400);
+  var M = { b: b, E: E, cur: cur, prev: prev, all: all };
+  // traffic sources
+  var sc = {}; cur.vEvents.forEach(function (e) { var k = SRC[e.src] ? e.src : 'other'; sc[k] = (sc[k] || 0) + 1; });
+  var sl = Object.keys(sc).map(function (k) { return { k: k, n: sc[k] }; }).sort(function (a, c) { return c.n - a.n; });
+  if (sl.length > 4) { var rest = sl.slice(3).reduce(function (s, x) { return s + x.n; }, 0); sl = sl.slice(0, 3).concat([{ k: 'other', n: rest }]); }
+  M.sources = sl.map(function (x) { return { name: SRC[x.k], n: x.n, p: cur.views ? x.n / cur.views * 100 : 0 }; });
+  // content type
+  M.types = [['Videos', 'video'], ['Feels', 'feel'], ['Posts', 'post']].map(function (x) {
+    var n = cur.vEvents.filter(function (e) { return e.type === x[1]; }).length; return { name: x[0], n: n, p: cur.views ? n / cur.views * 100 : 0 };
+  });
+  // audience (unique viewers of the selected range)
+  fetchProfiles(cur.uniq);
+  var g = { male: 0, female: 0, other: 0 }, ages = { '13-17': 0, '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0, '55+': 0 }, ctry = {}, known = 0, gKnown = 0, aKnown = 0, cKnown = 0;
+  cur.uniq.forEach(function (u) {
+    var p = S.profiles[u]; if (!p) return; known++;
+    if (p.g) { gKnown++; if (p.g === 'male') g.male++; else if (p.g === 'female') g.female++; else g.other++; }
+    if (p.age != null && p.age >= 13) { aKnown++; ages[p.age <= 17 ? '13-17' : p.age <= 24 ? '18-24' : p.age <= 34 ? '25-34' : p.age <= 44 ? '35-44' : p.age <= 54 ? '45-54' : '55+']++; }
+    var nm = (p.c || p.cc || '').trim(); if (nm) { cKnown++; var key = p.cc || nm; ctry[key] = ctry[key] || { name: nm, cc: p.cc, n: 0 }; ctry[key].n++; }
+  });
+  M.aud = { total: cur.uniq.length, known: known, g: g, gKnown: gKnown, ages: ages, aKnown: aKnown, cKnown: cKnown, countries: Object.keys(ctry).map(function (k) { return ctry[k]; }).sort(function (a, c) { return c.n - a.n; }) };
+  M.pending = cur.uniq.some(function (u) { return S.pending[u]; });
+  // top content (all-time)
+  M.top = Object.keys(S.items).map(function (id) {
+    var it = S.items[id], st = S.stats[id] || {}, l = {}; keys(st.likes).forEach(function (u) { l[u] = 1; }); if (it.type === 'post') keys(S.reacts[id]).forEach(function (u) { l[u] = 1; });
+    var pv = cur.vEvents.filter(function (e) { return e.id === id; }).length;
+    return { it: it, views: keys(st.views).length, likes: keys(l).length, comments: keys(S.comments[id]).length, pViews: pv };
+  }).sort(function (a, c) { return (c.views - a.views) || (c.likes - a.likes) || (c.it.created - a.it.created); });
+  M.subTotal = S.ch ? (Number(S.ch.subscribersCount) || keys(S.subs).length) : keys(S.subs).length;
+  return M;
+}
+
+/* ---------- trend ---------- */
+function trend(c, p) {
+  if (!c && !p) return { v: 0, cls: 'flat' };
+  if (!p) return { v: 100, cls: 'up' };
+  var v = Math.round((c - p) / p * 1000) / 10; return { v: v, cls: v > 0 ? 'up' : v < 0 ? 'down' : 'flat' };
+}
+function trH(t) { return '<span class="an-tr ' + t.cls + '">' + ic(t.cls === 'up' ? 'up' : t.cls === 'down' ? 'dn' : 'flat', 11) + Math.abs(t.v) + '%</span>'; }
+function trV(c, p, b) { return trH(trend(c, p)) + ' <span class="an-mu" style="font-size:.74rem;font-weight:600">vs ' + prevLabel(b) + '</span>'; }
+
+/* ---------- charts ---------- */
+var PAL = ['var(--an-p)', '#ff6f98', '#ffa8c0', '#ffd3df'];
+function niceMax(m) { if (m <= 4) return 4; var raw = m / 4, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p, s = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10; return s * p * 4; }
+function lineChart(vals, labels) {
+  var w = 340, h = 170, pl = 30, pr = 10, pt = 12, pb = 24, mx = niceMax(Math.max.apply(null, vals.concat([1])));
+  var n = vals.length, iw = w - pl - pr, ih = h - pt - pb;
+  var X = function (i) { return pl + (n === 1 ? iw / 2 : i * iw / (n - 1)); }, Y = function (v) { return pt + ih - v / mx * ih; };
+  var s = '<svg class="an-chart" viewBox="0 0 ' + w + ' ' + h + '"><defs><linearGradient id="anLg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0004f" stop-opacity=".22"/><stop offset="1" stop-color="#f0004f" stop-opacity=".02"/></linearGradient></defs>';
+  for (var k = 0; k <= 4; k++) { var yv = mx / 4 * k, y = Y(yv); s += '<line x1="' + pl + '" x2="' + (w - pr) + '" y1="' + y + '" y2="' + y + '" stroke="currentColor" stroke-opacity=".10"/><text x="' + (pl - 6) + '" y="' + (y + 3) + '" text-anchor="end">' + fmt(yv) + '</text>'; }
+  var pts = vals.map(function (v, i) { return X(i) + ',' + Y(v); });
+  s += '<path d="M' + X(0) + ',' + Y(0) + ' L' + pts.join(' L') + ' L' + X(n - 1) + ',' + Y(0) + ' Z" fill="url(#anLg)"/>';
+  s += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="#f0004f" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+  var every = Math.max(1, Math.ceil(n / 14));
+  vals.forEach(function (v, i) { if (i % every === 0 || i === n - 1) s += '<circle cx="' + X(i) + '" cy="' + Y(v) + '" r="' + (i === n - 1 ? 4 : 2.6) + '" fill="' + (i === n - 1 ? '#f0004f' : 'var(--an-sf)') + '" stroke="#f0004f" stroke-width="1.6"/>'; });
+  var lblEvery = Math.max(1, Math.ceil(n / 6));
+  labels.forEach(function (l, i) { if (i % lblEvery === 0) s += '<text x="' + X(i) + '" y="' + (h - 6) + '" text-anchor="middle">' + esc(l) + '</text>'; });
+  return s + '</svg>';
+}
+function sparkBars(vals) {
+  var w = 160, h = 72, n = vals.length, mx = Math.max.apply(null, vals.concat([1])), bw = w / n, s = '<svg class="an-sp" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">';
+  vals.forEach(function (v, i) { var bh = Math.max(2, v / mx * (h - 2)); s += '<rect x="' + (i * bw + bw * .12) + '" y="' + (h - bh) + '" width="' + (bw * .76) + '" height="' + bh + '" rx="1.5" fill="#f0004f" opacity="' + (0.35 + 0.65 * (i + 1) / n) + '"/>'; });
+  return s + '</svg>';
+}
+function sparkLine(vals, dots) {
+  var w = 160, h = 72, n = vals.length, mx = Math.max.apply(null, vals.concat([1])), X = function (i) { return n === 1 ? w / 2 : 4 + i * (w - 8) / (n - 1); }, Y = function (v) { return h - 6 - v / mx * (h - 14); };
+  var pts = vals.map(function (v, i) { return X(i) + ',' + Y(v); }), s = '<svg class="an-sp" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"><defs><linearGradient id="anSg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0004f" stop-opacity=".25"/><stop offset="1" stop-color="#f0004f" stop-opacity="0"/></linearGradient></defs>';
+  if (!dots) s += '<path d="M' + X(0) + ',' + h + ' L' + pts.join(' L') + ' L' + X(n - 1) + ',' + h + ' Z" fill="url(#anSg)"/>';
+  s += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="#f0004f" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>';
+  if (dots) vals.forEach(function (v, i) { if (i % Math.max(1, Math.ceil(n / 10)) === 0) s += '<circle cx="' + X(i) + '" cy="' + Y(v) + '" r="2.4" fill="var(--an-sf)" stroke="#f0004f" stroke-width="1.4"/>'; });
+  return s + '</svg>';
+}
+function donut(parts) {
+  var r = 38, c = 2 * Math.PI * r, tot = parts.reduce(function (s, x) { return s + x.n; }, 0), off = 0;
+  var s = '<svg class="an-donut" viewBox="0 0 100 100"><circle cx="50" cy="50" r="' + r + '" fill="none" stroke="var(--an-track)" stroke-width="18"/>';
+  if (tot > 0) parts.forEach(function (x, i) {
+    if (!x.n) return; var len = x.n / tot * c;
+    s += '<circle cx="50" cy="50" r="' + r + '" fill="none" style="stroke:' + PAL[i % 4] + '" stroke-width="18" stroke-dasharray="' + len + ' ' + (c - len) + '" stroke-dashoffset="' + (-off) + '" transform="rotate(-90 50 50)"/>'; off += len;
+  });
+  return s + '</svg>';
+}
+function legend(parts, tot) {
+  return '<div class="an-legend">' + parts.map(function (x, i) { return '<div><span class="l"><i class="an-dot" style="background:' + PAL[i % 4] + '"></i>' + esc(x.name) + '</span><b>' + pctS(tot ? x.n / tot * 100 : 0) + '</b></div>'; }).join('') + '</div>';
+}
+var LAND = [
+  [[-168, 66], [-140, 70], [-120, 72], [-95, 73], [-80, 68], [-62, 60], [-56, 50], [-66, 44], [-76, 38], [-81, 26], [-97, 26], [-105, 22], [-117, 32], [-124, 42], [-130, 55], [-150, 60]],
+  [[-55, 60], [-45, 60], [-20, 70], [-20, 82], [-60, 82], [-72, 76]],
+  [[-80, 8], [-62, 10], [-50, 0], [-35, -6], [-40, -22], [-58, -38], [-68, -55], [-75, -50], [-72, -20], [-81, -5]],
+  [[-10, 36], [0, 44], [-4, 48], [5, 53], [10, 58], [25, 70], [40, 68], [40, 48], [28, 41], [15, 38]],
+  [[-17, 21], [-5, 36], [10, 37], [32, 31], [43, 12], [51, 12], [40, -15], [33, -26], [20, -35], [12, -18], [9, 4], [-8, 4], [-17, 14]],
+  [[40, 68], [60, 72], [100, 77], [140, 72], [170, 66], [150, 50], [140, 38], [122, 30], [122, 20], [105, 10], [100, 2], [95, 16], [80, 8], [72, 20], [58, 25], [50, 30], [35, 36], [28, 41], [40, 48]],
+  [[114, -22], [130, -12], [142, -11], [153, -27], [146, -39], [130, -32], [115, -34]]
+];
+var CC = { BD: [90, 24], US: [-98, 39], IN: [79, 22], PK: [70, 30], GB: [-2, 54], CA: [-100, 58], AU: [134, -25], DE: [10, 51], FR: [2, 46], BR: [-52, -10], NG: [8, 9], ID: [115, -2], PH: [122, 13], TR: [35, 39], SA: [45, 24], AE: [54, 24], EG: [30, 27], RU: [90, 60], CN: [104, 35], JP: [138, 36], MX: [-102, 23], NP: [84, 28], LK: [81, 7], MY: [102, 4], SG: [104, 1], ZA: [25, -29], KE: [38, 0], IT: [12, 42], ES: [-4, 40], NL: [5, 52], SE: [15, 62], AF: [66, 33], IR: [53, 32], IQ: [44, 33], TH: [101, 15], VN: [106, 16], KR: [128, 36], AR: [-64, -34], CO: [-74, 4], ET: [40, 8], GH: [-1, 8], MA: [-6, 32], DZ: [3, 28], PL: [19, 52], UA: [31, 49], QA: [51, 25], KW: [48, 29], OM: [57, 21], JO: [36, 31], BE: [4, 50], CH: [8, 47], NZ: [172, -41], IE: [-8, 53], PT: [-8, 39], MM: [96, 21], KH: [105, 12], UG: [32, 1], TZ: [35, -6] };
+function worldMap(list) {
+  var X = function (lo) { return lo + 180; }, Y = function (la) { return 90 - la; };
+  var s = '<svg class="an-map" viewBox="0 0 360 160" preserveAspectRatio="xMidYMid meet">';
+  LAND.forEach(function (p) { s += '<polygon points="' + p.map(function (q) { return X(q[0]) + ',' + Y(q[1]); }).join(' ') + '" fill="#f0004f" fill-opacity=".22" stroke="#f0004f" stroke-opacity=".35" stroke-width=".6" stroke-linejoin="round"/>'; });
+  var mx = Math.max.apply(null, list.map(function (x) { return x.n; }).concat([1]));
+  list.slice(0, 8).forEach(function (x) { var c = CC[x.cc]; if (!c) return; var r = 3 + 6 * x.n / mx; s += '<circle cx="' + X(c[0]) + '" cy="' + Y(c[1]) + '" r="' + r + '" fill="#f0004f" fill-opacity=".30"/><circle cx="' + X(c[0]) + '" cy="' + Y(c[1]) + '" r="2.4" fill="#f0004f"/>'; });
+  return s + '</svg>';
+}
+function flag(cc) { return /^[A-Z]{2}$/.test(cc || '') ? String.fromCodePoint.apply(null, cc.split('').map(function (c) { return 127397 + c.charCodeAt(0); })) : '🌐'; }
+
+/* ---------- render pieces ---------- */
+function statCard(icon, label, val, t, sub, act) {
+  return '<button class="an-stat" data-an="' + act + '">' + icoBox(icon) + '<div><small>' + label + '</small><strong>' + val + '</strong>' + (t ? trH(t) : '<small style="font-size:.7rem">' + sub + '</small>') + '</div></button>';
+}
+function countriesList(M, limit) {
+  var a = M.aud, c = a.countries, rows = c.slice(0, limit), rest = c.slice(limit).reduce(function (s, x) { return s + x.n; }, 0);
+  if (!c.length) return '<div class="an-empty">No location data yet</div>';
+  var h = rows.map(function (x) { return '<div class="an-loc"><span class="f">' + flag(x.cc) + '</span><span class="n">' + esc(x.name) + '</span><b>' + pctS(x.n / a.cKnown * 100) + '</b></div>'; }).join('');
+  if (rest) h += '<div class="an-loc"><span class="f">🌐</span><span class="n">Others</span><b>' + pctS(rest / a.cKnown * 100) + '</b></div>';
+  return h;
+}
+function genderBlock(M) {
+  var a = M.aud, g = a.g, parts = [{ name: 'Male', n: g.male }, { name: 'Female', n: g.female }];
+  if (g.other) parts.push({ name: 'Other', n: g.other });
+  if (!a.gKnown) return '<div class="an-empty">No gender data yet</div>';
+  return '<div class="an-donutrow">' + donut(parts) + legend(parts, a.gKnown) + '</div>';
+}
+function agesBlock(M) {
+  var a = M.aud, ks = Object.keys(a.ages), mx = Math.max.apply(null, ks.map(function (k) { return a.ages[k]; }).concat([1]));
+  if (!a.aKnown) return '<div class="an-empty">No age data yet</div>';
+  return '<div class="an-cols">' + ks.map(function (k) { var p = a.ages[k] / a.aKnown * 100; return '<div class="an-col"><b>' + Math.round(p) + '%</b><i style="height:' + Math.max(2, a.ages[k] / mx * 100) + '%"></i><span>' + k + '</span></div>'; }).join('') + '</div>';
+}
+function audNote(M) { return M.pending ? '<div class="an-note">Loading viewer profiles…</div>' : (M.aud.total ? '<div class="an-note">Based on ' + M.aud.known + ' of ' + M.aud.total + ' viewers with profile info.</div>' : ''); }
+function thumbH(it, cls) {
+  var inner = it.thumb ? '<img src="' + esc(it.thumb) + '" alt="" loading="lazy" onerror="this.remove()">' : '';
+  return '<div class="an-thumb ' + (cls || '') + '">' + inner + (it.thumb ? '' : ic(it.type === 'post' ? 'img' : it.type === 'feel' ? 'feels' : 'play')) + '</div>';
+}
+function sourcesCard(M) {
+  var tot = M.cur.views;
+  if (!tot) return '<div class="an-card"><h3>Traffic Sources</h3><div class="an-empty">No views in this period</div></div>';
+  var parts = M.sources.map(function (x) { return { name: x.name, n: x.n }; });
+  return '<div class="an-card"><div class="an-row"><h3>Traffic Sources</h3></div><div class="an-donutrow">' + donut(parts) + legend(parts, tot) + '</div></div>';
+}
+function typesCard(M) {
+  var h = M.cur.views ? M.types.map(function (x) { return '<div class="an-hbar"><span>' + x.name + '</span><span class="t"><i style="width:' + x.p + '%"></i></span><b>' + pctS(x.p) + '</b></div>'; }).join('') : '<div class="an-empty">No views in this period</div>';
+  return '<div class="an-card"><div class="an-row"><h3>Traffic Time by Content Type</h3></div>' + h + '</div>';
+}
+function countriesCard(M, withSeeAll) {
+  return '<div class="an-card"><div class="an-row"><h3>Top Countries</h3>' + (withSeeAll ? '<button class="an-seeall" data-an="audTab:locations">See All ' + ic('chev') + '</button>' : '') + '</div>' + (M.aud.countries.length ? worldMap(M.aud.countries) : '') + countriesList(M, 3) + audNote(M) + '</div>';
+}
+
+/* ---------- render: main ---------- */
+function renderMain(M) {
+  var b = M.b, c = M.cur, p = M.prev, ch = S.ch || {}, name = ch.channelName || (window.currentChannelData && window.currentChannelData.channelName) || 'Channel';
+  var av = ch.avatarUrl || ch.channelImageUrl || '';
+  var chips = [['7', '7 Days'], ['28', '28 Days'], ['90', '90 Days'], ['365', '365 Days']].map(function (x) { return '<button class="an-chip' + (S.range === x[0] ? ' on' : '') + '" data-an="range:' + x[0] + '">' + x[1] + '</button>'; }).join('') + '<button class="an-chip' + (S.range === 'custom' ? ' on' : '') + '" data-an="range:custom">Custom ' + ic('down') + '</button>';
+  var sr = series(M.E, b, S.metric), mname = { views: 'Views', likes: 'Likes', comments: 'Comments', watch: 'Watch Time' }[S.metric];
+  var top = M.top[0], totViews = M.all.views || 1;
+  var g = M.aud.g, gp = [{ name: 'Male', n: g.male }, { name: 'Female', n: g.female }];
+  var gTot = M.aud.gKnown;
+  var h = '<div class="an-off" id="an-off">You are offline — showing the last synced data.</div>';
+  h += '<div class="an-chan"><span class="an-av">' + (av ? '<img src="' + esc(av) + '" alt="" onerror="this.remove()">' : esc(name.charAt(0).toUpperCase())) + '</span><div><b>' + esc(name) + '</b><small>' + fmt(M.subTotal) + ' Subscribers</small></div><button class="an-rangebtn" data-an="rangeMenu">' + rangeLabel(b) + ' ' + ic('down') + '</button></div>';
+  h += '<div class="an-rev"><div><small>Estimated Revenue</small><strong>$' + c.revenue.toFixed(2) + ' USDT</strong>' + trV(c.revenue, p.revenue, b) + '</div><button class="an-btn" data-an="rev">View Details ' + ic('chev') + '</button></div>';
+  h += '<div class="an-chips">' + chips + '</div>';
+  h += '<div class="an-grid">' +
+    statCard('eye', 'Views', fmt(c.views), trend(c.views, p.views), '', 'det:overview') +
+    statCard('users', 'Subscribers', fmt(M.subTotal), trend(c.subs, p.subs), '', 'det:overview') +
+    statCard('clock', 'Watch Time (min)', fmt(c.watch), trend(c.watch, p.watch), '', 'det:overview') +
+    statCard('thumb', 'Likes', fmt(c.likes), trend(c.likes, p.likes), '', 'det:engagement') +
+    statCard('comment', 'Comments', fmt(c.comments), trend(c.comments, p.comments), '', 'det:engagement') +
+    statCard('play', 'Created Items', fmt(c.created), null, 'Videos, Feels, Posts', 'top') + '</div>';
+  h += '<div class="an-card"><div class="an-row"><h3>' + icoBox('bars') + 'Views Overview</h3><select class="an-sel" id="an-metric">' + ['views', 'likes', 'comments', 'watch'].map(function (k) { return '<option value="' + k + '"' + (S.metric === k ? ' selected' : '') + '>' + { views: 'Views', likes: 'Likes', comments: 'Comments', watch: 'Watch Time' }[k] + '</option>'; }).join('') + '</select></div><div style="margin-top:10px">' + lineChart(sr.vals, sr.labels) + '</div></div>';
+  h += '<div class="an-two"><div class="an-card"><div class="an-row"><h3>' + icoBox('trophy') + 'Top Content</h3><button class="an-seeall" data-an="top">See All ' + ic('chev') + '</button></div>' +
+    (top ? '<div class="an-mini">' + thumbH(top.it) + '<div style="min-width:0;flex:1"><b style="font-size:.84rem;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(top.it.title) + '</b><span class="an-mu" style="font-size:.76rem;font-weight:600;display:flex;align-items:center;gap:4px">' + ic('eye', 13) + fmt(top.views) + ' Views</span><div class="an-bar"><i style="width:' + Math.min(100, top.views / totViews * 100) + '%"></i></div></div></div>' : '<div class="an-empty">No content yet</div>') +
+    '</div><div class="an-card"><div class="an-row"><h3>' + icoBox('users') + 'Audience</h3><button class="an-seeall" data-an="audience">See All ' + ic('chev') + '</button></div>' +
+    (gTot ? '<div class="an-donutrow" style="margin-top:12px;gap:8px">' + donut(gp).replace('class="an-donut"', 'class="an-donut" style="width:64px;height:64px;flex-basis:64px"') + '<div class="an-legend" style="font-size:.72rem;gap:6px">' + gp.map(function (x, i) { return '<div><span class="l"><i class="an-dot" style="background:' + PAL[i] + ';width:7px;height:7px;margin-right:4px"></i>' + x.name + '</span><b>' + Math.round(x.n / gTot * 100) + '%</b></div>'; }).join('') + '</div></div>' : '<div class="an-empty">No data yet</div>') + '</div></div>';
+  h += '<div class="an-grow"><span class="an-ico">' + ic('bulb') + '</span><div><b>Grow Your Channel</b><small>Post more content and engage with your audience.</small></div><button class="an-btn" data-an="tips">Get Tips ' + ic('chev') + '</button></div>';
+  return h;
+}
+
+/* ---------- render: details ---------- */
+function renderDetails(M) {
+  var b = M.b, c = M.cur, p = M.prev, t = S.dTab, h = '';
+  if (t === 'overview') {
+    var sv = series(M.E, b, 'views'), sw = series(M.E, b, 'watch');
+    var subDaily = buckets(b).map(function (x) { return M.E.subs.filter(function (e) { return e.t && inR(e.t, x.t0, x.t1); }).length; });
+    h += '<div class="an-card"><h3>' + icoBox('eye') + 'Views</h3><div class="an-metric"><div><div class="an-big">' + fmt(c.views) + '</div>' + trV(c.views, p.views, b) + '</div>' + sparkBars(sv.vals) + '</div></div>';
+    h += '<div class="an-card"><h3>' + icoBox('clock') + 'Watch Time (minutes)</h3><div class="an-metric"><div><div class="an-big">' + fmt(c.watch) + '</div>' + trV(c.watch, p.watch, b) + '</div>' + sparkLine(sw.vals) + '</div></div>';
+    h += '<div class="an-card"><h3>' + icoBox('users') + 'Subscribers</h3><div class="an-metric"><div><div class="an-big">' + fmt(M.subTotal) + '</div>' + trV(c.subs, p.subs, b) + '</div>' + sparkLine(subDaily, true) + '</div></div>';
+    h += sourcesCard(M) + countriesCard(M, true) + typesCard(M);
+  } else if (t === 'reach') {
+    var s2 = series(M.E, b, 'views'), n = Object.keys(S.items).length;
+    h += '<div class="an-kpi"><div class="an-card"><small>Total Views</small><strong>' + fmt(c.views) + '</strong>' + trH(trend(c.views, p.views)) + '</div><div class="an-card"><small>Unique Viewers</small><strong>' + fmt(c.uniq.length) + '</strong>' + trH(trend(c.uniq.length, p.uniq.length)) + '</div></div>';
+    h += '<div class="an-kpi"><div class="an-card"><small>Views per Viewer</small><strong>' + (c.uniq.length ? (c.views / c.uniq.length).toFixed(1) : '0') + '</strong></div><div class="an-card"><small>Avg. Views per Item</small><strong>' + (n ? fmt(M.all.views / n) : '0') + '</strong></div></div>';
+    h += '<div class="an-card"><h3>' + icoBox('eye') + 'Views Over Time</h3><div style="margin-top:10px">' + lineChart(s2.vals, s2.labels) + '</div></div>' + sourcesCard(M) + typesCard(M);
+  } else if (t === 'engagement') {
+    var sl = series(M.E, b, 'likes'), sc = series(M.E, b, 'comments');
+    var er = c.views ? (c.likes + c.comments) / c.views * 100 : 0, pr = p.views ? (p.likes + p.comments) / p.views * 100 : 0;
+    h += '<div class="an-kpi"><div class="an-card"><small>Likes</small><strong>' + fmt(c.likes) + '</strong>' + trH(trend(c.likes, p.likes)) + '</div><div class="an-card"><small>Comments</small><strong>' + fmt(c.comments) + '</strong>' + trH(trend(c.comments, p.comments)) + '</div></div>';
+    h += '<div class="an-card"><small class="an-mu" style="font-weight:700">Engagement Rate</small><div class="an-big">' + pctS(er) + '</div>' + trV(er, pr, b) + '</div>';
+    h += '<div class="an-card"><h3>' + icoBox('thumb') + 'Likes Over Time</h3><div style="margin-top:10px">' + lineChart(sl.vals, sl.labels) + '</div></div>';
+    h += '<div class="an-card"><h3>' + icoBox('comment') + 'Comments Over Time</h3><div style="margin-top:10px">' + lineChart(sc.vals, sc.labels) + '</div></div>';
+    var eng = M.top.slice().sort(function (a, z) { return (z.likes + z.comments) - (a.likes + a.comments); }).filter(function (x) { return x.likes + x.comments > 0; }).slice(0, 3);
+    h += '<div class="an-card"><h3>' + icoBox('trophy') + 'Most Engaging Content</h3>' + (eng.length ? eng.map(function (x) { return '<div class="an-item" style="padding:10px 0">' + thumbH(x.it) + '<div class="an-ibody"><b>' + esc(x.it.title) + '</b><div class="s"><span>' + ic('thumb') + fmt(x.likes) + '</span><span>' + ic('comment') + fmt(x.comments) + '</span></div></div></div>'; }).join('') : '<div class="an-empty">No engagement yet</div>') + '</div>';
+  } else {
+    h += audienceBody(M, 'overview');
+  }
+  return h;
+}
+function audienceBody(M, tab) {
+  var a = M.aud, h = '';
+  if (tab === 'overview') {
+    h += '<div class="an-card"><h3>' + icoBox('users') + 'Audience Overview</h3><div class="an-metric" style="align-items:center"><div><div class="an-big">' + fmt(M.subTotal) + '</div><span class="an-mu" style="font-weight:600;font-size:.84rem">Total Subscribers</span><div style="margin-top:6px">' + trV(M.cur.subs, M.prev.subs, M.b) + '</div></div><div class="an-ico" style="width:76px;height:76px;flex-basis:76px;border-radius:50%"><svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">' + IC.users + '</svg></div></div></div>';
+  }
+  if (tab !== 'locations') {
+    h += '<div class="an-card"><h3>Gender</h3>' + genderBlock(M) + '</div>';
+    h += '<div class="an-card"><h3>Age Groups</h3>' + agesBlock(M) + '</div>';
+  }
+  if (tab !== 'age') {
+    if (tab === 'locations') {
+      h += '<div class="an-card"><h3>Top Locations</h3>' + (a.countries.length ? worldMap(a.countries) : '') + (a.countries.length ? a.countries.slice(0, 30).map(function (x) { var pc = x.n / a.cKnown * 100; return '<div class="an-loc"><span class="f">' + flag(x.cc) + '</span><span class="n">' + esc(x.name) + '<div class="an-bar"><i style="width:' + pc + '%"></i></div></span><b>' + pctS(pc) + '</b></div>'; }).join('') : '<div class="an-empty">No location data yet</div>') + '</div>';
+    } else {
+      h += '<div class="an-card"><div class="an-row"><h3>Top Locations</h3><button class="an-seeall" data-an="audTab:locations">See All ' + ic('chev') + '</button></div>' + (a.countries.length ? worldMap(a.countries) : '') + countriesList(M, 3) + '</div>';
+    }
+  }
+  h += audNote(M);
+  return h;
+}
+function renderAudience(M) {
+  return audienceBody(M, S.aTab) + '<div class="an-grow" style="margin-top:14px"><span class="an-ico">' + ic('crown') + '</span><div><b>Unlock More Insights</b><small>Upgrade to Flaynity Pro for advanced analytics.</small></div><button class="an-btn" data-an="upgrade">Upgrade Pro ' + ic('chev') + '</button></div>';
+}
+
+/* ---------- render: top content ---------- */
+function renderTop(M) {
+  var list = M.top.filter(function (x) { return x.it.type === S.tTab; }), shown = list.slice(0, S.tShown);
+  if (!list.length) return '<div class="an-empty">No ' + { video: 'videos', feel: 'feels', post: 'posts' }[S.tTab] + ' yet</div>';
+  var h = '<div class="an-card" style="padding:4px 14px">' + shown.map(function (x, i) {
+    var it = x.it, open = S.openItem === it.id;
+    return '<div class="an-item"><div class="an-ithumb"><span class="an-rank">' + (i + 1) + '</span>' + thumbH(it) + '</div><div class="an-ibody"><b>' + esc(it.title) + '</b><small>' + dateS(it.created) + '</small><div class="s"><span>' + ic('eye') + fmt(x.views) + ' Views</span></div><div class="s"><span>' + ic('thumb') + fmt(x.likes) + '</span><span>' + ic('comment') + fmt(x.comments) + '</span></div></div><button class="an-dots" data-an="item:' + esc(it.id) + '" aria-label="More">' + ic('dots') + '</button></div>' +
+      (open ? '<div class="an-det"><span>Views (this range)</span><b>' + fmt(x.pViews) + '</b><span>Total views</span><b>' + fmt(x.views) + '</b><span>Total likes</span><b>' + fmt(x.likes) + '</b><span>Total comments</span><b>' + fmt(x.comments) + '</b>' + (it.duration ? '<span>Duration</span><b>' + esc(it.duration) + '</b>' : '') + (it.type === 'video' && typeof window.openMoviePage === 'function' ? '<button class="an-btn" style="grid-column:1/3;justify-content:center;margin-top:4px" data-an="open:' + esc(it.id) + '">Open video</button>' : '') + '</div>' : '');
+  }).join('') + '</div>';
+  if (list.length > shown.length) h += '<button class="an-more" data-an="more">Load More ' + ic('down') + '</button>';
+  return h;
+}
+
+/* ---------- tabs ---------- */
+function tabsH(arr, cur, act) { return arr.map(function (x) { return '<button class="an-tab' + (cur === x[0] ? ' on' : '') + '" data-an="' + act + ':' + x[0] + '">' + x[1] + '</button>'; }).join(''); }
+
+/* ---------- main render ---------- */
+function vis(id) { var e = $(id); return e && e.style.display !== 'none' && e.style.display !== ''; }
+function setHTML(id, html) { var e = $(id); if (e && e.__h !== html) { e.__h = html; e.innerHTML = html; } }
+function render() {
+  if (!S.live) return;
+  if (document.activeElement && document.activeElement.id === 'an-metric') { sched(); return; }
+  var M = compute();
+  var rl = rangeLabel(M.b);
+  if (vis('analytics-page')) setHTML('an-main', renderMain(M));
+  if (vis('analytics-details-page')) {
+    setHTML('an-dtabs', tabsH([['overview', 'Overview'], ['reach', 'Reach'], ['engagement', 'Engagement'], ['audience', 'Audience']], S.dTab, 'dtab'));
+    setHTML('an-details', renderDetails(M));
+  }
+  if (vis('analytics-top-page')) {
+    setHTML('an-ttabs', tabsH([['video', 'Videos'], ['feel', 'Feels'], ['post', 'Posts']], S.tTab, 'ttab'));
+    setHTML('an-top', renderTop(M));
+  }
+  if (vis('analytics-audience-page')) {
+    setHTML('an-atabs', tabsH([['overview', 'Overview'], ['age', 'Age & Gender'], ['locations', 'Locations']], S.aTab, 'audTab'));
+    setHTML('an-aud', renderAudience(M));
+  }
+  var off = $('an-off'); if (off) off.style.display = navigator.onLine ? 'none' : 'block';
+  syncMonetization(M);
+}
+function ready() {
+  var L = S.loaded; if (!(L.ch && L.video && L.feel && L.post)) return false;
+  return Object.keys(S.items).every(function (id) { return S.stats[id] && S.comments[id]; });
+}
+/* Debounced: only runs once every listener has delivered real data, so zeros are never written. */
+function syncMonetization(M) {
+  if (!ready()) return;
+  clearTimeout(S.pushT);
+  S.pushT = setTimeout(function () {
+    if (!S.live) return;
+    var a = M.all, hours = Math.round(a.watch / 60 * 10) / 10;
+    try { if (typeof updateMonetizationEligibility === 'function') updateMonetizationEligibility(M.subTotal, hours, a.views); } catch (e) {}
+    try {
+      if (navigator.onLine && S.uid) DB().ref('channel_analytics/' + S.uid).set({
+        totalSubscribers: M.subTotal, totalViews: a.views, publicWatchHours: hours, publicFeelsViews: a.feelV, publicLongVideoViews: a.longV,
+        totalLikes: a.likes, totalComments: a.comments,
+        totalVideos: Object.keys(S.items).filter(function (k) { return S.items[k].type === 'video'; }).length,
+        totalFeels: Object.keys(S.items).filter(function (k) { return S.items[k].type === 'feel'; }).length,
+        totalPosts: Object.keys(S.items).filter(function (k) { return S.items[k].type === 'post'; }).length,
+        totalRevenue: a.revenue.toFixed(2), updatedAt: Date.now()
+      });
+    } catch (e) {}
+  }, 3000);
+}
+
+/* ---------- sheets ---------- */
+function sheet(html) { $('an-sheet').innerHTML = '<div class="an-grab"></div>' + html; $('an-sheet-wrap').classList.add('on'); }
+function closeSheet() { $('an-sheet-wrap').classList.remove('on'); }
+function rangeSheet() {
+  sheet('<h4>Time range</h4>' + [['7', 'Last 7 Days'], ['28', 'Last 28 Days'], ['90', 'Last 90 Days'], ['365', 'Last 365 Days'], ['custom', 'Custom range…']].map(function (x) { return '<button class="an-opt' + (S.range === x[0] ? ' on' : '') + '" data-an="range:' + x[0] + '">' + x[1] + (S.range === x[0] ? ic('check', 18) : '') + '</button>'; }).join(''));
+}
+function customSheet() {
+  var today = new Date(), iso = function (t) { var d = new Date(t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  var b = bounds();
+  sheet('<h4>Custom range</h4><div class="an-dates"><div><label for="an-d1">From</label><input type="date" id="an-d1" max="' + iso(today) + '" value="' + iso(b.start) + '"></div><div><label for="an-d2">To</label><input type="date" id="an-d2" max="' + iso(today) + '" value="' + iso(b.end - DAY) + '"></div></div><button class="an-btn" style="width:100%;justify-content:center;padding:14px" data-an="applyCustom">Apply</button>');
+}
+function tipsSheet() {
+  var M = compute(), tips = [], c = M.cur, a = M.all, last = 0;
+  Object.keys(S.items).forEach(function (k) { last = Math.max(last, S.items[k].created); });
+  if (!Object.keys(S.items).length) tips.push('Publish your first video, Feel or post — analytics start filling as soon as people watch.');
+  else if (last && Date.now() - last > 7 * DAY) tips.push('Your last upload was ' + Math.floor((Date.now() - last) / DAY) + ' days ago. Posting regularly keeps viewers coming back.');
+  if (c.views > 0 && c.feelV / c.views >= 0.5) tips.push('Feels bring ' + Math.round(c.feelV / c.views * 100) + '% of your views in this range — keep making them.');
+  else if (c.views > 0 && c.longV / c.views >= 0.5) tips.push('Long videos bring ' + Math.round(c.longV / c.views * 100) + '% of your views in this range — try pairing each with a short Feel.');
+  var er = c.views ? (c.likes + c.comments) / c.views * 100 : 0;
+  if (c.views > 0 && er < 5) tips.push('Your engagement rate is ' + pctS(er) + '. Ask a question in your content to get more likes and comments.');
+  if (M.subTotal < 500) tips.push('You need ' + (500 - M.subTotal) + ' more subscribers to reach the 500 monetization goal.');
+  var hrs = a.watch / 60; if (hrs < 50) tips.push('You have ' + (Math.round(hrs * 10) / 10) + ' of 50 required watch hours. Longer videos add watch time faster.');
+  if (!tips.length) tips.push('Great work! Keep publishing consistently and replying to your comments.');
+  sheet('<h4>Tips to grow your channel</h4>' + tips.slice(0, 5).map(function (t) { return '<div class="an-tip">' + icoBox('bulb') + '<div>' + esc(t) + '</div></div>'; }).join(''));
+}
+
+/* ---------- navigation / events ---------- */
+function push(id) { if (window.AppNavigation) AppNavigation.pushPage(id); }
+function act(a) {
+  var i = a.indexOf(':'), k = i < 0 ? a : a.slice(0, i), v = i < 0 ? '' : a.slice(i + 1);
+  try { if (typeof playUI === 'function') playUI('click'); } catch (e) {}
+  switch (k) {
+    case 'back': closeSheet(); if (typeof executeBackAction === 'function') executeBackAction(); else history.back(); break;
+    case 'sheet-bg': break;
+    case 'rangeMenu': rangeSheet(); break;
+    case 'range': if (v === 'custom') { customSheet(); return; } S.range = v; closeSheet(); S.tShown = 5; render(); break;
+    case 'applyCustom':
+      var d1 = $('an-d1').value, d2 = $('an-d2').value; if (!d1 || !d2) return;
+      var s = new Date(d1 + 'T00:00:00').getTime(), e = new Date(d2 + 'T00:00:00').getTime() + DAY;
+      if (isNaN(s) || isNaN(e) || e <= s) { $('an-d2').style.borderColor = '#e11d48'; return; }
+      S.range = 'custom'; S.cStart = s; S.cEnd = e; closeSheet(); render(); break;
+    case 'det': S.dTab = v; push('analytics-details-page'); render(); break;
+    case 'dtab': S.dTab = v; render(); break;
+    case 'top': S.tShown = 5; S.openItem = null; push('analytics-top-page'); render(); break;
+    case 'ttab': S.tTab = v; S.tShown = 5; S.openItem = null; render(); break;
+    case 'more': S.tShown += 5; render(); break;
+    case 'item': S.openItem = S.openItem === v ? null : v; render(); break;
+    case 'open': closeSheet(); if (typeof window.openMoviePage === 'function') window.openMoviePage(v); break;
+    case 'audience': S.aTab = 'overview'; push('analytics-audience-page'); render(); break;
+    case 'audTab':
+      if (vis('analytics-audience-page')) { S.aTab = v; render(); }
+      else { S.aTab = v; push('analytics-audience-page'); render(); }
+      break;
+    case 'rev': if (typeof openMonetizationPage === 'function') openMonetizationPage(); break;
+    case 'tips': tipsSheet(); break;
+    case 'upgrade': try { if (AppNavigation.pushPremiumService) AppNavigation.pushPremiumService('upgrade-pro'); } catch (e) {} break;
+  }
+}
+document.addEventListener('click', function (e) {
+  var wrap = $('an-sheet-wrap');
+  if (e.target === wrap) { closeSheet(); return; }
+  var el = e.target.closest ? e.target.closest('[data-an]') : null;
+  if (!el) return;
+  if (!(el.closest('.an-page') || el.closest('#an-sheet-wrap'))) return;
+  act(el.getAttribute('data-an'));
+});
+document.addEventListener('change', function (e) {
+  if (e.target && e.target.id === 'an-metric') { S.metric = e.target.value; e.target.blur(); render(); }
+});
+window.addEventListener('online', sched); window.addEventListener('offline', sched);
+
+/* ---------- lifecycle: listen only while an Analytics page is open ---------- */
+function anyOpen() { return PAGES.some(function (id) { var e = $(id); return e && e.style.display === 'flex'; }); }
+var wasOpen = false;
+function check() {
+  var o = anyOpen();
+  if (o && !wasOpen) start();
+  if (o) render();
+  if (!o && wasOpen) { closeSheet(); stop(); }
+  wasOpen = o;
+}
+var mo = new MutationObserver(check);
+PAGES.forEach(function (id) { var e = $(id); if (e) mo.observe(e, { attributes: true, attributeFilter: ['style'] }); });
+check();
+
+window.FlayAnalytics = { refresh: function () { if (S.live) sched(); }, open: function () { push('analytics-page'); } };
+})();
+</script>
+</body>
+</html>

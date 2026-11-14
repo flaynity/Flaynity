@@ -185,35 +185,7 @@
         .avatar-overlay-camera { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; opacity: 0; transition: 0.2s; }
         .edit-avatar-section .avatar-preview-container:hover .avatar-overlay-camera { opacity: 1; }
 
-/* Analytics */
-        .analytics-overview-card { background: var(--surface); border: 1px solid var(--glass-border); border-radius: 24px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.01); margin-bottom: 24px; }
-        .analytics-header-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
-        .analytics-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: var(--bg-color); }
-        .analytics-header-row h3 { margin: 0 0 2px; font-size: 1.15rem; font-weight: 850; color: var(--text-main); }
-        .analytics-header-row p { margin: 0; font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
-        .revenue-box { background: var(--primary-glow); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
-        .revenue-label { font-size: 0.72rem; font-weight: 800; color: var(--primary); letter-spacing: 0.8px; }
-        .revenue-val { font-size: 1.6rem; font-weight: 900; color: var(--text-main); }
-        
-        .analytics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; }
-        .analytics-card { background: var(--surface); border: 1px solid var(--glass-border); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; min-height: 110px; }
-        .stat-lbl { font-size: 0.82rem; font-weight: 750; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
-        .stat-lbl i { color: var(--primary); }
-        .stat-num { font-size: 1.5rem; font-weight: 900; color: var(--text-main); margin: 8px 0 4px; }
-        .stat-trend { font-size: 0.75rem; font-weight: 800; display: flex; align-items: center; gap: 4px; }
-        .trend-up { color: var(--success); }
-        .stat-sub-text { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
-        
-        .chart-container-mock { background: var(--surface); border: 1px solid var(--glass-border); border-radius: 24px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.01); margin-bottom: 40px; }
-        .chart-bars { display: flex; align-items: flex-end; justify-content: space-between; height: 160px; padding: 10px 10px 24px; border-bottom: 2px solid var(--glass-border); position: relative; }
-        .chart-bar { flex: 1; margin: 0 6px; background: linear-gradient(to top, var(--primary), #FF7A00); border-radius: 6px 6px 0 0; position: relative; cursor: pointer; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-        .chart-bar::after { content: attr(data-lbl); position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); font-size: 0.72rem; font-weight: 800; color: var(--text-muted); }
-        .bar-val { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 0.75rem; font-weight: 800; color: var(--text-main); opacity: 0; transition: 0.2s; }
-        .chart-bar:hover { filter: brightness(1.1); transform: scaleY(1.05); }
-        .chart-bar:hover .bar-val { opacity: 1; }
-        .chart-footer-label { font-size: 0.75rem; color: var(--text-muted); text-align: center; margin: 14px 0 0; font-weight: 700; }
-        
-        .nav-avatar-wrap { width: 22px; height: 22px; border-radius: 50%; overflow: hidden; border: 2px solid transparent; transition: border-color 0.1s ease; display: flex; align-items: center; justify-content: center; }
+.nav-avatar-wrap { width: 22px; height: 22px; border-radius: 50%; overflow: hidden; border: 2px solid transparent; transition: border-color 0.1s ease; display: flex; align-items: center; justify-content: center; }
         .nav-item.active .nav-avatar-wrap { border-color: var(--text-main); }
         .nav-avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -221,7 +193,6 @@
 .fullscreen-page#you-tab,
 .fullscreen-page#create-channel-page,
 .fullscreen-page#view-channel-page,
-.fullscreen-page#analytics-page,
 .fullscreen-page#edit-channel-page,
 .fullscreen-page#monetization-page,
 .fullscreen-page#channel-settings-page {
@@ -232,7 +203,6 @@
 }
 #create-channel-page > .appbar,
 #view-channel-page > .appbar,
-#analytics-page > .appbar,
 #edit-channel-page > .appbar,
 #monetization-page > .appbar,
 #channel-settings-page > .appbar {
@@ -245,7 +215,6 @@
 
 #create-channel-page > .appbar .centered-page-title,
 #view-channel-page > .appbar .centered-page-title,
-#analytics-page > .appbar .centered-page-title,
 #edit-channel-page > .appbar .centered-page-title {
     position: absolute;
     left: 50%;
@@ -258,7 +227,6 @@
 .fullscreen-page#you-tab,
 .fullscreen-page#create-channel-page,
 .fullscreen-page#view-channel-page,
-.fullscreen-page#analytics-page,
 .fullscreen-page#edit-channel-page,
 .fullscreen-page#monetization-page,
 .fullscreen-page#channel-settings-page {
@@ -267,7 +235,6 @@
 #create-channel-page .page-content,
 #edit-channel-page .page-content,
 #view-channel-page .page-content,
-#analytics-page .page-content,
 #monetization-page .page-content,
 #channel-settings-page .page-content {
     min-height: 0;
@@ -1302,79 +1269,6 @@
 <i class="fas fa-chevron-right arrow-r"></i>
 </div>
 </div>
-</div>
-</div>
-</div>
-
-<!-- Analytics Page -->
-<div class="fullscreen-page" id="analytics-page" style="z-index: 1520;">
-<header class="appbar">
-<button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
-<h3 class="appbar-title centered-page-title">Analytics</h3>
-</header>
-<div class="page-content" style="padding-bottom: 40px;">
-<div class="analytics-overview-card">
-<div class="analytics-header-row">
-<img class="analytics-avatar" id="analytics-channel-avatar" src=""/>
-<div>
-<h3 id="analytics-channel-name">Channel Name</h3>
-<p id="analytics-channel-subscribers">0 Subscribers</p>
-</div>
-</div>
-<div class="revenue-box" style="display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
-<div style="display: flex; flex-direction: column; gap: 4px;">
-<span class="revenue-label">ESTIMATED REVENUE</span>
-<span class="revenue-val" id="estimated-revenue-val">$0.00 USDT</span>
-</div>
-<button id="btn-view-monetization" onclick="openMonetizationPage()" style="background: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                        View <i class="fas fa-chevron-right" style="font-size: 0.75rem;"></i>
-</button>
-</div>
-</div>
-<h4 class="section-title">Performance (Last 28 Days)</h4>
-<div class="analytics-grid">
-<div class="analytics-card">
-<span class="stat-lbl"><i class="fas fa-eye"></i> Views</span>
-<h2 class="stat-num" id="anal-views">0</h2>
-<span class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 100% Growth</span>
-</div>
-<div class="analytics-card">
-<span class="stat-lbl"><i class="fas fa-users"></i> Subscribers</span>
-<h2 class="stat-num" id="anal-subs">0</h2>
-<span class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 100% Growth</span>
-</div>
-<div class="analytics-card">
-<span class="stat-lbl"><i class="fas fa-clock"></i> Watch Time (min)</span>
-<h2 class="stat-num" id="anal-watchtime">0.0</h2>
-<span class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 100% Growth</span>
-</div>
-<div class="analytics-card">
-<span class="stat-lbl"><i class="fas fa-thumbs-up"></i> Likes</span>
-<h2 class="stat-num" id="anal-likes">0</h2>
-<span class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 100% Growth</span>
-</div>
-<div class="analytics-card">
-<span class="stat-lbl"><i class="fas fa-comments"></i> Comments</span>
-<h2 class="stat-num" id="anal-comments">0</h2>
-<span class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 100% Growth</span>
-</div>
-<div class="analytics-card">
-<span class="stat-lbl"><i class="fas fa-video"></i> Created Items</span>
-<h2 class="stat-num" id="anal-content">0</h2>
-<span class="stat-sub-text">Videos, Feels, Posts</span>
-</div>
-</div>
-<h4 class="section-title">Monthly Growth Channel</h4>
-<div class="chart-container-mock">
-<div class="chart-bars">
-<div class="chart-bar" data-lbl="Jan" style="height: 15%;"><span class="bar-val">15</span></div>
-<div class="chart-bar" data-lbl="Feb" style="height: 30%;"><span class="bar-val">30</span></div>
-<div class="chart-bar" data-lbl="Mar" style="height: 45%;"><span class="bar-val">45</span></div>
-<div class="chart-bar" data-lbl="Apr" style="height: 60%;"><span class="bar-val">60</span></div>
-<div class="chart-bar" data-lbl="May" style="height: 85%;"><span class="bar-val">85</span></div>
-<div class="chart-bar" data-lbl="Jun" style="height: 100%;"><span class="bar-val">100</span></div>
-</div>
-<p class="chart-footer-label">Metrics distributed based on channel totals</p>
 </div>
 </div>
 </div>

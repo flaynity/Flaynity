@@ -9,7 +9,7 @@ window.FEELS_ICONS = {
 // The WebView must never restore scroll on its own: AppNavigation saves/restores it (multi-step).
 try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
 (async function () {
-    const pageFiles = [["home","pages/home.html"],["feels","pages/feels.html"],["posts","pages/posts.html"],["upload","pages/upload.html"],["discover","pages/discover.html"],["you","pages/you.html"]];
+    const pageFiles = [["home","pages/home.html"],["feels","pages/feels.html"],["posts","pages/posts.html"],["upload","pages/upload.html"],["discover","pages/discover.html"],["you","pages/you.html"],["analytics","pages/analytics.html"]];
     const CACHE_PREFIX = "flaynity-page-cache-v1:";
 
     function addPageStyle(doc, name) {
@@ -40,7 +40,7 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
     // Pages listed here are single-file pages (HTML + CSS + JS). Their inline
     // <script> is run once, right after the page is mounted. (Scripts parsed by
     // DOMParser never execute on their own.)
-    const SELF_SCRIPTED_PAGES = new Set(["posts"]);
+    const SELF_SCRIPTED_PAGES = new Set(["posts","analytics"]);
     const pendingPageScripts = {};
 
     async function loadPage(name, url) {
@@ -793,10 +793,7 @@ const SyncManager = {
     },
 
     refreshAnalytics: function() {
-        const analyticsPage = document.getElementById('analytics-page');
-        if (analyticsPage && (analyticsPage.style.display === 'flex' || analyticsPage.style.display === 'block')) {
-            calculateChannelAnalytics();
-        }
+        try { if (window.FlayAnalytics) window.FlayAnalytics.refresh(); } catch (e) {}
     }
 };
 
@@ -6145,7 +6142,7 @@ function toggleClipSubscribe(channelId, buttonEl) {
             });
             showNotification("Unsubscribed from channel.", "success");
         } else {
-            userSubRef.set(true);
+            userSubRef.set(firebase.database.ServerValue.TIMESTAMP);
             channelSubCountRef.transaction((currentCount) => {
                 return (currentCount || 0) + 1;
             });
@@ -6322,7 +6319,7 @@ function initFeelsObserver() {
 
                     const userId = auth.currentUser ? auth.currentUser.uid : 'anonymous';
                     if (userId !== 'anonymous' && navigator.onLine) {
-                        db.ref(`movie_stats/${shortId}/views/${userId}`).set(true);
+                        flayTrackView(shortId, userId, 'feels');
                     }
 
                     video.ontimeupdate = () => {
@@ -7010,11 +7007,35 @@ function wpShortTime(timestamp) {
     return Math.floor(days / 365) + "y ago";
 }
 
+// Records a view (one per viewer per content) + WHEN and FROM WHERE it happened (used by pages/analytics.html).
+function flayViewSource(forced) {
+    try {
+        if (forced) return forced;
+        if (window.__flaynityViewSource) { const x = window.__flaynityViewSource; window.__flaynityViewSource = null; return x; }
+        const st = AppNavigation.stack, below = st[st.length - 2];
+        if (!below) return 'other';
+        if (below.type === 'page' && below.id === 'view-channel-page') return 'channel';
+        if (below.type === 'tab') return below.id === 'you' ? 'channel' : (['home', 'discover', 'posts', 'feels'].includes(below.id) ? below.id : 'other');
+    } catch (e) {}
+    return 'other';
+}
+function flayTrackView(contentId, userId, forcedSource) {
+    try {
+        const base = db.ref(`movie_stats/${contentId}`);
+        base.child(`views/${userId}`).set(true);
+        base.child(`viewTimes/${userId}`).once('value', (snap) => {
+            if (snap.exists()) return;
+            base.child(`viewTimes/${userId}`).set(firebase.database.ServerValue.TIMESTAMP);
+            base.child(`viewSources/${userId}`).set(flayViewSource(forcedSource));
+        });
+    } catch (e) {}
+}
+
 function registerViewAndListen(movieId) {
     const userId = auth.currentUser ? auth.currentUser.uid : 'anonymous';
     
     if (userId !== 'anonymous' && navigator.onLine) {
-        db.ref(`movie_stats/${movieId}/views/${userId}`).set(true);
+        flayTrackView(movieId, userId);
     }
 
     let uploadTimeText = "just now"; 
@@ -7120,7 +7141,7 @@ async function toggleMovieChannelSubscribe() {
             });
             showNotification("Unsubscribed from channel.", "success");
         } else {
-            await userSubRef.set(true);
+            await userSubRef.set(firebase.database.ServerValue.TIMESTAMP);
             channelSubCountRef.transaction((currentCount) => {
                 return (currentCount || 0) + 1;
             });
@@ -9478,7 +9499,8 @@ function updateBottomNavAvatar() {
 
 function openAnalyticsPage() {
     playUI('click');
-    calculateChannelAnalytics();
+    // Analytics is a self-contained page (pages/analytics.html). It listens to Firebase
+    // in realtime while it is open, so nothing has to be calculated or refreshed here.
     AppNavigation.pushPage('analytics-page');
 }
 

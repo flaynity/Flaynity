@@ -9499,8 +9499,7 @@ function updateBottomNavAvatar() {
 
 function openAnalyticsPage() {
     playUI('click');
-    // Analytics is a self-contained page (pages/analytics.html). It listens to Firebase
-    // in realtime while it is open, so nothing has to be calculated or refreshed here.
+    // Analytics is a self-contained page (pages/analytics.html) that listens to Firebase in realtime while open.
     AppNavigation.pushPage('analytics-page');
 }
 

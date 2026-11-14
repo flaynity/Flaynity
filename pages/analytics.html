@@ -70,6 +70,13 @@
 }
 .an-tab:active { transform: scale(.97); }
 
+/* Navigation tab bar (Dashboard · Overview · Reach · Engagement · Audience · Top Content) */
+.an-tabs .an-tab { flex: 0 0 auto; }
+.an-tabs.an-inline { margin: 0 -14px 12px; padding: 2px 14px 4px; }
+.an-tabs.an-sub { padding-top: 0; padding-bottom: 10px; }
+.an-tabs.an-sub .an-tab { flex: 1 1 0; min-height: 36px; padding: 8px 12px; font-size: .8rem; }
+.an-tabs.an-sub .an-tab.on { box-shadow: 0 4px 12px rgba(240, 0, 79, .22); }
+
 /* Scroll container */
 .an-scroll {
   flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden;
@@ -388,51 +395,47 @@
 </head>
 <body>
 
-<!-- 1) ANALYTICS (Main) -->
+<!-- 1) DASHBOARD  (its tab bar is rendered inside the scroll area, under the channel row) -->
 <section class="fullscreen-page an-page" id="analytics-page">
-  <header class="an-head">
-    <button class="an-back" data-an="back" aria-label="Back">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
-    </button>
-    <h1>Analytics</h1>
-  </header>
+  <header class="an-head"><button class="an-back" data-an="back" aria-label="Back"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><h1>Analytics</h1></header>
   <div class="an-scroll" id="an-main"></div>
 </section>
 
-<!-- 2) ANALYTICS DETAILS (Overview / Reach / Engagement / Audience) -->
-<section class="fullscreen-page an-page" id="analytics-details-page">
-  <header class="an-head">
-    <button class="an-back" data-an="back" aria-label="Back">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
-    </button>
-    <h1>Analytics</h1>
-  </header>
-  <div class="an-tabs" id="an-dtabs"></div>
-  <div class="an-scroll" id="an-details"></div>
+<!-- 2) OVERVIEW -->
+<section class="fullscreen-page an-page" id="analytics-overview-page">
+  <header class="an-head"><button class="an-back" data-an="back" aria-label="Back"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><h1>Analytics</h1></header>
+  <div class="an-tabs" id="an-nav-overview"></div>
+  <div class="an-scroll" id="an-overview"></div>
 </section>
 
-<!-- 3) TOP CONTENT -->
-<section class="fullscreen-page an-page" id="analytics-top-page">
-  <header class="an-head">
-    <button class="an-back" data-an="back" aria-label="Back">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
-    </button>
-    <h1>Top Content</h1>
-  </header>
-  <div class="an-tabs" id="an-ttabs"></div>
-  <div class="an-scroll" id="an-top"></div>
+<!-- 3) REACH -->
+<section class="fullscreen-page an-page" id="analytics-reach-page">
+  <header class="an-head"><button class="an-back" data-an="back" aria-label="Back"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><h1>Analytics</h1></header>
+  <div class="an-tabs" id="an-nav-reach"></div>
+  <div class="an-scroll" id="an-reach"></div>
 </section>
 
-<!-- 4) AUDIENCE -->
+<!-- 4) ENGAGEMENT -->
+<section class="fullscreen-page an-page" id="analytics-engagement-page">
+  <header class="an-head"><button class="an-back" data-an="back" aria-label="Back"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><h1>Analytics</h1></header>
+  <div class="an-tabs" id="an-nav-engagement"></div>
+  <div class="an-scroll" id="an-engagement"></div>
+</section>
+
+<!-- 5) AUDIENCE -->
 <section class="fullscreen-page an-page" id="analytics-audience-page">
-  <header class="an-head">
-    <button class="an-back" data-an="back" aria-label="Back">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
-    </button>
-    <h1>Audience</h1>
-  </header>
-  <div class="an-tabs" id="an-atabs"></div>
+  <header class="an-head"><button class="an-back" data-an="back" aria-label="Back"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><h1>Analytics</h1></header>
+  <div class="an-tabs" id="an-nav-audience"></div>
+  <div class="an-tabs an-sub" id="an-asub"></div>
   <div class="an-scroll" id="an-aud"></div>
+</section>
+
+<!-- 6) TOP CONTENT -->
+<section class="fullscreen-page an-page" id="analytics-top-page">
+  <header class="an-head"><button class="an-back" data-an="back" aria-label="Back"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><h1>Analytics</h1></header>
+  <div class="an-tabs" id="an-nav-top"></div>
+  <div class="an-tabs an-sub" id="an-tsub"></div>
+  <div class="an-scroll" id="an-top"></div>
 </section>
 
 <!-- Bottom Sheet -->
@@ -449,7 +452,10 @@ window.__flayAnalyticsInit = true;
 /* ---------- Helpers ---------- */
 var DAY = 864e5;
 var svgSeq = 0;
-var PAGES = ['analytics-page', 'analytics-details-page', 'analytics-top-page', 'analytics-audience-page'];
+var KEYS = ['dash', 'overview', 'reach', 'engagement', 'audience', 'top'];
+var KEY_PAGE = { dash: 'analytics-page', overview: 'analytics-overview-page', reach: 'analytics-reach-page', engagement: 'analytics-engagement-page', audience: 'analytics-audience-page', top: 'analytics-top-page' };
+var KEY_LABEL = { dash: 'Dashboard', overview: 'Overview', reach: 'Reach', engagement: 'Engagement', audience: 'Audience', top: 'Top Content' };
+var PAGES = KEYS.map(function (k) { return KEY_PAGE[k]; });
 var $ = function (id) { return document.getElementById(id); };
 function DB() { try { return (typeof db !== 'undefined' && db) || firebase.database(); } catch (e) { return null; } }
 function AUTH() { try { return (typeof auth !== 'undefined' && auth) || firebase.auth(); } catch (e) { return null; } }
@@ -503,7 +509,7 @@ var S = {
   items: {}, stats: {}, comments: {}, reacts: {}, subs: {},
   profiles: {}, pending: {},
   range: '28', cStart: 0, cEnd: 0, metric: 'views',
-  dTab: 'overview', tTab: 'video', tShown: 5, aTab: 'overview', openItem: null,
+  gen: 0, tTab: 'video', tShown: 5, aTab: 'overview', openItem: null,
   loaded: {}, pushT: null
 };
 var LIS = {};
@@ -1081,6 +1087,7 @@ function renderMain(M) {
   h += '<div class="an-chan"><span class="an-av">' + (av ? '<img src="' + esc(av) + '" alt="" onerror="this.remove()">' : esc(name.charAt(0).toUpperCase())) + '</span>' +
     '<div><b>' + esc(name) + '</b><small>' + fmt(M.subTotal) + ' Subscribers</small></div>' +
     '<button class="an-rangebtn" data-an="rangeMenu">' + rangeLabel(b) + ' ' + ic('down') + '</button></div>';
+  h += '<div class="an-tabs an-inline" id="an-nav-dash">' + navH('dash') + '</div>';
 
   h += '<div class="an-rev"><div><small>Estimated Revenue</small><strong>$' + c.revenue.toFixed(2) + ' USDT</strong>' + trV(c.revenue, p.revenue) + '</div>' +
     '<button class="an-btn" data-an="rev">View Details ' + ic('chev') + '</button></div>';
@@ -1124,9 +1131,9 @@ function renderMain(M) {
 }
 
 /* ---------- Render: Analytics Details (Screenshot 1) ---------- */
-function renderDetails(M) {
+function renderDetails(M, t) {
   if (!(S.loaded.ch && S.loaded.video && S.loaded.feel && S.loaded.post)) return loadingSkeleton();
-  var b = M.b, c = M.cur, p = M.prev, t = S.dTab, h = '';
+  var b = M.b, c = M.cur, p = M.prev, h = '';
   if (t === 'overview') {
     var sv = series(M.E, b, 'views'), sw = series(M.E, b, 'watch');
     var subDaily = buckets(b).map(function (x) { return M.E.subs.filter(function (e) { return e.t && inR(e.t, x.t0, x.t1); }).length; });
@@ -1207,6 +1214,25 @@ function renderTop(M) {
 }
 
 /* ---------- Tabs & DOM Update ---------- */
+function navH(active) {
+  return KEYS.map(function (k) {
+    return '<button class="an-tab' + (active === k ? ' on' : '') + '" data-an="nav:' + k + '">' + KEY_LABEL[k] + '</button>';
+  }).join('');
+}
+function curKey() { for (var i = 0; i < KEYS.length; i++) if (vis(KEY_PAGE[KEYS[i]])) return KEYS[i]; return null; }
+/* Every tab is its own page on the app's back-stack, so Back always returns to the page you came from. */
+function go(k) {
+  if (curKey() === k) { render(); return; }
+  S.tShown = 5; S.openItem = null; closeSheet();
+  push(KEY_PAGE[k]); render();
+}
+function centerNav(el) {
+  if (!el || el.__g === S.gen) return;
+  var on = el.querySelector('.an-tab.on'); if (!on || !el.clientWidth) return;
+  el.scrollLeft = Math.max(0, on.offsetLeft - (el.clientWidth - on.offsetWidth) / 2);
+  el.__g = S.gen;
+}
+function setNav(id, key) { setHTML(id, navH(key)); centerNav($(id)); }
 function tabsH(arr, cur, act) {
   return arr.map(function (x) {
     return '<button class="an-tab' + (cur === x[0] ? ' on' : '') + '" data-an="' + act + ':' + x[0] + '">' + x[1] + '</button>';
@@ -1230,17 +1256,20 @@ function render() {
   if (!S.live) return;
   if (document.activeElement && document.activeElement.id === 'an-metric') { sched(); return; }
   var M = compute();
-  if (vis('analytics-page')) setHTML('an-main', renderMain(M));
-  if (vis('analytics-details-page')) {
-    setHTML('an-dtabs', tabsH([['overview', 'Overview'], ['reach', 'Reach'], ['engagement', 'Engagement'], ['audience', 'Audience']], S.dTab, 'dtab'));
-    setHTML('an-details', renderDetails(M));
-  }
-  if (vis('analytics-top-page')) {
-    setHTML('an-ttabs', tabsH([['video', 'Videos'], ['feel', 'Feels'], ['post', 'Posts']], S.tTab, 'ttab'));
+  if (vis(KEY_PAGE.dash)) { setHTML('an-main', renderMain(M)); centerNav($('an-nav-dash')); }
+  ['overview', 'reach', 'engagement'].forEach(function (k) {
+    if (!vis(KEY_PAGE[k])) return;
+    setNav('an-nav-' + k, k);
+    setHTML('an-' + k, renderDetails(M, k));
+  });
+  if (vis(KEY_PAGE.top)) {
+    setNav('an-nav-top', 'top');
+    setHTML('an-tsub', tabsH([['video', 'Videos'], ['feel', 'Feels'], ['post', 'Posts']], S.tTab, 'ttab'));
     setHTML('an-top', renderTop(M));
   }
-  if (vis('analytics-audience-page')) {
-    setHTML('an-atabs', tabsH([['overview', 'Overview'], ['age', 'Age & Gender'], ['locations', 'Locations']], S.aTab, 'audTab'));
+  if (vis(KEY_PAGE.audience)) {
+    setNav('an-nav-audience', 'audience');
+    setHTML('an-asub', tabsH([['overview', 'Overview'], ['age', 'Age & Gender'], ['locations', 'Locations']], S.aTab, 'audTab'));
     setHTML('an-aud', renderAudience(M));
   }
   var off = $('an-off'); if (off) off.style.display = navigator.onLine ? 'none' : 'block';
@@ -1362,18 +1391,14 @@ function act(a) {
       var s = new Date(d1 + 'T00:00:00').getTime(), e = new Date(d2 + 'T00:00:00').getTime() + DAY;
       if (isNaN(s) || isNaN(e) || e <= s) { $('an-d2').style.borderColor = '#e11d48'; return; }
       S.range = 'custom'; S.cStart = s; S.cEnd = e; closeSheet(); render(); break;
-    case 'det': S.dTab = v; push('analytics-details-page'); render(); break;
-    case 'dtab': S.dTab = v; render(); break;
-    case 'top': S.tShown = 5; S.openItem = null; push('analytics-top-page'); render(); break;
+    case 'nav': case 'det': go(v); break;
+    case 'top': go('top'); break;
     case 'ttab': S.tTab = v; S.tShown = 5; S.openItem = null; render(); break;
     case 'more': S.tShown += 5; render(); break;
     case 'item': S.openItem = S.openItem === v ? null : v; render(); break;
     case 'open': closeSheet(); if (typeof window.openMoviePage === 'function') window.openMoviePage(v); break;
-    case 'audience': S.aTab = 'overview'; push('analytics-audience-page'); render(); break;
-    case 'audTab':
-      if (vis('analytics-audience-page')) { S.aTab = v; render(); }
-      else { S.aTab = v; push('analytics-audience-page'); render(); }
-      break;
+    case 'audience': S.aTab = 'overview'; go('audience'); break;
+    case 'audTab': S.aTab = v; go('audience'); break;
     case 'sourcesSheet': sourcesSheet(); break;
     case 'rev':
       if (typeof openMonetizationPage === 'function') openMonetizationPage();
@@ -1405,7 +1430,9 @@ window.addEventListener('offline', sched);
 /* ---------- Lifecycle: Real-Time Firebase When Any Analytics Page Is Open ---------- */
 function anyOpen() { return PAGES.some(vis); }
 var wasOpen = false;
+var lastKey = null;
 function check() {
+  var ck = curKey(); if (ck !== lastKey) { lastKey = ck; S.gen++; }
   var o = anyOpen();
   if (o && !wasOpen) start();
   if (o) render();

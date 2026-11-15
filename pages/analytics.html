@@ -497,6 +497,9 @@
 .an-rev-top { justify-content: center; width: 100%; padding: 0; }
 .an-rev-top > div { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .an-rev .an-tr { align-self: center; }
+
+/* No slide animation when opening Analytics pages */
+.an-page { animation: none !important; transition: none !important; transform: none !important; }
 </style>
 </head>
 <body>
@@ -1327,6 +1330,7 @@ function curKey() { for (var i = 0; i < KEYS.length; i++) if (vis(KEY_PAGE[KEYS[
 function go(k) {
   if (curKey() === k) { render(); return; }
   S.tShown = 5; S.openItem = null; closeSheet();
+  S.skelUntil = Date.now() + 380;
   push(KEY_PAGE[k]); render();
 }
 function centerNav(el) {
@@ -1355,8 +1359,25 @@ function setHTML(id, html) {
   }
 }
 
+var SKEL_BOX = { dash: 'an-main', overview: 'an-overview', reach: 'an-reach', engagement: 'an-engagement', audience: 'an-aud', top: 'an-top' };
+function showSkeleton() {
+  KEYS.forEach(function (k) {
+    if (!vis(KEY_PAGE[k])) return;
+    if (k !== 'dash') setNav('an-nav-' + k, k);
+    if (k === 'audience') setHTML('an-asub', tabsH([['overview', 'Overview'], ['age', 'Age & Gender'], ['locations', 'Locations']], S.aTab, 'audTab'));
+    if (k === 'top') setHTML('an-tsub', tabsH([['video', 'Videos'], ['feel', 'Feels'], ['post', 'Posts']], S.tTab, 'ttab'));
+    setHTML(SKEL_BOX[k], loadingSkeleton());
+  });
+}
+
 function render() {
   if (!S.live) return;
+  if (S.skelUntil && Date.now() < S.skelUntil) {
+    showSkeleton();
+    clearTimeout(S.skelT);
+    S.skelT = setTimeout(render, S.skelUntil - Date.now() + 10);
+    return;
+  }
   if (document.activeElement && document.activeElement.id === 'an-metric') { sched(); return; }
   var M = compute();
   if (vis(KEY_PAGE.dash)) { setHTML('an-main', renderMain(M)); centerNav($('an-nav-dash')); }
@@ -1466,6 +1487,11 @@ function tipsSheet() {
 
 /* ---------- Navigation & Events ---------- */
 function push(id) {
+  if (anyOpen()) {
+    PAGES.forEach(function (pid) { var e = $(pid); if (e) e.style.display = (pid === id ? 'flex' : 'none'); });
+    check();
+    return;
+  }
   if (window.AppNavigation && typeof AppNavigation.pushPage === 'function') {
     AppNavigation.pushPage(id);
   } else {
@@ -1480,6 +1506,7 @@ function act(a) {
   switch (k) {
     case 'back':
       closeSheet();
+      if (curKey() && curKey() !== 'dash') { go('dash'); break; }
       if (typeof executeBackAction === 'function') executeBackAction();
       else if (!vis('analytics-page')) push('analytics-page');
       else history.back();

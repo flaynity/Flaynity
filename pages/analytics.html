@@ -465,6 +465,48 @@
   animation: anPulse 1.3s ease-in-out infinite;
 }
 @keyframes anPulse { 0%, 100% { opacity: .5; } 50% { opacity: .95; } }
+
+/* ===== v2 Premium Redesign — inverted Card + in-card navigation (M3 x iOS) ===== */
+.an-page, .an-sheet-wrap {
+  --an-cd: #0e0e13; --an-ct: #ffffff; --an-cm: rgba(255,255,255,.62); --an-ctr: rgba(255,255,255,.10);
+  --ease: cubic-bezier(.2, 0, 0, 1);
+}
+/* App Dark  => Card Deep White + Black text */
+[data-theme="dark"] .an-page, [data-theme="dark"] .an-sheet-wrap {
+  --an-cd: #f6f6f9; --an-ct: #0b0b10; --an-cm: rgba(11,11,16,.58); --an-ctr: rgba(11,11,16,.07);
+}
+.an-head h1 { font-size: 1.15rem; font-weight: 800; }
+.an-scroll { border-top: 0; padding-top: 6px; }
+.an-card { border-radius: 24px; padding: 18px; border-color: transparent; background: var(--an-sf); }
+
+/* Hero card (Estimated Revenue + navigation buttons inside) */
+.an-rev {
+  flex-direction: column; align-items: stretch; gap: 16px;
+  padding: 20px 14px 14px; margin-bottom: 14px; border: 0; border-radius: 28px;
+  background: var(--an-cd); color: var(--an-ct);
+}
+.an-rev::before { display: none; }
+.an-rev-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 6px; }
+.an-rev small { color: var(--an-cm); opacity: 1; font-size: .78rem; }
+.an-rev strong { font-size: 1.85rem; margin: 4px 0 8px; color: var(--an-ct); }
+.an-rev .an-mu { color: var(--an-cm); }
+.an-rev .an-btn { min-height: 40px; padding: 10px 16px; }
+
+/* Navigation buttons: always inside a Card */
+.an-tabs:not(.an-sub) {
+  background: var(--an-cd); border-radius: 22px; padding: 6px; gap: 4px;
+  margin: 2px 16px 12px;
+}
+.an-rev .an-tabs, .an-rev .an-tabs.an-inline {
+  margin: 0; padding: 4px; background: var(--an-ctr); border-radius: 20px;
+}
+.an-tabs:not(.an-sub) .an-tab {
+  background: transparent; color: var(--an-ct); opacity: .72;
+  min-height: 38px; padding: 8px 16px; font-weight: 600;
+}
+.an-rev .an-tabs .an-tab { opacity: .78; }
+.an-tabs:not(.an-sub) .an-tab.on { background: var(--an-p); color: #fff; opacity: 1; font-weight: 700; }
+.an-tabs:not(.an-sub) .an-tab:active { transform: scale(.95); }
 </style>
 </head>
 <body>
@@ -1160,10 +1202,9 @@ function renderMain(M) {
   h += '<div class="an-chan"><span class="an-av">' + (av ? '<img src="' + esc(av) + '" alt="" onerror="this.remove()">' : esc(name.charAt(0).toUpperCase())) + '</span>' +
     '<div><b>' + esc(name) + '</b><small>' + fmt(M.subTotal) + ' Subscribers</small></div>' +
     '<button class="an-rangebtn" data-an="rangeMenu">' + rangeLabel(b) + ' ' + ic('down') + '</button></div>';
-  h += '<div class="an-tabs an-inline" id="an-nav-dash">' + navH('dash') + '</div>';
-
-  h += '<div class="an-rev"><div><small>Estimated Revenue</small><strong>$' + c.revenue.toFixed(2) + ' USDT</strong>' + trV(c.revenue, p.revenue) + '</div>' +
-    '<button class="an-btn" data-an="rev">View Details ' + ic('chev') + '</button></div>';
+  h += '<div class="an-rev"><div class="an-rev-top"><div><small>Estimated Revenue</small><strong>$' + c.revenue.toFixed(2) + ' USDT</strong>' + trV(c.revenue, p.revenue) + '</div>' +
+    '<button class="an-btn" data-an="rev">View Details ' + ic('chev') + '</button></div>' +
+    '<div class="an-tabs an-inline" id="an-nav-dash">' + navH('dash') + '</div></div>';
 
   h += '<div class="an-chips">' + chips + '</div>';
 

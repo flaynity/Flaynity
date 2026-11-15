@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Flaynity Analytics</title>
 <style>
-/* ===== Flaynity Analytics — iOS & Material Design 3 Hybrid (Zero Shadows, Exact Colors) ===== */
+/* ===== Flaynity Analytics — iOS & Material Design 3 Hybrid (Zero Shadows) ===== */
 .an-page, .an-sheet-wrap {
   --an-p: var(--primary, #f0004f);
   --an-bg: var(--bg-color, #ffffff);
@@ -65,23 +65,46 @@
 }
 .an-back:active { background: var(--an-track); transform: translateY(-50%) scale(.90); }
 
-/* Primary Navigation Tabs (Material 3 Filter Pills) */
+/* Primary Navigation Tabs inside Card Box (App Light: Deep Black bg + White text | App Dark: Deep White bg + Black text) */
 .an-tabs {
   flex: 0 0 auto; display: flex; align-items: center; gap: 6px; padding: 4px 16px 12px;
   overflow-x: auto; scrollbar-width: none; scroll-behavior: smooth;
 }
 .an-tabs::-webkit-scrollbar { display: none; }
+.an-tabs:not(.an-sub) {
+  background: #000000; color: #ffffff;
+  border: 1px solid #000000; border-radius: 18px;
+  margin: 2px 16px 10px; padding: 5px 0 5px 5px; gap: 4px;
+  box-shadow: none;
+}
+.an-tabs:not(.an-sub)::after { content: ''; flex: 0 0 1px; }
+.an-tabs:not(.an-sub).an-inline {
+  margin: 0 0 12px; padding: 5px 0 5px 5px;
+}
 .an-tab {
-  flex: 0 0 auto; padding: 8px 16px; min-height: 36px; border-radius: 999px;
-  background: var(--an-track); color: var(--an-tx); font-weight: 600;
+  flex: 0 0 auto; padding: 8px 15px; min-height: 36px; border-radius: 13px;
+  background: transparent; color: #ffffff; font-weight: 600;
   font-size: .81rem; letter-spacing: -.01em; white-space: nowrap; text-align: center;
   display: inline-flex; align-items: center; justify-content: center;
   box-shadow: none;
   transition: background .2s cubic-bezier(.2, 0, 0, 1), color .2s, transform .13s cubic-bezier(.2, 0, 0, 1);
 }
-.an-tab.on { background: var(--an-p); color: #fff; font-weight: 700; box-shadow: none; }
-.an-tab:active { transform: scale(.95); }
-.an-tabs.an-inline { margin: 0 -16px 14px; padding: 2px 16px 6px; }
+.an-tabs:not(.an-sub) .an-tab:active { background: rgba(255, 255, 255, .14); transform: scale(.96); }
+.an-tabs:not(.an-sub) .an-tab.on { background: var(--an-p); color: #ffffff; font-weight: 700; box-shadow: none; }
+
+[data-theme="dark"] .an-tabs:not(.an-sub) {
+  background: #ffffff; color: #000000;
+  border-color: rgba(0, 0, 0, .08);
+}
+[data-theme="dark"] .an-tabs:not(.an-sub) .an-tab {
+  color: #000000;
+}
+[data-theme="dark"] .an-tabs:not(.an-sub) .an-tab:active {
+  background: rgba(0, 0, 0, .08);
+}
+[data-theme="dark"] .an-tabs:not(.an-sub) .an-tab.on {
+  background: var(--an-p); color: #ffffff;
+}
 
 /* Sub Tabs (iOS Segmented Control + Material 3 Segmented Container) */
 .an-tabs.an-sub {
@@ -93,6 +116,7 @@
   background: transparent; color: var(--an-mu); font-size: .79rem; font-weight: 600;
   box-shadow: none;
 }
+.an-tabs.an-sub .an-tab:active { transform: scale(.96); }
 .an-tabs.an-sub .an-tab.on {
   background: var(--an-p); color: #fff; font-weight: 700; box-shadow: none;
 }
@@ -163,10 +187,11 @@
 .an-rangebtn:active { transform: scale(.95); }
 .an-rangebtn svg { width: 13px; height: 13px; color: var(--an-p); }
 
-/* Revenue Banner */
+/* Revenue Banner (App Light: Deep Black bg + White text | App Dark: Deep White bg + Black text) */
 .an-rev {
-  position: relative; overflow: hidden; background: var(--an-rev-bg);
-  border: 1px solid var(--an-soft2); border-radius: 20px;
+  position: relative; overflow: hidden;
+  background: #000000; color: #ffffff;
+  border: 1px solid #000000; border-radius: 20px;
   padding: 16px 16px 16px 20px; display: flex; align-items: center;
   justify-content: space-between; gap: 12px; margin-bottom: 12px; box-shadow: none;
 }
@@ -175,14 +200,30 @@
   width: 4px; background: var(--an-p);
 }
 .an-rev small {
-  font-size: .76rem; color: var(--an-tx); opacity: .75; font-weight: 600;
+  font-size: .76rem; color: rgba(255, 255, 255, .82); font-weight: 600;
   display: block; letter-spacing: .01em;
 }
 .an-rev strong {
-  display: block; font-size: 1.56rem; font-weight: 800;
+  display: block; font-size: 1.56rem; font-weight: 800; color: #ffffff;
   letter-spacing: -.03em; margin: 3px 0 5px; line-height: 1.15;
   font-variant-numeric: tabular-nums;
 }
+.an-rev .an-mu { color: rgba(255, 255, 255, .74); }
+.an-rev .an-tr.up { color: #34d399; background: rgba(52, 211, 153, .18); }
+.an-rev .an-tr.down { color: #fb7185; background: rgba(251, 113, 133, .18); }
+.an-rev .an-tr.flat { color: #ffffff; background: rgba(255, 255, 255, .15); }
+
+[data-theme="dark"] .an-rev {
+  background: #ffffff; color: #000000;
+  border-color: rgba(0, 0, 0, .08);
+}
+[data-theme="dark"] .an-rev small { color: rgba(0, 0, 0, .72); }
+[data-theme="dark"] .an-rev strong { color: #000000; }
+[data-theme="dark"] .an-rev .an-mu { color: rgba(0, 0, 0, .65); }
+[data-theme="dark"] .an-rev .an-tr.up { color: #14a44d; background: rgba(20, 164, 77, .12); }
+[data-theme="dark"] .an-rev .an-tr.down { color: #e11d48; background: rgba(225, 29, 72, .12); }
+[data-theme="dark"] .an-rev .an-tr.flat { color: #000000; background: rgba(0, 0, 0, .08); }
+
 .an-btn {
   background: var(--an-p); color: #fff !important; font-weight: 700;
   font-size: .78rem; padding: 10px 16px; min-height: 38px; border-radius: 999px;

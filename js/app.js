@@ -6572,17 +6572,34 @@ const AppNavigation = {
     },
 
     pushPremiumService: function(serviceId, paymentService) {
-        const current = this.current();
-        if (current && current.type === 'page' && current.id === serviceId + '-page') {
-            this.syncUI();
-            return Promise.resolve(document.getElementById(serviceId + '-page'));
-        }
-        this.stack.push({ type: 'page', id: serviceId + '-page', premiumService: serviceId, paymentService: paymentService || null });
-        this._fresh = true;
+        const self = this;
+        const pageId = serviceId + '-page';
+        const isTop = () => {
+            const c = self.current();
+            return !!(c && c.type === 'page' && c.id === pageId);
+        };
+        const doPush = () => {
+            if (isTop()) { self.syncUI(); return document.getElementById(pageId); }
+            self.stack.push({ type: 'page', id: pageId, premiumService: serviceId, paymentService: paymentService || null });
+            self._fresh = true;
+            if (serviceId === 'flay-pay') window.__flaynityPremiumPayService = paymentService || null;
+            self.syncUI();
+            self.updateBridge();
+            return document.getElementById(pageId);
+        };
+        if (isTop()) return Promise.resolve(doPush());
+        // Already loaded (or preloaded): open instantly with no intermediate screen.
+        if (document.getElementById(pageId)) return Promise.resolve(doPush());
+        // Not loaded yet: keep the current page on screen, load the service page first,
+        // and only then navigate. The empty "You" screen is never shown in between.
         if (serviceId === 'flay-pay') window.__flaynityPremiumPayService = paymentService || null;
-        this.syncUI();
-        this.updateBridge();
-        return __flaynityOpenPremiumService(serviceId);
+        return __flaynityLoadPremiumService(serviceId).then(() => doPush()).catch(error => {
+            console.error('Premium service load failed:', serviceId, error);
+            showNotification(serviceId === 'flay-payout'
+                ? 'Flay Payout could not load. Check connection or hosting path.'
+                : 'This page is unavailable offline. Open it once while online to save it for offline use.', 'error', 4000);
+            return null;
+        });
     },
 
     pushModal: function(modalId) {
@@ -8135,16 +8152,13 @@ function adjustHeaderForActiveTab(tabId) {
     }
 
     if (tabId === 'you') {
-        if (brand) brand.style.display = 'none';
-        if (actions) {
-            actions.innerHTML = `
-                <button id="theme-toggle-btn" class="appbar-theme-btn" onclick="openThemePopupMenu()" title="Switch Theme" style="background: none; border: none; font-size: 1.25rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">
-                </button>
-                <button class="btn-switch-account-header" onclick="openAccountSwitcher()" title="Switch Account">
-                    <i class="fas fa-exchange-alt"></i> Switch Account
-                </button>
-            `;
-        }
+        // The old You page (blank screen with Switch Account button) is removed.
+        // "Your Channel" is the You page; Switch Account stays in its menu.
+        header.style.display = 'none';
+        document.body.style.paddingTop = '0px';
+        if (chips) chips.style.display = 'none';
+        applyTheme();
+        return;
     } else {
         if (brand) brand.style.display = 'flex';
         if (actions) {

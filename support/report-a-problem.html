@@ -32,19 +32,23 @@
   position:sticky; top:0; z-index:40; background:var(--rp-bg);
   height:calc(58px + env(safe-area-inset-top, 0px)); padding-top:env(safe-area-inset-top, 0px);
 }
-.rp-bar-row{ position:relative; height:58px; }
-.rp-back{
-  position:absolute; left:12px; top:7px; width:44px; height:44px; border:0; border-radius:50%;
-  background:transparent; color:var(--rp-text); display:flex; align-items:center; justify-content:center;
-  transition:background .2s, transform .15s;
+.rp-root .rp-bar-row{
+  display:grid !important; grid-template-columns:56px minmax(0,1fr) 56px; align-items:center;
+  height:58px; width:100%; position:static !important;
 }
-.rp-back:active{ background:rgba(127,127,127,.18); transform:scale(.92); }
-.rp-back svg{ width:24px; height:24px; }
+.rp-root .rp-back{
+  position:static !important; grid-column:1; justify-self:center; width:44px; height:44px; margin:0; padding:0;
+  border:0; border-radius:50%; background:transparent; color:var(--rp-text);
+  display:flex; align-items:center; justify-content:center; transition:background .2s, transform .15s;
+}
+.rp-root .rp-back:active{ background:rgba(127,127,127,.18); transform:scale(.92); }
+.rp-root .rp-back svg{ width:24px; height:24px; }
 .rp-root .rp-title{
-  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-  margin:0; width:max-content; max-width:calc(100% - 120px); text-align:center; white-space:nowrap;
-  font-size:1.15rem; font-weight:800; color:var(--rp-text);
+  position:static !important; transform:none !important; grid-column:2; display:block; width:100%; margin:0; padding:0;
+  text-align:center !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  font-size:1.15rem; font-weight:800; line-height:1.2; color:var(--rp-text);
 }
+.rp-root .rp-bar-end{ grid-column:3; }
 
 .rp-content{ padding:6px 14px calc(40px + env(safe-area-inset-bottom, 0px)); display:flex; flex-direction:column; gap:14px; }
 .rp-card{ background:var(--rp-card); border-radius:20px; padding:18px; }
@@ -159,7 +163,8 @@ textarea.rp-field{ min-height:120px; resize:vertical; line-height:1.5; }
       <button class="rp-back" id="rp-backBtn" type="button" aria-label="Go back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <h1 class="rp-title">Report a Problem</h1>
+      <div class="rp-title" role="heading" aria-level="1">Report a Problem</div>
+      <span class="rp-bar-end" aria-hidden="true"></span>
     </div>
   </header>
 

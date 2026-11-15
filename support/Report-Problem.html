@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Report Problem · Infinity Game</title>
+<style>
+  /* ============================================================
+     TOKENS
+  ============================================================ */
+  :root{
+    --ink-900:#000000;
+    --ink-800:#000000;
+    --ink-700:#000000;
+    --ink-gradient: linear-gradient(135deg, var(--ink-900) 0%, var(--ink-700) 100%);
+
+    --surface:#ffffff;
+    --surface-sunken:#FFFFFF;
+    --border:#e8e8ee;
+    --border-strong:#d8d8e0;
+
+    --text-primary:#000000;
+    --text-secondary:#6c6c78;
+    --text-tertiary:#a2a2ac;
+    --text-on-dark:#ffffff;
+
+    --success:#000000;
+    --success-dark:#050907;
+    --success-tint:#E6F8F0;
+
+    --error:#FF0008;
+    --error-dark:#FF0009;
+    --error-tint:#fdecec;
+
+    --critical:#FF0008;
+    --high:#FF6A00;
+    --medium:#FFBD00;
+    --low:#00F545;
+
+    --radius-xl:28px;
+    --radius-lg:22px;
+    --radius-md:16px;
+    --radius-sm:12px;
+    --radius-pill:999px;
+
+    --shadow-sm: 0 1px 3px rgba(11,11,14,0.06), 0 1px 2px rgba(11,11,14,0.04);
+    --shadow-md: 0 6px 20px rgba(11,11,14,0.08), 0 2px 6px rgba(11,11,14,0.05);
+    --shadow-lg: 0 16px 40px rgba(11,11,14,0.14), 0 4px 12px rgba(11,11,14,0.08);
+    --shadow-topbar: 0 4px 18px rgba(11,11,14,0.22);
+
+    --font: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Helvetica, Arial, sans-serif;
+
+    --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+    --ease-emphasized: cubic-bezier(0.3, 0, 0.1, 1);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font);
+    background:var(--surface-sunken);
+    color:var(--text-primary);
+    -webkit-tap-highlight-color:transparent;
+    overflow-x:hidden;
+  }
+  button, input, textarea{font-family:inherit;}
+  button{cursor:pointer;}
+  h1,h2,h3,p{margin:0;}
+  img{max-width:100%;display:block;}
+
+  :focus-visible{
+    outline:2.5px solid var(--ink-800);
+    outline-offset:2px;
+    border-radius:8px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+      animation-duration:0.001ms !important;
+      animation-iteration-count:1 !important;
+      transition-duration:0.001ms !important;
+      scroll-behavior:auto !important;
+    }
+  }
+
+  /* ============================================================
+     APP SHELL
+  ============================================================ */
+  .app{
+    max-width:600px;
+    margin:0 auto;
+    min-height:100vh;
+    background:var(--surface-sunken);
+    position:relative;
+  }
+
+  /* ============================================================
+     TOP APP BAR
+  ============================================================ */
+  .topbar{
+    position:sticky;
+    top:0;
+    z-index:40;
+    height:70px;
+    display:flex;
+    align-items:center;
+    gap:4px;
+    padding:0 8px;
+    background:var(--ink-gradient);
+    background-size:180% 180%;
+    animation:topbarSheen 14s ease infinite;
+    border-radius:0 0 22px 22px;
+    box-shadow:var(--shadow-topbar);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+  }
+  @keyframes topbarSheen{
+    0%{background-position:0% 30%;}
+    50%{background-position:100% 70%;}
+    100%{background-position:0% 30%;}
+  }
+  .icon-btn{
+    position:relative;
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    border:none;
+    background:rgba(255,255,255,0.08);
+    color:var(--text-on-dark);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    transition:background 0.2s var(--ease-standard), transform 0.15s var(--ease-standard);
+    flex-shrink:0;
+  }
+  .icon-btn:hover{background:rgba(255,255,255,0.16);}
+  .icon-btn:active{transform:scale(0.9);}
+  .icon-btn svg{width:22px;height:22px;position:relative;z-index:1;}
+
+  .topbar-title{
+    font-size:20px;
+    font-weight:600;
+    letter-spacing:0.1px;
+    color:var(--text-on-dark);
+    padding-left:6px;
+  }
+
+  .ripple{
+    position:absolute;
+    border-radius:50%;
+    background:rgba(255,255,255,0.55);
+    transform:scale(0);
+    pointer-events:none;
+    animation:rippleAnim 0.6s var(--ease-standard);
+  }
+  .ripple.dark{background:rgba(11,11,14,0.16);}
+  @keyframes rippleAnim{
+    to{ transform:scale(2.6); opacity:0; }
+  }
+
+  /* ============================================================
+     LAYOUT / CONTENT
+  ============================================================ */
+  .content{
+    padding:18px 16px 40px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-sm);
+    padding:20px;
+    opacity:0;
+    transform:translateY(14px);
+    animation:cardIn 0.55s var(--ease-emphasized) forwards;
+    transition:box-shadow 0.25s var(--ease-standard), transform 0.25s var(--ease-standard);
+  }
+  .card:hover{ box-shadow:var(--shadow-md); }
+  .content .card:nth-child(1){animation-delay:0.02s;}
+  .content .card:nth-child(2){animation-delay:0.08s;}
+  .content .card:nth-child(3){animation-delay:0.14s;}
+  .content .card:nth-child(4){animation-delay:0.20s;}
+  .content .card:nth-child(5){animation-delay:0.26s;}
+  .content .card:nth-child(6){animation-delay:0.32s;}
+  .content .card:nth-child(7){animation-delay:0.38s;}
+  @keyframes cardIn{
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  .section-label{
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:0.2px;
+    color:var(--text-primary);
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-bottom:14px;
+    text-transform:uppercase;
+  }
+  .required{color:var(--error); font-weight:700;}
+  .optional{color:var(--text-tertiary); font-weight:500; text-transform:none; font-size:12.5px;}
+
+  /* ============================================================
+     HEADER CARD
+  ============================================================ */
+  .header-card{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:12px;
+    position:relative;
+    overflow:hidden;
+  }
+  .header-card::before{
+    content:"";
+    position:absolute;
+    top:-60px; right:-60px;
+    width:180px; height:180px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(11,11,14,0.05), transparent 70%);
+  }
+  .app-icon{
+    width:56px;
+    height:56px;
+    border-radius:18px;
+    background:var(--ink-gradient);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 8px 18px rgba(11,11,14,0.28);
+    position:relative;
+  }
+  .app-icon svg{width:30px;height:30px;}
+  .header-card h2{
+    font-size:20px;
+    font-weight:700;
+  }
+  .header-card .subtitle{
+    font-size:14.5px;
+    line-height:1.5;
+    color:var(--text-secondary);
+  }
+
+  /* ============================================================
+     CHIPS
+  ============================================================ */
+  .chip-group{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .chip{
+    position:relative;
+    overflow:hidden;
+    padding:10px 16px;
+    border-radius:var(--radius-pill);
+    border:1.5px solid var(--border-strong);
+    background:var(--surface);
+    color:var(--text-primary);
+    font-size:13.5px;
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    transition:transform 0.15s var(--ease-standard), background 0.25s var(--ease-standard), color 0.25s var(--ease-standard), border-color 0.25s var(--ease-standard), box-shadow 0.25s var(--ease-standard);
+  }
+  .chip .check{
+    width:0;
+    opacity:0;
+    overflow:hidden;
+    transition:width 0.25s var(--ease-standard), opacity 0.2s var(--ease-standard);
+  }
+  .chip.selected .check{ width:14px; opacity:1; }
+  .chip:active{ transform:scale(0.94); }
+  .chip.selected{
+    background:var(--ink-gradient);
+    border-color:transparent;
+    color:var(--text-on-dark);
+    box-shadow:0 6px 16px rgba(11,11,14,0.22);
+    animation:chipPop 0.35s var(--ease-emphasized);
+  }
+  @keyframes chipPop{
+    0%{ transform:scale(0.9); }
+    55%{ transform:scale(1.06); }
+    100%{ transform:scale(1); }
+  }
+
+  .field-error{
+    color:var(--error);
+    font-size:12.5px;
+    font-weight:600;
+    margin-top:10px;
+    display:none;
+    align-items:center;
+    gap:5px;
+  }
+  .field-error.show{ display:flex; animation:fadeSlide 0.25s var(--ease-standard); }
+  @keyframes fadeSlide{
+    from{ opacity:0; transform:translateY(-4px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  .shake{ animation:shakeAnim 0.4s var(--ease-standard); }
+  @keyframes shakeAnim{
+    10%,90%{ transform:translateX(-1px); }
+    20%,80%{ transform:translateX(2px); }
+    30%,50%,70%{ transform:translateX(-5px); }
+    40%,60%{ transform:translateX(5px); }
+  }
+
+  /* ============================================================
+     TEXT FIELDS
+  ============================================================ */
+  .text-field, .textarea-field{
+    width:100%;
+    border:1.5px solid var(--border-strong);
+    border-radius:var(--radius-md);
+    background:var(--surface-sunken);
+    padding:14px 16px;
+    font-size:15px;
+    color:var(--text-primary);
+    transition:border-color 0.2s var(--ease-standard), background 0.2s var(--ease-standard), box-shadow 0.2s var(--ease-standard);
+  }
+  .text-field::placeholder, .textarea-field::placeholder{ color:var(--text-tertiary); }
+  .text-field:focus, .textarea-field:focus{
+    outline:none;
+    border-color:var(--ink-800);
+    background:var(--surface);
+    box-shadow:0 0 0 4px rgba(11,11,14,0.06);
+  }
+  .textarea-field{
+    min-height:130px;
+    resize:vertical;
+    line-height:1.5;
+  }
+  .textarea-field.error, .text-field.error{
+    border-color:var(--error);
+    background:var(--error-tint);
+  }
+
+  .counter-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:10px;
+    gap:10px;
+  }
+  .char-counter{
+    font-size:12.5px;
+    color:var(--text-tertiary);
+    font-weight:600;
+    margin-left:auto;
+    white-space:nowrap;
+    transition:color 0.2s var(--ease-standard);
+  }
+  .char-counter.ok{ color:var(--success); }
+  .char-counter.bad{ color:var(--error); }
+
+  /* ============================================================
+     DEVICE INFO (READ ONLY)
+  ============================================================ */
+  .device-info{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .device-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:12px 14px;
+    background:var(--surface-sunken);
+    border:1px solid var(--border);
+    border-radius:var(--radius-md);
+  }
+  .device-row .label{
+    font-size:12.5px;
+    color:var(--text-tertiary);
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .device-row .label svg{ width:13px; height:13px; opacity:0.7; }
+  .device-row .value{
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--text-primary);
+    text-align:right;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    max-width:60%;
+  }
+
+  /* ============================================================
+     SEVERITY RADIO CARDS
+  ============================================================ */
+  .severity-group{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .severity-card{
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px 16px 14px 14px;
+    border:1.5px solid var(--border-strong);
+    border-radius:var(--radius-md);
+    background:var(--surface);
+    text-align:left;
+    transition:transform 0.15s var(--ease-standard), border-color 0.2s var(--ease-standard), box-shadow 0.2s var(--ease-standard);
+  }
+  .severity-card::before{
+    content:"";
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width:5px;
+    background:var(--bar-color, var(--text-tertiary));
+    opacity:0.35;
+    transition:opacity 0.2s var(--ease-standard);
+  }
+  .severity-card:active{ transform:scale(0.98); }
+  .severity-card.selected{
+    border-color:var(--bar-color);
+    box-shadow:0 6px 16px rgba(11,11,14,0.08);
+  }
+  .severity-card.selected::before{ opacity:1; }
+  .radio-dot{
+    width:20px;
+    height:20px;
+    border-radius:50%;
+    border:2px solid var(--border-strong);
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:border-color 0.2s var(--ease-standard);
+  }
+  .severity-card.selected .radio-dot{ border-color:var(--bar-color); }
+  .radio-dot .inner{
+    width:10px; height:10px;
+    border-radius:50%;
+    background:var(--bar-color);
+    transform:scale(0);
+    transition:transform 0.2s var(--ease-emphasized);
+  }
+  .severity-card.selected .radio-dot .inner{ transform:scale(1); }
+  .severity-text .sev-title{ font-size:14.5px; font-weight:700; color:var(--text-primary); }
+  .severity-text .sev-desc{ font-size:12.5px; color:var(--text-secondary); margin-top:2px; }
+
+  /* ============================================================
+     SCREENSHOT UPLOAD
+  ============================================================ */
+  .upload-area{ position:relative; }
+  .upload-label{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:28px 16px;
+    border:1.8px dashed var(--border-strong);
+    border-radius:var(--radius-md);
+    background:var(--surface-sunken);
+    color:var(--text-secondary);
+    text-align:center;
+    transition:border-color 0.2s var(--ease-standard), background 0.2s var(--ease-standard);
+  }
+  .upload-label:active{ background:var(--border); }
+  .upload-label svg{ width:30px; height:30px; opacity:0.55; }
+  .upload-label .upload-main{ font-size:14px; font-weight:600; color:var(--text-primary); }
+  .upload-label .upload-sub{ font-size:12px; color:var(--text-tertiary); }
+
+  .preview-wrap{
+    position:relative;
+    border-radius:var(--radius-md);
+    overflow:hidden;
+    border:1px solid var(--border);
+    animation:fadeSlide 0.3s var(--ease-standard);
+  }
+  .preview-img{
+    width:100%;
+    max-height:240px;
+    object-fit:cover;
+    display:block;
+  }
+  .remove-btn{
+    position:absolute;
+    top:10px;
+    right:10px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:8px 12px;
+    border-radius:var(--radius-pill);
+    border:none;
+    background:rgba(11,11,14,0.68);
+    color:#fff;
+    font-size:12.5px;
+    font-weight:600;
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    transition:background 0.2s var(--ease-standard), transform 0.15s var(--ease-standard);
+  }
+  .remove-btn:hover{ background:rgba(11,11,14,0.85); }
+  .remove-btn:active{ transform:scale(0.94); }
+  .remove-btn svg{ width:13px; height:13px; }
+
+  /* ============================================================
+     SUBMIT BUTTON
+  ============================================================ */
+  .submit-btn{
+    position:relative;
+    overflow:hidden;
+    width:100%;
+    height:56px;
+    border:none;
+    border-radius:var(--radius-md);
+    background:linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+    color:#fff;
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:0.2px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    box-shadow:0 10px 24px rgba(15, 169, 104, 0);
+    transition:transform 0.15s var(--ease-standard), box-shadow 0.2s var(--ease-standard), opacity 0.2s var(--ease-standard);
+  }
+  .submit-btn:hover{ box-shadow:0 12px 28px rgba(15,169,104,0.4); }
+  .submit-btn:active{ transform:scale(0.98); }
+  .submit-btn:disabled{
+    opacity:0.75;
+    cursor:not-allowed;
+    transform:none;
+  }
+  .spinner{
+    width:20px;
+    height:20px;
+    border-radius:50%;
+    border:2.5px solid rgba(255,255,255,0.4);
+    border-top-color:#fff;
+    animation:spin 0.7s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ============================================================
+     DIALOGS
+  ============================================================ */
+  .overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(11,11,14,0.55);
+    backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    z-index:100;
+    animation:overlayIn 0.25s var(--ease-standard);
+  }
+  .overlay[hidden]{ display:none; }
+  @keyframes overlayIn{ from{ opacity:0; } to{ opacity:1; } }
+
+  .dialog{
+    width:100%;
+    max-width:340px;
+    background:var(--surface);
+    border-radius:var(--radius-xl);
+    padding:32px 26px 26px;
+    text-align:center;
+    box-shadow:var(--shadow-lg);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    animation:dialogIn 0.35s var(--ease-emphasized);
+  }
+  @keyframes dialogIn{
+    0%{ opacity:0; transform:translateY(24px) scale(0.94); }
+    100%{ opacity:1; transform:translateY(0) scale(1); }
+  }
+
+  .dialog-icon{
+    width:64px; height:64px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin-bottom:6px;
+  }
+  .success-icon{
+    background:var(--success-tint);
+    color:var(--success);
+    animation:iconPop 0.5s var(--ease-emphasized) 0.1s both;
+  }
+  .error-icon{
+    background:var(--error-tint);
+    color:var(--error);
+    animation:shakeAnim 0.5s var(--ease-standard) 0.1s both;
+  }
+  .dialog-icon svg{ width:32px; height:32px; }
+  @keyframes iconPop{
+    0%{ transform:scale(0); }
+    60%{ transform:scale(1.15); }
+    100%{ transform:scale(1); }
+  }
+
+  .dialog h2{ font-size:18px; font-weight:700; }
+  .dialog p{ font-size:14px; color:var(--text-secondary); line-height:1.55; }
+  .dialog-btn{
+    width:100%;
+    height:48px;
+    margin-top:14px;
+    border:none;
+    border-radius:var(--radius-md);
+    font-size:15px;
+    font-weight:700;
+    color:#fff;
+    position:relative;
+    overflow:hidden;
+    transition:transform 0.15s var(--ease-standard);
+  }
+  .dialog-btn:active{ transform:scale(0.97); }
+  .success-btn{ background:linear-gradient(135deg, var(--success), var(--success-dark)); }
+  .error-btn{ background:var(--ink-gradient); }
+
+  /* ============================================================
+     RESPONSIVE
+  ============================================================ */
+  @media (min-width:600px){
+    .app{
+      box-shadow:0 0 0 1px var(--border);
+      background:var(--surface);
+    }
+    .content{ padding:22px 22px 44px; }
+  }
+  @media (max-width:359px){
+    .content{ padding:14px 12px 32px; }
+    .card{ padding:16px; }
+    .topbar-title{ font-size:18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============================================================
+       TOP APP BAR
+  ============================================================ -->
+  <header class="topbar">
+    <button class="icon-btn" id="backBtn" aria-label="Go back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+    <h1 class="topbar-title">Report Problem</h1>
+  </header>
+
+  <main class="content">
+
+    <!-- HEADER CARD -->
+    <section class="card header-card">
+      <div class="app-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="7" width="20" height="12" rx="4" fill="white" fill-opacity="0.14"/>
+          <circle cx="8" cy="13" r="1.6" fill="white"/>
+          <rect x="6.4" y="11.4" width="3.2" height="3.2" fill="white" opacity="0"/>
+          <path d="M6.5 13h3M8 11.5v3" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="16.2" cy="12" r="1.1" fill="white"/>
+          <circle cx="18.3" cy="14.1" r="1.1" fill="white"/>
+        </svg>
+      </div>
+      <h2>Report a Problem</h2>
+      <p class="subtitle">Found something wrong?<br>Tell us and we'll improve Infinity Game.</p>
+    </section>
+
+    <!-- PROBLEM CATEGORY -->
+    <section class="card">
+      <h3 class="section-label">Problem Category <span class="required">*</span></h3>
+      <div class="chip-group" id="categoryChips" role="radiogroup" aria-label="Problem category"></div>
+      <p class="field-error" id="categoryError">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" opacity="0.15"/><path d="M11 7h2v7h-2zM11 16h2v2h-2z"/></svg>
+        Please select a problem category
+      </p>
+    </section>
+
+    <!-- GAME NAME -->
+    <section class="card">
+      <h3 class="section-label">Game Name <span class="optional">(optional)</span></h3>
+      <input type="text" id="gameName" class="text-field" placeholder="Enter Game Name" maxlength="80">
+    </section>
+
+    <!-- DEVICE INFORMATION -->
+    <section class="card">
+      <h3 class="section-label">Device Information</h3>
+      <div class="device-info" id="deviceInfo"></div>
+    </section>
+
+    <!-- PROBLEM DESCRIPTION -->
+    <section class="card">
+      <h3 class="section-label">Problem Description <span class="required">*</span></h3>
+      <textarea id="description" class="textarea-field" placeholder="Describe your problem in detail..." maxlength="1000"></textarea>
+      <div class="counter-row">
+        <p class="field-error" id="descError">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" opacity="0.15"/><path d="M11 7h2v7h-2zM11 16h2v2h-2z"/></svg>
+          Minimum 20 characters required
+        </p>
+        <span class="char-counter" id="charCounter">0 / 1000</span>
+      </div>
+    </section>
+
+    <!-- HOW OFTEN -->
+    <section class="card">
+      <h3 class="section-label">How Often</h3>
+      <div class="chip-group" id="frequencyChips" role="radiogroup" aria-label="Frequency"></div>
+    </section>
+
+    <!-- SEVERITY -->
+    <section class="card">
+      <h3 class="section-label">Severity</h3>
+      <div class="severity-group" id="severityGroup" role="radiogroup" aria-label="Severity"></div>
+    </section>
+
+    <!-- SCREENSHOT -->
+    <section class="card">
+      <h3 class="section-label">Screenshot <span class="optional">(optional)</span></h3>
+      <div class="upload-area">
+        <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" hidden>
+        <label for="fileInput" class="upload-label" id="uploadLabel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 16V4M12 4l-4 4M12 4l4 4"/>
+            <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+          </svg>
+          <span class="upload-main">Tap to upload a screenshot</span>
+          <span class="upload-sub">PNG · JPG · JPEG · WEBP — up to 5MB</span>
+        </label>
+        <div class="preview-wrap" id="previewWrap" hidden>
+          <img id="previewImg" class="preview-img" alt="Screenshot preview">
+          <button type="button" class="remove-btn" id="removeBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            Remove
+          </button>
+        </div>
+      </div>
+      <p class="field-error" id="fileError">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" opacity="0.15"/><path d="M11 7h2v7h-2zM11 16h2v2h-2z"/></svg>
+        <span id="fileErrorText"></span>
+      </p>
+    </section>
+
+    <!-- SUBMIT -->
+    <button class="submit-btn" id="submitBtn">
+      <span class="btn-label" id="btnLabel">Report Problem</span>
+      <span class="spinner" id="spinner" hidden></span>
+    </button>
+
+  </main>
+</div>
+
+<!-- SUCCESS DIALOG -->
+<div class="overlay" id="successOverlay" hidden>
+  <div class="dialog">
+    <div class="dialog-icon success-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+    </div>
+    <h2>Problem Report Submitted</h2>
+    <p>Thank you. Your report has been recorded successfully.</p>
+    <button class="dialog-btn success-btn" id="successDoneBtn">Done</button>
+  </div>
+</div>
+
+<!-- ERROR DIALOG -->
+<div class="overlay" id="errorOverlay" hidden>
+  <div class="dialog">
+    <div class="dialog-icon error-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg>
+    </div>
+    <h2 id="errorTitle">Check your report</h2>
+    <p id="errorMessage"></p>
+    <button class="dialog-btn error-btn" id="errorOkBtn">OK</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     CONSTANTS
+  ============================================================ */
+  var DRAFT_KEY = "gamebox_report_draft_v1";
+  var MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  var ALLOWED_TYPES = ["image/png","image/jpeg","image/webp"];
+
+  var CATEGORIES = [
+    "Game Not Loading","Black Screen","Slow Performance","App Crash", "Network Error","Network Error","Audio Problem","Graphics Issue","Controls Not Working","Errors","Login Problem","Update Issue","Ads Problem","Other"
+  ];
+
+  var FREQUENCIES = ["Always","Sometimes","Rarely","Only Once"];
+
+  var SEVERITIES = [
+    { value:"Critical", desc:" Game is unusable", color:"var(--critical)" },
+    { value:"High",     desc:" Major feature is broken", color:"var(--high)" },
+    { value:"Medium",   desc:" Noticeable but game still works", color:"var(--medium)" },
+    { value:"Low",      desc:" Minor annoyance", color:"var(--low)" }
+  ];
+
+  /* ============================================================
+     STATE
+  ============================================================ */
+  var state = {
+    category: null,
+    gameName: "",
+    description: "",
+    frequency: null,
+    severity: null,
+    file: null
+  };
+
+  /* ============================================================
+     UTILITIES
+  ============================================================ */
+  function $(id){ return document.getElementById(id); }
+
+  function debounce(fn, wait){
+    var t;
+    return function(){
+      var args = arguments;
+      clearTimeout(t);
+      t = setTimeout(function(){ fn.apply(null, args); }, wait);
+    };
+  }
+
+  function addRipple(el, evt, dark){
+    var rect = el.getBoundingClientRect();
+    var size = Math.max(rect.width, rect.height) * 1.4;
+    var x = (evt.clientX != null ? evt.clientX - rect.left : rect.width/2) - size/2;
+    var y = (evt.clientY != null ? evt.clientY - rect.top : rect.height/2) - size/2;
+    var span = document.createElement("span");
+    span.className = "ripple" + (dark ? " dark" : "");
+    span.style.width = size + "px";
+    span.style.height = size + "px";
+    span.style.left = x + "px";
+    span.style.top = y + "px";
+    el.appendChild(span);
+    span.addEventListener("animationend", function(){ span.remove(); });
+  }
+
+  function shake(el){
+    el.classList.remove("shake");
+    void el.offsetWidth;
+    el.classList.add("shake");
+  }
+
+  /* ============================================================
+     BUILD CATEGORY + FREQUENCY CHIPS
+  ============================================================ */
+  function buildChipGroup(containerId, values, stateKey){
+    var container = $(containerId);
+    container.innerHTML = "";
+    values.forEach(function(val){
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "chip";
+      chip.setAttribute("role","radio");
+      chip.setAttribute("aria-checked","false");
+      chip.dataset.value = val;
+      chip.style.position = "relative";
+      chip.innerHTML =
+        '<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>' +
+        '<span>' + val + '</span>';
+
+      chip.addEventListener("click", function(e){
+        addRipple(chip, e, chip.classList.contains("selected"));
+        selectChip(container, chip, stateKey, val);
+      });
+      container.appendChild(chip);
+    });
+  }
+
+  function selectChip(container, chip, stateKey, val){
+    var chips = container.querySelectorAll(".chip");
+    chips.forEach(function(c){
+      c.classList.remove("selected");
+      c.setAttribute("aria-checked","false");
+    });
+    chip.classList.add("selected");
+    chip.setAttribute("aria-checked","true");
+    state[stateKey] = val;
+
+    if(stateKey === "category"){
+      $("categoryError").classList.remove("show");
+    }
+    saveDraft();
+  }
+
+  /* ============================================================
+     BUILD SEVERITY CARDS
+  ============================================================ */
+  function buildSeverity(){
+    var container = $("severityGroup");
+    container.innerHTML = "";
+    SEVERITIES.forEach(function(sev){
+      var card = document.createElement("button");
+      card.type = "button";
+      card.className = "severity-card";
+      card.style.setProperty("--bar-color", sev.color);
+      card.setAttribute("role","radio");
+      card.setAttribute("aria-checked","false");
+      card.dataset.value = sev.value;
+      card.innerHTML =
+        '<span class="radio-dot"><span class="inner"></span></span>' +
+        '<span class="severity-text">' +
+          '<span class="sev-title">' + sev.value + '</span>' +
+          '<span class="sev-desc">' + sev.desc + '</span>' +
+        '</span>';
+
+      card.addEventListener("click", function(e){
+        addRipple(card, e, true);
+        var cards = container.querySelectorAll(".severity-card");
+        cards.forEach(function(c){
+          c.classList.remove("selected");
+          c.setAttribute("aria-checked","false");
+        });
+        card.classList.add("selected");
+        card.setAttribute("aria-checked","true");
+        state.severity = sev.value;
+        saveDraft();
+      });
+      container.appendChild(card);
+    });
+  }
+
+  /* ============================================================
+     DEVICE DETECTION
+  ============================================================ */
+  function detectDevice(){
+    var ua = navigator.userAgent || "";
+
+    function detectOS(){
+      if(/iPhone|iPad|iPod/.test(ua)) return "iOS";
+      if(/Android/.test(ua)){
+        var m = ua.match(/Android\s([0-9.]+)/);
+        return "Android" + (m ? " " + m[1] : "");
+      }
+      if(/Windows NT 10/.test(ua)) return "Windows 10/11";
+      if(/Windows NT/.test(ua)) return "Windows";
+      if(/Mac OS X/.test(ua)){
+        var mm = ua.match(/Mac OS X ([0-9_]+)/);
+        return "macOS" + (mm ? " " + mm[1].replace(/_/g,".") : "");
+      }
+      if(/CrOS/.test(ua)) return "ChromeOS";
+      if(/Linux/.test(ua)) return "Linux";
+      return "Unknown OS";
+    }
+
+    function detectBrowser(){
+      if(/Edg\//.test(ua)) return "Edge" + versionOf(/Edg\/([0-9.]+)/);
+      if(/OPR\//.test(ua)) return "Opera" + versionOf(/OPR\/([0-9.]+)/);
+      if(/Chrome\//.test(ua) && !/Chromium/.test(ua)) return "Chrome" + versionOf(/Chrome\/([0-9.]+)/);
+      if(/Firefox\//.test(ua)) return "Firefox" + versionOf(/Firefox\/([0-9.]+)/);
+      if(/Safari\//.test(ua) && /Version\//.test(ua)) return "Safari" + versionOf(/Version\/([0-9.]+)/);
+      return "Unknown Browser";
+    }
+
+    function versionOf(regex){
+      var m = ua.match(regex);
+      return m ? " " + m[1].split(".")[0] : "";
+    }
+
+    function detectDeviceName(){
+      var iphone = ua.match(/iPhone/);
+      var ipad = ua.match(/iPad/);
+      var samsung = ua.match(/SM-[A-Za-z0-9]+/);
+      var android = ua.match(/Android/);
+      if(ipad) return "iPad";
+      if(iphone) return "iPhone";
+      if(samsung) return "Samsung " + samsung[0];
+      if(android){
+        var m = ua.match(/;\s([A-Za-z0-9_\- ]+)\sBuild\//);
+        return m ? m[1].trim() : "Android Device";
+      }
+      var touch = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
+      return touch ? "Mobile Device" : "Desktop Computer";
+    }
+
+    var w = screen.width * (window.devicePixelRatio || 1);
+    var h = screen.height * (window.devicePixelRatio || 1);
+
+    return {
+      deviceName: detectDeviceName(),
+      browser: detectBrowser(),
+      os: detectOS(),
+      resolution: Math.round(w) + " × " + Math.round(h) + " px"
+    };
+  }
+
+  function renderDeviceInfo(){
+    var info = detectDevice();
+    var rows = [
+      { label:"Device Name", value:info.deviceName },
+
+      { label:"Operating System", value:info.os },
+      { label:"Screen Resolution", value:info.resolution }
+    ];
+    var container = $("deviceInfo");
+    container.innerHTML = rows.map(function(r){
+      return '<div class="device-row">' +
+        '<span class="label">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 18h6"/></svg>' +
+          r.label +
+        '</span>' +
+        '<span class="value" title="' + r.value + '">' + r.value + '</span>' +
+      '</div>';
+    }).join("");
+  }
+
+  /* ============================================================
+     DESCRIPTION / COUNTER
+  ============================================================ */
+  var descField = null;
+  var counterEl = null;
+
+  function updateCounter(){
+    var len = descField.value.length;
+    counterEl.textContent = len + " / 1000";
+    counterEl.classList.remove("ok","bad");
+    if(len >= 20){ counterEl.classList.add("ok"); }
+    else if(len > 0){ counterEl.classList.add("bad"); }
+    if(len > 0){ $("descError").classList.remove("show"); }
+  }
+
+  /* ============================================================
+     FILE UPLOAD
+  ============================================================ */
+  function initUpload(){
+    var input = $("fileInput");
+    var wrap = $("previewWrap");
+    var label = $("uploadLabel");
+    var img = $("previewImg");
+    var removeBtn = $("removeBtn");
+    var fileError = $("fileError");
+    var fileErrorText = $("fileErrorText");
+
+    function clearFileError(){
+      fileError.classList.remove("show");
+      fileErrorText.textContent = "";
+    }
+    function showFileError(msg){
+      fileErrorText.textContent = msg;
+      fileError.classList.add("show");
+    }
+
+    input.addEventListener("change", function(){
+      clearFileError();
+      var file = input.files && input.files[0];
+      if(!file) return;
+
+      if(ALLOWED_TYPES.indexOf(file.type) === -1){
+        showFileError("Unsupported format. Please upload PNG, JPG, JPEG or WEBP.");
+        input.value = "";
+        return;
+      }
+      if(file.size > MAX_FILE_SIZE){
+        showFileError("File is too large. Maximum size is 5MB.");
+        input.value = "";
+        return;
+      }
+
+      var reader = new FileReader();
+      reader.onload = function(e){
+        img.src = e.target.result;
+        label.hidden = true;
+        wrap.hidden = false;
+        state.file = { name:file.name, size:file.size };
+      };
+      reader.readAsDataURL(file);
+    });
+
+    removeBtn.addEventListener("click", function(e){
+      addRipple(removeBtn, e, false);
+      input.value = "";
+      img.src = "";
+      wrap.hidden = true;
+      label.hidden = false;
+      state.file = null;
+      clearFileError();
+    });
+  }
+
+  /* ============================================================
+     DRAFT (LOCAL STORAGE)
+  ============================================================ */
+  function saveDraft(){
+    try{
+      var draft = {
+        category: state.category,
+        gameName: $("gameName").value,
+        description: $("description").value,
+        frequency: state.frequency,
+        severity: state.severity
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    }catch(err){ /* storage unavailable — fail silently */ }
+  }
+
+  var saveDraftDebounced = debounce(saveDraft, 250);
+
+  function restoreDraft(){
+    var raw;
+    try{ raw = localStorage.getItem(DRAFT_KEY); }catch(err){ return; }
+    if(!raw) return;
+    var draft;
+    try{ draft = JSON.parse(raw); }catch(err){ return; }
+    if(!draft) return;
+
+    if(draft.gameName){ $("gameName").value = draft.gameName; }
+    if(draft.description){
+      $("description").value = draft.description;
+      updateCounter();
+    }
+    if(draft.category){
+      var catChip = $("categoryChips").querySelector('[data-value="' + cssEscape(draft.category) + '"]');
+      if(catChip) selectChip($("categoryChips"), catChip, "category", draft.category);
+    }
+    if(draft.frequency){
+      var freqChip = $("frequencyChips").querySelector('[data-value="' + cssEscape(draft.frequency) + '"]');
+      if(freqChip) selectChip($("frequencyChips"), freqChip, "frequency", draft.frequency);
+    }
+    if(draft.severity){
+      var sevCard = $("severityGroup").querySelector('[data-value="' + cssEscape(draft.severity) + '"]');
+      if(sevCard) sevCard.click();
+    }
+  }
+
+  function cssEscape(str){
+    return String(str).replace(/["\\]/g, "\\$&");
+  }
+
+  function clearDraft(){
+    try{ localStorage.removeItem(DRAFT_KEY); }catch(err){}
+  }
+
+  /* ============================================================
+     VALIDATION + SUBMIT
+  ============================================================ */
+  function validate(){
+    var errors = [];
+    var descLen = $("description").value.trim().length;
+
+    var categoryOk = !!state.category;
+    var descOk = descLen >= 20 && descLen <= 1000;
+
+    if(!categoryOk){
+      errors.push("Select a problem category.");
+      $("categoryError").classList.add("show");
+      shake($("categoryChips"));
+    }
+    if(!descOk){
+      if(descLen === 0){
+        errors.push("Describe the problem you're experiencing.");
+      } else {
+        errors.push("Description must be between 20 and 1000 characters.");
+      }
+      $("descError").classList.add("show");
+      $("description").classList.add("error");
+      shake($("description"));
+    } else {
+      $("description").classList.remove("error");
+    }
+
+    return errors;
+  }
+
+  function resetForm(){
+    state = { category:null, gameName:"", description:"", frequency:null, severity:null, file:null };
+
+    $("categoryChips").querySelectorAll(".chip").forEach(function(c){
+      c.classList.remove("selected"); c.setAttribute("aria-checked","false");
+    });
+    $("frequencyChips").querySelectorAll(".chip").forEach(function(c){
+      c.classList.remove("selected"); c.setAttribute("aria-checked","false");
+    });
+    $("severityGroup").querySelectorAll(".severity-card").forEach(function(c){
+      c.classList.remove("selected"); c.setAttribute("aria-checked","false");
+    });
+
+    $("gameName").value = "";
+    $("description").value = "";
+    $("description").classList.remove("error");
+    updateCounter();
+
+    $("fileInput").value = "";
+    $("previewImg").src = "";
+    $("previewWrap").hidden = true;
+    $("uploadLabel").hidden = false;
+
+    $("categoryError").classList.remove("show");
+    $("descError").classList.remove("show");
+    $("fileError").classList.remove("show");
+  }
+
+  function showError(title, messages){
+    $("errorTitle").textContent = title;
+    $("errorMessage").innerHTML = messages.map(function(m){ return m; }).join("<br>");
+    $("errorOverlay").hidden = false;
+  }
+
+  function initSubmit(){
+    var btn = $("submitBtn");
+    var label = $("btnLabel");
+    var spinner = $("spinner");
+
+    btn.addEventListener("click", function(e){
+      var errors = validate();
+      if(errors.length){
+        addRipple(btn, e, true);
+        showError("Check your report", errors);
+        return;
+      }
+
+      addRipple(btn, e, true);
+      btn.disabled = true;
+      label.hidden = true;
+      spinner.hidden = false;
+
+      setTimeout(function(){
+        spinner.hidden = true;
+        label.hidden = false;
+        btn.disabled = false;
+
+        resetForm();
+        clearDraft();
+        $("successOverlay").hidden = false;
+      }, 1100);
+    });
+  }
+
+  /* ============================================================
+     DIALOGS + TOPBAR
+  ============================================================ */
+  function initDialogs(){
+    $("successDoneBtn").addEventListener("click", function(){
+      $("successOverlay").hidden = true;
+      window.scrollTo({ top:0, behavior:"smooth" });
+    });
+    $("errorOkBtn").addEventListener("click", function(){
+      $("errorOverlay").hidden = true;
+    });
+  }
+
+  function initTopbar(){
+    var backBtn = $("backBtn");
+    backBtn.addEventListener("click", function(e){
+      addRipple(backBtn, e, false);
+      setTimeout(function(){
+        if(window.history.length > 1){ window.history.back(); }
+      }, 120);
+    });
+  }
+
+  /* ============================================================
+     INIT
+  ============================================================ */
+  function init(){
+    buildChipGroup("categoryChips", CATEGORIES, "category");
+    buildChipGroup("frequencyChips", FREQUENCIES, "frequency");
+    buildSeverity();
+    renderDeviceInfo();
+    initUpload();
+    initSubmit();
+    initDialogs();
+    initTopbar();
+
+    descField = $("description");
+    counterEl = $("charCounter");
+    descField.addEventListener("input", function(){
+      updateCounter();
+      saveDraftDebounced();
+    });
+
+    $("gameName").addEventListener("input", saveDraftDebounced);
+
+    restoreDraft();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+
+})();
+</script>
+
+</body>
+</html>

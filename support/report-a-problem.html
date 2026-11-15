@@ -5,10 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
 <title>Report Problem · Infinity Game</title>
 <style>
-  /* ============================================================
-     TOKENS
-  ============================================================ */
-  :root{
+.rp-root{
     --ink-900:#000000;
     --ink-800:#000000;
     --ink-700:#000000;
@@ -53,73 +50,64 @@
     --ease-standard: cubic-bezier(0.2, 0, 0, 1);
     --ease-emphasized: cubic-bezier(0.3, 0, 0.1, 1);
   }
-
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
+.rp-root *{box-sizing:border-box;}
+.rp-root{margin:0;padding:0;}
+.rp-root{
     font-family:var(--font);
     background:var(--surface-sunken);
     color:var(--text-primary);
     -webkit-tap-highlight-color:transparent;
     overflow-x:hidden;
   }
-  button, input, textarea{font-family:inherit;}
-  button{cursor:pointer;}
-  h1,h2,h3,p{margin:0;}
-  img{max-width:100%;display:block;}
-
-  :focus-visible{
-    outline:2.5px solid var(--ink-800);
+.rp-root button, .rp-root input, .rp-root textarea{font-family:inherit;}
+.rp-root button{cursor:pointer;}
+.rp-root h1, .rp-root h2, .rp-root h3, .rp-root p{margin:0;}
+.rp-root img{max-width:100%;display:block;}
+.rp-root :focus-visible{
+    outline:2.5px solid var(--focus);
     outline-offset:2px;
     border-radius:8px;
   }
-
-  @media (prefers-reduced-motion: reduce){
-    *, *::before, *::after{
+@media (prefers-reduced-motion: reduce){
+.rp-root *, .rp-root *::before, .rp-root *::after{
       animation-duration:0.001ms !important;
       animation-iteration-count:1 !important;
       transition-duration:0.001ms !important;
       scroll-behavior:auto !important;
     }
-  }
-
-  /* ============================================================
-     APP SHELL
-  ============================================================ */
-  .app{
+}
+.rp-root .app{
+    width:100%;
+    flex:0 0 auto;
     max-width:600px;
     margin:0 auto;
     min-height:100vh;
     background:var(--surface-sunken);
     position:relative;
   }
-
-  /* ============================================================
-     TOP APP BAR
-  ============================================================ */
-  .topbar{
+.rp-root .topbar{
     position:sticky;
     top:0;
     z-index:40;
-    height:70px;
+    height:calc(70px + env(safe-area-inset-top, 0px));
     display:flex;
     align-items:center;
     gap:4px;
-    padding:0 8px;
-    background:var(--ink-gradient);
+    padding:env(safe-area-inset-top, 0px) 8px 0;
+    background:var(--topbar-bg);
     background-size:180% 180%;
-    animation:topbarSheen 14s ease infinite;
+    animation:rpTopbarSheen 14s ease infinite;
     border-radius:0 0 22px 22px;
     box-shadow:var(--shadow-topbar);
     backdrop-filter:blur(14px);
     -webkit-backdrop-filter:blur(14px);
   }
-  @keyframes topbarSheen{
+@keyframes rpTopbarSheen{
     0%{background-position:0% 30%;}
     50%{background-position:100% 70%;}
     100%{background-position:0% 30%;}
   }
-  .icon-btn{
+.rp-root .icon-btn{
     position:relative;
     width:44px;
     height:44px;
@@ -134,42 +122,35 @@
     transition:background 0.2s var(--ease-standard), transform 0.15s var(--ease-standard);
     flex-shrink:0;
   }
-  .icon-btn:hover{background:rgba(255,255,255,0.16);}
-  .icon-btn:active{transform:scale(0.9);}
-  .icon-btn svg{width:22px;height:22px;position:relative;z-index:1;}
-
-  .topbar-title{
+.rp-root .icon-btn:hover{background:rgba(255,255,255,0.16);}
+.rp-root .icon-btn:active{transform:scale(0.9);}
+.rp-root .icon-btn svg{width:22px;height:22px;position:relative;z-index:1;}
+.rp-root .topbar-title{
     font-size:20px;
     font-weight:600;
     letter-spacing:0.1px;
     color:var(--text-on-dark);
     padding-left:6px;
   }
-
-  .ripple{
+.rp-root .ripple{
     position:absolute;
     border-radius:50%;
     background:rgba(255,255,255,0.55);
     transform:scale(0);
     pointer-events:none;
-    animation:rippleAnim 0.6s var(--ease-standard);
+    animation:rpRippleAnim 0.6s var(--ease-standard);
   }
-  .ripple.dark{background:rgba(11,11,14,0.16);}
-  @keyframes rippleAnim{
+.rp-root .ripple.dark{background:rgba(11,11,14,0.16);}
+@keyframes rpRippleAnim{
     to{ transform:scale(2.6); opacity:0; }
   }
-
-  /* ============================================================
-     LAYOUT / CONTENT
-  ============================================================ */
-  .content{
+.rp-root .content{
     padding:18px 16px 40px;
     display:flex;
     flex-direction:column;
     gap:16px;
   }
-
-  .card{
+.rp-root .card{
     background:var(--surface);
     border:1px solid var(--border);
     border-radius:var(--radius-lg);
@@ -177,22 +158,21 @@
     padding:20px;
     opacity:0;
     transform:translateY(14px);
-    animation:cardIn 0.55s var(--ease-emphasized) forwards;
+    animation:rpCardIn 0.55s var(--ease-emphasized) forwards;
     transition:box-shadow 0.25s var(--ease-standard), transform 0.25s var(--ease-standard);
   }
-  .card:hover{ box-shadow:var(--shadow-md); }
-  .content .card:nth-child(1){animation-delay:0.02s;}
-  .content .card:nth-child(2){animation-delay:0.08s;}
-  .content .card:nth-child(3){animation-delay:0.14s;}
-  .content .card:nth-child(4){animation-delay:0.20s;}
-  .content .card:nth-child(5){animation-delay:0.26s;}
-  .content .card:nth-child(6){animation-delay:0.32s;}
-  .content .card:nth-child(7){animation-delay:0.38s;}
-  @keyframes cardIn{
+.rp-root .card:hover{ box-shadow:var(--shadow-md); }
+.rp-root .content .card:nth-child(1){animation-delay:0.02s;}
+.rp-root .content .card:nth-child(2){animation-delay:0.08s;}
+.rp-root .content .card:nth-child(3){animation-delay:0.14s;}
+.rp-root .content .card:nth-child(4){animation-delay:0.20s;}
+.rp-root .content .card:nth-child(5){animation-delay:0.26s;}
+.rp-root .content .card:nth-child(6){animation-delay:0.32s;}
+.rp-root .content .card:nth-child(7){animation-delay:0.38s;}
+@keyframes rpCardIn{
     to{ opacity:1; transform:translateY(0); }
   }
-
-  .section-label{
+.rp-root .section-label{
     font-size:14px;
     font-weight:700;
     letter-spacing:0.2px;
@@ -203,13 +183,9 @@
     margin-bottom:14px;
     text-transform:uppercase;
   }
-  .required{color:var(--error); font-weight:700;}
-  .optional{color:var(--text-tertiary); font-weight:500; text-transform:none; font-size:12.5px;}
-
-  /* ============================================================
-     HEADER CARD
-  ============================================================ */
-  .header-card{
+.rp-root .required{color:var(--error); font-weight:700;}
+.rp-root .optional{color:var(--text-tertiary); font-weight:500; text-transform:none; font-size:12.5px;}
+.rp-root .header-card{
     display:flex;
     flex-direction:column;
     align-items:flex-start;
@@ -217,7 +193,7 @@
     position:relative;
     overflow:hidden;
   }
-  .header-card::before{
+.rp-root .header-card::before{
     content:"";
     position:absolute;
     top:-60px; right:-60px;
@@ -225,7 +201,7 @@
     border-radius:50%;
     background:radial-gradient(circle, rgba(11,11,14,0.05), transparent 70%);
   }
-  .app-icon{
+.rp-root .app-icon{
     width:56px;
     height:56px;
     border-radius:18px;
@@ -236,26 +212,22 @@
     box-shadow:0 8px 18px rgba(11,11,14,0.28);
     position:relative;
   }
-  .app-icon svg{width:30px;height:30px;}
-  .header-card h2{
+.rp-root .app-icon svg{width:30px;height:30px;}
+.rp-root .header-card h2{
     font-size:20px;
     font-weight:700;
   }
-  .header-card .subtitle{
+.rp-root .header-card .subtitle{
     font-size:14.5px;
     line-height:1.5;
     color:var(--text-secondary);
   }
-
-  /* ============================================================
-     CHIPS
-  ============================================================ */
-  .chip-group{
+.rp-root .chip-group{
     display:flex;
     flex-wrap:wrap;
     gap:10px;
   }
-  .chip{
+.rp-root .chip{
     position:relative;
     overflow:hidden;
     padding:10px 16px;
@@ -270,28 +242,27 @@
     gap:6px;
     transition:transform 0.15s var(--ease-standard), background 0.25s var(--ease-standard), color 0.25s var(--ease-standard), border-color 0.25s var(--ease-standard), box-shadow 0.25s var(--ease-standard);
   }
-  .chip .check{
+.rp-root .chip .check{
     width:0;
     opacity:0;
     overflow:hidden;
     transition:width 0.25s var(--ease-standard), opacity 0.2s var(--ease-standard);
   }
-  .chip.selected .check{ width:14px; opacity:1; }
-  .chip:active{ transform:scale(0.94); }
-  .chip.selected{
+.rp-root .chip.selected .check{ width:14px; opacity:1; }
+.rp-root .chip:active{ transform:scale(0.94); }
+.rp-root .chip.selected{
     background:var(--ink-gradient);
     border-color:transparent;
     color:var(--text-on-dark);
     box-shadow:0 6px 16px rgba(11,11,14,0.22);
-    animation:chipPop 0.35s var(--ease-emphasized);
+    animation:rpChipPop 0.35s var(--ease-emphasized);
   }
-  @keyframes chipPop{
+@keyframes rpChipPop{
     0%{ transform:scale(0.9); }
     55%{ transform:scale(1.06); }
     100%{ transform:scale(1); }
   }
-
-  .field-error{
+.rp-root .field-error{
     color:var(--error);
     font-size:12.5px;
     font-weight:600;
@@ -300,24 +271,19 @@
     align-items:center;
     gap:5px;
   }
-  .field-error.show{ display:flex; animation:fadeSlide 0.25s var(--ease-standard); }
-  @keyframes fadeSlide{
+.rp-root .field-error.show{ display:flex; animation:rpFadeSlide 0.25s var(--ease-standard); }
+@keyframes rpFadeSlide{
     from{ opacity:0; transform:translateY(-4px); }
     to{ opacity:1; transform:translateY(0); }
   }
-
-  .shake{ animation:shakeAnim 0.4s var(--ease-standard); }
-  @keyframes shakeAnim{
+.rp-root .shake{ animation:rpShakeAnim 0.4s var(--ease-standard); }
+@keyframes rpShakeAnim{
     10%,90%{ transform:translateX(-1px); }
     20%,80%{ transform:translateX(2px); }
     30%,50%,70%{ transform:translateX(-5px); }
     40%,60%{ transform:translateX(5px); }
   }
-
-  /* ============================================================
-     TEXT FIELDS
-  ============================================================ */
-  .text-field, .textarea-field{
+.rp-root .text-field, .rp-root .textarea-field{
     width:100%;
     border:1.5px solid var(--border-strong);
     border-radius:var(--radius-md);
@@ -327,31 +293,30 @@
     color:var(--text-primary);
     transition:border-color 0.2s var(--ease-standard), background 0.2s var(--ease-standard), box-shadow 0.2s var(--ease-standard);
   }
-  .text-field::placeholder, .textarea-field::placeholder{ color:var(--text-tertiary); }
-  .text-field:focus, .textarea-field:focus{
+.rp-root .text-field::placeholder, .rp-root .textarea-field::placeholder{ color:var(--text-tertiary); }
+.rp-root .text-field:focus, .rp-root .textarea-field:focus{
     outline:none;
-    border-color:var(--ink-800);
+    border-color:var(--focus);
     background:var(--surface);
     box-shadow:0 0 0 4px rgba(11,11,14,0.06);
   }
-  .textarea-field{
+.rp-root .textarea-field{
     min-height:130px;
     resize:vertical;
     line-height:1.5;
   }
-  .textarea-field.error, .text-field.error{
+.rp-root .textarea-field.error, .rp-root .text-field.error{
     border-color:var(--error);
     background:var(--error-tint);
   }
-
-  .counter-row{
+.rp-root .counter-row{
     display:flex;
     justify-content:space-between;
     align-items:center;
     margin-top:10px;
     gap:10px;
   }
-  .char-counter{
+.rp-root .char-counter{
     font-size:12.5px;
     color:var(--text-tertiary);
     font-weight:600;
@@ -359,18 +324,14 @@
     white-space:nowrap;
     transition:color 0.2s var(--ease-standard);
   }
-  .char-counter.ok{ color:var(--success); }
-  .char-counter.bad{ color:var(--error); }
-
-  /* ============================================================
-     DEVICE INFO (READ ONLY)
-  ============================================================ */
-  .device-info{
+.rp-root .char-counter.ok{ color:var(--ok-color); }
+.rp-root .char-counter.bad{ color:var(--error); }
+.rp-root .device-info{
     display:flex;
     flex-direction:column;
     gap:10px;
   }
-  .device-row{
+.rp-root .device-row{
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -380,7 +341,7 @@
     border:1px solid var(--border);
     border-radius:var(--radius-md);
   }
-  .device-row .label{
+.rp-root .device-row .label{
     font-size:12.5px;
     color:var(--text-tertiary);
     font-weight:600;
@@ -388,8 +349,8 @@
     align-items:center;
     gap:6px;
   }
-  .device-row .label svg{ width:13px; height:13px; opacity:0.7; }
-  .device-row .value{
+.rp-root .device-row .label svg{ width:13px; height:13px; opacity:0.7; }
+.rp-root .device-row .value{
     font-size:13.5px;
     font-weight:600;
     color:var(--text-primary);
@@ -399,16 +360,12 @@
     white-space:nowrap;
     max-width:60%;
   }
-
-  /* ============================================================
-     SEVERITY RADIO CARDS
-  ============================================================ */
-  .severity-group{
+.rp-root .severity-group{
     display:flex;
     flex-direction:column;
     gap:10px;
   }
-  .severity-card{
+.rp-root .severity-card{
     position:relative;
     overflow:hidden;
     display:flex;
@@ -421,7 +378,7 @@
     text-align:left;
     transition:transform 0.15s var(--ease-standard), border-color 0.2s var(--ease-standard), box-shadow 0.2s var(--ease-standard);
   }
-  .severity-card::before{
+.rp-root .severity-card::before{
     content:"";
     position:absolute;
     left:0; top:0; bottom:0;
@@ -430,13 +387,13 @@
     opacity:0.35;
     transition:opacity 0.2s var(--ease-standard);
   }
-  .severity-card:active{ transform:scale(0.98); }
-  .severity-card.selected{
+.rp-root .severity-card:active{ transform:scale(0.98); }
+.rp-root .severity-card.selected{
     border-color:var(--bar-color);
     box-shadow:0 6px 16px rgba(11,11,14,0.08);
   }
-  .severity-card.selected::before{ opacity:1; }
-  .radio-dot{
+.rp-root .severity-card.selected::before{ opacity:1; }
+.rp-root .radio-dot{
     width:20px;
     height:20px;
     border-radius:50%;
@@ -447,23 +404,19 @@
     justify-content:center;
     transition:border-color 0.2s var(--ease-standard);
   }
-  .severity-card.selected .radio-dot{ border-color:var(--bar-color); }
-  .radio-dot .inner{
+.rp-root .severity-card.selected .radio-dot{ border-color:var(--bar-color); }
+.rp-root .radio-dot .inner{
     width:10px; height:10px;
     border-radius:50%;
     background:var(--bar-color);
     transform:scale(0);
     transition:transform 0.2s var(--ease-emphasized);
   }
-  .severity-card.selected .radio-dot .inner{ transform:scale(1); }
-  .severity-text .sev-title{ font-size:14.5px; font-weight:700; color:var(--text-primary); }
-  .severity-text .sev-desc{ font-size:12.5px; color:var(--text-secondary); margin-top:2px; }
-
-  /* ============================================================
-     SCREENSHOT UPLOAD
-  ============================================================ */
-  .upload-area{ position:relative; }
-  .upload-label{
+.rp-root .severity-card.selected .radio-dot .inner{ transform:scale(1); }
+.rp-root .severity-text .sev-title{ font-size:14.5px; font-weight:700; color:var(--text-primary); }
+.rp-root .severity-text .sev-desc{ font-size:12.5px; color:var(--text-secondary); margin-top:2px; }
+.rp-root .upload-area{ position:relative; }
+.rp-root .upload-label{
     display:flex;
     flex-direction:column;
     align-items:center;
@@ -477,25 +430,24 @@
     text-align:center;
     transition:border-color 0.2s var(--ease-standard), background 0.2s var(--ease-standard);
   }
-  .upload-label:active{ background:var(--border); }
-  .upload-label svg{ width:30px; height:30px; opacity:0.55; }
-  .upload-label .upload-main{ font-size:14px; font-weight:600; color:var(--text-primary); }
-  .upload-label .upload-sub{ font-size:12px; color:var(--text-tertiary); }
-
-  .preview-wrap{
+.rp-root .upload-label:active{ background:var(--border); }
+.rp-root .upload-label svg{ width:30px; height:30px; opacity:0.55; }
+.rp-root .upload-label .upload-main{ font-size:14px; font-weight:600; color:var(--text-primary); }
+.rp-root .upload-label .upload-sub{ font-size:12px; color:var(--text-tertiary); }
+.rp-root .preview-wrap{
     position:relative;
     border-radius:var(--radius-md);
     overflow:hidden;
     border:1px solid var(--border);
-    animation:fadeSlide 0.3s var(--ease-standard);
+    animation:rpFadeSlide 0.3s var(--ease-standard);
   }
-  .preview-img{
+.rp-root .preview-img{
     width:100%;
     max-height:240px;
     object-fit:cover;
     display:block;
   }
-  .remove-btn{
+.rp-root .remove-btn{
     position:absolute;
     top:10px;
     right:10px;
@@ -513,22 +465,18 @@
     -webkit-backdrop-filter:blur(6px);
     transition:background 0.2s var(--ease-standard), transform 0.15s var(--ease-standard);
   }
-  .remove-btn:hover{ background:rgba(11,11,14,0.85); }
-  .remove-btn:active{ transform:scale(0.94); }
-  .remove-btn svg{ width:13px; height:13px; }
-
-  /* ============================================================
-     SUBMIT BUTTON
-  ============================================================ */
-  .submit-btn{
+.rp-root .remove-btn:hover{ background:rgba(11,11,14,0.85); }
+.rp-root .remove-btn:active{ transform:scale(0.94); }
+.rp-root .remove-btn svg{ width:13px; height:13px; }
+.rp-root .submit-btn{
     position:relative;
     overflow:hidden;
     width:100%;
     height:56px;
     border:none;
     border-radius:var(--radius-md);
-    background:linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
-    color:#fff;
+    background:var(--btn-bg);
+    color:var(--btn-fg);
     font-size:16px;
     font-weight:700;
     letter-spacing:0.2px;
@@ -539,27 +487,23 @@
     box-shadow:0 10px 24px rgba(15, 169, 104, 0);
     transition:transform 0.15s var(--ease-standard), box-shadow 0.2s var(--ease-standard), opacity 0.2s var(--ease-standard);
   }
-  .submit-btn:hover{ box-shadow:0 12px 28px rgba(15,169,104,0.4); }
-  .submit-btn:active{ transform:scale(0.98); }
-  .submit-btn:disabled{
+.rp-root .submit-btn:hover{ box-shadow:0 12px 28px rgba(15,169,104,0.4); }
+.rp-root .submit-btn:active{ transform:scale(0.98); }
+.rp-root .submit-btn:disabled{
     opacity:0.75;
     cursor:not-allowed;
     transform:none;
   }
-  .spinner{
+.rp-root .spinner{
     width:20px;
     height:20px;
     border-radius:50%;
-    border:2.5px solid rgba(255,255,255,0.4);
-    border-top-color:#fff;
-    animation:spin 0.7s linear infinite;
+    border:2.5px solid currentColor;
+    border-top-color:transparent;
+    animation:rpSpin 0.7s linear infinite;
   }
-  @keyframes spin{ to{ transform:rotate(360deg); } }
-
-  /* ============================================================
-     DIALOGS
-  ============================================================ */
-  .overlay{
+@keyframes rpSpin{ to{ transform:rotate(360deg); } }
+.rp-root .overlay{
     position:fixed;
     inset:0;
     background:rgba(11,11,14,0.55);
@@ -570,12 +514,11 @@
     justify-content:center;
     padding:24px;
     z-index:100;
-    animation:overlayIn 0.25s var(--ease-standard);
+    animation:rpOverlayIn 0.25s var(--ease-standard);
   }
-  .overlay[hidden]{ display:none; }
-  @keyframes overlayIn{ from{ opacity:0; } to{ opacity:1; } }
-
-  .dialog{
+.rp-root .overlay[hidden]{ display:none; }
+@keyframes rpOverlayIn{ from{ opacity:0; } to{ opacity:1; } }
+.rp-root .dialog{
     width:100%;
     max-width:340px;
     background:var(--surface);
@@ -587,14 +530,13 @@
     flex-direction:column;
     align-items:center;
     gap:10px;
-    animation:dialogIn 0.35s var(--ease-emphasized);
+    animation:rpDialogIn 0.35s var(--ease-emphasized);
   }
-  @keyframes dialogIn{
+@keyframes rpDialogIn{
     0%{ opacity:0; transform:translateY(24px) scale(0.94); }
     100%{ opacity:1; transform:translateY(0) scale(1); }
   }
-
-  .dialog-icon{
+.rp-root .dialog-icon{
     width:64px; height:64px;
     border-radius:50%;
     display:flex;
@@ -602,26 +544,25 @@
     justify-content:center;
     margin-bottom:6px;
   }
-  .success-icon{
+.rp-root .success-icon{
     background:var(--success-tint);
     color:var(--success);
-    animation:iconPop 0.5s var(--ease-emphasized) 0.1s both;
+    animation:rpIconPop 0.5s var(--ease-emphasized) 0.1s both;
   }
-  .error-icon{
+.rp-root .error-icon{
     background:var(--error-tint);
     color:var(--error);
-    animation:shakeAnim 0.5s var(--ease-standard) 0.1s both;
+    animation:rpShakeAnim 0.5s var(--ease-standard) 0.1s both;
   }
-  .dialog-icon svg{ width:32px; height:32px; }
-  @keyframes iconPop{
+.rp-root .dialog-icon svg{ width:32px; height:32px; }
+@keyframes rpIconPop{
     0%{ transform:scale(0); }
     60%{ transform:scale(1.15); }
     100%{ transform:scale(1); }
   }
-
-  .dialog h2{ font-size:18px; font-weight:700; }
-  .dialog p{ font-size:14px; color:var(--text-secondary); line-height:1.55; }
-  .dialog-btn{
+.rp-root .dialog h2{ font-size:18px; font-weight:700; }
+.rp-root .dialog p{ font-size:14px; color:var(--text-secondary); line-height:1.55; }
+.rp-root .dialog-btn{
     width:100%;
     height:48px;
     margin-top:14px;
@@ -629,41 +570,82 @@
     border-radius:var(--radius-md);
     font-size:15px;
     font-weight:700;
-    color:#fff;
+    color:var(--btn-fg);
     position:relative;
     overflow:hidden;
     transition:transform 0.15s var(--ease-standard);
   }
-  .dialog-btn:active{ transform:scale(0.97); }
-  .success-btn{ background:linear-gradient(135deg, var(--success), var(--success-dark)); }
-  .error-btn{ background:var(--ink-gradient); }
-
-  /* ============================================================
-     RESPONSIVE
-  ============================================================ */
-  @media (min-width:600px){
-    .app{
+.rp-root .dialog-btn:active{ transform:scale(0.97); }
+.rp-root .success-btn{ background:var(--btn-bg); }
+.rp-root .error-btn{ background:var(--ink-gradient); color:#fff; }
+@media (min-width:600px){
+.rp-root .app{
       box-shadow:0 0 0 1px var(--border);
-      background:var(--surface);
+      background:var(--surface-sunken);
     }
-    .content{ padding:22px 22px 44px; }
-  }
-  @media (max-width:359px){
-    .content{ padding:14px 12px 32px; }
-    .card{ padding:16px; }
-    .topbar-title{ font-size:18px; }
-  }
+.rp-root .content{ padding:22px 22px 44px; }
+}
+@media (max-width:359px){
+.rp-root .content{ padding:14px 12px 32px; }
+.rp-root .card{ padding:16px; }
+.rp-root .topbar-title{ font-size:18px; }
+}
+
+/* ===== Report a Problem — page + theme ===== */
+#report-a-problem-page{ background:#FFFFFF !important; padding-top:0 !important; }
+[data-theme="dark"] #report-a-problem-page{ background:#0F0F0F !important; }
+
+.rp-root, .rp-root *, .rp-root *::before, .rp-root *::after{ box-sizing:border-box; }
+.rp-root{
+  position:relative; width:100%; flex:0 0 auto; min-height:100%;
+  font-family:var(--font); color:var(--text-primary); background:var(--surface-sunken);
+  overflow-x:hidden; -webkit-tap-highlight-color:transparent;
+  --focus:#000000;
+  --topbar-bg:var(--ink-gradient);
+  --btn-bg:linear-gradient(135deg, #000000 0%, #050907 100%);
+  --btn-fg:#ffffff;
+  --ok-color:#000000;
+}
+.rp-root [hidden]{ display:none !important; }
+
+/* Light theme  -> page background #FFFFFF (tokens above) */
+/* Dark theme   -> page background #0F0F0F */
+[data-theme="dark"] .rp-root{
+  --ink-900:#3A3A40; --ink-800:#3A3A40; --ink-700:#2B2B30;
+  --ink-gradient:linear-gradient(135deg, #3A3A40 0%, #2B2B30 100%);
+  --topbar-bg:#1A1A1A;
+  --surface:#1A1A1A;
+  --surface-sunken:#0F0F0F;
+  --border:#2A2A2E;
+  --border-strong:#3A3A40;
+  --text-primary:#FFFFFF;
+  --text-secondary:#A1A1AA;
+  --text-tertiary:#71717A;
+  --text-on-dark:#FFFFFF;
+  --success:#34D399;
+  --success-dark:#10B981;
+  --success-tint:#12261E;
+  --error-tint:#2A1215;
+  --focus:#FFFFFF;
+  --btn-bg:#FFFFFF;
+  --btn-fg:#000000;
+  --ok-color:#FFFFFF;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md:0 6px 20px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.4);
+  --shadow-lg:0 16px 40px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.5);
+  --shadow-topbar:0 4px 18px rgba(0,0,0,0.6);
+}
 </style>
 </head>
-<body>
-
+<body style="margin:0">
+<div class="rp-root">
 <div class="app">
 
   <!-- ============================================================
        TOP APP BAR
   ============================================================ -->
   <header class="topbar">
-    <button class="icon-btn" id="backBtn" aria-label="Go back">
+    <button class="icon-btn" id="rp-backBtn" aria-label="Go back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M15 18l-6-6 6-6"/>
       </svg>
@@ -692,8 +674,8 @@
     <!-- PROBLEM CATEGORY -->
     <section class="card">
       <h3 class="section-label">Problem Category <span class="required">*</span></h3>
-      <div class="chip-group" id="categoryChips" role="radiogroup" aria-label="Problem category"></div>
-      <p class="field-error" id="categoryError">
+      <div class="chip-group" id="rp-categoryChips" role="radiogroup" aria-label="Problem category"></div>
+      <p class="field-error" id="rp-categoryError">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" opacity="0.15"/><path d="M11 7h2v7h-2zM11 16h2v2h-2z"/></svg>
         Please select a problem category
       </p>
@@ -702,46 +684,46 @@
     <!-- GAME NAME -->
     <section class="card">
       <h3 class="section-label">Game Name <span class="optional">(optional)</span></h3>
-      <input type="text" id="gameName" class="text-field" placeholder="Enter Game Name" maxlength="80">
+      <input type="text" id="rp-gameName" class="text-field" placeholder="Enter Game Name" maxlength="80">
     </section>
 
     <!-- DEVICE INFORMATION -->
     <section class="card">
       <h3 class="section-label">Device Information</h3>
-      <div class="device-info" id="deviceInfo"></div>
+      <div class="device-info" id="rp-deviceInfo"></div>
     </section>
 
     <!-- PROBLEM DESCRIPTION -->
     <section class="card">
       <h3 class="section-label">Problem Description <span class="required">*</span></h3>
-      <textarea id="description" class="textarea-field" placeholder="Describe your problem in detail..." maxlength="1000"></textarea>
+      <textarea id="rp-description" class="textarea-field" placeholder="Describe your problem in detail..." maxlength="1000"></textarea>
       <div class="counter-row">
-        <p class="field-error" id="descError">
+        <p class="field-error" id="rp-descError">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" opacity="0.15"/><path d="M11 7h2v7h-2zM11 16h2v2h-2z"/></svg>
           Minimum 20 characters required
         </p>
-        <span class="char-counter" id="charCounter">0 / 1000</span>
+        <span class="char-counter" id="rp-charCounter">0 / 1000</span>
       </div>
     </section>
 
     <!-- HOW OFTEN -->
     <section class="card">
       <h3 class="section-label">How Often</h3>
-      <div class="chip-group" id="frequencyChips" role="radiogroup" aria-label="Frequency"></div>
+      <div class="chip-group" id="rp-frequencyChips" role="radiogroup" aria-label="Frequency"></div>
     </section>
 
     <!-- SEVERITY -->
     <section class="card">
       <h3 class="section-label">Severity</h3>
-      <div class="severity-group" id="severityGroup" role="radiogroup" aria-label="Severity"></div>
+      <div class="severity-group" id="rp-severityGroup" role="radiogroup" aria-label="Severity"></div>
     </section>
 
     <!-- SCREENSHOT -->
     <section class="card">
       <h3 class="section-label">Screenshot <span class="optional">(optional)</span></h3>
       <div class="upload-area">
-        <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" hidden>
-        <label for="fileInput" class="upload-label" id="uploadLabel">
+        <input type="file" id="rp-fileInput" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" hidden>
+        <label for="rp-fileInput" class="upload-label" id="rp-uploadLabel">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 16V4M12 4l-4 4M12 4l4 4"/>
             <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
@@ -749,53 +731,53 @@
           <span class="upload-main">Tap to upload a screenshot</span>
           <span class="upload-sub">PNG · JPG · JPEG · WEBP — up to 5MB</span>
         </label>
-        <div class="preview-wrap" id="previewWrap" hidden>
-          <img id="previewImg" class="preview-img" alt="Screenshot preview">
-          <button type="button" class="remove-btn" id="removeBtn">
+        <div class="preview-wrap" id="rp-previewWrap" hidden>
+          <img id="rp-previewImg" class="preview-img" alt="Screenshot preview">
+          <button type="button" class="remove-btn" id="rp-removeBtn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
             Remove
           </button>
         </div>
       </div>
-      <p class="field-error" id="fileError">
+      <p class="field-error" id="rp-fileError">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" opacity="0.15"/><path d="M11 7h2v7h-2zM11 16h2v2h-2z"/></svg>
-        <span id="fileErrorText"></span>
+        <span id="rp-fileErrorText"></span>
       </p>
     </section>
 
     <!-- SUBMIT -->
-    <button class="submit-btn" id="submitBtn">
-      <span class="btn-label" id="btnLabel">Report Problem</span>
-      <span class="spinner" id="spinner" hidden></span>
+    <button class="submit-btn" id="rp-submitBtn">
+      <span class="btn-label" id="rp-btnLabel">Report Problem</span>
+      <span class="spinner" id="rp-spinner" hidden></span>
     </button>
 
   </main>
 </div>
 
 <!-- SUCCESS DIALOG -->
-<div class="overlay" id="successOverlay" hidden>
+<div class="overlay" id="rp-successOverlay" hidden>
   <div class="dialog">
     <div class="dialog-icon success-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
     </div>
     <h2>Problem Report Submitted</h2>
     <p>Thank you. Your report has been recorded successfully.</p>
-    <button class="dialog-btn success-btn" id="successDoneBtn">Done</button>
+    <button class="dialog-btn success-btn" id="rp-successDoneBtn">Done</button>
   </div>
 </div>
 
 <!-- ERROR DIALOG -->
-<div class="overlay" id="errorOverlay" hidden>
+<div class="overlay" id="rp-errorOverlay" hidden>
   <div class="dialog">
     <div class="dialog-icon error-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg>
     </div>
-    <h2 id="errorTitle">Check your report</h2>
-    <p id="errorMessage"></p>
-    <button class="dialog-btn error-btn" id="errorOkBtn">OK</button>
+    <h2 id="rp-errorTitle">Check your report</h2>
+    <p id="rp-errorMessage"></p>
+    <button class="dialog-btn error-btn" id="rp-errorOkBtn">OK</button>
   </div>
 </div>
-
+</div>
 <script>
 (function(){
   "use strict";
@@ -803,7 +785,7 @@
   /* ============================================================
      CONSTANTS
   ============================================================ */
-  var DRAFT_KEY = "gamebox_report_draft_v1";
+  var DRAFT_KEY = "flaynity_report_draft_v1";
   var MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
   var ALLOWED_TYPES = ["image/png","image/jpeg","image/webp"];
 
@@ -835,7 +817,16 @@
   /* ============================================================
      UTILITIES
   ============================================================ */
-  function $(id){ return document.getElementById(id); }
+  var ROOT = document.querySelector(".rp-root") || document;
+  function $(id){ return ROOT.querySelector("#rp-" + id); }
+
+  // Standalone (opened directly in a browser): follow the saved app theme.
+  // Inside the app the theme is already set on <html> by the app itself.
+  if(!document.getElementById("app-screen")){
+    try{
+      document.documentElement.setAttribute("data-theme", localStorage.getItem("flaynity-theme-pref") || "light");
+    }catch(err){}
+  }
 
   function debounce(fn, wait){
     var t;
@@ -1257,7 +1248,9 @@
   function initDialogs(){
     $("successDoneBtn").addEventListener("click", function(){
       $("successOverlay").hidden = true;
-      window.scrollTo({ top:0, behavior:"smooth" });
+      var pg = document.getElementById("report-a-problem-page");
+      if(pg && pg.scrollTo){ pg.scrollTo({ top:0, behavior:"smooth" }); }
+      else { window.scrollTo({ top:0, behavior:"smooth" }); }
     });
     $("errorOkBtn").addEventListener("click", function(){
       $("errorOverlay").hidden = true;
@@ -1269,7 +1262,11 @@
     backBtn.addEventListener("click", function(e){
       addRipple(backBtn, e, false);
       setTimeout(function(){
-        if(window.history.length > 1){ window.history.back(); }
+        if(typeof window.executeBackAction === "function" && document.getElementById("app-screen")){
+          window.executeBackAction();
+        } else if(window.history.length > 1){
+          window.history.back();
+        }
       }, 120);
     });
   }
@@ -1307,6 +1304,5 @@
 
 })();
 </script>
-
 </body>
 </html>

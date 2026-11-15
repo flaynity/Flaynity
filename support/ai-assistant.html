@@ -30,7 +30,7 @@
 .aia .m.u .b{background:var(--ub);padding:14px 26px;border-radius:30px;line-height:1.5;font-size:1.12rem}.aia .m.a .b{line-height:1.65;padding:2px 2px;font-size:1.1rem}.aia .m.a .b:empty{display:none}.aia .m.e .b{padding:10px 14px;border-radius:18px}
 .aia .caret{display:inline-block;width:2px;height:1.1em;background:var(--pur);margin-left:2px;vertical-align:text-bottom;animation:aiaB 1s steps(1) infinite}@keyframes aiaB{50%{opacity:0}}
 .aia .ac{display:flex;gap:8px;margin:14px 0 0 -4px;color:#6b6b70}[data-theme="dark"] .aia .ac{color:var(--tx2)}.aia .ac button{width:46px;height:42px;display:grid;place-items:center;border-radius:14px}.aia .ac button.on{color:var(--pur)}.aia .ac svg{width:25px;height:25px;stroke-width:1.9}.aia .ac .dl svg{transform:rotate(180deg)}
-.aia .th{display:flex;align-items:center;gap:14px;color:var(--tx2);font-size:1.12rem;font-weight:500;margin-bottom:14px;min-height:36px}.aia .th.tg{cursor:pointer}.aia .pet svg{width:36px;height:36px;stroke:none;display:block}.aia .pet.spin svg{animation:aiaSp 1.6s linear infinite}@keyframes aiaSp{to{transform:rotate(360deg)}}
+.aia .th .lb{display:none}.aia .th{display:flex;align-items:center;gap:14px;color:var(--tx2);font-size:1.12rem;font-weight:500;margin-bottom:14px;min-height:36px}.aia .th.tg{cursor:pointer}.aia .pet svg{width:36px;height:36px;stroke:none;display:block}.aia .pet.spin svg{animation:aiaSp 1.6s linear infinite}@keyframes aiaSp{to{transform:rotate(360deg)}}
 .aia .chv svg{width:22px;height:22px;transition:transform .2s;display:block}.aia .chv.open svg{transform:rotate(90deg)}
 .aia .rs{margin:0 0 16px 17px;padding-left:24px;border-left:2px solid #cfc8e0;color:var(--tx2);font-size:1.02rem;line-height:1.6;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere}.aia .rs.full{display:block!important;-webkit-line-clamp:unset}
 /* premium confirmation card */
@@ -210,7 +210,7 @@ function md(el,t){el.textContent='';let ul=null,cd=null;
  if(cd){const p=h('pre');p.appendChild(h('code',0,cd.join('\n')));el.appendChild(p)}}
 let stick=true;const scrollEnd=()=>{if(!stick)return;const m=$('#aMain');m.scrollTop=m.scrollHeight};
 $('#aMain').addEventListener('scroll',()=>{const m=$('#aMain');stick=m.scrollHeight-m.scrollTop-m.clientHeight<120;$('#aDn').classList.toggle('on',!stick&&m.classList.contains('chatting'))},{passive:true});
-const PC=['#e879f9','#c04cf0','#a855f7','#8b5cf6','#6d5ef6','#5b4ff0','#8b3ff0','#c24cf0'];
+const PC=['#ff7aa2','#ff5c8a','#ff3d71','#f43f5e','#ec2f5f','#e11d48','#fb5a7c','#ff6b9d'];
 const PET='<svg viewBox="0 0 32 32">'+PC.map((c,i)=>'<ellipse cx="16" cy="6.5" rx="'+(i%2?2.8:2.3)+'" ry="3.6" fill="'+c+'" transform="rotate('+i*45+' 16 16)"/>').join('')+'</svg>';
 function petal(sp){const e=h('span','pet'+(sp?' spin':''));e.innerHTML=PET;return e}
 function addMsg(r,t,o){o=o||{};const row=h('div','m '+(r==='u'?'u':o.err?'e':'a')),w=h('div','w'),b=h('div','b');w.appendChild(b);row.appendChild(w);const m={row,b};
@@ -219,10 +219,8 @@ function addMsg(r,t,o){o=o||{};const row=h('div','m '+(r==='u'?'u':o.err?'e':'a'
  if(!o.noSave&&!o.err&&!o.typing)saveHist(r,t,o.ts||Date.now());
  if(r!=='u'&&!o.err&&!o.typing)actions(m,t);
  if(r==='u')stick=true;scrollEnd();return m}
-function showRs(m,t){if(!m||!m.rs)return;m.rs.style.display='-webkit-box';m.rs.textContent=(t.length>200?'\u2026':'')+t.slice(-200);scrollEnd()}
-function endThink(m,rz){if(!m||!m.th)return;if(!rz){m.th.remove();m.rs.remove();return}
- m.pet.classList.remove('spin');m.lb.textContent='Show thinking';const c=h('span','chv');c.innerHTML='<svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>';m.th.appendChild(c);m.th.classList.add('tg');
- m.rs.classList.add('full');m.rs.textContent=rz;m.rs.style.display='none';m.th.onclick=()=>{const o=m.rs.style.display==='none';m.rs.style.display=o?'block':'none';c.classList.toggle('open',o)}}
+function showRs(){}
+function endThink(m){if(!m||!m.th)return;m.th.remove();if(m.rs)m.rs.remove()}
 const IC={copy:'<rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',up:'<path d="M7 11v9H4v-9zM7 11l4-8c2 0 3 1 3 3v3h5a2 2 0 0 1 2 2l-1.500 7a2 2 0 0 1-2 1.500H7"/>',shr:'<path d="M21 3 3 10.500l7 3 3 7zM21 3 10 13.500"/>'};
 function copyTxt(t){try{if(navigator.clipboard&&navigator.clipboard.writeText)return navigator.clipboard.writeText(t)}catch(e){}const x=document.createElement('textarea');x.value=t;x.style.cssText='position:fixed;opacity:0';document.body.appendChild(x);x.select();try{document.execCommand('copy')}catch(e){}x.remove()}
 function actions(m,text){const w=m.b.parentNode;if(w.querySelector('.ac'))return;const bar=h('div','ac');

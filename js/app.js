@@ -6368,9 +6368,7 @@ async function __flaynityLoadPremiumService(serviceId) {
         // WebView may have a non-root base URL; retry payout from the site's absolute URL.
         const pageUrls = serviceId === 'flay-payout'
             ? [url, 'https://flaynity.indevs.in/service/flay-payout.html']
-            : serviceId === 'report-a-problem'
-                ? [url, 'https://flaynity.indevs.in/support/report-a-problem.html']
-                : [url];
+            : [url];
         for (const pageUrl of [...new Set(pageUrls)]) {
             try {
                 const response = await fetch(pageUrl, { cache: 'no-store' });

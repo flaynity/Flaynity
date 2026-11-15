@@ -6349,7 +6349,8 @@ const PREMIUM_SERVICE_FILES = {
     'flay-ads': 'service/flay-ads.html',
     'boost-content': 'service/boost-content.html',
     'flay-pay': 'service/flay-pay.html',
-    'flay-payout': 'service/flay-payout.html'
+    'flay-payout': 'service/flay-payout.html',
+    'report-a-problem': 'support/report-a-problem.html'
 };
 const PREMIUM_SERVICE_CACHE_PREFIX = 'flaynity-premium-service-cache-v1:';
 const premiumServiceLoads = {};
@@ -6367,7 +6368,9 @@ async function __flaynityLoadPremiumService(serviceId) {
         // WebView may have a non-root base URL; retry payout from the site's absolute URL.
         const pageUrls = serviceId === 'flay-payout'
             ? [url, 'https://flaynity.indevs.in/service/flay-payout.html']
-            : [url];
+            : serviceId === 'report-a-problem'
+                ? [url, 'https://flaynity.indevs.in/support/report-a-problem.html']
+                : [url];
         for (const pageUrl of [...new Set(pageUrls)]) {
             try {
                 const response = await fetch(pageUrl, { cache: 'no-store' });
@@ -8759,6 +8762,10 @@ function openSupportLink(type) {
         }
         return;
     }
+    if (type === 'report-problem') {
+        AppNavigation.pushPremiumService('report-a-problem');
+        return;
+    }
     console.warn('Unknown support page:', type);
 }
 
@@ -8801,12 +8808,12 @@ function selectGenericOption(element, sheetId) {
 
 function selectThemeOption(element, sheetId) {
     const theme = element ? element.getAttribute('data-value') : null;
-    if (theme === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        try { localStorage.setItem('flaynity-theme', 'dark'); } catch (e) {}
+    const pref = (theme === 'dark') ? 'dark' : 'light';
+    try { localStorage.setItem('flaynity-theme-pref', pref); } catch (e) {}
+    if (typeof applyTheme === 'function') {
+        applyTheme();
     } else {
-        document.documentElement.removeAttribute('data-theme');
-        try { localStorage.setItem('flaynity-theme', 'light'); } catch (e) {}
+        document.documentElement.setAttribute('data-theme', pref);
     }
     selectGenericOption(element, sheetId);
 }

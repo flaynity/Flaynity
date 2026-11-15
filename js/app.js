@@ -6349,8 +6349,7 @@ const PREMIUM_SERVICE_FILES = {
     'flay-ads': 'service/flay-ads.html',
     'boost-content': 'service/boost-content.html',
     'flay-pay': 'service/flay-pay.html',
-    'flay-payout': 'service/flay-payout.html',
-    'ai-assistant': 'support/ai-assistant.html'
+    'flay-payout': 'service/flay-payout.html'
 };
 const PREMIUM_SERVICE_CACHE_PREFIX = 'flaynity-premium-service-cache-v1:';
 const premiumServiceLoads = {};
@@ -9496,11 +9495,6 @@ function updateBottomNavAvatar() {
             </svg>
         `;
     }
-}
-
-function openAiAssistantPage() {
-    playUI('click');
-    AppNavigation.pushPremiumService('ai-assistant');
 }
 
 function openAnalyticsPage() {

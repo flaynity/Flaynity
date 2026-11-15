@@ -1,103 +1,367 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Flaynity AI Assistant</title>
 <style>
-.aia{--pur:#A56BFF;--pur2:#6d2cf0;--tx:#17131E;--tx2:#77717F;--bg:#FFFFFF;--gl:#f6f3fb;--gb:#ebe5f5;--ic:#fff;--sh:#FFFFFF;--ub:#f3f4f6;--cd:#FFFFFF;--bo:#f6f6f8;--bn:#f5efff;--bt:#efe6ff;--eb:#ffe9ee;--ec:#a3203f;--r1:rgba(165,107,255,.08);--r2:rgba(165,107,255,.15);position:fixed;inset:0;z-index:5;overflow:hidden;color:var(--tx);font-family:Urbanist,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Bengali",sans-serif;background:var(--bg);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;padding-top:env(safe-area-inset-top,0px);box-sizing:border-box}
-.aia *{box-sizing:border-box;margin:0}.aia button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
-.aia svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.aia .scr{position:absolute;inset:env(safe-area-inset-top,0px) 0 0;display:none;flex-direction:column;padding:14px 18px calc(14px + env(safe-area-inset-bottom,0px))}
-.aia .scr.on{display:flex;animation:aiaIn .35s ease}@keyframes aiaIn{from{opacity:0;transform:translateY(14px)}}
-.aia .glass{background:var(--gl);border:1px solid var(--gb);box-shadow:0 4px 18px rgba(120,80,200,.07)}
-.aia .rb{width:44px;height:44px;border-radius:50%;display:grid;place-items:center}.aia .rb:active,.aia .cd:active,.aia .gs:active{transform:scale(.95)}
-/* welcome */
-.aia h1{font-size:2.3rem;line-height:1.15;font-weight:400;margin-top:48px}.aia h1 b{font-weight:500;color:var(--pur)}
-.aia .bub{align-self:flex-end;max-width:210px;padding:14px 18px;border-radius:22px;font-size:1.05rem;color:var(--tx);margin-top:6vh}
-.aia .robot{width:min(70vw,290px);align-self:center;margin:2vh 0;animation:aiaFl 4s ease-in-out infinite}@keyframes aiaFl{50%{transform:translateY(-12px)}}
-.aia .gs{margin-top:auto;height:60px;border-radius:30px;display:flex;align-items:center;padding:0 12px;font-size:1.05rem}.aia .gs span{flex:1;text-align:center}
-.aia .gs .mini{width:38px;height:38px;border-radius:50%;background:var(--ic);display:grid;place-items:center}.aia .gs .mini svg{width:26px;height:26px}
-/* home */
-.aia .hd{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none}.aia .av{width:44px;height:44px;border-radius:50%;object-fit:cover;background:linear-gradient(135deg,#c9a6ff,#f6b8ee);display:grid;place-items:center;color:#fff;font-weight:700;overflow:hidden}
-.aia .hr{display:flex;gap:8px;align-items:center}.aia .prem{height:44px;padding:0 20px;border-radius:22px;color:var(--pur2);font-weight:600}
-.aia .main{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;margin:0 -18px;padding:0 18px;-webkit-overflow-scrolling:touch}
-.aia .orb{width:min(48vw,190px);aspect-ratio:1;border-radius:50%;margin:3vh auto 14px;background:radial-gradient(circle at 32% 28%,#fff 0 6%,transparent 26%),conic-gradient(from 0deg,#6fb5ff,#c9a6ff,#ffb6ec,#fff,#8cc4ff,#a98bff,#6fb5ff);box-shadow:inset -14px -18px 36px rgba(140,90,255,.35),0 18px 50px rgba(165,107,255,.35);animation:aiaOrb 9s linear infinite}@keyframes aiaOrb{to{filter:hue-rotate(40deg) saturate(1.1);transform:rotate(360deg)}}
-.aia .gr{text-align:center;font-size:2rem;font-weight:500;color:var(--pur)}.aia .sub{text-align:center;font-size:1.1rem;margin:4px 0 22px}
-.aia .cds{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-bottom:10px}
-.aia .cd{text-align:left;padding:14px;border-radius:24px;display:flex;flex-direction:column;gap:12px;min-height:150px;transition:transform .15s}
-.aia .cd .t{display:flex;justify-content:space-between}.aia .cd .ic{width:42px;height:42px;border-radius:50%;background:var(--ic);display:grid;place-items:center}.aia .cd .ic svg{width:20px}
-.aia .cd b{font-weight:600;font-size:1rem;display:block;margin-top:auto}.aia .cd small{font-size:.86rem;color:var(--tx2);line-height:1.35}
-.aia .chatting .hero{display:none}.aia .msgs{display:none;flex-direction:column;gap:26px;padding:16px 0}.aia .chatting .msgs{display:flex}
-.aia .m{display:flex;max-width:84%}.aia .m.u{align-self:flex-end}.aia .m.a,.aia .m.e{max-width:100%;width:100%}.aia .m .w{min-width:0;max-width:100%}.aia .m.a .w{width:100%}
-.aia .m .b{-webkit-user-select:text;user-select:text;overflow-wrap:anywhere;min-width:0;font-size:1.05rem}
-.aia .m.u .b{background:var(--ub);padding:14px 26px;border-radius:30px;line-height:1.5;font-size:1.12rem}.aia .m.a .b{line-height:1.65;padding:2px 2px;font-size:1.1rem}.aia .m.a .b:empty{display:none}.aia .m.e .b{padding:10px 14px;border-radius:18px}
-.aia .caret{display:inline-block;width:2px;height:1.1em;background:var(--pur);margin-left:2px;vertical-align:text-bottom;animation:aiaB 1s steps(1) infinite}@keyframes aiaB{50%{opacity:0}}
-.aia .ac{display:flex;gap:8px;margin:14px 0 0 -4px;color:#6b6b70}[data-theme="dark"] .aia .ac{color:var(--tx2)}.aia .ac button{width:46px;height:42px;display:grid;place-items:center;border-radius:14px}.aia .ac button.on{color:var(--pur)}.aia .ac svg{width:25px;height:25px;stroke-width:1.9}.aia .ac .dl svg{transform:rotate(180deg)}
-.aia .th .lb{display:none}.aia .th{display:flex;align-items:center;gap:14px;color:var(--tx2);font-size:1.12rem;font-weight:500;margin-bottom:14px;min-height:36px}.aia .th.tg{cursor:pointer}.aia .pet svg{width:36px;height:36px;stroke:none;display:block}.aia .pet.spin svg{animation:aiaSp 1.6s linear infinite}@keyframes aiaSp{to{transform:rotate(360deg)}}
-.aia .chv svg{width:22px;height:22px;transition:transform .2s;display:block}.aia .chv.open svg{transform:rotate(90deg)}
-.aia .rs{margin:0 0 16px 17px;padding-left:24px;border-left:2px solid #cfc8e0;color:var(--tx2);font-size:1.02rem;line-height:1.6;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere}.aia .rs.full{display:block!important;-webkit-line-clamp:unset}
-/* premium confirmation card */
-.aia .pc{width:100%;max-width:430px;border-radius:28px;padding:18px;border:1.5px solid transparent;background:linear-gradient(var(--cd),var(--cd)) padding-box,linear-gradient(135deg,#c9a6ff,#f6b8ee 55%,#9ec5ff) border-box;box-shadow:0 18px 44px rgba(165,107,255,.2),0 2px 6px rgba(0,0,0,.04);animation:aiaIn .4s ease}
-.aia .pc .ch{display:flex;gap:12px;align-items:center}.aia .pc .bd{width:46px;height:46px;border-radius:16px;background:linear-gradient(135deg,#a56bff,#f08be5);color:#fff;display:grid;place-items:center;box-shadow:0 8px 18px rgba(165,107,255,.45);flex:none}.aia .pc .bd svg{width:23px;height:23px}
-.aia .pc .ct{font-weight:700;font-size:1.12rem}.aia .pc .cs{font-size:.8rem;color:var(--tx2);margin-top:2px;max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.aia .pc .df{margin-top:16px;display:flex;flex-direction:column;gap:6px}.aia .pc .bx{border-radius:18px;padding:11px 14px}.aia .pc .bx.o{background:var(--bo)}.aia .pc .bx.n{background:var(--bn);border:1px solid rgba(165,107,255,.35)}
-.aia .pc .bl{font-size:.68rem;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--tx2)}.aia .pc .bx.n .bl{color:var(--pur2)}
-.aia .pc .bv{font-size:.98rem;margin-top:3px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:120px;overflow:auto;line-height:1.45}.aia .pc .bx.o .bv{color:var(--tx2)}.aia .pc .bx.n .bv{font-weight:600}
-.aia .pc .ar{align-self:center;color:var(--pur);display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--bn);margin:-2px 0}.aia .pc .ar svg{width:15px;height:15px;stroke-width:2.4}
-.aia .pc .ro{display:flex;gap:10px;margin-top:16px}.aia .pc .bg{flex:1;height:48px;border-radius:24px;border:1px solid var(--gb);font-weight:600;color:var(--tx);background:transparent}.aia .pc .bp{flex:1.5;height:48px;border-radius:24px;font-weight:700;color:#fff;background:linear-gradient(135deg,#a56bff,#e879d9);box-shadow:0 10px 22px rgba(165,107,255,.4);display:flex;align-items:center;justify-content:center;gap:8px}.aia .pc .bp svg{width:19px;height:19px;stroke-width:2.4}.aia .pc button:active{transform:scale(.97)}
-.aia .pc .fn{display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--tx2);margin-top:12px}.aia .pc .fn svg{width:14px;height:14px}
-.aia .pc .st{display:none;align-items:center;gap:10px;margin-top:16px;padding:12px 14px;border-radius:16px;font-weight:600;font-size:.95rem}.aia .pc .st.on{display:flex}.aia .pc .st svg{width:22px;height:22px;stroke-width:2.4}
-.aia .pc .st.run{background:var(--bn);color:var(--pur2)}.aia .pc .st.run svg{animation:aiaSp 1s linear infinite}.aia .pc .st.ok{background:rgba(34,197,94,.13);color:#16a34a}.aia .pc .st.er{background:var(--eb);color:var(--ec)}.aia .pc .st.no{background:var(--bo);color:var(--tx2)}
-.aia .cp{position:relative}.aia .cp .dn{position:absolute;left:50%;bottom:100%;margin:0 0 12px -21px;width:42px;height:42px;display:none}.aia .cp .dn.on{display:grid}
-.aia .b p+p,.aia .b ul,.aia .b pre{margin-top:10px}.aia .b li{margin-top:4px}.aia .b ul{padding-left:20px}.aia .b pre{background:#1d1829;color:#eee;padding:10px;border-radius:12px;overflow-x:auto;font-size:.85rem}.aia .b code{font-family:ui-monospace,monospace;font-size:.9em}
-.aia .dots i{display:inline-block;width:7px;height:7px;margin:0 2px;border-radius:50%;background:var(--pur);animation:aiaD 1s infinite}.aia .dots i:nth-child(2){animation-delay:.15s}.aia .dots i:nth-child(3){animation-delay:.3s}@keyframes aiaD{50%{opacity:.25;transform:translateY(-3px)}}
+.aia{
+  --pur:#8B5CF6;--pur2:#6D28D9;
+  --tx:#0D0D0D;--tx2:#6E6E80;
+  --bg:#FFFFFF;
+  --gl:#F4F4F4;--gb:rgba(0,0,0,.09);
+  --ic:#FFFFFF;--sh:#FFFFFF;
+  --ub:#F4F4F4;--cd:#FFFFFF;
+  --bo:#F7F7F8;--bn:#F5F3FF;--bt:#ECECEF;
+  --eb:#FEF2F2;--ec:#DC2626;
+  --cta:#0D0D0D;--cta-tx:#FFFFFF;
+  --r1:rgba(139,92,246,.08);--r2:rgba(139,92,246,.16);
+  position:fixed;inset:0;z-index:5;overflow:hidden;color:var(--tx);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans Bengali",sans-serif;
+  background:var(--bg);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
+  padding-top:env(safe-area-inset-top,0px);box-sizing:border-box;
+  letter-spacing:-0.01em;
+}
+.aia *{box-sizing:border-box;margin:0}
+.aia button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;transition:transform .14s ease,background-color .16s ease,opacity .16s ease}
+.aia svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.aia .scr{position:absolute;inset:env(safe-area-inset-top,0px) 0 0;display:none;flex-direction:column;padding:10px 16px calc(14px + env(safe-area-inset-bottom,0px))}
+.aia .scr.on{display:flex;animation:aiaIn .28s cubic-bezier(.16,1,.3,1)}
+@keyframes aiaIn{from{opacity:0;transform:translateY(10px)}}
+.aia .glass{background:var(--gl);border:1px solid var(--gb)}
+.aia .rb{width:38px;height:38px;border-radius:50%;display:grid;place-items:center}
+.aia .rb:active,.aia .cd:active,.aia .gs:active{transform:scale(.94)}
 
-.aia .cr{display:flex;gap:8px;margin-top:12px}.aia .bt{flex:1;height:40px;border-radius:20px;background:var(--bt);font-weight:600}.aia .bt.ok{background:var(--pur);color:#fff}.aia .bt:disabled{opacity:.5}.aia .st{font-size:.85rem;margin-top:8px}
-.aia .off{display:none;flex:none;text-align:center;font-size:.85rem;background:#fff3cd;color:#7a5b00;border-radius:12px;padding:6px;margin-top:8px}.aia .off.on{display:block}
-.aia .cp{flex:none;display:flex;align-items:flex-end;gap:6px;border-radius:30px;padding:8px;margin-top:8px}.aia .cp textarea{flex:1;min-width:0;border:0;background:none;outline:0;resize:none;font:inherit;font-size:1rem;color:var(--tx);max-height:120px;padding:10px 4px;line-height:1.35;-webkit-user-select:text;user-select:text}
-.aia .cp .rb{width:42px;height:42px}.aia .mic,.aia .snd{background:linear-gradient(135deg,#e6d4ff,#f8d3f1)}.aia .snd{display:none}.aia .has .snd{display:grid}.aia .has .mic{display:none}.aia .gen .snd{display:none}.aia .stp{display:none}.aia .gen .stp{display:grid}
-/* voice */
-.aia .vt{font-size:1.75rem;line-height:1.3;color:#9a93a6;margin-top:36px;flex:1;overflow-y:auto}.aia .vt em{font-style:normal;color:var(--tx)}.aia .vn{text-align:center;color:#a3203f;font-size:.9rem;min-height:22px}
-.aia .ls{text-align:center;font-size:1rem}.aia .mw{position:relative;width:150px;height:150px;margin:14px auto;display:grid;place-items:center}.aia .mw i{position:absolute;inset:0;border-radius:50%;background:var(--r1)}.aia .mw i:nth-child(2){inset:14px;background:var(--r2)}
-.aia .listening .mw i{animation:aiaP 1.8s ease-out infinite}.aia .listening .mw i:nth-child(2){animation-delay:.4s}@keyframes aiaP{50%{transform:scale(1.12)}}
-.aia .mbig{position:relative;width:84px;height:84px;border-radius:50%;background:var(--ic);color:var(--pur);display:grid;place-items:center;box-shadow:0 8px 24px rgba(165,107,255,.3)}.aia .mbig svg{width:34px;height:34px}
-.aia .vb{display:flex;align-items:center;gap:12px}.aia .wf{flex:1;height:56px;display:flex;align-items:center;justify-content:space-between}.aia .wf i{width:3px;border-radius:2px;background:var(--tx);height:6px}.aia .listening .wf i{animation:aiaW .9s ease-in-out infinite}@keyframes aiaW{50%{height:var(--h)}}
-/* sheets */
-.aia .ov{position:absolute;inset:0;background:rgba(30,20,50,.35);display:none;align-items:flex-end;z-index:9}.aia .ov.on{display:flex}.aia .sh{width:100%;background:var(--sh);border-radius:28px 28px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));animation:aiaIn .25s}
-.aia .sh h3{margin-bottom:10px}.aia ::placeholder{color:var(--tx2)}.aia .sh p{font-size:.82rem;color:var(--tx2);line-height:1.45;margin:8px 0}.aia .it{display:flex;align-items:center;gap:12px;width:100%;padding:13px 4px;font-size:1rem;text-align:left}
-.aia .sh input[type=password],.aia .sh input[type=text]{width:100%;height:46px;border-radius:14px;border:1px solid var(--gb);padding:0 12px;font:inherit;background:var(--ic);color:var(--tx);-webkit-user-select:text;user-select:text}.aia .sh label{display:flex;gap:8px;font-size:.88rem;margin:8px 0}
-[data-theme="dark"] .aia,.aia[data-theme="dark"]{--tx:#f1ecf8;--tx2:#a39bb3;--pur2:#cdb4ff;--bg:#0F0F0F;--gl:#1a1a1f;--gb:rgba(255,255,255,.09);--ic:#26262d;--sh:#171717;--ub:#262630;--cd:#1c1c22;--bo:#202027;--bn:#2a2140;--bt:#2c2540;--eb:#3a1822;--ec:#ff9bb0;--r1:rgba(255,255,255,.04);--r2:rgba(255,255,255,.08)}
-[data-theme="dark"] .aia .orb{box-shadow:inset -14px -18px 36px rgba(140,90,255,.35),0 18px 60px rgba(165,107,255,.45)}[data-theme="dark"] .aia .ov{background:rgba(0,0,0,.55)}
-@media(min-width:700px){.aia{max-width:480px;margin:0 auto;left:0;right:0;box-shadow:0 0 60px rgba(120,80,200,.25)}}
+/* Welcome Screen - ChatGPT Onboarding Style */
+.aia [data-s="welcome"]{justify-content:space-between;padding-top:20px}
+.aia .w-top{display:flex;align-items:center;justify-content:space-between}
+.aia .w-brand{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:var(--gl);border:1px solid var(--gb);font-size:.82rem;font-weight:600;color:var(--tx)}
+.aia .w-brand i{width:8px;height:8px;border-radius:50%;background:var(--pur);box-shadow:0 0 8px var(--pur)}
+.aia h1{font-size:2.15rem;line-height:1.15;font-weight:600;letter-spacing:-0.03em;margin-top:22px}
+.aia h1 b{font-weight:600;background:linear-gradient(135deg,var(--pur),#EC4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.aia .bub{align-self:flex-start;max-width:260px;padding:10px 16px;border-radius:18px;font-size:.92rem;color:var(--tx2);margin-top:14px;background:var(--gl);border:1px solid var(--gb)}
+.aia .w-center{flex:1;display:grid;place-items:center;padding:16px 0}
+.aia .robot{width:min(56vw,210px);height:auto;animation:aiaFl 4.5s ease-in-out infinite}
+@keyframes aiaFl{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.aia .gs{height:54px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:10px;padding:0 20px;font-size:1rem;font-weight:600;background:var(--cta);color:var(--cta-tx);border:0;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.aia .gs .mini{display:none}
+.aia .gs span{flex:0 1 auto}
+
+/* Header - ChatGPT Minimal Top Bar */
+.aia .hd{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none;height:46px;margin-bottom:4px}
+.aia .hl{display:flex;align-items:center;gap:6px;min-width:0}
+.aia .av{width:34px;height:34px;border-radius:50%;object-fit:cover;background:var(--gl);border:1px solid var(--gb);display:grid;place-items:center;color:var(--tx);font-weight:600;font-size:.88rem;overflow:hidden}
+.aia .model-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:.98rem;font-weight:600;color:var(--tx);letter-spacing:-0.02em}
+.aia .model-pill .tag{font-size:.7rem;font-weight:600;padding:2px 7px;border-radius:999px;background:var(--gl);border:1px solid var(--gb);color:var(--tx2)}
+.aia .hr{display:flex;gap:6px;align-items:center}
+.aia .rb.ghost{background:transparent;color:var(--tx)}
+.aia .rb.ghost:hover{background:var(--gl)}
+.aia .prem{height:34px;padding:0 13px;border-radius:999px;background:var(--bn);border:1px solid rgba(139,92,246,.25);color:var(--pur2);font-size:.82rem;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+
+/* Main Scroll Area */
+.aia .main{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;margin:0 -16px;padding:0 16px;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:var(--gb) transparent}
+.aia .main::-webkit-scrollbar{width:4px}
+.aia .main::-webkit-scrollbar-thumb{background:var(--gb);border-radius:4px}
+
+/* Empty Hero - ChatGPT Style */
+.aia .hero{min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:12px 0 18px}
+.aia .orb-wrap{display:flex;justify-content:center;margin-bottom:18px}
+.aia .orb{
+  width:52px;height:52px;border-radius:50%;position:relative;
+  background:conic-gradient(from 0deg,var(--tx) 0deg,var(--pur) 120deg,#EC4899 240deg,var(--tx) 360deg);
+  padding:2.5px;box-shadow:0 8px 28px rgba(139,92,246,.22);
+  animation:aiaOrb 8s linear infinite;
+}
+.aia .orb::after{content:"";display:block;width:100%;height:100%;border-radius:50%;background:var(--bg)}
+.aia .orb::before{content:"";position:absolute;inset:12px;border-radius:50%;background:radial-gradient(circle at 35% 35%,var(--pur),transparent 70%);opacity:.45}
+@keyframes aiaOrb{to{transform:rotate(360deg)}}
+
+.aia .gr{text-align:center;font-size:1.65rem;font-weight:600;color:var(--tx);letter-spacing:-0.025em}
+.aia .sub{text-align:center;font-size:.96rem;color:var(--tx2);margin:6px 0 26px}
+
+/* Suggestion Cards - Clean ChatGPT Grid */
+.aia .cds{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-bottom:6px}
+.aia .cd{
+  text-align:left;padding:14px;border-radius:18px;display:flex;flex-direction:column;gap:8px;min-height:118px;
+  background:var(--cd);border:1px solid var(--gb);box-shadow:0 1px 4px rgba(0,0,0,.03);
+}
+.aia .cd .t{display:flex;justify-content:space-between;align-items:center}
+.aia .cd .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--gl)}
+.aia .cd .ic svg{width:16px;height:16px}
+.aia .cd .t .ic:last-child{background:none;color:var(--tx2);opacity:.55;width:20px;height:20px}
+.aia .cd:nth-child(1) .t .ic:first-child{color:#3B82F6;background:rgba(59,130,246,.1)}
+.aia .cd:nth-child(2) .t .ic:first-child{color:#F59E0B;background:rgba(245,158,11,.1)}
+.aia .cd:nth-child(3) .t .ic:first-child{color:#8B5CF6;background:rgba(139,92,246,.1)}
+.aia .cd:nth-child(4) .t .ic:first-child{color:#10B981;background:rgba(16,185,129,.1)}
+.aia .cd b{font-weight:600;font-size:.9rem;color:var(--tx);display:block;margin-top:4px}
+.aia .cd small{font-size:.8rem;color:var(--tx2);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* Messages - ChatGPT Layout */
+.aia .chatting .hero{display:none}
+.aia .msgs{display:none;flex-direction:column;gap:22px;padding:14px 0 18px}
+.aia .chatting .msgs{display:flex}
+.aia .m{display:flex;max-width:86%}
+.aia .m.u{align-self:flex-end}
+.aia .m.a,.aia .m.e{max-width:100%;width:100%}
+.aia .m .w{min-width:0;max-width:100%}
+.aia .m.a .w{width:100%}
+.aia .m .b{-webkit-user-select:text;user-select:text;overflow-wrap:anywhere;min-width:0;font-size:1rem}
+.aia .m.u .b{background:var(--ub);color:var(--tx);padding:11px 16px;border-radius:20px;border-bottom-right-radius:6px;line-height:1.5;font-size:.98rem}
+.aia .m.a .b{line-height:1.68;padding:0 2px;font-size:1rem;color:var(--tx)}
+.aia .m.a .b:empty{display:none}
+.aia .m.e .b{padding:12px 15px;border-radius:14px;background:var(--eb);color:var(--ec);border:1px solid rgba(220,38,38,.18);font-size:.92rem;line-height:1.5}
+.aia .caret{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--tx);margin-left:5px;vertical-align:middle;animation:aiaB .9s ease-in-out infinite}
+@keyframes aiaB{50%{opacity:.2;transform:scale(.75)}}
+
+/* Markdown Elements inside Assistant Replies */
+.aia .b p+p,.aia .b ul,.aia .b pre{margin-top:11px}
+.aia .b li{margin-top:5px}
+.aia .b ul{padding-left:20px}
+.aia .b strong,.aia .b b{font-weight:600}
+.aia .b pre{background:#0D0D0D;color:#ECECEC;padding:13px 14px;border-radius:12px;overflow-x:auto;font-size:.84rem;line-height:1.5;border:1px solid rgba(255,255,255,.08)}
+.aia .b code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:.88em;background:var(--gl);padding:2px 5px;border-radius:6px}
+.aia .b pre code{background:none;padding:0;font-size:inherit}
+
+/* ChatGPT Message Action Bar */
+.aia .ac{display:flex;gap:2px;margin:8px 0 0 -6px;color:var(--tx2)}
+.aia .ac button{width:32px;height:32px;display:grid;place-items:center;border-radius:8px}
+.aia .ac button:hover{background:var(--gl);color:var(--tx)}
+.aia .ac button.on{color:var(--pur)}
+.aia .ac svg{width:16px;height:16px;stroke-width:1.85}
+.aia .ac .dl svg{transform:rotate(180deg)}
+
+/* Thinking / Tool Status Indicator */
+.aia .th{display:flex;align-items:center;gap:10px;color:var(--tx2);font-size:.94rem;font-weight:500;margin-bottom:8px;min-height:28px}
+.aia .th .lb{display:inline-block;background:linear-gradient(90deg,var(--tx2) 0%,var(--tx) 50%,var(--tx2) 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:aiaSh 2s linear infinite}
+@keyframes aiaSh{to{background-position:200% center}}
+.aia .pet svg{width:20px;height:20px;stroke:none;display:block}
+.aia .pet.spin svg{animation:aiaSp 1.2s linear infinite}
+@keyframes aiaSp{to{transform:rotate(360deg)}}
+.aia .rs{display:none}
+
+/* Premium Confirmation Card - ChatGPT Tool Card Style */
+.aia .pc{width:100%;max-width:430px;border-radius:20px;padding:16px;border:1px solid var(--gb);background:var(--cd);box-shadow:0 6px 24px rgba(0,0,0,.06);animation:aiaIn .3s ease}
+.aia .pc .ch{display:flex;gap:12px;align-items:center}
+.aia .pc .bd{width:38px;height:38px;border-radius:12px;background:var(--gl);border:1px solid var(--gb);color:var(--tx);display:grid;place-items:center;flex:none}
+.aia .pc .bd svg{width:18px;height:18px}
+.aia .pc .ct{font-weight:600;font-size:1rem;color:var(--tx)}
+.aia .pc .cs{font-size:.8rem;color:var(--tx2);margin-top:2px;max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aia .pc .df{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.aia .pc .bx{border-radius:14px;padding:10px 13px}
+.aia .pc .bx.o{background:var(--bo);border:1px solid var(--gb)}
+.aia .pc .bx.n{background:var(--bn);border:1px solid rgba(139,92,246,.3)}
+.aia .pc .bl{font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--tx2)}
+.aia .pc .bx.n .bl{color:var(--pur2)}
+.aia .pc .bv{font-size:.92rem;margin-top:3px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:110px;overflow:auto;line-height:1.45}
+.aia .pc .bx.o .bv{color:var(--tx2)}
+.aia .pc .bx.n .bv{font-weight:600;color:var(--tx)}
+.aia .pc .ar{align-self:center;color:var(--tx2);display:grid;place-items:center;width:22px;height:22px;margin:-2px 0}
+.aia .pc .ar svg{width:14px;height:14px;stroke-width:2.2}
+.aia .pc .ro{display:flex;gap:8px;margin-top:14px}
+.aia .pc .bg{flex:1;height:42px;border-radius:999px;border:1px solid var(--gb);font-weight:600;font-size:.9rem;color:var(--tx);background:transparent}
+.aia .pc .bp{flex:1.4;height:42px;border-radius:999px;font-weight:600;font-size:.9rem;color:var(--cta-tx);background:var(--cta);display:flex;align-items:center;justify-content:center;gap:6px}
+.aia .pc .bp svg{width:17px;height:17px;stroke-width:2.3}
+.aia .pc .fn{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--tx2);margin-top:10px}
+.aia .pc .fn svg{width:13px;height:13px}
+.aia .pc .st{display:none;align-items:center;gap:8px;margin-top:14px;padding:10px 13px;border-radius:12px;font-weight:600;font-size:.88rem}
+.aia .pc .st.on{display:flex}
+.aia .pc .st svg{width:18px;height:18px;stroke-width:2.2}
+.aia .pc .st.run{background:var(--gl);color:var(--tx)}
+.aia .pc .st.run svg{animation:aiaSp 1s linear infinite}
+.aia .pc .st.ok{background:rgba(16,185,129,.12);color:#10B981}
+.aia .pc .st.er{background:var(--eb);color:var(--ec)}
+.aia .pc .st.no{background:var(--bo);color:var(--tx2)}
+
+/* Scroll to Bottom Button */
+.aia .cp{position:relative}
+.aia .cp .dn{position:absolute;left:50%;bottom:100%;margin:0 0 12px -18px;width:36px;height:36px;display:none;background:var(--cd);border:1px solid var(--gb);box-shadow:0 4px 14px rgba(0,0,0,.12);color:var(--tx)}
+.aia .cp .dn.on{display:grid}
+.aia .cp .dn svg{width:17px;height:17px}
+
+/* Offline Banner */
+.aia .off{display:none;flex:none;text-align:center;font-size:.82rem;background:rgba(245,158,11,.14);color:#B45309;border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:7px 10px;margin:4px 0 6px}
+[data-theme="dark"] .aia .off,.aia[data-theme="dark"] .off{color:#FCD34D}
+.aia .off.on{display:block}
+
+/* ChatGPT Floating Pill Composer */
+.aia .cp{
+  flex:none;display:flex;align-items:flex-end;gap:6px;
+  border-radius:26px;padding:6px 6px 6px 8px;margin-top:6px;
+  background:var(--gl);border:1px solid var(--gb);
+  box-shadow:0 2px 10px rgba(0,0,0,.04);
+}
+.aia .cp textarea{
+  flex:1;min-width:0;border:0;background:none;outline:0;resize:none;
+  font:inherit;font-size:1rem;color:var(--tx);max-height:128px;
+  padding:8px 4px;line-height:1.4;-webkit-user-select:text;user-select:text;
+}
+.aia .cp .rb{width:36px;height:36px;flex:none}
+.aia .cp [data-a="plus"]{color:var(--tx2)}
+.aia .cp [data-a="plus"]:hover{color:var(--tx)}
+.aia .mic,.aia .snd,.aia .stp{background:var(--cta);color:var(--cta-tx)}
+.aia .mic svg,.aia .snd svg,.aia .stp svg{width:18px;height:18px;stroke-width:2.2}
+.aia .snd{display:none}
+.aia .has .snd{display:grid}
+.aia .has .mic{display:none}
+.aia .gen .snd{display:none}
+.aia .gen .mic{display:none}
+.aia .stp{display:none}
+.aia .gen .stp{display:grid}
+
+/* Voice Screen - ChatGPT Advanced Voice Mode */
+.aia [data-s="voice"]{justify-content:space-between}
+.aia .vt{font-size:1.35rem;line-height:1.45;color:var(--tx2);margin-top:20px;flex:1;overflow-y:auto;text-align:center;padding:0 10px}
+.aia .vt em{font-style:normal;color:var(--tx);font-weight:500}
+.aia .vn{text-align:center;color:var(--ec);font-size:.86rem;min-height:20px;margin-bottom:4px}
+.aia .ls{text-align:center;font-size:.9rem;color:var(--tx2);font-weight:500}
+.aia .mw{position:relative;width:168px;height:168px;margin:12px auto;display:grid;place-items:center}
+.aia .mw i{position:absolute;inset:0;border-radius:50%;background:var(--r1)}
+.aia .mw i:nth-child(2){inset:18px;background:var(--r2)}
+.aia .listening .mw i{animation:aiaP 1.6s ease-out infinite}
+.aia .listening .mw i:nth-child(2){animation-delay:.35s}
+@keyframes aiaP{50%{transform:scale(1.14)}}
+.aia .mbig{
+  position:relative;width:96px;height:96px;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%,#C4B5FD,#6366F1 55%,#3B82F6);
+  color:#fff;display:grid;place-items:center;
+  box-shadow:0 12px 34px rgba(99,102,241,.38);
+}
+.aia .listening .mbig{animation:aiaOrb 5s linear infinite}
+.aia .mbig svg{width:32px;height:32px}
+.aia .vb{display:flex;align-items:center;gap:14px;padding:8px 6px}
+.aia .vb .rb{width:46px;height:46px}
+.aia .wf{flex:1;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 6px}
+.aia .wf i{width:2.5px;border-radius:2px;background:var(--tx2);height:5px;opacity:.5}
+.aia .listening .wf i{background:var(--tx);opacity:.9;animation:aiaW .85s ease-in-out infinite}
+@keyframes aiaW{50%{height:var(--h)}}
+
+/* Bottom Sheets - ChatGPT Menu & Settings */
+.aia .ov{position:absolute;inset:0;background:rgba(0,0,0,.42);backdrop-filter:blur(2px);display:none;align-items:flex-end;z-index:9}
+.aia .ov.on{display:flex}
+.aia .sh{
+  width:100%;background:var(--sh);border-radius:24px 24px 0 0;
+  border-top:1px solid var(--gb);
+  padding:10px 18px calc(20px + env(safe-area-inset-bottom,0px));
+  animation:aiaIn .22s ease;
+}
+.aia .sh::before{content:"";display:block;width:36px;height:4px;border-radius:2px;background:var(--gb);margin:0 auto 14px}
+.aia .sh h3{font-size:1.08rem;font-weight:600;margin-bottom:10px;padding:0 4px}
+.aia ::placeholder{color:var(--tx2)}
+.aia .sh p{font-size:.82rem;color:var(--tx2);line-height:1.5;margin:10px 0}
+.aia .it{display:flex;align-items:center;gap:12px;width:100%;padding:12px 10px;border-radius:12px;font-size:.98rem;font-weight:500;text-align:left;color:var(--tx)}
+.aia .it:active,.aia .it:hover{background:var(--gl)}
+.aia .it svg{width:19px;height:19px;color:var(--tx2)}
+.aia .sh input[type=password],.aia .sh input[type=text]{
+  width:100%;height:46px;border-radius:14px;border:1px solid var(--gb);padding:0 14px;
+  font:inherit;background:var(--gl);color:var(--tx);outline:none;-webkit-user-select:text;user-select:text;
+}
+.aia .sh input[type=password]:focus,.aia .sh input[type=text]:focus{border-color:var(--pur)}
+.aia .sh label{display:flex;align-items:center;gap:8px;font-size:.86rem;margin:10px 0;color:var(--tx)}
+.aia .cr{display:flex;gap:8px;margin-top:14px}
+.aia .bt{flex:1;height:44px;border-radius:999px;background:var(--bt);color:var(--tx);font-weight:600;font-size:.94rem}
+.aia .bt.ok{background:var(--cta);color:var(--cta-tx)}
+.aia .bt:disabled{opacity:.5}
+
+/* Dark Mode (Background colour #0F0F0F preserved) */
+[data-theme="dark"] .aia,.aia[data-theme="dark"]{
+  --tx:#ECECEC;--tx2:#9B9B9B;--pur:#A78BFA;--pur2:#C4B5FD;
+  --bg:#0F0F0F;
+  --gl:#212121;--gb:rgba(255,255,255,.11);
+  --ic:#262626;--sh:#1A1A1A;
+  --ub:#2F2F2F;--cd:#171717;
+  --bo:#1E1E1E;--bn:rgba(139,92,246,.14);--bt:#2A2A2A;
+  --eb:rgba(239,68,68,.15);--ec:#FCA5A5;
+  --cta:#FFFFFF;--cta-tx:#0D0D0D;
+  --r1:rgba(255,255,255,.05);--r2:rgba(255,255,255,.09);
+}
+[data-theme="dark"] .aia .ov{background:rgba(0,0,0,.62)}
+[data-theme="dark"] .aia .pc{box-shadow:0 8px 30px rgba(0,0,0,.35)}
+
+@media(min-width:700px){.aia{max-width:480px;margin:0 auto;left:0;right:0;box-shadow:0 0 60px rgba(0,0,0,.18)}}
 @media(prefers-reduced-motion:reduce){.aia *{animation:none!important}}
 </style></head><body>
 <div class="aia" id="aia">
-<!-- Screen 1 -->
+<!-- Screen 1: Welcome -->
 <section class="scr" data-s="welcome">
-<h1>Meet Your <svg viewBox="0 0 48 24" style="width:46px;height:23px;stroke:none;vertical-align:middle"><rect x="1" y="2" width="46" height="20" rx="10" fill="#d8c9f4"/><rect x="6" y="7" width="36" height="13" rx="6.5" fill="#1d1829"/><circle cx="17" cy="14" r="2.2" fill="#e04cf0"/><circle cx="31" cy="14" r="2.2" fill="#e04cf0"/></svg><br>Smart <b>AI</b> Assistant</h1>
-<div class="bub glass">Need help? We're ready for you</div>
-<svg class="robot" viewBox="0 0 240 300" style="stroke:none;width:min(70vw,290px);height:auto"><defs><radialGradient id="aiaw" cx="35%" cy="25%"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#cfcad8"/></radialGradient><linearGradient id="aiav" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a1d3a"/><stop offset="1" stop-color="#0f0a18"/></linearGradient><filter id="aiag"><feGaussianBlur stdDeviation="3"/></filter></defs><ellipse cx="120" cy="285" rx="56" ry="9" fill="#b9a6d6" opacity=".45"/><path d="M62 170q-34 30-26 82 8 6 18 0 8-40 30-52zM178 170q34 30 26 82-8 6-18 0-8-40-30-52z" fill="url(#aiaw)"/><ellipse cx="120" cy="215" rx="58" ry="62" fill="url(#aiaw)"/><rect x="104" y="148" width="32" height="22" rx="8" fill="#bfb9cc"/><rect x="24" y="52" width="14" height="52" rx="7" fill="#c8c2d4"/><rect x="202" y="52" width="14" height="52" rx="7" fill="#c8c2d4"/><rect x="34" y="20" width="172" height="136" rx="52" fill="url(#aiaw)"/><rect x="48" y="36" width="144" height="104" rx="40" fill="url(#aiav)"/><g filter="url(#aiag)" fill="#e04cf0"><ellipse cx="90" cy="92" rx="14" ry="12"/><ellipse cx="150" cy="92" rx="14" ry="12"/></g><ellipse cx="90" cy="92" rx="12" ry="10" fill="#f06bff"/><ellipse cx="150" cy="92" rx="12" ry="10" fill="#f06bff"/><path d="M110 114q10 9 20 0" stroke="#f06bff" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="74" cy="112" rx="9" ry="5" fill="#a02ac0" opacity=".5"/><ellipse cx="166" cy="112" rx="9" ry="5" fill="#a02ac0" opacity=".5"/></svg>
-<button class="gs glass" data-a="start"><span class="mini"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="6"/><circle cx="9" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/></svg></span><span>Get Started</span><svg viewBox="0 0 24 24" style="width:26px;opacity:.9"><path d="m6 6 6 6-6 6M12 6l6 6-6 6"/></svg></button>
+  <div>
+    <div class="w-top"><span class="w-brand"><i></i>Flaynity AI</span></div>
+    <h1>Meet Your<br>Smart <b>AI</b> Assistant</h1>
+    <div class="bub">Need help with your channel? I'm ready.</div>
+  </div>
+  <div class="w-center">
+    <svg class="robot" viewBox="0 0 200 200" style="stroke:none">
+      <defs>
+        <radialGradient id="cgGlow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#8B5CF6" stop-opacity=".35"/><stop offset="100%" stop-color="#8B5CF6" stop-opacity="0"/></radialGradient>
+        <linearGradient id="cgRing" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8B5CF6"/><stop offset="50%" stop-color="#EC4899"/><stop offset="100%" stop-color="#3B82F6"/></linearGradient>
+      </defs>
+      <circle cx="100" cy="100" r="92" fill="url(#cgGlow)"/>
+      <circle cx="100" cy="100" r="64" fill="none" stroke="url(#cgRing)" stroke-width="5" opacity=".9"/>
+      <circle cx="100" cy="100" r="46" fill="none" stroke="url(#cgRing)" stroke-width="2" stroke-dasharray="6 6" opacity=".6"/>
+      <path d="M100 58c4 22 20 38 42 42-22 4-38 20-42 42-4-22-20-38-42-42 22-4 38-20 42-42z" fill="url(#cgRing)"/>
+    </svg>
+  </div>
+  <button class="gs" data-a="start"><span class="mini"></span><span>Get Started</span><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
 </section>
-<!-- Screen 2 -->
+
+<!-- Screen 2: ChatGPT Home & Chat -->
 <section class="scr" data-s="home">
-<div class="hd"><button class="rb av" data-a="back" aria-label="Back"><span id="aAv">F</span></button><div class="hr"><button class="rb glass" data-a="menu" id="aMenu" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><button class="prem glass" data-a="prem" id="aPrem">Try Premium</button></div></div>
-<div class="off" id="aOff">You're offline. Saved chats are visible, but the AI and live data need a connection.</div>
-<div class="main" id="aMain"><div class="hero"><div class="orb"></div><div class="gr" id="aGr">Hello</div><div class="sub">How can I assist you right now?</div>
-<div class="cds">
-<button class="cd glass" data-p="Give me a summary of my channel analytics: subscribers, total views, likes, comments and my last 7 days."><div class="t"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg></span></div><b>Channel Analytics</b><small>Explore your channel performance and statistics.</small></button>
-<button class="cd glass" data-p="Show my latest videos and help me manage their titles and descriptions."><div class="t"><span class="ic"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg></span></div><b>Manage Videos</b><small>Manage your videos, titles and descriptions.</small></button>
-<button class="cd glass" data-p="Show my channel name, handle, description, category and other channel information."><div class="t"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg></span></div><b>Account Assistant</b><small>View and manage your channel information.</small></button>
-<button class="cd glass" data-p="Give me 5 creative ideas for my next video, based on what my channel already has."><div class="t"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v9h14v-9M12 8c-2 0-4-1-4-3s3-2 4 3c1-5 4-5 4-3s-2 3-4 3z"/></svg></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg></span></div><b>Content Ideas</b><small>Discover creative ideas for your next video.</small></button>
-</div></div><div class="msgs" id="aMsgs"></div></div>
-<div class="cp glass" id="aCp"><button class="rb glass dn" id="aDn" data-a="down" aria-label="Scroll to bottom"><svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button><button class="rb" data-a="plus" aria-label="More"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button><textarea id="aIn" rows="1" placeholder="Ask me anything..." enterkeyhint="send" maxlength="2000"></textarea><button class="rb mic" data-a="voice" aria-label="Voice"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button><button class="rb snd" data-a="send" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button><button class="rb stp mic" data-a="stop" aria-label="Stop"><svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></svg></button></div>
+  <div class="hd">
+    <div class="hl">
+      <button class="rb av" data-a="back" aria-label="Back"><span id="aAv">F</span></button>
+      <div class="model-pill"><span>Flaynity</span><span class="tag">AI</span></div>
+    </div>
+    <div class="hr">
+      <button class="prem" data-a="prem" id="aPrem"><svg viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M12 3l2 5.5L19.5 10.5 14 12.5 12 18l-2-5.5L4.5 10.5 10 8.5z" style="fill:currentColor;stroke:none"/></svg>Plus</button>
+      <button class="rb ghost" data-a="new" aria-label="New chat" title="New chat"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+      <button class="rb ghost" data-a="menu" id="aMenu" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </div>
+  </div>
+  <div class="off" id="aOff">You're offline. Saved chats are visible, but AI and live data need a connection.</div>
+  <div class="main" id="aMain">
+    <div class="hero">
+      <div class="orb-wrap"><div class="orb"></div></div>
+      <div class="gr" id="aGr">Hello</div>
+      <div class="sub">What can I help with?</div>
+      <div class="cds">
+        <button class="cd" data-p="Give me a summary of my channel analytics: subscribers, total views, likes, comments and my last 7 days."><div class="t"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg></span></div><b>Channel Analytics</b><small>Subscribers, views &amp; 7-day performance</small></button>
+        <button class="cd" data-p="Show my latest videos and help me manage their titles and descriptions."><div class="t"><span class="ic"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="m10 9 5 3-5 3z"/></svg></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg></span></div><b>Manage Videos</b><small>Edit titles, descriptions &amp; stats</small></button>
+        <button class="cd" data-p="Show my channel name, handle, description, category and other channel information."><div class="t"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg></span></div><b>Account Info</b><small>Check channel name, handle &amp; bio</small></button>
+        <button class="cd" data-p="Give me 5 creative ideas for my next video, based on what my channel already has."><div class="t"><span class="ic"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg></span></div><b>Content Ideas</b><small>Brainstorm your next viral video</small></button>
+      </div>
+    </div>
+    <div class="msgs" id="aMsgs"></div>
+  </div>
+  <div class="cp" id="aCp">
+    <button class="rb dn" id="aDn" data-a="down" aria-label="Scroll to bottom"><svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button>
+    <button class="rb" data-a="plus" aria-label="More"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    <textarea id="aIn" rows="1" placeholder="Ask anything" enterkeyhint="send" maxlength="2000"></textarea>
+    <button class="rb mic" data-a="voice" aria-label="Voice"><svg viewBox="0 0 24 24"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg></button>
+    <button class="rb snd" data-a="send" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+    <button class="rb stp" data-a="stop" aria-label="Stop"><svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" style="fill:currentColor;stroke:none"/></svg></button>
+  </div>
 </section>
-<!-- Screen 3 -->
+
+<!-- Screen 3: ChatGPT Voice Mode -->
 <section class="scr" data-s="voice">
-<div class="hd"><button class="rb glass" data-a="vback" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><button class="rb glass" data-a="vlang" aria-label="Voice language" style="color:var(--pur)"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z" style="fill:currentColor;stroke:none"/></svg></button></div>
-<div class="vt" id="vT"></div><div class="vn" id="vN"></div><div class="ls" id="vL">Tap the microphone</div>
-<button class="mw" data-a="vtoggle" aria-label="Microphone"><i></i><i></i><span class="mbig"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span></button>
-<div class="vb"><button class="rb glass" data-a="vclear" aria-label="Clear"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button><div class="wf" id="vW"></div><button class="rb glass" data-a="vstop" aria-label="Stop" style="color:var(--pur)"><svg viewBox="0 0 24 24"><path d="M9 6v12M15 6v12" style="stroke-width:3"/></svg></button></div>
+  <div class="hd">
+    <button class="rb glass" data-a="vback" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    <div class="model-pill"><span>Voice</span></div>
+    <button class="rb glass" data-a="vlang" aria-label="Voice language"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></button>
+  </div>
+  <div class="vt" id="vT"></div>
+  <div class="vn" id="vN"></div>
+  <div class="ls" id="vL">Tap the orb to speak</div>
+  <button class="mw" data-a="vtoggle" aria-label="Microphone"><i></i><i></i><span class="mbig"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span></button>
+  <div class="vb">
+    <button class="rb glass" data-a="vclear" aria-label="Clear"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button>
+    <div class="wf" id="vW"></div>
+    <button class="rb glass" data-a="vstop" aria-label="Stop"><svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" style="fill:currentColor;stroke:none"/></svg></button>
+  </div>
 </section>
-<!-- Sheets -->
-<div class="ov" id="aPlus"><div class="sh"><h3>Assistant</h3><button class="it" data-a="new">New chat</button><button class="it" data-a="clear">Clear this chat</button><button class="it" data-a="key">OpenRouter API key</button><button class="it" data-a="close">Close</button></div></div>
+
+<!-- Bottom Sheets -->
+<div class="ov" id="aPlus"><div class="sh"><h3>Flaynity AI</h3>
+  <button class="it" data-a="new"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>New chat</button>
+  <button class="it" data-a="clear"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Clear this chat</button>
+  <button class="it" data-a="key"><svg viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></svg>OpenRouter API key</button>
+  <button class="it" data-a="close"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>Close</button>
+</div></div>
 <div class="ov" id="aKey"><div class="sh"><h3>OpenRouter API key</h3><input type="password" id="aKi" placeholder="sk-or-..." autocomplete="off"><label><input type="checkbox" id="aKr"> Remember on this device (this account only)</label><p>The key is kept in memory for this session unless you tick the box. Saving uses browser storage, which is <b>not encrypted</b> and not as safe as a server-side secret. The key is only sent to openrouter.ai. Model: <b>openrouter/free</b> (free router).</p><div class="cr"><button class="bt" data-a="kclear">Remove key</button><button class="bt ok" data-a="ksave">Save</button></div></div></div>
 </div>
 <script>
@@ -121,7 +385,7 @@ function setSheet(id,on){$('#'+id).classList.toggle('on',on)}
 function setUser(name,photo){
  const f=clean(name).split(' ')[0]||'there';$('#aGr').textContent='Hello, '+f;
  const a=$('#aAv');a.textContent='';
- if(/^https:\/\//.test(photo||'')){const i=new Image();i.className='av';i.style.cssText='width:100%;height:100%;object-fit:cover';i.src=photo;i.onerror=()=>{a.textContent=f[0].toUpperCase()};a.appendChild(i)}else a.textContent=f[0].toUpperCase();
+ if(/^https:\/\//.test(photo||'')){const i=new Image();i.className='av';i.style.cssText='width:100%;height:100%;object-fit:cover;border:0';i.src=photo;i.onerror=()=>{a.textContent=f[0].toUpperCase()};a.appendChild(i)}else a.textContent=f[0].toUpperCase();
 }
 function resetUser(u){
  if(S.ctrl)try{S.ctrl.abort()}catch(e){}
@@ -210,8 +474,7 @@ function md(el,t){el.textContent='';let ul=null,cd=null;
  if(cd){const p=h('pre');p.appendChild(h('code',0,cd.join('\n')));el.appendChild(p)}}
 let stick=true;const scrollEnd=()=>{if(!stick)return;const m=$('#aMain');m.scrollTop=m.scrollHeight};
 $('#aMain').addEventListener('scroll',()=>{const m=$('#aMain');stick=m.scrollHeight-m.scrollTop-m.clientHeight<120;$('#aDn').classList.toggle('on',!stick&&m.classList.contains('chatting'))},{passive:true});
-const PC=['#ff7aa2','#ff5c8a','#ff3d71','#f43f5e','#ec2f5f','#e11d48','#fb5a7c','#ff6b9d'];
-const PET='<svg viewBox="0 0 32 32">'+PC.map((c,i)=>'<ellipse cx="16" cy="6.5" rx="'+(i%2?2.8:2.3)+'" ry="3.6" fill="'+c+'" transform="rotate('+i*45+' 16 16)"/>').join('')+'</svg>';
+const PET='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.4" stroke-dasharray="38 18" fill="none" stroke-linecap="round"/></svg>';
 function petal(sp){const e=h('span','pet'+(sp?' spin':''));e.innerHTML=PET;return e}
 function addMsg(r,t,o){o=o||{};const row=h('div','m '+(r==='u'?'u':o.err?'e':'a')),w=h('div','w'),b=h('div','b');w.appendChild(b);row.appendChild(w);const m={row,b};
  if(o.typing){m.th=h('div','th');m.pet=petal(true);m.lb=h('span','lb','Thinking');m.th.append(m.pet,m.lb);m.rs=h('div','rs');m.rs.style.display='none';w.insertBefore(m.th,b);w.insertBefore(m.rs,b)}else md(b,t);
@@ -221,12 +484,12 @@ function addMsg(r,t,o){o=o||{};const row=h('div','m '+(r==='u'?'u':o.err?'e':'a'
  if(r==='u')stick=true;scrollEnd();return m}
 function showRs(){}
 function endThink(m){if(!m||!m.th)return;m.th.remove();if(m.rs)m.rs.remove()}
-const IC={copy:'<rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',up:'<path d="M7 11v9H4v-9zM7 11l4-8c2 0 3 1 3 3v3h5a2 2 0 0 1 2 2l-1.500 7a2 2 0 0 1-2 1.500H7"/>',shr:'<path d="M21 3 3 10.500l7 3 3 7zM21 3 10 13.500"/>'};
+const IC={copy:'<rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',up:'<path d="M7 11v9H4v-9zM7 11l4-8c2 0 3 1 3 3v3h5a2 2 0 0 1 2 2l-1.5 7a2 2 0 0 1-2 1.5H7"/>',shr:'<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/>'};
 function copyTxt(t){try{if(navigator.clipboard&&navigator.clipboard.writeText)return navigator.clipboard.writeText(t)}catch(e){}const x=document.createElement('textarea');x.value=t;x.style.cssText='position:fixed;opacity:0';document.body.appendChild(x);x.select();try{document.execCommand('copy')}catch(e){}x.remove()}
 function actions(m,text){const w=m.b.parentNode;if(w.querySelector('.ac'))return;const bar=h('div','ac');
  const mk=(k,cl,fn)=>{const b=h('button',cl||'');b.type='button';b.setAttribute('aria-label',k);b.innerHTML='<svg viewBox="0 0 24 24">'+IC[k]+'</svg>';b.onclick=()=>fn(b);bar.appendChild(b);return b};
- const up=mk('up','',b=>{b.classList.toggle('on');dn.classList.remove('on')}),dn=mk('up','dl',b=>{b.classList.toggle('on');up.classList.remove('on')});
  mk('copy','',b=>{copyTxt(text);b.classList.add('on');setTimeout(()=>b.classList.remove('on'),1200)});
+ const up=mk('up','',b=>{b.classList.toggle('on');dn.classList.remove('on')}),dn=mk('up','dl',b=>{b.classList.toggle('on');up.classList.remove('on')});
  mk('shr','',()=>{if(navigator.share)navigator.share({text}).catch(()=>{});else copyTxt(text)});w.appendChild(bar)}
 function typer(b){let tgt='',n=0,raf=0,fin=false,res=null;
  const draw=()=>{md(b,tgt.slice(0,n));const c=h('span','caret');(b.lastElementChild&&b.lastElementChild.tagName!=='PRE'?b.lastElementChild:b).appendChild(c);scrollEnd()};
@@ -235,16 +498,16 @@ function typer(b){let tgt='',n=0,raf=0,fin=false,res=null;
  return{set(t){tgt=t;if(!raf)raf=requestAnimationFrame(step)},end(){fin=true;return new Promise(r=>{res=r;if(!raf)raf=requestAnimationFrame(step)})},cancel(){if(raf)cancelAnimationFrame(raf);raf=0;md(b,tgt)}}}
 function saveHist(r,t,ts){S.hist.push({r,t,ts});S.hist=S.hist.slice(-60);try{localStorage.setItem(lk('aia_hist'),JSON.stringify(S.hist))}catch(e){}}
 const SV=d=>'<svg viewBox="0 0 24 24">'+d+'</svg>';
-function addCard(p){const c=h('div','pc'),hd=h('div','ch'),bd=h('span','bd'),tt=h('div');bd.innerHTML=SV('<path d="M12 20h9M16.500 3.500a2.100 2.100 0 0 1 3 3L7 19l-4 1 1-4z"/>');
+function addCard(p){const c=h('div','pc'),hd=h('div','ch'),bd=h('span','bd'),tt=h('div');bd.innerHTML=SV('<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>');
  tt.append(h('div','ct',p.title));tt.append(h('div','cs',p.kind==='video'?'Video \u00b7 '+(p.sub||p.key):'Your channel'));hd.append(bd,tt);c.appendChild(hd);
  const df=h('div','df'),bx=(cl,l,v)=>{const x=h('div','bx '+cl);x.append(h('div','bl',l),h('div','bv',v));return x},ar=h('div','ar');ar.innerHTML=SV('<path d="M12 5v14M6 13l6 6 6-6"/>');
  df.append(bx('o','Current',p.old||'(empty)'),ar,bx('n','New',p.neu));c.appendChild(df);
- const row=h('div','ro'),no=h('button','bg','Cancel'),ok=h('button','bp'),st=h('div','st');ok.innerHTML=SV('<path d="m5 12.500 4.500 4.500L19 7.500"/>')+'<span>Confirm</span>';row.append(no,ok);
- const fn=h('div','fn');fn.innerHTML=SV('<rect x="5" y="11" width="14" height="9" rx="2.500"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>')+'<span>Nothing changes until you confirm.</span>';c.append(row,fn,st);
+ const row=h('div','ro'),no=h('button','bg','Cancel'),ok=h('button','bp'),st=h('div','st');ok.innerHTML=SV('<path d="m5 12.5 4.5 4.5L19 7.5"/>')+'<span>Confirm</span>';row.append(no,ok);
+ const fn=h('div','fn');fn.innerHTML=SV('<rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>')+'<span>Nothing changes until you confirm.</span>';c.append(row,fn,st);
  const say=(cl,ic,t)=>{st.className='st on '+cl;st.innerHTML=SV(ic);st.appendChild(h('span',0,t));row.style.display='none';fn.style.display='none'};
  no.onclick=()=>{if(p.state)return;p.state='x';say('no','<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/>','Cancelled. Nothing was changed.');delete S.pend[p.id]};
  ok.onclick=async()=>{if(p.state)return;p.state='run';say('run','<path d="M12 3a9 9 0 1 0 9 9"/>','Updating...');
-  try{await commit(p);p.state='done';say('ok','<circle cx="12" cy="12" r="9"/><path d="m8 12.500 3 3 5-6"/>','Updated successfully.');saveHist('a','Update confirmed and saved: '+p.title.replace('?','')+' -> "'+p.neu+'".')}
+  try{await commit(p);p.state='done';say('ok','<circle cx="12" cy="12" r="9"/><path d="m8 12.5 3 3 5-6"/>','Updated successfully.');saveHist('a','Update confirmed and saved: '+p.title.replace('?','')+' -> "'+p.neu+'".')}
   catch(e){p.state='err';say('er','<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16v.01"/>','Update failed: '+(e instanceof AErr?e.message:'database error or permission denied.'))}};
  const r2=h('div','m a'),w=h('div','w');w.appendChild(c);r2.appendChild(w);$('#aMsgs').appendChild(r2);stick=true;scrollEnd()}
 /* ---------- OpenRouter ---------- */
@@ -295,23 +558,23 @@ async function turn(){
    if(i===4)throw new AErr('bad')}
  }catch(e){if(tw)tw.cancel();if(bub){if(live)endThink(bub,'');else bub.row.remove()}
   if(e&&e.name==='AbortError'){if(live)saveHist('a',live)}
-  else{if(live)saveHist('a',live);const m=addMsg('a',errMsg(e),{err:1});if(e.code!=='k401'&&e.code!=='auth'){const rt=h('button','bt','Retry');rt.style.cssText='margin-top:8px;padding:0 16px;flex:none';rt.onclick=()=>{m.row.remove();turn()};m.b.parentNode.insertBefore(rt,m.b.nextSibling)}if(e.code==='k401')setSheet('aKey',true)}}
+  else{if(live)saveHist('a',live);const m=addMsg('a',errMsg(e),{err:1});if(e.code!=='k401'&&e.code!=='auth'){const rt=h('button','bt','Retry');rt.style.cssText='margin-top:8px;padding:0 16px;height:36px;flex:none;font-size:.86rem';rt.onclick=()=>{m.row.remove();turn()};m.b.parentNode.insertBefore(rt,m.b.nextSibling)}if(e.code==='k401')setSheet('aKey',true)}}
  finally{if(S.uid===uid0){gen(false);S.ctrl=null}}}
 /* ---------- composer ---------- */
-const inp=$('#aIn');function fit(){inp.style.height='auto';inp.style.height=Math.min(120,inp.scrollHeight)+'px';$('#aCp').classList.toggle('has',!!inp.value.trim())}
+const inp=$('#aIn');function fit(){inp.style.height='auto';inp.style.height=Math.min(128,inp.scrollHeight)+'px';$('#aCp').classList.toggle('has',!!inp.value.trim())}
 inp.addEventListener('input',fit);inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send(inp.value)}});
 /* ---------- voice ---------- */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null,vtxt='',vfin='',vlang=/^bn/i.test(navigator.language)?'bn-BD':'en-US',vauto=false;
-const wf=$('#vW');for(let i=0;i<34;i++){const b=document.createElement('i');b.style.setProperty('--h',(8+Math.abs(Math.sin(i*1.7))*40)+'px');b.style.animationDelay=(i%7)*.08+'s';wf.appendChild(b)}
-function vtext(){const t=$('#vT');t.textContent='';t.appendChild(h('span',0,'Hey there! What can I help you with today? Ask me anything. '));if(vtxt)t.appendChild(h('em',0,vtxt))}
-function vmsg(m){$('#vN').textContent=m||''}function vstate(on){$('[data-s=voice]').classList.toggle('listening',on);$('#vL').textContent=on?'Listening...':'Tap the microphone'}
+const wf=$('#vW');for(let i=0;i<34;i++){const b=document.createElement('i');b.style.setProperty('--h',(8+Math.abs(Math.sin(i*1.7))*34)+'px');b.style.animationDelay=(i%7)*.08+'s';wf.appendChild(b)}
+function vtext(){const t=$('#vT');t.textContent='';t.appendChild(h('span',0,'Ask anything with your voice... '));if(vtxt)t.appendChild(h('em',0,vtxt))}
+function vmsg(m){$('#vN').textContent=m||''}function vstate(on){$('[data-s=voice]').classList.toggle('listening',on);$('#vL').textContent=on?'Listening...':'Tap the orb to speak'}
 function vstart(){vmsg('');
  if(!SR)return vmsg('Voice recognition is not supported on this device or WebView. You can keep using text chat.');
  if(!navigator.onLine)return vmsg('Voice recognition needs an internet connection.');
  if(rec)return;vfin='';vtxt='';vtext();const r=rec=new SR();r.lang=vlang;r.interimResults=true;r.continuous=false;vauto=true;
  r.onstart=()=>vstate(true);
  r.onresult=e=>{let f='',i='';for(let k=e.resultIndex;k<e.results.length;k++){const x=e.results[k][0].transcript;if(e.results[k].isFinal)f+=x;else i+=x}vfin+=f;vtxt=(vfin+i).trim();vtext()};
- r.onerror=e=>{vauto=false;vmsg({'not-allowed':'Microphone permission was denied. Allow microphone access for Flaynity in your device settings.','service-not-allowed':'Speech recognition is blocked on this device.','no-speech':"I didn't hear anything. Tap the microphone to try again.",'audio-capture':'No microphone was found.',network:'Speech recognition needs an internet connection.'}[e.error]||'Voice recognition failed ('+e.error+').')};
+ r.onerror=e=>{vauto=false;vmsg({'not-allowed':'Microphone permission was denied. Allow microphone access for Flaynity in your device settings.','service-not-allowed':'Speech recognition is blocked on this device.','no-speech':"I didn't hear anything. Tap the orb to try again.",'audio-capture':'No microphone was found.',network:'Speech recognition needs an internet connection.'}[e.error]||'Voice recognition failed ('+e.error+').')};
  r.onend=()=>{rec=null;vstate(false);const t=vtxt.trim();if(vauto&&t){vauto=false;vtxt='';vfin='';vtext();show('home');send(t)}};
  try{r.start()}catch(e){rec=null;vmsg('Could not start the microphone.')}}
 function vstop(auto){vauto=!!auto;if(rec)try{rec.stop()}catch(e){}}

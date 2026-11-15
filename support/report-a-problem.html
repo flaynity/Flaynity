@@ -3,1305 +3,463 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
-<title>Report Problem · Infinity Game</title>
+<title>Report a Problem · Flaynity</title>
 <style>
-.rp-root{
-    --ink-900:#000000;
-    --ink-800:#000000;
-    --ink-700:#000000;
-    --ink-gradient: linear-gradient(135deg, var(--ink-900) 0%, var(--ink-700) 100%);
-
-    --surface:#ffffff;
-    --surface-sunken:#FFFFFF;
-    --border:#e8e8ee;
-    --border-strong:#d8d8e0;
-
-    --text-primary:#000000;
-    --text-secondary:#6c6c78;
-    --text-tertiary:#a2a2ac;
-    --text-on-dark:#ffffff;
-
-    --success:#000000;
-    --success-dark:#050907;
-    --success-tint:#E6F8F0;
-
-    --error:#FF0008;
-    --error-dark:#FF0009;
-    --error-tint:#fdecec;
-
-    --critical:#FF0008;
-    --high:#FF6A00;
-    --medium:#FFBD00;
-    --low:#00F545;
-
-    --radius-xl:28px;
-    --radius-lg:22px;
-    --radius-md:16px;
-    --radius-sm:12px;
-    --radius-pill:999px;
-
-    --shadow-sm: 0 1px 3px rgba(11,11,14,0.06), 0 1px 2px rgba(11,11,14,0.04);
-    --shadow-md: 0 6px 20px rgba(11,11,14,0.08), 0 2px 6px rgba(11,11,14,0.05);
-    --shadow-lg: 0 16px 40px rgba(11,11,14,0.14), 0 4px 12px rgba(11,11,14,0.08);
-    --shadow-topbar: 0 4px 18px rgba(11,11,14,0.22);
-
-    --font: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Helvetica, Arial, sans-serif;
-
-    --ease-standard: cubic-bezier(0.2, 0, 0, 1);
-    --ease-emphasized: cubic-bezier(0.3, 0, 0.1, 1);
-  }
-.rp-root *{box-sizing:border-box;}
-.rp-root{margin:0;padding:0;}
-.rp-root{
-    font-family:var(--font);
-    background:var(--surface-sunken);
-    color:var(--text-primary);
-    -webkit-tap-highlight-color:transparent;
-    overflow-x:hidden;
-  }
-.rp-root button, .rp-root input, .rp-root textarea{font-family:inherit;}
-.rp-root button{cursor:pointer;}
-.rp-root h1, .rp-root h2, .rp-root h3, .rp-root p{margin:0;}
-.rp-root img{max-width:100%;display:block;}
-.rp-root :focus-visible{
-    outline:2.5px solid var(--focus);
-    outline-offset:2px;
-    border-radius:8px;
-  }
-@media (prefers-reduced-motion: reduce){
-.rp-root *, .rp-root *::before, .rp-root *::after{
-      animation-duration:0.001ms !important;
-      animation-iteration-count:1 !important;
-      transition-duration:0.001ms !important;
-      scroll-behavior:auto !important;
-    }
-}
-.rp-root .app{
-    width:100%;
-    flex:0 0 auto;
-    max-width:600px;
-    margin:0 auto;
-    min-height:100vh;
-    background:var(--surface-sunken);
-    position:relative;
-  }
-.rp-root .topbar{
-    position:sticky;
-    top:0;
-    z-index:40;
-    height:calc(70px + env(safe-area-inset-top, 0px));
-    display:flex;
-    align-items:center;
-    gap:4px;
-    padding:env(safe-area-inset-top, 0px) 8px 0;
-    background:var(--topbar-bg);
-    background-size:180% 180%;
-    animation:rpTopbarSheen 14s ease infinite;
-    border-radius:0 0 22px 22px;
-    box-shadow:var(--shadow-topbar);
-    backdrop-filter:blur(14px);
-    -webkit-backdrop-filter:blur(14px);
-  }
-@keyframes rpTopbarSheen{
-    0%{background-position:0% 30%;}
-    50%{background-position:100% 70%;}
-    100%{background-position:0% 30%;}
-  }
-.rp-root .icon-btn{
-    position:relative;
-    width:44px;
-    height:44px;
-    border-radius:50%;
-    border:none;
-    background:rgba(255,255,255,0.08);
-    color:var(--text-on-dark);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    overflow:hidden;
-    transition:background 0.2s var(--ease-standard), transform 0.15s var(--ease-standard);
-    flex-shrink:0;
-  }
-.rp-root .icon-btn:hover{background:rgba(255,255,255,0.16);}
-.rp-root .icon-btn:active{transform:scale(0.9);}
-.rp-root .icon-btn svg{width:22px;height:22px;position:relative;z-index:1;}
-.rp-root .topbar-title{
-    font-size:20px;
-    font-weight:600;
-    letter-spacing:0.1px;
-    color:var(--text-on-dark);
-    padding-left:6px;
-  }
-.rp-root .ripple{
-    position:absolute;
-    border-radius:50%;
-    background:rgba(255,255,255,0.55);
-    transform:scale(0);
-    pointer-events:none;
-    animation:rpRippleAnim 0.6s var(--ease-standard);
-  }
-.rp-root .ripple.dark{background:rgba(11,11,14,0.16);}
-@keyframes rpRippleAnim{
-    to{ transform:scale(2.6); opacity:0; }
-  }
-.rp-root .content{
-    padding:18px 16px 40px;
-    display:flex;
-    flex-direction:column;
-    gap:16px;
-  }
-.rp-root .card{
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:var(--radius-lg);
-    box-shadow:var(--shadow-sm);
-    padding:20px;
-    opacity:0;
-    transform:translateY(14px);
-    animation:rpCardIn 0.55s var(--ease-emphasized) forwards;
-    transition:box-shadow 0.25s var(--ease-standard), transform 0.25s var(--ease-standard);
-  }
-.rp-root .card:hover{ box-shadow:var(--shadow-md); }
-.rp-root .content .card:nth-child(1){animation-delay:0.02s;}
-.rp-root .content .card:nth-child(2){animation-delay:0.08s;}
-.rp-root .content .card:nth-child(3){animation-delay:0.14s;}
-.rp-root .content .card:nth-child(4){animation-delay:0.20s;}
-.rp-root .content .card:nth-child(5){animation-delay:0.26s;}
-.rp-root .content .card:nth-child(6){animation-delay:0.32s;}
-.rp-root .content .card:nth-child(7){animation-delay:0.38s;}
-@keyframes rpCardIn{
-    to{ opacity:1; transform:translateY(0); }
-  }
-.rp-root .section-label{
-    font-size:14px;
-    font-weight:700;
-    letter-spacing:0.2px;
-    color:var(--text-primary);
-    display:flex;
-    align-items:center;
-    gap:6px;
-    margin-bottom:14px;
-    text-transform:uppercase;
-  }
-.rp-root .required{color:var(--error); font-weight:700;}
-.rp-root .optional{color:var(--text-tertiary); font-weight:500; text-transform:none; font-size:12.5px;}
-.rp-root .header-card{
-    display:flex;
-    flex-direction:column;
-    align-items:flex-start;
-    gap:12px;
-    position:relative;
-    overflow:hidden;
-  }
-.rp-root .header-card::before{
-    content:"";
-    position:absolute;
-    top:-60px; right:-60px;
-    width:180px; height:180px;
-    border-radius:50%;
-    background:radial-gradient(circle, rgba(11,11,14,0.05), transparent 70%);
-  }
-.rp-root .app-icon{
-    width:56px;
-    height:56px;
-    border-radius:18px;
-    background:var(--ink-gradient);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    box-shadow:0 8px 18px rgba(11,11,14,0.28);
-    position:relative;
-  }
-.rp-root .app-icon svg{width:30px;height:30px;}
-.rp-root .header-card h2{
-    font-size:20px;
-    font-weight:700;
-  }
-.rp-root .header-card .subtitle{
-    font-size:14.5px;
-    line-height:1.5;
-    color:var(--text-secondary);
-  }
-.rp-root .chip-group{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-  }
-.rp-root .chip{
-    position:relative;
-    overflow:hidden;
-    padding:10px 16px;
-    border-radius:var(--radius-pill);
-    border:1.5px solid var(--border-strong);
-    background:var(--surface);
-    color:var(--text-primary);
-    font-size:13.5px;
-    font-weight:600;
-    display:flex;
-    align-items:center;
-    gap:6px;
-    transition:transform 0.15s var(--ease-standard), background 0.25s var(--ease-standard), color 0.25s var(--ease-standard), border-color 0.25s var(--ease-standard), box-shadow 0.25s var(--ease-standard);
-  }
-.rp-root .chip .check{
-    width:0;
-    opacity:0;
-    overflow:hidden;
-    transition:width 0.25s var(--ease-standard), opacity 0.2s var(--ease-standard);
-  }
-.rp-root .chip.selected .check{ width:14px; opacity:1; }
-.rp-root .chip:active{ transform:scale(0.94); }
-.rp-root .chip.selected{
-    background:var(--ink-gradient);
-    border-color:transparent;
-    color:var(--text-on-dark);
-    box-shadow:0 6px 16px rgba(11,11,14,0.22);
-    animation:rpChipPop 0.35s var(--ease-emphasized);
-  }
-@keyframes rpChipPop{
-    0%{ transform:scale(0.9); }
-    55%{ transform:scale(1.06); }
-    100%{ transform:scale(1); }
-  }
-.rp-root .field-error{
-    color:var(--error);
-    font-size:12.5px;
-    font-weight:600;
-    margin-top:10px;
-    display:none;
-    align-items:center;
-    gap:5px;
-  }
-.rp-root .field-error.show{ display:flex; animation:rpFadeSlide 0.25s var(--ease-standard); }
-@keyframes rpFadeSlide{
-    from{ opacity:0; transform:translateY(-4px); }
-    to{ opacity:1; transform:translateY(0); }
-  }
-.rp-root .shake{ animation:rpShakeAnim 0.4s var(--ease-standard); }
-@keyframes rpShakeAnim{
-    10%,90%{ transform:translateX(-1px); }
-    20%,80%{ transform:translateX(2px); }
-    30%,50%,70%{ transform:translateX(-5px); }
-    40%,60%{ transform:translateX(5px); }
-  }
-.rp-root .text-field, .rp-root .textarea-field{
-    width:100%;
-    border:1.5px solid var(--border-strong);
-    border-radius:var(--radius-md);
-    background:var(--surface-sunken);
-    padding:14px 16px;
-    font-size:15px;
-    color:var(--text-primary);
-    transition:border-color 0.2s var(--ease-standard), background 0.2s var(--ease-standard), box-shadow 0.2s var(--ease-standard);
-  }
-.rp-root .text-field::placeholder, .rp-root .textarea-field::placeholder{ color:var(--text-tertiary); }
-.rp-root .text-field:focus, .rp-root .textarea-field:focus{
-    outline:none;
-    border-color:var(--focus);
-    background:var(--surface);
-    box-shadow:0 0 0 4px rgba(11,11,14,0.06);
-  }
-.rp-root .textarea-field{
-    min-height:130px;
-    resize:vertical;
-    line-height:1.5;
-  }
-.rp-root .textarea-field.error, .rp-root .text-field.error{
-    border-color:var(--error);
-    background:var(--error-tint);
-  }
-.rp-root .counter-row{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-top:10px;
-    gap:10px;
-  }
-.rp-root .char-counter{
-    font-size:12.5px;
-    color:var(--text-tertiary);
-    font-weight:600;
-    margin-left:auto;
-    white-space:nowrap;
-    transition:color 0.2s var(--ease-standard);
-  }
-.rp-root .char-counter.ok{ color:var(--ok-color); }
-.rp-root .char-counter.bad{ color:var(--error); }
-.rp-root .device-info{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-  }
-.rp-root .device-row{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    padding:12px 14px;
-    background:var(--surface-sunken);
-    border:1px solid var(--border);
-    border-radius:var(--radius-md);
-  }
-.rp-root .device-row .label{
-    font-size:12.5px;
-    color:var(--text-tertiary);
-    font-weight:600;
-    display:flex;
-    align-items:center;
-    gap:6px;
-  }
-.rp-root .device-row .label svg{ width:13px; height:13px; opacity:0.7; }
-.rp-root .device-row .value{
-    font-size:13.5px;
-    font-weight:600;
-    color:var(--text-primary);
-    text-align:right;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-    max-width:60%;
-  }
-.rp-root .severity-group{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-  }
-.rp-root .severity-card{
-    position:relative;
-    overflow:hidden;
-    display:flex;
-    align-items:center;
-    gap:12px;
-    padding:14px 16px 14px 14px;
-    border:1.5px solid var(--border-strong);
-    border-radius:var(--radius-md);
-    background:var(--surface);
-    text-align:left;
-    transition:transform 0.15s var(--ease-standard), border-color 0.2s var(--ease-standard), box-shadow 0.2s var(--ease-standard);
-  }
-.rp-root .severity-card::before{
-    content:"";
-    position:absolute;
-    left:0; top:0; bottom:0;
-    width:5px;
-    background:var(--bar-color, var(--text-tertiary));
-    opacity:0.35;
-    transition:opacity 0.2s var(--ease-standard);
-  }
-.rp-root .severity-card:active{ transform:scale(0.98); }
-.rp-root .severity-card.selected{
-    border-color:var(--bar-color);
-    box-shadow:0 6px 16px rgba(11,11,14,0.08);
-  }
-.rp-root .severity-card.selected::before{ opacity:1; }
-.rp-root .radio-dot{
-    width:20px;
-    height:20px;
-    border-radius:50%;
-    border:2px solid var(--border-strong);
-    flex-shrink:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    transition:border-color 0.2s var(--ease-standard);
-  }
-.rp-root .severity-card.selected .radio-dot{ border-color:var(--bar-color); }
-.rp-root .radio-dot .inner{
-    width:10px; height:10px;
-    border-radius:50%;
-    background:var(--bar-color);
-    transform:scale(0);
-    transition:transform 0.2s var(--ease-emphasized);
-  }
-.rp-root .severity-card.selected .radio-dot .inner{ transform:scale(1); }
-.rp-root .severity-text .sev-title{ font-size:14.5px; font-weight:700; color:var(--text-primary); }
-.rp-root .severity-text .sev-desc{ font-size:12.5px; color:var(--text-secondary); margin-top:2px; }
-.rp-root .upload-area{ position:relative; }
-.rp-root .upload-label{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    padding:28px 16px;
-    border:1.8px dashed var(--border-strong);
-    border-radius:var(--radius-md);
-    background:var(--surface-sunken);
-    color:var(--text-secondary);
-    text-align:center;
-    transition:border-color 0.2s var(--ease-standard), background 0.2s var(--ease-standard);
-  }
-.rp-root .upload-label:active{ background:var(--border); }
-.rp-root .upload-label svg{ width:30px; height:30px; opacity:0.55; }
-.rp-root .upload-label .upload-main{ font-size:14px; font-weight:600; color:var(--text-primary); }
-.rp-root .upload-label .upload-sub{ font-size:12px; color:var(--text-tertiary); }
-.rp-root .preview-wrap{
-    position:relative;
-    border-radius:var(--radius-md);
-    overflow:hidden;
-    border:1px solid var(--border);
-    animation:rpFadeSlide 0.3s var(--ease-standard);
-  }
-.rp-root .preview-img{
-    width:100%;
-    max-height:240px;
-    object-fit:cover;
-    display:block;
-  }
-.rp-root .remove-btn{
-    position:absolute;
-    top:10px;
-    right:10px;
-    display:flex;
-    align-items:center;
-    gap:6px;
-    padding:8px 12px;
-    border-radius:var(--radius-pill);
-    border:none;
-    background:rgba(11,11,14,0.68);
-    color:#fff;
-    font-size:12.5px;
-    font-weight:600;
-    backdrop-filter:blur(6px);
-    -webkit-backdrop-filter:blur(6px);
-    transition:background 0.2s var(--ease-standard), transform 0.15s var(--ease-standard);
-  }
-.rp-root .remove-btn:hover{ background:rgba(11,11,14,0.85); }
-.rp-root .remove-btn:active{ transform:scale(0.94); }
-.rp-root .remove-btn svg{ width:13px; height:13px; }
-.rp-root .submit-btn{
-    position:relative;
-    overflow:hidden;
-    width:100%;
-    height:56px;
-    border:none;
-    border-radius:var(--radius-md);
-    background:var(--btn-bg);
-    color:var(--btn-fg);
-    font-size:16px;
-    font-weight:700;
-    letter-spacing:0.2px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:10px;
-    box-shadow:0 10px 24px rgba(15, 169, 104, 0);
-    transition:transform 0.15s var(--ease-standard), box-shadow 0.2s var(--ease-standard), opacity 0.2s var(--ease-standard);
-  }
-.rp-root .submit-btn:hover{ box-shadow:0 12px 28px rgba(15,169,104,0.4); }
-.rp-root .submit-btn:active{ transform:scale(0.98); }
-.rp-root .submit-btn:disabled{
-    opacity:0.75;
-    cursor:not-allowed;
-    transform:none;
-  }
-.rp-root .spinner{
-    width:20px;
-    height:20px;
-    border-radius:50%;
-    border:2.5px solid currentColor;
-    border-top-color:transparent;
-    animation:rpSpin 0.7s linear infinite;
-  }
-@keyframes rpSpin{ to{ transform:rotate(360deg); } }
-.rp-root .overlay{
-    position:fixed;
-    inset:0;
-    background:rgba(11,11,14,0.55);
-    backdrop-filter:blur(4px);
-    -webkit-backdrop-filter:blur(4px);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:24px;
-    z-index:100;
-    animation:rpOverlayIn 0.25s var(--ease-standard);
-  }
-.rp-root .overlay[hidden]{ display:none; }
-@keyframes rpOverlayIn{ from{ opacity:0; } to{ opacity:1; } }
-.rp-root .dialog{
-    width:100%;
-    max-width:340px;
-    background:var(--surface);
-    border-radius:var(--radius-xl);
-    padding:32px 26px 26px;
-    text-align:center;
-    box-shadow:var(--shadow-lg);
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:10px;
-    animation:rpDialogIn 0.35s var(--ease-emphasized);
-  }
-@keyframes rpDialogIn{
-    0%{ opacity:0; transform:translateY(24px) scale(0.94); }
-    100%{ opacity:1; transform:translateY(0) scale(1); }
-  }
-.rp-root .dialog-icon{
-    width:64px; height:64px;
-    border-radius:50%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    margin-bottom:6px;
-  }
-.rp-root .success-icon{
-    background:var(--success-tint);
-    color:var(--success);
-    animation:rpIconPop 0.5s var(--ease-emphasized) 0.1s both;
-  }
-.rp-root .error-icon{
-    background:var(--error-tint);
-    color:var(--error);
-    animation:rpShakeAnim 0.5s var(--ease-standard) 0.1s both;
-  }
-.rp-root .dialog-icon svg{ width:32px; height:32px; }
-@keyframes rpIconPop{
-    0%{ transform:scale(0); }
-    60%{ transform:scale(1.15); }
-    100%{ transform:scale(1); }
-  }
-.rp-root .dialog h2{ font-size:18px; font-weight:700; }
-.rp-root .dialog p{ font-size:14px; color:var(--text-secondary); line-height:1.55; }
-.rp-root .dialog-btn{
-    width:100%;
-    height:48px;
-    margin-top:14px;
-    border:none;
-    border-radius:var(--radius-md);
-    font-size:15px;
-    font-weight:700;
-    color:var(--btn-fg);
-    position:relative;
-    overflow:hidden;
-    transition:transform 0.15s var(--ease-standard);
-  }
-.rp-root .dialog-btn:active{ transform:scale(0.97); }
-.rp-root .success-btn{ background:var(--btn-bg); }
-.rp-root .error-btn{ background:var(--ink-gradient); color:#fff; }
-@media (min-width:600px){
-.rp-root .app{
-      box-shadow:0 0 0 1px var(--border);
-      background:var(--surface-sunken);
-    }
-.rp-root .content{ padding:22px 22px 44px; }
-}
-@media (max-width:359px){
-.rp-root .content{ padding:14px 12px 32px; }
-.rp-root .card{ padding:16px; }
-.rp-root .topbar-title{ font-size:18px; }
-}
-
-/* ===== Report a Problem — page + theme ===== */
 #report-a-problem-page{ background:#FFFFFF !important; padding-top:0 !important; }
 [data-theme="dark"] #report-a-problem-page{ background:#0F0F0F !important; }
 
-.rp-root, .rp-root *, .rp-root *::before, .rp-root *::after{ box-sizing:border-box; }
 .rp-root{
-  position:relative; width:100%; flex:0 0 auto; min-height:100%;
-  font-family:var(--font); color:var(--text-primary); background:var(--surface-sunken);
-  overflow-x:hidden; -webkit-tap-highlight-color:transparent;
-  --focus:#000000;
-  --topbar-bg:var(--ink-gradient);
-  --btn-bg:linear-gradient(135deg, #000000 0%, #050907 100%);
-  --btn-fg:#ffffff;
-  --ok-color:#000000;
+  --rp-bg:#FFFFFF; --rp-card:#F4F4F4; --rp-field:#FFFFFF; --rp-border:#E4E4E7;
+  --rp-text:#000000; --rp-muted:#8A8A90; --rp-primary:var(--primary, #D80E45);
+  --rp-error:#E5484D; --rp-ok:#10B981;
+  position:relative; width:100%; max-width:600px; margin:0 auto; flex:0 0 auto; min-height:100vh;
+  background:var(--rp-bg); color:var(--rp-text);
+  font-family:'Plus Jakarta Sans','Roboto',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  -webkit-tap-highlight-color:transparent; overflow-x:hidden;
 }
+[data-theme="dark"] .rp-root{
+  --rp-bg:#0F0F0F; --rp-card:#1C1C1E; --rp-field:#0F0F0F; --rp-border:#2E2E32;
+  --rp-text:#FFFFFF; --rp-muted:#8E8E94;
+}
+.rp-root, .rp-root *, .rp-root *::before, .rp-root *::after{ box-sizing:border-box; }
+.rp-root h1,.rp-root h2,.rp-root h3,.rp-root p{ margin:0; }
+.rp-root button,.rp-root input,.rp-root textarea{ font-family:inherit; }
+.rp-root button{ cursor:pointer; }
 .rp-root [hidden]{ display:none !important; }
 
-/* Light theme  -> page background #FFFFFF (tokens above) */
-/* Dark theme   -> page background #0F0F0F */
-[data-theme="dark"] .rp-root{
-  --ink-900:#3A3A40; --ink-800:#3A3A40; --ink-700:#2B2B30;
-  --ink-gradient:linear-gradient(135deg, #3A3A40 0%, #2B2B30 100%);
-  --topbar-bg:#1A1A1A;
-  --surface:#1A1A1A;
-  --surface-sunken:#0F0F0F;
-  --border:#2A2A2E;
-  --border-strong:#3A3A40;
-  --text-primary:#FFFFFF;
-  --text-secondary:#A1A1AA;
-  --text-tertiary:#71717A;
-  --text-on-dark:#FFFFFF;
-  --success:#34D399;
-  --success-dark:#10B981;
-  --success-tint:#12261E;
-  --error-tint:#2A1215;
-  --focus:#FFFFFF;
-  --btn-bg:#FFFFFF;
-  --btn-fg:#000000;
-  --ok-color:#FFFFFF;
-  --shadow-sm:0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4);
-  --shadow-md:0 6px 20px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.4);
-  --shadow-lg:0 16px 40px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.5);
-  --shadow-topbar:0 4px 18px rgba(0,0,0,0.6);
+/* App bar: back button left, title perfectly centered */
+.rp-bar{
+  position:sticky; top:0; z-index:40; background:var(--rp-bg);
+  height:calc(58px + env(safe-area-inset-top, 0px)); padding-top:env(safe-area-inset-top, 0px);
+}
+.rp-bar-row{ position:relative; height:58px; }
+.rp-back{
+  position:absolute; left:12px; top:7px; width:44px; height:44px; border:0; border-radius:50%;
+  background:transparent; color:var(--rp-text); display:flex; align-items:center; justify-content:center;
+  transition:background .2s, transform .15s;
+}
+.rp-back:active{ background:rgba(127,127,127,.18); transform:scale(.92); }
+.rp-back svg{ width:24px; height:24px; }
+.rp-root .rp-title{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  margin:0; width:max-content; max-width:calc(100% - 120px); text-align:center; white-space:nowrap;
+  font-size:1.15rem; font-weight:800; color:var(--rp-text);
+}
+
+.rp-content{ padding:6px 14px calc(40px + env(safe-area-inset-bottom, 0px)); display:flex; flex-direction:column; gap:14px; }
+.rp-card{ background:var(--rp-card); border-radius:20px; padding:18px; }
+.rp-root .rp-label{ font-size:.95rem; font-weight:800; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+.rp-req{ color:var(--rp-primary); }
+.rp-opt{ color:var(--rp-muted); font-weight:600; font-size:.8rem; }
+
+.rp-head{ display:flex; align-items:center; gap:14px; }
+.rp-badge{
+  width:52px; height:52px; border-radius:16px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg,#D80E45 0%,#FF7A00 100%); box-shadow:0 6px 16px rgba(216,14,69,.3); color:#fff;
+}
+.rp-badge svg{ width:26px; height:26px; }
+.rp-head h2{ font-size:1.15rem; font-weight:800; }
+.rp-root .rp-head p{ font-size:.85rem; color:var(--rp-muted); font-weight:600; margin-top:3px; line-height:1.4; }
+
+.rp-chips{ display:flex; flex-wrap:wrap; gap:8px; }
+.rp-chip{
+  padding:9px 15px; border-radius:999px; border:1.5px solid var(--rp-border); background:var(--rp-field);
+  color:var(--rp-text); font-size:.85rem; font-weight:700; transition:transform .15s, background .2s, border-color .2s, color .2s;
+}
+.rp-chip:active{ transform:scale(.95); }
+.rp-chip.selected{ background:var(--rp-primary); border-color:var(--rp-primary); color:#fff; }
+
+.rp-root .rp-error{ display:none; color:var(--rp-error); font-size:.78rem; font-weight:700; margin-top:10px; }
+.rp-error.show{ display:block; }
+.rp-shake{ animation:rpShake .4s; }
+@keyframes rpShake{ 10%,90%{transform:translateX(-1px)} 20%,80%{transform:translateX(2px)} 30%,50%,70%{transform:translateX(-5px)} 40%,60%{transform:translateX(5px)} }
+
+.rp-field{
+  width:100%; border:1.5px solid var(--rp-border); border-radius:14px; background:var(--rp-field); color:var(--rp-text);
+  padding:13px 14px; font-size:.92rem; font-weight:600; outline:none; transition:border-color .2s, box-shadow .2s;
+}
+.rp-field::placeholder{ color:var(--rp-muted); }
+.rp-field:focus{ border-color:var(--rp-primary); box-shadow:0 0 0 3px rgba(216,14,69,.15); }
+.rp-field.error{ border-color:var(--rp-error); }
+textarea.rp-field{ min-height:120px; resize:vertical; line-height:1.5; }
+.rp-count{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:8px; }
+.rp-root .rp-count .rp-error{ margin-top:0; }
+.rp-counter{ margin-left:auto; font-size:.75rem; font-weight:700; color:var(--rp-muted); }
+.rp-counter.ok{ color:var(--rp-ok); } .rp-counter.bad{ color:var(--rp-error); }
+
+.rp-device{ display:flex; flex-direction:column; }
+.rp-row{ display:flex; justify-content:space-between; gap:12px; padding:11px 0; border-bottom:1px solid var(--rp-border); }
+.rp-row:last-child{ border-bottom:0; padding-bottom:0; } .rp-row:first-child{ padding-top:0; }
+.rp-row .k{ font-size:.82rem; font-weight:700; color:var(--rp-muted); }
+.rp-row .v{ font-size:.85rem; font-weight:700; text-align:right; max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.rp-sev{ display:flex; flex-direction:column; gap:8px; }
+.rp-sev-item{
+  display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:14px; text-align:left;
+  border:1.5px solid var(--rp-border); background:var(--rp-field); color:var(--rp-text); transition:border-color .2s, transform .15s;
+}
+.rp-sev-item:active{ transform:scale(.985); }
+.rp-sev-item.selected{ border-color:var(--bar); }
+.rp-dot{ width:20px; height:20px; border-radius:50%; border:2px solid var(--rp-border); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.rp-sev-item.selected .rp-dot{ border-color:var(--bar); }
+.rp-dot i{ width:10px; height:10px; border-radius:50%; background:var(--bar); transform:scale(0); transition:transform .2s; }
+.rp-sev-item.selected .rp-dot i{ transform:scale(1); }
+.rp-sev-item b{ display:block; font-size:.9rem; font-weight:800; }
+.rp-sev-item small{ display:block; font-size:.76rem; font-weight:600; color:var(--rp-muted); margin-top:2px; }
+
+.rp-upload{
+  display:flex; flex-direction:column; align-items:center; gap:6px; padding:24px 14px; text-align:center;
+  border:1.8px dashed var(--rp-border); border-radius:14px; background:var(--rp-field); color:var(--rp-muted);
+}
+.rp-upload svg{ width:28px; height:28px; color:var(--rp-primary); }
+.rp-upload b{ font-size:.88rem; font-weight:800; color:var(--rp-text); }
+.rp-upload span{ font-size:.75rem; font-weight:600; }
+.rp-preview{ position:relative; border-radius:14px; overflow:hidden; border:1px solid var(--rp-border); }
+.rp-preview img{ display:block; width:100%; max-height:240px; object-fit:cover; }
+.rp-remove{
+  position:absolute; top:10px; right:10px; border:0; border-radius:999px; padding:7px 13px;
+  background:rgba(0,0,0,.65); color:#fff; font-size:.78rem; font-weight:700;
+}
+
+.rp-submit{
+  width:100%; height:54px; border:0; border-radius:16px; background:var(--rp-primary); color:#fff;
+  font-size:1rem; font-weight:800; display:flex; align-items:center; justify-content:center; gap:10px;
+  box-shadow:0 8px 20px rgba(216,14,69,.3); transition:transform .15s, opacity .2s;
+}
+.rp-submit:active{ transform:scale(.97); } .rp-submit:disabled{ opacity:.7; box-shadow:none; }
+.rp-spin{ width:20px; height:20px; border-radius:50%; border:2.5px solid currentColor; border-top-color:transparent; animation:rpSpin .7s linear infinite; }
+@keyframes rpSpin{ to{ transform:rotate(360deg); } }
+
+.rp-overlay{
+  position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; padding:24px;
+  background:rgba(0,0,0,.55); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+}
+.rp-dialog{
+  width:100%; max-width:330px; background:var(--rp-card); color:var(--rp-text); border-radius:26px; padding:28px 22px 22px;
+  text-align:center; display:flex; flex-direction:column; align-items:center; gap:8px;
+}
+[data-theme="dark"] .rp-dialog{ background:#242426; }
+.rp-ic{ width:62px; height:62px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:4px; }
+.rp-ic svg{ width:30px; height:30px; }
+.rp-ic.ok{ background:rgba(16,185,129,.14); color:var(--rp-ok); }
+.rp-ic.err{ background:rgba(229,72,77,.14); color:var(--rp-error); }
+.rp-dialog h2{ font-size:1.1rem; font-weight:800; }
+.rp-dialog p{ font-size:.86rem; font-weight:600; color:var(--rp-muted); line-height:1.5; }
+.rp-dialog button{
+  width:100%; height:46px; margin-top:12px; border:0; border-radius:14px; background:var(--rp-primary); color:#fff;
+  font-size:.95rem; font-weight:800;
 }
 </style>
 </head>
 <body style="margin:0">
 <div class="rp-root">
-<div class="app">
 
-  <!-- ============================================================
-       TOP APP BAR
-  ============================================================ -->
-  <header class="topbar">
-    <button class="icon-btn" id="rp-backBtn" aria-label="Go back">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M15 18l-6-6 6-6"/>
-      </svg>
-    </button>
-    <h1 class="topbar-title">Report Problem</h1>
+  <header class="rp-bar">
+    <div class="rp-bar-row">
+      <button class="rp-back" id="rp-backBtn" type="button" aria-label="Go back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <h1 class="rp-title">Report a Problem</h1>
+    </div>
   </header>
 
-  <main class="content">
+  <main class="rp-content">
 
-    <!-- HEADER CARD -->
-    <section class="card header-card">
-      <div class="app-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none">
-          <rect x="2" y="7" width="20" height="12" rx="4" fill="white" fill-opacity="0.14"/>
-          <circle cx="8" cy="13" r="1.6" fill="white"/>
-          <rect x="6.4" y="11.4" width="3.2" height="3.2" fill="white" opacity="0"/>
-          <path d="M6.5 13h3M8 11.5v3" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
-          <circle cx="16.2" cy="12" r="1.1" fill="white"/>
-          <circle cx="18.3" cy="14.1" r="1.1" fill="white"/>
-        </svg>
+    <section class="rp-card rp-head">
+      <div class="rp-badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
       </div>
-      <h2>Report a Problem</h2>
-      <p class="subtitle">Found something wrong?<br>Tell us and we'll improve Infinity Game.</p>
-    </section>
-
-    <!-- PROBLEM CATEGORY -->
-    <section class="card">
-      <h3 class="section-label">Problem Category <span class="required">*</span></h3>
-      <div class="chip-group" id="rp-categoryChips" role="radiogroup" aria-label="Problem category"></div>
-      <p class="field-error" id="rp-categoryError">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" opacity="0.15"/><path d="M11 7h2v7h-2zM11 16h2v2h-2z"/></svg>
-        Please select a problem category
-      </p>
-    </section>
-
-    <!-- GAME NAME -->
-    <section class="card">
-      <h3 class="section-label">Game Name <span class="optional">(optional)</span></h3>
-      <input type="text" id="rp-gameName" class="text-field" placeholder="Enter Game Name" maxlength="80">
-    </section>
-
-    <!-- DEVICE INFORMATION -->
-    <section class="card">
-      <h3 class="section-label">Device Information</h3>
-      <div class="device-info" id="rp-deviceInfo"></div>
-    </section>
-
-    <!-- PROBLEM DESCRIPTION -->
-    <section class="card">
-      <h3 class="section-label">Problem Description <span class="required">*</span></h3>
-      <textarea id="rp-description" class="textarea-field" placeholder="Describe your problem in detail..." maxlength="1000"></textarea>
-      <div class="counter-row">
-        <p class="field-error" id="rp-descError">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" opacity="0.15"/><path d="M11 7h2v7h-2zM11 16h2v2h-2z"/></svg>
-          Minimum 20 characters required
-        </p>
-        <span class="char-counter" id="rp-charCounter">0 / 1000</span>
+      <div>
+        <h2>Found something wrong?</h2>
+        <p>Tell us and we'll make Flaynity better.</p>
       </div>
     </section>
 
-    <!-- HOW OFTEN -->
-    <section class="card">
-      <h3 class="section-label">How Often</h3>
-      <div class="chip-group" id="rp-frequencyChips" role="radiogroup" aria-label="Frequency"></div>
+    <section class="rp-card">
+      <h3 class="rp-label">Problem Category <span class="rp-req">*</span></h3>
+      <div class="rp-chips" id="rp-categoryChips" role="radiogroup" aria-label="Problem category"></div>
+      <p class="rp-error" id="rp-categoryError">Please select a problem category</p>
     </section>
 
-    <!-- SEVERITY -->
-    <section class="card">
-      <h3 class="section-label">Severity</h3>
-      <div class="severity-group" id="rp-severityGroup" role="radiogroup" aria-label="Severity"></div>
+    <section class="rp-card">
+      <h3 class="rp-label">Related Video or Page <span class="rp-opt">(optional)</span></h3>
+      <input type="text" id="rp-relatedName" class="rp-field" placeholder="Video title, page name or link" maxlength="120">
     </section>
 
-    <!-- SCREENSHOT -->
-    <section class="card">
-      <h3 class="section-label">Screenshot <span class="optional">(optional)</span></h3>
-      <div class="upload-area">
-        <input type="file" id="rp-fileInput" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" hidden>
-        <label for="rp-fileInput" class="upload-label" id="rp-uploadLabel">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 16V4M12 4l-4 4M12 4l4 4"/>
-            <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
-          </svg>
-          <span class="upload-main">Tap to upload a screenshot</span>
-          <span class="upload-sub">PNG · JPG · JPEG · WEBP — up to 5MB</span>
-        </label>
-        <div class="preview-wrap" id="rp-previewWrap" hidden>
-          <img id="rp-previewImg" class="preview-img" alt="Screenshot preview">
-          <button type="button" class="remove-btn" id="rp-removeBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-            Remove
-          </button>
-        </div>
+    <section class="rp-card">
+      <h3 class="rp-label">Device Information</h3>
+      <div class="rp-device" id="rp-deviceInfo"></div>
+    </section>
+
+    <section class="rp-card">
+      <h3 class="rp-label">Problem Description <span class="rp-req">*</span></h3>
+      <textarea id="rp-description" class="rp-field" placeholder="Describe your problem in detail..." maxlength="1000"></textarea>
+      <div class="rp-count">
+        <p class="rp-error" id="rp-descError">Minimum 20 characters required</p>
+        <span class="rp-counter" id="rp-charCounter">0 / 1000</span>
       </div>
-      <p class="field-error" id="rp-fileError">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" opacity="0.15"/><path d="M11 7h2v7h-2zM11 16h2v2h-2z"/></svg>
-        <span id="rp-fileErrorText"></span>
-      </p>
     </section>
 
-    <!-- SUBMIT -->
-    <button class="submit-btn" id="rp-submitBtn">
-      <span class="btn-label" id="rp-btnLabel">Report Problem</span>
-      <span class="spinner" id="rp-spinner" hidden></span>
+    <section class="rp-card">
+      <h3 class="rp-label">How Often</h3>
+      <div class="rp-chips" id="rp-frequencyChips" role="radiogroup" aria-label="Frequency"></div>
+    </section>
+
+    <section class="rp-card">
+      <h3 class="rp-label">Severity</h3>
+      <div class="rp-sev" id="rp-severityGroup" role="radiogroup" aria-label="Severity"></div>
+    </section>
+
+    <section class="rp-card">
+      <h3 class="rp-label">Screenshot <span class="rp-opt">(optional)</span></h3>
+      <input type="file" id="rp-fileInput" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" hidden>
+      <label for="rp-fileInput" class="rp-upload" id="rp-uploadLabel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        <b>Tap to upload a screenshot</b>
+        <span>PNG · JPG · JPEG · WEBP — up to 5MB</span>
+      </label>
+      <div class="rp-preview" id="rp-previewWrap" hidden>
+        <img id="rp-previewImg" alt="Screenshot preview">
+        <button type="button" class="rp-remove" id="rp-removeBtn">Remove</button>
+      </div>
+      <p class="rp-error" id="rp-fileError"></p>
+    </section>
+
+    <button class="rp-submit" id="rp-submitBtn" type="button">
+      <span id="rp-btnLabel">Submit Report</span>
+      <span class="rp-spin" id="rp-spinner" hidden></span>
     </button>
 
   </main>
-</div>
 
-<!-- SUCCESS DIALOG -->
-<div class="overlay" id="rp-successOverlay" hidden>
-  <div class="dialog">
-    <div class="dialog-icon success-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+  <div class="rp-overlay" id="rp-successOverlay" hidden>
+    <div class="rp-dialog">
+      <div class="rp-ic ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
+      <h2>Problem Report Submitted</h2>
+      <p>Thank you. Your report has been recorded successfully.</p>
+      <button type="button" id="rp-successDoneBtn">Done</button>
     </div>
-    <h2>Problem Report Submitted</h2>
-    <p>Thank you. Your report has been recorded successfully.</p>
-    <button class="dialog-btn success-btn" id="rp-successDoneBtn">Done</button>
   </div>
-</div>
 
-<!-- ERROR DIALOG -->
-<div class="overlay" id="rp-errorOverlay" hidden>
-  <div class="dialog">
-    <div class="dialog-icon error-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg>
+  <div class="rp-overlay" id="rp-errorOverlay" hidden>
+    <div class="rp-dialog">
+      <div class="rp-ic err"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg></div>
+      <h2>Check your report</h2>
+      <p id="rp-errorMessage"></p>
+      <button type="button" id="rp-errorOkBtn">OK</button>
     </div>
-    <h2 id="rp-errorTitle">Check your report</h2>
-    <p id="rp-errorMessage"></p>
-    <button class="dialog-btn error-btn" id="rp-errorOkBtn">OK</button>
   </div>
-</div>
+
 </div>
 <script>
 (function(){
   "use strict";
 
-  /* ============================================================
-     CONSTANTS
-  ============================================================ */
-  var DRAFT_KEY = "flaynity_report_draft_v1";
-  var MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-  var ALLOWED_TYPES = ["image/png","image/jpeg","image/webp"];
-
-  var CATEGORIES = [
-    "Game Not Loading","Black Screen","Slow Performance","App Crash", "Network Error","Network Error","Audio Problem","Graphics Issue","Controls Not Working","Errors","Login Problem","Update Issue","Ads Problem","Other"
-  ];
-
-  var FREQUENCIES = ["Always","Sometimes","Rarely","Only Once"];
-
-  var SEVERITIES = [
-    { value:"Critical", desc:" Game is unusable", color:"var(--critical)" },
-    { value:"High",     desc:" Major feature is broken", color:"var(--high)" },
-    { value:"Medium",   desc:" Noticeable but game still works", color:"var(--medium)" },
-    { value:"Low",      desc:" Minor annoyance", color:"var(--low)" }
-  ];
-
-  /* ============================================================
-     STATE
-  ============================================================ */
-  var state = {
-    category: null,
-    gameName: "",
-    description: "",
-    frequency: null,
-    severity: null,
-    file: null
-  };
-
-  /* ============================================================
-     UTILITIES
-  ============================================================ */
   var ROOT = document.querySelector(".rp-root") || document;
   function $(id){ return ROOT.querySelector("#rp-" + id); }
 
   // Standalone (opened directly in a browser): follow the saved app theme.
-  // Inside the app the theme is already set on <html> by the app itself.
   if(!document.getElementById("app-screen")){
-    try{
-      document.documentElement.setAttribute("data-theme", localStorage.getItem("flaynity-theme-pref") || "light");
-    }catch(err){}
+    try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("flaynity-theme-pref") || "light"); }catch(e){}
   }
 
-  function debounce(fn, wait){
-    var t;
-    return function(){
-      var args = arguments;
-      clearTimeout(t);
-      t = setTimeout(function(){ fn.apply(null, args); }, wait);
-    };
+  var DRAFT_KEY = "flaynity_report_draft_v2";
+  var MAX_FILE_SIZE = 5 * 1024 * 1024;
+  var ALLOWED_TYPES = ["image/png","image/jpeg","image/webp"];
+
+  var CATEGORIES = ["App Crash","Video Not Playing","Feels Problem","Upload Problem","Slow Performance","Network Error","Login Problem","Account Problem","Notification Issue","Ads Problem","Flay Pay / Payout","Monetization","Other"];
+  var FREQUENCIES = ["Always","Sometimes","Rarely","Only Once"];
+  var SEVERITIES = [
+    { value:"Critical", desc:"App is unusable", color:"#E5484D" },
+    { value:"High",     desc:"Major feature is broken", color:"#FF6A00" },
+    { value:"Medium",   desc:"Noticeable but app still works", color:"#F5B301" },
+    { value:"Low",      desc:"Minor annoyance", color:"#10B981" }
+  ];
+
+  var state = { category:null, frequency:null, severity:null };
+
+  function shake(el){ el.classList.remove("rp-shake"); void el.offsetWidth; el.classList.add("rp-shake"); }
+
+  function selectIn(container, selector, el, key, val){
+    container.querySelectorAll(selector).forEach(function(c){ c.classList.remove("selected"); c.setAttribute("aria-checked","false"); });
+    el.classList.add("selected"); el.setAttribute("aria-checked","true");
+    state[key] = val;
+    if(key === "category") $("categoryError").classList.remove("show");
+    saveDraft();
   }
 
-  function addRipple(el, evt, dark){
-    var rect = el.getBoundingClientRect();
-    var size = Math.max(rect.width, rect.height) * 1.4;
-    var x = (evt.clientX != null ? evt.clientX - rect.left : rect.width/2) - size/2;
-    var y = (evt.clientY != null ? evt.clientY - rect.top : rect.height/2) - size/2;
-    var span = document.createElement("span");
-    span.className = "ripple" + (dark ? " dark" : "");
-    span.style.width = size + "px";
-    span.style.height = size + "px";
-    span.style.left = x + "px";
-    span.style.top = y + "px";
-    el.appendChild(span);
-    span.addEventListener("animationend", function(){ span.remove(); });
-  }
-
-  function shake(el){
-    el.classList.remove("shake");
-    void el.offsetWidth;
-    el.classList.add("shake");
-  }
-
-  /* ============================================================
-     BUILD CATEGORY + FREQUENCY CHIPS
-  ============================================================ */
-  function buildChipGroup(containerId, values, stateKey){
+  function buildChips(containerId, values, key){
     var container = $(containerId);
     container.innerHTML = "";
     values.forEach(function(val){
       var chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = "chip";
-      chip.setAttribute("role","radio");
-      chip.setAttribute("aria-checked","false");
-      chip.dataset.value = val;
-      chip.style.position = "relative";
-      chip.innerHTML =
-        '<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>' +
-        '<span>' + val + '</span>';
-
-      chip.addEventListener("click", function(e){
-        addRipple(chip, e, chip.classList.contains("selected"));
-        selectChip(container, chip, stateKey, val);
-      });
+      chip.type = "button"; chip.className = "rp-chip";
+      chip.setAttribute("role","radio"); chip.setAttribute("aria-checked","false");
+      chip.dataset.value = val; chip.textContent = val;
+      chip.addEventListener("click", function(){ selectIn(container, ".rp-chip", chip, key, val); });
       container.appendChild(chip);
     });
   }
 
-  function selectChip(container, chip, stateKey, val){
-    var chips = container.querySelectorAll(".chip");
-    chips.forEach(function(c){
-      c.classList.remove("selected");
-      c.setAttribute("aria-checked","false");
-    });
-    chip.classList.add("selected");
-    chip.setAttribute("aria-checked","true");
-    state[stateKey] = val;
-
-    if(stateKey === "category"){
-      $("categoryError").classList.remove("show");
-    }
-    saveDraft();
-  }
-
-  /* ============================================================
-     BUILD SEVERITY CARDS
-  ============================================================ */
   function buildSeverity(){
     var container = $("severityGroup");
     container.innerHTML = "";
     SEVERITIES.forEach(function(sev){
       var card = document.createElement("button");
-      card.type = "button";
-      card.className = "severity-card";
-      card.style.setProperty("--bar-color", sev.color);
-      card.setAttribute("role","radio");
-      card.setAttribute("aria-checked","false");
+      card.type = "button"; card.className = "rp-sev-item";
+      card.style.setProperty("--bar", sev.color);
+      card.setAttribute("role","radio"); card.setAttribute("aria-checked","false");
       card.dataset.value = sev.value;
-      card.innerHTML =
-        '<span class="radio-dot"><span class="inner"></span></span>' +
-        '<span class="severity-text">' +
-          '<span class="sev-title">' + sev.value + '</span>' +
-          '<span class="sev-desc">' + sev.desc + '</span>' +
-        '</span>';
-
-      card.addEventListener("click", function(e){
-        addRipple(card, e, true);
-        var cards = container.querySelectorAll(".severity-card");
-        cards.forEach(function(c){
-          c.classList.remove("selected");
-          c.setAttribute("aria-checked","false");
-        });
-        card.classList.add("selected");
-        card.setAttribute("aria-checked","true");
-        state.severity = sev.value;
-        saveDraft();
-      });
+      card.innerHTML = '<span class="rp-dot"><i></i></span><span><b>' + sev.value + '</b><small>' + sev.desc + '</small></span>';
+      card.addEventListener("click", function(){ selectIn(container, ".rp-sev-item", card, "severity", sev.value); });
       container.appendChild(card);
     });
   }
 
-  /* ============================================================
-     DEVICE DETECTION
-  ============================================================ */
   function detectDevice(){
     var ua = navigator.userAgent || "";
-
-    function detectOS(){
-      if(/iPhone|iPad|iPod/.test(ua)) return "iOS";
-      if(/Android/.test(ua)){
-        var m = ua.match(/Android\s([0-9.]+)/);
-        return "Android" + (m ? " " + m[1] : "");
-      }
-      if(/Windows NT 10/.test(ua)) return "Windows 10/11";
-      if(/Windows NT/.test(ua)) return "Windows";
-      if(/Mac OS X/.test(ua)){
-        var mm = ua.match(/Mac OS X ([0-9_]+)/);
-        return "macOS" + (mm ? " " + mm[1].replace(/_/g,".") : "");
-      }
-      if(/CrOS/.test(ua)) return "ChromeOS";
-      if(/Linux/.test(ua)) return "Linux";
-      return "Unknown OS";
-    }
-
-    function detectBrowser(){
-      if(/Edg\//.test(ua)) return "Edge" + versionOf(/Edg\/([0-9.]+)/);
-      if(/OPR\//.test(ua)) return "Opera" + versionOf(/OPR\/([0-9.]+)/);
-      if(/Chrome\//.test(ua) && !/Chromium/.test(ua)) return "Chrome" + versionOf(/Chrome\/([0-9.]+)/);
-      if(/Firefox\//.test(ua)) return "Firefox" + versionOf(/Firefox\/([0-9.]+)/);
-      if(/Safari\//.test(ua) && /Version\//.test(ua)) return "Safari" + versionOf(/Version\/([0-9.]+)/);
-      return "Unknown Browser";
-    }
-
-    function versionOf(regex){
-      var m = ua.match(regex);
-      return m ? " " + m[1].split(".")[0] : "";
-    }
-
-    function detectDeviceName(){
-      var iphone = ua.match(/iPhone/);
-      var ipad = ua.match(/iPad/);
-      var samsung = ua.match(/SM-[A-Za-z0-9]+/);
-      var android = ua.match(/Android/);
-      if(ipad) return "iPad";
-      if(iphone) return "iPhone";
-      if(samsung) return "Samsung " + samsung[0];
-      if(android){
-        var m = ua.match(/;\s([A-Za-z0-9_\- ]+)\sBuild\//);
-        return m ? m[1].trim() : "Android Device";
-      }
-      var touch = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
-      return touch ? "Mobile Device" : "Desktop Computer";
-    }
-
-    var w = screen.width * (window.devicePixelRatio || 1);
-    var h = screen.height * (window.devicePixelRatio || 1);
-
-    return {
-      deviceName: detectDeviceName(),
-      browser: detectBrowser(),
-      os: detectOS(),
-      resolution: Math.round(w) + " × " + Math.round(h) + " px"
-    };
+    var os = "Unknown OS";
+    if(/Android/.test(ua)){ var m = ua.match(/Android\s([0-9.]+)/); os = "Android" + (m ? " " + m[1] : ""); }
+    else if(/iPhone|iPad|iPod/.test(ua)) os = "iOS";
+    else if(/Windows/.test(ua)) os = "Windows";
+    else if(/Mac OS X/.test(ua)) os = "macOS";
+    else if(/Linux/.test(ua)) os = "Linux";
+    var name = "Desktop Computer";
+    var sm = ua.match(/SM-[A-Za-z0-9]+/);
+    if(/iPad/.test(ua)) name = "iPad";
+    else if(/iPhone/.test(ua)) name = "iPhone";
+    else if(sm) name = "Samsung " + sm[0];
+    else if(/Android/.test(ua)){ var b = ua.match(/;\s([A-Za-z0-9_\- ]+)\sBuild\//); name = b ? b[1].trim() : "Android Device"; }
+    else if(("ontouchstart" in window) || navigator.maxTouchPoints > 0) name = "Mobile Device";
+    var r = window.devicePixelRatio || 1;
+    return { name:name, os:os, res: Math.round(screen.width * r) + " × " + Math.round(screen.height * r) + " px" };
   }
 
-  function renderDeviceInfo(){
-    var info = detectDevice();
-    var rows = [
-      { label:"Device Name", value:info.deviceName },
-
-      { label:"Operating System", value:info.os },
-      { label:"Screen Resolution", value:info.resolution }
-    ];
-    var container = $("deviceInfo");
-    container.innerHTML = rows.map(function(r){
-      return '<div class="device-row">' +
-        '<span class="label">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 18h6"/></svg>' +
-          r.label +
-        '</span>' +
-        '<span class="value" title="' + r.value + '">' + r.value + '</span>' +
-      '</div>';
-    }).join("");
+  function renderDevice(){
+    var d = detectDevice();
+    var rows = [["Device Name", d.name], ["Operating System", d.os], ["Screen Resolution", d.res]];
+    var c = $("deviceInfo"); c.innerHTML = "";
+    rows.forEach(function(r){
+      var row = document.createElement("div"); row.className = "rp-row";
+      var k = document.createElement("span"); k.className = "k"; k.textContent = r[0];
+      var v = document.createElement("span"); v.className = "v"; v.textContent = r[1]; v.title = r[1];
+      row.appendChild(k); row.appendChild(v); c.appendChild(row);
+    });
   }
-
-  /* ============================================================
-     DESCRIPTION / COUNTER
-  ============================================================ */
-  var descField = null;
-  var counterEl = null;
 
   function updateCounter(){
-    var len = descField.value.length;
-    counterEl.textContent = len + " / 1000";
-    counterEl.classList.remove("ok","bad");
-    if(len >= 20){ counterEl.classList.add("ok"); }
-    else if(len > 0){ counterEl.classList.add("bad"); }
-    if(len > 0){ $("descError").classList.remove("show"); }
+    var len = $("description").value.length, el = $("charCounter");
+    el.textContent = len + " / 1000";
+    el.classList.remove("ok","bad");
+    if(len >= 20) el.classList.add("ok"); else if(len > 0) el.classList.add("bad");
+    if(len > 0) $("descError").classList.remove("show");
   }
 
-  /* ============================================================
-     FILE UPLOAD
-  ============================================================ */
   function initUpload(){
-    var input = $("fileInput");
-    var wrap = $("previewWrap");
-    var label = $("uploadLabel");
-    var img = $("previewImg");
-    var removeBtn = $("removeBtn");
-    var fileError = $("fileError");
-    var fileErrorText = $("fileErrorText");
-
-    function clearFileError(){
-      fileError.classList.remove("show");
-      fileErrorText.textContent = "";
-    }
-    function showFileError(msg){
-      fileErrorText.textContent = msg;
-      fileError.classList.add("show");
-    }
-
+    var input = $("fileInput"), wrap = $("previewWrap"), label = $("uploadLabel"), img = $("previewImg"), err = $("fileError");
+    function showErr(msg){ err.textContent = msg; err.classList.add("show"); }
     input.addEventListener("change", function(){
-      clearFileError();
+      err.classList.remove("show");
       var file = input.files && input.files[0];
       if(!file) return;
-
-      if(ALLOWED_TYPES.indexOf(file.type) === -1){
-        showFileError("Unsupported format. Please upload PNG, JPG, JPEG or WEBP.");
-        input.value = "";
-        return;
-      }
-      if(file.size > MAX_FILE_SIZE){
-        showFileError("File is too large. Maximum size is 5MB.");
-        input.value = "";
-        return;
-      }
-
+      if(ALLOWED_TYPES.indexOf(file.type) === -1){ showErr("Unsupported format. Please upload PNG, JPG, JPEG or WEBP."); input.value = ""; return; }
+      if(file.size > MAX_FILE_SIZE){ showErr("File is too large. Maximum size is 5MB."); input.value = ""; return; }
       var reader = new FileReader();
-      reader.onload = function(e){
-        img.src = e.target.result;
-        label.hidden = true;
-        wrap.hidden = false;
-        state.file = { name:file.name, size:file.size };
-      };
+      reader.onload = function(e){ img.src = e.target.result; label.hidden = true; wrap.hidden = false; };
       reader.readAsDataURL(file);
     });
-
-    removeBtn.addEventListener("click", function(e){
-      addRipple(removeBtn, e, false);
-      input.value = "";
-      img.src = "";
-      wrap.hidden = true;
-      label.hidden = false;
-      state.file = null;
-      clearFileError();
+    $("removeBtn").addEventListener("click", function(){
+      input.value = ""; img.removeAttribute("src"); wrap.hidden = true; label.hidden = false; err.classList.remove("show");
     });
   }
 
-  /* ============================================================
-     DRAFT (LOCAL STORAGE)
-  ============================================================ */
   function saveDraft(){
     try{
-      var draft = {
-        category: state.category,
-        gameName: $("gameName").value,
-        description: $("description").value,
-        frequency: state.frequency,
-        severity: state.severity
-      };
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-    }catch(err){ /* storage unavailable — fail silently */ }
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        category:state.category, related:$("relatedName").value, description:$("description").value,
+        frequency:state.frequency, severity:state.severity
+      }));
+    }catch(e){}
   }
-
-  var saveDraftDebounced = debounce(saveDraft, 250);
+  var t; function saveDraftSoon(){ clearTimeout(t); t = setTimeout(saveDraft, 250); }
 
   function restoreDraft(){
-    var raw;
-    try{ raw = localStorage.getItem(DRAFT_KEY); }catch(err){ return; }
-    if(!raw) return;
-    var draft;
-    try{ draft = JSON.parse(raw); }catch(err){ return; }
-    if(!draft) return;
-
-    if(draft.gameName){ $("gameName").value = draft.gameName; }
-    if(draft.description){
-      $("description").value = draft.description;
-      updateCounter();
+    var d; try{ d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); }catch(e){ return; }
+    if(!d) return;
+    if(d.related) $("relatedName").value = d.related;
+    if(d.description){ $("description").value = d.description; updateCounter(); }
+    function pick(containerId, selector, key, val){
+      if(!val) return;
+      var c = $(containerId);
+      var el = Array.prototype.filter.call(c.querySelectorAll(selector), function(x){ return x.dataset.value === val; })[0];
+      if(el) selectIn(c, selector, el, key, val);
     }
-    if(draft.category){
-      var catChip = $("categoryChips").querySelector('[data-value="' + cssEscape(draft.category) + '"]');
-      if(catChip) selectChip($("categoryChips"), catChip, "category", draft.category);
-    }
-    if(draft.frequency){
-      var freqChip = $("frequencyChips").querySelector('[data-value="' + cssEscape(draft.frequency) + '"]');
-      if(freqChip) selectChip($("frequencyChips"), freqChip, "frequency", draft.frequency);
-    }
-    if(draft.severity){
-      var sevCard = $("severityGroup").querySelector('[data-value="' + cssEscape(draft.severity) + '"]');
-      if(sevCard) sevCard.click();
-    }
-  }
-
-  function cssEscape(str){
-    return String(str).replace(/["\\]/g, "\\$&");
-  }
-
-  function clearDraft(){
-    try{ localStorage.removeItem(DRAFT_KEY); }catch(err){}
-  }
-
-  /* ============================================================
-     VALIDATION + SUBMIT
-  ============================================================ */
-  function validate(){
-    var errors = [];
-    var descLen = $("description").value.trim().length;
-
-    var categoryOk = !!state.category;
-    var descOk = descLen >= 20 && descLen <= 1000;
-
-    if(!categoryOk){
-      errors.push("Select a problem category.");
-      $("categoryError").classList.add("show");
-      shake($("categoryChips"));
-    }
-    if(!descOk){
-      if(descLen === 0){
-        errors.push("Describe the problem you're experiencing.");
-      } else {
-        errors.push("Description must be between 20 and 1000 characters.");
-      }
-      $("descError").classList.add("show");
-      $("description").classList.add("error");
-      shake($("description"));
-    } else {
-      $("description").classList.remove("error");
-    }
-
-    return errors;
+    pick("categoryChips", ".rp-chip", "category", d.category);
+    pick("frequencyChips", ".rp-chip", "frequency", d.frequency);
+    pick("severityGroup", ".rp-sev-item", "severity", d.severity);
   }
 
   function resetForm(){
-    state = { category:null, gameName:"", description:"", frequency:null, severity:null, file:null };
-
-    $("categoryChips").querySelectorAll(".chip").forEach(function(c){
-      c.classList.remove("selected"); c.setAttribute("aria-checked","false");
-    });
-    $("frequencyChips").querySelectorAll(".chip").forEach(function(c){
-      c.classList.remove("selected"); c.setAttribute("aria-checked","false");
-    });
-    $("severityGroup").querySelectorAll(".severity-card").forEach(function(c){
-      c.classList.remove("selected"); c.setAttribute("aria-checked","false");
-    });
-
-    $("gameName").value = "";
-    $("description").value = "";
-    $("description").classList.remove("error");
-    updateCounter();
-
-    $("fileInput").value = "";
-    $("previewImg").src = "";
-    $("previewWrap").hidden = true;
-    $("uploadLabel").hidden = false;
-
-    $("categoryError").classList.remove("show");
-    $("descError").classList.remove("show");
-    $("fileError").classList.remove("show");
+    state = { category:null, frequency:null, severity:null };
+    ROOT.querySelectorAll(".rp-chip, .rp-sev-item").forEach(function(c){ c.classList.remove("selected"); c.setAttribute("aria-checked","false"); });
+    $("relatedName").value = ""; $("description").value = ""; $("description").classList.remove("error"); updateCounter();
+    $("fileInput").value = ""; $("previewImg").removeAttribute("src"); $("previewWrap").hidden = true; $("uploadLabel").hidden = false;
+    ["categoryError","descError","fileError"].forEach(function(id){ $(id).classList.remove("show"); });
   }
 
-  function showError(title, messages){
-    $("errorTitle").textContent = title;
-    $("errorMessage").innerHTML = messages.map(function(m){ return m; }).join("<br>");
-    $("errorOverlay").hidden = false;
+  function validate(){
+    var errors = [], len = $("description").value.trim().length;
+    if(!state.category){ errors.push("Select a problem category."); $("categoryError").classList.add("show"); shake($("categoryChips")); }
+    if(len < 20 || len > 1000){
+      errors.push(len === 0 ? "Describe the problem you're experiencing." : "Description must be between 20 and 1000 characters.");
+      $("descError").classList.add("show"); $("description").classList.add("error"); shake($("description"));
+    } else { $("description").classList.remove("error"); }
+    return errors;
   }
 
   function initSubmit(){
-    var btn = $("submitBtn");
-    var label = $("btnLabel");
-    var spinner = $("spinner");
-
-    btn.addEventListener("click", function(e){
+    var btn = $("submitBtn"), label = $("btnLabel"), spinner = $("spinner");
+    btn.addEventListener("click", function(){
       var errors = validate();
       if(errors.length){
-        addRipple(btn, e, true);
-        showError("Check your report", errors);
+        $("errorMessage").innerHTML = errors.join("<br>");
+        $("errorOverlay").hidden = false;
         return;
       }
-
-      addRipple(btn, e, true);
-      btn.disabled = true;
-      label.hidden = true;
-      spinner.hidden = false;
-
+      btn.disabled = true; label.hidden = true; spinner.hidden = false;
       setTimeout(function(){
-        spinner.hidden = true;
-        label.hidden = false;
-        btn.disabled = false;
-
+        spinner.hidden = true; label.hidden = false; btn.disabled = false;
         resetForm();
-        clearDraft();
+        try{ localStorage.removeItem(DRAFT_KEY); }catch(e){}
         $("successOverlay").hidden = false;
       }, 1100);
     });
   }
 
-  /* ============================================================
-     DIALOGS + TOPBAR
-  ============================================================ */
-  function initDialogs(){
+  function init(){
+    buildChips("categoryChips", CATEGORIES, "category");
+    buildChips("frequencyChips", FREQUENCIES, "frequency");
+    buildSeverity();
+    renderDevice();
+    initUpload();
+    initSubmit();
+
     $("successDoneBtn").addEventListener("click", function(){
       $("successOverlay").hidden = true;
       var pg = document.getElementById("report-a-problem-page");
-      if(pg && pg.scrollTo){ pg.scrollTo({ top:0, behavior:"smooth" }); }
-      else { window.scrollTo({ top:0, behavior:"smooth" }); }
+      if(pg && pg.scrollTo) pg.scrollTo({ top:0, behavior:"smooth" }); else window.scrollTo({ top:0, behavior:"smooth" });
     });
-    $("errorOkBtn").addEventListener("click", function(){
-      $("errorOverlay").hidden = true;
+    $("errorOkBtn").addEventListener("click", function(){ $("errorOverlay").hidden = true; });
+    $("backBtn").addEventListener("click", function(){
+      if(typeof window.executeBackAction === "function" && document.getElementById("app-screen")) window.executeBackAction();
+      else if(window.history.length > 1) window.history.back();
     });
-  }
-
-  function initTopbar(){
-    var backBtn = $("backBtn");
-    backBtn.addEventListener("click", function(e){
-      addRipple(backBtn, e, false);
-      setTimeout(function(){
-        if(typeof window.executeBackAction === "function" && document.getElementById("app-screen")){
-          window.executeBackAction();
-        } else if(window.history.length > 1){
-          window.history.back();
-        }
-      }, 120);
-    });
-  }
-
-  /* ============================================================
-     INIT
-  ============================================================ */
-  function init(){
-    buildChipGroup("categoryChips", CATEGORIES, "category");
-    buildChipGroup("frequencyChips", FREQUENCIES, "frequency");
-    buildSeverity();
-    renderDeviceInfo();
-    initUpload();
-    initSubmit();
-    initDialogs();
-    initTopbar();
-
-    descField = $("description");
-    counterEl = $("charCounter");
-    descField.addEventListener("input", function(){
-      updateCounter();
-      saveDraftDebounced();
-    });
-
-    $("gameName").addEventListener("input", saveDraftDebounced);
-
+    $("description").addEventListener("input", function(){ updateCounter(); saveDraftSoon(); });
+    $("relatedName").addEventListener("input", saveDraftSoon);
     restoreDraft();
   }
 
-  if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
-
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
 </script>
 </body>

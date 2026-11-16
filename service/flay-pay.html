@@ -13,179 +13,1426 @@
     })();
 </script>
 <style>
-/* BASIC APP CSS SCOPED */
+/* ===== FLAY PAY PREMIUM UI (SCOPED) ===== */
 .flay-pay-wrapper {
-    --fp-bg: #fdfdfd; --fp-surface: #fff; --fp-surface-alt: #f4f5f7; --fp-text: #000;
-    --fp-muted: #666; --fp-border: #e5e5e5; --fp-accent: #D80E45; --fp-soft: rgba(255,46,85,.10);
-    --fp-shadow: 0 12px 32px rgba(0,0,0,.06); --fp-success: #00a844; --fp-warning: #d98200;
-    --fp-danger: #D80E45; --fp-overlay-bg: rgba(255, 255, 255, 0.95); 
-    --pbc-bg-grad: linear-gradient(135deg, #ECECEC, #ECECEC); --pbc-text: #0d0d12;
-    --pbc-sub-text: #5f6368; --pbc-border: #efefef; --pbc-box-bg: rgba(0,0,0,0.03);
-    --pbc-box-border: rgba(0,0,0,0.04); --pbc-icon-glow: rgba(255, 46, 85, 0.1);
-    background: var(--fp-bg); color: var(--fp-text); font-family: 'Plus Jakarta Sans', sans-serif;
-    line-height: 1.5; width: 100%; min-height: 100vh; position: relative;
+    --fp-bg: #fdfdfd;
+    --fp-surface: #ffffff;
+    --fp-surface-alt: #f4f5f7;
+    --fp-text: #0d0d12;
+    --fp-muted: #666b75;
+    --fp-border: rgba(15, 18, 25, 0.08);
+    --fp-accent: #D80E45;
+    --fp-accent-end: #B10A37;
+    --fp-accent-bright: #FF2E55;
+    --fp-soft: rgba(216, 14, 69, 0.10);
+    --fp-soft-strong: rgba(216, 14, 69, 0.16);
+    --fp-accent-glow: rgba(216, 14, 69, 0.26);
+    --fp-shadow: 0 14px 36px rgba(15, 18, 25, 0.07);
+    --fp-shadow-card: 0 2px 10px rgba(15, 18, 25, 0.03);
+    --fp-footer-bg: rgba(253, 253, 253, 0.86);
+    --fp-success: #00a844;
+    --fp-success-soft: rgba(0, 168, 68, 0.11);
+    --fp-warning: #d98200;
+    --fp-warning-soft: rgba(217, 130, 0, 0.12);
+    --fp-danger: #D80E45;
+    --fp-overlay-bg: rgba(15, 15, 18, 0.48);
+    --pbc-bg-grad: linear-gradient(145deg, #ffffff 0%, #f6f3f5 52%, #f1eaee 100%);
+    --pbc-text: #0d0d12;
+    --pbc-sub-text: #5f6368;
+    --pbc-border: rgba(216, 14, 69, 0.14);
+    --pbc-box-bg: rgba(255, 255, 255, 0.72);
+    --pbc-box-border: rgba(15, 18, 25, 0.06);
+    --pbc-icon-glow: rgba(216, 14, 69, 0.14);
+    --pbc-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+    background: var(--fp-bg);
+    color: var(--fp-text);
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.5;
+    width: 100%;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
 }
 [data-theme="dark"] .flay-pay-wrapper {
-    --fp-bg: #0F0F0F; --fp-surface: #121212; --fp-surface-alt: #1a1a1a; --fp-text: #fff;
-    --fp-muted: #9BA1B0; --fp-border: #222; --fp-soft: rgba(255,46,85,.14);
-    --fp-shadow: 0 14px 40px rgba(0,0,0,.35); --fp-overlay-bg: rgba(0, 0, 0, 0.95); 
-    --pbc-bg-grad: linear-gradient(135deg, #18151c, #0d0b13); --pbc-text: #ffffff;
-    --pbc-sub-text: #8c8c9a; --pbc-border: rgba(255, 46, 85, 0.08);
-    --pbc-box-bg: rgba(255, 255, 255, 0.03); --pbc-box-border: rgba(255, 255, 255, 0.04);
-    --pbc-icon-glow: rgba(255, 46, 85, 0.12);
+    --fp-bg: #0F0F0F;
+    --fp-surface: #161619;
+    --fp-surface-alt: #1e1e23;
+    --fp-text: #ffffff;
+    --fp-muted: #9BA1B0;
+    --fp-border: rgba(255, 255, 255, 0.08);
+    --fp-soft: rgba(216, 14, 69, 0.15);
+    --fp-soft-strong: rgba(216, 14, 69, 0.22);
+    --fp-accent-glow: rgba(216, 14, 69, 0.34);
+    --fp-shadow: 0 20px 44px rgba(0, 0, 0, 0.48);
+    --fp-shadow-card: 0 4px 14px rgba(0, 0, 0, 0.24);
+    --fp-footer-bg: rgba(15, 15, 15, 0.88);
+    --fp-overlay-bg: rgba(0, 0, 0, 0.76);
+    --pbc-bg-grad: linear-gradient(145deg, #1d151a 0%, #131116 56%, #1a0f15 100%);
+    --pbc-text: #ffffff;
+    --pbc-sub-text: #9BA1B0;
+    --pbc-border: rgba(216, 14, 69, 0.22);
+    --pbc-box-bg: rgba(255, 255, 255, 0.04);
+    --pbc-box-border: rgba(255, 255, 255, 0.07);
+    --pbc-icon-glow: rgba(216, 14, 69, 0.24);
+    --pbc-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
-.flay-pay-wrapper * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
-.flay-pay-wrapper .app { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; animation: fadeInFP 0.4s ease-out; }
-@keyframes fadeInFP { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.flay-pay-wrapper .top-bar { position: relative; background: var(--fp-bg); display: flex; align-items: center; justify-content: center; height: 60px; padding: 0 16px; border-bottom: 1px solid var(--fp-border); }
-.flay-pay-wrapper .back-btn { position: absolute; left: 16px; width: 40px; height: 40px; border: none; background: transparent; color: var(--fp-text); font-size: 20px; display: grid; place-items: center; border-radius: 50%; cursor: pointer; }
-.flay-pay-wrapper .header-title { font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
-.flay-pay-wrapper .header-title i { color: var(--fp-accent); }
-.flay-pay-wrapper .content { padding: 20px 16px 140px 16px; }
-.flay-pay-wrapper .page-header { text-align: center; margin-bottom: 28px; }
-.flay-pay-wrapper .page-header h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
-.flay-pay-wrapper .page-header p { color: var(--fp-muted); font-size: 13px; font-weight: 500; }
 
-.flay-pay-wrapper .premium-balance-card { background: var(--pbc-bg-grad); border: 1px solid var(--pbc-border); border-radius: 20px; padding: 20px; margin-bottom: 24px; box-shadow: var(--fp-shadow); color: var(--pbc-text); position: relative; overflow: hidden; }
-.flay-pay-wrapper .premium-balance-card::before, .flay-pay-wrapper .premium-balance-card::after { content: ''; position: absolute; width: 130px; height: 130px; border-radius: 50%; filter: blur(46px); z-index: 0; pointer-events: none; }
-.flay-pay-wrapper .premium-balance-card::before { background: var(--pbc-icon-glow); top: -40px; left: 10%; }
-.flay-pay-wrapper .premium-balance-card::after { background: rgba(140, 54, 140, 0.08); bottom: -30px; right: -15px; }
-.flay-pay-wrapper .premium-balance-card * { z-index: 1; position: relative; }
-.flay-pay-wrapper .pbc-icon-wrapper { width: 48px; height: 48px; margin: 0 auto 12px; border-radius: 14px; background: linear-gradient(135deg, rgba(255,46,85,0.15), rgba(255,46,85,0.03)); border: 1px solid rgba(255,46,85,0.2); display: flex; justify-content: center; align-items: center; font-size: 20px; color: var(--fp-accent); z-index:1; position:relative; }
-.flay-pay-wrapper .pbc-label { font-size: 13px; font-weight: 600; color: var(--pbc-sub-text); margin-bottom: 4px; text-align: center; z-index:1; position:relative; }
-.flay-pay-wrapper .pbc-balance { font-size: 40px; font-weight: 800; letter-spacing: -1px; margin-bottom: 22px; text-align: center; line-height: 1; z-index:1; position:relative; }
-.flay-pay-wrapper .pbc-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; z-index:1; position:relative;}
-.flay-pay-wrapper .pbc-stat-box { background: var(--pbc-box-bg); border: 1px solid var(--pbc-box-border); border-radius: 14px; padding: 14px 12px; display: flex; align-items: center; gap: 12px; }
-.flay-pay-wrapper .pbc-stat-icon { width: 32px; height: 32px; border-radius: 50%; border: 1.2px solid rgba(255,46,85,0.3); display: flex; align-items: center; justify-content: center; color: var(--fp-accent); font-size: 12px; background: rgba(255, 46, 85, 0.05); }
-.flay-pay-wrapper .pbc-stat-icon.up { transform: rotate(45deg); }
-.flay-pay-wrapper .pbc-stat-info p { font-size: 11px; font-weight: 600; color: var(--pbc-sub-text); margin: 0 0 2px 0; }
-.flay-pay-wrapper .pbc-stat-info h4 { font-size: 15px; font-weight: 800; margin: 0; color: var(--pbc-text); }
+.flay-pay-wrapper * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    margin: 0;
+    padding: 0;
+}
 
-.flay-pay-wrapper .section-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;}
-.flay-pay-wrapper .section-subtitle { color: var(--fp-muted); font-size: 13px; font-weight: 500; display: block; margin-top: -8px; margin-bottom: 16px;}
-.flay-pay-wrapper .payment-card { background: var(--fp-surface); border: 1px solid var(--fp-border); border-radius: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 14px; padding: 16px; cursor: pointer; transition: 0.2s; }
-.flay-pay-wrapper .payment-card.active { border-color: var(--fp-accent); background: var(--fp-soft); box-shadow: inset 0 2px 6px rgba(0,0,0,0.03); }
-.flay-pay-wrapper .card-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--fp-surface-alt); display: grid; place-items: center; font-size: 18px; color: var(--fp-muted); }
-.flay-pay-wrapper .payment-card.active .card-icon { color: var(--fp-accent); background: rgba(255, 46, 85, 0.12); }
-.flay-pay-wrapper .card-info { flex: 1; }
-.flay-pay-wrapper .card-info h3 { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
-.flay-pay-wrapper .card-info p { font-size: 12px; color: var(--fp-muted); font-weight: 500; line-height: 1.3;}
-.flay-pay-wrapper .card-indicator { font-size: 18px; color: var(--fp-border); }
-.flay-pay-wrapper .payment-card.active .card-indicator { color: var(--fp-accent); }
+.flay-pay-wrapper::before {
+    content: '';
+    position: absolute;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 680px;
+    height: 320px;
+    background: radial-gradient(ellipse at top center, rgba(216, 14, 69, 0.08) 0%, rgba(216, 14, 69, 0) 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+[data-theme="dark"] .flay-pay-wrapper::before {
+    background: radial-gradient(ellipse at top center, rgba(216, 14, 69, 0.14) 0%, rgba(216, 14, 69, 0) 72%);
+}
 
-.flay-pay-wrapper .security-card { background: var(--fp-surface); border: 1px solid var(--fp-border); border-radius: 16px; padding: 14px; margin-top: 18px; }
-.flay-pay-wrapper .security-header { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; margin-bottom: 6px; }
-.flay-pay-wrapper .security-header i { color: var(--fp-success); }
-.flay-pay-wrapper .security-card p { font-size: 11.5px; color: var(--fp-muted); margin-bottom: 10px; line-height:1.4;}
+/* Pre-standard colors inherited cleanly by Standard Top Bar */
+.flay-pay-wrapper .back-btn { color: var(--fp-text); }
+.flay-pay-wrapper .header-title { color: var(--fp-text); }
 
-/* FOOTER BUTTON */
-.flay-pay-wrapper .sticky-footer { position: fixed; bottom: 0; left: 0; right: 0; margin: 0 auto; width: 100%; max-width: 600px; background: var(--fp-bg); border-top: 1px solid var(--fp-border); padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 100; }
-.flay-pay-wrapper .btn-primary { background: var(--fp-accent); color: #fff; border: none; border-radius: 14px; height: 50px; padding: 0 20px; font-size: 15px; font-weight: 800; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; width: 100%; }
-.flay-pay-wrapper .btn-primary:active { transform: scale(0.97); }
-.flay-pay-wrapper .btn-primary:disabled { background: var(--fp-surface-alt); color: var(--fp-muted); cursor: not-allowed; opacity: 0.6; pointer-events: none;}
+.flay-pay-wrapper .app {
+    max-width: 680px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+}
+
+.flay-pay-wrapper .content {
+    padding: 20px 16px calc(120px + env(safe-area-inset-bottom, 0px)) 16px;
+}
+
+@keyframes fpFadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fpSpin {
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes fpPulseDot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.82); }
+}
+
+.flay-pay-wrapper .fp-anim {
+    opacity: 0;
+    animation: fpFadeUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.flay-pay-wrapper .fp-anim-1 { animation-delay: 0.02s; }
+.flay-pay-wrapper .fp-anim-2 { animation-delay: 0.07s; }
+.flay-pay-wrapper .fp-anim-3 { animation-delay: 0.12s; }
+.flay-pay-wrapper .fp-anim-4 { animation-delay: 0.17s; }
+.flay-pay-wrapper .fp-anim-5 { animation-delay: 0.22s; }
+.flay-pay-wrapper .fp-anim-6 { animation-delay: 0.27s; }
+
+/* HERO WALLET CARD */
+.flay-pay-wrapper .premium-balance-card {
+    background: var(--pbc-bg-grad);
+    border: 1px solid var(--pbc-border);
+    border-radius: 26px;
+    padding: 22px 20px 20px;
+    margin-bottom: 24px;
+    box-shadow: var(--fp-shadow), var(--pbc-highlight);
+    color: var(--pbc-text);
+    position: relative;
+    overflow: hidden;
+}
+.flay-pay-wrapper .premium-balance-card::before,
+.flay-pay-wrapper .premium-balance-card::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+}
+.flay-pay-wrapper .premium-balance-card::before {
+    width: 190px;
+    height: 190px;
+    background: radial-gradient(circle, var(--pbc-icon-glow) 0%, transparent 72%);
+    top: -70px;
+    right: -40px;
+}
+.flay-pay-wrapper .premium-balance-card::after {
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgba(216, 14, 69, 0.08) 0%, transparent 72%);
+    bottom: -60px;
+    left: -35px;
+}
+.flay-pay-wrapper .premium-balance-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+.flay-pay-wrapper .pbc-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+.flay-pay-wrapper .pbc-brand-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.flay-pay-wrapper .pbc-icon-wrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--fp-soft);
+    border: 1px solid rgba(216, 14, 69, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fp-accent);
+    flex: none;
+}
+.flay-pay-wrapper .pbc-icon-wrapper svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+.flay-pay-wrapper .pbc-wallet-tag {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--pbc-sub-text);
+    white-space: nowrap;
+}
+.flay-pay-wrapper .pbc-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: var(--pbc-box-bg);
+    border: 1px solid var(--pbc-box-border);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--pbc-sub-text);
+    flex: none;
+}
+.flay-pay-wrapper .pbc-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--fp-success);
+    box-shadow: 0 0 8px rgba(0, 168, 68, 0.6);
+    animation: fpPulseDot 2.4s ease-in-out infinite;
+}
+
+.flay-pay-wrapper .pbc-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--pbc-sub-text);
+    margin-bottom: 4px;
+}
+.flay-pay-wrapper .pbc-balance {
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -1.4px;
+    line-height: 1.08;
+    margin-bottom: 20px;
+    color: var(--pbc-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.flay-pay-wrapper .pbc-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.flay-pay-wrapper .pbc-stat-box {
+    background: var(--pbc-box-bg);
+    border: 1px solid var(--pbc-box-border);
+    border-radius: 16px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.flay-pay-wrapper .pbc-stat-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--fp-soft);
+    border: 1px solid rgba(216, 14, 69, 0.16);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fp-accent);
+    flex: none;
+}
+.flay-pay-wrapper .pbc-stat-icon.in {
+    background: var(--fp-success-soft);
+    border-color: rgba(0, 168, 68, 0.18);
+    color: var(--fp-success);
+}
+.flay-pay-wrapper .pbc-stat-icon svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+}
+.flay-pay-wrapper .pbc-stat-info {
+    min-width: 0;
+}
+.flay-pay-wrapper .pbc-stat-info p {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--pbc-sub-text);
+    margin-bottom: 2px;
+}
+.flay-pay-wrapper .pbc-stat-info h4 {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--pbc-text);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* SECTION HEADER */
+.flay-pay-wrapper .fp-section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.flay-pay-wrapper .section-title {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: var(--fp-text);
+    margin-bottom: 2px;
+}
+.flay-pay-wrapper .section-subtitle {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--fp-muted);
+}
+.flay-pay-wrapper .fp-method-count {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--fp-muted);
+    background: var(--fp-surface-alt);
+    border: 1px solid var(--fp-border);
+    padding: 5px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+    flex: none;
+}
+
+/* SELECTABLE PAYMENT CARDS */
+.flay-pay-wrapper .payment-card {
+    background: var(--fp-surface);
+    border: 1px solid var(--fp-border);
+    border-radius: 20px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    min-height: 76px;
+    cursor: pointer;
+    box-shadow: var(--fp-shadow-card);
+    user-select: none;
+    transition: transform 0.16s ease, border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.flay-pay-wrapper .payment-card:active {
+    transform: scale(0.985);
+}
+.flay-pay-wrapper .payment-card.active {
+    border-color: var(--fp-accent);
+    background: var(--fp-soft);
+    box-shadow: 0 8px 24px rgba(216, 14, 69, 0.12), inset 0 0 0 1px rgba(216, 14, 69, 0.16);
+}
+.flay-pay-wrapper .card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: var(--fp-surface-alt);
+    border: 1px solid var(--fp-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: var(--fp-muted);
+    flex: none;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.flay-pay-wrapper .card-icon svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+.flay-pay-wrapper .payment-card.active .card-icon {
+    color: var(--fp-accent);
+    background: var(--fp-surface);
+    border-color: rgba(216, 14, 69, 0.26);
+}
+.flay-pay-wrapper .card-info {
+    flex: 1;
+    min-width: 0;
+}
+.flay-pay-wrapper .card-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 2px;
+    flex-wrap: wrap;
+}
+.flay-pay-wrapper .card-info h3 {
+    font-size: 15.5px;
+    font-weight: 700;
+    color: var(--fp-text);
+    line-height: 1.25;
+}
+.flay-pay-wrapper .fp-card-badge {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--fp-soft);
+    color: var(--fp-accent);
+    letter-spacing: 0.02em;
+}
+.flay-pay-wrapper .card-info p {
+    font-size: 12.5px;
+    color: var(--fp-muted);
+    font-weight: 500;
+    line-height: 1.35;
+}
+.flay-pay-wrapper .card-indicator {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--fp-border);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.flay-pay-wrapper .card-indicator svg {
+    width: 13px;
+    height: 13px;
+    color: #ffffff;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.flay-pay-wrapper .payment-card.active .card-indicator {
+    background: var(--fp-accent);
+    border-color: var(--fp-accent);
+    box-shadow: 0 4px 12px rgba(216, 14, 69, 0.32);
+}
+.flay-pay-wrapper .payment-card.active .card-indicator svg {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* SECURITY STRIP */
+.flay-pay-wrapper .security-card {
+    background: var(--fp-surface);
+    border: 1px solid var(--fp-border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-top: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+.flay-pay-wrapper .security-badge {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--fp-success-soft);
+    color: var(--fp-success);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    margin-top: 1px;
+}
+.flay-pay-wrapper .security-badge svg {
+    width: 17px;
+    height: 17px;
+    display: block;
+}
+.flay-pay-wrapper .security-body {
+    flex: 1;
+    min-width: 0;
+}
+.flay-pay-wrapper .security-header {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--fp-text);
+    margin-bottom: 2px;
+}
+.flay-pay-wrapper .security-card p {
+    font-size: 12px;
+    color: var(--fp-muted);
+    line-height: 1.45;
+    font-weight: 500;
+}
+
+/* STICKY FOOTER & PRIMARY CTA */
+.flay-pay-wrapper .sticky-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 680px;
+    background: var(--fp-footer-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--fp-border);
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+    z-index: 100;
+}
+.flay-pay-wrapper .btn-primary {
+    background: linear-gradient(135deg, #E31750 0%, #D80E45 55%, #B50938 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 16px;
+    height: 56px;
+    padding: 0 20px;
+    font-size: 15.5px;
+    font-weight: 800;
+    font-family: inherit;
+    letter-spacing: -0.1px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    user-select: none;
+    box-shadow: 0 10px 26px var(--fp-accent-glow);
+    transition: transform 0.16s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+.flay-pay-wrapper .btn-primary i {
+    font-size: 14px;
+    transition: transform 0.2s ease;
+}
+.flay-pay-wrapper .btn-primary:active {
+    transform: scale(0.98);
+    box-shadow: 0 6px 16px var(--fp-accent-glow);
+}
+.flay-pay-wrapper .btn-primary:disabled {
+    background: var(--fp-surface-alt);
+    color: var(--fp-muted);
+    border: 1px solid var(--fp-border);
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.72;
+    pointer-events: none;
+}
 
 /* OVERLAYS & MODALS */
-.flay-pay-wrapper .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--fp-overlay-bg); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; opacity: 0; pointer-events: none; transition: 0.3s ease; }
-.flay-pay-wrapper .overlay.active { opacity: 1; pointer-events: all; }
+.flay-pay-wrapper .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--fp-overlay-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.26s ease;
+}
+.flay-pay-wrapper .overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
 
-/* FP PREMIUM CUSTOM ALERT */
-.flay-pay-wrapper .premium-alert-card { background: var(--fp-surface); border-radius: 24px; padding: 30px 24px; width: 100%; max-width: 320px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--fp-border); transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-.flay-pay-wrapper .overlay.active .premium-alert-card { transform: scale(1); }
-.flay-pay-wrapper .premium-alert-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 16px; }
-.flay-pay-wrapper .premium-alert-icon.error { background: rgba(239, 68, 68, 0.1); color: #D80E45; }
-.flay-pay-wrapper .premium-alert-icon.success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-.flay-pay-wrapper .premium-alert-icon.warning { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-.flay-pay-wrapper .premium-alert-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; color: var(--fp-text); }
-.flay-pay-wrapper .premium-alert-msg { font-size: 14px; color: var(--fp-muted); line-height: 1.5; margin-bottom: 24px; }
-.flay-pay-wrapper .premium-alert-btn { background: var(--fp-text); color: var(--fp-surface); border: none; padding: 14px; width: 100%; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
-.flay-pay-wrapper .premium-alert-btn:active { transform: scale(0.96); }
+/* CUSTOM ALERT */
+.flay-pay-wrapper .premium-alert-card {
+    background: var(--fp-surface);
+    border-radius: 26px;
+    padding: 28px 22px 22px;
+    width: 100%;
+    max-width: 336px;
+    text-align: center;
+    box-shadow: var(--fp-shadow);
+    border: 1px solid var(--fp-border);
+    transform: scale(0.92) translateY(8px);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.flay-pay-wrapper .overlay.active .premium-alert-card {
+    transform: scale(1) translateY(0);
+}
+.flay-pay-wrapper .premium-alert-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin: 0 auto 16px;
+}
+.flay-pay-wrapper .premium-alert-icon.error {
+    background: var(--fp-soft);
+    color: var(--fp-danger);
+    border: 1px solid rgba(216, 14, 69, 0.2);
+}
+.flay-pay-wrapper .premium-alert-icon.success {
+    background: var(--fp-success-soft);
+    color: var(--fp-success);
+    border: 1px solid rgba(0, 168, 68, 0.2);
+}
+.flay-pay-wrapper .premium-alert-icon.warning {
+    background: var(--fp-warning-soft);
+    color: var(--fp-warning);
+    border: 1px solid rgba(217, 130, 0, 0.22);
+}
+.flay-pay-wrapper .premium-alert-title {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    color: var(--fp-text);
+}
+.flay-pay-wrapper .premium-alert-msg {
+    font-size: 13.5px;
+    color: var(--fp-muted);
+    line-height: 1.55;
+    margin-bottom: 22px;
+    font-weight: 500;
+}
+.flay-pay-wrapper .premium-alert-btn {
+    background: var(--fp-text);
+    color: var(--fp-surface);
+    border: none;
+    height: 50px;
+    padding: 0 16px;
+    width: 100%;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 800;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform 0.16s ease;
+}
+.flay-pay-wrapper .premium-alert-btn:active {
+    transform: scale(0.98);
+}
 
-/* PREMIUM CHECKOUT MODAL */
-.flay-pay-wrapper .premium-checkout-card { background: var(--fp-surface); border-radius: 24px; padding: 24px; width: 100%; max-width: 340px; text-align: left; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--fp-border); transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-.flay-pay-wrapper .overlay.active .premium-checkout-card { transform: scale(1); }
-.flay-pay-wrapper .chk-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid var(--fp-border); padding-bottom: 16px; }
-.flay-pay-wrapper .chk-icon { width: 40px; height: 40px; border-radius: 12px; background: rgba(51, 144, 236, 0.1); color: #3390EC; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-.flay-pay-wrapper .chk-header h3 { font-size: 18px; font-weight: 800; color: var(--fp-text); margin: 0; }
-.flay-pay-wrapper .chk-user-box { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; background: var(--fp-surface-alt); padding: 12px; border-radius: 16px; border: 1px solid var(--fp-border); }
-.flay-pay-wrapper .chk-user-box img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: var(--fp-border); }
-.flay-pay-wrapper .chk-user-info { flex: 1; }
-.flay-pay-wrapper .chk-name-row { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: var(--fp-text); margin-bottom: 2px; }
-.flay-pay-wrapper .chk-handle { font-size: 13px; color: var(--fp-muted); font-weight: 500; }
-.flay-pay-wrapper .verified-svg { width: 1.1em; height: 1.1em; flex-shrink: 0; display: inline-block; }
-.flay-pay-wrapper .chk-plan-box { margin-bottom: 24px; }
-.flay-pay-wrapper .chk-plan-label { font-size: 12px; font-weight: 700; color: var(--fp-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
-.flay-pay-wrapper .chk-plan-val { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 16px; color: var(--fp-text); }
-.flay-pay-wrapper .chk-plan-val .price-tag { color: var(--fp-accent); font-size: 18px; background: var(--fp-soft); padding: 4px 10px; border-radius: 10px; }
-.flay-pay-wrapper .chk-actions { display: flex; gap: 12px; }
-.flay-pay-wrapper .btn-cancel { flex: 1; padding: 14px; border-radius: 14px; font-weight: 800; font-size: 15px; cursor: pointer; border: none; background: var(--fp-surface-alt); color: var(--fp-text); transition: 0.2s; }
-.flay-pay-wrapper .btn-cancel:active { transform: scale(0.96); }
-.flay-pay-wrapper .btn-confirm { flex: 1; padding: 14px; border-radius: 14px; font-weight: 800; font-size: 15px; cursor: pointer; border: none; background: var(--fp-text); color: var(--fp-surface); transition: 0.2s; }
-.flay-pay-wrapper .btn-confirm:active { transform: scale(0.96); }
+/* PENDING OVERLAY CARD */
+.flay-pay-wrapper .fp-pending-box {
+    background: var(--fp-surface);
+    border: 1px solid var(--fp-border);
+    border-radius: 26px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 300px;
+    box-shadow: var(--fp-shadow);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.flay-pay-wrapper .status-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+.flay-pay-wrapper .status-icon.processing {
+    background: var(--fp-soft);
+    color: var(--fp-accent);
+    border: 1px solid rgba(216, 14, 69, 0.2);
+}
+.flay-pay-wrapper .fp-pending-spinner {
+    width: 28px;
+    height: 28px;
+    animation: fpSpin 0.9s linear infinite;
+}
+.flay-pay-wrapper .fp-pending-box h2 {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--fp-text);
+    margin-bottom: 4px;
+}
+.flay-pay-wrapper .fp-pending-box p {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--fp-muted);
+}
+
+/* CHECKOUT MODAL */
+.flay-pay-wrapper .premium-checkout-card {
+    background: var(--fp-surface);
+    border-radius: 26px;
+    padding: 22px;
+    width: 100%;
+    max-width: 356px;
+    text-align: left;
+    box-shadow: var(--fp-shadow);
+    border: 1px solid var(--fp-border);
+    transform: scale(0.92) translateY(8px);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.flay-pay-wrapper .overlay.active .premium-checkout-card {
+    transform: scale(1) translateY(0);
+}
+.flay-pay-wrapper .chk-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--fp-border);
+    padding-bottom: 14px;
+}
+.flay-pay-wrapper .chk-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--fp-soft);
+    color: var(--fp-accent);
+    border: 1px solid rgba(216, 14, 69, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+}
+.flay-pay-wrapper .chk-icon svg {
+    width: 19px;
+    height: 19px;
+    display: block;
+}
+.flay-pay-wrapper .chk-header h3 {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--fp-text);
+}
+.flay-pay-wrapper .chk-user-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    background: var(--fp-surface-alt);
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid var(--fp-border);
+}
+.flay-pay-wrapper .chk-user-box img {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--fp-border);
+    flex: none;
+}
+.flay-pay-wrapper .chk-user-info {
+    flex: 1;
+    min-width: 0;
+}
+.flay-pay-wrapper .chk-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--fp-text);
+    margin-bottom: 2px;
+}
+.flay-pay-wrapper .chk-name-row span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.flay-pay-wrapper .chk-handle {
+    font-size: 12.5px;
+    color: var(--fp-muted);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.flay-pay-wrapper .verified-svg {
+    width: 1.1em;
+    height: 1.1em;
+    flex-shrink: 0;
+    display: inline-block;
+}
+.flay-pay-wrapper .chk-plan-box {
+    background: var(--fp-surface-alt);
+    border: 1px solid var(--fp-border);
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 20px;
+}
+.flay-pay-wrapper .chk-plan-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--fp-muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    letter-spacing: 0.06em;
+}
+.flay-pay-wrapper .chk-plan-val {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--fp-text);
+}
+.flay-pay-wrapper .chk-plan-val .price-tag {
+    color: var(--fp-accent);
+    font-size: 15px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    background: var(--fp-soft);
+    padding: 5px 10px;
+    border-radius: 10px;
+    white-space: nowrap;
+    flex: none;
+}
+.flay-pay-wrapper .chk-actions {
+    display: flex;
+    gap: 10px;
+}
+.flay-pay-wrapper .btn-cancel {
+    flex: 1;
+    height: 50px;
+    padding: 0 14px;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 14.5px;
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid var(--fp-border);
+    background: var(--fp-surface-alt);
+    color: var(--fp-text);
+    transition: transform 0.16s ease;
+}
+.flay-pay-wrapper .btn-cancel:active {
+    transform: scale(0.97);
+}
+.flay-pay-wrapper .btn-confirm {
+    flex: 1.3;
+    height: 50px;
+    padding: 0 14px;
+    border-radius: 14px;
+    font-weight: 800;
+    font-size: 14.5px;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: linear-gradient(135deg, #E31750 0%, #D80E45 60%, #B50938 100%);
+    color: #ffffff;
+    box-shadow: 0 8px 20px var(--fp-accent-glow);
+    transition: transform 0.16s ease;
+}
+.flay-pay-wrapper .btn-confirm:active {
+    transform: scale(0.97);
+}
 
 /* SUCCESS MODAL FOR PLAN ACTIVATION */
-.flay-pay-wrapper .premium-success-card { background: var(--fp-surface); border-radius: 24px; padding: 32px 24px; width: 100%; max-width: 320px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--fp-border); transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-.flay-pay-wrapper .overlay.active .premium-success-card { transform: scale(1); }
-.flay-pay-wrapper .ps-icon-wrap { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 20px; box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3); }
-.flay-pay-wrapper .ps-title { font-size: 20px; font-weight: 900; color: var(--fp-text); margin-bottom: 8px; }
-.flay-pay-wrapper .ps-desc { font-size: 14px; color: var(--fp-muted); line-height: 1.5; margin-bottom: 24px; }
-.flay-pay-wrapper .btn-success-done { background: var(--fp-text); color: var(--fp-surface); border: none; padding: 14px; width: 100%; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
-.flay-pay-wrapper .btn-success-done:active { transform: scale(0.96); }
-
-/* STATUS ICONS */
-.flay-pay-wrapper .status-icon { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; margin-bottom: 20px; }
-.flay-pay-wrapper .status-icon.processing { background: var(--fp-soft); color: var(--fp-accent); }
-.flay-pay-wrapper .spinner { animation: spinFP 1s linear infinite; }
-@keyframes spinFP { 100% { transform: rotate(360deg); } }
+.flay-pay-wrapper .premium-success-card {
+    background: var(--fp-surface);
+    border-radius: 26px;
+    padding: 30px 24px 24px;
+    width: 100%;
+    max-width: 336px;
+    text-align: center;
+    box-shadow: var(--fp-shadow);
+    border: 1px solid var(--fp-border);
+    transform: scale(0.92) translateY(8px);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.flay-pay-wrapper .overlay.active .premium-success-card {
+    transform: scale(1) translateY(0);
+}
+.flay-pay-wrapper .ps-icon-wrap {
+    width: 68px;
+    height: 68px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #10b981, #00a844);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+    box-shadow: 0 12px 24px rgba(0, 168, 68, 0.28);
+}
+.flay-pay-wrapper .ps-icon-wrap svg {
+    width: 30px;
+    height: 30px;
+    display: block;
+}
+.flay-pay-wrapper .ps-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--fp-text);
+    margin-bottom: 8px;
+}
+.flay-pay-wrapper .ps-desc {
+    font-size: 13.5px;
+    color: var(--fp-muted);
+    line-height: 1.55;
+    margin-bottom: 22px;
+    font-weight: 500;
+}
+.flay-pay-wrapper .btn-success-done {
+    background: var(--fp-text);
+    color: var(--fp-surface);
+    border: none;
+    height: 52px;
+    padding: 0 18px;
+    width: 100%;
+    border-radius: 15px;
+    font-size: 15px;
+    font-weight: 800;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform 0.16s ease;
+}
+.flay-pay-wrapper .btn-success-done:active {
+    transform: scale(0.98);
+}
 
 /* BOTTOM SHEET ADD MONEY */
-.flay-pay-wrapper .bs-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; opacity: 0; pointer-events: none; transition: 0.3s; }
-.flay-pay-wrapper .bs-backdrop.active { opacity: 1; pointer-events: all; }
-.flay-pay-wrapper .bottom-sheet { position: fixed; bottom: 0; left: 0; right: 0; margin: 0 auto; width: 100%; max-width: 600px; background: var(--fp-surface); border-radius: 28px 28px 0 0; z-index: 9100; padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; max-height: 90vh; }
-.flay-pay-wrapper .bottom-sheet.active { transform: translateY(0); }
-.flay-pay-wrapper .bs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.flay-pay-wrapper .bs-title { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; color: var(--fp-text); }
-.flay-pay-wrapper .bs-title i { color: var(--fp-accent); font-size: 20px;}
-.flay-pay-wrapper .bs-close { width: 34px; height: 34px; border-radius: 50%; background: var(--fp-surface-alt); border: none; font-size: 14px; color: var(--fp-text); display: grid; place-items: center; cursor: pointer; }
-.flay-pay-wrapper .bs-label-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: var(--fp-muted); margin-bottom: 10px; }
-.flay-pay-wrapper .bs-label-row span.right { color: var(--fp-text); font-weight: 600; opacity: 0.6; }
-.flay-pay-wrapper .amount-input-wrapper { position: relative; display: flex; align-items: center; background: var(--fp-surface-alt); border: 2px solid transparent; border-radius: 16px; transition: 0.3s; }
-.flay-pay-wrapper .amount-input-wrapper:focus-within { border-color: var(--fp-accent); }
-.flay-pay-wrapper .prefix-icon { padding-left: 20px; font-size: 18px; color: var(--fp-text); font-weight: 800; }
-.flay-pay-wrapper .bs-input-amount { width: 100%; border: none; background: transparent; font-size: 24px; font-weight: 900; color: var(--fp-text); padding: 18px 12px; font-family: inherit; outline: none; }
-.flay-pay-wrapper .exchange-disp { background: var(--fp-surface-alt); margin-top: 10px; border-radius: 12px; padding: 12px 16px; font-size: 15px; font-weight: 700; color: var(--fp-accent); border: 1px dashed var(--fp-border); display: flex; align-items: center; justify-content: center; margin-bottom: 24px;}
-.flay-pay-wrapper .gateway-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-.flay-pay-wrapper .gateway-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--fp-surface); border: 1.5px solid var(--fp-border); padding: 14px 8px; border-radius: 16px; cursor: pointer; gap: 8px; font-size: 13.5px; font-weight: 800; transition: 0.2s; color: var(--fp-text);}
-.flay-pay-wrapper .gateway-btn.selected { border-color: var(--fp-accent); background: rgba(255,46,85,0.04); }
-.flay-pay-wrapper .gateway-icon { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); }
+.flay-pay-wrapper .bs-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.56);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 9000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+}
+.flay-pay-wrapper .bs-backdrop.active {
+    opacity: 1;
+    pointer-events: all;
+}
+.flay-pay-wrapper .bottom-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 680px;
+    background: var(--fp-surface);
+    border-top: 1px solid var(--fp-border);
+    border-radius: 28px 28px 0 0;
+    z-index: 9100;
+    padding: 12px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.18);
+    transform: translateY(100%);
+    transition: transform 0.36s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    max-height: 92vh;
+    overflow-y: auto;
+}
+.flay-pay-wrapper .bottom-sheet.active {
+    transform: translateY(0);
+}
+.flay-pay-wrapper .bs-handle {
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--fp-border);
+    margin: 0 auto 14px;
+    flex: none;
+}
+.flay-pay-wrapper .bs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+.flay-pay-wrapper .bs-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--fp-text);
+}
+.flay-pay-wrapper .bs-title-ico {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: var(--fp-soft);
+    color: var(--fp-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+}
+.flay-pay-wrapper .bs-title-ico svg {
+    width: 19px;
+    height: 19px;
+    display: block;
+}
+.flay-pay-wrapper .bs-close {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--fp-surface-alt);
+    border: 1px solid var(--fp-border);
+    color: var(--fp-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex: none;
+    transition: transform 0.16s ease;
+}
+.flay-pay-wrapper .bs-close:active {
+    transform: scale(0.92);
+}
+.flay-pay-wrapper .bs-close svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+
+.flay-pay-wrapper .bs-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--fp-muted);
+    margin-bottom: 8px;
+}
+.flay-pay-wrapper .bs-label-row span.right {
+    color: var(--fp-muted);
+    font-weight: 600;
+    letter-spacing: 0;
+}
+.flay-pay-wrapper .amount-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 64px;
+    background: var(--fp-surface-alt);
+    border: 1.5px solid var(--fp-border);
+    border-radius: 18px;
+    padding: 0 16px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+.flay-pay-wrapper .amount-input-wrapper:focus-within {
+    border-color: var(--fp-accent);
+    background: var(--fp-surface);
+    box-shadow: 0 0 0 4px var(--fp-soft);
+}
+.flay-pay-wrapper .prefix-icon {
+    font-size: 22px;
+    color: var(--fp-muted);
+    font-weight: 800;
+    margin-right: 6px;
+    flex: none;
+}
+.flay-pay-wrapper .bs-input-amount {
+    width: 100%;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--fp-text);
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+    outline: none;
+}
+.flay-pay-wrapper .bs-input-amount::placeholder {
+    color: var(--fp-muted);
+    opacity: 0.45;
+}
+.flay-pay-wrapper .bs-usd-chip {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--fp-muted);
+    background: var(--fp-surface);
+    border: 1px solid var(--fp-border);
+    padding: 5px 10px;
+    border-radius: 999px;
+    flex: none;
+}
+.flay-pay-wrapper .exchange-disp {
+    background: var(--fp-soft);
+    margin-top: 10px;
+    border-radius: 14px;
+    padding: 11px 14px;
+    font-size: 14.5px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--fp-accent);
+    border: 1px solid rgba(216, 14, 69, 0.16);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+}
+.flay-pay-wrapper .bs-gw-heading {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--fp-muted);
+    margin-bottom: 10px;
+}
+.flay-pay-wrapper .gateway-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
+}
+.flay-pay-wrapper .gateway-btn {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--fp-surface-alt);
+    border: 1.5px solid var(--fp-border);
+    padding: 14px 8px;
+    min-height: 92px;
+    min-width: 0;
+    border-radius: 18px;
+    cursor: pointer;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--fp-text);
+    user-select: none;
+    transition: transform 0.16s ease, border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.flay-pay-wrapper .gateway-btn:active {
+    transform: scale(0.96);
+}
+.flay-pay-wrapper .gateway-btn.selected {
+    border-color: var(--fp-accent);
+    background: var(--fp-soft);
+    box-shadow: 0 6px 18px rgba(216, 14, 69, 0.14);
+}
+.flay-pay-wrapper .gateway-btn.selected::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--fp-accent);
+    box-shadow: 0 0 0 3px var(--fp-soft);
+}
+.flay-pay-wrapper .gateway-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+    border: 1.5px solid rgba(255, 255, 255, 0.7);
+}
+.flay-pay-wrapper .gateway-btn span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
 
 /* FULL SCREEN 15-MIN PAYMENT PAGE */
 .flay-pay-wrapper .fs-payment-page {
-    position: fixed; top: 0; left: 0; right:0; margin: 0 auto; width: 100%; height: 100%;
-    max-width: 600px; background: #D80E45; z-index: 10000; transform: translateX(100%);
-    transition: transform 0.4s ease; overflow-y: auto; display: flex; flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: 100%;
+    height: 100%;
+    max-width: 680px;
+    background: #D80E45;
+    z-index: 10000;
+    transform: translateX(100%);
+    transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
-.flay-pay-wrapper .fs-payment-page.active { transform: translateX(0); }
-.flay-pay-wrapper .fs-header-controls { display: flex; align-items: center; padding: 16px; }
-.flay-pay-wrapper .fs-header-controls .back-sq { width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 12px; border:none; color:#fff; display:flex; justify-content:center; align-items:center; font-size:18px; cursor:pointer;}
-.flay-pay-wrapper .fs-logo-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 10px; margin-bottom: 20px;}
-.flay-pay-wrapper .fs-logo { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #ffffff; background: #fff; padding: 2px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); object-fit: cover;}
-.flay-pay-wrapper .fs-timer { font-size: 52px; font-weight: 900; color: #ffffff; text-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 10px; line-height:1;}
-.flay-pay-wrapper .fs-timer-sub { font-size: 13px; font-weight: 800; color: #ffffff; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 24px;}
-.flay-pay-wrapper .fs-inst-wrap { text-align: center; color: #fff; margin: 0 24px 24px 24px; font-family: sans-serif; }
-.flay-pay-wrapper .fs-inst-en { font-size: 15.5px; font-weight: 700; margin-bottom: 6px; line-height: 1.3;}
-.flay-pay-wrapper .fs-inst-bn { font-size: 14px; opacity: 0.9; }
-.flay-pay-wrapper .fs-card-white { background: #ffffff; border-radius: 28px; margin: 0 20px 40px 20px; padding: 24px; box-shadow: 0 -4px 30px rgba(0,0,0,0.1); color: #333; font-family: 'Plus Jakarta Sans', sans-serif; }
-.flay-pay-wrapper .fs-input-box { margin-bottom: 18px; position: relative;}
-.flay-pay-wrapper .fs-label { font-size: 12px; font-weight: 700; color: #5a6676; margin-bottom: 8px; display: block;}
-.flay-pay-wrapper .fs-val-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ebecf0; padding-bottom: 10px; margin-bottom: 6px; }
-.flay-pay-wrapper .fs-val-text { font-size: 20px; font-weight: 800; color: #1f2533; display: flex; align-items:center; }
-.flay-pay-wrapper .fs-copy-btn { width: 32px; height: 32px; border-radius: 10px; border:none; background:#f4f5f8; color:#0396fe; font-size: 14px; cursor: pointer; transition: 0.2s; display:grid; place-items:center; }
-.flay-pay-wrapper .fs-copy-btn:active { transform: scale(0.9); }
-.flay-pay-wrapper .fs-text-field { width: 100%; border: 1.5px solid #dcdfe5; border-radius: 16px; padding: 16px; font-size: 16px; font-weight: 600; color:#333; outline: none; background: #fafafc; transition: 0.3s; }
-.flay-pay-wrapper .fs-text-field:focus { border-color: #03a5fc; background:#fff;}
-.flay-pay-wrapper .fs-submit-btn { width: 100%; height: 56px; border-radius: 16px; border:none; background: #D80E45; color: #fff; font-size: 18px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 25px rgba(0, 164, 255, 0.3); margin-top:10px; transition: 0.2s; }
-.flay-pay-wrapper .fs-submit-btn:active { transform: scale(0.97); }
+.flay-pay-wrapper .fs-payment-page.active {
+    transform: translateX(0);
+}
+.flay-pay-wrapper .fs-header-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 8px;
+}
+.flay-pay-wrapper .fs-header-controls .back-sq {
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.16s ease, background-color 0.2s ease;
+}
+.flay-pay-wrapper .fs-header-controls .back-sq:active {
+    transform: scale(0.94);
+    background: rgba(255, 255, 255, 0.28);
+}
+.flay-pay-wrapper .fs-header-controls .back-sq svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+.flay-pay-wrapper .fs-secure-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    font-size: 11.5px;
+    font-weight: 700;
+}
+.flay-pay-wrapper .fs-secure-pill svg {
+    width: 13px;
+    height: 13px;
+    display: block;
+}
+.flay-pay-wrapper .fs-logo-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: 6px;
+    margin-bottom: 16px;
+}
+.flay-pay-wrapper .fs-logo {
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.92);
+    background: #ffffff;
+    padding: 2px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+    object-fit: cover;
+}
+.flay-pay-wrapper .fs-timer {
+    font-size: 46px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: -1px;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+    margin-top: 12px;
+    line-height: 1;
+}
+.flay-pay-wrapper .fs-timer-sub {
+    font-size: 11px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.92);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-top: 8px;
+    background: rgba(0, 0, 0, 0.18);
+    padding: 4px 12px;
+    border-radius: 999px;
+}
+.flay-pay-wrapper .fs-inst-wrap {
+    text-align: center;
+    color: #ffffff;
+    margin: 0 20px 20px;
+}
+.flay-pay-wrapper .fs-inst-en {
+    font-size: 14.5px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    line-height: 1.4;
+}
+.flay-pay-wrapper .fs-inst-bn {
+    font-size: 13px;
+    opacity: 0.92;
+    line-height: 1.45;
+}
+.flay-pay-wrapper .fs-card-white {
+    flex: 1;
+    background: var(--fp-surface);
+    color: var(--fp-text);
+    border-radius: 28px 28px 0 0;
+    padding: 22px 20px calc(32px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -10px 36px rgba(0, 0, 0, 0.18);
+}
+.flay-pay-wrapper .fs-input-box {
+    margin-bottom: 18px;
+    position: relative;
+}
+.flay-pay-wrapper .fs-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--fp-muted);
+    margin-bottom: 8px;
+    display: block;
+}
+.flay-pay-wrapper .fs-val-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    background: var(--fp-surface-alt);
+    border: 1px solid var(--fp-border);
+    border-radius: 16px;
+    padding: 10px 10px 10px 16px;
+}
+.flay-pay-wrapper .fs-val-text {
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--fp-text);
+    display: flex;
+    align-items: center;
+    font-variant-numeric: tabular-nums;
+    min-width: 0;
+    word-break: break-all;
+}
+.flay-pay-wrapper .fs-copy-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(216, 14, 69, 0.16);
+    background: var(--fp-soft);
+    color: var(--fp-accent);
+    cursor: pointer;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.16s ease, background-color 0.2s ease;
+}
+.flay-pay-wrapper .fs-copy-btn:active {
+    transform: scale(0.92);
+}
+.flay-pay-wrapper .fs-copy-btn svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+.flay-pay-wrapper .fs-text-field {
+    width: 100%;
+    height: 54px;
+    border: 1.5px solid var(--fp-border);
+    border-radius: 15px;
+    padding: 0 16px;
+    font-size: 15.5px;
+    font-weight: 700;
+    font-family: inherit;
+    color: var(--fp-text);
+    outline: none;
+    background: var(--fp-surface-alt);
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.flay-pay-wrapper .fs-text-field::placeholder {
+    color: var(--fp-muted);
+    opacity: 0.55;
+    font-weight: 600;
+}
+.flay-pay-wrapper .fs-text-field:focus {
+    border-color: var(--fp-accent);
+    background: var(--fp-surface);
+    box-shadow: 0 0 0 4px var(--fp-soft);
+}
+.flay-pay-wrapper .fs-submit-btn {
+    width: 100%;
+    height: 56px;
+    border-radius: 16px;
+    border: none;
+    background: linear-gradient(135deg, #E31750 0%, #D80E45 55%, #B50938 100%);
+    color: #ffffff;
+    font-size: 16.5px;
+    font-weight: 800;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 10px 26px var(--fp-accent-glow);
+    margin-top: 8px;
+    transition: transform 0.16s ease, box-shadow 0.2s ease;
+}
+.flay-pay-wrapper .fs-submit-btn:active {
+    transform: scale(0.98);
+}
 
+/* REDUCED MOTION ACCESSIBILITY */
+@media (prefers-reduced-motion: reduce) {
+    .flay-pay-wrapper .fp-anim {
+        opacity: 1;
+        animation: none;
+    }
+    .flay-pay-wrapper .pbc-live-dot,
+    .flay-pay-wrapper .fp-pending-spinner {
+        animation: none;
+    }
+    .flay-pay-wrapper *,
+    .flay-pay-wrapper .bottom-sheet,
+    .flay-pay-wrapper .fs-payment-page,
+    .flay-pay-wrapper .overlay {
+        transition-duration: 0.01ms !important;
+    }
+}
 
 /* ===== STANDARD TOP BAR (same in Upgrade Pro / Flay Verified Badge / Flay Pay / Flay Payout) ===== */
 .flay-pay-wrapper .top-bar{position:relative;height:60px;min-height:60px;box-sizing:border-box;margin:0;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(128,128,128,.18);background:var(--fp-bg);}
@@ -230,10 +1477,64 @@
 <!-- PAGE LOADING GATE (skeleton / retry) -->
 <div class="fsg-gate" id="fsg-gate-flay-pay" data-state="loading">
 <div class="fsg-head"><button class="fsg-back" type="button" data-fsg="back" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button><div class="fsg-title">Flay Pay</div><div class="fsg-head-r"></div></div>
-<div class="fsg-skel"><div class="fsg-sk" style="width:100%;height:206px;border-radius:26px;margin-top:6px"></div><div class="fsg-center" style="margin-top:22px"><div class="fsg-sk" style="width:140px;height:24px;border-radius:10px;"></div><div class="fsg-sk" style="width:230px;height:13px;border-radius:8px;margin-top:10px"></div></div><div class="fsg-sk" style="width:150px;height:16px;border-radius:8px;margin-top:22px"></div><div class="fsg-sk" style="width:100%;height:82px;border-radius:20px;margin-top:14px"></div><div class="fsg-sk" style="width:100%;height:82px;border-radius:20px;margin-top:12px"></div><div class="fsg-sk" style="width:100%;height:82px;border-radius:20px;margin-top:12px"></div><div class="fsg-sk" style="width:100%;height:54px;border-radius:16px;margin-top:22px"></div></div>
-<div class="fsg-skel2"><div class="fsg-sk" style="width:55%;height:22px;border-radius:10px;"></div><div class="fsg-sk" style="width:85%;height:13px;border-radius:8px;margin-top:10px"></div><div class="fsg-sk" style="width:90px;height:12px;border-radius:8px;margin-top:18px"></div><div class="fsg-sk" style="width:100%;height:56px;border-radius:16px;margin-top:8px"></div><div class="fsg-sk" style="width:90px;height:12px;border-radius:8px;margin-top:18px"></div><div class="fsg-sk" style="width:100%;height:56px;border-radius:16px;margin-top:8px"></div><div class="fsg-sk" style="width:90px;height:12px;border-radius:8px;margin-top:18px"></div><div class="fsg-sk" style="width:100%;height:56px;border-radius:16px;margin-top:8px"></div><div class="fsg-sk" style="width:100%;height:110px;border-radius:20px;margin-top:22px"></div><div class="fsg-sk" style="width:100%;height:54px;border-radius:16px;margin-top:22px"></div></div><div class="fsg-err"><div class="fsg-err-mid"><svg width="76" height="76" viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="38" cy="9" r="5"/><path d="M38 14v9"/><rect x="11" y="23" width="54" height="40" rx="9"/><path d="M29 38v5M47 38v5"/></svg><h2>Something went wrong</h2><p>Please try again</p></div><div class="fsg-err-foot"><button class="fsg-retry" type="button" data-fsg="retry"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4v4.5H8"/></svg><span>Retry</span></button></div></div>
+<div class="fsg-skel">
+    <div style="max-width:680px;margin:0 auto;padding-top:12px;">
+        <div class="fsg-sk" style="width:100%;height:224px;border-radius:26px;"></div>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:24px;">
+            <div>
+                <div class="fsg-sk" style="width:155px;height:20px;border-radius:8px;"></div>
+                <div class="fsg-sk" style="width:215px;height:13px;border-radius:7px;margin-top:8px;"></div>
+            </div>
+            <div class="fsg-sk" style="width:76px;height:26px;border-radius:999px;"></div>
+        </div>
+        <div class="fsg-card-row" style="margin-top:16px;padding:16px;border-radius:20px;">
+            <div class="fsg-sk" style="width:48px;height:48px;border-radius:14px;flex:none;"></div>
+            <div style="flex:1;">
+                <div class="fsg-sk" style="width:130px;height:15px;border-radius:7px;"></div>
+                <div class="fsg-sk" style="width:190px;height:12px;border-radius:6px;margin-top:8px;"></div>
+            </div>
+            <div class="fsg-sk" style="width:24px;height:24px;border-radius:50%;flex:none;"></div>
+        </div>
+        <div class="fsg-card-row" style="padding:16px;border-radius:20px;">
+            <div class="fsg-sk" style="width:48px;height:48px;border-radius:14px;flex:none;"></div>
+            <div style="flex:1;">
+                <div class="fsg-sk" style="width:140px;height:15px;border-radius:7px;"></div>
+                <div class="fsg-sk" style="width:210px;height:12px;border-radius:6px;margin-top:8px;"></div>
+            </div>
+            <div class="fsg-sk" style="width:24px;height:24px;border-radius:50%;flex:none;"></div>
+        </div>
+        <div class="fsg-card-row" style="padding:16px;border-radius:20px;">
+            <div class="fsg-sk" style="width:48px;height:48px;border-radius:14px;flex:none;"></div>
+            <div style="flex:1;">
+                <div class="fsg-sk" style="width:145px;height:15px;border-radius:7px;"></div>
+                <div class="fsg-sk" style="width:195px;height:12px;border-radius:6px;margin-top:8px;"></div>
+            </div>
+            <div class="fsg-sk" style="width:24px;height:24px;border-radius:50%;flex:none;"></div>
+        </div>
+        <div class="fsg-sk" style="width:100%;height:68px;border-radius:16px;margin-top:16px;"></div>
+        <div class="fsg-sk" style="width:100%;height:56px;border-radius:16px;margin-top:22px;"></div>
+    </div>
 </div>
-
+<div class="fsg-skel2">
+    <div style="max-width:680px;margin:0 auto;padding-top:6px;">
+        <div class="fsg-sk" style="width:48%;height:22px;border-radius:10px;"></div>
+        <div class="fsg-sk" style="width:80%;height:13px;border-radius:8px;margin-top:10px;"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:22px;">
+            <div class="fsg-sk" style="width:96px;height:12px;border-radius:6px;"></div>
+            <div class="fsg-sk" style="width:110px;height:12px;border-radius:6px;"></div>
+        </div>
+        <div class="fsg-sk" style="width:100%;height:64px;border-radius:18px;margin-top:10px;"></div>
+        <div class="fsg-sk" style="width:100%;height:46px;border-radius:14px;margin-top:12px;"></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:20px;">
+            <div class="fsg-sk" style="width:100%;height:92px;border-radius:18px;"></div>
+            <div class="fsg-sk" style="width:100%;height:92px;border-radius:18px;"></div>
+            <div class="fsg-sk" style="width:100%;height:92px;border-radius:18px;"></div>
+        </div>
+        <div class="fsg-sk" style="width:100%;height:56px;border-radius:16px;margin-top:24px;"></div>
+    </div>
+</div>
+<div class="fsg-err"><div class="fsg-err-mid"><svg width="76" height="76" viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="38" cy="9" r="5"/><path d="M38 14v9"/><rect x="11" y="23" width="54" height="40" rx="9"/><path d="M29 38v5M47 38v5"/></svg><h2>Something went wrong</h2><p>Please try again</p></div><div class="fsg-err-foot"><button class="fsg-retry" type="button" data-fsg="retry"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4v4.5H8"/></svg><span>Retry</span></button></div></div>
+</div>
 
 <div class="flay-pay-wrapper">
 
@@ -241,7 +1542,7 @@
     <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <g id="icon-verified-telegram">
-                <path d="M12.0001 2.37877L14.1539 3.58552L16.634 3.44754L18.0699 5.56844L20.4705 6.30722L20.6724 8.78318L22.4516 10.4287L21.5794 12.7562L22.4516 15.0837L20.6724 16.7292L20.4705 19.2052L18.0699 19.9439L16.634 22.0648L14.1539 21.9269L12.0001 23.1336L9.84628 21.9269L7.36616 22.0648L5.93026 19.9439L3.52968 19.2052L3.32777 16.7292L1.54858 15.0837L2.42079 12.7562L1.54858 10.4287L3.32777 8.78318L3.52968 6.30722L5.93026 5.56844L7.36616 3.44754L9.84628 3.58552L12.0001 2.37877Z" fill="var(--telegram-blue)"/>
+                <path d="M12.0001 2.37877L14.1539 3.58552L16.634 3.44754L18.0699 5.56844L20.4705 6.30722L20.6724 8.78318L22.4516 10.4287L21.5794 12.7562L22.4516 15.0837L20.6724 16.7292L20.4705 19.2052L18.0699 19.9439L16.634 22.0648L14.1539 21.9269L12.0001 23.1336L9.84628 21.9269L7.36616 22.0648L5.93026 19.9439L3.52968 19.2052L3.32777 16.7292L1.54858 15.0837L2.42079 12.7562L1.54858 10.4287L3.32777 8.78318L3.52968 6.30722L5.93026 5.56844L7.36616 3.44754L9.84628 3.58552L12.0001 2.37877Z" style="fill: var(--telegram-blue, #3390EC);"/>
                 <path d="M10.8335 15.6881L7.14515 12.0858L8.35483 10.9044L10.8335 13.3253L15.6453 8.625L16.855 9.8064L10.8335 15.6881Z" fill="#FFFFFF"/>
             </g>
         </defs>
@@ -253,7 +1554,7 @@
             <div class="premium-alert-icon" id="fp-alert-icon"></div>
             <h3 class="premium-alert-title" id="fp-alert-title">Title</h3>
             <p class="premium-alert-msg" id="fp-alert-msg">Message goes here</p>
-            <button class="premium-alert-btn" id="fp-alert-btn">OK</button>
+            <button class="premium-alert-btn" type="button" id="fp-alert-btn">OK</button>
         </div>
     </div>
 
@@ -265,45 +1566,118 @@
         </header>
 
         <div class="content">
-            <div class="premium-balance-card">
-                <div class="pbc-icon-wrapper"><i class="fas fa-wallet"></i></div>
+            <!-- HERO WALLET CARD -->
+            <section class="premium-balance-card fp-anim fp-anim-1" aria-label="Wallet Balance">
+                <div class="pbc-top-row">
+                    <div class="pbc-brand-group">
+                        <div class="pbc-icon-wrapper" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+                                <path d="M21 12h-5a2 2 0 0 0 0 4h5v-4z"/>
+                            </svg>
+                        </div>
+                        <span class="pbc-wallet-tag">Flay Pay Wallet</span>
+                    </div>
+                    <span class="pbc-status-pill"><span class="pbc-live-dot" aria-hidden="true"></span>USD Wallet</span>
+                </div>
+
                 <p class="pbc-label">Total available balance</p>
                 <div class="pbc-balance" id="fp-avail-balance">$0.00</div>
+
                 <div class="pbc-stats-grid">
-                    <div class="pbc-stat-box"><div class="pbc-stat-icon"><i class="fas fa-download"></i></div><div class="pbc-stat-info"><p>Recharged</p><h4 id="fp-recharged-balance">$0.00</h4></div></div>
-                    <div class="pbc-stat-box"><div class="pbc-stat-icon up"><i class="fas fa-arrow-up"></i></div><div class="pbc-stat-info"><p>Spent</p><h4 id="fp-spent-balance">$0.00</h4></div></div>
+                    <div class="pbc-stat-box">
+                        <div class="pbc-stat-icon in" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 7L7 17"/>
+                                <path d="M16 17H7V8"/>
+                            </svg>
+                        </div>
+                        <div class="pbc-stat-info">
+                            <p>Recharged</p>
+                            <h4 id="fp-recharged-balance">$0.00</h4>
+                        </div>
+                    </div>
+                    <div class="pbc-stat-box">
+                        <div class="pbc-stat-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M7 17L17 7"/>
+                                <path d="M8 7h9v9"/>
+                            </svg>
+                        </div>
+                        <div class="pbc-stat-info">
+                            <p>Spent</p>
+                            <h4 id="fp-spent-balance">$0.00</h4>
+                        </div>
+                    </div>
                 </div>
+            </section>
+
+            <!-- PAYMENT METHODS SECTION -->
+            <div class="fp-section-head fp-anim fp-anim-2">
+                <div>
+                    <h2 class="section-title">Payment Method</h2>
+                    <span class="section-subtitle">Choose your preferred way to pay</span>
+                </div>
+                <span class="fp-method-count">3 Options</span>
             </div>
 
-            <div class="page-header">
-                <h1>Flay Pay</h1>
-                <p>Choose your preferred payment method</p>
+            <div class="payment-card fp-anim fp-anim-3" id="card-crypto" role="button" tabindex="0" onclick="fpSelectAppMethod('crypto', 'Crypto Payment')">
+                <div class="card-icon" aria-hidden="true"><i class="fab fa-bitcoin"></i></div>
+                <div class="card-info">
+                    <div class="card-title-row">
+                        <h3>Crypto Payment</h3>
+                    </div>
+                    <p>Pay securely via crypto wallet</p>
+                </div>
+                <span class="card-indicator" id="ind-crypto" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </span>
             </div>
 
-            <h3 class="section-title">Payment Method</h3>
-            <span class="section-subtitle">Select how you want to pay</span>
-
-            <div class="payment-card" id="card-crypto" onclick="fpSelectAppMethod('crypto', 'Crypto Payment')">
-                <div class="card-icon"><i class="fab fa-bitcoin"></i></div>
-                <div class="card-info"><h3>Crypto Payment</h3><p>Pay securely via crypto wallet</p></div>
-                <i class="fas fa-check-circle card-indicator" id="ind-crypto"></i>
+            <div class="payment-card fp-anim fp-anim-4" id="card-local" role="button" tabindex="0" onclick="fpSelectAppMethod('local', 'Local Mobile Payment')">
+                <div class="card-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="2" width="12" height="20" rx="3"/>
+                        <path d="M11 18h2"/>
+                    </svg>
+                </div>
+                <div class="card-info">
+                    <div class="card-title-row">
+                        <h3>Local Payment</h3>
+                        <span class="fp-card-badge">Popular</span>
+                    </div>
+                    <p>Pay using bKash, Nagad or Rocket</p>
+                </div>
+                <span class="card-indicator" id="ind-local" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </span>
             </div>
 
-            <div class="payment-card" id="card-local" onclick="fpSelectAppMethod('local', 'Local Mobile Payment')">
-                <div class="card-icon"><i class="fas fa-mobile-screen"></i></div>
-                <div class="card-info"><h3>Local Payment</h3><p>Pay using bKash, Nagad or Rocket</p></div>
-                <i class="fas fa-check-circle card-indicator" id="ind-local"></i>
+            <div class="payment-card fp-anim fp-anim-5" id="card-google" role="button" tabindex="0" onclick="fpSelectAppMethod('google', 'Google Play Billing')">
+                <div class="card-icon" aria-hidden="true"><i class="fab fa-google-play"></i></div>
+                <div class="card-info">
+                    <div class="card-title-row">
+                        <h3>Buy Google Play</h3>
+                    </div>
+                    <p>Quick purchase through Play Store</p>
+                </div>
+                <span class="card-indicator" id="ind-google" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </span>
             </div>
 
-            <div class="payment-card" id="card-google" onclick="fpSelectAppMethod('google', 'Google Play Billing')">
-                <div class="card-icon"><i class="fab fa-google-play"></i></div>
-                <div class="card-info"><h3>Buy Google Play</h3><p>Quick purchase through Play Store</p></div>
-                <i class="fas fa-check-circle card-indicator" id="ind-google"></i>
-            </div>
-            
-            <div class="security-card">
-                <div class="security-header"><i class="fas fa-lock"></i> Secure Encrypted</div>
-                <p>Your payment information is handled through the selected payment provider securely.</p>
+            <!-- SECURITY STRIP -->
+            <div class="security-card fp-anim fp-anim-6">
+                <div class="security-badge" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="5" y="11" width="14" height="10" rx="2"/>
+                        <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+                    </svg>
+                </div>
+                <div class="security-body">
+                    <div class="security-header">Secure Encrypted</div>
+                    <p>Your payment information is handled through the selected payment provider securely.</p>
+                </div>
             </div>
         </div>
     </main>
@@ -315,12 +1689,25 @@
 
     <!-- BOTTOM SHEET ADD MONEY -->
     <div class="bs-backdrop" id="fp-bsBackdrop" onclick="fpCloseBottomSheet()"></div>
-    <div class="bottom-sheet" id="fp-localPaymentSheet">
+    <div class="bottom-sheet" id="fp-localPaymentSheet" role="dialog" aria-modal="true" aria-label="Add Money">
+        <div class="bs-handle" aria-hidden="true"></div>
         <div class="bs-header">
-            <div class="bs-title"><i class="fas fa-money-bill-transfer"></i> Add Money</div>
-            <button class="bs-close" onclick="fpCloseBottomSheet()"><i class="fas fa-times"></i></button>
+            <div class="bs-title">
+                <span class="bs-title-ico" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v20"/>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                </span>
+                <span>Add Money</span>
+            </div>
+            <button class="bs-close" type="button" aria-label="Close" onclick="fpCloseBottomSheet()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
-        
+
         <div class="bs-label-row">
             <span>AMOUNT (USDT)</span>
             <span class="right" id="fp-limits-text">Limits: ($1 - $1000)</span>
@@ -329,43 +1716,62 @@
         <div class="amount-input-wrapper">
             <span class="prefix-icon">$</span>
             <input type="number" class="bs-input-amount" id="sheetInputUsd" placeholder="0.00" oninput="fpCalcBdtRate()" onkeyup="fpCalcBdtRate()">
+            <span class="bs-usd-chip">USDT</span>
         </div>
-        
+
         <div class="exchange-disp" id="exchangeDisp">
             $ 0 = ৳0
         </div>
-        
+
+        <div class="bs-gw-heading">Select Local Wallet</div>
         <div class="gateway-grid">
-            <div class="gateway-btn" id="gw-bkash" onclick="fpSelectSubGateway('bkash')">
+            <div class="gateway-btn" id="gw-bkash" role="button" tabindex="0" onclick="fpSelectSubGateway('bkash')">
                 <img src="https://www.image2url.com/r2/default/images/1788007876265-5d6da5f7-5ec6-4cdd-ad68-b90b87ebcb6e.jpg" alt="bKash Logo" class="gateway-icon">
                 <span>bKash</span>
             </div>
-            <div class="gateway-btn" id="gw-nagad" onclick="fpSelectSubGateway('nagad')">
+            <div class="gateway-btn" id="gw-nagad" role="button" tabindex="0" onclick="fpSelectSubGateway('nagad')">
                 <img src="https://www.image2url.com/r2/default/images/1788008020392-ac61a553-48a8-4ed3-a1da-5ad149aae2e7.jpg" alt="Nagad Logo" class="gateway-icon">
                 <span>Nagad</span>
             </div>
-            <div class="gateway-btn" id="gw-rocket" style="grid-column: 1 / span 2;" onclick="fpSelectSubGateway('rocket')">
+            <div class="gateway-btn" id="gw-rocket" role="button" tabindex="0" onclick="fpSelectSubGateway('rocket')">
                 <img src="https://www.image2url.com/r2/default/images/1788008076520-1f2a46ad-aa02-4da8-8958-25e0bb83a603.jpg" alt="Rocket Logo" class="gateway-icon">
                 <span>Rocket</span>
             </div>
         </div>
 
-        <button class="btn-primary" style="margin-top:10px" onclick="fpProceedToInit()">Continue</button>
+        <button class="btn-primary" type="button" onclick="fpProceedToInit()">Continue</button>
     </div>
 
     <!-- INITIALIZING OVERLAY -->
     <div class="overlay" id="fp-overlay-pending">
-        <div class="status-icon processing"><i class="fas fa-circle-notch spinner"></i></div>
-        <h2>Processing...</h2>
-        <p>Generating a secure localized session.</p>
+        <div class="fp-pending-box">
+            <div class="status-icon processing" aria-hidden="true">
+                <svg class="fp-pending-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>
+            </div>
+            <h2>Processing...</h2>
+            <p>Generating a secure localized session.</p>
+        </div>
     </div>
 
     <!-- FULL SCREEN 15-MIN PAYMENT PAGE -->
     <div class="fs-payment-page" id="fp-fsPayPage">
         <div class="fs-header-controls">
-            <button class="back-sq" onclick="window.__flayPageBack_flay_pay()"><i class="fas fa-arrow-left"></i></button>
+            <button class="back-sq" type="button" aria-label="Back" onclick="window.__flayPageBack_flay_pay()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <div class="fs-secure-pill">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="5" y="11" width="14" height="10" rx="2"/>
+                    <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+                </svg>
+                <span>Verified Gateway</span>
+            </div>
         </div>
-        
+
         <div class="fs-logo-wrapper">
             <img class="fs-logo" id="fullScreenPayLogo" src="https://www.image2url.com/r2/default/images/1788007876265-5d6da5f7-5ec6-4cdd-ad68-b90b87ebcb6e.jpg" alt="Brand Logo">
             <div class="fs-timer" id="timerDisplay">14:58</div>
@@ -378,33 +1784,43 @@
         </div>
 
         <div class="fs-card-white">
-            <div class="fs-input-box" style="margin-bottom:28px;">
+            <div class="fs-input-box">
                 <label class="fs-label">Amount (পরিমাণ)</label>
                 <div class="fs-val-box">
                     <span class="fs-val-text">৳ <span id="finalDisplayBdtAmount" style="margin-left:8px;">0</span></span>
-                    <button class="fs-copy-btn" onclick="fpCopyDynamicValue('finalDisplayBdtAmount')"><i class="far fa-copy"></i></button>
-                </div>
-            </div>
-
-            <div class="fs-input-box" style="margin-bottom:28px;">
-                <label class="fs-label" id="providerNameBangla">bKash Personal (বিকাশ পার্সোনাল)</label>
-                <div class="fs-val-box">
-                    <span class="fs-val-text" id="finalGatewayNumber" style="font-family:monospace;">017XXXXXXXX</span>
-                    <button class="fs-copy-btn" onclick="fpCopyDynamicValue('finalGatewayNumber')"><i class="far fa-copy"></i></button>
+                    <button class="fs-copy-btn" type="button" aria-label="Copy amount" onclick="fpCopyDynamicValue('finalDisplayBdtAmount')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="9" y="9" width="13" height="13" rx="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
 
             <div class="fs-input-box">
-                <label class="fs-label" style="margin-bottom: 12px;">Transaction ID (ট্রানজেকশন আইডি)</label>
+                <label class="fs-label" id="providerNameBangla">bKash Personal (বিকাশ পার্সোনাল)</label>
+                <div class="fs-val-box">
+                    <span class="fs-val-text" id="finalGatewayNumber" style="font-family:monospace;">017XXXXXXXX</span>
+                    <button class="fs-copy-btn" type="button" aria-label="Copy number" onclick="fpCopyDynamicValue('finalGatewayNumber')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="9" y="9" width="13" height="13" rx="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="fs-input-box">
+                <label class="fs-label" for="txIDField">Transaction ID (ট্রানজেকশন আইডি)</label>
                 <input type="text" class="fs-text-field" placeholder="F7XXXXXX" id="txIDField">
             </div>
 
-            <div class="fs-input-box" style="margin-top:24px; margin-bottom:30px;">
-                <label class="fs-label" style="margin-bottom: 12px;">Send Money From (যে নাম্বার থেকে টাকা পাঠিয়ে ছেন)</label>
+            <div class="fs-input-box" style="margin-bottom:22px;">
+                <label class="fs-label" for="phoneField">Send Money From (যে নাম্বার থেকে টাকা পাঠিয়েছেন)</label>
                 <input type="number" class="fs-text-field" placeholder="01XXXXXXXXX" id="phoneField">
             </div>
 
-            <button class="fs-submit-btn" onclick="fpSubmitFinalPaymentRequest()">Submit</button>
+            <button class="fs-submit-btn" type="button" onclick="fpSubmitFinalPaymentRequest()">Submit</button>
         </div>
     </div>
 
@@ -412,23 +1828,29 @@
     <div class="overlay" id="fp-checkout-popup-overlay">
         <div class="premium-checkout-card">
             <div class="chk-header">
-                <div class="chk-icon"><i class="fas fa-shopping-cart"></i></div>
+                <div class="chk-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                        <path d="M3 6h18"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                </div>
                 <h3>Order Confirmation</h3>
             </div>
-            
+
             <div class="chk-user-box">
-                <img id="chk-avatar" src="" />
+                <img id="chk-avatar" src="" alt="User Avatar" />
                 <div class="chk-user-info">
                     <div class="chk-name-row">
-                        <span id="chk-name">Name</span> 
-                        <svg viewBox="0 0 24 24" class="verified-svg">
+                        <span id="chk-name">Name</span>
+                        <svg viewBox="0 0 24 24" class="verified-svg" aria-hidden="true">
                             <use href="#icon-verified-telegram"></use>
                         </svg>
                     </div>
                     <div id="chk-handle" class="chk-handle">@handle</div>
                 </div>
             </div>
-            
+
             <div class="chk-plan-box">
                 <div class="chk-plan-label">Selected Plan</div>
                 <div class="chk-plan-val">
@@ -436,10 +1858,10 @@
                     <span id="chk-plan-price" class="price-tag">$0 USDT</span>
                 </div>
             </div>
-            
+
             <div class="chk-actions">
-                <button class="btn-cancel" onclick="fpCancelCheckout()">Cancel</button>
-                <button class="btn-confirm" onclick="fpConfirmCheckout()">Confirm Payment</button>
+                <button class="btn-cancel" type="button" onclick="fpCancelCheckout()">Cancel</button>
+                <button class="btn-confirm" type="button" onclick="fpConfirmCheckout()">Confirm Payment</button>
             </div>
         </div>
     </div>
@@ -447,10 +1869,14 @@
     <!-- SUCCESS MODAL FOR PLAN ACTIVATION -->
     <div class="overlay" id="fp-plan-success-modal">
         <div class="premium-success-card">
-            <div class="ps-icon-wrap"><i class="fas fa-check"></i></div>
+            <div class="ps-icon-wrap" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 6L9 17l-5-5"/>
+                </svg>
+            </div>
             <h3 class="ps-title">Payment Successful!</h3>
             <p class="ps-desc" id="ps-desc-dynamic">Your plan has been activated successfully. Enjoy the premium benefits across Flaynity.</p>
-            <button class="btn-success-done" onclick="fpFinishPlanSuccess()">Done</button>
+            <button class="btn-success-done" type="button" onclick="fpFinishPlanSuccess()">Done</button>
         </div>
     </div>
 

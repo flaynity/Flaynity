@@ -9211,7 +9211,7 @@ function buildChannelVideoCard(v) {
             </div>
             <div class="ch-vinfo">
                 <h4 class="ch-vtitle">${escapeHTML(v.title || '')}</h4>
-                <p class="ch-vmeta"><svg class="ch-vplay" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg><span id="chan-vid-views-${v.id}">${views}</span>${when ? '<span class="ch-vwhen"> · ' + when + '</span>' : ''}</p>
+                <p class="ch-vmeta"><span id="chan-vid-views-${v.id}">${views}</span>${when ? ' · ' + when : ''}</p>
             </div>
             <button type="button" class="ch-more" aria-label="More" onclick="chOpenItemMenu(event,'${v.id}','video')">${__CH_DOTS}</button>
         </div>

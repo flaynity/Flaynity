@@ -44,7 +44,7 @@ async function flaynityCreateUpload(file, folder = "images", options = {}) {
     const currentUserId = (typeof auth !== "undefined" && auth.currentUser && auth.currentUser.uid)
         ? String(auth.currentUser.uid).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 128)
         : "";
-    const key = safeFolder === "feels"
+    let key = safeFolder === "feels"
         ? `uploads/feels/${currentUserId || "user"}/${id}_${safeName}`
         : `uploads/${safeFolder}/${id}_${safeName}`;
 
@@ -67,6 +67,20 @@ async function flaynityCreateUpload(file, folder = "images", options = {}) {
     let result = await requestUploadUrl(false);
     if (result.response.status === 401) {
         result = await requestUploadUrl(true);
+    }
+
+    // Some older/deployed Worker versions may validate Feels keys using the
+    // shorter legacy path. If (and only if) the Worker rejects the key format,
+    // retry once with a minimal ASCII-only Feels key that both accepted formats
+    // can validate. Do not retry authentication, content-type, or network errors.
+    if (safeFolder === "feels" &&
+        result.response.status === 400 &&
+        String(result.data?.error || result.data?.message || "").toLowerCase() === "invalid media key") {
+        key = `uploads/feels/${Date.now()}_${Math.random().toString(36).slice(2, 12)}.mp4`;
+        result = await requestUploadUrl(false);
+        if (result.response.status === 401) {
+            result = await requestUploadUrl(true);
+        }
     }
 
     const { response, data } = result;

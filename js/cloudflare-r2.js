@@ -3,8 +3,8 @@
 // R2 credentials NEVER belong in the WebView/frontend.
 // Upload authorization is issued by Flaynity-Server.
 // =========================================================
-const FLAYNITY_API_BASE = "https://api.flaynity.indevs.in/api";
-const FLAYNITY_MEDIA_BASE = "https://cdn.flaynity.indevs.in/media";
+const FLAYNITY_API_BASE = "https://api.flaynity-app.indevs.in/api";
+const FLAYNITY_MEDIA_BASE = "https://cdn.flaynity-app.indevs.in/media";
 const LEGACY_R2_PUBLIC_PREFIX = "https://pub-92694602f8ec4e0fbbcbf4a91b194f69.r2.dev";
 
 function normalizeFlaynityMediaUrl(url) {

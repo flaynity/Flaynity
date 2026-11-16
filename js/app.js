@@ -8844,6 +8844,64 @@ function openChannelSettingsPage() {
     AppNavigation.pushPage('channel-settings-page');
 }
 
+
+// ---------------------------------------------------------------------------
+// Channel page: Subscriber / Videos numbers + description "More" button.
+// pages/you.html's inline script never runs (page scripts are not executed for
+// "you"), so the big numbers stayed at 0. The logic now lives here.
+// ---------------------------------------------------------------------------
+function flaynitySyncChannelStats() {
+    [['view-sub-count', 'view-sub-count-val'], ['view-vid-count', 'view-vid-count-val']].forEach(function (pair) {
+        const src = document.getElementById(pair[0]);
+        const dst = document.getElementById(pair[1]);
+        if (!src || !dst) return;
+        const m = (src.textContent || '').trim().match(/^([^\s\u2022]+)/);
+        if (m && m[1] && dst.textContent !== m[1]) dst.textContent = m[1];
+    });
+}
+
+function flaynityInitChannelStatsSync() {
+    ['view-sub-count', 'view-vid-count'].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (!el || el.__flStatsObserved || !window.MutationObserver) return;
+        el.__flStatsObserved = true;
+        new MutationObserver(flaynitySyncChannelStats).observe(el, { childList: true, characterData: true, subtree: true });
+    });
+}
+
+// Show "More" only when the description is longer than 3 lines; a short
+// description takes only the space it needs (no empty gap before "More").
+function flaynityUpdateDescMore(attempt) {
+    attempt = attempt || 0;
+    const el = document.getElementById('view-channel-desc');
+    const btn = document.getElementById('view-channel-desc-btn');
+    if (!el || !btn) return;
+    const box = el.closest('.channel-description-box');
+    const hidden = !el.getClientRects().length || !el.clientWidth;
+    if (hidden) {
+        if (attempt < 12) setTimeout(function () { flaynityUpdateDescMore(attempt + 1); }, 120);
+        return;
+    }
+    const imp = function (node, prop, val) { node.style.setProperty(prop, val, 'important'); };
+    // Measure the natural height.
+    imp(el, 'height', 'auto'); imp(el, 'min-height', '0'); imp(el, 'max-height', 'none');
+    const cs = getComputedStyle(el);
+    let lh = parseFloat(cs.lineHeight);
+    if (!lh || isNaN(lh)) lh = (parseFloat(cs.fontSize) || 14) * 1.65;
+    const needsMore = el.scrollHeight > lh * 3 + 2;
+    if (needsMore) {
+        // Back to the normal 3-line clamp from the stylesheet.
+        ['height', 'min-height', 'max-height'].forEach(function (p) { el.style.removeProperty(p); });
+        btn.style.removeProperty('display');
+        imp(btn, 'display', 'flex');
+    } else {
+        imp(btn, 'display', 'none');
+        if (box) imp(box, 'padding-bottom', '0px');
+    }
+    if (needsMore && box) box.style.removeProperty('padding-bottom');
+    if (attempt === 0) [200, 600, 1400].forEach(function (ms) { setTimeout(function () { flaynityUpdateDescMore(1); }, ms); });
+}
+
 function openViewChannelPage() {
     ensureLiveUploadStyles();
     playUI('click');
@@ -8923,6 +8981,7 @@ function openViewChannelPage() {
 
     switchChannelTab('videos');
     AppNavigation.pushPage('view-channel-page');
+    try { flaynityInitChannelStatsSync(); flaynitySyncChannelStats(); flaynityUpdateDescMore(); } catch (e) {}
     startLiveChannelUploadRefresh();
     setTimeout(() => renderChannelUploadQueue('videos'), 120);
     setTimeout(() => renderChannelUploadQueue('feels'), 120);

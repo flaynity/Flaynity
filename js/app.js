@@ -6355,11 +6355,205 @@ const PREMIUM_SERVICE_FILES = {
 const PREMIUM_SERVICE_CACHE_PREFIX = 'flaynity-premium-service-cache-v1:';
 const premiumServiceLoads = {};
 
+// =========================================================
+// SERVICE PAGE GATE: shimmer skeleton + live internet check + Retry screen
+// Used by: Upgrade Pro, Flay Verified Badge, Flay Pay, Flay Payout
+// Every time one of these pages is opened:
+//   1) the page opens at once with an animated shimmer skeleton,
+//   2) a REAL internet check runs (not just navigator.onLine),
+//   3) online  -> page content is loaded and the skeleton fades out,
+//      offline -> "Something went wrong / Please try again / Retry" screen.
+// =========================================================
+const FlayServiceGate = (function () {
+    const _sk = (w, h, r, m) => '<i class="fsg-sk" style="width:' + w + ';height:' + h + ';border-radius:' + (r || '10px') + ';' + (m || '') + '"></i>';
+    const _row = (h) => '<div class="fsg-card-row" style="height:' + h + 'px">' + _sk('46px', '46px', '50%', 'flex:none') +
+        '<div style="flex:1;display:flex;flex-direction:column;gap:9px">' + _sk('62%', '14px') + _sk('85%', '11px') + '</div></div>';
+
+    const SERVICES = {
+        'upgrade-pro': {
+            title: 'Upgrade Pro',
+            skeleton: () =>
+                '<div class="fsg-center">' + _sk('190px', '26px', '999px') + _sk('230px', '30px', '10px', 'margin-top:14px') +
+                _sk('280px', '13px', '8px', 'margin-top:12px') + _sk('230px', '13px', '8px', 'margin-top:8px') + '</div>' +
+                _sk('100%', '118px', '22px', 'margin-top:22px') +
+                _sk('190px', '18px', '8px', 'margin-top:26px') +
+                '<div class="fsg-two" style="margin-top:14px">' + _sk('100%', '170px', '22px') + _sk('100%', '170px', '22px') + '</div>' +
+                '<div style="margin-top:20px">' + _row(70) + _row(70) + _row(70) + '</div>'
+        },
+        'flay-verified-badge': {
+            title: 'Flay Verified Badge',
+            skeleton: () =>
+                _sk('100%', '170px', '24px', 'margin-top:6px') +
+                '<div class="fsg-card-row" style="margin-top:18px;height:96px">' + _sk('58px', '58px', '50%', 'flex:none') +
+                '<div style="flex:1;display:flex;flex-direction:column;gap:10px">' + _sk('55%', '16px') + _sk('35%', '12px') + '</div></div>' +
+                _sk('170px', '18px', '8px', 'margin-top:26px') +
+                '<div style="margin-top:14px">' + _row(70) + _row(70) + _row(70) + '</div>' +
+                _sk('100%', '54px', '16px', 'margin-top:22px')
+        },
+        'flay-pay': {
+            title: 'Flay Pay',
+            skeleton: () =>
+                _sk('100%', '206px', '26px', 'margin-top:6px') +
+                '<div class="fsg-center" style="margin-top:22px">' + _sk('140px', '24px') + _sk('230px', '13px', '8px', 'margin-top:10px') + '</div>' +
+                _sk('150px', '16px', '8px', 'margin-top:22px') +
+                _sk('100%', '82px', '20px', 'margin-top:14px') + _sk('100%', '82px', '20px', 'margin-top:12px') +
+                _sk('100%', '82px', '20px', 'margin-top:12px') + _sk('100%', '54px', '16px', 'margin-top:22px')
+        },
+        'flay-payout': {
+            title: 'Flay Payout',
+            skeleton: () =>
+                '<div style="display:flex;align-items:center;gap:10px;margin-top:6px">' + _sk('34px', '34px', '10px') + _sk('150px', '14px', '8px') + '</div>' +
+                _sk('100%', '128px', '24px', 'margin-top:14px') +
+                '<div class="fsg-two" style="margin-top:14px">' + _sk('100%', '112px', '22px') + _sk('100%', '112px', '22px') + '</div>' +
+                '<div style="display:flex;align-items:center;gap:10px;margin-top:24px">' + _sk('34px', '34px', '10px') + _sk('130px', '14px', '8px') + '</div>' +
+                '<div style="margin-top:12px">' + _row(66) + _row(66) + _row(66) + '</div>'
+        }
+    };
+
+    const ROBOT = '<svg width="76" height="76" viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<circle cx="38" cy="9" r="5"/><path d="M38 14v9"/><rect x="11" y="23" width="54" height="40" rx="9"/><path d="M29 38v5M47 38v5"/></svg>';
+    const BACK = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
+    const RETRY = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4v4.5H8"/></svg>';
+
+    function injectStyle() {
+        if (document.getElementById('flaynity-service-gate-style')) return;
+        const css = document.createElement('style');
+        css.id = 'flaynity-service-gate-style';
+        css.textContent = [
+            '.fsg-gate{--fsg-bg:#fff;--fsg-text:#000;--fsg-muted:#6b6b6b;--fsg-a:#ececee;--fsg-b:#f7f7f8;--fsg-btn:#f1f1f3;--fsg-card:#fafafa;--fsg-line:#efefef;',
+            'position:fixed;top:0;left:0;right:0;bottom:0;z-index:60;display:flex;flex-direction:column;background:var(--fsg-bg);color:var(--fsg-text);',
+            'font-family:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding-top:env(safe-area-inset-top,0px);box-sizing:border-box;overflow:hidden;opacity:1;transition:opacity .25s ease}',
+            ':root[data-theme="dark"] .fsg-gate{--fsg-bg:#000;--fsg-text:#fff;--fsg-muted:#d9d9d9;--fsg-a:#1c1c1e;--fsg-b:#2a2a2d;--fsg-btn:#202020;--fsg-card:#0e0e10;--fsg-line:#1b1b1d}',
+            '.fsg-gate.fsg-out{opacity:0;pointer-events:none}',
+            '.fsg-head{flex:none;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 12px}',
+            '.fsg-back{width:44px;height:44px;border:0;background:transparent;color:inherit;display:grid;place-items:center;border-radius:50%;cursor:pointer;-webkit-tap-highlight-color:transparent}',
+            '.fsg-back:active{background:var(--fsg-a)}',
+            '.fsg-title{font-size:18px;font-weight:800;letter-spacing:-.2px}',
+            '.fsg-head-r{width:44px;height:44px}',
+            '.fsg-skel{flex:1;overflow:hidden;padding:8px 16px 24px;display:none}',
+            '.fsg-err{flex:1;display:none;flex-direction:column;align-items:center}',
+            '.fsg-gate[data-state="loading"] .fsg-skel{display:block}',
+            '.fsg-gate[data-state="error"] .fsg-err{display:flex}',
+            '.fsg-err-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 24px;gap:14px}',
+            '.fsg-err-mid h2{margin:10px 0 0;font-size:23px;font-weight:700}',
+            '.fsg-err-mid p{margin:0;font-size:17px;color:var(--fsg-muted);font-weight:400}',
+            '.fsg-err-foot{flex:none;width:100%;box-sizing:border-box;padding:0 24px calc(16vh + env(safe-area-inset-bottom,0px))}',
+            '.fsg-retry{width:100%;height:68px;border:0;border-radius:16px;background:var(--fsg-btn);color:inherit;font:inherit;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:12px;cursor:pointer;-webkit-tap-highlight-color:transparent}',
+            '.fsg-retry:active{transform:scale(.98)}',
+            '.fsg-sk{display:block;max-width:100%;background:linear-gradient(100deg,var(--fsg-a) 30%,var(--fsg-b) 50%,var(--fsg-a) 70%);background-size:300% 100%;animation:fsgShimmer 1.3s linear infinite}',
+            '@keyframes fsgShimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}',
+            '.fsg-center{display:flex;flex-direction:column;align-items:center;margin-top:8px}',
+            '.fsg-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}',
+            '.fsg-card-row{display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid var(--fsg-line);background:var(--fsg-card);border-radius:20px;margin-bottom:12px;box-sizing:border-box}'
+        ].join('');
+        document.head.appendChild(css);
+    }
+
+    function buildGate(serviceId) {
+        const cfg = SERVICES[serviceId];
+        const gate = document.createElement('div');
+        gate.className = 'fsg-gate';
+        gate.setAttribute('data-state', 'loading');
+        gate.innerHTML =
+            '<div class="fsg-head"><button class="fsg-back" type="button" data-fsg="back" aria-label="Back">' + BACK + '</button>' +
+            '<div class="fsg-title">' + cfg.title + '</div><div class="fsg-head-r"></div></div>' +
+            '<div class="fsg-skel">' + cfg.skeleton() + '</div>' +
+            '<div class="fsg-err"><div class="fsg-err-mid">' + ROBOT + '<h2>Something went wrong</h2><p>Please try again</p></div>' +
+            '<div class="fsg-err-foot"><button class="fsg-retry" type="button" data-fsg="retry">' + RETRY + '<span>Retry</span></button></div></div>';
+        gate.addEventListener('click', function (e) {
+            const t = e.target.closest('[data-fsg]');
+            if (!t) return;
+            if (t.getAttribute('data-fsg') === 'back') { try { AppNavigation.pop(); } catch (err) {} }
+            else if (t.getAttribute('data-fsg') === 'retry') run(serviceId);
+        });
+        return gate;
+    }
+
+    // Page element exists at once (empty shell + gate); real content is filled in later by __flaynityLoadPremiumService.
+    function ensureShell(serviceId) {
+        injectStyle();
+        const pageId = serviceId + '-page';
+        let page = document.getElementById(pageId);
+        if (!page) {
+            page = document.createElement('div');
+            page.id = pageId;
+            page.className = 'fullscreen-page premium-service-page';
+            page.setAttribute('data-premium-service', serviceId);
+            page.setAttribute('data-content-loaded', '0');
+            page.style.display = 'none';
+            page.style.paddingTop = 'env(safe-area-inset-top, 0px)';
+            page.style.boxSizing = 'border-box';
+            page.style.overflowY = 'auto';
+            page.style.webkitOverflowScrolling = 'touch';
+            (document.getElementById('app-screen') || document.body).appendChild(page);
+        }
+        let gate = page.querySelector(':scope > .fsg-gate');
+        if (!gate) { gate = buildGate(serviceId); page.insertBefore(gate, page.firstChild); }
+        return page;
+    }
+
+    // REAL connectivity test: navigator.onLine alone is unreliable (Wi-Fi without internet reports true).
+    function checkInternet(timeoutMs) {
+        timeoutMs = timeoutMs || 5000;
+        if (navigator.onLine === false) return Promise.resolve(false);
+        const stamp = '?_=' + Date.now();
+        const urls = ['https://www.gstatic.com/generate_204' + stamp, 'https://www.google.com/generate_204' + stamp, 'https://cdnjs.cloudflare.com/cdn-cgi/trace' + stamp];
+        return new Promise(function (resolve) {
+            let pending = urls.length, settled = false;
+            const done = function (ok) {
+                if (settled) return;
+                if (ok) { settled = true; resolve(true); return; }
+                if (--pending === 0) { settled = true; resolve(false); }
+            };
+            urls.forEach(function (u) {
+                const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+                const timer = setTimeout(function () { try { ctl && ctl.abort(); } catch (e) {} done(false); }, timeoutMs);
+                fetch(u, { method: 'GET', mode: 'no-cors', cache: 'no-store', signal: ctl ? ctl.signal : undefined })
+                    .then(function () { clearTimeout(timer); done(true); })
+                    .catch(function () { clearTimeout(timer); done(false); });
+            });
+        });
+    }
+
+    const wait = (ms) => new Promise(r => setTimeout(r, ms));
+    const timeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+
+    async function run(serviceId) {
+        const page = ensureShell(serviceId);
+        const gate = page.querySelector(':scope > .fsg-gate');
+        const token = (gate._fsgToken = (gate._fsgToken || 0) + 1);
+        clearTimeout(gate._fsgHide);
+        gate.style.display = 'flex';
+        gate.setAttribute('data-state', 'loading');
+        void gate.offsetWidth;               // restart fade
+        gate.classList.remove('fsg-out');
+        const stale = () => gate._fsgToken !== token;
+        try {
+            // keep the shimmer visible long enough to be seen, while the internet check runs
+            const res = await Promise.all([checkInternet(5000), wait(600)]);
+            if (stale()) return;
+            if (!res[0]) throw new Error('offline');
+            await timeout(__flaynityLoadPremiumService(serviceId), 20000);
+            if (stale()) return;
+            gate.classList.add('fsg-out');
+            gate._fsgHide = setTimeout(function () { if (!stale()) gate.style.display = 'none'; }, 260);
+        } catch (err) {
+            if (stale()) return;
+            console.warn('Service gate failed:', serviceId, err && err.message);
+            gate.setAttribute('data-state', 'error');
+        }
+    }
+
+    return { has: (id) => Object.prototype.hasOwnProperty.call(SERVICES, id), ensureShell: ensureShell, run: run, checkInternet: checkInternet };
+})();
+
 async function __flaynityLoadPremiumService(serviceId) {
     const url = PREMIUM_SERVICE_FILES[serviceId];
     if (!url) throw new Error('Unknown premium service: ' + serviceId);
     const pageId = serviceId + '-page';
-    if (document.getElementById(pageId)) return document.getElementById(pageId);
+    const existingPage = document.getElementById(pageId);
+    // An empty shell (data-content-loaded="0") still has to be filled; a loaded page is reused.
+    if (existingPage && existingPage.getAttribute('data-content-loaded') !== '0') return existingPage;
     if (premiumServiceLoads[serviceId]) return premiumServiceLoads[serviceId];
 
     premiumServiceLoads[serviceId] = (async () => {
@@ -6400,20 +6594,25 @@ async function __flaynityLoadPremiumService(serviceId) {
             }
         });
 
-        const page = document.createElement('div');
-        page.id = pageId;
-        page.className = 'fullscreen-page premium-service-page';
-        page.setAttribute('data-premium-service', serviceId);
-        page.style.display = 'none';
-        page.style.paddingTop = 'env(safe-area-inset-top, 0px)';
-        page.style.boxSizing = 'border-box';
-        page.style.overflowY = 'auto';
-        page.style.webkitOverflowScrolling = 'touch';
+        let page = document.getElementById(pageId);   // may already exist as a shell with the skeleton gate
+        const isShell = !!page;
+        if (!page) {
+            page = document.createElement('div');
+            page.id = pageId;
+            page.className = 'fullscreen-page premium-service-page';
+            page.setAttribute('data-premium-service', serviceId);
+            page.style.display = 'none';
+            page.style.paddingTop = 'env(safe-area-inset-top, 0px)';
+            page.style.boxSizing = 'border-box';
+            page.style.overflowY = 'auto';
+            page.style.webkitOverflowScrolling = 'touch';
+        }
 
         Array.from(doc.body.children).forEach(node => {
             if (node.tagName && node.tagName.toLowerCase() !== 'script') page.appendChild(node.cloneNode(true));
         });
-        document.getElementById('app-screen')?.appendChild(page);
+        if (!isShell) document.getElementById('app-screen')?.appendChild(page);
+        page.setAttribute('data-content-loaded', '1');
 
         // Firebase/font libraries are already loaded by index.html; only execute the page's own inline logic.
         if (serviceId !== 'flay-pay') window.__flaynityPremiumPayService = null;
@@ -6571,7 +6770,30 @@ const AppNavigation = {
         this.updateBridge();
     },
 
+    // Upgrade Pro / Verified Badge / Flay Pay / Flay Payout: open at once with a shimmer skeleton,
+    // check the internet live, then show the page or the Retry screen.
+    _pushGatedService: function(serviceId, paymentService) {
+        const self = this;
+        const pageId = serviceId + '-page';
+        const c = self.current();
+        if (c && c.type === 'page' && c.id === pageId) {
+            self.syncUI();
+            return Promise.resolve(document.getElementById(pageId));
+        }
+        if (serviceId === 'flay-pay') window.__flaynityPremiumPayService = paymentService || null;
+        const page = FlayServiceGate.ensureShell(serviceId);
+        FlayServiceGate.run(serviceId);   // skeleton is visible synchronously, before the page is shown
+        self.stack.push({ type: 'page', id: pageId, premiumService: serviceId, paymentService: paymentService || null });
+        self._fresh = true;
+        self.syncUI();
+        self.updateBridge();
+        return Promise.resolve(page);
+    },
+
     pushPremiumService: function(serviceId, paymentService) {
+        if (typeof FlayServiceGate !== 'undefined' && FlayServiceGate.has(serviceId)) {
+            return this._pushGatedService(serviceId, paymentService);
+        }
         const self = this;
         const pageId = serviceId + '-page';
         const isTop = () => {

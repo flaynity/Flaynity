@@ -962,17 +962,33 @@
 #view-channel-page{--tt-muted:#8a8b91;--tt-line:rgba(127,127,127,.22)}
 html[data-theme="dark"] #view-channel-page{--tt-muted:#a3a3a9}
 
+/* banner: long, soft fade into the page (no dark band at the bottom) */
+#view-channel-page .channel-banner-container{margin-bottom:0 !important}
+html[data-theme] #view-channel-page .banner-gradient,
+#view-channel-page .banner-gradient{
+    background:linear-gradient(180deg,
+        rgba(255,255,255,0) 0%, rgba(255,255,255,0) 22%,
+        rgba(255,255,255,.10) 36%, rgba(255,255,255,.26) 48%,
+        rgba(255,255,255,.48) 60%, rgba(255,255,255,.70) 72%,
+        rgba(255,255,255,.88) 84%, rgba(255,255,255,.97) 93%,
+        var(--bg-color) 100%) !important}
+html[data-theme="dark"] #view-channel-page .banner-gradient{
+    background:linear-gradient(180deg,
+        rgba(0,0,0,0) 0%, rgba(0,0,0,0) 22%,
+        rgba(0,0,0,.10) 36%, rgba(0,0,0,.26) 48%,
+        rgba(0,0,0,.48) 60%, rgba(0,0,0,.70) 72%,
+        rgba(0,0,0,.88) 84%, rgba(0,0,0,.97) 93%,
+        var(--bg-color) 100%) !important}
+#view-channel-page .channel-profile-section{margin-top:-84px !important}
+
 /* round translucent top buttons */
-#view-channel-page > .appbar .appbar-back-btn,
 #view-channel-page .view-channel-settings-btn{
     width:40px !important;height:40px !important;border-radius:50% !important;
     background:rgba(0,0,0,.38) !important;
     -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
     display:flex !important;align-items:center !important;justify-content:center !important;
 }
-#view-channel-page > .appbar .appbar-back-btn{left:12px !important;top:max(12px, env(safe-area-inset-top, 0px)) !important}
 #view-channel-page .view-channel-settings-btn{right:12px !important;top:max(12px, env(safe-area-inset-top, 0px)) !important}
-#view-channel-page > .appbar .appbar-back-btn i,
 #view-channel-page .view-channel-settings-btn i{font-size:1.12rem !important;text-shadow:none !important;color:#fff !important}
 
 /* banner fades into the page like TikTok */
@@ -1021,23 +1037,11 @@ html[data-theme] #view-channel-page .channel-stat-label{
 #view-channel-page .ch-chip{font-size:.82rem;font-weight:600;padding:6px 14px;border:0;border-radius:8px;background:rgba(127,127,127,.14)}
 #view-channel-page .ch-chip.active{background:var(--text-main);color:var(--bg-color)}
 
-/* Videos + Feels: 3-column thumbnail grid (3:4) */
-#view-channel-page .channel-videos-container,
+/* Feels: 3-column thumbnail grid (3:4). Videos keep the original list cards. */
 #view-channel-page .channel-feels-container{
     display:grid !important;grid-template-columns:repeat(3,minmax(0,1fr)) !important;gap:2px !important;
     padding:0 !important;width:100% !important;box-sizing:border-box !important;overflow:hidden !important}
-#view-channel-page .channel-videos-container .fl-live-upload-card{grid-column:1 / -1 !important;width:auto !important;margin:6px 12px 10px !important}
 #view-channel-page .ch-fcard{aspect-ratio:3/4;border-radius:0}
-#view-channel-page .ch-vcard{display:block;position:relative;gap:0;aspect-ratio:3/4;overflow:hidden;background:#E2E8F0;border-radius:0}
-#view-channel-page .ch-vthumb{position:absolute;inset:0;flex:none;width:100%;max-width:none;height:100%;aspect-ratio:auto;border-radius:0}
-#view-channel-page .ch-vcard::after{content:'';position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(to top,rgba(0,0,0,.5),rgba(0,0,0,0));pointer-events:none}
-#view-channel-page .ch-vdur{top:auto;right:6px;bottom:6px;background:transparent;padding:0;border-radius:0;font-size:.7rem;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.7);z-index:2}
-#view-channel-page .ch-vinfo{position:absolute;left:6px;bottom:6px;right:44px;z-index:2;padding:0}
-#view-channel-page .ch-vtitle,#view-channel-page .ch-vwhen{display:none}
-#view-channel-page .ch-vmeta{display:flex;align-items:center;gap:3px;margin:0;color:#fff;font-size:.8rem;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.7)}
-#view-channel-page .ch-vplay{width:13px;height:13px;fill:#fff;flex:none}
-#view-channel-page .ch-more{position:absolute;top:3px;right:1px;z-index:3;width:30px;height:28px;margin:0;color:#fff;filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
-#view-channel-page .ch-more svg{width:19px;height:19px}
 #view-channel-page .ch-fviews{left:6px;bottom:6px;font-size:.8rem}
 #view-channel-page .ch-empty{margin:36px 16px}
 </style></head><body>
@@ -1077,7 +1081,6 @@ html[data-theme] #view-channel-page .channel-stat-label{
 <!-- ========================================================= -->
 <div class="fullscreen-page" id="view-channel-page" style="z-index: 1510;">
 <header class="appbar">
-<button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
 <h3 class="appbar-title centered-page-title" id="view-appbar-title">Your Channel</h3>
 </header>
 <div class="page-content" style="padding: 0;">

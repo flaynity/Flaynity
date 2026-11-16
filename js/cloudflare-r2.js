@@ -33,9 +33,20 @@ async function flaynityAuthHeaders() {
 async function flaynityCreateUpload(file, folder = "images", options = {}) {
     if (!file) throw new Error("No file selected.");
     const safeFolder = String(folder || "images").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 32) || "images";
-    const safeName = String(file.name || "file.bin").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-140);
+    let safeName = String(file.name || "file.bin").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-140);
+    // The Worker requires the final path segment to start with an alphanumeric
+    // character. Some Android/Sketchware file providers return names beginning
+    // with punctuation (or a truncated punctuation prefix), so normalize it.
+    safeName = safeName.replace(/^[^a-zA-Z0-9]+/, "");
+    if (!safeName) safeName = "file.bin";
     const id = `${Date.now()}_${crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
-    const key = `uploads/${safeFolder}/${id}_${safeName}`;
+    // Keep Feels objects in the documented per-user path accepted by the Worker.
+    const currentUserId = (typeof auth !== "undefined" && auth.currentUser && auth.currentUser.uid)
+        ? String(auth.currentUser.uid).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 128)
+        : "";
+    const key = safeFolder === "feels"
+        ? `uploads/feels/${currentUserId || "user"}/${id}_${safeName}`
+        : `uploads/${safeFolder}/${id}_${safeName}`;
 
     async function requestUploadUrl(forceFreshToken) {
         const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;

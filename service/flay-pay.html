@@ -189,10 +189,10 @@
 
 /* ===== STANDARD TOP BAR (same in Upgrade Pro / Flay Verified Badge / Flay Pay / Flay Payout) ===== */
 .flay-pay-wrapper .top-bar{position:relative;height:60px;min-height:60px;box-sizing:border-box;margin:0;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(128,128,128,.18);background:var(--fp-bg);}
-.flay-pay-wrapper .back-btn{width:40px;height:40px;min-width:40px;padding:0;margin:0;border:none;background:transparent;box-shadow:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;cursor:pointer;flex:none;z-index:2;-webkit-tap-highlight-color:transparent;transition:background .2s,transform .2s}
+.flay-pay-wrapper .back-btn{position:relative;left:auto;right:auto;top:auto;bottom:auto;transform:none;width:40px;height:40px;min-width:40px;padding:0;margin:0;border:none;background:transparent;box-shadow:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;cursor:pointer;flex:none;z-index:2;-webkit-tap-highlight-color:transparent;transition:background .2s,transform .2s}
 .flay-pay-wrapper .back-btn:active{background:rgba(128,128,128,.16);transform:scale(.94)}
 .flay-pay-wrapper .back-btn .std-back-ico{display:block;width:20px;height:20px}
-.flay-pay-wrapper .header-title{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;padding:0;font-size:17px;font-weight:800;line-height:1.2;letter-spacing:-.2px;text-align:center;white-space:nowrap;pointer-events:none;z-index:1;display:block;gap:0}
+.flay-pay-wrapper .header-title{position:absolute;left:50%;top:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);margin:0;padding:0;font-size:17px;font-weight:800;line-height:1.2;letter-spacing:-.2px;text-align:center;white-space:nowrap;pointer-events:none;z-index:1;display:block;gap:0}
 /* ===== END STANDARD TOP BAR ===== */
 /* ===== PAGE LOADING GATE: shimmer skeleton + live internet check + Retry screen ===== */
 .fsg-gate{--fsg-bg:#fff;--fsg-text:#000;--fsg-muted:#6b6b6b;--fsg-a:#ececee;--fsg-b:#f7f7f8;--fsg-btn:#f1f1f3;--fsg-card:#fafafa;--fsg-line:#efefef;position:fixed;top:0;left:0;right:0;bottom:0;z-index:2147483000;display:flex;flex-direction:column;background:var(--fsg-bg);color:var(--fsg-text);font-family:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding-top:env(safe-area-inset-top,0px);box-sizing:border-box;overflow:hidden;opacity:1;transition:opacity .25s ease}

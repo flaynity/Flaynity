@@ -1061,6 +1061,22 @@ html[data-theme="dark"] #view-channel-page .banner-gradient,
 html[data-theme="light"] #view-channel-page .channel-desc-text{color:#000000 !important}
 html[data-theme="dark"] #view-channel-page .channel-desc-text{color:#ffffff !important}
 #view-channel-page .channel-desc-text{font-weight:500 !important}
+
+/* ---- v5: taller banner + earlier, longer fade so the bottom dissolves into the page ---- */
+#view-channel-page .channel-banner-container{aspect-ratio:1.8 / 1 !important;background:transparent !important}
+#view-channel-page .channel-banner-img{
+    -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 16%,rgba(0,0,0,.86) 28%,rgba(0,0,0,.66) 38%,rgba(0,0,0,.44) 47%,rgba(0,0,0,.26) 55%,rgba(0,0,0,.12) 63%,rgba(0,0,0,.04) 71%,transparent 78%,transparent 100%) !important;
+            mask-image:linear-gradient(to bottom,#000 0%,#000 16%,rgba(0,0,0,.86) 28%,rgba(0,0,0,.66) 38%,rgba(0,0,0,.44) 47%,rgba(0,0,0,.26) 55%,rgba(0,0,0,.12) 63%,rgba(0,0,0,.04) 71%,transparent 78%,transparent 100%) !important}
+/* safety layer: same fade painted with the page colour, in case masks are unsupported */
+html[data-theme] #view-channel-page .banner-gradient,
+html[data-theme="dark"] #view-channel-page .banner-gradient,
+#view-channel-page .banner-gradient{
+    display:block !important;
+    background:linear-gradient(to bottom,rgba(127,127,127,0) 0%,rgba(127,127,127,0) 30%,transparent 30%) !important;
+    background:linear-gradient(to bottom,transparent 0%,transparent 34%,var(--bg-color,#fff) 80%,var(--bg-color,#fff) 100%) !important;
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0%,transparent 34%,rgba(0,0,0,.35) 52%,rgba(0,0,0,.8) 68%,#000 80%);
+            mask-image:linear-gradient(to bottom,transparent 0%,transparent 34%,rgba(0,0,0,.35) 52%,rgba(0,0,0,.8) 68%,#000 80%)}
+#view-channel-page .channel-profile-section{margin-top:-78px !important}
 </style></head><body>
 <div class="tab-content" id="you-tab">
 <!-- You profile card removed. Hidden anchor kept only so initYouTabUI() can still load/cache channel data. -->

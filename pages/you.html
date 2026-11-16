@@ -1044,6 +1044,23 @@ html[data-theme] #view-channel-page .channel-stat-label{
 #view-channel-page .ch-fcard{aspect-ratio:3/4;border-radius:0}
 #view-channel-page .ch-fviews{left:6px;bottom:6px;font-size:.8rem}
 #view-channel-page .ch-empty{margin:36px 16px}
+
+/* ---- v4: banner fades with an image mask (works on any theme background) ---- */
+#view-channel-page .channel-banner-container{background:transparent !important}
+#view-channel-page .channel-banner-img{
+    -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 28%,rgba(0,0,0,.88) 42%,rgba(0,0,0,.66) 55%,rgba(0,0,0,.42) 68%,rgba(0,0,0,.2) 82%,rgba(0,0,0,.06) 93%,transparent 100%);
+            mask-image:linear-gradient(to bottom,#000 0%,#000 28%,rgba(0,0,0,.88) 42%,rgba(0,0,0,.66) 55%,rgba(0,0,0,.42) 68%,rgba(0,0,0,.2) 82%,rgba(0,0,0,.06) 93%,transparent 100%)}
+html[data-theme] #view-channel-page .banner-gradient,
+html[data-theme="dark"] #view-channel-page .banner-gradient,
+#view-channel-page .banner-gradient{display:none !important}
+
+/* ---- v4: description moved up; theme-aware text colour ---- */
+#view-channel-page .channel-action-row{display:none !important;margin:0 !important}
+#view-channel-page .view-avatar-img{margin-bottom:0 !important}
+#view-channel-page .channel-description-box{margin:6px 0 0 0 !important;padding:0 16px 4px !important}
+html[data-theme="light"] #view-channel-page .channel-desc-text{color:#000000 !important}
+html[data-theme="dark"] #view-channel-page .channel-desc-text{color:#ffffff !important}
+#view-channel-page .channel-desc-text{font-weight:500 !important}
 </style></head><body>
 <div class="tab-content" id="you-tab">
 <!-- You profile card removed. Hidden anchor kept only so initYouTabUI() can still load/cache channel data. -->

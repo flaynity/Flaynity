@@ -955,6 +955,91 @@
 @media (prefers-reduced-motion: reduce) {
     .you-quick-menu-overlay, .you-quick-menu-panel, .you-quick-menu-item { transition: none !important; }
 }
+
+/* =====================================================================
+   TIKTOK-STYLE CHANNEL PAGE (overrides, keep this block last)
+   ===================================================================== */
+#view-channel-page{--tt-muted:#8a8b91;--tt-line:rgba(127,127,127,.22)}
+html[data-theme="dark"] #view-channel-page{--tt-muted:#a3a3a9}
+
+/* round translucent top buttons */
+#view-channel-page > .appbar .appbar-back-btn,
+#view-channel-page .view-channel-settings-btn{
+    width:40px !important;height:40px !important;border-radius:50% !important;
+    background:rgba(0,0,0,.38) !important;
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    display:flex !important;align-items:center !important;justify-content:center !important;
+}
+#view-channel-page > .appbar .appbar-back-btn{left:12px !important;top:max(12px, env(safe-area-inset-top, 0px)) !important}
+#view-channel-page .view-channel-settings-btn{right:12px !important;top:max(12px, env(safe-area-inset-top, 0px)) !important}
+#view-channel-page > .appbar .appbar-back-btn i,
+#view-channel-page .view-channel-settings-btn i{font-size:1.12rem !important;text-shadow:none !important;color:#fff !important}
+
+/* banner fades into the page like TikTok */
+#view-channel-page .channel-profile-section{margin-top:-70px !important;padding:0 16px !important}
+#view-channel-page .profile-row-main{align-items:flex-end !important;gap:12px !important}
+#view-channel-page .channel-main-meta{padding-bottom:6px !important}
+html[data-theme] #view-channel-page #view-channel-name-txt{
+    font-size:1.55rem !important;font-weight:800 !important;letter-spacing:-.3px !important;
+    margin:0 0 4px !important;line-height:1.2 !important;text-shadow:none !important}
+html[data-theme] #view-channel-page #view-channel-handle-txt{
+    font-size:.95rem !important;font-weight:500 !important;margin:0 0 16px !important;
+    color:var(--tt-muted) !important;text-shadow:none !important}
+#view-channel-page .view-avatar-img{
+    width:96px !important;height:96px !important;border:3px solid var(--bg-color) !important;margin-bottom:6px}
+
+/* stats: bold number, grey label under it */
+#view-channel-page .channel-stats-row{gap:26px !important}
+#view-channel-page .channel-stat-item{align-items:flex-start !important;gap:1px !important}
+html[data-theme] #view-channel-page .channel-stat-num{
+    font-size:1.12rem !important;font-weight:800 !important;text-shadow:none !important}
+html[data-theme] #view-channel-page .channel-stat-label{
+    font-size:.8rem !important;font-weight:500 !important;color:var(--tt-muted) !important;text-shadow:none !important}
+
+/* bio */
+#view-channel-page .channel-description-box{margin:6px 0 0 0 !important;padding:6px 16px 4px !important}
+#view-channel-page .channel-desc-text{font-size:.93rem !important;line-height:1.5 !important}
+#view-channel-page #view-channel-desc.line-clamp{height:4.5em !important;min-height:4.5em !important;max-height:4.5em !important}
+#view-channel-page .channel-desc-text{min-height:0 !important}
+#view-channel-page .btn-more-desc{font-size:.85rem !important;padding:4px 0 0 !important}
+
+/* icon tabs, evenly spaced, short underline */
+#view-channel-page .channel-tabs{
+    display:flex !important;justify-content:space-around !important;gap:0 !important;padding:6px 0 0 !important;
+    margin-top:8px;border-bottom:1px solid var(--tt-line) !important;overflow:visible !important}
+#view-channel-page .channel-tab-item,
+#view-channel-page .channel-tab-item.active{
+    flex:1 1 0 !important;display:flex !important;justify-content:center !important;align-items:center !important;
+    padding:10px 0 0 !important;color:var(--tt-muted) !important;font-weight:400 !important}
+#view-channel-page .channel-tab-item.active{color:var(--text-main) !important}
+#view-channel-page .ch-tab-label{position:relative;display:inline-flex;align-items:center;justify-content:center;padding:0 6px 10px}
+#view-channel-page .ch-tab-svg{width:26px;height:26px;display:block}
+#view-channel-page .channel-tab-item.active .ch-tab-label::after{left:0;right:0;height:2px;border-radius:2px;background:var(--text-main);bottom:-1px}
+
+/* sort chips: small rounded grey pills */
+#view-channel-page .ch-sort-row{gap:8px;padding:12px 12px 10px}
+#view-channel-page .ch-chip{font-size:.82rem;font-weight:600;padding:6px 14px;border:0;border-radius:8px;background:rgba(127,127,127,.14)}
+#view-channel-page .ch-chip.active{background:var(--text-main);color:var(--bg-color)}
+
+/* Videos + Feels: 3-column thumbnail grid (3:4) */
+#view-channel-page .channel-videos-container,
+#view-channel-page .channel-feels-container{
+    display:grid !important;grid-template-columns:repeat(3,minmax(0,1fr)) !important;gap:2px !important;
+    padding:0 !important;width:100% !important;box-sizing:border-box !important;overflow:hidden !important}
+#view-channel-page .channel-videos-container .fl-live-upload-card{grid-column:1 / -1 !important;width:auto !important;margin:6px 12px 10px !important}
+#view-channel-page .ch-fcard{aspect-ratio:3/4;border-radius:0}
+#view-channel-page .ch-vcard{display:block;position:relative;gap:0;aspect-ratio:3/4;overflow:hidden;background:#E2E8F0;border-radius:0}
+#view-channel-page .ch-vthumb{position:absolute;inset:0;flex:none;width:100%;max-width:none;height:100%;aspect-ratio:auto;border-radius:0}
+#view-channel-page .ch-vcard::after{content:'';position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(to top,rgba(0,0,0,.5),rgba(0,0,0,0));pointer-events:none}
+#view-channel-page .ch-vdur{top:auto;right:6px;bottom:6px;background:transparent;padding:0;border-radius:0;font-size:.7rem;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.7);z-index:2}
+#view-channel-page .ch-vinfo{position:absolute;left:6px;bottom:6px;right:44px;z-index:2;padding:0}
+#view-channel-page .ch-vtitle,#view-channel-page .ch-vwhen{display:none}
+#view-channel-page .ch-vmeta{display:flex;align-items:center;gap:3px;margin:0;color:#fff;font-size:.8rem;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+#view-channel-page .ch-vplay{width:13px;height:13px;fill:#fff;flex:none}
+#view-channel-page .ch-more{position:absolute;top:3px;right:1px;z-index:3;width:30px;height:28px;margin:0;color:#fff;filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
+#view-channel-page .ch-more svg{width:19px;height:19px}
+#view-channel-page .ch-fviews{left:6px;bottom:6px;font-size:.8rem}
+#view-channel-page .ch-empty{margin:36px 16px}
 </style></head><body>
 <div class="tab-content" id="you-tab">
 <!-- You profile card removed. Hidden anchor kept only so initYouTabUI() can still load/cache channel data. -->
@@ -1042,9 +1127,9 @@
 </div>
 
 <div class="channel-tabs">
-<div class="channel-tab-item active" id="tab-channel-videos" onclick="switchChannelTab('videos')"><span class="ch-tab-label">Videos</span></div>
-<div class="channel-tab-item" id="tab-channel-feels" onclick="switchChannelTab('feels')"><span class="ch-tab-label">Feels</span></div>
-<div class="channel-tab-item" id="tab-channel-posts" onclick="switchChannelTab('posts')"><span class="ch-tab-label">Posts</span></div>
+<div class="channel-tab-item active" id="tab-channel-videos" role="tab" title="Videos" onclick="switchChannelTab('videos')"><span class="ch-tab-label" aria-label="Videos"><svg class="ch-tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg></span></div>
+<div class="channel-tab-item" id="tab-channel-feels" role="tab" title="Feels" onclick="switchChannelTab('feels')"><span class="ch-tab-label" aria-label="Feels"><svg class="ch-tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="4"/><path d="M10 8.6v6.8l5.6-3.4z" fill="currentColor"/></svg></span></div>
+<div class="channel-tab-item" id="tab-channel-posts" role="tab" title="Posts" onclick="switchChannelTab('posts')"><span class="ch-tab-label" aria-label="Posts"><svg class="ch-tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="3"/><circle cx="9" cy="10" r="1.7"/><path d="m4 17 5-4.5 4 3.5 3-2.5 4 3.5"/></svg></span></div>
 </div>
 <div class="channel-tab-content active" id="channel-content-videos">
 <div class="ch-sort-row" data-type="videos"><button type="button" class="ch-chip active" data-sort="latest" onclick="setChannelSort('videos','latest',this)">Latest</button><button type="button" class="ch-chip" data-sort="popular" onclick="setChannelSort('videos','popular',this)">Popular</button><button type="button" class="ch-chip" data-sort="oldest" onclick="setChannelSort('videos','oldest',this)">Oldest</button></div>

@@ -2471,7 +2471,7 @@ window.authEmailSignup = async function () {
         del: (k) => { try { localStorage.removeItem(k); } catch (e) {} }
     };
     // Use only the custom authorization domain for email verification.
-    const VF_API = 'https://authorization.flaynity.indevs.in';
+    const VF_API = 'https://authorization.flaynity-app.indevs.in';
     const fn = (name) => async (data) => {
         const user = auth.currentUser;
         if (!user) { const e = new Error('Please sign in first.'); e.code = 'functions/unauthenticated'; throw e; }

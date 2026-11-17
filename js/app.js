@@ -2089,7 +2089,11 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
     try {
         clearUserStatusListener();
         detachAdminControlListener();
-        // New email sign-ups must finish the 4-digit code step before entering the app.
+        // Password-based accounts must complete email OTP verification before entering the app.
+        if (user && user.emailVerified === false && Array.isArray(user.providerData) &&
+            user.providerData.some(provider => provider && provider.providerId === 'password')) {
+            try { localStorage.setItem('flaynity-verify-pending', user.uid); } catch (e) {}
+        }
         if (user && window.vfGate && window.vfGate(user)) return;
         if (!user) {
             cleanupUserSessionData();

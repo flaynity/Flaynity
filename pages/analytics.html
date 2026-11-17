@@ -500,6 +500,31 @@
 
 /* No slide animation when opening Analytics pages */
 .an-page { animation: none !important; transition: none !important; transform: none !important; }
+
+/* ===== ANALYTICS PAGE GATE: shimmer skeleton + live internet check + Retry screen ===== */
+.ang-gate{--ang-bg:var(--an-bg,#fff);--ang-text:#000;--ang-muted:#6b6b6b;--ang-a:#ececee;--ang-b:#f7f7f8;--ang-btn:#f1f1f3;--ang-card:#fafafa;--ang-line:#efefef;
+  position:absolute;left:0;right:0;bottom:0;top:calc(56px + env(safe-area-inset-top,0px));z-index:30;display:flex;flex-direction:column;
+  background:var(--ang-bg);color:var(--ang-text);overflow:hidden;opacity:1;transition:opacity .25s ease}
+:root[data-theme="dark"] .ang-gate{--ang-bg:#0F0F0F;--ang-text:#fff;--ang-muted:#d9d9d9;--ang-a:#1c1c1e;--ang-b:#2a2a2d;--ang-btn:#202020;--ang-card:#161618;--ang-line:#222225}
+.ang-gate.ang-out{opacity:0;pointer-events:none}
+.an-page.ang-active{overflow:hidden !important}
+.an-page.ang-active > *:not(.ang-gate):not(.an-head){visibility:hidden !important}
+.ang-gate .ang-skel{flex:1;overflow:hidden;padding:4px 16px 24px;display:none}
+.ang-gate .ang-err{flex:1;display:none;flex-direction:column;align-items:center}
+.ang-gate[data-state="loading"] .ang-skel{display:block}
+.ang-gate[data-state="error"] .ang-err{display:flex}
+.ang-gate .ang-err-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 24px;gap:14px}
+.ang-gate .ang-err-mid h2{margin:10px 0 0;font-size:23px;font-weight:700;color:var(--ang-text)}
+.ang-gate .ang-err-mid p{margin:0;font-size:17px;color:var(--ang-muted);font-weight:400}
+.ang-gate .ang-err-foot{flex:none;width:100%;padding:0 24px calc(16vh + env(safe-area-inset-bottom,0px))}
+.ang-gate .ang-retry{width:100%;height:68px;border:0;border-radius:16px;background:var(--ang-btn);color:inherit;font-family:inherit;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:12px;cursor:pointer}
+.ang-gate .ang-retry:active{transform:scale(.98)}
+.ang-gate .ang-sk{display:block;max-width:100%;background:linear-gradient(100deg,var(--ang-a) 30%,var(--ang-b) 50%,var(--ang-a) 70%);background-size:300% 100%;animation:angShimmer 1.3s linear infinite}
+@keyframes angShimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+.ang-gate .ang-pills{display:flex;gap:6px;overflow:hidden;padding:4px 0 12px}
+.ang-gate .ang-two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.ang-gate .ang-row{display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid var(--ang-line);background:var(--ang-card);border-radius:20px;margin-top:12px;height:68px}
+/* ===== END ANALYTICS PAGE GATE ===== */
 </style>
 </head>
 <body>
@@ -619,7 +644,7 @@ var S = {
   profiles: {}, pending: {},
   range: '28', cStart: 0, cEnd: 0, metric: 'views',
   gen: 0, tTab: 'video', tShown: 5, aTab: 'overview', openItem: null,
-  loaded: {}, pushT: null
+  loaded: {}, pushT: null, hist: [], navBack: false
 };
 var LIS = {};
 var timer = null;
@@ -1329,6 +1354,8 @@ function navH(active) {
 function curKey() { for (var i = 0; i < KEYS.length; i++) if (vis(KEY_PAGE[KEYS[i]])) return KEYS[i]; return null; }
 function go(k) {
   if (curKey() === k) { render(); return; }
+  var from = curKey();   // remember where we came from, so Back returns to the PREVIOUS page
+  if (from && !S.navBack) { S.hist.push(from); if (S.hist.length > 30) S.hist.shift(); }
   S.tShown = 5; S.openItem = null; closeSheet();
   S.skelUntil = Date.now() + 380;
   push(KEY_PAGE[k]); render();
@@ -1500,13 +1527,28 @@ function push(id) {
   }
 }
 
+/* Back inside Analytics: close the sheet, else go to the PREVIOUS Analytics page. Returns false when nothing is left (then the whole Analytics closes). */
+function innerBack() {
+  var wrap = $('an-sheet-wrap');
+  if (wrap && wrap.classList.contains('on')) { closeSheet(); return true; }
+  var from = curKey();
+  if (!from) return false;
+  var prev = null;
+  while (S.hist.length && !prev) { var c = S.hist.pop(); if (c !== from) prev = c; }
+  if (!prev && from !== 'dash') prev = 'dash';
+  if (!prev) return false;
+  window.__anInstantUntil = Date.now() + 400;   // going back is instant (no skeleton / internet check)
+  S.navBack = true;
+  try { go(prev); } finally { S.navBack = false; }
+  return true;
+}
+
 function act(a) {
   var i = a.indexOf(':'), k = i < 0 ? a : a.slice(0, i), v = i < 0 ? '' : a.slice(i + 1);
   try { if (typeof playUI === 'function') playUI('click'); } catch (e) {}
   switch (k) {
     case 'back':
-      closeSheet();
-      if (curKey() && curKey() !== 'dash') { go('dash'); break; }
+      if (innerBack()) break;
       if (typeof executeBackAction === 'function') executeBackAction();
       else if (!vis('analytics-page')) push('analytics-page');
       else history.back();
@@ -1564,9 +1606,9 @@ var lastKey = null;
 function check() {
   var ck = curKey(); if (ck !== lastKey) { lastKey = ck; S.gen++; }
   var o = anyOpen();
-  if (o && !wasOpen) start();
+  if (o && !wasOpen) { S.hist = []; start(); }
   if (o) render();
-  if (!o && wasOpen) { closeSheet(); stop(); }
+  if (!o && wasOpen) { closeSheet(); S.hist = []; stop(); }
   wasOpen = o;
 }
 
@@ -1589,11 +1631,138 @@ PAGES.forEach(function (id) {
   }
 })();
 
+/* System/hardware Back (via AppNavigation.pop) first goes to the previous Analytics page */
+window.__flayInnerBack = window.__flayInnerBack || {};
+window.__flayInnerBack['analytics-page'] = innerBack;
+
 check();
 window.FlayAnalytics = {
   refresh: function () { if (S.live) sched(); },
   open: function () { push('analytics-page'); }
 };
+})();
+</script>
+<script>
+/* ANALYTICS PAGE GATE: every time an Analytics page opens (Dashboard, Overview, Reach, Engagement, Audience, Top Content)
+   -> shimmer skeleton + live internet check, then the page (online) or the Retry screen (offline).
+   Going BACK to a previous Analytics page is instant. */
+(function () {
+    if (window.__anGateInit) return;
+    window.__anGateInit = true;
+    var IDS = ['analytics-page', 'analytics-overview-page', 'analytics-reach-page', 'analytics-engagement-page', 'analytics-audience-page', 'analytics-top-page'];
+    var GATE_HTML = "<div class=\"ang-skel\"><div class=\"ang-pills\"><div class=\"ang-sk\" style=\"width:84px;height:36px;border-radius:999px;flex:none\"></div><div class=\"ang-sk\" style=\"width:84px;height:36px;border-radius:999px;flex:none\"></div><div class=\"ang-sk\" style=\"width:84px;height:36px;border-radius:999px;flex:none\"></div><div class=\"ang-sk\" style=\"width:84px;height:36px;border-radius:999px;flex:none\"></div><div class=\"ang-sk\" style=\"width:84px;height:36px;border-radius:999px;flex:none\"></div></div><div class=\"ang-sk\" style=\"width:100%;height:210px;border-radius:20px;\"></div><div class=\"ang-two\"><div class=\"ang-sk\" style=\"width:100%;height:96px;border-radius:18px;\"></div><div class=\"ang-sk\" style=\"width:100%;height:96px;border-radius:18px;\"></div></div><div class=\"ang-two\" style=\"margin-top:12px\"><div class=\"ang-sk\" style=\"width:100%;height:96px;border-radius:18px;\"></div><div class=\"ang-sk\" style=\"width:100%;height:96px;border-radius:18px;\"></div></div><div class=\"ang-row\"><div class=\"ang-sk\" style=\"width:44px;height:44px;border-radius:50%;flex:none\"></div><div style=\"flex:1;display:flex;flex-direction:column;gap:9px\"><div class=\"ang-sk\" style=\"width:60%;height:14px;border-radius:10px;\"></div><div class=\"ang-sk\" style=\"width:85%;height:11px;border-radius:10px;\"></div></div></div><div class=\"ang-row\"><div class=\"ang-sk\" style=\"width:44px;height:44px;border-radius:50%;flex:none\"></div><div style=\"flex:1;display:flex;flex-direction:column;gap:9px\"><div class=\"ang-sk\" style=\"width:60%;height:14px;border-radius:10px;\"></div><div class=\"ang-sk\" style=\"width:85%;height:11px;border-radius:10px;\"></div></div></div></div><div class=\"ang-err\"><div class=\"ang-err-mid\"><svg width=\"76\" height=\"76\" viewBox=\"0 0 76 76\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"38\" cy=\"9\" r=\"5\"/><path d=\"M38 14v9\"/><rect x=\"11\" y=\"23\" width=\"54\" height=\"40\" rx=\"9\"/><path d=\"M29 38v5M47 38v5\"/></svg><h2>Something went wrong</h2><p>Please try again</p></div><div class=\"ang-err-foot\"><button class=\"ang-retry\" type=\"button\" data-ang=\"retry\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3.5 12a8.5 8.5 0 1 0 2.6-6.1\"/><path d=\"M3.5 4v4.5H8\"/></svg><span>Retry</span></button></div></div>";
+
+    function checkInternet(ms) {
+        if (navigator.onLine === false) return Promise.resolve(false);
+        var stamp = '?_=' + Date.now();
+        var urls = ['https://www.gstatic.com/generate_204' + stamp, 'https://www.google.com/generate_204' + stamp, 'https://cdnjs.cloudflare.com/cdn-cgi/trace' + stamp];
+        return new Promise(function (resolve) {
+            var pending = urls.length, settled = false;
+            function done(ok) {
+                if (settled) return;
+                if (ok) { settled = true; resolve(true); return; }
+                if (--pending === 0) { settled = true; resolve(false); }
+            }
+            urls.forEach(function (u) {
+                var ctl = typeof AbortController === 'function' ? new AbortController() : null;
+                var t = setTimeout(function () { try { ctl && ctl.abort(); } catch (e) {} done(false); }, ms || 5000);
+                fetch(u, { method: 'GET', mode: 'no-cors', cache: 'no-store', signal: ctl ? ctl.signal : undefined })
+                    .then(function () { clearTimeout(t); done(true); })
+                    .catch(function () { clearTimeout(t); done(false); });
+            });
+        });
+    }
+    function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+    function setup(root) {
+        if (root.querySelector(':scope > .ang-gate')) return;
+        var gate = document.createElement('div');
+        gate.className = 'ang-gate';
+        gate.setAttribute('data-state', 'loading');
+        gate.innerHTML = GATE_HTML;
+        root.appendChild(gate);
+        var token = 0, hideTimer = null;
+        function isShown() { return root.style.display !== 'none' && root.getClientRects().length > 0; }
+        var wasShown = isShown();
+
+        function showSkeleton() {
+            clearTimeout(hideTimer);
+            root.classList.add('ang-active');
+            try { root.scrollTop = 0; } catch (e) {}
+            gate.style.display = 'flex';
+            gate.setAttribute('data-state', 'loading');
+            void gate.offsetWidth;
+            gate.classList.remove('ang-out');
+        }
+        function hideNow() {
+            clearTimeout(hideTimer);
+            gate.style.display = 'none';
+            gate.classList.add('ang-out');
+            root.classList.remove('ang-active');
+        }
+        function finish(my) {
+            gate.classList.add('ang-out');
+            hideTimer = setTimeout(function () {
+                if (my !== token) return;
+                gate.style.display = 'none';
+                root.classList.remove('ang-active');
+            }, 260);
+        }
+        function run() {
+            var my = ++token;
+            showSkeleton();
+            Promise.all([checkInternet(5000), wait(550)]).then(function (res) {
+                if (my !== token) return;
+                if (!res[0]) { gate.setAttribute('data-state', 'error'); return; }
+                finish(my);
+            });
+        }
+        gate.addEventListener('click', function (e) {
+            var t = e.target.closest ? e.target.closest('[data-ang="retry"]') : null;
+            if (t) run();
+        });
+        new MutationObserver(function () {
+            var now = isShown();
+            if (now === wasShown) return;
+            wasShown = now;
+            if (now) {
+                if (Date.now() < (window.__anInstantUntil || 0)) { token++; hideNow(); }   // Back -> previous page, instant
+                else run();                                                              // opened -> skeleton + internet check
+            } else {
+                token++; showSkeleton();   // closed -> reset, so the next open starts with the skeleton
+            }
+        }).observe(root, { attributes: true, attributeFilter: ['style', 'class'] });
+        if (wasShown) run();
+    }
+
+    function init(n) {
+        var missing = 0;
+        IDS.forEach(function (id) { var r = document.getElementById(id); if (r) setup(r); else missing++; });
+        if (missing && n < 20) setTimeout(function () { init(n + 1); }, 300);
+    }
+    init(0);
+
+    /* System/hardware Back: let the page close an inner page first (shared with the Flay service pages) */
+    (function installInnerBack(n) {
+        try {
+            if (typeof AppNavigation === 'undefined') throw new Error('not ready');
+            if (AppNavigation.__innerBackPatched) return;
+            AppNavigation.__innerBackPatched = true;
+            var origPop = AppNavigation.pop;
+            AppNavigation.pop = function () {
+                try {
+                    var c = AppNavigation.current && AppNavigation.current();
+                    if (c && c.type === 'page') {
+                        var h = window.__flayInnerBack && window.__flayInnerBack[c.id];
+                        if (typeof h === 'function' && h() === true) return null;
+                    }
+                } catch (e) { console.error('Inner back error:', e); }
+                return origPop.apply(AppNavigation, arguments);
+            };
+        } catch (e) {
+            if (n < 40) setTimeout(function () { installInnerBack(n + 1); }, 250);
+        }
+    })(0);
 })();
 </script>
 </body>

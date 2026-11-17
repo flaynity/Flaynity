@@ -1,4 +1,4 @@
 /* Flaynity Google Apps Script Email Verification endpoint.
- * After deploying apps-script/Code.gs as a Web App, paste its /exec URL below.
+ * Deployed Google Apps Script Web App URL.
  */
-window.FLAYNITY_EMAIL_VERIFICATION_URL = '';
+window.FLAYNITY_EMAIL_VERIFICATION_URL = 'https://script.google.com/macros/s/AKfycbxCErJ00CEWpATyJR_AeS74pbC4tA3hUQMuVQ3vHNTr8ScG_foIMxj_ixUR714oiTuz/exec';

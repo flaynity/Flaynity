@@ -108,15 +108,26 @@ function verifyEmailCode_(user, data) {
     }
     var apiKey = PropertiesService.getScriptProperties().getProperty('FIREBASE_WEB_API_KEY');
     if (!apiKey) throw appError('failed-precondition', 'Server setup is incomplete: Firebase API key is missing.');
-    var update = UrlFetchApp.fetch(FIREBASE_UPDATE + encodeURIComponent(apiKey), {
+    // Only the server-side service account may set emailVerified=true.
+    // The client ID token is still validated above and supplies the trusted UID.
+    var projectId = PropertiesService.getScriptProperties().getProperty('FIREBASE_PROJECT_ID');
+    if (!projectId) throw appError('failed-precondition', 'Server setup is incomplete: Firebase project ID is missing.');
+    var accessToken = getFirebaseAdminAccessToken_();
+    var update = UrlFetchApp.fetch('https://identitytoolkit.googleapis.com/v1/projects/' +
+      encodeURIComponent(projectId) + '/accounts:update', {
       method: 'post',
       contentType: 'application/json',
-      payload: JSON.stringify({ idToken: currentIdToken_(), emailVerified: true, returnSecureToken: true }),
+      headers: { Authorization: 'Bearer ' + accessToken },
+      payload: JSON.stringify({ localId: uid, emailVerified: true }),
       muteHttpExceptions: true
     });
     var response = JSON.parse(update.getContentText() || '{}');
-    if (update.getResponseCode() < 200 || update.getResponseCode() >= 300 || !response.emailVerified) {
-      throw appError('internal', 'The code is correct, but Firebase could not update the email verification status.');
+    if (update.getResponseCode() < 200 || update.getResponseCode() >= 300) {
+      var detail = response.error && response.error.message ? String(response.error.message) : 'HTTP ' + update.getResponseCode();
+      throw appError('internal', 'Firebase Admin update failed: ' + detail);
+    }
+    if (response.emailVerified !== true) {
+      throw appError('internal', 'Firebase did not confirm the email verification update.');
     }
     clearOtp_(props, prefix);
     return { ok: true, verified: true, email: email };
@@ -170,4 +181,54 @@ function htmlResponse_(requestId, result) {
     '<script>try{window.top.postMessage(' + payload + ', "*");}catch(e){try{window.parent.postMessage(' + payload + ', "*");}catch(e2){}}</script>' +
     '</body></html>';
   return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+
+/**
+ * Creates a short-lived Google OAuth 2.0 access token for Firebase Auth Admin REST.
+ * Required Script Properties:
+ *   FIREBASE_SERVICE_ACCOUNT_EMAIL
+ *   FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY
+ * The service account must have the Firebase Authentication Admin role on the project.
+ */
+function getFirebaseAdminAccessToken_() {
+  var props = PropertiesService.getScriptProperties();
+  var clientEmail = props.getProperty('FIREBASE_SERVICE_ACCOUNT_EMAIL');
+  var privateKey = props.getProperty('FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY');
+  if (!clientEmail || !privateKey) {
+    throw appError('failed-precondition', 'Server setup is incomplete: Firebase service account credentials are missing.');
+  }
+  privateKey = privateKey.replace(/\\n/g, '\n');
+
+  var now = Math.floor(Date.now() / 1000);
+  var header = { alg: 'RS256', typ: 'JWT' };
+  var claims = {
+    iss: clientEmail,
+    scope: 'https://www.googleapis.com/auth/identitytoolkit',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600
+  };
+  var unsigned = base64UrlJson_(header) + '.' + base64UrlJson_(claims);
+  var signature = Utilities.computeRsaSha256Signature(unsigned, privateKey);
+  var assertion = unsigned + '.' + Utilities.base64EncodeWebSafe(signature).replace(/=+$/g, '');
+
+  var tokenResponse = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
+    method: 'post',
+    payload: {
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: assertion
+    },
+    muteHttpExceptions: true
+  });
+  var tokenData = JSON.parse(tokenResponse.getContentText() || '{}');
+  if (tokenResponse.getResponseCode() < 200 || tokenResponse.getResponseCode() >= 300 || !tokenData.access_token) {
+    var detail = tokenData.error_description || tokenData.error || ('HTTP ' + tokenResponse.getResponseCode());
+    throw appError('internal', 'Could not obtain Firebase Admin access: ' + String(detail));
+  }
+  return tokenData.access_token;
+}
+
+function base64UrlJson_(value) {
+  return Utilities.base64EncodeWebSafe(JSON.stringify(value), Utilities.Charset.UTF_8).replace(/=+$/g, '');
 }

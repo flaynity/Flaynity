@@ -900,9 +900,25 @@ function getMainScrollTop() {
     );
 }
 
+function forceHidePTRIndicator() {
+    document.querySelectorAll('#ptr-indicator').forEach((el) => {
+        el.style.setProperty('display', 'none', 'important');
+        el.style.setProperty('visibility', 'hidden', 'important');
+        el.style.setProperty('opacity', '0', 'important');
+    });
+}
+
 function isPTRAllowedOnCurrentView() {
+    // Never on startup splash / loading / get-started / welcome / sign-up / login pages.
+    if (document.body.classList.contains('auth-active')) return false;
+    const _splash = document.getElementById('flaynity-startup-splash');
+    if (_splash && !_splash.classList.contains('is-hidden') && getComputedStyle(_splash).display !== 'none') return false;
+    const _auth = document.getElementById('auth-screen');
+    if (_auth && getComputedStyle(_auth).display !== 'none') return false;
+    const _appScr = document.getElementById('app-screen');
+    if (!_appScr || getComputedStyle(_appScr).display === 'none') return false;
     const _flcc=document.getElementById('fl-create-channel');
-    if (_flcc && _flcc.style.display !== 'none') return false;
+    if (_flcc && getComputedStyle(_flcc).display !== 'none') return false;
     const modalsOpen = document.querySelectorAll('.fullscreen-page[style*="display: flex"], .fullscreen-page[style*="display: block"], .premium-download-modal[style*="display: flex"], #full-movie-page[style*="display: block"], #theme-popup-menu[style*="display: flex"], #full-image-preview-overlay[style*="display: flex"]');
     if (modalsOpen.length > 0) return false;
 
@@ -987,22 +1003,27 @@ function ensurePTRIndicator() {
         ptrSpinner.appendChild(path3);
         ptrIndicator.appendChild(ptrSpinner);
     }
+    // Remove duplicate indicators (Home page markup + dynamically created one).
+    document.querySelectorAll('#ptr-indicator').forEach((el) => { if (el !== ptrIndicator) el.remove(); });
     if (ptrIndicator) {
         ptrIndicator.style.setProperty('position', 'fixed', 'important');
         ptrIndicator.style.setProperty('top', '58px', 'important');
         ptrIndicator.style.setProperty('left', '50%', 'important');
         ptrIndicator.style.setProperty('width', '42px', 'important');
         ptrIndicator.style.setProperty('height', '42px', 'important');
-        ptrIndicator.style.setProperty('display', 'flex', 'important');
         ptrIndicator.style.setProperty('align-items', 'center', 'important');
         ptrIndicator.style.setProperty('justify-content', 'center', 'important');
-        ptrIndicator.style.setProperty('visibility', 'visible', 'important');
         ptrIndicator.style.setProperty('pointer-events', 'none', 'important');
         ptrIndicator.style.setProperty('background', 'var(--surface, #0F0F0F)', 'important');
         ptrIndicator.style.setProperty('border', '2px solid var(--primary, #FF1744)', 'important');
         ptrIndicator.style.setProperty('border-radius', '50%', 'important');
         ptrIndicator.style.setProperty('box-shadow', '0 4px 16px rgba(0,0,0,0.35)', 'important');
         ptrIndicator.style.setProperty('z-index', '2147483647', 'important');
+        // Hidden by default. Only the Home pull gesture may show it.
+        ptrIndicator.style.setProperty('display', 'none', 'important');
+        ptrIndicator.style.setProperty('visibility', 'hidden', 'important');
+        ptrIndicator.style.setProperty('opacity', '0', 'important');
+        ptrIndicator.style.setProperty('transform', 'translate3d(-50%, -90px, 0) scale(0.72)', 'important');
     }
     if (ptrSpinner) {
         ptrSpinner.style.setProperty('width', '24px', 'important');
@@ -1086,6 +1107,11 @@ function initPullToRefresh() {
     }
 
     const PTR_TRIGGER_DISTANCE = 110;
+
+    // Safety net: if the user is not on Home, the indicator must never be visible.
+    setInterval(() => {
+        if (!isRefreshingNow && !isPTRActive && !isPTRAllowedOnCurrentView()) forceHidePTRIndicator();
+    }, 400);
 
     document.addEventListener('touchstart', (e) => {
         if (isRefreshingNow || !e.touches || !e.touches.length) return;

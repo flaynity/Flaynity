@@ -8,6 +8,34 @@ window.FEELS_ICONS = {
 /* Flaynity Modular Loader — serial page loading + offline cache */
 // The WebView must never restore scroll on its own: AppNavigation saves/restores it (multi-step).
 try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
+// ===== BOOT GATE: never show Welcome / Log In while the saved login is still being checked =====
+(function () {
+    try { document.body.classList.add('auth-booting'); } catch (e) {}
+    window.__flBootDone = function () {
+        try { document.body.classList.remove('auth-booting'); } catch (e) {}
+        if (window.__flBootTimer) { clearTimeout(window.__flBootTimer); window.__flBootTimer = null; }
+    };
+    window.__flWithTimeout = function (promise, ms) {
+        return new Promise(function (resolve, reject) {
+            const t = setTimeout(function () { const err = new Error('timeout'); err.__flTimeout = true; reject(err); }, ms);
+            Promise.resolve(promise).then(function (v) { clearTimeout(t); resolve(v); }, function (e) { clearTimeout(t); reject(e); });
+        });
+    };
+    // Safety net: if the login check is still stuck after 12s, open the app for a saved user (or the normal signed-out screen).
+    window.__flBootTimer = setTimeout(function () {
+        window.__flBootTimer = null;
+        try {
+            const u = (typeof auth !== 'undefined') ? auth.currentUser : null;
+            if (u) {
+                const a = document.getElementById('auth-screen'), s = document.getElementById('app-screen');
+                if (a) a.style.display = 'none';
+                if (s) s.style.display = 'block';
+                document.body.classList.remove('auth-active');
+            }
+        } catch (e) {}
+        window.__flBootDone();
+    }, 12000);
+})();
 (async function () {
     const pageFiles = [["home","pages/home.html"],["feels","pages/feels.html"],["posts","pages/posts.html"],["upload","pages/upload.html"],["discover","pages/discover.html"],["you","pages/you.html"],["analytics","pages/analytics.html"]];
     const CACHE_PREFIX = "flaynity-page-cache-v1:";
@@ -80,6 +108,7 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
         if (appScr) appScr.style.display = 'block';
         document.body.classList.remove('auth-active');
         window.__flaynityOfflineSessionActive = true;
+        if (window.__flBootDone) window.__flBootDone();
         try { firebase.database().goOffline(); } catch (e) {}
     }
 
@@ -2090,7 +2119,7 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         clearUserStatusListener();
         detachAdminControlListener();
         // New email sign-ups must finish the 4-digit code step before entering the app.
-        if (user && window.vfGate && window.vfGate(user)) return;
+        if (user && window.vfGate && window.vfGate(user)) { window.__flBootDone && window.__flBootDone(); return; }
         if (!user) {
             cleanupUserSessionData();
             document.body.classList.add('auth-active');
@@ -2102,6 +2131,7 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
                 window.__flaynityDirectWelcomeAfterSwitch = false;
                 if (authScr) authScr.style.display = 'flex';
                 if (typeof window.authShowView === 'function') window.authShowView('welcome', true);
+                window.__flBootDone && window.__flBootDone();
                 return;
             }
             // First launch / ordinary signed-out launch keeps the existing onboarding flow.
@@ -2109,6 +2139,7 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
             if (typeof window.__flaynityShowOnboarding === 'function') {
                 window.__flaynityShowOnboarding();
             }
+            window.__flBootDone && window.__flBootDone();
             return;
         }
 
@@ -2120,7 +2151,7 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
 
         // Always verify the account status from Firebase before exposing the app.
         const userRef = db.ref(`users/${user.uid}`);
-        const firstSnap = await userRef.once('value');
+        const firstSnap = await window.__flWithTimeout(userRef.once('value'), 8000);
         const firstData = firstSnap.val() || {};
         const firstStatus = String(firstData.userStatus || firstData.accountStatus || '').toLowerCase();
         if (firstStatus === 'banned') {
@@ -2129,6 +2160,7 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
             const authScr = document.getElementById('auth-screen');
             if (appScr) appScr.style.display = 'none';
             if (authScr) authScr.style.display = 'none';
+            window.__flBootDone && window.__flBootDone();
             showAccountBannedPopup(firstData.banReason);
             try { await auth.signOut(); } catch(e) {}
             return;
@@ -2143,7 +2175,7 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
             } catch (e) {}
             // Read the channel (twice if it looks missing) so one empty read never shows the page by mistake.
             for (let i = 0; i < 2 && !hasChannel; i++) {
-                const channelSnap = await db.ref('channels/' + user.uid).once('value');
+                const channelSnap = await window.__flWithTimeout(db.ref('channels/' + user.uid).once('value'), 8000);
                 if (channelSnap.exists()) { hasChannel = true; break; }
                 if (i === 0) await new Promise(r => setTimeout(r, 600));
             }
@@ -2163,11 +2195,14 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
             // Keep the app hidden. The app starts only after the channel is created.
             if (appScr) appScr.style.display = 'none';
             window.__flaynityNeedsChannelBoot = true;
+            window.__flBootDone && window.__flBootDone();
             await window.showCreateChannelPage();
             return;
         }
         window.__flaynityNeedsChannelBoot = false;
         if (appScr) appScr.style.display = 'block';
+        window.__flBootDone && window.__flBootDone();
+        window.__flAuthRetry = 0;
 
         saveAccountToList(user);
         attachAdminControlListener();
@@ -2272,7 +2307,33 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         }
     } catch (e) {
         console.error('Auth status sync error:', e);
-        try { await auth.signOut(); } catch(err) {}
+        // A slow / failed network must NEVER log the user out (that sent them back to Welcome).
+        // Only a real account problem (disabled / deleted / expired login) signs out.
+        const code = String((e && e.code) || '');
+        const realAuthProblem = /^auth\/(user-disabled|user-not-found|user-token-expired|invalid-user-token|requires-recent-login)$/.test(code);
+        const cu = auth.currentUser;
+        if (cu && !realAuthProblem) {
+            let known = false;
+            try { known = !!(localStorage.getItem('flaynity_channel_created:' + cu.uid) || localStorage.getItem('flaynity_channel_cache:' + cu.uid)); } catch (x) {}
+            if (known) {
+                // Returning user: open the app now, then finish loading in the background.
+                const a = document.getElementById('auth-screen'), s = document.getElementById('app-screen');
+                if (a) a.style.display = 'none';
+                if (s) s.style.display = 'block';
+                document.body.classList.remove('auth-active');
+                try { window.__flaynityHideOnboarding && window.__flaynityHideOnboarding(); } catch (x) {}
+                window.__flBootDone && window.__flBootDone();
+            }
+            window.__flAuthRetry = (window.__flAuthRetry || 0) + 1;
+            if (window.__flAuthRetry <= 5) {
+                setTimeout(function () {
+                    if (auth.currentUser && typeof window.__flaynityAuthHandler === 'function') window.__flaynityAuthHandler(auth.currentUser);
+                }, 3000 * window.__flAuthRetry);
+            }
+        } else {
+            window.__flBootDone && window.__flBootDone();
+            try { await auth.signOut(); } catch (err) {}
+        }
     }
 });
 

@@ -341,7 +341,7 @@
 
     var T_STAGES = 2700;      // full animation length
     var T_REDUCED = 700;      // reduced-motion: short static brand screen
-    var T_MAX = 6000;         // never keep the user waiting longer than this
+    var T_MAX = 13000;         // never keep the user waiting longer than this
     var FADE_OUT = 400;       // reveal fade + safety margin
 
     var t0 = Date.now(), startAt = 0;
@@ -380,7 +380,7 @@
             if (window.__flaynityNeedsChannelBoot === true) return true;
             if (document.body && document.body.classList.contains('auth-active')) return true;
             var a = document.getElementById('app-screen');
-            if (a && window.getComputedStyle(a).display !== 'none') return true;
+            if (a && window.getComputedStyle(a).display !== 'none') return window.__flaynityHomeReady !== false;   // wait until Home feed is loaded
         } catch (e) {}
         return false;
     }

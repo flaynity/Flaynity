@@ -1209,7 +1209,7 @@ async function triggerUniversalPullToRefresh() {
     }
 
     try {
-        await SyncManager.refreshEverything();
+        await hfRunHomeRefresh(() => SyncManager.refreshEverything());
         showNotification("Feed Updated!", "success");
     } catch (e) {
         console.error("PTR Refresh Exception:", e);
@@ -1271,6 +1271,160 @@ let currentGenre = null;
 
 let activeStatsRef = null;
 let activeCommentsRef = null;
+
+// =========================================================
+// HOME FEED RANDOMIZER (YouTube-style personal random feed)
+// - One random seed per user per app launch, re-rolled on every Home pull-to-refresh.
+// - Same seed => same order, so realtime rebuilds / Back navigation never reshuffle the feed.
+// - Smart mix: random + fresh-upload boost; already-watched items sink to the bottom.
+// =========================================================
+var _hfSeed = 0;
+var _hfNow = 0;
+var _hfSeenSnap = null;
+var _hfAnimateNext = false;
+var _hfHoldRender = false;
+var HF_SEEN_KEY = 'flaynity_home_seen_v1';
+var HF_SEEN_TTL = 14 * 24 * 3600 * 1000;
+
+function _hfHash(str) {
+    str = String(str);
+    var h = 1779033703 ^ str.length;
+    for (var i = 0; i < str.length; i++) {
+        h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+        h = (h << 13) | (h >>> 19);
+    }
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return (h ^ (h >>> 16)) >>> 0;
+}
+
+function hfNewSeed() {
+    var uid = '', r;
+    try { uid = (auth && auth.currentUser && auth.currentUser.uid) || ''; } catch (e) {}
+    try { var a = new Uint32Array(2); crypto.getRandomValues(a); r = a[0] + '-' + a[1]; }
+    catch (e) { r = Math.random() + '-' + Math.random(); }
+    _hfNow = Date.now();
+    _hfSeed = _hfHash(uid + '|' + _hfNow + '|' + r);
+    _hfSeenSnap = null;   // re-read watched list for the new feed
+    return _hfSeed;
+}
+
+function _hfReadSeen() {
+    try { return JSON.parse(localStorage.getItem(HF_SEEN_KEY) || '{}') || {}; } catch (e) { return {}; }
+}
+
+function hfMarkSeen(id) {
+    if (id === undefined || id === null || id === '') return;
+    try {
+        var m = _hfReadSeen();
+        m[String(id)] = Date.now();
+        var keys = Object.keys(m);
+        if (keys.length > 1500) {
+            keys.sort(function (a, b) { return m[a] - m[b]; })
+                .slice(0, keys.length - 1000)
+                .forEach(function (k) { delete m[k]; });
+        }
+        localStorage.setItem(HF_SEEN_KEY, JSON.stringify(m));
+    } catch (e) {}
+}
+
+// Order a list for Home: seeded random + fresh boost - watched penalty, capped to `max` candidates.
+function hfOrder(list, max) {
+    if (!_hfSeed) hfNewSeed();
+    if (!_hfSeenSnap) _hfSeenSnap = _hfReadSeen();
+    var seen = _hfSeenSnap, seed = _hfSeed, now = _hfNow;
+    var scored = list.map(function (it) {
+        var id = String(it && it.id);
+        var r = _hfHash(seed + '|' + id) / 4294967296;
+        var ageDays = Math.max(0, (now - (it.createdAt || 0)) / 86400000);
+        var fresh = it.createdAt ? Math.exp(-ageDays / 10) : 0;
+        var t = seen[id];
+        var watched = t && (now - t) < HF_SEEN_TTL;
+        return { it: it, s: r * 0.62 + fresh * 0.38 - (watched ? 0.9 : 0) };
+    });
+    scored.sort(function (a, b) { return b.s - a.s; });
+    var out = scored.map(function (x) { return x.it; });
+    if (max && out.length > max) out = out.slice(0, max);
+
+    // Avoid the same channel appearing back-to-back (look ahead a few slots).
+    for (var i = 1; i < out.length; i++) {
+        var u = out[i].userId;
+        if (u && out[i - 1].userId === u) {
+            for (var j = i + 1; j < Math.min(out.length, i + 6); j++) {
+                if (out[j].userId !== u) { var tmp = out[i]; out[i] = out[j]; out[j] = tmp; break; }
+            }
+        }
+    }
+    return out;
+}
+
+// Write the feed HTML. Skips the write when nothing changed (no flicker on realtime rebuilds)
+// and plays the staggered fade/slide-up once for a freshly refreshed feed.
+function hfCommit(container, html) {
+    var same = container.__hfSig === html && container.__hfNode &&
+               container.__hfNode === container.firstElementChild && container.childElementCount > 0;
+    if (same) return;
+    var animate = _hfAnimateNext && !!html;
+    container.innerHTML = html;
+    container.__hfSig = html;
+    container.__hfNode = container.firstElementChild;
+    if (animate) {
+        _hfAnimateNext = false;
+        hfPlayEnter(container);
+    }
+}
+
+function hfPlayEnter(container) {
+    try {
+        var targets = Array.prototype.slice.call(container.children);
+        if (targets.length <= 2) {
+            var cards = container.querySelectorAll('.short-home-card-2col');
+            if (cards.length) targets = Array.prototype.slice.call(cards);
+        }
+        targets = targets.slice(0, 8);
+        targets.forEach(function (el, i) {
+            el.style.setProperty('--hf-i', i);
+            el.classList.add('hf-enter');
+        });
+        setTimeout(function () {
+            targets.forEach(function (el) { el.classList.remove('hf-enter'); el.style.removeProperty('--hf-i'); });
+        }, 1200);
+    } catch (e) {}
+}
+
+// Home pull-to-refresh: new seed -> fade old feed out -> shimmer skeleton -> new feed fades/slides in.
+async function hfRunHomeRefresh(doRefresh) {
+    var home = document.getElementById('home-feed-container');
+    var activeNav = document.querySelector('.nav-item.active');
+    var onHome = !!home && !!activeNav && activeNav.id === 'nav-home' &&
+                 isAdminFeatureEnabled('homeFeedEnabled');
+    if (!onHome) { await doRefresh(); return; }
+
+    hfNewSeed();
+    _hfAnimateNext = true;
+    _hfHoldRender = true;
+    var safety = setTimeout(function () { _hfHoldRender = false; }, 20000);
+    try {
+        home.classList.add('hf-leaving');
+        await new Promise(function (r) { setTimeout(r, 220); });
+        home.innerHTML = getHomeSkeletonHTML();
+        home.__hfSig = null;
+        home.classList.remove('hf-leaving');
+        home.classList.add('hf-skel-in');
+        var started = Date.now();
+        try { await doRefresh(); } finally {
+            var wait = 520 - (Date.now() - started);   // let the shimmer be seen
+            if (wait > 0) await new Promise(function (r) { setTimeout(r, wait); });
+        }
+    } finally {
+        clearTimeout(safety);
+        _hfHoldRender = false;
+        home.classList.remove('hf-leaving');
+        home.classList.remove('hf-skel-in');
+        try { buildHomeFeed(); } catch (e) {}
+        _hfAnimateNext = false;
+    }
+}
 
 // =========================================
 // DYNAMIC FEED DATA VARIABLES
@@ -3432,6 +3586,8 @@ function buildHomeFeed() {
     const container = document.getElementById('home-feed-container');
     if (!container) return;
 
+    if (_hfHoldRender) return;   // pull-to-refresh in progress: it rebuilds once data is ready
+
     if (!navigator.onLine) {
         renderAllSkeletons();
         return;
@@ -3454,9 +3610,12 @@ function buildHomeFeed() {
     feels = feels.filter(x => !(x.userId && _fxHiddenChannels.has(String(x.userId))));
     posts = posts.filter(x => !(x.userId && _fxHiddenChannels.has(String(x.userId))));
 
-    feels.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
-    longs.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
-    posts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+    // Personal random feed (new seed per user / per refresh). Posts tab stays newest-first.
+    feels = hfOrder(feels, 300);
+    longs = hfOrder(longs, 300);
+    posts = (activeHomeCategory === "Posts")
+        ? posts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0))
+        : hfOrder(posts, 100);
 
     const uniqueUserIds = new Set();
 
@@ -3473,7 +3632,7 @@ function buildHomeFeed() {
             if (s.userId) uniqueUserIds.add(s.userId);
             html += `
                 <div class="short-home-card-2col" onclick="openShortFromHome('${s.id}')">
-                    <img src="${s.poster}" loading="lazy">
+                    <img src="${s.poster}" loading="lazy" decoding="async">
                     <div class="short-home-meta">
                         <h4 style="font-size: 0.85rem; font-weight: 800; margin: 0 0 2px 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(s.title)}</h4>
                         <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}">0</span></p>
@@ -3489,7 +3648,7 @@ function buildHomeFeed() {
             });
         });
         html += `</div></div>`;
-        container.innerHTML = html;
+        hfCommit(container, html);
         
         uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
         return;
@@ -3505,6 +3664,7 @@ function buildHomeFeed() {
             html += renderSinglePostSegmentUI(p);
         });
         container.innerHTML = html;
+        container.__hfSig = null;
         ensureHomePostScrollFlow();
         posts.slice(0, postRenderLimit).forEach(p => {
             registerPostReactionsListener(p.id);
@@ -3549,7 +3709,7 @@ function buildHomeFeed() {
         }
     }
 
-    container.innerHTML = html;
+    hfCommit(container, html);
     ensureHomePostScrollFlow();
     postsToBind.forEach(postId => registerPostReactionsListener(postId));
     uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
@@ -3576,7 +3736,7 @@ function renderFeelsSegmentUI(segmentFeels) {
     limitedFeels.forEach(s => {
         html += `
             <div class="short-home-card-2col" onclick="openShortFromHome('${s.id}')">
-                <img src="${s.poster}" loading="lazy">
+                <img src="${s.poster}" loading="lazy" decoding="async">
                 <div class="short-home-meta">
                     <h4 style="font-size: 0.85rem; font-weight: 800; margin: 0 0 2px 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(s.title)}</h4>
                     <p style="font-size: 0.7rem; font-weight: 700; margin: 0; opacity: 0.9;"><i class="fas fa-play"></i> <span id="home-short-views-${s.id}">0</span></p>
@@ -4322,7 +4482,7 @@ function fxBuildLongVideoCard(v) {
                     <button class="fx-cap-more" onclick="event.stopPropagation(); fxExpandCaption(this)">… more</button>
                 </div>
                 <div class="fx-thumb long-video-thumb-container">
-                    <img src="${v.poster || ''}" loading="lazy" alt="" draggable="false">
+                    <img src="${v.poster || ''}" loading="lazy" decoding="async" alt="" draggable="false">
                     <span class="fx-dur long-video-duration">${v.duration || '10:00'}</span>
                 </div>
                 <div class="fx-foot">
@@ -4585,6 +4745,7 @@ function playFeelsSlide(shortId, resetTime = true) {
 }
 
 function openShortFromHome(shortId) {
+    hfMarkSeen(shortId);   // watched Feels sink in the next random Home feed
     AppNavigation.rememberHome();   // save Home scroll BEFORE the Feels tab is shown
     const targetId = String(shortId);
     // Lock the exact Home Feels before navigation so the first slide cannot
@@ -6955,6 +7116,7 @@ function executeBackAction() {
 // MOVIE DETAILS, STATISTICS & COMMENTS
 // =========================================================
 async function openMoviePage(id, isTMDB = false) {
+    hfMarkSeen(id);   // watched videos sink in the next random Home feed
     AppNavigation.rememberHome();   // save Home scroll BEFORE anything else happens
     playUI('click');
     if (!navigator.onLine) {

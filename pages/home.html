@@ -329,9 +329,8 @@
         #au-verify .vf-icon svg { width: 42px; height: 42px; color: #1E2530; }
         #au-verify h2 { margin: 22px 0 0; font-size: 1.45rem; font-weight: 800; color: #0B0B0B; letter-spacing: -.4px; }
         #au-verify .vf-sub { margin: 18px 0 0; font-size: 1rem; line-height: 1.5; color: #555; font-weight: 500; word-break: break-all; }
-        #au-verify .vf-boxes { margin-top: 28px; display: flex; gap: 6px; justify-content: center; }
-        #au-verify .vf-box { width: 42px; height: 52px; border: 1.5px solid #DADADF; border-radius: 14px; background: #fff; text-align: center; font: 700 1.5rem 'Plus Jakarta Sans', sans-serif; color: #111; outline: none; padding: 0; box-sizing: border-box; -webkit-user-select: text; user-select: text; caret-color: #5B8DEF; transition: border-color .15s ease, box-shadow .15s ease; }
-        @media (max-width: 360px) { #au-verify .vf-boxes { gap: 4px; } #au-verify .vf-box { width: 34px; height: 48px; font-size: 1.2rem; } }
+        #au-verify .vf-boxes { margin-top: 28px; display: flex; gap: 12px; justify-content: center; }
+        #au-verify .vf-box { width: 56px; height: 60px; border: 1.5px solid #DADADF; border-radius: 14px; background: #fff; text-align: center; font: 700 1.5rem 'Plus Jakarta Sans', sans-serif; color: #111; outline: none; padding: 0; box-sizing: border-box; -webkit-user-select: text; user-select: text; caret-color: #5B8DEF; transition: border-color .15s ease, box-shadow .15s ease; }
         #au-verify .vf-box:focus { border-color: #5B8DEF; box-shadow: 0 0 0 3px rgba(91,141,239,.15); }
         #au-verify .vf-boxes.err .vf-box { border-color: #FF3B3B; color: #F00; box-shadow: none; }
         #au-verify .vf-error { margin: 10px 0 0; font-size: .92rem; font-weight: 500; color: #F00; line-height: 1.4; }
@@ -1880,8 +1879,6 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 <input class="vf-box" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 2">
 <input class="vf-box" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 3">
 <input class="vf-box" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 4">
-<input class="vf-box" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 5">
-<input class="vf-box" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 6">
 </div>
 <p class="vf-error" id="vf-error"></p>
 <button class="vf-btn" id="vf-submit" type="button" onclick="vfSubmit()">Submit code</button>

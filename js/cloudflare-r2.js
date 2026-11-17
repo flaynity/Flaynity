@@ -210,7 +210,7 @@ async function uploadFlaynityHlsPackage(files, baseKey, onProgress) {
     });
 
     // Playlists are uploaded after their referenced media objects.
-    normalized.sort((a, b) => Number(/\.m3u8$/i.test(a.path)) - Number(/\.m3u8$/i.test(b.path)));
+    normalized.sort((a, b) => Number(a.path === "master.m3u8") - Number(b.path === "master.m3u8") || Number(/\.m3u8$/i.test(a.path)) - Number(/\.m3u8$/i.test(b.path)));
     let completed = 0;
     const uploaded = [];
     for (const entry of normalized) {

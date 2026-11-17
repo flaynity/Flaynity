@@ -2765,33 +2765,25 @@ async function startS3DirectUpload(item) {
     const startTime = Date.now();
     try {
         const uploadFolder = item.type === 'video-short' ? 'feels' : 'videos';
-        let upload;
-        if (item.hlsPackage && Array.isArray(item.hlsPackage.files)) {
-            upload = await uploadFlaynityHlsPackage(item.hlsPackage.files, item.hlsPackage.baseKey, (completed, total, loaded, size) => {
-                if (item.status !== 'uploading') return;
-                const current = size > 0 ? loaded / size : 0;
-                item.progress = Math.min(99, Math.round(((completed + current) / total) * 100));
-                updateManagerUI();
-            });
-        } else {
-            upload = item.upload || await uploadMediaToFlaynity(item.file, uploadFolder, (loaded, total) => {
-                if (item.status !== 'uploading') return;
-                item.progress = Math.round((loaded / total) * 100);
-                const elapsed = (Date.now() - startTime) / 1000;
-                if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
-                updateManagerUI();
-            }, item.control);
-        }
+        const upload = item.upload || await uploadMediaToFlaynity(item.file, uploadFolder, (loaded, total) => {
+            if (item.status !== 'uploading') return;
+            item.progress = Math.round((loaded / total) * 100);
+            const elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed > 0) { item.speed = loaded / elapsed; item.eta = (total - loaded) / item.speed; }
+            updateManagerUI();
+        }, item.control);
 
         item.upload = upload;
         if (item.status === 'cancelled') return;
-        item.key = upload.key || upload.sourceKey;
+        item.key = upload.key;
         if (item.status === 'cancelled') return;
 
-        item.videoProvider = upload.videoProvider || "r2";
-        item.videoUrl = normalizeFlaynityMediaUrl(upload.videoUrl || upload.publicUrl || flaynityMediaUrl(upload.key));
+        // Direct R2 MP4: the object uploaded above is already the final playable
+        // video. There is intentionally no FFmpeg/transcode/HLS step here.
+        item.videoProvider = "r2";
+        item.videoUrl = normalizeFlaynityMediaUrl(upload.publicUrl || flaynityMediaUrl(upload.key));
         item.videoLink = item.videoUrl;
-        item.sourceKey = upload.sourceKey || upload.key;
+        item.sourceKey = upload.key;
 
         item.status = "processing"; item.retryCount = 0; item.processingMsg = "Publishing Feed..."; item.progress = 100; updateManagerUI();
         await runPostUploadProcessingSequence(item);
@@ -2894,8 +2886,7 @@ async function pushVideoMetadataToDatabase(item) {
         poster: item.thumbUrl || item.thumbDataUrl || "",
         banner: item.thumbUrl || item.thumbDataUrl || "",
         videoLink: item.videoUrl,
-        videoProvider: item.videoProvider || 'r2',
-        hls: item.videoProvider === 'r2-hls',
+        videoProvider: 'r2',
         streamUid: '',
         sourceKey: item.sourceKey || item.key || '',
         uploadTime: Date.now(),
@@ -6186,72 +6177,6 @@ function setFeelsQuality(shortId, value) {
     if (video) refreshFeelsQualityMenu(shortId, video);
 }
 
-const flaynityHlsInstances = new WeakMap();
-let flaynityHlsLoader = null;
-
-function loadFlaynityHlsLibrary() {
-    if (window.Hls) return Promise.resolve(window.Hls);
-    if (!flaynityHlsLoader) {
-        flaynityHlsLoader = new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.6.15/dist/hls.min.js';
-            script.async = true;
-            script.onload = () => window.Hls ? resolve(window.Hls) : reject(new Error('HLS.js did not initialize.'));
-            script.onerror = () => reject(new Error('Could not load HLS playback engine.'));
-            document.head.appendChild(script);
-        });
-    }
-    return flaynityHlsLoader;
-}
-
-function applyFlaynityVideoSource(video, url) {
-    if (!video || !url) return;
-    const normalized = normalizeFlaynityMediaUrl(url);
-    const generation = (video._flaynityHlsGeneration || 0) + 1;
-    video._flaynityHlsGeneration = generation;
-    const old = flaynityHlsInstances.get(video);
-    if (old) { try { old.destroy(); } catch (e) {} flaynityHlsInstances.delete(video); }
-
-    if (!/\.m3u8(?:[?#]|$)/i.test(normalized)) {
-        video.src = normalized;
-        video.load();
-        return;
-    }
-
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = normalized;
-        video.load();
-        return;
-    }
-
-    loadFlaynityHlsLibrary().then(Hls => {
-        if (video._flaynityHlsGeneration !== generation) return;
-        if (!Hls.isSupported()) {
-            video.src = normalized;
-            video.load();
-            return;
-        }
-        const hls = new Hls({
-            enableWorker: true,
-            capLevelToPlayerSize: true,
-            startLevel: -1,
-            maxBufferLength: 30,
-            backBufferLength: 30
-        });
-        flaynityHlsInstances.set(video, hls);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-            if (video._flaynityHlsGeneration === generation) hls.loadSource(normalized);
-        });
-    }).catch(error => {
-        console.warn('[Flaynity HLS] Playback engine unavailable:', error);
-        if (video._flaynityHlsGeneration === generation) {
-            video.src = normalized;
-            video.load();
-        }
-    });
-}
-
 function refreshPublishedSources(items) {
     const byId = new Map(items.map(item => [String(item.id), item]));
     if (currentActiveMovie && byId.has(String(currentActiveMovie.id))) Object.assign(currentActiveMovie, byId.get(String(currentActiveMovie.id)));
@@ -6260,10 +6185,7 @@ function refreshPublishedSources(items) {
         if (!item || !item.videoUrl) return;
         video._flaynityItem = { ...item };
         const nextUrl = normalizeFlaynityMediaUrl(item.videoUrl);
-        if (video.dataset.flaynitySource !== nextUrl) {
-            video.dataset.flaynitySource = nextUrl;
-            applyFlaynityVideoSource(video, nextUrl);
-        }
+        if (video.src !== nextUrl) { video.src = nextUrl; video.load(); }
     });
 }
 
@@ -6275,8 +6197,8 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
     preserveVideoFrame(videoElement);
     const normalizedUrl = normalizeFlaynityMediaUrl(item?.videoUrl || url);
     videoElement.preload = shortId === 'fly_main' ? 'auto' : 'metadata';
-    videoElement.dataset.flaynitySource = normalizedUrl;
-    applyFlaynityVideoSource(videoElement, normalizedUrl);
+    videoElement.src = normalizedUrl;
+    videoElement.load();
 }
 
 const FEELS_FULL_PRELOAD_AHEAD = 2;

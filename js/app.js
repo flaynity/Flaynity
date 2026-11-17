@@ -1358,6 +1358,63 @@ function hfOrder(list, max) {
     return out;
 }
 
+// Small seeded random generator (mulberry32): same seed => same sequence.
+function hfMakeRng(seed) {
+    var a = (seed >>> 0) || 1;
+    return function () {
+        a = (a + 0x6D2B79F5) >>> 0;
+        var t = a;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+// =========================================================
+// LONG VIDEO PLAY PAGE: random "up next" feed (new seed every time a video is opened)
+// =========================================================
+var _wpRelSeed = 0;
+var _wpRelNow = 0;
+var _wpRelSeen = null;
+var _wpRelatedIds = [];
+
+function wpNewRelatedSeed() {
+    var uid = '', r;
+    try { uid = (auth && auth.currentUser && auth.currentUser.uid) || ''; } catch (e) {}
+    try { var a = new Uint32Array(2); crypto.getRandomValues(a); r = a[0] + '-' + a[1]; }
+    catch (e) { r = Math.random() + '-' + Math.random(); }
+    _wpRelNow = Date.now();
+    _wpRelSeed = _hfHash('wp|' + uid + '|' + _wpRelNow + '|' + r);
+    _wpRelSeen = _hfReadSeen();
+    return _wpRelSeed;
+}
+
+function wpOrderRelated(list) {
+    if (!_wpRelSeed) wpNewRelatedSeed();
+    var seen = _wpRelSeen || _hfReadSeen(), seed = _wpRelSeed, now = _wpRelNow;
+    var scored = list.map(function (it) {
+        var id = String(it && it.id);
+        var r = _hfHash(seed + '|' + id) / 4294967296;
+        var ageDays = Math.max(0, (now - (it.createdAt || 0)) / 86400000);
+        var fresh = it.createdAt ? Math.exp(-ageDays / 10) : 0;
+        var t = seen[id];
+        var watched = t && (now - t) < HF_SEEN_TTL;
+        return { it: it, s: r * 0.7 + fresh * 0.3 - (watched ? 0.9 : 0) };
+    });
+    scored.sort(function (a, b) { return b.s - a.s; });
+    var out = scored.map(function (x) { return x.it; });
+    // Avoid the same channel appearing back-to-back.
+    for (var i = 1; i < out.length; i++) {
+        var u = out[i].userId;
+        if (u && out[i - 1].userId === u) {
+            for (var j = i + 1; j < Math.min(out.length, i + 6); j++) {
+                if (out[j].userId !== u) { var tmp = out[i]; out[i] = out[j]; out[j] = tmp; break; }
+            }
+        }
+    }
+    return out;
+}
+
 // Write the feed HTML. Skips the write when nothing changed (no flicker on realtime rebuilds)
 // and plays the staggered fade/slide-up once for a freshly refreshed feed.
 function hfCommit(container, html) {
@@ -3685,29 +3742,59 @@ function buildHomeFeed() {
 
     let postsToBind = [];
 
-    while (longIdx < longs.length || shortIdx < feels.length || postIdx < posts.length) {
-        if (shortIdx < feels.length) {
-            const segmentFeels = feels.slice(shortIdx, shortIdx + 6);
-            shortIdx += 6;
-            segmentFeels.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
-            html += renderFeelsSegmentUI(segmentFeels);
-        }
+    // YouTube-style RANDOM grid pattern.
+    // The pattern (which block comes first, how many Feels / Long Videos / Posts in each block)
+    // is drawn from the same seed as the feed order: a new Pull-to-Refresh => a new seed => a new
+    // pattern, while realtime rebuilds / Back navigation keep the exact same layout.
+    const patRng = hfMakeRng(_hfSeed ^ 0x9E3779B9);
+    let lastBlock = '';
+    let safetyLoop = 0;
 
-        if (longIdx < longs.length) {
-            const segmentLongs = longs.slice(longIdx, longIdx + 10);
-            longIdx += 10;
-            segmentLongs.forEach(l => { if (l.userId) uniqueUserIds.add(l.userId); });
-            html += renderLongVideosSegmentUI(segmentLongs);
-        }
-
-        if (postIdx < posts.length) {
-            const singlePost = posts[postIdx];
-            postIdx++;
+    const pushPosts = (count) => {
+        for (let k = 0; k < count && postIdx < posts.length; k++) {
+            const singlePost = posts[postIdx++];
             if (singlePost.userId) uniqueUserIds.add(singlePost.userId);
             html += renderSinglePostSegmentUI(singlePost);
             postsToBind.push(singlePost.id);
         }
+    };
+
+    while ((longIdx < longs.length || shortIdx < feels.length) && safetyLoop++ < 1000) {
+        const feelsLeft = feels.length - shortIdx;
+        const longsLeft = longs.length - longIdx;
+
+        // Blocks alternate Feels <-> Long Videos; the very first block is random.
+        let block;
+        if (!lastBlock) block = (patRng() < 0.42) ? 'feels' : 'long';
+        else block = (lastBlock === 'feels') ? 'long' : 'feels';
+        if (block === 'feels' && feelsLeft <= 0) block = 'long';
+        if (block === 'long' && longsLeft <= 0) block = 'feels';
+
+        if (block === 'feels') {
+            // 2-column grid: 2 / 4 / 6 / 8 cards per Feels shelf
+            const r = patRng();
+            const size = r < 0.12 ? 2 : (r < 0.52 ? 4 : (r < 0.90 ? 6 : 8));
+            const segmentFeels = feels.slice(shortIdx, shortIdx + size);
+            shortIdx += size;
+            segmentFeels.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
+            html += renderFeelsSegmentUI(segmentFeels);
+        } else {
+            // 2 to 10 Long Videos in a row
+            const size = 2 + Math.floor(patRng() * 9);
+            const segmentLongs = longs.slice(longIdx, longIdx + size);
+            longIdx += size;
+            segmentLongs.forEach(l => { if (l.userId) uniqueUserIds.add(l.userId); });
+            html += renderLongVideosSegmentUI(segmentLongs);
+        }
+        lastBlock = block;
+
+        // Community posts are sprinkled randomly between the blocks (0, 1 or 2 posts).
+        const pr = patRng();
+        pushPosts(pr < 0.25 ? 0 : (pr < 0.85 ? 1 : 2));
     }
+
+    // Anything left over (only posts can be left) is appended at the end.
+    pushPosts(posts.length - postIdx);
 
     hfCommit(container, html);
     ensureHomePostScrollFlow();
@@ -3718,7 +3805,7 @@ function buildHomeFeed() {
 function renderFeelsSegmentUI(segmentFeels) {
     if (segmentFeels.length === 0) return '';
     
-    const limitedFeels = segmentFeels.slice(0, 6);
+    const limitedFeels = segmentFeels.slice(0, 8);
     
     let html = `
         <div class="feels-section-container" style="margin-bottom: 24px;">
@@ -7172,6 +7259,7 @@ async function openMoviePage(id, isTMDB = false) {
 
     // Show the watch page before starting playback. Android WebView can reject
     // autoplay/play() when the video element is still inside a display:none page.
+    wpNewRelatedSeed();   // fresh random 'up next' feed for every opened video
     delete _fxPlayLikeInit[currentActiveMovie.id];
     wpResetDetailsCard(currentActiveMovie);
     AppNavigation.pushPage('full-movie-page');
@@ -7258,8 +7346,15 @@ function playNextRecommendedVideo() {
     const currentId = currentActiveMovie ? String(currentActiveMovie.id) : null;
     const availableVids = allLongVideos.filter(m => String(m.id) !== currentId);
     if (availableVids.length > 0) {
-        openMoviePage(availableVids[0].id, false);
-        showNotification(`Autoplay: Playing ${availableVids[0].title}`, "success");
+        // Play the first video of the random "up next" list that the watch page shows.
+        let nextVid = null;
+        for (const rid of _wpRelatedIds) {
+            nextVid = availableVids.find(m => String(m.id) === rid);
+            if (nextVid) break;
+        }
+        if (!nextVid) nextVid = wpOrderRelated(availableVids)[0];
+        openMoviePage(nextVid.id, false);
+        showNotification(`Autoplay: Playing ${nextVid.title}`, "success");
     }
 }
 
@@ -8238,31 +8333,97 @@ function closeMoreDescriptionSheet() {
     AppNavigation.pop();
 }
 
+// Long Video Play Page "up next": random order + INFINITE SCROLL.
+// The first batch is rendered at once; more batches are appended whenever the bottom sentinel
+// gets close to the screen (YouTube / Facebook style).
+var _wpRelOrdered = [];
+var _wpRelShown = 0;
+var _wpRelObserver = null;
+var _wpRelScrollHandler = null;
+
+function wpRelatedCleanup() {
+    try { if (_wpRelObserver) _wpRelObserver.disconnect(); } catch (e) {}
+    _wpRelObserver = null;
+    try {
+        if (_wpRelScrollHandler) {
+            const pg = document.getElementById('full-movie-page');
+            if (pg) pg.removeEventListener('scroll', _wpRelScrollHandler);
+        }
+    } catch (e) {}
+    _wpRelScrollHandler = null;
+}
+
+function wpAppendRelatedBatch() {
+    const container = document.getElementById('yt-related-list');
+    if (!container) return;
+    if (_wpRelShown >= _wpRelOrdered.length) { wpRelatedCleanup(); return; }
+
+    const batchSize = Math.max(1, watchRecommendedLimit);
+    const batch = _wpRelOrdered.slice(_wpRelShown, _wpRelShown + batchSize);
+    _wpRelShown += batch.length;
+
+    const oldSentinel = document.getElementById('yt-related-sentinel');
+    if (oldSentinel) oldSentinel.remove();
+
+    const uniqueUserIds = new Set();
+    let html = '';
+    batch.forEach(v => {
+        if (v.userId) uniqueUserIds.add(v.userId);
+        html += fxBuildLongVideoCard(v);
+    });
+    container.insertAdjacentHTML('beforeend', html);
+    batch.forEach(v => fxLoadCardStats(String(v.id)));
+    uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
+
+    if (_wpRelShown < _wpRelOrdered.length) {
+        const sentinel = document.createElement('div');
+        sentinel.id = 'yt-related-sentinel';
+        sentinel.style.cssText = 'height:1px;width:100%;pointer-events:none;';
+        container.appendChild(sentinel);
+        // Re-observe so the callback fires again if the sentinel is still on screen after this batch.
+        if (_wpRelObserver) { try { _wpRelObserver.observe(sentinel); } catch (e) {} }
+    } else {
+        wpRelatedCleanup();
+    }
+}
+
 function renderMovieWatchRecommendedFeed() {
     const container = document.getElementById('yt-related-list');
     if (!container) return;
+
+    wpRelatedCleanup();
 
     const currentId = currentActiveMovie ? String(currentActiveMovie.id) : null;
     const longvids = allLongVideos.filter(m => String(m.id) !== currentId);
 
     if (longvids.length === 0) {
+        _wpRelOrdered = []; _wpRelShown = 0; _wpRelatedIds = [];
         container.innerHTML = `<p style="color:var(--text-muted); font-size:0.9rem; text-align:center; padding: 20px 0;">No recommendations found.</p>`;
         return;
     }
 
-    longvids.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-    const itemsToRender = longvids.slice(0, Math.min(longvids.length, watchRecommendedLimit));
-    const uniqueUserIds = new Set();
-    let html = '';
+    _wpRelOrdered = wpOrderRelated(longvids);
+    _wpRelatedIds = _wpRelOrdered.map(v => String(v.id));
+    _wpRelShown = 0;
+    container.innerHTML = '';
+    wpAppendRelatedBatch();   // first batch
 
-    itemsToRender.forEach(v => {
-        if (v.userId) uniqueUserIds.add(v.userId);
-        html += fxBuildLongVideoCard(v);
-    });
+    if (_wpRelShown >= _wpRelOrdered.length) return;   // everything already shown
 
-    container.innerHTML = html;
-    itemsToRender.forEach(v => fxLoadCardStats(String(v.id)));
-    uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
+    const pageEl = document.getElementById('full-movie-page');
+    if ('IntersectionObserver' in window) {
+        _wpRelObserver = new IntersectionObserver((entries) => {
+            if (entries.some(e => e.isIntersecting)) wpAppendRelatedBatch();
+        }, { root: pageEl || null, rootMargin: '0px 0px 900px 0px', threshold: 0 });
+        const sentinel = document.getElementById('yt-related-sentinel');
+        if (sentinel) _wpRelObserver.observe(sentinel);
+    } else if (pageEl) {
+        // Fallback for very old WebViews: load more when scrolled near the bottom.
+        _wpRelScrollHandler = () => {
+            if (pageEl.scrollTop + pageEl.clientHeight >= pageEl.scrollHeight - 900) wpAppendRelatedBatch();
+        };
+        pageEl.addEventListener('scroll', _wpRelScrollHandler, { passive: true });
+    }
 }
 
 function wpApplyReaction(btnId, isOn, silent) {

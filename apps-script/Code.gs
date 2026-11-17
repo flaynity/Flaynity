@@ -57,7 +57,8 @@ function sendEmailCode_(user, data) {
     if (now - lastSent < RESEND_COOLDOWN_MS) throw appError('resource-exhausted', 'Please wait before requesting another code.');
     var history = JSON.parse(props.getProperty(prefix + 'history') || '[]').filter(function(t) { return now - t < 60 * 60 * 1000; });
     if (history.length >= MAX_SENDS_PER_HOUR) throw appError('resource-exhausted', 'Too many codes requested. Try again in an hour.');
-    var code = String(Math.floor(100000 + Math.random() * 900000));
+    var randomHex = Utilities.getUuid().replace(/-/g, '').slice(0, 12);
+    var code = String(100000 + (parseInt(randomHex, 16) % 900000));
     var secret = getSecret_();
     var digest = hash_(uid + '|' + email + '|' + code + '|' + secret);
     props.setProperties({

@@ -22,6 +22,37 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
         });
     };
     // Safety net: if the login check is still stuck after 12s, open the app for a saved user (or the normal signed-out screen).
+    // HOME READY: the startup splash stays on screen until the Home feed really has content.
+    window.__flaynityHomeReady = false;
+    window.__flHomeHasContent = function () {
+        const c = document.getElementById('home-feed-container');
+        if (!c || !c.children.length) return false;
+        if (c.querySelector('.offline-home-skeleton')) return false;
+        return true;
+    };
+    window.__flWatchHomeReady = function () {
+        if (window.__flaynityHomeReady || window.__flHomeWatching) return;
+        window.__flHomeWatching = true;
+        let tries = 0;
+        const finish = function () {
+            window.__flaynityHomeReady = true; window.__flHomeWatching = false;
+            try { if (typeof window.__flaynityHideStartupSplash === 'function') window.__flaynityHideStartupSplash(); } catch (e) {}
+        };
+        const iv = setInterval(function () {
+            tries++;
+            if (!navigator.onLine || window.__flHomeHasContent()) { clearInterval(iv); setTimeout(finish, 300); return; }
+            // Data arrived but Home still shows skeleton / nothing: draw the feed again.
+            if (tries % 15 === 0) {
+                try {
+                    if ((allLongVideos && allLongVideos.length) || (allFeels && allFeels.length) || (allCommunityPosts && allCommunityPosts.length)) {
+                        previousLongsCount = -1; previousFeelsCount = -1; previousPostsCount = -1;
+                        buildHomeFeed();
+                    }
+                } catch (e) {}
+            }
+            if (tries >= 110) { clearInterval(iv); finish(); }   // ~11s max, never stuck
+        }, 100);
+    };
     window.__flBootTimer = setTimeout(function () {
         window.__flBootTimer = null;
         try {
@@ -33,8 +64,9 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
                 document.body.classList.remove('auth-active');
             }
         } catch (e) {}
+        window.__flaynityHomeReady = true;
         window.__flBootDone();
-    }, 12000);
+    }, 10000);
 })();
 (async function () {
     const pageFiles = [["home","pages/home.html"],["feels","pages/feels.html"],["posts","pages/posts.html"],["upload","pages/upload.html"],["discover","pages/discover.html"],["you","pages/you.html"],["analytics","pages/analytics.html"]];
@@ -109,6 +141,7 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
         document.body.classList.remove('auth-active');
         window.__flaynityOfflineSessionActive = true;
         if (window.__flBootDone) window.__flBootDone();
+        try { window.__flWatchHomeReady && window.__flWatchHomeReady(); } catch (e) {}
         try { firebase.database().goOffline(); } catch (e) {}
     }
 
@@ -2225,6 +2258,7 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         _feedListenersAttached = false;
         // Start fresh listeners for this Firebase UID and redraw account-bound screens immediately.
         startRealtimeFeedsListener();
+        try { window.__flWatchHomeReady && window.__flWatchHomeReady(); } catch (e) {}
         try { prefetchYouPageData(user.uid); } catch (e) {}
         restoreQueueFromLocalStorage();
         try { if (typeof initYouTabUI === 'function') initYouTabUI(); } catch (e) { console.warn('You page refresh failed:', e); }
@@ -2323,6 +2357,7 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
                 document.body.classList.remove('auth-active');
                 try { window.__flaynityHideOnboarding && window.__flaynityHideOnboarding(); } catch (x) {}
                 window.__flBootDone && window.__flBootDone();
+                try { window.__flWatchHomeReady && window.__flWatchHomeReady(); } catch (x) {}
             }
             window.__flAuthRetry = (window.__flAuthRetry || 0) + 1;
             if (window.__flAuthRetry <= 5) {

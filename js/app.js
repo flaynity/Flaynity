@@ -2453,7 +2453,7 @@ window.authEmailSignup = async function () {
 
 
 // =========================================================
-// EMAIL VERIFICATION — 4-digit code (valid 60s, resend cooldown 60s)
+// EMAIL VERIFICATION — 6-digit code (valid 5 minutes, resend cooldown 60s)
 // Backend: Firebase Cloud Functions `sendEmailCode` + `verifyEmailCode`
 // =========================================================
 (function () {
@@ -2461,6 +2461,7 @@ window.authEmailSignup = async function () {
     const SENT_KEY = 'flaynity-verify-sent';
     const TOKEN_KEY = 'flaynity-verify-token';
     const COOLDOWN = 60; // seconds
+    const CODE_LENGTH = 6;
     let timer = null, busy = false, retryMode = false, done = false;
 
     const $ = (id) => document.getElementById(id);
@@ -2470,31 +2471,59 @@ window.authEmailSignup = async function () {
         set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
         del: (k) => { try { localStorage.removeItem(k); } catch (e) {} }
     };
-    // Use only the custom authorization domain for email verification.
-    const VF_API = 'https://authorization.flaynity.indevs.in';
+    // Google Apps Script Web App URL is configured after deployment.
+    const VF_API = (window.FLAYNITY_EMAIL_VERIFICATION_URL || '').trim();
     const fn = (name) => async (data) => {
         const user = auth.currentUser;
         if (!user) { const e = new Error('Please sign in first.'); e.code = 'functions/unauthenticated'; throw e; }
-        const token = await user.getIdToken();
-        let res, j = {};
-        try {
-            res = await fetch(VF_API + '/' + name, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify(data || {})
-            });
-            j = await res.json().catch(() => ({}));
-        } catch (netErr) {
-            const e = new Error('Unable to reach the verification server. Please check your connection and try again.');
-            e.code = 'functions/unavailable';
-            throw e;
+        if (!VF_API || VF_API.indexOf('https://script.google.com/macros/s/') !== 0) {
+            const e = new Error('Email verification is not configured yet. Add the deployed Google Apps Script Web App URL.');
+            e.code = 'functions/not-configured'; throw e;
         }
-        if (!res.ok || j.ok === false) {
-            const e = new Error(j.error || ('Verification server returned HTTP ' + res.status));
-            e.code = 'functions/' + (j.code || 'error');
-            throw e;
-        }
-        return j;
+        const idToken = await user.getIdToken(true);
+        const requestId = 'vf_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+        const payload = JSON.stringify({ action: name, idToken: idToken, data: data || {}, requestId: requestId });
+        return await new Promise((resolve, reject) => {
+            let finished = false, frame, form, timeout;
+            const cleanup = () => {
+                window.removeEventListener('message', onMessage);
+                if (timeout) clearTimeout(timeout);
+                if (form && form.parentNode) form.parentNode.removeChild(form);
+                if (frame && frame.parentNode) frame.parentNode.removeChild(frame);
+            };
+            const finish = (err, value) => {
+                if (finished) return;
+                finished = true; cleanup();
+                if (err) reject(err); else resolve(value);
+            };
+            const onMessage = (event) => {
+                const msg = event && event.data;
+                if (!msg || msg.type !== 'flaynity-email-verification' || msg.requestId !== requestId) return;
+                if (!msg.result || msg.result.ok !== true) {
+                    const e = new Error((msg.result && msg.result.error) || 'Verification request failed.');
+                    e.code = 'functions/' + ((msg.result && msg.result.code) || 'error');
+                    finish(e); return;
+                }
+                finish(null, msg.result);
+            };
+            window.addEventListener('message', onMessage);
+            frame = document.createElement('iframe');
+            frame.name = 'flaynity-vf-' + requestId;
+            frame.style.display = 'none';
+            frame.setAttribute('aria-hidden', 'true');
+            form = document.createElement('form');
+            form.method = 'POST'; form.action = VF_API; form.target = frame.name;
+            form.style.display = 'none';
+            const field = document.createElement('input');
+            field.type = 'hidden'; field.name = 'payload'; field.value = payload;
+            form.appendChild(field);
+            document.body.appendChild(frame); document.body.appendChild(form);
+            timeout = setTimeout(() => {
+                const e = new Error('Google Apps Script did not respond. Check its deployment access and URL.');
+                e.code = 'functions/unavailable'; finish(e);
+            }, 25000);
+            form.submit();
+        });
     };
 
     function setError(msg) {
@@ -2605,7 +2634,7 @@ window.authEmailSignup = async function () {
         if (retryMode) { setError(''); setRetry(false); clearBoxes(true); return; }
         if (busy) return;
         const code = readCode();
-        if (code.length < 4) { setError('Please enter the 4-digit code.'); setRetry(true); return; }
+        if (code.length !== CODE_LENGTH) { setError('Please enter the 6-digit code.'); setRetry(true); return; }
         busy = true;
         const btn = $('vf-submit'); btn.disabled = true; btn.textContent = 'Please wait...';
         try {
@@ -2680,7 +2709,7 @@ window.authEmailSignup = async function () {
     document.addEventListener('paste', function (e) {
         const t = e.target;
         if (!t || !t.classList || !t.classList.contains('vf-box')) return;
-        const text = ((e.clipboardData || window.clipboardData).getData('text') || '').replace(/\D/g, '').slice(0, 4);
+        const text = ((e.clipboardData || window.clipboardData).getData('text') || '').replace(/\D/g, '').slice(0, 6);
         if (!text) return;
         e.preventDefault();
         const list = boxes();

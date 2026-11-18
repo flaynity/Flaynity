@@ -792,8 +792,14 @@ window.FlaynityNativeRefresh = function() {
 const SyncManager = {
     isRefreshing: false,
     refreshEverything: async function() {
-        if (this.isRefreshing || !navigator.onLine) return;
+        // A refresh that hangs (flaky network) must never block every later refresh: treat a lock older than 25s as stale.
+        if (this.isRefreshing && (Date.now() - (this._startedAt || 0)) < 25000) return;
+        if (!navigator.onLine) return;
         this.isRefreshing = true;
+        this._startedAt = Date.now();
+        const myRun = this._run = (this._run || 0) + 1;
+        const withTimeout = window.__flWithTimeout || function (p) { return p; };
+        let loaded = false;
 
         try {
             _detachAllGlobalFeedListeners();
@@ -802,14 +808,15 @@ const SyncManager = {
             previousLongsCount  = -1;
             previousPostsCount  = -1;
 
-            await this.refreshProfile();
+            // The profile must never block (or break) the feed download.
+            try { await withTimeout(this.refreshProfile(), 6000); } catch (e) { console.warn('refreshProfile skipped:', e); }
 
-            const [longsSnap, feelsSnap, legacyShortsSnap, postsSnap] = await Promise.all([
+            const [longsSnap, feelsSnap, legacyShortsSnap, postsSnap] = await withTimeout(Promise.all([
                 db.ref('admin_panel/movies/user_uploads').once('value'),
                 db.ref('admin_panel/movies/feels').once('value'),
                 db.ref('admin_panel/movies/shorts').once('value'),
                 db.ref('admin_panel/posts').once('value')
-            ]);
+            ]), 12000);
 
             const now = Date.now();
             allLongVideos      = longsSnap.val()  ? Object.values(longsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
@@ -823,6 +830,7 @@ const SyncManager = {
             });
             allCommunityPosts  = postsSnap.val()  ? Object.values(postsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
 
+            loaded = true;
             startRealtimeFeedsListener();
 
             buildHomeFeed();
@@ -835,7 +843,13 @@ const SyncManager = {
         } catch (err) {
             console.error("SyncManager Execution Error:", err);
         } finally {
-            this.isRefreshing = false;
+            if (!loaded) {
+                // Download failed / timed out: the live listeners were detached above, so put them back.
+                // They deliver the feed as soon as the connection is ready (no more empty Home).
+                try { startRealtimeFeedsListener(); } catch (e) {}
+                try { buildHomeFeed(); } catch (e) {}
+            }
+            if (this._run === myRun) this.isRefreshing = false;
         }
     },
 
@@ -858,6 +872,38 @@ const SyncManager = {
         try { if (window.FlayAnalytics) window.FlayAnalytics.refresh(); } catch (e) {}
     }
 };
+
+// =========================================================
+// HOME SELF-HEAL: online but Home is blank / stuck on the skeleton -> recover automatically
+// (redraw if data exists, otherwise download the feeds again with a back-off).
+// =========================================================
+(function () {
+    var lastTry = 0, attempts = 0;
+    setInterval(function () {
+        try {
+            if (!navigator.onLine || document.hidden) return;
+            var home = document.getElementById('home-feed-container');
+            var homeTab = document.getElementById('home-tab');
+            if (!home || !homeTab || !homeTab.classList.contains('active')) return;
+            if (typeof _hfHoldRender !== 'undefined' && _hfHoldRender) return;
+            if (typeof auth === 'undefined' || !auth.currentUser) return;
+            if (!isAdminFeatureEnabled('homeFeedEnabled')) return;
+
+            home.classList.remove('hf-leaving');
+            var blank = !home.children.length || !!home.querySelector('.offline-home-skeleton');
+            if (!blank) { attempts = 0; return; }
+
+            var hasData = (allLongVideos && allLongVideos.length) || (allFeels && allFeels.length);
+            if (hasData) { buildHomeFeed(); return; }
+            if (!home.children.length) buildHomeFeed();   // at least the skeleton, never a blank screen
+
+            var wait = attempts < 3 ? 5000 : 30000;
+            if (SyncManager.isRefreshing || Date.now() - lastTry < wait) return;
+            lastTry = Date.now(); attempts++;
+            SyncManager.refreshEverything();
+        } catch (e) {}
+    }, 2000);
+})();
 
 function _detachAllGlobalFeedListeners() {
     try { db.ref('admin_panel/movies/user_uploads').off(); } catch(e) {}

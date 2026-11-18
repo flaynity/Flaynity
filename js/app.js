@@ -1608,6 +1608,7 @@ function cleanupUserSessionData() {
     
     const feelsSwiper = document.getElementById('feels-swiper-container');
     if (feelsSwiper) feelsSwiper.innerHTML = '';
+    try { feelsResetSessions(); } catch (e) {}
 
     const searchResults = document.getElementById('search-results');
     if (searchResults) searchResults.innerHTML = '<p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding: 60px 0; font-weight: 500;">Search or use the mic to find movies.</p>';
@@ -4878,11 +4879,19 @@ function openShortFromHome(shortId) {
     hfMarkSeen(shortId);   // watched Feels sink in the next random Home feed
     AppNavigation.rememberHome();   // save Home scroll BEFORE the Feels tab is shown
     const targetId = String(shortId);
+    // New random Feels session: the tapped Feels is the FIRST one (nothing above it, so the user can
+    // only scroll DOWN; Feels played after it stay above as previews). Pull-to-Refresh works on it.
+    if (feelsFeedMode !== 'for-you') { feelsFeedMode = 'for-you'; try { updateFeelsModeButtons(); } catch (e) {} }
+    feelsStartSession('for-you', targetId);
+    const feelsDomExisted = !!document.querySelector('#feels-swiper-container .short-slide');
+    currentActiveFeelsIdx = -1;
     // Lock the exact Home Feels before navigation so the first slide cannot
     // become active while the Feels tab is being shown/rebuilt.
     feelsProgrammaticTargetId = targetId;
     feelsProgrammaticTargetUntil = Date.now() + 1500;
     switchTab('feels');
+    // The Feels DOM already existed (built earlier): rebuild it with the new session order.
+    if (feelsDomExisted) buildFeelsPage();
 
     // AppNavigation.syncUI() builds the Feels DOM synchronously when the tab
     // is opened. Activate the exact tapped Feels SYNCHRONOUSLY, before the
@@ -4935,6 +4944,311 @@ let feelsPendingRestoreId = null;
 let feelsProgrammaticTargetId = null;
 let feelsProgrammaticTargetUntil = 0;
 const feelsLastPlayedByMode = { 'for-you': null, 'subscribe': null };
+
+// =========================================================
+// FEELS RANDOM SESSION ENGINE
+// - Every Feels feed (For You / Subscribe) is a random "session": one random order that stays STABLE
+//   (realtime updates / tab switches never reshuffle it).
+// - A new session starts: on the first open of the app, when a Feels is opened from Home/Posts/Channel
+//   (that Feels becomes the FIRST one, nothing above it) and on Pull-to-Refresh at the first Feels.
+// - Feels that were already played stay above the current one, so the user can scroll UP only to
+//   previews of Feels they have already seen, and DOWN to new ones. Nothing unseen exists above.
+// =========================================================
+const feelsSessionOrder = { 'for-you': [], 'subscribe': [] };
+const FEELS_SEEN_KEY = 'flaynity_feels_seen_v1';
+const FEELS_SEEN_TTL = 14 * 24 * 3600 * 1000;
+
+function feelsReadSeen() {
+    try { return JSON.parse(localStorage.getItem(FEELS_SEEN_KEY) || '{}') || {}; } catch (e) { return {}; }
+}
+function feelsMarkSeen(id) {
+    if (id === undefined || id === null || id === '') return;
+    try {
+        const m = feelsReadSeen();
+        m[String(id)] = Date.now();
+        const keys = Object.keys(m);
+        if (keys.length > 1500) {
+            keys.sort((a, b) => m[a] - m[b]).slice(0, keys.length - 1000).forEach(k => { delete m[k]; });
+        }
+        localStorage.setItem(FEELS_SEEN_KEY, JSON.stringify(m));
+    } catch (e) {}
+}
+
+function feelsListForMode(mode) {
+    if (mode === 'subscribe') {
+        return allFeels.filter(s => { const channelId = s.userId || s.channelId; return channelId && channelId !== auth.currentUser?.uid && !!feelsSubscribedChannels[channelId]; });
+    }
+    return allFeels;
+}
+
+// Random order (ids). Fresh uploads get a small boost, already watched Feels sink. `firstId` is forced to position 0.
+function feelsBuildOrder(list, firstId) {
+    let rnd;
+    try { const a = new Uint32Array(2); crypto.getRandomValues(a); rnd = a[0] + '-' + a[1]; }
+    catch (e) { rnd = Math.random() + '-' + Math.random(); }
+    const now = Date.now();
+    const seed = _hfHash(now + '|' + rnd);
+    const seen = feelsReadSeen();
+    const scored = list.map(it => {
+        const id = String(it && it.id);
+        const r = _hfHash(seed + '|' + id) / 4294967296;
+        const ageDays = Math.max(0, (now - (it.createdAt || 0)) / 86400000);
+        const fresh = it.createdAt ? Math.exp(-ageDays / 10) : 0;
+        const t = seen[id];
+        const watched = t && (now - t) < FEELS_SEEN_TTL;
+        return { it, s: r * 0.75 + fresh * 0.25 - (watched ? 0.9 : 0) };
+    });
+    scored.sort((a, b) => b.s - a.s);
+    const out = scored.map(x => x.it);
+    // avoid the same channel back-to-back
+    for (let i = 1; i < out.length; i++) {
+        const u = out[i].userId || out[i].channelId;
+        if (u && (out[i - 1].userId || out[i - 1].channelId) === u) {
+            for (let j = i + 1; j < Math.min(out.length, i + 6); j++) {
+                if ((out[j].userId || out[j].channelId) !== u) { const tmp = out[i]; out[i] = out[j]; out[j] = tmp; break; }
+            }
+        }
+    }
+    const ids = out.map(x => String(x.id));
+    if (firstId !== undefined && firstId !== null) {
+        const f = String(firstId);
+        const idx = ids.indexOf(f);
+        if (idx > -1) { ids.splice(idx, 1); ids.unshift(f); }
+    }
+    return ids;
+}
+
+// Start a brand-new random session for a mode. `firstId` (optional) becomes the first Feels.
+function feelsStartSession(mode, firstId) {
+    const m = mode === 'subscribe' ? 'subscribe' : 'for-you';
+    feelsSessionOrder[m] = feelsBuildOrder(feelsListForMode(m), firstId);
+    const first = (firstId !== undefined && firstId !== null) ? String(firstId) : (feelsSessionOrder[m][0] || null);
+    feelsLastPlayedByMode[m] = first;
+    feelsLastPlayedId = first;
+    return feelsSessionOrder[m];
+}
+
+// Order a list by the stable session order. Unknown (new) Feels are appended at the end.
+function feelsApplySessionOrder(mode, list) {
+    if (!list || !list.length) return [];
+    const m = mode === 'subscribe' ? 'subscribe' : 'for-you';
+    let order = feelsSessionOrder[m] || [];
+    if (!order.length) {
+        order = feelsBuildOrder(list, null);
+    } else {
+        const inList = new Set(list.map(s => String(s.id)));
+        const kept = order.filter(id => inList.has(id));
+        const have = new Set(kept);
+        const added = list.filter(s => !have.has(String(s.id)));
+        order = kept.concat(added.length ? feelsBuildOrder(added, null) : []);
+    }
+    feelsSessionOrder[m] = order;
+    const byId = new Map(list.map(s => [String(s.id), s]));
+    return order.map(id => byId.get(id)).filter(Boolean);
+}
+
+function feelsResetSessions() {
+    feelsSessionOrder['for-you'] = [];
+    feelsSessionOrder['subscribe'] = [];
+    feelsLastPlayedByMode['for-you'] = null;
+    feelsLastPlayedId = null;
+    try { feelsDetachListeners(); } catch (e) {}
+}
+
+// Firebase listeners created by buildFeelsPage(): detached before every rebuild so that
+// Pull-to-Refresh / mode switches never stack duplicate listeners.
+const feelsListenerRegistry = [];
+function feelsTrackListener(ref, cb) {
+    ref.on('value', cb);
+    feelsListenerRegistry.push([ref, cb]);
+}
+function feelsDetachListeners() {
+    while (feelsListenerRegistry.length) {
+        const pair = feelsListenerRegistry.pop();
+        try { pair[0].off('value', pair[1]); } catch (e) {}
+    }
+}
+
+// =========================================================
+// FEELS PULL-TO-REFRESH (TikTok style)
+// Works ONLY while the very first Feels of the feed is on screen (scrollTop = 0).
+// Pull down -> new random session -> the feed is rebuilt and the new first Feels plays.
+// From the 2nd Feels onwards a downward drag only scrolls back to the previous (watched) Feels.
+// =========================================================
+const FEELS_PTR_TRIGGER = 70;   // damped px needed to refresh
+const FEELS_PTR_MAX = 120;
+const FEELS_PTR_HOLD = 60;
+const feelsPtr = { tracking: false, pulling: false, refreshing: false, startY: 0, startX: 0, dist: 0, swiper: null };
+
+function feelsPtrIndicator() {
+    const tab = document.getElementById('feels-tab');
+    if (!tab) return null;
+    let el = document.getElementById('feels-ptr');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'feels-ptr';
+        el.className = 'feels-ptr';
+        el.setAttribute('aria-hidden', 'true');
+        el.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"></path></svg>';
+        tab.appendChild(el);
+    }
+    return el;
+}
+
+function feelsPtrAllowed(sw, target) {
+    if (document.body.classList.contains('auth-active')) return false;
+    const tab = document.getElementById('feels-tab');
+    if (!tab || !tab.classList.contains('active') || tab.classList.contains('fds-open')) return false;
+    if (typeof feelsAdShowing !== 'undefined' && feelsAdShowing) return false;
+    let cur = null;
+    try { cur = AppNavigation.current(); } catch (e) {}
+    if (!cur || cur.type !== 'tab' || cur.id !== 'feels') return false;   // no page / modal / sheet on top
+    if (!sw.querySelector('.short-slide')) return false;
+    if (sw.scrollTop > 2) return false;                                    // first Feels only
+    if (sw.classList.contains('feels-switching')) return false;
+    if (sw.querySelector('.short-slide.scrubbing')) return false;
+    if (target && target.closest && target.closest('.short-progress-container')) return false;
+    return true;
+}
+
+function feelsPtrRender(dist, animate) {
+    const sw = feelsPtr.swiper;
+    const ind = feelsPtrIndicator();
+    if (sw) {
+        sw.style.transition = animate ? 'transform .28s cubic-bezier(.22,1,.36,1)' : 'none';
+        sw.style.transform = dist > 0 ? 'translate3d(0,' + dist.toFixed(1) + 'px,0)' : '';
+    }
+    if (ind) {
+        const p = Math.max(0, Math.min(1, (dist - 14) / 40));
+        ind.style.transition = animate ? 'opacity .2s ease, transform .28s cubic-bezier(.22,1,.36,1)' : 'none';
+        ind.style.opacity = String(p);
+        ind.style.transform = 'translate3d(-50%,' + ((1 - p) * -14).toFixed(1) + 'px,0) scale(' + (0.6 + 0.4 * p).toFixed(2) + ')';
+        const svg = ind.querySelector('svg');
+        if (svg && !ind.classList.contains('spinning')) svg.style.transform = 'rotate(' + Math.round(dist * 3.2) + 'deg)';
+    }
+}
+
+function feelsPtrReset(animate) {
+    const ind = feelsPtrIndicator();
+    if (ind) {
+        ind.classList.remove('spinning');
+        const svg = ind.querySelector('svg');
+        if (svg) svg.style.transform = '';
+    }
+    feelsPtrRender(0, animate);
+    const sw = feelsPtr.swiper;
+    if (sw) {
+        setTimeout(() => { sw.style.transition = ''; sw.style.transform = ''; }, animate ? 320 : 0);
+    }
+}
+
+async function feelsRunPullRefresh() {
+    const p = feelsPtr;
+    if (p.refreshing) return;
+    const sw = p.swiper;
+    const container = document.getElementById('feels-swiper-container');
+    if (!sw || !container) { feelsPtrReset(true); return; }
+
+    if (!navigator.onLine) {
+        feelsPtrReset(true);
+        try { showNotification('Offline - Cannot Refresh', 'error'); } catch (e) {}
+        return;
+    }
+
+    p.refreshing = true;
+    const ind = feelsPtrIndicator();
+    feelsPtrRender(FEELS_PTR_HOLD, true);
+    if (ind) ind.classList.add('spinning');
+    try { triggerFeelsHaptic(14); } catch (e) {}
+    try { playUI('click'); } catch (e) {}
+
+    try {
+        const t0 = Date.now();
+        container.querySelectorAll('video').forEach(v => { try { v.pause(); } catch (e) {} });
+
+        // New random session for the CURRENT mode (For You or Subscribe)
+        feelsStartSession(feelsFeedMode, null);
+
+        const wait = Math.max(0, 700 - (Date.now() - t0));
+        await new Promise(r => setTimeout(r, wait));
+
+        // Old feed fades out, new random feed replaces it and starts from its first Feels
+        sw.classList.add('feels-switching');
+        await new Promise(r => setTimeout(r, 190));
+
+        feelsProgrammaticTargetId = null;
+        feelsProgrammaticTargetUntil = 0;
+        feelsPendingRestoreId = null;
+        currentActiveFeelsIdx = -1;
+        buildFeelsPage();
+    } catch (e) {
+        console.error('Feels PTR error:', e);
+    } finally {
+        feelsPtr.swiper = null;
+        const ind2 = feelsPtrIndicator();
+        if (ind2) {
+            ind2.classList.remove('spinning');
+            ind2.style.transition = 'opacity .2s ease';
+            ind2.style.opacity = '0';
+        }
+        p.refreshing = false;
+        p.tracking = false;
+        p.pulling = false;
+    }
+}
+
+(function initFeelsPullToRefresh() {
+    if (window.__flaynityFeelsPTR) return;
+    window.__flaynityFeelsPTR = true;
+    const p = feelsPtr;
+
+    document.addEventListener('touchstart', (e) => {
+        p.tracking = false;
+        p.pulling = false;
+        if (p.refreshing || !e.touches || e.touches.length !== 1) return;
+        const t = e.target;
+        const sw = t && t.closest ? t.closest('#feels-swiper-container .feels-swiper') : null;
+        if (!sw || !feelsPtrAllowed(sw, t)) return;
+        p.tracking = true;
+        p.swiper = sw;
+        p.startY = e.touches[0].clientY;
+        p.startX = e.touches[0].clientX;
+        p.dist = 0;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+        if (!p.tracking || p.refreshing) return;
+        if (!e.touches || e.touches.length !== 1) { p.tracking = false; if (p.pulling) { p.pulling = false; feelsPtrReset(true); } return; }
+        const sw = p.swiper;
+        if (!sw || !sw.isConnected) { p.tracking = false; p.pulling = false; return; }
+        const dy = e.touches[0].clientY - p.startY;
+        const dx = Math.abs(e.touches[0].clientX - p.startX);
+
+        if (!p.pulling) {
+            // Finger moving up (or the feed already left the first Feels) = normal Feels scrolling.
+            if (dy < -4 || sw.scrollTop > 2) { p.tracking = false; return; }
+            if (dy > 6 && dy > dx * 1.2) p.pulling = true;
+            else { if (dx > 14 && dx > Math.abs(dy)) p.tracking = false; return; }
+        }
+
+        if (e.cancelable) e.preventDefault();
+        p.dist = Math.min(FEELS_PTR_MAX, Math.max(0, (dy - 6) * 0.55));
+        feelsPtrRender(p.dist, false);
+    }, { passive: false });
+
+    const end = () => {
+        if (!p.tracking && !p.pulling) return;
+        const wasPulling = p.pulling;
+        p.tracking = false;
+        p.pulling = false;
+        if (!wasPulling || p.refreshing) return;
+        if (p.dist >= FEELS_PTR_TRIGGER) feelsRunPullRefresh();
+        else feelsPtrReset(true);
+        p.dist = 0;
+    };
+    document.addEventListener('touchend', end, { passive: true });
+    document.addEventListener('touchcancel', end, { passive: true });
+})();
 
 function triggerFeelsHaptic(pattern = 12) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} }
 function getCurrentVisibleFeelsId(mode = feelsFeedMode) {
@@ -5246,6 +5560,7 @@ window.onFeelsAdFinished = function (result) {
 function buildFeelsPage() {
     const container = document.getElementById('feels-swiper-container');
     if (!container) return;
+    feelsDetachListeners();
     
     if (!navigator.onLine) {
         container.innerHTML = getFeelsSkeletonHTML();
@@ -5254,7 +5569,7 @@ function buildFeelsPage() {
 
     ensureFeelsSubscriptionListeners();
     updateFeelsModeButtons();
-    let activeFeelsList = feelsFeedMode === 'subscribe' ? allFeels.filter(s => { const channelId = s.userId || s.channelId; return channelId && channelId !== auth.currentUser?.uid && !!feelsSubscribedChannels[channelId]; }) : allFeels;
+    let activeFeelsList = feelsApplySessionOrder(feelsFeedMode, feelsListForMode(feelsFeedMode));
 
     if (activeFeelsList.length === 0) {
         container.innerHTML = getFeelsSkeletonHTML();
@@ -5355,7 +5670,7 @@ function buildFeelsPage() {
             feelsAdCountdown = feelsNextAdGap();
         }
 
-        db.ref(`movie_stats/${s.id}`).on('value', (snapshot) => {
+        feelsTrackListener(db.ref(`movie_stats/${s.id}`), (snapshot) => {
             const stats = snapshot.val() || {};
             const viewsObj = stats.views || {};
             const likesObj = stats.likes || {};
@@ -5401,7 +5716,7 @@ function buildFeelsPage() {
             }
         });
 
-        db.ref(`movie_comments/${s.id}`).on('value', (snapshot) => {
+        feelsTrackListener(db.ref(`movie_comments/${s.id}`), (snapshot) => {
             const commentsObj = snapshot.val() || {};
             const count = Object.keys(commentsObj).length;
             feelsCommentsCache[s.id] = commentsObj;
@@ -5433,7 +5748,7 @@ function buildFeelsPage() {
             if (!channelId) return;
             const subBtn = document.getElementById(`short-sub-btn-${s.id}`);
             if (!subBtn) return;
-            db.ref(`subscribers/${channelId}/${auth.currentUser.uid}`).on('value', (snapshot) => {
+            feelsTrackListener(db.ref(`subscribers/${channelId}/${auth.currentUser.uid}`), (snapshot) => {
                 const btn = document.getElementById(`short-sub-btn-${s.id}`);
                 if (!btn) return;
                 // Already subscribed: hide BOTH + and tick; keep only avatar visible.
@@ -6636,15 +6951,21 @@ function warmFeelRange(url, key, generation) {
 
 function warmNextFeels(activeIndex) {
     const generation = ++feelsWarmGeneration;
-    const total = allFeels.length;
-    if (!total) return;
+    // Follow the order that is really on screen (random session order).
+    const slides = Array.from(document.querySelectorAll('.short-slide'));
+    if (!slides.length) return;
     let launched = 0;
+    let cursor = activeIndex;
     const pump = () => {
         if (generation !== feelsWarmGeneration || launched >= FEELS_WARM_AHEAD) return;
-        const idx = (activeIndex + 1 + launched) % total;
-        const s = allFeels[idx];
+        let s = null;
+        while (!s && ++cursor < slides.length) {
+            const id = slides[cursor].getAttribute('data-shortid');
+            if (id) s = allFeels.find(item => String(item.id) === String(id)) || null;
+        }
+        if (!s) return;
         launched++;
-        if (s?.videoLink) warmFeelRange(s.videoLink, s.id, generation);
+        if (s.videoLink) warmFeelRange(s.videoLink, s.id, generation);
         if (launched < FEELS_WARM_AHEAD) setTimeout(pump, 70);
     };
     pump();
@@ -6719,6 +7040,7 @@ function initFeelsObserver() {
                         }
                     }
 
+                    try { feelsMarkSeen(shortId); } catch (e) {}
                     const slides = Array.from(document.querySelectorAll('.short-slide'));
                     const activeIdx = slides.indexOf(entry.target);
                     if (activeIdx !== -1 && activeIdx !== currentActiveFeelsIdx) {

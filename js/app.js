@@ -6303,7 +6303,7 @@ let _ttSeed = '';                    // random order seed, new on every open of 
 const _ttOpen = new Set();         // parent keys whose replies are expanded
 const _ttShown = {};               // parent key -> how many replies are visible
 let _ttScroll = 0;
-const TT_EMOJIS = ['😃','😄','😁','😆','😅','😂','🤣','☺️','😊'];
+const TT_EMOJIS = ['😁','🥰','😂','😳','😏','😅'];
 const TT_REPLY_PAGE = 3;
 
 function ttEsc(v) { return escapeHTML(String(v == null ? '' : v)); }
@@ -6367,19 +6367,25 @@ function ttEnsureSheet() {
     .tt-more .tt-dash{width:24px;height:1px;background:rgba(128,128,128,.5)}
     .tt-more svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
     .tt-foot{flex:0 0 auto;border-top:1px solid rgba(128,128,128,.18);padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--surface,#fff)}
-    .tt-foot.kb{padding-bottom:10px;border-radius:14px 14px 0 0;box-shadow:0 -4px 16px rgba(0,0,0,.18);border-top-color:transparent;position:relative;z-index:4}
-    .tt-inrow{display:flex;align-items:flex-end;gap:10px}
+    .tt-foot.open{border-radius:20px 20px 0 0;border-top-color:transparent}
+    .tt-foot.kb{padding-bottom:8px;box-shadow:0 -4px 16px rgba(0,0,0,.18);position:relative;z-index:4}
+    .tt-foot.open .tt-pill{background:rgba(128,128,128,.26)}
+    .tt-inrow #tt-me{margin-top:4px}
+    .tt-inrow{display:flex;align-items:flex-start;gap:10px}
     .tt-pill{flex:1 1 auto;min-width:0;background:rgba(128,128,128,.14);border-radius:22px;padding:0 16px;min-height:44px;display:flex;align-items:center}
     .tt-pill textarea{display:block;width:100%;height:22px;margin:11px 0;padding:0;border:0;outline:0;resize:none;overflow-y:hidden;background:transparent;color:inherit;font-size:16px;line-height:22px;font-family:inherit;-webkit-user-select:text;user-select:text}
     .tt-pill textarea::placeholder{color:var(--text-muted,#8a8b91)}
-    .tt-actions{display:none;justify-content:flex-end;margin-top:10px}
+    .tt-actions{display:none;align-items:center;justify-content:space-between;margin-top:8px}
+    .tt-tools{display:flex;align-items:center;margin-left:-2px}
+    .tt-tool{width:44px;height:32px;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .tt-tool svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
     .tt-foot.open .tt-actions{display:flex}
-    .tt-send{width:78px;height:46px;border:0;border-radius:23px;background:#fe2c55;color:#fff;display:flex;align-items:center;justify-content:center;opacity:.35;transition:opacity .15s;cursor:pointer}
+    .tt-send{width:52px;height:32px;border:0;border-radius:16px;background:#fe2c55;color:#fff;display:flex;align-items:center;justify-content:center;opacity:.42;transition:opacity .15s;cursor:pointer;padding:0}
     .tt-send.ready{opacity:1}
-    .tt-send svg{width:24px;height:24px;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;fill:none}
-    .tt-emojis{display:none;justify-content:space-between;margin-top:8px}
+    .tt-send svg{width:20px;height:20px;stroke:#fff;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+    .tt-emojis{display:none;justify-content:space-between;padding:0 4px;margin-bottom:6px}
     .tt-foot.open .tt-emojis{display:flex}
-    .tt-emojis button{border:0;background:transparent;font-size:30px;line-height:1;padding:4px;cursor:pointer}
+    .tt-emojis button{border:0;background:transparent;font-size:24px;line-height:1;padding:6px;cursor:pointer;-webkit-tap-highlight-color:transparent}
     .tt-menu{position:absolute;left:0;right:0;bottom:0;background:var(--surface,#fff);border-radius:14px 14px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,.25);padding:6px 0 calc(8px + env(safe-area-inset-bottom,0px));z-index:5;animation:ttUp .22s ease}
     .tt-menu button{display:block;width:100%;border:0;background:transparent;color:inherit;font-size:16px;font-weight:600;padding:15px 20px;text-align:center;cursor:pointer;border-bottom:1px solid rgba(128,128,128,.14)}
     .tt-menu button.danger{color:#fe2c55}
@@ -6409,12 +6415,19 @@ function ttEnsureSheet() {
         <div class="tt-list" id="tt-list"></div>
         <div class="tt-foot" id="tt-foot">
           <div class="tt-editbar" id="tt-editbar" style="display:none"><span>Editing comment</span><button type="button" onclick="ttCancelEdit()">Cancel</button></div>
+          <div class="tt-emojis">${TT_EMOJIS.map(e => `<button type="button" data-e="${e}">${e}</button>`).join('')}</div>
           <div class="tt-inrow">
             <div id="tt-me" style="flex:0 0 auto"></div>
             <div class="tt-pill"><textarea id="tt-input" rows="1" autocomplete="off" autocapitalize="sentences" enterkeyhint="enter" placeholder="Add comment..." maxlength="500"></textarea></div>
           </div>
-          <div class="tt-actions"><button class="tt-send" id="tt-send" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M12 20V5M5.5 11.5L12 5l6.5 6.5"/></svg></button></div>
-          <div class="tt-emojis">${TT_EMOJIS.map(e => `<button type="button" data-e="${e}">${e}</button>`).join('')}</div>
+          <div class="tt-actions">
+            <div class="tt-tools">
+              <button type="button" class="tt-tool" id="tt-t-img" aria-label="Photo"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M3.5 16.5l5-5 4.5 4.5 3-3 4.5 4.5"/></svg></button>
+              <button type="button" class="tt-tool" id="tt-t-stk" aria-label="Sticker"><svg viewBox="0 0 24 24"><path d="M21 12A9 9 0 1 0 12 21"/><path d="M12 21c0-5 4-9 9-9"/><path d="M12 21c5 0 9-4 9-9"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/><path d="M8.5 14.3c1 1.3 2.2 1.9 3.5 1.9"/></svg></button>
+              <button type="button" class="tt-tool" id="tt-t-at" aria-label="Mention"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg></button>
+            </div>
+            <button class="tt-send" id="tt-send" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M12 20V5M5.5 11.5L12 5l6.5 6.5"/></svg></button>
+          </div>
         </div>
       </div>`;
     document.body.appendChild(el);
@@ -6431,7 +6444,22 @@ function ttEnsureSheet() {
     el.querySelector('#tt-sheet').addEventListener('scroll', (e) => { e.currentTarget.scrollTop = 0; }, { passive: true });
     input.addEventListener('input', ttSyncSend);
     el.querySelector('#tt-send').addEventListener('click', submitTikTokComment);
-    el.querySelectorAll('.tt-emojis button').forEach(b => b.addEventListener('mousedown', (e) => e.preventDefault()));
+    el.querySelectorAll('.tt-emojis button, .tt-tool, .tt-send').forEach(b => b.addEventListener('mousedown', (e) => e.preventDefault()));
+    el.querySelector('#tt-t-at').addEventListener('click', () => ttInsertEmoji('@'));
+    el.querySelector('#tt-t-img').addEventListener('click', () => showNotification('Photo in comments is coming soon', 'error'));
+    el.querySelector('#tt-t-stk').addEventListener('click', () => showNotification('Stickers are coming soon', 'error'));
+    // Tap anywhere outside the card -> the card goes back to its normal (collapsed) size
+    el.addEventListener('pointerdown', (e) => {
+        const f = document.getElementById('tt-foot');
+        if (!f || !f.classList.contains('open') || f.contains(e.target)) return;
+        if (e.target.closest && e.target.closest('.tt-menu-wrap')) return;
+        _ttCollapseAt = Date.now();
+        ttCollapse();
+    }, true);
+    el.addEventListener('click', (e) => {
+        const f = document.getElementById('tt-foot');
+        if (_ttCollapseAt && Date.now() - _ttCollapseAt < 600 && f && !f.contains(e.target)) { _ttCollapseAt = 0; e.stopPropagation(); e.preventDefault(); }
+    }, true);
     el.querySelectorAll('.tt-emojis button').forEach(b => b.addEventListener('click', () => ttInsertEmoji(b.dataset.e)));
     const list = el.querySelector('#tt-list');
     list.addEventListener('scroll', () => { _ttScroll = list.scrollTop; }, { passive: true });
@@ -6448,7 +6476,15 @@ function ttEnsureSheet() {
 // Keyboard handling: the comment sheet stays exactly where it is; only the "Add comment..." card
 // (the footer) is lifted to sit right above the keyboard. Works for both resize modes
 // (visual-viewport overlay keyboard and Android adjustResize).
-let _ttBaseH = 0;
+let _ttBaseH = 0, _ttBaseW = 0, _ttKbWas = false, _ttCollapseAt = 0;
+function ttCollapse() {
+    const i = document.getElementById('tt-input'), f = document.getElementById('tt-foot');
+    _ttKbWas = false;
+    if (i) i.blur();
+    if (f) { f.classList.remove('open', 'kb'); f.style.transform = ''; }
+    ttAutoGrow();
+    ttFitKeyboard();
+}
 function ttFitKeyboard() {
     const m = document.getElementById('tt-comment-modal');
     const sheet = document.getElementById('tt-sheet');
@@ -6457,18 +6493,20 @@ function ttFitKeyboard() {
     if (!m || !sheet || !foot || m.style.display === 'none' || !m.clientHeight) return;
     const vv = window.visualViewport;
     const vvH = vv ? vv.height + vv.offsetTop : window.innerHeight;
-    // remember the full (keyboard-less) height while the input is not focused
-    if (!_ttBaseH || document.activeElement !== input) _ttBaseH = Math.max(window.innerHeight, vvH);
+    if (_ttBaseW !== window.innerWidth) { _ttBaseW = window.innerWidth; _ttBaseH = 0; }
+    _ttBaseH = Math.max(_ttBaseH, window.innerHeight, vvH);      // full screen height (no keyboard)
     const base = _ttBaseH;
     const kb = Math.max(0, Math.round(base - vvH));
+    const kbVisible = kb > 80;
+    // Keyboard was closed (system Back / hide button) -> card returns to normal
+    if (_ttKbWas && !kbVisible && document.activeElement === input) { ttCollapse(); return; }
+    _ttKbWas = kbVisible;
     const shrink = Math.max(0, Math.round(base - m.clientHeight));   // >0 only when the webview itself resized
-    // pin the sheet to its original screen position / size
     sheet.style.height = Math.round(Math.min(base * 0.72, base - 120)) + 'px';
     sheet.style.maxHeight = 'none';
     sheet.style.marginBottom = (-shrink) + 'px';
     m.style.paddingBottom = '0px';
-    // lift only the card
-    const up = kb > 80 && document.activeElement === input;
+    const up = kbVisible && document.activeElement === input;
     foot.classList.toggle('kb', up);
     foot.style.transform = up ? 'translateY(' + (-kb) + 'px)' : '';
     sheet.scrollTop = 0;
@@ -6563,7 +6601,7 @@ function closeTikTokComments() {
     ttCloseMenu();
     const i = document.getElementById('tt-input'); if (i) i.blur();
     const m = document.getElementById('tt-comment-modal'); if (m) m.style.paddingBottom = '0px';
-    const ft = document.getElementById('tt-foot'); if (ft) { ft.style.transform = ''; ft.classList.remove('kb'); }
+    const ft = document.getElementById('tt-foot'); if (ft) { ft.style.transform = ''; ft.classList.remove('kb', 'open'); }
     const shx = document.getElementById('tt-sheet'); if (shx) shx.style.marginBottom = '0px';
     ttDetach();
     const cur = AppNavigation.current();
@@ -6575,9 +6613,24 @@ function ttPaintMe() {
     const box = document.getElementById('tt-me'); if (!box) return;
     const u = auth.currentUser;
     const fb = ((u && u.email) || 'U').charAt(0).toUpperCase();
-    const paint = (photo) => { box.innerHTML = ttAvatar({ avatar: photo, username: fb }, 36); };
-    paint((u && (u.photoURL)) || (typeof currentChannelData !== 'undefined' && currentChannelData && (currentChannelData.avatarUrl || currentChannelData.photoURL)) || '');
-    if (u && navigator.onLine) db.ref(`users/${u.uid}`).once('value', (snap) => { const d = snap.val() || {}; _ttMe = { uid: u.uid, username: d.username || (u.email || 'user').split('@')[0], avatar: (typeof currentChannelData !== 'undefined' && currentChannelData && (currentChannelData.avatarUrl || currentChannelData.photoURL)) || d.photoURL || u.photoURL || '' }; if (d.photoURL) paint(d.photoURL); });
+    let shown = null;
+    const paint = (photo) => { if (photo === shown) return; shown = photo; box.innerHTML = ttAvatar({ avatar: photo, username: fb }, 36); };
+    const chImg = (c) => (c && (c.avatarUrl || c.photoURL)) || '';
+    let first = chImg(typeof currentChannelData !== 'undefined' ? currentChannelData : null);
+    if (!first && u) { try { first = chImg(JSON.parse(localStorage.getItem('flaynity_channel_cache:' + u.uid) || 'null')); } catch (e) {} }
+    paint(first || (u && u.photoURL) || '');
+    if (!u || !navigator.onLine) return;
+    // The user's own channel image is the source of truth
+    db.ref(`channels/${u.uid}`).once('value', (cs) => {
+        const channelImg = chImg(cs.val());
+        if (channelImg) paint(channelImg);
+        db.ref(`users/${u.uid}`).once('value', (snap) => {
+            const d = snap.val() || {};
+            const img = channelImg || chImg(typeof currentChannelData !== 'undefined' ? currentChannelData : null) || d.photoURL || u.photoURL || '';
+            _ttMe = { uid: u.uid, username: d.username || (u.email || 'user').split('@')[0], avatar: img };
+            if (!channelImg && d.photoURL) paint(d.photoURL);
+        });
+    });
 }
 
 function ttRender() {
@@ -7624,6 +7677,8 @@ window.addEventListener('scroll', function () {
 }, { passive: true });
 
 function executeBackAction() {
+    const ttF = document.getElementById('tt-foot'), ttM = document.getElementById('tt-comment-modal');
+    if (ttF && ttM && ttM.style.display !== 'none' && ttF.classList.contains('open')) { ttCollapse(); return; }
     AppNavigation.pop();
 }
 

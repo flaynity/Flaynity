@@ -381,6 +381,18 @@ function __flaynityReady(fn) {
     } catch (e) {}
 })();
 
+// Bottom-nav "You" avatar: if the picture can't load (offline) fall back to the default You icon.
+const _FL_NAV_YOU_ICON = '<svg class="nav-icon-svg icon-unselected" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12"></circle><circle cx="16" cy="12" r="3.2"></circle><path d="M10 23c1.3-3.2 3.2-4.7 6-4.7s4.7 1.5 6 4.7"></path></svg>';
+function _flSetNavAvatar(el, url) {
+    if (!el) return;
+    if (!url || !navigator.onLine) { el.innerHTML = _FL_NAV_YOU_ICON; if (!url) return; }
+    const img = new Image();
+    img.style.cssText = 'width:100%; height:100%; object-fit:cover;';
+    img.onload = function () { el.innerHTML = ''; el.appendChild(img); };
+    img.onerror = function () { el.innerHTML = _FL_NAV_YOU_ICON; };
+    img.src = url;
+}
+
 (function() {
     try {
         let cachedSession = localStorage.getItem('flaynity_user_session_cache');
@@ -397,9 +409,7 @@ function __flaynityReady(fn) {
                     if (data.avatarUrl) avatarLarge.innerHTML = `<img src="${data.avatarUrl}" style="width:100%; height:100%; object-fit:cover;">`;
                     else avatarLarge.innerHTML = (data.channelName || "F").charAt(0).toUpperCase();
                 }
-                if (avatarNav && data.avatarUrl) {
-                    avatarNav.innerHTML = `<img src="${data.avatarUrl}" style="width: 100%; height: 100%; object-fit: cover;">`;
-                }
+                if (avatarNav) _flSetNavAvatar(avatarNav, data.avatarUrl);
             });
         }
     } catch (e) {}
@@ -773,11 +783,36 @@ window.FlaynityNativeRefresh = function() {
 // =========================================================
 // GLOBAL SYNC MANAGER (No-Reload Synchronization Engine)
 // =========================================================
+// Direct REST download of the feeds (used when the Firebase SDK socket is stuck after an offline start).
+async function _flRestFetchFeeds() {
+    const base = String((firebase.app().options || {}).databaseURL || '').replace(/\/+$/, '');
+    if (!base) throw new Error('No databaseURL');
+    let token = '';
+    try { if (auth.currentUser) token = await auth.currentUser.getIdToken(); } catch (e) {}
+    const get = async function (path) {
+        const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        const t = setTimeout(function () { if (ctrl) ctrl.abort(); }, 15000);
+        try {
+            const res = await fetch(base + '/' + path + '.json' + (token ? '?auth=' + encodeURIComponent(token) : ''), ctrl ? { signal: ctrl.signal, cache: 'no-store' } : { cache: 'no-store' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return await res.json();
+        } finally { clearTimeout(t); }
+    };
+    return await Promise.all([
+        get('admin_panel/movies/user_uploads'),
+        get('admin_panel/movies/feels'),
+        get('admin_panel/movies/shorts'),
+        get('admin_panel/posts')
+    ]);
+}
+
 const SyncManager = {
     isRefreshing: false,
-    refreshEverything: async function() {
+    refreshEverything: async function(opts) {
+        const force = !!(opts && opts.force);
         // A refresh that hangs (flaky network) must never block every later refresh: treat a lock older than 25s as stale.
-        if (this.isRefreshing && (Date.now() - (this._startedAt || 0)) < 25000) return;
+        // A manual pull-to-refresh (force) always runs and supersedes any older hanging run.
+        if (!force && this.isRefreshing && (Date.now() - (this._startedAt || 0)) < 25000) return;
         if (!navigator.onLine) return;
         this.isRefreshing = true;
         this._startedAt = Date.now();
@@ -788,19 +823,39 @@ const SyncManager = {
         try {
             _detachAllGlobalFeedListeners();
 
+            // Started offline / connection never recovered: restart the Firebase socket before downloading.
+            if (force || !(allLongVideos && allLongVideos.length) && !(allFeels && allFeels.length)) {
+                try { firebase.database().goOffline(); firebase.database().goOnline(); } catch (e) {}
+            }
+
             previousFeelsCount = -1;
             previousLongsCount  = -1;
             previousPostsCount  = -1;
 
             // The profile must never block (or break) the feed download.
-            try { await withTimeout(this.refreshProfile(), 6000); } catch (e) { console.warn('refreshProfile skipped:', e); }
+            if (force) {
+                try { Promise.resolve(this.refreshProfile()).catch(function () {}); } catch (e) {}
+            } else {
+                try { await withTimeout(this.refreshProfile(), 6000); } catch (e) { console.warn('refreshProfile skipped:', e); }
+            }
 
-            const [longsSnap, feelsSnap, legacyShortsSnap, postsSnap] = await withTimeout(Promise.all([
-                db.ref('admin_panel/movies/user_uploads').once('value'),
-                db.ref('admin_panel/movies/feels').once('value'),
-                db.ref('admin_panel/movies/shorts').once('value'),
-                db.ref('admin_panel/posts').once('value')
-            ]), 12000);
+            let vals;
+            try {
+                const snaps = await withTimeout(Promise.all([
+                    db.ref('admin_panel/movies/user_uploads').once('value'),
+                    db.ref('admin_panel/movies/feels').once('value'),
+                    db.ref('admin_panel/movies/shorts').once('value'),
+                    db.ref('admin_panel/posts').once('value')
+                ]), force ? 8000 : 12000);
+                vals = snaps.map(function (s) { return s.val(); });
+            } catch (sdkErr) {
+                console.warn('Firebase SDK download failed, trying REST fallback:', sdkErr);
+                vals = await _flRestFetchFeeds();
+            }
+            const longsSnap = { val: function () { return vals[0]; } };
+            const feelsSnap = { val: function () { return vals[1]; } };
+            const legacyShortsSnap = { val: function () { return vals[2]; } };
+            const postsSnap = { val: function () { return vals[3]; } };
 
             const now = Date.now();
             allLongVideos      = longsSnap.val()  ? Object.values(longsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
@@ -1239,7 +1294,7 @@ async function triggerUniversalPullToRefresh() {
     }
 
     try {
-        await hfRunHomeRefresh(() => SyncManager.refreshEverything());
+        await hfRunHomeRefresh(() => SyncManager.refreshEverything({ force: true }));
         showNotification("Feed Updated!", "success");
     } catch (e) {
         console.error("PTR Refresh Exception:", e);
@@ -2635,7 +2690,7 @@ function renderUserAvatar(photoURL, email) {
     const avatarNav = document.getElementById('nav-avatar-img');
     if (avatarNav) {
         if (photoURL) {
-            avatarNav.innerHTML = `<img src="${photoURL}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            _flSetNavAvatar(avatarNav, photoURL);
         } else {
             const initial = email ? email.charAt(0).toUpperCase() : 'U';
             avatarNav.innerHTML = `<div style="background: linear-gradient(135deg, var(--primary), #FF7A00); color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem;">${initial}</div>`;
@@ -10485,7 +10540,7 @@ function updateBottomNavAvatar() {
     if (currentUser) {
         const photoURL = currentUser.photoURL || '';
         if (photoURL) {
-            navAvatarContainer.innerHTML = `<img src="${photoURL}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            _flSetNavAvatar(navAvatarContainer, photoURL);
         } else {
             navAvatarContainer.innerHTML = `<div style="background: linear-gradient(135deg, var(--primary), #FF7A00); color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem;">${currentUser.email ? currentUser.email.charAt(0).toUpperCase() : 'U'}</div>`;
         }

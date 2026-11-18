@@ -3805,7 +3805,7 @@ function renderFeelsSegmentUI(segmentFeels, hasPrev) {
     const limitedFeels = segmentFeels.slice(0, 8);
     
     let html = `
-        <div class="feels-section-container" style="margin-bottom: 24px;${hasPrev ? ' padding-top: 22px;' : ''}">
+        <div class="feels-section-container" style="margin-bottom: 24px;${hasPrev ? ' padding-top: 12px;' : ''}">
             <div class="section-title">
                 <svg class="nav-icon-svg" width="26" height="26" viewBox="0 0 32 32" aria-hidden="true" style="color:var(--primary) !important;">
                     <rect x="5" y="4" width="22" height="24" rx="6"></rect>

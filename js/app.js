@@ -6367,6 +6367,7 @@ function ttEnsureSheet() {
     .tt-more .tt-dash{width:24px;height:1px;background:rgba(128,128,128,.5)}
     .tt-more svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
     .tt-foot{flex:0 0 auto;border-top:1px solid rgba(128,128,128,.18);padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--surface,#fff)}
+    .tt-foot.kb{padding-bottom:10px;border-radius:14px 14px 0 0;box-shadow:0 -4px 16px rgba(0,0,0,.18);border-top-color:transparent;position:relative;z-index:4}
     .tt-inrow{display:flex;align-items:flex-end;gap:10px}
     .tt-pill{flex:1 1 auto;min-width:0;background:rgba(128,128,128,.14);border-radius:22px;padding:0 16px;min-height:44px;display:flex;align-items:center}
     .tt-pill textarea{display:block;width:100%;height:22px;margin:11px 0;padding:0;border:0;outline:0;resize:none;overflow-y:hidden;background:transparent;color:inherit;font-size:16px;line-height:22px;font-family:inherit;-webkit-user-select:text;user-select:text}
@@ -6420,7 +6421,14 @@ function ttEnsureSheet() {
 
     const input = el.querySelector('#tt-input');
     const foot = el.querySelector('#tt-foot');
-    input.addEventListener('focus', () => { foot.classList.add('open'); });
+    input.addEventListener('focus', () => {
+        foot.classList.add('open'); ttAutoGrow();
+        // Keep the sheet itself from being scrolled by the browser's "reveal focused field" behaviour
+        const sh = document.getElementById('tt-sheet'); if (sh) sh.scrollTop = 0;
+        setTimeout(ttFitKeyboard, 50); setTimeout(ttFitKeyboard, 250);
+    });
+    input.addEventListener('blur', () => { setTimeout(ttFitKeyboard, 50); });
+    el.querySelector('#tt-sheet').addEventListener('scroll', (e) => { e.currentTarget.scrollTop = 0; }, { passive: true });
     input.addEventListener('input', ttSyncSend);
     el.querySelector('#tt-send').addEventListener('click', submitTikTokComment);
     el.querySelectorAll('.tt-emojis button').forEach(b => b.addEventListener('mousedown', (e) => e.preventDefault()));
@@ -6430,25 +6438,50 @@ function ttEnsureSheet() {
     list.addEventListener('click', ttListClick);
     ttBindLongPress(list);
     if (window.visualViewport) {
-        const fit = () => {
-            const m = document.getElementById('tt-comment-modal');
-            if (!m || m.style.display === 'none') return;
-            const vv = window.visualViewport;
-            const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-            m.style.paddingBottom = kb + 'px';
-        };
-        window.visualViewport.addEventListener('resize', fit);
-        window.visualViewport.addEventListener('scroll', fit);
+        window.visualViewport.addEventListener('resize', ttFitKeyboard);
+        window.visualViewport.addEventListener('scroll', ttFitKeyboard);
     }
+    window.addEventListener('resize', ttFitKeyboard);
     return el;
 }
 
-// The comment box grows with the text (new lines with Enter) up to 6 lines, then it scrolls inside.
+// Keyboard handling: the comment sheet stays exactly where it is; only the "Add comment..." card
+// (the footer) is lifted to sit right above the keyboard. Works for both resize modes
+// (visual-viewport overlay keyboard and Android adjustResize).
+let _ttBaseH = 0;
+function ttFitKeyboard() {
+    const m = document.getElementById('tt-comment-modal');
+    const sheet = document.getElementById('tt-sheet');
+    const foot = document.getElementById('tt-foot');
+    const input = document.getElementById('tt-input');
+    if (!m || !sheet || !foot || m.style.display === 'none' || !m.clientHeight) return;
+    const vv = window.visualViewport;
+    const vvH = vv ? vv.height + vv.offsetTop : window.innerHeight;
+    // remember the full (keyboard-less) height while the input is not focused
+    if (!_ttBaseH || document.activeElement !== input) _ttBaseH = Math.max(window.innerHeight, vvH);
+    const base = _ttBaseH;
+    const kb = Math.max(0, Math.round(base - vvH));
+    const shrink = Math.max(0, Math.round(base - m.clientHeight));   // >0 only when the webview itself resized
+    // pin the sheet to its original screen position / size
+    sheet.style.height = Math.round(Math.min(base * 0.72, base - 120)) + 'px';
+    sheet.style.maxHeight = 'none';
+    sheet.style.marginBottom = (-shrink) + 'px';
+    m.style.paddingBottom = '0px';
+    // lift only the card
+    const up = kb > 80 && document.activeElement === input;
+    foot.classList.toggle('kb', up);
+    foot.style.transform = up ? 'translateY(' + (-kb) + 'px)' : '';
+    sheet.scrollTop = 0;
+}
+
+// The comment box starts at 2 lines when the card opens, grows with the text up to 6 lines, then scrolls inside.
 function ttAutoGrow() {
     const i = document.getElementById('tt-input'); if (!i) return;
+    const foot = document.getElementById('tt-foot');
     const LINE = 22, MAX = LINE * 6;
-    i.style.height = LINE + 'px';
-    const h = Math.max(LINE, Math.min(i.scrollHeight, MAX));
+    const MIN = (foot && foot.classList.contains('open')) ? LINE * 2 : LINE;
+    i.style.height = MIN + 'px';
+    const h = Math.max(MIN, Math.min(i.scrollHeight, MAX));
     i.style.height = h + 'px';
     i.style.overflowY = i.scrollHeight > MAX ? 'auto' : 'hidden';
 }
@@ -6482,7 +6515,9 @@ function openTikTokComments(shortId) {
 
     const input = el.querySelector('#tt-input');
     input.value = ''; input.placeholder = 'Add comment...';
-    el.querySelector('#tt-foot').classList.remove('open');
+    el.querySelector('#tt-foot').classList.remove('open', 'kb');
+    el.querySelector('#tt-foot').style.transform = '';
+    _ttBaseH = 0;
     ttSyncSend();
     const cached = feelsCommentsCache[s.id];
     const list = el.querySelector('#tt-list');
@@ -6492,7 +6527,7 @@ function openTikTokComments(shortId) {
 
     ttAttach(s.id);
     AppNavigation.pushModal('tt-comment-modal');
-    requestAnimationFrame(() => keepFeelsVideoActive(shortId));
+    requestAnimationFrame(() => { keepFeelsVideoActive(shortId); ttFitKeyboard(); });
 }
 
 let _ttGot = false, _ttEdit = null, _ttMe = null;
@@ -6528,6 +6563,8 @@ function closeTikTokComments() {
     ttCloseMenu();
     const i = document.getElementById('tt-input'); if (i) i.blur();
     const m = document.getElementById('tt-comment-modal'); if (m) m.style.paddingBottom = '0px';
+    const ft = document.getElementById('tt-foot'); if (ft) { ft.style.transform = ''; ft.classList.remove('kb'); }
+    const shx = document.getElementById('tt-sheet'); if (shx) shx.style.marginBottom = '0px';
     ttDetach();
     const cur = AppNavigation.current();
     if (cur && cur.id === 'tt-comment-modal') AppNavigation.pop();
@@ -6666,7 +6703,7 @@ function ttResetInput() {
     if (input) { input.value = ''; input.placeholder = 'Add comment...'; input.blur(); }
     _ttReply = null; _ttEdit = null;
     const bar = document.getElementById('tt-editbar'); if (bar) bar.style.display = 'none';
-    document.getElementById('tt-foot').classList.remove('open');
+    const ft2 = document.getElementById('tt-foot'); ft2.classList.remove('open', 'kb'); ft2.style.transform = '';
     ttSyncSend();
 }
 

@@ -5138,6 +5138,17 @@ function feelsPtrReset(animate) {
     feelsPtrRender(0, animate);
 }
 
+// Feels bottom-nav button tapped while Feels is open: same refresh as Pull-to-Refresh.
+function feelsRefreshFromNav() {
+    if (feelsPtr.refreshing) return;
+    const sw = document.querySelector('#feels-swiper-container .feels-swiper');
+    if (!sw) return;
+    const first = sw.querySelector('.short-slide');
+    if (first) scrollFeelsToSlide(sw, first, 'auto');   // jump to the top of the feed
+    feelsPtr.swiper = sw;
+    feelsRunPullRefresh();
+}
+
 async function feelsRunPullRefresh() {
     const p = feelsPtr;
     if (p.refreshing) return;
@@ -6287,6 +6298,8 @@ function handleFeelsInfoClick(event, shortId, action) {
 // =========================================================
 let _ttRef = null, _ttCb = null, _ttId = null, _ttData = {};
 let _ttReply = null;               // { parent, name, mention }
+const _ttPinned = [];                 // keys the user posted while this sheet is open (stay on top, newest first)
+let _ttSeed = '';                    // random order seed, new on every open of the sheet
 const _ttOpen = new Set();         // parent keys whose replies are expanded
 const _ttShown = {};               // parent key -> how many replies are visible
 let _ttScroll = 0;
@@ -6354,10 +6367,10 @@ function ttEnsureSheet() {
     .tt-more .tt-dash{width:24px;height:1px;background:rgba(128,128,128,.5)}
     .tt-more svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
     .tt-foot{flex:0 0 auto;border-top:1px solid rgba(128,128,128,.18);padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--surface,#fff)}
-    .tt-inrow{display:flex;align-items:center;gap:10px}
-    .tt-pill{flex:1 1 auto;min-width:0;background:rgba(128,128,128,.14);border-radius:22px;padding:0 16px;height:44px;display:flex;align-items:center}
-    .tt-pill input{width:100%;border:0;outline:0;background:transparent;color:inherit;font-size:16px;font-family:inherit}
-    .tt-pill input::placeholder{color:var(--text-muted,#8a8b91)}
+    .tt-inrow{display:flex;align-items:flex-end;gap:10px}
+    .tt-pill{flex:1 1 auto;min-width:0;background:rgba(128,128,128,.14);border-radius:22px;padding:0 16px;min-height:44px;display:flex;align-items:center}
+    .tt-pill textarea{display:block;width:100%;height:22px;margin:11px 0;padding:0;border:0;outline:0;resize:none;overflow-y:hidden;background:transparent;color:inherit;font-size:16px;line-height:22px;font-family:inherit;-webkit-user-select:text;user-select:text}
+    .tt-pill textarea::placeholder{color:var(--text-muted,#8a8b91)}
     .tt-actions{display:none;justify-content:flex-end;margin-top:10px}
     .tt-foot.open .tt-actions{display:flex}
     .tt-send{width:78px;height:46px;border:0;border-radius:23px;background:#fe2c55;color:#fff;display:flex;align-items:center;justify-content:center;opacity:.35;transition:opacity .15s;cursor:pointer}
@@ -6397,7 +6410,7 @@ function ttEnsureSheet() {
           <div class="tt-editbar" id="tt-editbar" style="display:none"><span>Editing comment</span><button type="button" onclick="ttCancelEdit()">Cancel</button></div>
           <div class="tt-inrow">
             <div id="tt-me" style="flex:0 0 auto"></div>
-            <div class="tt-pill"><input id="tt-input" type="text" autocomplete="off" enterkeyhint="send" placeholder="Add comment..." maxlength="500"></div>
+            <div class="tt-pill"><textarea id="tt-input" rows="1" autocomplete="off" autocapitalize="sentences" enterkeyhint="enter" placeholder="Add comment..." maxlength="500"></textarea></div>
           </div>
           <div class="tt-actions"><button class="tt-send" id="tt-send" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M12 20V5M5.5 11.5L12 5l6.5 6.5"/></svg></button></div>
           <div class="tt-emojis">${TT_EMOJIS.map(e => `<button type="button" data-e="${e}">${e}</button>`).join('')}</div>
@@ -6409,7 +6422,6 @@ function ttEnsureSheet() {
     const foot = el.querySelector('#tt-foot');
     input.addEventListener('focus', () => { foot.classList.add('open'); });
     input.addEventListener('input', ttSyncSend);
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submitTikTokComment(); } });
     el.querySelector('#tt-send').addEventListener('click', submitTikTokComment);
     el.querySelectorAll('.tt-emojis button').forEach(b => b.addEventListener('mousedown', (e) => e.preventDefault()));
     el.querySelectorAll('.tt-emojis button').forEach(b => b.addEventListener('click', () => ttInsertEmoji(b.dataset.e)));
@@ -6431,9 +6443,19 @@ function ttEnsureSheet() {
     return el;
 }
 
+// The comment box grows with the text (new lines with Enter) up to 6 lines, then it scrolls inside.
+function ttAutoGrow() {
+    const i = document.getElementById('tt-input'); if (!i) return;
+    const LINE = 22, MAX = LINE * 6;
+    i.style.height = LINE + 'px';
+    const h = Math.max(LINE, Math.min(i.scrollHeight, MAX));
+    i.style.height = h + 'px';
+    i.style.overflowY = i.scrollHeight > MAX ? 'auto' : 'hidden';
+}
 function ttSyncSend() {
     const i = document.getElementById('tt-input'), b = document.getElementById('tt-send');
     if (b) b.classList.toggle('ready', !!(i && i.value.trim()));
+    ttAutoGrow();
 }
 function ttInsertEmoji(e) {
     const i = document.getElementById('tt-input'); if (!i) return;
@@ -6455,6 +6477,7 @@ function openTikTokComments(shortId) {
     const el = ttEnsureSheet();
     ttDetach();
     _ttId = String(s.id); _ttData = {}; _ttReply = null; _ttScroll = 0;
+    _ttPinned.length = 0; _ttSeed = Math.random() + '|' + Date.now();
     _ttOpen.clear(); Object.keys(_ttShown).forEach(k => delete _ttShown[k]);
 
     const input = el.querySelector('#tt-input');
@@ -6533,9 +6556,11 @@ function ttRender() {
     entries.filter(e => e.c.parentId && keys.has(e.c.parentId)).forEach(e => { (kids[e.c.parentId] = kids[e.c.parentId] || []).push(e); });
     const uid = auth.currentUser && auth.currentUser.uid;
     const now = Date.now();
-    const likeN = e => ttLikeUids(e.c).size;
-    const fresh = e => uid && e.c.uid === uid && now - (e.c.timestamp || 0) < 120000;
-    top.sort((a, b) => (fresh(b) - fresh(a)) || (likeN(b) - likeN(a)) || ((b.c.timestamp || 0) - (a.c.timestamp || 0)));
+    // Random order (TikTok style). The order depends only on the seed + comment id, so a Like (or any
+    // realtime update) never moves a comment. Comments the user just posted stay on top.
+    const pin = e => { const i = _ttPinned.indexOf(e.k); return i === -1 ? 0 : (_ttPinned.length - i); };
+    const rnd = e => _hfHash(_ttSeed + '|' + e.k);
+    top.sort((a, b) => (pin(b) - pin(a)) || (rnd(a) - rnd(b)));
 
     if (!top.length) { list.innerHTML = '<div class="tt-empty">No comments yet. Be the first to comment!</div>'; return; }
 
@@ -6673,6 +6698,7 @@ function submitTikTokComment() {
         if (reply) { data.parentId = reply.parent; if (reply.mention) data.replyToName = reply.name; _ttOpen.add(reply.parent); _ttShown[reply.parent] = 9999; }
         const ref = db.ref(`movie_comments/${movieId}`).push();
         _ttData[ref.key] = data;
+        if (!reply) _ttPinned.push(ref.key);
         feelsCommentsCache[movieId] = _ttData;
         ttResetInput();
         if (!reply) _ttScroll = 0;
@@ -8828,6 +8854,17 @@ async function switchTab(tabId) {
     }
     try { if (lvAdShowing) lvCancelAd(); } catch (e) {}
     try { if (flyLandscape) flySetLandscape(false); } catch (e) {}
+
+    // Already on Feels and the Feels button is tapped again: refresh Feels (new random feed).
+    if (tabId === 'feels') {
+        let curNav = null;
+        try { curNav = AppNavigation.current(); } catch (e) {}
+        if (curNav && curNav.type === 'tab' && curNav.id === 'feels' && document.querySelector('#feels-swiper-container .feels-swiper')) {
+            feelsRefreshFromNav();
+            return;
+        }
+    }
+
     playUI('click');
     document.querySelectorAll('.short-video-el').forEach(vid => vid.pause());
 

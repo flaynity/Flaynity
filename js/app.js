@@ -682,22 +682,6 @@ function selectThemeVal(val) {
 __flaynityReady(function() {
     applyTheme();
     
-    try {
-        const sound = document.getElementById("startupSound");
-        if (sound) {
-            sound.volume = 0.3; 
-            document.body.addEventListener('click', () => {
-                sound.play().catch(e => console.log("Startup audio block:", e));
-            }, { once: true });
-            
-            let playPromise = sound.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(error => { console.log("Auto-play blocked by client."); });
-            }
-        }
-    } catch (e) {
-        console.warn("Startup sound engine bypassed:", e);
-    }
 
     // Startup splash timing is controlled from index.html so it starts immediately
     // and cannot appear late or disappear before the full 3.5-second duration.

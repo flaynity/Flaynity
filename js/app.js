@@ -3774,7 +3774,7 @@ function buildHomeFeed() {
             const segmentFeels = feels.slice(shortIdx, shortIdx + size);
             shortIdx += size;
             segmentFeels.forEach(s => { if (s.userId) uniqueUserIds.add(s.userId); });
-            html += renderFeelsSegmentUI(segmentFeels);
+            html += renderFeelsSegmentUI(segmentFeels, html !== '');   // gap above the title when it follows a card
         } else {
             // 2 to 10 Long Videos in a row
             const size = 2 + Math.floor(patRng() * 9);
@@ -3799,13 +3799,13 @@ function buildHomeFeed() {
     uniqueUserIds.forEach(uid => bindLiveChannelUI(uid));
 }
 
-function renderFeelsSegmentUI(segmentFeels) {
+function renderFeelsSegmentUI(segmentFeels, hasPrev) {
     if (segmentFeels.length === 0) return '';
     
     const limitedFeels = segmentFeels.slice(0, 8);
     
     let html = `
-        <div class="feels-section-container" style="margin-bottom: 24px;">
+        <div class="feels-section-container" style="margin-bottom: 24px;${hasPrev ? ' padding-top: 22px;' : ''}">
             <div class="section-title">
                 <svg class="nav-icon-svg" width="26" height="26" viewBox="0 0 32 32" aria-hidden="true" style="color:var(--primary) !important;">
                     <rect x="5" y="4" width="22" height="24" rx="6"></rect>

@@ -133,46 +133,6 @@
         .offline-feels-info { position:absolute; bottom:60px; left:16px; right:80px; display:flex; flex-direction:column; gap:10px; }
         .offline-feels-user { display:flex; gap:10px; align-items:center; }
 
-/* OFFICIAL-STYLE PULL TO REFRESH INDICATOR */
-        .ptr-container {
-            position: fixed;
-            top: 86px;
-            left: 50%;
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: var(--surface);
-            border: 1px solid var(--border-color);
-            box-shadow: 0 6px 18px rgba(0,0,0,0.18);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 99999;
-            transform: translate3d(-50%, -70px, 0);
-            transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.18s ease;
-            opacity: 0;
-            pointer-events: none;
-            will-change: transform, opacity;
-        }
-        .ptr-spinner {
-            width: 24px;
-            height: 24px;
-            display: block;
-            fill: none;
-            stroke: var(--text-muted);
-            stroke-width: 2.4;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            transform-origin: 50% 50%;
-            transition: transform 0.08s linear, stroke 0.15s ease;
-        }
-        .ptr-spinning {
-            stroke: var(--primary);
-            animation: ptrOfficialSpin 0.75s linear infinite;
-        }
-        @keyframes ptrOfficialSpin {
-            to { transform: rotate(360deg); }
-        }
 
         /* Keep the browser/WebView from starting its own page-level pull gesture. */
         html { overscroll-behavior-y: contain; }
@@ -1795,15 +1755,7 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 .fbcm-ai{gap:16px;padding:11px 14px;font-size:15.5px;}
 .fbcm-ai svg{width:22px;height:22px;}
 </style></head><body>
-<audio id="startupSound" preload="auto">
-<source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg"/>
-</audio>
 <div class="toast-container" id="toast-container"></div>
-<div class="ptr-container" id="ptr-indicator" aria-hidden="true">
-    <svg id="ptr-spinner" class="ptr-spinner" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"></path>
-    </svg>
-</div>
 
 <div id="network-spinner-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:9999999; justify-content:center; align-items:center; flex-direction:column; color:white;">
 <div style="width:48px; height:48px; border:4px solid rgba(255,255,255,0.2); border-top-color:var(--primary); border-radius:50%; animation:spin 1s linear infinite; margin-bottom:16px;"></div>

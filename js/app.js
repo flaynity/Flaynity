@@ -1449,7 +1449,8 @@ function hfPlayEnter(container) {
     } catch (e) {}
 }
 
-// Home pull-to-refresh: new seed -> fade old feed out -> shimmer skeleton -> new feed fades/slides in.
+// Home pull-to-refresh: new seed -> old feed stays visible while data reloads (NO skeleton / shimmer)
+// -> the new random feed replaces it and fades/slides in.
 async function hfRunHomeRefresh(doRefresh) {
     var home = document.getElementById('home-feed-container');
     var activeNav = document.querySelector('.nav-item.active');
@@ -1462,17 +1463,7 @@ async function hfRunHomeRefresh(doRefresh) {
     _hfHoldRender = true;
     var safety = setTimeout(function () { _hfHoldRender = false; }, 20000);
     try {
-        home.classList.add('hf-leaving');
-        await new Promise(function (r) { setTimeout(r, 220); });
-        home.innerHTML = getHomeSkeletonHTML();
-        home.__hfSig = null;
-        home.classList.remove('hf-leaving');
-        home.classList.add('hf-skel-in');
-        var started = Date.now();
-        try { await doRefresh(); } finally {
-            var wait = 520 - (Date.now() - started);   // let the shimmer be seen
-            if (wait > 0) await new Promise(function (r) { setTimeout(r, wait); });
-        }
+        await doRefresh();
     } finally {
         clearTimeout(safety);
         _hfHoldRender = false;
@@ -3731,6 +3722,9 @@ function buildHomeFeed() {
         return;
     }
 
+    // Community Posts are hidden from the Home feed (they stay in the Posts tab).
+    posts = [];
+
     let shortIdx = 0;
     let longIdx = 0;
     let postIdx = 0;
@@ -3769,6 +3763,9 @@ function buildHomeFeed() {
         else block = (lastBlock === 'feels') ? 'long' : 'feels';
         if (block === 'feels' && feelsLeft <= 0) block = 'long';
         if (block === 'long' && longsLeft <= 0) block = 'feels';
+        // Never show a Feels grid directly under another Feels grid (e.g. when Long Videos run out).
+        // Leftover Feels stay available in the Feels tab.
+        if (block === 'feels' && lastBlock === 'feels') break;
 
         if (block === 'feels') {
             // 2-column grid: 2 / 4 / 6 / 8 cards per Feels shelf

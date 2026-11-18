@@ -763,6 +763,9 @@ window.FlaynityNetworkOnline = function() {
 };
 
 window.FlaynityNetworkOffline = function() {
+    // Android WebView sometimes fires a spurious 'offline' event while the connection is fine:
+    // never switch to skeleton / offline mode unless the browser really reports offline.
+    if (navigator.onLine) return;
     try { firebase.database().goOffline(); } catch(e) {}
     showNotification("Offline Mode. Showing Skeletons.", "error");
 
@@ -936,10 +939,10 @@ const SyncManager = {
             if (hasData) { buildHomeFeed(); return; }
             if (!home.children.length) buildHomeFeed();   // at least the skeleton, never a blank screen
 
-            var wait = attempts < 3 ? 5000 : 30000;
+            var wait = attempts < 5 ? 3000 : 12000;
             if (SyncManager.isRefreshing || Date.now() - lastTry < wait) return;
             lastTry = Date.now(); attempts++;
-            SyncManager.refreshEverything();
+            SyncManager.refreshEverything({ force: true });
         } catch (e) {}
     }, 2000);
 })();
@@ -2495,6 +2498,14 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
             cleanupUserSessionData();
         }
         window.__flaynityActiveDataUid = user.uid;
+
+        // Online start: begin downloading the feeds right away (do not wait for the account checks below),
+        // so Home shows real content instead of staying on the skeleton.
+        try {
+            if (navigator.onLine && !(allLongVideos && allLongVideos.length) && !(allFeels && allFeels.length)) {
+                SyncManager.refreshEverything();
+            }
+        } catch (e) {}
 
         // Always verify the account status from Firebase before exposing the app.
         const userRef = db.ref(`users/${user.uid}`);

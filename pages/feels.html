@@ -521,7 +521,8 @@
     fill: none; stroke: var(--primary, #D80E45); stroke-width: 1.9;
     stroke-linecap: round; stroke-linejoin: round; transform-origin: 50% 50%;
 }
-.feels-ptr svg path { fill: none; stroke: var(--primary, #D80E45); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.feels-ptr svg path, .feels-ptr svg rect { fill: none; stroke: var(--primary, #D80E45); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.feels-ptr svg path.fp-play { fill: var(--primary, #D80E45); stroke: none; }
 .feels-ptr.spinning svg { animation: feelsPtrGlow 1.15s ease-in-out infinite alternate; }
 @keyframes feelsPtrGlow {
     0% { filter: drop-shadow(0 0 1px rgba(255,23,68,.25)); }
@@ -536,7 +537,7 @@
 </div>
 <button type="button" id="feels-settings-btn" class="feels-settings-btn" aria-label="Settings" onclick="openFeelsSettingsTop(event)"><svg viewBox="0 0 24 24"  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15z"/></svg></button>
 <button type="button" class="feels-search-btn" aria-label="Search" onclick="switchTab('discover')"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="7"></circle><path d="M16 16l5 5"></path></svg></button>
-<div class="feels-ptr" id="feels-ptr" aria-hidden="true"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 14.5 16 7l9 7.5"></path><path d="M7 14.5V23c0 1.7 1.3 3 3 3h12c1.7 0 3-1.3 3-3v-8.5"></path><path d="M13 26v-7h6v7"></path></svg></div>
+<div class="feels-ptr" id="feels-ptr" aria-hidden="true"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="4" width="22" height="24" rx="6"></rect><path d="M12 4v4h8V4"></path><path class="fp-play" d="M13 13l7 4-7 4z"></path></svg></div>
 <div id="feels-swiper-container" style="height:100%; width:100%;"></div>
 </div>
 </body></html>

@@ -4955,6 +4955,16 @@ const feelsLastPlayedByMode = { 'for-you': null, 'subscribe': null };
 //   previews of Feels they have already seen, and DOWN to new ones. Nothing unseen exists above.
 // =========================================================
 const feelsSessionOrder = { 'for-you': [], 'subscribe': [] };
+
+function feelsApplyDarkNav(on) {
+    if (!document.getElementById('feels-dark-nav-style')) {
+        const st = document.createElement('style');
+        st.id = 'feels-dark-nav-style';
+        st.textContent = 'body.feels-nav-dark .bottom-nav { --surface:#0F0F0F; --bg-color:#0F0F0F; --card-bg:#0F0F0F; --border-color:#222222; --text-main:#FFFFFF; --text-muted:#AAAAAA; background:#0F0F0F !important; border-top-color:#222222 !important; }';
+        document.head.appendChild(st);
+    }
+    document.body.classList.toggle('feels-nav-dark', !!on);
+}
 const FEELS_SEEN_KEY = 'flaynity_feels_seen_v1';
 const FEELS_SEEN_TTL = 14 * 24 * 3600 * 1000;
 
@@ -5089,7 +5099,7 @@ function feelsPtrIndicator() {
         el.id = 'feels-ptr';
         el.className = 'feels-ptr';
         el.setAttribute('aria-hidden', 'true');
-        el.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 14.5 16 7l9 7.5"></path><path d="M7 14.5V23c0 1.7 1.3 3 3 3h12c1.7 0 3-1.3 3-3v-8.5"></path><path d="M13 26v-7h6v7"></path></svg>';
+        el.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="4" width="22" height="24" rx="6"></rect><path d="M12 4v4h8V4"></path><path class="fp-play" d="M13 13l7 4-7 4z"></path></svg>';
         tab.appendChild(el);
     }
     return el;
@@ -7456,6 +7466,10 @@ const AppNavigation = {
             tabEl.classList.add('active');
         }
         if (navEl) navEl.classList.add('active');
+
+        // Feels is always dark: the bottom navigation turns dark there (even in Light theme)
+        // and returns to the selected theme as soon as the user leaves Feels / presses Back.
+        feelsApplyDarkNav(activeTab === 'feels');
 
         adjustHeaderForActiveTab(activeTab);
 

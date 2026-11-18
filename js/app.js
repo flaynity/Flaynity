@@ -5089,7 +5089,7 @@ function feelsPtrIndicator() {
         el.id = 'feels-ptr';
         el.className = 'feels-ptr';
         el.setAttribute('aria-hidden', 'true');
-        el.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"></path></svg>';
+        el.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 14.5 16 7l9 7.5"></path><path d="M7 14.5V23c0 1.7 1.3 3 3 3h12c1.7 0 3-1.3 3-3v-8.5"></path><path d="M13 26v-7h6v7"></path></svg>';
         tab.appendChild(el);
     }
     return el;
@@ -5112,34 +5112,20 @@ function feelsPtrAllowed(sw, target) {
 }
 
 function feelsPtrRender(dist, animate) {
-    const sw = feelsPtr.swiper;
+    // The Feels video stays exactly where it is. Only the Home-style indicator appears.
     const ind = feelsPtrIndicator();
-    if (sw) {
-        sw.style.transition = animate ? 'transform .28s cubic-bezier(.22,1,.36,1)' : 'none';
-        sw.style.transform = dist > 0 ? 'translate3d(0,' + dist.toFixed(1) + 'px,0)' : '';
-    }
-    if (ind) {
-        const p = Math.max(0, Math.min(1, (dist - 14) / 40));
-        ind.style.transition = animate ? 'opacity .2s ease, transform .28s cubic-bezier(.22,1,.36,1)' : 'none';
-        ind.style.opacity = String(p);
-        ind.style.transform = 'translate3d(-50%,' + ((1 - p) * -14).toFixed(1) + 'px,0) scale(' + (0.6 + 0.4 * p).toFixed(2) + ')';
-        const svg = ind.querySelector('svg');
-        if (svg && !ind.classList.contains('spinning')) svg.style.transform = 'rotate(' + Math.round(dist * 3.2) + 'deg)';
-    }
+    if (!ind) return;
+    const p = Math.max(0, Math.min(1, (dist - 10) / 40));
+    const y = -20 + Math.min(dist, FEELS_PTR_MAX) * 0.5;
+    ind.style.transition = animate ? 'opacity .2s ease, transform .28s cubic-bezier(.22,1,.36,1)' : 'none';
+    ind.style.opacity = String(p);
+    ind.style.transform = 'translate3d(-50%,' + y.toFixed(1) + 'px,0) scale(' + (0.7 + 0.3 * p).toFixed(2) + ')';
 }
 
 function feelsPtrReset(animate) {
     const ind = feelsPtrIndicator();
-    if (ind) {
-        ind.classList.remove('spinning');
-        const svg = ind.querySelector('svg');
-        if (svg) svg.style.transform = '';
-    }
+    if (ind) ind.classList.remove('spinning');
     feelsPtrRender(0, animate);
-    const sw = feelsPtr.swiper;
-    if (sw) {
-        setTimeout(() => { sw.style.transition = ''; sw.style.transform = ''; }, animate ? 320 : 0);
-    }
 }
 
 async function feelsRunPullRefresh() {
@@ -5158,7 +5144,7 @@ async function feelsRunPullRefresh() {
     p.refreshing = true;
     const ind = feelsPtrIndicator();
     feelsPtrRender(FEELS_PTR_HOLD, true);
-    if (ind) ind.classList.add('spinning');
+    if (ind) { ind.style.opacity = '1'; ind.classList.add('spinning'); }
     try { triggerFeelsHaptic(14); } catch (e) {}
     try { playUI('click'); } catch (e) {}
 

@@ -4559,14 +4559,16 @@ function fxSubmitReport() {
 // REPORT / COPYRIGHT FULL PAGES (TikTok-style flow)
 // Why are you reporting this? -> Thanks for reporting -> Reports list
 // =========================================================
+// Report page texts — এক জায়গা থেকেই বদলানো যায়
+const RP_T = { notForMe: "Not for me", moreBtn: "See more reasons", moreTitle: "More reasons", ipr: "Fake products or copyright" };
 const RP_REASONS = [
-    ['sexual', 'Sexual content'], ['hate', 'Hate and harassment'], ['violence', 'Violence or abuse'],
-    ['child_safety', 'Child safety'], ['misleading', 'False or misleading information'],
-    ['ai_content', 'Problematic AI content'], ['self_harm', 'Suicide and self-harm'], ['branded', 'Undisclosed branded content']
+    ['sexual', 'Nudity or sexual material'], ['hate', 'Hate speech or bullying'], ['violence', 'Violence or harm'],
+    ['child_safety', 'Risk to children'], ['misleading', 'Fake or misleading info'],
+    ['ai_content', 'Harmful AI-generated content'], ['self_harm', 'Self-harm or suicide'], ['branded', 'Hidden paid promotion']
 ];
 const RP_MORE = [
-    ['spam', 'Spam or scam'], ['dangerous', 'Dangerous activities and challenges'],
-    ['illegal', 'Illegal activities and regulated goods'], ['gambling', 'Gambling'], ['other', 'Other']
+    ['spam', 'Spam or scams'], ['dangerous', 'Risky challenges or stunts'],
+    ['illegal', 'Illegal or restricted items'], ['gambling', 'Gambling content'], ['other', 'Something else']
 ];
 const RP_COPY = [
     ['copies_work', 'It copies my original work'], ['unauthorized_media', 'Uses my video or music without permission'],
@@ -4669,12 +4671,12 @@ function rpShow(screen, isBack) {
     if (screen === 'report') {
         html = `<h1 class="rp-h1">Why are you reporting this?</h1>
             <div class="rp-info">${RP_SHIELD}<span>Your report remains anonymous to others, and we review all reports against our guidelines.</span></div>
-            <div class="rp-card rp-single"><button type="button" class="rp-row" data-act="reason" data-k="dislike" data-t="I don't like it"><span>I don't like it</span>${RP_CHEV}</button></div>
-            <div class="rp-card rp-list">${rpRows(RP_REASONS, 'reason')}<button type="button" class="rp-row" data-act="more"><span>More reasons</span>${RP_CHEV}</button></div>
-            <div class="rp-card rp-single"><button type="button" class="rp-row" data-act="ipr"><span>Counterfeits and intellectual property</span>${RP_CHEV}</button></div>
+            <div class="rp-card rp-single"><button type="button" class="rp-row" data-act="reason" data-k="dislike" data-t="${RP_T.notForMe}"><span>${RP_T.notForMe}</span>${RP_CHEV}</button></div>
+            <div class="rp-card rp-list">${rpRows(RP_REASONS, 'reason')}<button type="button" class="rp-row" data-act="more"><span>${RP_T.moreBtn}</span>${RP_CHEV}</button></div>
+            <div class="rp-card rp-single"><button type="button" class="rp-row" data-act="ipr"><span>${RP_T.ipr}</span>${RP_CHEV}</button></div>
             <div class="rp-bottom-gap"></div>`;
     } else if (screen === 'more') {
-        html = `<h1 class="rp-h1">More reasons</h1>
+        html = `<h1 class="rp-h1">${RP_T.moreTitle}</h1>
             <div class="rp-card rp-list">${rpRows(RP_MORE, 'reason')}</div><div class="rp-bottom-gap"></div>`;
     } else if (screen === 'copyright') {
         html = `<h1 class="rp-h1">What is the copyright issue?</h1>
@@ -4683,26 +4685,40 @@ function rpShow(screen, isBack) {
     } else if (screen === 'copyform') {
         html = `<h1 class="rp-h1 rp-h1-sm">Tell us more</h1>
             <div class="rp-info">${RP_SHIELD}<span>${escapeHTML(_rp.copyLabel)}</span></div>
-            <input type="text" id="rp-name" class="rp-input" maxlength="80" placeholder="Your full name" autocomplete="off">
-            <textarea id="rp-details" class="rp-input rp-area" maxlength="600" rows="5" placeholder="Link or details of your original work (what was copied?)"></textarea>
+            <div class="rp-label">Channel name</div>
+            <div class="rp-input rp-ro">${escapeHTML(rpChannelName())}</div>
+            <textarea id="rp-details" class="rp-input rp-area" maxlength="200" rows="5" placeholder="Link or details of your original work (what was copied?)"></textarea>
+            <div class="rp-count" id="rp-count"><span>Minimum 10 characters</span><b id="rp-cnt">0/200</b></div>
             <button type="button" class="rp-check" id="rp-agree" data-act="agree"><span class="rp-box"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>I am the copyright owner or authorized to act on their behalf.</span></button>
             <div class="rp-foot"><button type="button" class="rp-primary" id="rp-submit" data-act="submitcopy" disabled>Submit</button></div>`;
     } else if (screen === 'thanks') {
         headHtml = `<span class="rp-hspacer"></span><button type="button" class="rp-hbtn" data-act="close" aria-label="Close">${RP_X}</button>`;
-        const mute = RP_MEM.muted.has(_rp.uid), blk = rpIsBlocked(_rp.uid);
-        const restricted = RP_MEM.restricted;
-        html = `<div class="rp-thanks">
-            <div class="rp-okc"><svg viewBox="0 0 24 24"><path d="M5.5 12.5l4.2 4.2L18.5 8"/></svg></div>
-            <h1 class="rp-h1">Thanks for reporting</h1>
-            <p class="rp-p">We'll review your report and take action if there is a violation of our Community Guidelines. The creator won't be notified that you reported their content.</p>
-            <div class="rp-card rp-single rp-gapt"><button type="button" class="rp-row" data-act="viewreports"><span>View your reports</span>${RP_CHEV}</button></div>
-            <div class="rp-card rp-list2">
-                ${_rp.uid ? `<div class="rp-row rp-trow"><span>Mute posts from ${nm}</span><button type="button" class="rp-sw${mute ? ' on' : ''}" data-act="mute" aria-label="Mute"><i></i></button></div>
-                <div class="rp-row rp-trow"><span>Block ${nm}</span><button type="button" class="rp-sw${blk ? ' on' : ''}" data-act="block" aria-label="Block"><i></i></button></div>` : ''}
-                <button type="button" class="rp-row rp-two" data-act="restricted"><b>${restricted ? 'Restricted Mode is on' : 'Turn on Restricted Mode'}</b>${RP_CHEV}<em>Limit videos that may be inappropriate for some people.</em></button>
-                <button type="button" class="rp-row rp-two" data-act="parent"><b>Notify parent or guardian</b>${RP_CHEV}<em>We won't share the post or account details with your parent or guardian.</em></button>
+        const mute = RP_MEM.muted.has(_rp.uid), blk = rpIsBlocked(_rp.uid), restricted = RP_MEM.restricted;
+        const ic = {
+            mute: '<svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 9.5-4.9M18 9c0 4 1.5 5.5 2 6.5H8M10 19a2 2 0 0 0 4 0M3 3l18 18"/></svg>',
+            block: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>',
+            shield: '<svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9.5 12l2 2 3.5-4"/></svg>',
+            family: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9.5" r="2.4"/><path d="M3.5 19c.5-3.2 2.7-5 5.5-5s5 1.8 5.5 5M15.5 14.4c2.6-.3 4.4 1 5 3.6"/></svg>'
+        };
+        const reasonTxt = escapeHTML(_rp.lastLabel || '');
+        html = `<div class="rp-thanks2">
+            <div class="rp-tk-top">
+                <div class="rp-tk-check"><span class="rp-ring"></span><span class="rp-ring r2"></span><div class="rp-tk-c"><svg viewBox="0 0 24 24"><path d="M5.5 12.6l4.3 4.3L18.6 8"/></svg></div></div>
+                <h1 class="rp-tk-h">Report received</h1>
+                <p class="rp-tk-p">Thanks for helping keep Flaynity safe. Our team will review it, and the creator won't know it was you.</p>
+                ${reasonTxt ? `<div class="rp-tk-pill">${reasonTxt}</div>` : ''}
             </div>
-            <div class="rp-foot"><button type="button" class="rp-primary" data-act="close">Done</button></div></div>`;
+            <div class="rp-tk-card">
+                ${_rp.uid ? `<div class="rp-tk-row"><span class="rp-tk-ic c1">${ic.mute}</span><div class="rp-tk-tx"><b>Mute ${nm}</b><em>Hide their posts from your feed</em></div><button type="button" class="rp-sw${mute ? ' on' : ''}" data-act="mute" aria-label="Mute"><i></i></button></div>
+                <div class="rp-tk-row"><span class="rp-tk-ic c2">${ic.block}</span><div class="rp-tk-tx"><b>Block ${nm}</b><em>They won't show up for you</em></div><button type="button" class="rp-sw${blk ? ' on' : ''}" data-act="block" aria-label="Block"><i></i></button></div>` : ''}
+                <div class="rp-tk-row"><span class="rp-tk-ic c3">${ic.shield}</span><div class="rp-tk-tx"><b>Restricted Mode</b><em>Limit content that may be sensitive</em></div><button type="button" class="rp-sw${restricted ? ' on' : ''}" data-act="restricted" aria-label="Restricted Mode"><i></i></button></div>
+                <button type="button" class="rp-tk-row rp-tk-btn" data-act="parent"><span class="rp-tk-ic c4">${ic.family}</span><div class="rp-tk-tx"><b>Tell a parent or guardian</b><em>Post and account details stay private</em></div>${RP_CHEV}</button>
+            </div>
+            <div class="rp-tk-actions">
+                <button type="button" class="rp-secondary" data-act="viewreports">View your reports</button>
+                <button type="button" class="rp-primary" data-act="close">Done</button>
+            </div>
+        </div>`;
     } else if (screen === 'reports') {
         headHtml = `<button type="button" class="rp-hbtn" data-act="back" aria-label="Back">${RP_BACK}</button><div class="rp-htitle">Reports</div><span class="rp-hspacer"></span>`;
         const list = rpLoadReports();
@@ -4716,18 +4732,32 @@ function rpShow(screen, isBack) {
     }
     head.innerHTML = headHtml;
     head.classList.remove('rp-line');
+    body.classList.toggle('rp-noscroll', screen === 'thanks');
     body.innerHTML = `<div class="rp-wrap">${html}</div>`;
     body.scrollTop = 0;
 }
 
+function rpChannelName() {
+    try {
+        if (typeof currentChannelData !== 'undefined' && currentChannelData && currentChannelData.channelName) return currentChannelData.channelName;
+        const c = JSON.parse(localStorage.getItem('flaynity_user_session_cache') || 'null');
+        if (c && c.channelName) return c.channelName;
+    } catch (e) {}
+    return (typeof auth !== 'undefined' && auth.currentUser && auth.currentUser.displayName) ? auth.currentUser.displayName : 'Your channel';
+}
+
 function rpSyncForm() {
     const root = document.getElementById('fx-report-page'); if (!root) return;
-    const n = root.querySelector('#rp-name'), d = root.querySelector('#rp-details'), a = root.querySelector('#rp-agree'), b = root.querySelector('#rp-submit');
-    if (!n || !d || !a || !b) return;
-    b.disabled = !(n.value.trim().length >= 2 && d.value.trim().length >= 10 && a.classList.contains('on')) || _rp.busy;
+    const d = root.querySelector('#rp-details'), a = root.querySelector('#rp-agree'), b = root.querySelector('#rp-submit');
+    if (!d || !a || !b) return;
+    const len = d.value.length, ok = d.value.trim().length >= 10;
+    const cnt = root.querySelector('#rp-cnt'); if (cnt) cnt.textContent = len + '/200';
+    const box = root.querySelector('#rp-count'); if (box) box.classList.toggle('ok', ok);
+    b.disabled = !(ok && a.classList.contains('on'));
 }
 
 function rpFinish(label, type) {
+    _rp.lastLabel = String(label || '').replace(/^Copyright: /, '');
     rpSaveReport({ id: _rp.id, kind: _rp.kind, name: _rp.name, thumb: _rp.thumb, reason: label, type: type, ts: Date.now() });
     rpShow('thanks', false);
 }
@@ -4738,8 +4768,8 @@ function rpSubmitReport(key, label) {
 
 function rpSubmitCopyright() {
     const root = document.getElementById('fx-report-page');
-    const name = root.querySelector('#rp-name').value.trim(), details = root.querySelector('#rp-details').value.trim();
-    if (name.length < 2 || details.length < 10) return;
+    const details = root.querySelector('#rp-details').value.trim();
+    if (details.length < 10) return;
     rpFinish('Copyright: ' + _rp.copyLabel, 'copyright');   // DEMO: কোথাও সেভ হয় না
 }
 
@@ -4766,8 +4796,7 @@ function rpAct(act, el) {
     }
     if (act === 'restricted') {
         RP_MEM.restricted = !RP_MEM.restricted;
-        const b = document.querySelector('#fx-report-page [data-act="restricted"] b');
-        if (b) b.textContent = RP_MEM.restricted ? 'Restricted Mode is on' : 'Turn on Restricted Mode';
+        document.querySelectorAll('#fx-report-page .rp-sw[data-act="restricted"]').forEach(x => x.classList.toggle('on', RP_MEM.restricted));
         return;
     }
     if (act === 'parent') return;

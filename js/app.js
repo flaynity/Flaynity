@@ -38,20 +38,30 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
             window.__flaynityHomeReady = true; window.__flHomeWatching = false;
             try { if (typeof window.__flaynityHideStartupSplash === 'function') window.__flaynityHideStartupSplash(); } catch (e) {}
         };
-        const iv = setInterval(function () {
-            tries++;
-            if (!navigator.onLine || window.__flHomeHasContent()) { clearInterval(iv); setTimeout(finish, 300); return; }
-            // Data arrived but Home still shows skeleton / nothing: draw the feed again.
-            if (tries % 15 === 0) {
-                try {
-                    if ((allLongVideos && allLongVideos.length) || (allFeels && allFeels.length) || (allCommunityPosts && allCommunityPosts.length)) {
-                        previousLongsCount = -1; previousFeelsCount = -1; previousPostsCount = -1;
-                        buildHomeFeed();
-                    }
-                } catch (e) {}
+        // LIVE INTERNET CHECK runs while the loading screen is on screen.
+        window.FlayNet.check(4000).then(function (live) {
+            if (!live) {
+                // Really offline: open the cached app. Skeleton is only for offline.
+                try { if (!window.__flHomeHasContent()) renderAllSkeletons(); } catch (e) {}
+                setTimeout(finish, 300);
+                return;
             }
-            if (tries >= 110) { clearInterval(iv); finish(); }   // ~11s max, never stuck
-        }, 100);
+            try { firebase.database().goOnline(); } catch (e) {}
+            // Online: the loading screen stays until the feed is really drawn (no skeleton after it).
+            const iv = setInterval(function () {
+                tries++;
+                if (window.__flHomeHasContent()) { clearInterval(iv); setTimeout(finish, 300); return; }
+                if (tries % 15 === 0) {
+                    try {
+                        if ((allLongVideos && allLongVideos.length) || (allFeels && allFeels.length) || (allCommunityPosts && allCommunityPosts.length)) {
+                            previousLongsCount = -1; previousFeelsCount = -1; previousPostsCount = -1;
+                            buildHomeFeed();
+                        }
+                    } catch (e) {}
+                }
+                if (tries >= 110) { clearInterval(iv); finish(); }   // ~11s max, never stuck
+            }, 100);
+        });
     };
     window.__flBootTimer = setTimeout(function () {
         window.__flBootTimer = null;
@@ -67,6 +77,46 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
         window.__flaynityHomeReady = true;
         window.__flBootDone();
     }, 10000);
+})();
+// ===== LIVE INTERNET CHECK (real network probe, not just navigator.onLine) =====
+(function () {
+    var net = window.FlayNet = {
+        live: (typeof navigator.onLine === 'boolean') ? navigator.onLine : true,
+        _p: null,
+        check: function (timeoutMs) {
+            if (net._p) return net._p;
+            var ms = timeoutMs || 4000;
+            var urls = ['https://www.gstatic.com/generate_204', 'https://www.google.com/generate_204'];
+            net._p = new Promise(function (resolve) {
+                var done = false, pending = urls.length, ctrls = [], timer = null;
+                var finish = function (ok) {
+                    if (done) return;
+                    done = true; clearTimeout(timer);
+                    ctrls.forEach(function (c) { try { c.abort(); } catch (e) {} });
+                    net.live = ok; net._p = null; resolve(ok);
+                };
+                timer = setTimeout(function () { finish(false); }, ms);
+                urls.forEach(function (u) {
+                    var c = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+                    if (c) ctrls.push(c);
+                    fetch(u + '?_=' + Date.now(), { method: 'GET', mode: 'no-cors', cache: 'no-store', signal: c ? c.signal : undefined })
+                        .then(function () { finish(true); })
+                        .catch(function () { if (--pending === 0) finish(false); });
+                });
+            });
+            return net._p;
+        }
+    };
+    window.flIsOnline = function () { return net.live; };
+    // Which feed sources have delivered their first data (Home shows NO skeleton while this is still loading).
+    window.__flFeedSrc = {};
+    window.__flFeedLoaded = false;
+    window.flMarkFeedSrc = function (name) {
+        window.__flFeedSrc[name] = true;
+        if (window.__flFeedSrc.longs && window.__flFeedSrc.feels && window.__flFeedSrc.posts) window.__flFeedLoaded = true;
+    };
+    window.addEventListener('online', function () { net.live = true; });
+    window.addEventListener('offline', function () { net.live = false; });
 })();
 (async function () {
     const pageFiles = [["home","pages/home.html"],["feels","pages/feels.html"],["posts","pages/posts.html"],["upload","pages/upload.html"],["discover","pages/discover.html"],["you","pages/you.html"],["analytics","pages/analytics.html"]];
@@ -883,11 +933,24 @@ window.addEventListener('flaynity-dom-ready', initPullToRefresh);
 // =========================================================
 let _networkOnlineDebounceTimer = null;
 
-window.addEventListener('online', () => { window.FlaynityNetworkOnline(); });
-window.addEventListener('offline', () => { window.FlaynityNetworkOffline(); });
+window.addEventListener('online', () => {
+    window.FlayNet.check(4000).then(ok => { if (ok) window.FlaynityNetworkOnline(); });
+});
+window.addEventListener('offline', () => {
+    window.FlayNet.check(3000).then(ok => { if (!ok) window.FlaynityNetworkOffline(); });
+});
+// Android WebView does not always fire 'online': while offline, quietly re-check; when back, sync automatically.
+setInterval(() => {
+    if (document.hidden || window.flIsOnline()) return;
+    window.FlayNet.check(4000).then(ok => { if (ok) window.FlaynityNetworkOnline(); });
+}, 6000);
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    window.FlayNet.check(4000).then(ok => { if (ok) window.FlaynityNetworkOnline(); else window.FlaynityNetworkOffline(true); });
+});
 
 window.FlaynityNetworkOnline = function() {
-    if (!navigator.onLine) return;
+    if (!window.flIsOnline()) return;
     if (_networkOnlineDebounceTimer) return;
     _networkOnlineDebounceTimer = setTimeout(() => {
         _networkOnlineDebounceTimer = null;
@@ -914,11 +977,12 @@ window.FlaynityNetworkOnline = function() {
     }
 };
 
-window.FlaynityNetworkOffline = function() {
+window.FlaynityNetworkOffline = function(silent) {
     try { firebase.database().goOffline(); } catch(e) {}
-    showNotification("Offline Mode. Showing Skeletons.", "error");
+    if (!silent) showNotification("No internet connection", "error");
 
-    renderAllSkeletons();
+    // Like YouTube / Facebook: a feed that is already on screen stays; skeleton only when there is nothing to show.
+    try { if (!window.__flHomeHasContent()) renderAllSkeletons(); } catch (e) { renderAllSkeletons(); }
 
     const activeVideo = document.querySelector('.short-slide video[src]');
     if (activeVideo && !activeVideo.paused) {
@@ -927,9 +991,12 @@ window.FlaynityNetworkOffline = function() {
 };
 
 window.FlaynityNativeRefresh = function() {
-    if (!navigator.onLine) return;
     if (SyncManager.isRefreshing) return;
-    SyncManager.refreshEverything();
+    window.FlayNet.check(4000).then(ok => {
+        if (!ok) { showNotification("No internet connection", "error"); return; }
+        try { firebase.database().goOnline(); } catch (e) {}
+        SyncManager.refreshEverything();
+    });
 };
 
 // =========================================================
@@ -939,8 +1006,8 @@ const SyncManager = {
     isRefreshing: false,
     refreshEverything: async function() {
         // A refresh that hangs (flaky network) must never block every later refresh: treat a lock older than 25s as stale.
-        if (this.isRefreshing && (Date.now() - (this._startedAt || 0)) < 25000) return;
-        if (!navigator.onLine) return;
+        if (this.isRefreshing && (Date.now() - (this._startedAt || 0)) < 25000) return false;
+        if (!window.flIsOnline()) return false;
         this.isRefreshing = true;
         this._startedAt = Date.now();
         const myRun = this._run = (this._run || 0) + 1;
@@ -948,21 +1015,31 @@ const SyncManager = {
         let loaded = false;
 
         try {
+            // A previous goOffline() (offline start / network drop) would make every read hang: always go online first.
+            try { firebase.database().goOnline(); } catch (e) {}
             _detachAllGlobalFeedListeners();
 
             previousFeelsCount = -1;
             previousLongsCount  = -1;
             previousPostsCount  = -1;
 
-            // The profile must never block (or break) the feed download.
-            try { await withTimeout(this.refreshProfile(), 6000); } catch (e) { console.warn('refreshProfile skipped:', e); }
+            // The profile runs in the background: it must never block (or break) the feed download.
+            try { this.refreshProfile().catch(function (e) { console.warn('refreshProfile skipped:', e); }); } catch (e) {}
 
-            const [longsSnap, feelsSnap, legacyShortsSnap, postsSnap] = await withTimeout(Promise.all([
+            const fetchFeeds = () => withTimeout(Promise.all([
                 db.ref('admin_panel/movies/user_uploads').once('value'),
                 db.ref('admin_panel/movies/feels').once('value'),
                 db.ref('admin_panel/movies/shorts').once('value'),
                 db.ref('admin_panel/posts').once('value')
-            ]), 12000);
+            ]), 10000);
+            let feedSnaps;
+            try { feedSnaps = await fetchFeeds(); }
+            catch (firstErr) {
+                // One automatic retry (flaky connection) before reporting a failure.
+                try { firebase.database().goOnline(); } catch (e) {}
+                feedSnaps = await fetchFeeds();
+            }
+            const [longsSnap, feelsSnap, legacyShortsSnap, postsSnap] = feedSnaps;
 
             const now = Date.now();
             allLongVideos      = longsSnap.val()  ? Object.values(longsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
@@ -977,12 +1054,13 @@ const SyncManager = {
             allCommunityPosts  = postsSnap.val()  ? Object.values(postsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
 
             loaded = true;
+            window.flMarkFeedSrc('longs'); window.flMarkFeedSrc('feels'); window.flMarkFeedSrc('posts');
             startRealtimeFeedsListener();
 
             buildHomeFeed();
 
             const feelsTab = document.getElementById('feels-tab');
-            if (feelsTab && feelsTab.classList.contains('active')) buildFeelsPage();
+            if (feelsTab && feelsTab.classList.contains('active') && !this.skipFeelsBuild) buildFeelsPage();
 
             this.refreshAnalytics();
 
@@ -997,6 +1075,7 @@ const SyncManager = {
             }
             if (this._run === myRun) this.isRefreshing = false;
         }
+        return loaded;
     },
 
     refreshProfile: async function() {
@@ -1027,7 +1106,7 @@ const SyncManager = {
     var lastTry = 0, attempts = 0;
     setInterval(function () {
         try {
-            if (!navigator.onLine || document.hidden) return;
+            if (!window.flIsOnline() || document.hidden) return;
             var home = document.getElementById('home-feed-container');
             var homeTab = document.getElementById('home-tab');
             if (!home || !homeTab || !homeTab.classList.contains('active')) return;
@@ -1395,14 +1474,32 @@ function initPullToRefresh() {
 
 async function triggerUniversalPullToRefresh() {
     playUI('click');
-    if (!navigator.onLine) {
-        showNotification("Offline - Cannot Refresh", "error");
+
+    // Every pull makes a REAL network call (live check) - never skipped because of a stale "offline" flag.
+    const live = await window.FlayNet.check(4000);
+    if (!live) {
+        try { firebase.database().goOffline(); } catch (e) {}
+        showNotification("No internet connection", "error");
         return;
     }
+    try { firebase.database().goOnline(); } catch (e) {}
+
+    // Back online after an offline skeleton: clear it (no skeleton while loading online).
+    try {
+        const h = document.getElementById('home-feed-container');
+        if (h && h.querySelector('.offline-home-skeleton')) {
+            h.classList.remove('offline-skeleton-active');
+            h.style.minHeight = '60vh';
+            h.innerHTML = '';
+            h.__hfSig = null;
+        }
+    } catch (e) {}
 
     try {
-        await hfRunHomeRefresh(() => SyncManager.refreshEverything());
-        showNotification("Feed Updated!", "success");
+        let ok = false;
+        await hfRunHomeRefresh(async () => { ok = await SyncManager.refreshEverything(); });
+        if (ok) showNotification("Feed Updated!", "success");
+        else showNotification("Couldn't refresh. Check your connection.", "error");
     } catch (e) {
         console.error("PTR Refresh Exception:", e);
         showNotification("Refresh failed: " + e.message, "error");
@@ -3628,6 +3725,7 @@ function startRealtimeFeedsListener() {
 
         db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
             try {
+                window.flMarkFeedSrc('longs');
                 const data = snap.val();
                 allLongVideos = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'video') : [];
                 allLongVideos.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -3653,6 +3751,7 @@ function startRealtimeFeedsListener() {
 
         db.ref('admin_panel/movies/feels').on('value', (snap) => {
             try {
+                window.flMarkFeedSrc('feels');
                 const data = snap.val();
                 allFeels = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'short') : [];
                 allFeels.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -3706,6 +3805,7 @@ function startRealtimeFeedsListener() {
 
         db.ref('admin_panel/posts').on('value', (snap) => {
             try {
+                window.flMarkFeedSrc('posts');
                 const data = snap.val();
                 allCommunityPosts = data ? enforceContentAdminStatus(Object.values(data).filter(p => !p.scheduledTime || p.scheduledTime <= now), 'post') : [];
                 allCommunityPosts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -3824,14 +3924,29 @@ function selectCategoryChip(category, el) {
 // =========================================================
 // UNIFIED REAL-TIME FEED ENGINE FOR HOME PAGE
 // =========================================================
+// Online + nothing to draw: never a skeleton. Before the first data arrives the area stays blank
+// (the loading screen / pull spinner covers it); after data arrived and it is really empty, a short message.
+function hfShowEmpty(container) {
+    container.classList.remove('offline-skeleton-active');
+    container.__hfSig = null;
+    if (!window.__flFeedLoaded) {
+        container.innerHTML = '';
+        container.style.minHeight = '60vh';
+        return;
+    }
+    container.style.minHeight = '';
+    container.innerHTML = '<div style="padding:56px 20px;text-align:center;opacity:.7;font-weight:700;">Nothing to show yet. Pull down to refresh.</div>';
+}
+
 function buildHomeFeed() {
     const container = document.getElementById('home-feed-container');
     if (!container) return;
 
     if (_hfHoldRender) return;   // pull-to-refresh in progress: it rebuilds once data is ready
 
-    if (!navigator.onLine) {
-        renderAllSkeletons();
+    if (!window.flIsOnline()) {
+        // Offline: keep a feed that is already shown; skeleton only when there is nothing to show.
+        if (!window.__flHomeHasContent()) renderAllSkeletons();
         return;
     }
 
@@ -3863,7 +3978,7 @@ function buildHomeFeed() {
 
     if (activeHomeCategory === "Feels") {
         if (feels.length === 0) {
-            container.innerHTML = getHomeSkeletonHTML();
+            hfShowEmpty(container);
             return;
         }
         html += `
@@ -3898,7 +4013,7 @@ function buildHomeFeed() {
 
     if (activeHomeCategory === "Posts") {
         if (posts.length === 0) {
-            container.innerHTML = getHomeSkeletonHTML();
+            hfShowEmpty(container);
             return;
         }
         posts.slice(0, postRenderLimit).forEach(p => {
@@ -3924,7 +4039,7 @@ function buildHomeFeed() {
     let postIdx = 0;
 
     if (feels.length === 0 && longs.length === 0 && posts.length === 0) {
-        container.innerHTML = getHomeSkeletonHTML();
+        hfShowEmpty(container);
         return;
     }
 
@@ -5767,12 +5882,6 @@ async function feelsRunPullRefresh() {
     const container = document.getElementById('feels-swiper-container');
     if (!sw || !container) { feelsPtrReset(true); return; }
 
-    if (!navigator.onLine) {
-        feelsPtrReset(true);
-        try { showNotification('Offline - Cannot Refresh', 'error'); } catch (e) {}
-        return;
-    }
-
     p.refreshing = true;
     const ind = feelsPtrIndicator();
     feelsPtrRender(FEELS_PTR_HOLD, true);
@@ -5782,6 +5891,23 @@ async function feelsRunPullRefresh() {
 
     try {
         const t0 = Date.now();
+
+        // Every pull makes a REAL call: live internet check, then the feeds are downloaded again.
+        const live = await window.FlayNet.check(4000);
+        if (!live) {
+            try { firebase.database().goOffline(); } catch (e) {}
+            try { showNotification('No internet connection', 'error'); } catch (e) {}
+            return;
+        }
+        try { firebase.database().goOnline(); } catch (e) {}
+        let fetched = false;
+        SyncManager.skipFeelsBuild = true;
+        try { fetched = await SyncManager.refreshEverything(); } finally { SyncManager.skipFeelsBuild = false; }
+        if (!fetched) {
+            try { showNotification("Couldn't refresh. Check your connection.", 'error'); } catch (e) {}
+            return;
+        }
+
         container.querySelectorAll('video').forEach(v => { try { v.pause(); } catch (e) {} });
 
         // New random session for the CURRENT mode (For You or Subscribe)
@@ -6180,8 +6306,8 @@ function buildFeelsPage() {
     if (!container) return;
     feelsDetachListeners();
     
-    if (!navigator.onLine) {
-        container.innerHTML = getFeelsSkeletonHTML();
+    if (!window.flIsOnline()) {
+        if (!container.querySelector('.short-slide')) container.innerHTML = getFeelsSkeletonHTML();
         return;
     }
 
@@ -6190,7 +6316,8 @@ function buildFeelsPage() {
     let activeFeelsList = feelsApplySessionOrder(feelsFeedMode, feelsListForMode(feelsFeedMode));
 
     if (activeFeelsList.length === 0) {
-        container.innerHTML = getFeelsSkeletonHTML();
+        // Online: no skeleton. Blank until the first data arrives, then a short message if truly empty.
+        container.innerHTML = window.__flFeedLoaded ? '<div style="padding:56px 20px;text-align:center;opacity:.7;font-weight:700;">No Feels yet. Pull down to refresh.</div>' : '';
         return;
     }
 

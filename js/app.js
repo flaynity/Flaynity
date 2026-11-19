@@ -410,6 +410,13 @@ function flNavSessionAvatarUrl() {
     } catch (e) { return ''; }
 }
 
+function flNavChannelAvatarUrl() {
+    try {
+        if (typeof currentChannelData !== 'undefined' && currentChannelData && currentChannelData.avatarUrl) return currentChannelData.avatarUrl;
+    } catch (e) {}
+    return flNavSessionAvatarUrl();
+}
+
 function flSetNavDefaultIcon(box) {
     box = box || document.getElementById('nav-avatar-img');
     if (box) box.innerHTML = FL_NAV_YOU_SVG;
@@ -455,7 +462,16 @@ function flEnsureNavYouIcon() {
 (function () {
     const run = () => { try { flEnsureNavYouIcon(); } catch (e) {} };
     window.addEventListener('offline', () => { setTimeout(run, 50); setTimeout(run, 600); });
-    window.addEventListener('online', () => setTimeout(run, 300));
+    window.addEventListener('online', () => {
+        [300, 1500, 4000].forEach(t => setTimeout(() => {
+            try {
+                const u = flNavChannelAvatarUrl();
+                if (u) flSetNavAvatar(u);
+                else if (typeof auth !== 'undefined' && auth.currentUser && typeof updateBottomNavAvatar === 'function') updateBottomNavAvatar();
+                run();
+            } catch (e) {}
+        }, t));
+    });
     window.addEventListener('flaynity-dom-ready', () => { [150, 700, 1800, 4000].forEach(t => setTimeout(run, t)); });
     window.addEventListener('flaynity-pages-ready', run);
 })();
@@ -2714,8 +2730,9 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
 function renderUserAvatar(photoURL, email) {
     const avatarNav = document.getElementById('nav-avatar-img');
     if (avatarNav) {
-        if (photoURL) {
-            flSetNavAvatar(photoURL);
+        const _chUrl = flNavChannelAvatarUrl();
+        if (_chUrl || photoURL) {
+            flSetNavAvatar(_chUrl || photoURL);
         } else {
             const initial = email ? email.charAt(0).toUpperCase() : 'U';
             avatarNav.innerHTML = `<div style="background: linear-gradient(135deg, var(--primary), #FF7A00); color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem;">${initial}</div>`;
@@ -4254,8 +4271,8 @@ function fxmRows(ctx) {
     if (!ctx.own) {
         rows.push({ a: 'report', t: 'Report', i: FXM_IC.report });
         rows.push({ a: 'copyright', t: 'Copyright claim', i: FXM_IC.copyright });
-        if (ctx.uid) rows.push({ a: 'subscribe', t: ctx.subbed ? 'Subscribed' : 'Subscribe', i: FXM_IC.subscribe });
-        if (ctx.uid) rows.push({ a: 'no_channel', t: "Don't recommend channel", i: FXM_IC.no_channel });
+        rows.push({ a: 'subscribe', t: ctx.subbed ? 'Subscribed' : 'Subscribe', i: FXM_IC.subscribe });
+        rows.push({ a: 'no_channel', t: "Don't recommend channel", i: FXM_IC.no_channel });
         rows.push({ a: 'not_interested', t: 'Not interested', i: FXM_IC.not_interested });
     }
     if (ctx.watch) rows.push({ a: 'dislike', t: 'Dislike', i: FXM_IC.dislike });
@@ -4293,7 +4310,7 @@ function fxmOpen(ctx) {
     requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('open')));
 
     // live Subscribe / Subscribed state
-    if (!ctx.own && ctx.uid && me && navigator.onLine && typeof db !== 'undefined') {
+    if (ctx.uid && !ctx.own && me && navigator.onLine && typeof db !== 'undefined') {
         db.ref(`subscribers/${ctx.uid}/${me}`).once('value').then(snap => {
             if (_fxmCtx !== ctx) return;
             ctx.subbed = snap.exists();
@@ -4345,17 +4362,20 @@ function fxMenuAction(action) {
             else showNotification('Sharing is not supported on this device.', 'error');
 
         } else if (action === 'report') {
+            if (ctx.own) { showNotification('You cannot report your own content.', 'error'); return; }
             fxOpenReportDialog(v.id, ctx.kind);
 
         } else if (action === 'copyright') {
+            if (ctx.own) { showNotification('You cannot claim copyright on your own content.', 'error'); return; }
             fxOpenCopyrightDialog(v.id, ctx.kind, v.userId || '');
 
         } else if (action === 'subscribe') {
-            if (!v.userId) return;
+            if (!v.userId) { showNotification('Channel not found.', 'error'); return; }
             toggleClipSubscribe(String(v.userId));
 
         } else if (action === 'no_channel') {
-            if (!v.userId) return;
+            if (!v.userId) { showNotification('Channel not found.', 'error'); return; }
+            if (ctx.own) { showNotification('You cannot hide your own channel.', 'error'); return; }
             _fxHiddenChannels.add(String(v.userId)); fxPersistHidden();
             fxRemoveCards(`#home-feed-container .fx-card[data-fx-uid="${v.userId}"]`);
             fxRemoveCards(`.post-card[data-fb-uid="${v.userId}"]`);
@@ -10771,7 +10791,7 @@ function updateBottomNavAvatar() {
     if (!navAvatarContainer) return;
     const currentUser = auth.currentUser;
     if (currentUser) {
-        const photoURL = currentUser.photoURL || '';
+        const photoURL = flNavChannelAvatarUrl() || currentUser.photoURL || '';
         if (photoURL) {
             flSetNavAvatar(photoURL);
         } else {
@@ -10779,7 +10799,7 @@ function updateBottomNavAvatar() {
         }
     } else {
         // Offline / auth এখনও restore হয়নি: cached avatar, না থাকলে default You আইকন।
-        flSetNavAvatar(flNavSessionAvatarUrl());
+        flSetNavAvatar(flNavChannelAvatarUrl());
     }
 }
 

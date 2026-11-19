@@ -403,18 +403,76 @@ function flNavCachedAvatar() {
     return '';
 }
 
+function flAvatarFromChannel(d) {
+    if (!d) return '';
+    return d.avatarUrl || d.channelImageUrl || d.profileImageUrl || d.photoURL || d.photoUrl || d.imageUrl || '';
+}
+
 function flNavSessionAvatarUrl() {
     try {
-        const d = JSON.parse(localStorage.getItem('flaynity_user_session_cache') || 'null');
-        return (d && d.avatarUrl) ? d.avatarUrl : '';
+        return flAvatarFromChannel(JSON.parse(localStorage.getItem('flaynity_user_session_cache') || 'null'));
     } catch (e) { return ''; }
 }
 
 function flNavChannelAvatarUrl() {
     try {
-        if (typeof currentChannelData !== 'undefined' && currentChannelData && currentChannelData.avatarUrl) return currentChannelData.avatarUrl;
+        if (typeof currentChannelData !== 'undefined' && currentChannelData) {
+            const u = flAvatarFromChannel(currentChannelData);
+            if (u) return u;
+        }
     } catch (e) {}
     return flNavSessionAvatarUrl();
+}
+
+// Channel image => localStorage এ ডাউনলোড হয়ে থাকে (Online + Offline দুই জায়গায় একই ছবি)।
+function flNavStoredAvatar() {
+    try { const v = localStorage.getItem('flaynity_nav_avatar_data'); return (v && v.indexOf('data:image/') === 0) ? v : ''; } catch (e) { return ''; }
+}
+function flNavStoredSrc() {
+    try { return localStorage.getItem('flaynity_nav_avatar_src') || ''; } catch (e) { return ''; }
+}
+let _flNavDl = '';
+function flCacheNavAvatar(url) {
+    if (!url || typeof url !== 'string') return;
+    const save = (dataUrl) => {
+        try {
+            localStorage.setItem('flaynity_nav_avatar_data', dataUrl);
+            localStorage.setItem('flaynity_nav_avatar_src', url);
+        } catch (e) { try { localStorage.removeItem('flaynity_nav_avatar_data'); localStorage.removeItem('flaynity_nav_avatar_src'); } catch (e2) {} }
+        try { flSetNavAvatar(url); } catch (e) {}
+    };
+    if (/^data:image\//i.test(url)) { save(url); return; }
+    if (!navigator.onLine) return;
+    if (flNavStoredSrc() === url && flNavStoredAvatar()) return;
+    if (_flNavDl === url) return;
+    _flNavDl = url;
+    const viaCanvas = () => new Promise((resolve, reject) => {
+        const im = new Image();
+        im.crossOrigin = 'anonymous';
+        im.onload = () => {
+            try {
+                const w = im.naturalWidth, h = im.naturalHeight;
+                if (!w || !h) throw new Error('size');
+                const sc = Math.min(1, 240 / Math.max(w, h));
+                const c = document.createElement('canvas');
+                c.width = Math.max(1, Math.round(w * sc)); c.height = Math.max(1, Math.round(h * sc));
+                c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+                resolve(c.toDataURL('image/jpeg', 0.88));
+            } catch (e) { reject(e); }
+        };
+        im.onerror = () => reject(new Error('load'));
+        im.src = url + (url.indexOf('?') > -1 ? '&' : '?') + 'flnav=1';
+    });
+    fetch(url, { method: 'GET', mode: 'cors', cache: 'force-cache' })
+        .then(r => { if (!r.ok) throw new Error('http'); return r.blob(); })
+        .then(blob => {
+            if (!blob || !blob.type || blob.type.indexOf('image/') !== 0) throw new Error('type');
+            return __flBlobToScaledDataUrl(blob, 240, blob.type === 'image/png' ? 'image/png' : 'image/jpeg');
+        })
+        .catch(() => viaCanvas())
+        .then(d => { if (typeof d === 'string' && d.indexOf('data:image/') === 0) save(d); })
+        .catch(() => {})
+        .then(() => { if (_flNavDl === url) _flNavDl = ''; });
 }
 
 function flSetNavDefaultIcon(box) {
@@ -425,23 +483,30 @@ function flSetNavDefaultIcon(box) {
 function flSetNavAvatar(url) {
     const box = document.getElementById('nav-avatar-img');
     if (!box) return;
-    let src = url || '';
-    if (!navigator.onLine) src = flNavCachedAvatar() || src;
+    const stored = flNavStoredAvatar(), storedSrc = flNavStoredSrc();
+    let src = '';
+    if (!navigator.onLine) src = stored || flNavCachedAvatar() || url || '';
+    else if (url && stored && url === storedSrc) src = stored;
+    else src = url || stored || flNavCachedAvatar() || '';
     if (!src) { flSetNavDefaultIcon(box); return; }
     const cur = box.querySelector('img');
-    if (cur && cur.dataset.src === src && !(cur.complete && cur.naturalWidth === 0)) return;
-    const img = new Image();
-    img.alt = '';
-    img.dataset.src = src;
-    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
-    let tried = false;
-    img.onerror = function () {
-        const c = flNavCachedAvatar();
-        if (!tried && c && img.src !== c) { tried = true; img.src = c; return; }
-        flSetNavDefaultIcon(box);
-    };
-    box.innerHTML = '';
-    box.appendChild(img);
+    if (!(cur && cur.dataset.src === src && !(cur.complete && cur.naturalWidth === 0))) {
+        const img = new Image();
+        img.alt = '';
+        img.dataset.src = src;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+        let tried = false;
+        img.onerror = function () {
+            const c = flNavStoredAvatar() || flNavCachedAvatar();
+            if (!tried && c && img.src !== c) { tried = true; img.dataset.src = c; img.src = c; return; }
+            flSetNavDefaultIcon(box);
+        };
+        img.src = src;
+        box.innerHTML = '';
+        box.appendChild(img);
+    }
+    // নতুন/বদলানো ছবি হলে সঙ্গে সঙ্গে localStorage এ ডাউনলোড
+    if (url && navigator.onLine && url !== storedSrc) flCacheNavAvatar(url);
 }
 
 // Safety net: কোনো কারণে You আইকন ফাঁকা/ভাঙা থাকলে default আইকন ফিরিয়ে আনে।
@@ -466,7 +531,7 @@ function flEnsureNavYouIcon() {
         [300, 1500, 4000].forEach(t => setTimeout(() => {
             try {
                 const u = flNavChannelAvatarUrl();
-                if (u) flSetNavAvatar(u);
+                if (u) { flSetNavAvatar(u); flCacheNavAvatar(u); }
                 else if (typeof auth !== 'undefined' && auth.currentUser && typeof updateBottomNavAvatar === 'function') updateBottomNavAvatar();
                 run();
             } catch (e) {}
@@ -493,7 +558,8 @@ function flEnsureNavYouIcon() {
                     else avatarLarge.innerHTML = (data.channelName || "F").charAt(0).toUpperCase();
                 }
                 if (avatarNav) {
-                    if (data.avatarUrl) flSetNavAvatar(data.avatarUrl);
+                    const _bu = flAvatarFromChannel(data);
+                    if (_bu || flNavStoredAvatar()) flSetNavAvatar(_bu);
                     else flEnsureNavYouIcon();
                 }
             });
@@ -4291,7 +4357,7 @@ function fxmRenderRows(ctx) {
 }
 
 function fxmOpen(ctx) {
-    if (typeof playUI === 'function') playUI('click');
+    if (!ctx.silent && typeof playUI === 'function') playUI('click');
     const root = fxEnsureMenu();
     ctx.item = fxmFindItem(ctx);
     ctx.uid = (ctx.item && ctx.item.userId) ? String(ctx.item.userId) : '';
@@ -4513,25 +4579,13 @@ const RP_X = '<svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg>';
 const RP_SHIELD = '<svg class="rp-shield" viewBox="0 0 24 24"><path d="M12 2L4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z" fill="#2C5CC5"/><rect x="11" y="7" width="2" height="6" rx="1" fill="#fff"/><circle cx="12" cy="16.2" r="1.2" fill="#fff"/></svg>';
 let _rp = { id: '', kind: 'video', uid: '', name: '', thumb: '', stack: [], mode: 'report', reason: '', busy: false, copyKey: '', copyLabel: '' };
 
-function rpUid() { return (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.uid : 'guest'; }
-function rpLoadReports() { try { return JSON.parse(localStorage.getItem('fx_my_reports:' + rpUid()) || '[]'); } catch (e) { return []; } }
-function rpSaveReport(rec) {
-    try {
-        const list = rpLoadReports(); list.unshift(rec);
-        localStorage.setItem('fx_my_reports:' + rpUid(), JSON.stringify(list.slice(0, 100)));
-    } catch (e) {}
-}
-function rpBlockedKey() { return 'fx_blocked_channels:' + rpUid(); }
-function rpIsBlocked(uid) { try { return JSON.parse(localStorage.getItem(rpBlockedKey()) || '[]').indexOf(String(uid)) > -1; } catch (e) { return false; } }
-function rpSetBlocked(uid, on) {
-    try {
-        let l = JSON.parse(localStorage.getItem(rpBlockedKey()) || '[]').filter(x => x !== String(uid));
-        if (on) l.push(String(uid));
-        localStorage.setItem(rpBlockedKey(), JSON.stringify(l));
-    } catch (e) {}
-}
+// DEMO: সব ডাটা শুধু মেমোরিতে থাকে (Firebase / localStorage এ সেভ হয় না) — App Refresh করলে চলে যায়।
+const RP_MEM = { reports: [], muted: new Set(), blocked: new Set(), restricted: false };
+function rpLoadReports() { return RP_MEM.reports; }
+function rpSaveReport(rec) { RP_MEM.reports.unshift(rec); }
+function rpIsBlocked(uid) { return RP_MEM.blocked.has(String(uid)); }
+function rpSetBlocked(uid, on) { if (on) RP_MEM.blocked.add(String(uid)); else RP_MEM.blocked.delete(String(uid)); }
 function rpHideChannelNow(uid) {
-    _fxHiddenChannels.add(String(uid)); fxPersistHidden();
     fxRemoveCards(`#home-feed-container .fx-card[data-fx-uid="${uid}"]`);
     fxRemoveCards(`.post-card[data-fb-uid="${uid}"]`);
 }
@@ -4559,15 +4613,15 @@ function rpEnsure() {
 }
 
 function rpOpen(mode, id, kind) {
-    if (typeof playUI === 'function') playUI('click');
     const root = rpEnsure();
+    const menu = _fxmCtx ? { kind: _fxmCtx.kind, id: _fxmCtx.id, watch: !!_fxmCtx.watch } : null;
     const item = fxmFindItem({ kind: kind, id: id }) || {};
     _rp = {
         id: String(id), kind: kind === 'post' ? 'post' : 'video', mode: mode,
         uid: item.userId ? String(item.userId) : '',
         name: item.username || item.channelName || 'Flaynity User',
         thumb: item.poster || (item.images && item.images[0]) || '',
-        stack: [], reason: '', busy: false, copyKey: '', copyLabel: ''
+        stack: [], reason: '', busy: false, copyKey: '', copyLabel: '', menu: menu
     };
     root.classList.remove('open', 'closing');
     AppNavigation.pushModal('fx-report-page');
@@ -4577,21 +4631,24 @@ function rpOpen(mode, id, kind) {
 function fxOpenReportPage(id, kind) { rpOpen('report', id, kind); }
 function fxOpenCopyrightPage(id, kind) { rpOpen('copyright', id, kind); }
 
-function rpClose() {
+function rpClose(reopenMenu) {
     const root = document.getElementById('fx-report-page');
     if (!root || root.classList.contains('closing')) return;
+    const menu = reopenMenu ? _rp.menu : null;
     root.classList.add('closing'); root.classList.remove('open');
     setTimeout(() => {
         const c = AppNavigation.current();
         if (c && c.type === 'modal' && c.id === 'fx-report-page') AppNavigation.pop();
         else root.style.display = 'none';
         root.classList.remove('closing');
+        if (menu) { try { fxmOpen({ kind: menu.kind, id: menu.id, watch: menu.watch, silent: true }); } catch (e) {} }
     }, 230);
 }
 
+// Back: আগের Page এ ফিরে যায়। প্রথম Page এ হলে "More options" এ ফিরে যায়।
 function rpBack() {
     if (_rp.stack.length > 1) { _rp.stack.pop(); rpShow(_rp.stack.pop(), true); }
-    else rpClose();
+    else rpClose(true);
 }
 
 function rpRows(list, act) {
@@ -4632,8 +4689,8 @@ function rpShow(screen, isBack) {
             <div class="rp-foot"><button type="button" class="rp-primary" id="rp-submit" data-act="submitcopy" disabled>Submit</button></div>`;
     } else if (screen === 'thanks') {
         headHtml = `<span class="rp-hspacer"></span><button type="button" class="rp-hbtn" data-act="close" aria-label="Close">${RP_X}</button>`;
-        const mute = _fxHiddenChannels.has(_rp.uid), blk = rpIsBlocked(_rp.uid);
-        const restricted = (() => { try { return localStorage.getItem('fx_restricted_mode') === '1'; } catch (e) { return false; } })();
+        const mute = RP_MEM.muted.has(_rp.uid), blk = rpIsBlocked(_rp.uid);
+        const restricted = RP_MEM.restricted;
         html = `<div class="rp-thanks">
             <div class="rp-okc"><svg viewBox="0 0 24 24"><path d="M5.5 12.5l4.2 4.2L18.5 8"/></svg></div>
             <h1 class="rp-h1">Thanks for reporting</h1>
@@ -4672,34 +4729,18 @@ function rpSyncForm() {
 
 function rpFinish(label, type) {
     rpSaveReport({ id: _rp.id, kind: _rp.kind, name: _rp.name, thumb: _rp.thumb, reason: label, type: type, ts: Date.now() });
-    _rp.stack = [];
     rpShow('thanks', false);
 }
 
 function rpSubmitReport(key, label) {
-    if (_rp.busy) return;
-    if (typeof auth === 'undefined' || !auth.currentUser) { showNotification('Please sign in to report', 'error'); return; }
-    if (!navigator.onLine) { showNotification('Cannot report while offline.', 'error'); return; }
-    _rp.busy = true;
-    db.ref(`video_reports/${_rp.id}/${auth.currentUser.uid}`)
-        .set({ reason: key, kind: _rp.kind, timestamp: Date.now() })
-        .then(() => { _rp.busy = false; rpFinish(label, 'report'); })
-        .catch(() => { _rp.busy = false; showNotification('Could not send report. Please try again.', 'error'); });
+    rpFinish(label, 'report');   // DEMO: কোথাও সেভ হয় না
 }
 
 function rpSubmitCopyright() {
-    if (_rp.busy) return;
     const root = document.getElementById('fx-report-page');
     const name = root.querySelector('#rp-name').value.trim(), details = root.querySelector('#rp-details').value.trim();
     if (name.length < 2 || details.length < 10) return;
-    if (typeof auth === 'undefined' || !auth.currentUser) { showNotification('Please sign in to submit a claim', 'error'); return; }
-    if (!navigator.onLine) { showNotification('Cannot submit a claim while offline.', 'error'); return; }
-    _rp.busy = true;
-    const b = root.querySelector('#rp-submit'); b.textContent = 'Sending...'; b.disabled = true;
-    db.ref(`copyright_claims/${_rp.id}/${auth.currentUser.uid}`)
-        .set({ kind: _rp.kind, contentOwnerId: _rp.uid, issue: _rp.copyKey, claimantName: name, details: details, claimantEmail: auth.currentUser.email || '', timestamp: Date.now() })
-        .then(() => { _rp.busy = false; rpFinish('Copyright: ' + _rp.copyLabel, 'copyright'); })
-        .catch(() => { _rp.busy = false; b.textContent = 'Submit'; b.disabled = false; showNotification('Could not submit the claim. Please try again.', 'error'); });
+    rpFinish('Copyright: ' + _rp.copyLabel, 'copyright');   // DEMO: কোথাও সেভ হয় না
 }
 
 function rpAct(act, el) {
@@ -4714,29 +4755,25 @@ function rpAct(act, el) {
     if (act === 'viewreports') return rpShow('reports');
     if (act === 'mute') {
         const on = !el.classList.contains('on'); el.classList.toggle('on', on);
-        if (on) { rpHideChannelNow(_rp.uid); showNotification('Posts from ' + _rp.name + ' muted.', 'success', 2200); }
-        else { if (!rpIsBlocked(_rp.uid)) { _fxHiddenChannels.delete(_rp.uid); fxPersistHidden(); } showNotification('Unmuted ' + _rp.name + '.', 'success', 2200); }
+        if (on) { RP_MEM.muted.add(_rp.uid); rpHideChannelNow(_rp.uid); } else RP_MEM.muted.delete(_rp.uid);
         return;
     }
     if (act === 'block') {
         const on = !el.classList.contains('on'); el.classList.toggle('on', on);
         rpSetBlocked(_rp.uid, on);
-        if (on) { rpHideChannelNow(_rp.uid); showNotification(_rp.name + ' blocked.', 'success', 2200); }
-        else { _fxHiddenChannels.delete(_rp.uid); fxPersistHidden(); showNotification('Unblocked ' + _rp.name + '.', 'success', 2200); const m = document.querySelector('#fx-report-page .rp-sw[data-act="mute"]'); if (m) m.classList.remove('on'); }
+        if (on) rpHideChannelNow(_rp.uid);
         return;
     }
     if (act === 'restricted') {
-        let on = false;
-        try { on = localStorage.getItem('fx_restricted_mode') !== '1'; localStorage.setItem('fx_restricted_mode', on ? '1' : '0'); } catch (e) {}
-        showNotification(on ? 'Restricted Mode turned on.' : 'Restricted Mode turned off.', 'success', 2200);
-        const b = document.querySelector('#fx-report-page [data-act="restricted"] b'); if (b) b.textContent = on ? 'Restricted Mode is on' : 'Turn on Restricted Mode';
+        RP_MEM.restricted = !RP_MEM.restricted;
+        const b = document.querySelector('#fx-report-page [data-act="restricted"] b');
+        if (b) b.textContent = RP_MEM.restricted ? 'Restricted Mode is on' : 'Turn on Restricted Mode';
         return;
     }
-    if (act === 'parent') return showNotification("Parent or guardian notification isn't available yet.", 'error', 2400);
+    if (act === 'parent') return;
     if (act === 'viewmore') {
         const r = rpLoadReports()[parseInt(el.dataset.i, 10)];
-        if (!r) return;
-        if (r.kind === 'post') { showNotification('Reason: ' + (r.reason || 'Reported'), 'success', 2600); return; }
+        if (!r || r.kind === 'post') return;
         rpClose();
         setTimeout(() => { try { openMoviePage(String(r.id), false); } catch (e) {} }, 300);
     }
@@ -8222,6 +8259,7 @@ window.addEventListener('scroll', function () {
 }, { passive: true });
 
 function executeBackAction() {
+    { const _c = AppNavigation.current(); if (_c && _c.type === 'modal' && _c.id === 'fx-report-page' && typeof rpBack === 'function') { rpBack(); return; } }
     const ttF = document.getElementById('tt-foot'), ttM = document.getElementById('tt-comment-modal');
     if (ttF && ttM && ttM.style.display !== 'none' && ttF.classList.contains('open')) { ttCollapse(); return; }
     AppNavigation.pop();
@@ -11329,6 +11367,7 @@ async function saveChannelEdits() {
 
         await db.ref(`channels/${auth.currentUser.uid}`).set(updatedData);
         currentChannelData = updatedData;
+        try { localStorage.setItem('flaynity_user_session_cache', JSON.stringify(updatedData)); flSetNavAvatar(flAvatarFromChannel(updatedData)); flCacheNavAvatar(flAvatarFromChannel(updatedData)); } catch (e) {}
 
         showNotification("Channel Successfully Updated!", "success");
         AppNavigation.pop(); 

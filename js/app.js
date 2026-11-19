@@ -4363,11 +4363,11 @@ function fxMenuAction(action) {
 
         } else if (action === 'report') {
             if (ctx.own) { showNotification('You cannot report your own content.', 'error'); return; }
-            fxOpenReportDialog(v.id, ctx.kind);
+            fxOpenReportPage(v.id, ctx.kind);
 
         } else if (action === 'copyright') {
             if (ctx.own) { showNotification('You cannot claim copyright on your own content.', 'error'); return; }
-            fxOpenCopyrightDialog(v.id, ctx.kind, v.userId || '');
+            fxOpenCopyrightPage(v.id, ctx.kind);
 
         } else if (action === 'subscribe') {
             if (!v.userId) { showNotification('Channel not found.', 'error'); return; }
@@ -4487,6 +4487,259 @@ function fxSubmitReport() {
         .set({ reason: sel.dataset.k, kind: _fxrKind, timestamp: Date.now() })
         .then(() => { showNotification('Report submitted. Thank you!', 'success', 2400); fxCloseReportDialog(); })
         .catch(() => { showNotification('Could not send report. Please try again.', 'error'); _fxrBusy = false; send.textContent = 'Report'; send.disabled = false; });
+}
+
+// =========================================================
+// REPORT / COPYRIGHT FULL PAGES (TikTok-style flow)
+// Why are you reporting this? -> Thanks for reporting -> Reports list
+// =========================================================
+const RP_REASONS = [
+    ['sexual', 'Sexual content'], ['hate', 'Hate and harassment'], ['violence', 'Violence or abuse'],
+    ['child_safety', 'Child safety'], ['misleading', 'False or misleading information'],
+    ['ai_content', 'Problematic AI content'], ['self_harm', 'Suicide and self-harm'], ['branded', 'Undisclosed branded content']
+];
+const RP_MORE = [
+    ['spam', 'Spam or scam'], ['dangerous', 'Dangerous activities and challenges'],
+    ['illegal', 'Illegal activities and regulated goods'], ['gambling', 'Gambling'], ['other', 'Other']
+];
+const RP_COPY = [
+    ['copies_work', 'It copies my original work'], ['unauthorized_media', 'Uses my video or music without permission'],
+    ['photo_art', 'Uses my photo or artwork without permission'], ['counterfeit', 'Counterfeit or fake brand products'],
+    ['other_copyright', 'Other copyright issue']
+];
+const RP_CHEV = '<svg class="rp-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>';
+const RP_BACK = '<svg viewBox="0 0 24 24"><path d="M20 12H4M10.5 5.5L4 12l6.5 6.5"/></svg>';
+const RP_X = '<svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg>';
+const RP_SHIELD = '<svg class="rp-shield" viewBox="0 0 24 24"><path d="M12 2L4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z" fill="#2C5CC5"/><rect x="11" y="7" width="2" height="6" rx="1" fill="#fff"/><circle cx="12" cy="16.2" r="1.2" fill="#fff"/></svg>';
+let _rp = { id: '', kind: 'video', uid: '', name: '', thumb: '', stack: [], mode: 'report', reason: '', busy: false, copyKey: '', copyLabel: '' };
+
+function rpUid() { return (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.uid : 'guest'; }
+function rpLoadReports() { try { return JSON.parse(localStorage.getItem('fx_my_reports:' + rpUid()) || '[]'); } catch (e) { return []; } }
+function rpSaveReport(rec) {
+    try {
+        const list = rpLoadReports(); list.unshift(rec);
+        localStorage.setItem('fx_my_reports:' + rpUid(), JSON.stringify(list.slice(0, 100)));
+    } catch (e) {}
+}
+function rpBlockedKey() { return 'fx_blocked_channels:' + rpUid(); }
+function rpIsBlocked(uid) { try { return JSON.parse(localStorage.getItem(rpBlockedKey()) || '[]').indexOf(String(uid)) > -1; } catch (e) { return false; } }
+function rpSetBlocked(uid, on) {
+    try {
+        let l = JSON.parse(localStorage.getItem(rpBlockedKey()) || '[]').filter(x => x !== String(uid));
+        if (on) l.push(String(uid));
+        localStorage.setItem(rpBlockedKey(), JSON.stringify(l));
+    } catch (e) {}
+}
+function rpHideChannelNow(uid) {
+    _fxHiddenChannels.add(String(uid)); fxPersistHidden();
+    fxRemoveCards(`#home-feed-container .fx-card[data-fx-uid="${uid}"]`);
+    fxRemoveCards(`.post-card[data-fb-uid="${uid}"]`);
+}
+
+function rpEnsure() {
+    let root = document.getElementById('fx-report-page');
+    if (root) return root;
+    root = document.createElement('div');
+    root.id = 'fx-report-page';
+    root.className = 'rp-root';
+    root.innerHTML = `
+        <div class="rp-head" id="rp-head"></div>
+        <div class="rp-body" id="rp-body"></div>`;
+    document.body.appendChild(root);
+    root.querySelector('#rp-body').addEventListener('scroll', (e) => {
+        root.querySelector('#rp-head').classList.toggle('rp-line', e.target.scrollTop > 6);
+    }, { passive: true });
+    root.addEventListener('click', (e) => {
+        const t = e.target.closest('[data-act]');
+        if (!t) return;
+        rpAct(t.dataset.act, t);
+    });
+    root.addEventListener('input', () => rpSyncForm());
+    return root;
+}
+
+function rpOpen(mode, id, kind) {
+    if (typeof playUI === 'function') playUI('click');
+    const root = rpEnsure();
+    const item = fxmFindItem({ kind: kind, id: id }) || {};
+    _rp = {
+        id: String(id), kind: kind === 'post' ? 'post' : 'video', mode: mode,
+        uid: item.userId ? String(item.userId) : '',
+        name: item.username || item.channelName || 'Flaynity User',
+        thumb: item.poster || (item.images && item.images[0]) || '',
+        stack: [], reason: '', busy: false, copyKey: '', copyLabel: ''
+    };
+    root.classList.remove('open', 'closing');
+    AppNavigation.pushModal('fx-report-page');
+    rpShow(mode === 'copyright' ? 'copyright' : 'report', false);
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('open')));
+}
+function fxOpenReportPage(id, kind) { rpOpen('report', id, kind); }
+function fxOpenCopyrightPage(id, kind) { rpOpen('copyright', id, kind); }
+
+function rpClose() {
+    const root = document.getElementById('fx-report-page');
+    if (!root || root.classList.contains('closing')) return;
+    root.classList.add('closing'); root.classList.remove('open');
+    setTimeout(() => {
+        const c = AppNavigation.current();
+        if (c && c.type === 'modal' && c.id === 'fx-report-page') AppNavigation.pop();
+        else root.style.display = 'none';
+        root.classList.remove('closing');
+    }, 230);
+}
+
+function rpBack() {
+    if (_rp.stack.length > 1) { _rp.stack.pop(); rpShow(_rp.stack.pop(), true); }
+    else rpClose();
+}
+
+function rpRows(list, act) {
+    return list.map(r => `<button type="button" class="rp-row" data-act="${act}" data-k="${r[0]}" data-t="${escapeHTML(r[1])}"><span>${escapeHTML(r[1])}</span>${RP_CHEV}</button>`).join('');
+}
+
+function rpShow(screen, isBack) {
+    const root = rpEnsure();
+    const head = root.querySelector('#rp-head');
+    const body = root.querySelector('#rp-body');
+    _rp.stack.push(screen);
+    root.classList.toggle('rp-gray', screen === 'reports');
+    let headHtml = `<button type="button" class="rp-hbtn" data-act="back" aria-label="Back">${RP_BACK}</button>`;
+    let html = '';
+    const nm = escapeHTML(_rp.name);
+    const isP = _rp.kind === 'post';
+
+    if (screen === 'report') {
+        html = `<h1 class="rp-h1">Why are you reporting this?</h1>
+            <div class="rp-info">${RP_SHIELD}<span>Your report remains anonymous to others, and we review all reports against our guidelines.</span></div>
+            <div class="rp-card rp-single"><button type="button" class="rp-row" data-act="reason" data-k="dislike" data-t="I don't like it"><span>I don't like it</span>${RP_CHEV}</button></div>
+            <div class="rp-card rp-list">${rpRows(RP_REASONS, 'reason')}<button type="button" class="rp-row" data-act="more"><span>More reasons</span>${RP_CHEV}</button></div>
+            <div class="rp-card rp-single"><button type="button" class="rp-row" data-act="ipr"><span>Counterfeits and intellectual property</span>${RP_CHEV}</button></div>
+            <div class="rp-bottom-gap"></div>`;
+    } else if (screen === 'more') {
+        html = `<h1 class="rp-h1">More reasons</h1>
+            <div class="rp-card rp-list">${rpRows(RP_MORE, 'reason')}</div><div class="rp-bottom-gap"></div>`;
+    } else if (screen === 'copyright') {
+        html = `<h1 class="rp-h1">What is the copyright issue?</h1>
+            <div class="rp-info">${RP_SHIELD}<span>Copyright claims are reviewed against our copyright policy. Only the copyright owner or an authorized person should submit a claim.</span></div>
+            <div class="rp-card rp-list">${rpRows(RP_COPY, 'copyreason')}</div><div class="rp-bottom-gap"></div>`;
+    } else if (screen === 'copyform') {
+        html = `<h1 class="rp-h1 rp-h1-sm">Tell us more</h1>
+            <div class="rp-info">${RP_SHIELD}<span>${escapeHTML(_rp.copyLabel)}</span></div>
+            <input type="text" id="rp-name" class="rp-input" maxlength="80" placeholder="Your full name" autocomplete="off">
+            <textarea id="rp-details" class="rp-input rp-area" maxlength="600" rows="5" placeholder="Link or details of your original work (what was copied?)"></textarea>
+            <button type="button" class="rp-check" id="rp-agree" data-act="agree"><span class="rp-box"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>I am the copyright owner or authorized to act on their behalf.</span></button>
+            <div class="rp-foot"><button type="button" class="rp-primary" id="rp-submit" data-act="submitcopy" disabled>Submit</button></div>`;
+    } else if (screen === 'thanks') {
+        headHtml = `<span class="rp-hspacer"></span><button type="button" class="rp-hbtn" data-act="close" aria-label="Close">${RP_X}</button>`;
+        const mute = _fxHiddenChannels.has(_rp.uid), blk = rpIsBlocked(_rp.uid);
+        const restricted = (() => { try { return localStorage.getItem('fx_restricted_mode') === '1'; } catch (e) { return false; } })();
+        html = `<div class="rp-thanks">
+            <div class="rp-okc"><svg viewBox="0 0 24 24"><path d="M5.5 12.5l4.2 4.2L18.5 8"/></svg></div>
+            <h1 class="rp-h1">Thanks for reporting</h1>
+            <p class="rp-p">We'll review your report and take action if there is a violation of our Community Guidelines. The creator won't be notified that you reported their content.</p>
+            <div class="rp-card rp-single rp-gapt"><button type="button" class="rp-row" data-act="viewreports"><span>View your reports</span>${RP_CHEV}</button></div>
+            <div class="rp-card rp-list2">
+                ${_rp.uid ? `<div class="rp-row rp-trow"><span>Mute posts from ${nm}</span><button type="button" class="rp-sw${mute ? ' on' : ''}" data-act="mute" aria-label="Mute"><i></i></button></div>
+                <div class="rp-row rp-trow"><span>Block ${nm}</span><button type="button" class="rp-sw${blk ? ' on' : ''}" data-act="block" aria-label="Block"><i></i></button></div>` : ''}
+                <button type="button" class="rp-row rp-two" data-act="restricted"><b>${restricted ? 'Restricted Mode is on' : 'Turn on Restricted Mode'}</b>${RP_CHEV}<em>Limit videos that may be inappropriate for some people.</em></button>
+                <button type="button" class="rp-row rp-two" data-act="parent"><b>Notify parent or guardian</b>${RP_CHEV}<em>We won't share the post or account details with your parent or guardian.</em></button>
+            </div>
+            <div class="rp-foot"><button type="button" class="rp-primary" data-act="close">Done</button></div></div>`;
+    } else if (screen === 'reports') {
+        headHtml = `<button type="button" class="rp-hbtn" data-act="back" aria-label="Back">${RP_BACK}</button><div class="rp-htitle">Reports</div><span class="rp-hspacer"></span>`;
+        const list = rpLoadReports();
+        html = `<div class="rp-rs-top"><div class="rp-rs-t">Turn on Restricted Mode</div><div class="rp-rs-d">Limit content that may not be comfortable for all audiences. <a data-act="restricted">Learn more about Restricted Mode</a></div></div>` +
+            (list.length ? list.map((r, i) => `<div class="rp-rcard">
+                <div class="rp-rmain"><div class="rp-rtx"><div class="rp-rt">${escapeHTML(r.name || 'Flaynity User')}'s ${r.kind === 'post' ? 'post' : 'video'}</div>
+                <div class="rp-rs">Status: Under review</div><div class="rp-rd">We'll review and take action if there is a violation of our Community Guidelines.</div></div>
+                <div class="rp-rth">${r.thumb ? `<img src="${escapeHTML(r.thumb)}" alt="" onerror="this.remove()">` : ''}</div></div>
+                <button type="button" class="rp-rmore" data-act="viewmore" data-i="${i}"><span>View more</span>${RP_CHEV}</button></div>`).join('')
+                : '<div class="rp-empty">You have not reported anything yet.</div>');
+    }
+    head.innerHTML = headHtml;
+    head.classList.remove('rp-line');
+    body.innerHTML = `<div class="rp-wrap">${html}</div>`;
+    body.scrollTop = 0;
+}
+
+function rpSyncForm() {
+    const root = document.getElementById('fx-report-page'); if (!root) return;
+    const n = root.querySelector('#rp-name'), d = root.querySelector('#rp-details'), a = root.querySelector('#rp-agree'), b = root.querySelector('#rp-submit');
+    if (!n || !d || !a || !b) return;
+    b.disabled = !(n.value.trim().length >= 2 && d.value.trim().length >= 10 && a.classList.contains('on')) || _rp.busy;
+}
+
+function rpFinish(label, type) {
+    rpSaveReport({ id: _rp.id, kind: _rp.kind, name: _rp.name, thumb: _rp.thumb, reason: label, type: type, ts: Date.now() });
+    _rp.stack = [];
+    rpShow('thanks', false);
+}
+
+function rpSubmitReport(key, label) {
+    if (_rp.busy) return;
+    if (typeof auth === 'undefined' || !auth.currentUser) { showNotification('Please sign in to report', 'error'); return; }
+    if (!navigator.onLine) { showNotification('Cannot report while offline.', 'error'); return; }
+    _rp.busy = true;
+    db.ref(`video_reports/${_rp.id}/${auth.currentUser.uid}`)
+        .set({ reason: key, kind: _rp.kind, timestamp: Date.now() })
+        .then(() => { _rp.busy = false; rpFinish(label, 'report'); })
+        .catch(() => { _rp.busy = false; showNotification('Could not send report. Please try again.', 'error'); });
+}
+
+function rpSubmitCopyright() {
+    if (_rp.busy) return;
+    const root = document.getElementById('fx-report-page');
+    const name = root.querySelector('#rp-name').value.trim(), details = root.querySelector('#rp-details').value.trim();
+    if (name.length < 2 || details.length < 10) return;
+    if (typeof auth === 'undefined' || !auth.currentUser) { showNotification('Please sign in to submit a claim', 'error'); return; }
+    if (!navigator.onLine) { showNotification('Cannot submit a claim while offline.', 'error'); return; }
+    _rp.busy = true;
+    const b = root.querySelector('#rp-submit'); b.textContent = 'Sending...'; b.disabled = true;
+    db.ref(`copyright_claims/${_rp.id}/${auth.currentUser.uid}`)
+        .set({ kind: _rp.kind, contentOwnerId: _rp.uid, issue: _rp.copyKey, claimantName: name, details: details, claimantEmail: auth.currentUser.email || '', timestamp: Date.now() })
+        .then(() => { _rp.busy = false; rpFinish('Copyright: ' + _rp.copyLabel, 'copyright'); })
+        .catch(() => { _rp.busy = false; b.textContent = 'Submit'; b.disabled = false; showNotification('Could not submit the claim. Please try again.', 'error'); });
+}
+
+function rpAct(act, el) {
+    if (act === 'back') return rpBack();
+    if (act === 'close') return rpClose();
+    if (act === 'reason') return rpSubmitReport(el.dataset.k, el.dataset.t);
+    if (act === 'more') return rpShow('more');
+    if (act === 'ipr') return rpShow('copyright');
+    if (act === 'copyreason') { _rp.copyKey = el.dataset.k; _rp.copyLabel = el.dataset.t; return rpShow('copyform'); }
+    if (act === 'agree') { el.classList.toggle('on'); return rpSyncForm(); }
+    if (act === 'submitcopy') return rpSubmitCopyright();
+    if (act === 'viewreports') return rpShow('reports');
+    if (act === 'mute') {
+        const on = !el.classList.contains('on'); el.classList.toggle('on', on);
+        if (on) { rpHideChannelNow(_rp.uid); showNotification('Posts from ' + _rp.name + ' muted.', 'success', 2200); }
+        else { if (!rpIsBlocked(_rp.uid)) { _fxHiddenChannels.delete(_rp.uid); fxPersistHidden(); } showNotification('Unmuted ' + _rp.name + '.', 'success', 2200); }
+        return;
+    }
+    if (act === 'block') {
+        const on = !el.classList.contains('on'); el.classList.toggle('on', on);
+        rpSetBlocked(_rp.uid, on);
+        if (on) { rpHideChannelNow(_rp.uid); showNotification(_rp.name + ' blocked.', 'success', 2200); }
+        else { _fxHiddenChannels.delete(_rp.uid); fxPersistHidden(); showNotification('Unblocked ' + _rp.name + '.', 'success', 2200); const m = document.querySelector('#fx-report-page .rp-sw[data-act="mute"]'); if (m) m.classList.remove('on'); }
+        return;
+    }
+    if (act === 'restricted') {
+        let on = false;
+        try { on = localStorage.getItem('fx_restricted_mode') !== '1'; localStorage.setItem('fx_restricted_mode', on ? '1' : '0'); } catch (e) {}
+        showNotification(on ? 'Restricted Mode turned on.' : 'Restricted Mode turned off.', 'success', 2200);
+        const b = document.querySelector('#fx-report-page [data-act="restricted"] b'); if (b) b.textContent = on ? 'Restricted Mode is on' : 'Turn on Restricted Mode';
+        return;
+    }
+    if (act === 'parent') return showNotification("Parent or guardian notification isn't available yet.", 'error', 2400);
+    if (act === 'viewmore') {
+        const r = rpLoadReports()[parseInt(el.dataset.i, 10)];
+        if (!r) return;
+        if (r.kind === 'post') { showNotification('Reason: ' + (r.reason || 'Reported'), 'success', 2600); return; }
+        rpClose();
+        setTimeout(() => { try { openMoviePage(String(r.id), false); } catch (e) {} }, 300);
+    }
 }
 
 // ---- Copyright claim dialog ----
@@ -7845,7 +8098,7 @@ const AppNavigation = {
 
         const fxdSheetEl = document.getElementById('fx-dislike-sheet');
         if (fxdSheetEl) fxdSheetEl.style.display = 'none';
-        ['fx-video-menu', 'fx-report-dialog', 'fx-copyright-dialog'].forEach(mid => { const el = document.getElementById(mid); if (el) el.style.display = 'none'; });
+        ['fx-video-menu', 'fx-report-dialog', 'fx-copyright-dialog', 'fx-report-page'].forEach(mid => { const el = document.getElementById(mid); if (el) el.style.display = 'none'; });
 
         // Pages opened from You, including View Channel, appear directly without sliding.
         if ((activeTab === 'you' && activePage) || activePage === 'view-channel-page') {

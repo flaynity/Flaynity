@@ -143,6 +143,7 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
         if (window.__flBootDone) window.__flBootDone();
         try { window.__flWatchHomeReady && window.__flWatchHomeReady(); } catch (e) {}
         try { firebase.database().goOffline(); } catch (e) {}
+        try { setTimeout(() => { typeof flEnsureNavYouIcon === 'function' && flEnsureNavYouIcon(); }, 400); } catch (e) {}
     }
 
     try {
@@ -381,6 +382,84 @@ function __flaynityReady(fn) {
     } catch (e) {}
 })();
 
+
+// =========================================================
+// BOTTOM NAV "YOU" ICON — always visible (online + offline)
+// Offline এ remote avatar URL লোড হয় না => আগে আইকন ফাঁকা হয়ে যেত।
+// এখন: cached avatar (data URL) -> না থাকলে/ভাঙলে default You আইকন।
+// =========================================================
+const FL_NAV_YOU_SVG = '<svg class="nav-icon-svg icon-unselected" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12"></circle><circle cx="16" cy="12" r="3.2"></circle><path d="M10 23c1.3-3.2 3.2-4.7 6-4.7s4.7 1.5 6 4.7"></path></svg>';
+
+function flNavCachedAvatar() {
+    try {
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.indexOf('flaynity_cached_channel_avatar:') === 0) {
+                const v = localStorage.getItem(k);
+                if (v && v.indexOf('data:image/') === 0) return v;
+            }
+        }
+    } catch (e) {}
+    return '';
+}
+
+function flNavSessionAvatarUrl() {
+    try {
+        const d = JSON.parse(localStorage.getItem('flaynity_user_session_cache') || 'null');
+        return (d && d.avatarUrl) ? d.avatarUrl : '';
+    } catch (e) { return ''; }
+}
+
+function flSetNavDefaultIcon(box) {
+    box = box || document.getElementById('nav-avatar-img');
+    if (box) box.innerHTML = FL_NAV_YOU_SVG;
+}
+
+function flSetNavAvatar(url) {
+    const box = document.getElementById('nav-avatar-img');
+    if (!box) return;
+    let src = url || '';
+    if (!navigator.onLine) src = flNavCachedAvatar() || src;
+    if (!src) { flSetNavDefaultIcon(box); return; }
+    const cur = box.querySelector('img');
+    if (cur && cur.dataset.src === src && !(cur.complete && cur.naturalWidth === 0)) return;
+    const img = new Image();
+    img.alt = '';
+    img.dataset.src = src;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+    let tried = false;
+    img.onerror = function () {
+        const c = flNavCachedAvatar();
+        if (!tried && c && img.src !== c) { tried = true; img.src = c; return; }
+        flSetNavDefaultIcon(box);
+    };
+    box.innerHTML = '';
+    box.appendChild(img);
+}
+
+// Safety net: কোনো কারণে You আইকন ফাঁকা/ভাঙা থাকলে default আইকন ফিরিয়ে আনে।
+function flEnsureNavYouIcon() {
+    const box = document.getElementById('nav-avatar-img');
+    if (!box) return;
+    const img = box.querySelector('img');
+    if (img) {
+        if (img.complete && img.naturalWidth === 0) {
+            const c = flNavCachedAvatar();
+            if (c && img.src !== c) img.src = c; else flSetNavDefaultIcon(box);
+        }
+        return;
+    }
+    if (box.querySelector('svg') || (box.firstElementChild && box.textContent.trim())) return;
+    flSetNavDefaultIcon(box);
+}
+(function () {
+    const run = () => { try { flEnsureNavYouIcon(); } catch (e) {} };
+    window.addEventListener('offline', () => { setTimeout(run, 50); setTimeout(run, 600); });
+    window.addEventListener('online', () => setTimeout(run, 300));
+    window.addEventListener('flaynity-dom-ready', () => { [150, 700, 1800, 4000].forEach(t => setTimeout(run, t)); });
+    window.addEventListener('flaynity-pages-ready', run);
+})();
+
 (function() {
     try {
         let cachedSession = localStorage.getItem('flaynity_user_session_cache');
@@ -397,8 +476,9 @@ function __flaynityReady(fn) {
                     if (data.avatarUrl) avatarLarge.innerHTML = `<img src="${data.avatarUrl}" style="width:100%; height:100%; object-fit:cover;">`;
                     else avatarLarge.innerHTML = (data.channelName || "F").charAt(0).toUpperCase();
                 }
-                if (avatarNav && data.avatarUrl) {
-                    avatarNav.innerHTML = `<img src="${data.avatarUrl}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                if (avatarNav) {
+                    if (data.avatarUrl) flSetNavAvatar(data.avatarUrl);
+                    else flEnsureNavYouIcon();
                 }
             });
         }
@@ -2635,7 +2715,7 @@ function renderUserAvatar(photoURL, email) {
     const avatarNav = document.getElementById('nav-avatar-img');
     if (avatarNav) {
         if (photoURL) {
-            avatarNav.innerHTML = `<img src="${photoURL}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            flSetNavAvatar(photoURL);
         } else {
             const initial = email ? email.charAt(0).toUpperCase() : 'U';
             avatarNav.innerHTML = `<div style="background: linear-gradient(135deg, var(--primary), #FF7A00); color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem;">${initial}</div>`;
@@ -4048,13 +4128,17 @@ function fxClearDislikeFeedback(videoId, uid) {
 // =========================================================
 // VIDEO CARD 3-DOT MENU (Download / Share / Not interested / Don't recommend channel / Report)
 // =========================================================
-const FXM_ITEMS = [
-    { a: 'download', t: 'Download', i: '<svg viewBox="0 0 24 24"><path d="M12 3v12M7 10.5l5 5 5-5M4 20h16"/></svg>' },
-    { a: 'share', t: 'Share', i: '<svg viewBox="0 0 24 24"><path d="M14 4l7 6.5-7 6.5v-4c-5 0-8.5 1.5-11 5 .8-5.5 4-9.5 11-10V4z"/></svg>' },
-    { a: 'not_interested', t: 'Not interested', i: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>' },
-    { a: 'no_channel', t: "Don't recommend channel", i: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5 1.2 0 2.3.2 3.2.7M16 14l6 6M22 14l-6 6"/></svg>' },
-    { a: 'report', t: 'Report', danger: true, i: '<svg viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>' }
-];
+const FXM_IC = {
+    share: '<svg viewBox="0 0 24 24"><circle cx="18" cy="5.5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="18.5" r="2.6"/><path d="M8.3 10.8l7.4-4.1M8.3 13.2l7.4 4.1"/></svg>',
+    report: '<svg viewBox="0 0 24 24"><path d="M5 22V3"/><path d="M5 4.2c3.3-1.8 6 1.8 9.3 0 1.8-1 3.2-1 4.7-.5v9.1c-1.5-.5-2.9-.5-4.7.5C11 15.1 8.3 11.5 5 13.3"/></svg>',
+    copyright: '<svg viewBox="0 0 24 24"><path d="M6.5 3h7.6L19 7.9V19a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5M8.5 12.5h7M8.5 16h7"/></svg>',
+    subscribe: '<svg viewBox="0 0 24 24"><circle cx="14.5" cy="8.5" r="4"/><path d="M6.5 21c.5-4 3.5-6 8-6s7.5 2 8 6z"/><path d="M4.5 5.5v5M2 8h5"/></svg>',
+    no_channel: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M5.3 5.3l13.4 13.4"/></svg>',
+    not_interested: '<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 3.5l16 17"/></svg>',
+    download: '<svg viewBox="0 0 24 24"><path d="M12 3v11M8 10.5l4 4 4-4"/><path d="M5 12.5V19a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19v-6.5"/></svg>',
+    dislike: '<svg viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>',
+    chev: '<svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>'
+};
 const FXR_REASONS = [
     { k: 'sexual', t: 'Sexual content' },
     { k: 'violent', t: 'Violent or repulsive content' },
@@ -4064,6 +4148,7 @@ const FXR_REASONS = [
 ];
 let _fxmVideoId = null;
 let _fxrVideoId = null;
+let _fxrKind = 'video';
 let _fxrBusy = false;
 
 // ---- hidden videos / channels: stored PER ACCOUNT (never shared with other accounts) ----
@@ -4106,54 +4191,126 @@ function fxRemoveCards(selector) {
     });
 }
 
+// ---------------------------------------------------------
+// "More options" BOTTOM SHEET (Long Video + Post cards + Watch page)
+// ---------------------------------------------------------
+let _fxmCtx = null;
+
 function fxEnsureMenu() {
     let root = document.getElementById('fx-video-menu');
     if (root) return root;
     root = document.createElement('div');
     root.id = 'fx-video-menu';
     root.className = 'fxm-root';
-    root.innerHTML = `<div class="fxm-pop" id="fxm-pop">${FXM_ITEMS.map(it => `
-        ${it.danger ? '<div class="fxm-sep"></div>' : ''}
-        <button type="button" class="fxm-item${it.danger ? ' danger' : ''}" data-a="${it.a}">
-            <span class="fxm-ic">${it.i}</span><span class="fxm-tx">${it.t}</span>
-        </button>`).join('')}</div>`;
+    root.innerHTML = `
+        <div class="fxm-sheet" id="fxm-sheet" role="dialog" aria-label="More options">
+            <div class="fxm-grab" id="fxm-grab"><span></span></div>
+            <div class="fxm-title" id="fxm-title">More options</div>
+            <div class="fxm-list" id="fxm-list"></div>
+        </div>`;
     document.body.appendChild(root);
     root.addEventListener('click', (e) => {
-        const btn = e.target.closest('.fxm-item');
+        const btn = e.target.closest('.fxm-row');
         if (btn) { fxMenuAction(btn.dataset.a); return; }
         if (e.target === root) fxCloseVideoMenu();
+    });
+    // drag down to dismiss
+    const sheet = root.querySelector('#fxm-sheet');
+    let sy = 0, dy = 0, drag = false;
+    ['fxm-grab', 'fxm-title'].forEach(id => {
+        const el = root.querySelector('#' + id);
+        el.addEventListener('touchstart', (e) => { drag = true; sy = e.touches[0].clientY; dy = 0; sheet.style.transition = 'none'; }, { passive: true });
+        el.addEventListener('touchmove', (e) => {
+            if (!drag) return;
+            dy = Math.max(0, e.touches[0].clientY - sy);
+            sheet.style.transform = `translateY(${dy}px)`;
+        }, { passive: true });
+        const end = () => {
+            if (!drag) return;
+            drag = false; sheet.style.transition = '';
+            if (dy > 80) fxCloseVideoMenu(); else sheet.style.transform = '';
+        };
+        el.addEventListener('touchend', end);
+        el.addEventListener('touchcancel', end);
     });
     return root;
 }
 
-function fxOpenVideoMenu(videoId, anchor) {
+function fxmFindItem(ctx) {
+    const id = String(ctx.id);
+    if (ctx.kind === 'post') {
+        return (typeof allCommunityPosts !== 'undefined') ? (allCommunityPosts.find(x => String(x.id) === id) || null) : null;
+    }
+    let v = (typeof allLongVideos !== 'undefined') ? allLongVideos.find(x => String(x.id) === id) : null;
+    if (!v && typeof currentActiveMovie !== 'undefined' && currentActiveMovie && String(currentActiveMovie.id) === id) v = currentActiveMovie;
+    return v || null;
+}
+
+function fxmRows(ctx) {
+    const rows = [];
+    const isPost = ctx.kind === 'post';
+    const it = ctx.item || {};
+    rows.push({ a: 'share', t: isPost ? 'Share post' : 'Share video', i: FXM_IC.share });
+    if (!ctx.own) {
+        rows.push({ a: 'report', t: 'Report', i: FXM_IC.report });
+        rows.push({ a: 'copyright', t: 'Copyright claim', i: FXM_IC.copyright });
+        if (ctx.uid) rows.push({ a: 'subscribe', t: ctx.subbed ? 'Subscribed' : 'Subscribe', i: FXM_IC.subscribe });
+        if (ctx.uid) rows.push({ a: 'no_channel', t: "Don't recommend channel", i: FXM_IC.no_channel });
+        rows.push({ a: 'not_interested', t: 'Not interested', i: FXM_IC.not_interested });
+    }
+    if (ctx.watch) rows.push({ a: 'dislike', t: 'Dislike', i: FXM_IC.dislike });
+    if (!isPost) rows.push({ a: 'download', t: 'Download video', i: FXM_IC.download });
+    else if (it.images && it.images.length) rows.push({ a: 'download', t: it.images.length > 1 ? 'Download images' : 'Download image', i: FXM_IC.download });
+    return rows;
+}
+
+function fxmRenderRows(ctx) {
+    const list = document.querySelector('#fx-video-menu #fxm-list');
+    if (!list) return;
+    list.innerHTML = fxmRows(ctx).map(r => `
+        <button type="button" class="fxm-row" data-a="${r.a}">
+            <span class="fxm-ic">${r.i}</span><span class="fxm-tx">${r.t}</span><span class="fxm-chev">${FXM_IC.chev}</span>
+        </button>`).join('');
+}
+
+function fxmOpen(ctx) {
     if (typeof playUI === 'function') playUI('click');
     const root = fxEnsureMenu();
-    _fxmVideoId = String(videoId);
-    const pop = root.querySelector('#fxm-pop');
-    pop.querySelectorAll('[data-a="dislike"]').forEach(n => n.remove());
-    if (anchor && anchor.closest && anchor.closest('#full-movie-page')) {
-        const dl = document.createElement('button');
-        dl.type = 'button'; dl.className = 'fxm-item'; dl.dataset.a = 'dislike';
-        dl.innerHTML = '<span class="fxm-ic"><svg viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></span><span class="fxm-tx">Dislike</span>';
-        pop.insertBefore(dl, pop.firstChild);
-    }
+    ctx.item = fxmFindItem(ctx);
+    ctx.uid = (ctx.item && ctx.item.userId) ? String(ctx.item.userId) : '';
+    const me = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.uid : '';
+    ctx.own = !!(me && ctx.uid && me === ctx.uid);
+    ctx.subbed = false;
+    _fxmCtx = ctx;
+    _fxmVideoId = ctx.id;
+    fxmRenderRows(ctx);
+
+    const sheet = root.querySelector('#fxm-sheet');
+    sheet.style.transform = '';
+    root.querySelector('#fxm-list').scrollTop = 0;
     root.classList.remove('open', 'closing');
     AppNavigation.pushModal('fx-video-menu');
-    pop.style.visibility = 'hidden';
-    requestAnimationFrame(() => {
-        const r = anchor ? anchor.getBoundingClientRect() : { top: 80, bottom: 110, right: window.innerWidth - 12 };
-        const w = pop.offsetWidth, ph = pop.offsetHeight;
-        const vw = window.innerWidth, vh = window.innerHeight;
-        let left = Math.min(Math.max(12, r.right - w), vw - w - 12);
-        let top = r.bottom + 6, up = false;
-        if (top + ph > vh - 12) { top = Math.max(12, r.top - ph - 6); up = true; }
-        pop.style.left = left + 'px';
-        pop.style.top = top + 'px';
-        pop.style.transformOrigin = (up ? 'bottom' : 'top') + ' right';
-        pop.style.visibility = 'visible';
-        root.classList.add('open');
-    });
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('open')));
+
+    // live Subscribe / Subscribed state
+    if (!ctx.own && ctx.uid && me && navigator.onLine && typeof db !== 'undefined') {
+        db.ref(`subscribers/${ctx.uid}/${me}`).once('value').then(snap => {
+            if (_fxmCtx !== ctx) return;
+            ctx.subbed = snap.exists();
+            const tx = root.querySelector('.fxm-row[data-a="subscribe"] .fxm-tx');
+            if (tx) tx.textContent = ctx.subbed ? 'Subscribed' : 'Subscribe';
+        }).catch(() => {});
+    }
+}
+
+// Long Video card + Watch page 3-dot
+function fxOpenVideoMenu(videoId, anchor) {
+    const watch = !!(anchor && anchor.closest && anchor.closest('#full-movie-page'));
+    fxmOpen({ kind: 'video', id: String(videoId), watch });
+}
+// Post card 3-dot
+function fbOpenPostMenu(postId) {
+    fxmOpen({ kind: 'post', id: String(postId), watch: false });
 }
 
 function fxCloseVideoMenu(done) {
@@ -4166,39 +4323,70 @@ function fxCloseVideoMenu(done) {
         if (c && c.type === 'modal' && c.id === 'fx-video-menu') AppNavigation.pop();
         else root.style.display = 'none';
         root.classList.remove('closing');
+        const sh = root.querySelector('#fxm-sheet'); if (sh) sh.style.transform = '';
         if (done) done();
-    }, 170);
+    }, 240);
 }
 
 function fxMenuAction(action) {
-    const id = _fxmVideoId;
-    const v = (typeof allLongVideos !== 'undefined') ? allLongVideos.find(x => String(x.id) === String(id)) : null;
+    const ctx = _fxmCtx;
+    if (!ctx) { fxCloseVideoMenu(); return; }
+    const v = ctx.item;
+    const isPost = ctx.kind === 'post';
     fxCloseVideoMenu(() => {
         if (action === 'dislike') { try { toggleMovieDislike(); } catch (e) {} return; }
-        if (!v) return;
-        if (action === 'download') {
-            const raw = v.videoLink || v.videoUrl;
-            const name = `${String(v.title || 'video').replace(/\s+/g, '_')}_video-720.mp4`;
-            const url = (typeof normalizeFlaynityMediaUrl === 'function' && raw) ? normalizeFlaynityMediaUrl(raw) : raw;
-            if (!url) { showNotification('No valid download link found.', 'error'); return; }
-            triggerFileDownload(url, name);
-        } else if (action === 'share') {
-            const data = { title: v.title || 'Flaynity', text: v.title || 'Flaynity', url: location.href };
+        if (!v) { showNotification('Content not available.', 'error'); return; }
+
+        if (action === 'share') {
+            const title = v.title || v.caption || 'Flaynity';
+            const data = { title: title, text: v.caption || title, url: location.href };
             if (navigator.share) navigator.share(data).catch(() => {});
             else if (navigator.clipboard) { navigator.clipboard.writeText(location.href); showNotification('Link copied', 'success'); }
-        } else if (action === 'not_interested') {
-            _fxHiddenVideos.add(String(v.id)); fxPersistHidden();
-            fxRemoveCards(`#home-feed-container .fx-card[data-fx-id="${v.id}"]`);
-            showNotification("Video hidden. We'll show fewer videos like this.", 'success', 2400);
-        } else if (action === 'no_channel') {
-            if (v.userId) {
-                _fxHiddenChannels.add(String(v.userId)); fxPersistHidden();
-                fxRemoveCards(`#home-feed-container .fx-card[data-fx-uid="${v.userId}"]`);
-                setTimeout(() => { try { if (AppNavigation.current() && AppNavigation.current().type === 'tab') buildHomeFeed(); } catch (e) {} }, 400);
-            }
-            showNotification("Okay, we won't recommend this channel.", 'success', 2400);
+            else showNotification('Sharing is not supported on this device.', 'error');
+
         } else if (action === 'report') {
-            fxOpenReportDialog(v.id);
+            fxOpenReportDialog(v.id, ctx.kind);
+
+        } else if (action === 'copyright') {
+            fxOpenCopyrightDialog(v.id, ctx.kind, v.userId || '');
+
+        } else if (action === 'subscribe') {
+            if (!v.userId) return;
+            toggleClipSubscribe(String(v.userId));
+
+        } else if (action === 'no_channel') {
+            if (!v.userId) return;
+            _fxHiddenChannels.add(String(v.userId)); fxPersistHidden();
+            fxRemoveCards(`#home-feed-container .fx-card[data-fx-uid="${v.userId}"]`);
+            fxRemoveCards(`.post-card[data-fb-uid="${v.userId}"]`);
+            setTimeout(() => { try { if (AppNavigation.current() && AppNavigation.current().type === 'tab') buildHomeFeed(); } catch (e) {} }, 400);
+            showNotification("Okay, we won't recommend this channel.", 'success', 2400);
+
+        } else if (action === 'not_interested') {
+            if (isPost) {
+                fbHidePost(String(v.id), true);
+                showNotification("Post hidden. We'll show fewer posts like this.", 'success', 2400);
+            } else {
+                _fxHiddenVideos.add(String(v.id)); fxPersistHidden();
+                fxRemoveCards(`#home-feed-container .fx-card[data-fx-id="${v.id}"]`);
+                showNotification("Video hidden. We'll show fewer videos like this.", 'success', 2400);
+            }
+
+        } else if (action === 'download') {
+            if (isPost) {
+                const imgs = (v.images || []).filter(Boolean);
+                if (!imgs.length) { showNotification('No image found to download.', 'error'); return; }
+                imgs.forEach((u, i) => setTimeout(() => {
+                    const url = (typeof normalizeFlaynityMediaUrl === 'function') ? normalizeFlaynityMediaUrl(u) : u;
+                    triggerFileDownload(url, `flaynity_post_${v.id}_${i + 1}.jpg`);
+                }, i * 600));
+            } else {
+                const raw = v.videoLink || v.videoUrl;
+                const name = `${String(v.title || 'video').replace(/\s+/g, '_')}_video-720.mp4`;
+                const url = (typeof normalizeFlaynityMediaUrl === 'function' && raw) ? normalizeFlaynityMediaUrl(raw) : raw;
+                if (!url) { showNotification('No valid download link found.', 'error'); return; }
+                triggerFileDownload(url, name);
+            }
         }
     });
 }
@@ -4214,7 +4402,7 @@ function fxEnsureReport() {
         <div class="fxr-card" id="fxr-card">
             <div class="fxr-head">
                 <div class="fxr-flag"><svg viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg></div>
-                <div><h3>Report video</h3><p>Select the issue you want to report</p></div>
+                <div><h3 id="fxr-title">Report video</h3><p>Select the issue you want to report</p></div>
             </div>
             <div class="fxr-list" id="fxr-list">${FXR_REASONS.map(r => `
                 <button type="button" class="fxr-opt" data-k="${r.k}">
@@ -4239,9 +4427,11 @@ function fxEnsureReport() {
     return root;
 }
 
-function fxOpenReportDialog(videoId) {
+function fxOpenReportDialog(videoId, kind) {
     const root = fxEnsureReport();
     _fxrVideoId = String(videoId); _fxrBusy = false;
+    _fxrKind = kind === 'post' ? 'post' : 'video';
+    const _t = root.querySelector('#fxr-title'); if (_t) _t.textContent = _fxrKind === 'post' ? 'Report post' : 'Report video';
     root.querySelectorAll('.fxr-opt').forEach(o => o.classList.remove('on'));
     const send = root.querySelector('#fxr-send');
     send.disabled = true; send.textContent = 'Report';
@@ -4274,9 +4464,92 @@ function fxSubmitReport() {
     const send = root.querySelector('#fxr-send');
     send.textContent = 'Sending...'; send.disabled = true;
     db.ref(`video_reports/${_fxrVideoId}/${auth.currentUser.uid}`)
-        .set({ reason: sel.dataset.k, timestamp: Date.now() })
+        .set({ reason: sel.dataset.k, kind: _fxrKind, timestamp: Date.now() })
         .then(() => { showNotification('Report submitted. Thank you!', 'success', 2400); fxCloseReportDialog(); })
         .catch(() => { showNotification('Could not send report. Please try again.', 'error'); _fxrBusy = false; send.textContent = 'Report'; send.disabled = false; });
+}
+
+// ---- Copyright claim dialog ----
+let _fxcId = null, _fxcKind = 'video', _fxcOwner = '', _fxcBusy = false;
+
+function fxEnsureCopyright() {
+    let root = document.getElementById('fx-copyright-dialog');
+    if (root) return root;
+    root = document.createElement('div');
+    root.id = 'fx-copyright-dialog';
+    root.className = 'fxr-root';
+    root.innerHTML = `
+        <div class="fxr-card" id="fxc-card">
+            <div class="fxr-head">
+                <div class="fxr-flag"><svg viewBox="0 0 24 24"><path d="M6.5 3h7.6L19 7.9V19a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5M8.5 12.5h7M8.5 16h7"/></svg></div>
+                <div><h3>Copyright claim</h3><p>Tell us about your original work</p></div>
+            </div>
+            <input type="text" id="fxc-name" class="fxc-input" maxlength="80" placeholder="Your full name" autocomplete="off">
+            <textarea id="fxc-details" class="fxc-input fxc-area" maxlength="600" rows="4" placeholder="Link or details of your original work (what was copied?)"></textarea>
+            <button type="button" class="fxc-check" id="fxc-agree"><span class="fxc-box"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>I am the copyright owner or authorized to act on their behalf.</span></button>
+            <div class="fxr-actions">
+                <button type="button" class="fxr-cancel" id="fxc-cancel">Cancel</button>
+                <button type="button" class="fxr-send" id="fxc-send" disabled>Submit</button>
+            </div>
+        </div>`;
+    document.body.appendChild(root);
+    const sync = () => {
+        const ok = root.querySelector('#fxc-name').value.trim().length >= 2 &&
+                   root.querySelector('#fxc-details').value.trim().length >= 10 &&
+                   root.querySelector('#fxc-agree').classList.contains('on');
+        root.querySelector('#fxc-send').disabled = !ok || _fxcBusy;
+    };
+    root.addEventListener('click', (e) => { if (e.target === root) fxCloseCopyrightDialog(); });
+    root.querySelector('#fxc-name').addEventListener('input', sync);
+    root.querySelector('#fxc-details').addEventListener('input', sync);
+    root.querySelector('#fxc-agree').addEventListener('click', (e) => { e.currentTarget.classList.toggle('on'); sync(); });
+    root.querySelector('#fxc-cancel').addEventListener('click', () => fxCloseCopyrightDialog());
+    root.querySelector('#fxc-send').addEventListener('click', () => fxSubmitCopyright());
+    root._sync = sync;
+    return root;
+}
+
+function fxOpenCopyrightDialog(contentId, kind, ownerId) {
+    const root = fxEnsureCopyright();
+    _fxcId = String(contentId); _fxcKind = kind === 'post' ? 'post' : 'video'; _fxcOwner = String(ownerId || ''); _fxcBusy = false;
+    root.querySelector('#fxc-name').value = '';
+    root.querySelector('#fxc-details').value = '';
+    root.querySelector('#fxc-agree').classList.remove('on');
+    const send = root.querySelector('#fxc-send'); send.textContent = 'Submit'; send.disabled = true;
+    root.classList.remove('open', 'closing');
+    AppNavigation.pushModal('fx-copyright-dialog');
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('open')));
+}
+
+function fxCloseCopyrightDialog() {
+    const root = document.getElementById('fx-copyright-dialog');
+    if (!root || root.classList.contains('closing')) return;
+    root.classList.add('closing');
+    root.classList.remove('open');
+    setTimeout(() => {
+        const c = AppNavigation.current();
+        if (c && c.type === 'modal' && c.id === 'fx-copyright-dialog') AppNavigation.pop();
+        else root.style.display = 'none';
+        root.classList.remove('closing');
+    }, 200);
+}
+
+function fxSubmitCopyright() {
+    if (_fxcBusy) return;
+    const root = document.getElementById('fx-copyright-dialog');
+    if (!root || !_fxcId) return;
+    if (typeof auth === 'undefined' || !auth.currentUser) { showNotification('Please sign in to submit a claim', 'error'); return; }
+    if (!navigator.onLine) { showNotification('Cannot submit a claim while offline.', 'error'); return; }
+    const name = root.querySelector('#fxc-name').value.trim();
+    const details = root.querySelector('#fxc-details').value.trim();
+    if (name.length < 2 || details.length < 10) return;
+    _fxcBusy = true;
+    const send = root.querySelector('#fxc-send');
+    send.textContent = 'Sending...'; send.disabled = true;
+    db.ref(`copyright_claims/${_fxcId}/${auth.currentUser.uid}`)
+        .set({ kind: _fxcKind, contentOwnerId: _fxcOwner, claimantName: name, details: details, claimantEmail: auth.currentUser.email || '', timestamp: Date.now() })
+        .then(() => { showNotification('Copyright claim submitted. We will review it.', 'success', 2800); fxCloseCopyrightDialog(); })
+        .catch(() => { showNotification('Could not submit the claim. Please try again.', 'error'); _fxcBusy = false; send.textContent = 'Submit'; send.disabled = false; });
 }
 
 // Title: 25 characters per line, max 2 lines ("…" at the end if longer).
@@ -4676,6 +4949,19 @@ const FB_SHARE_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M15,
 const FB_DOTS_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="4.5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19.5" cy="12" r="2"/></svg>';
 const FB_X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg>';
 const _fbHiddenPosts = new Set();
+function fbHiddenPostsKey() {
+    const uid = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.uid : 'guest';
+    return `fx_hidden_posts:${uid}`;
+}
+function fbReloadHiddenPosts() {
+    _fbHiddenPosts.clear();
+    try { JSON.parse(localStorage.getItem(fbHiddenPostsKey()) || '[]').forEach(x => _fbHiddenPosts.add(String(x))); } catch (e) {}
+}
+function fbPersistHiddenPosts() {
+    try { localStorage.setItem(fbHiddenPostsKey(), JSON.stringify(Array.from(_fbHiddenPosts))); } catch (e) {}
+}
+fbReloadHiddenPosts();
+try { auth.onAuthStateChanged(() => { fbReloadHiddenPosts(); }); } catch (e) {}
 
 function fbTimeShort(ts) {
     if (!ts) return 'Just now';
@@ -4704,6 +4990,7 @@ function renderSinglePostSegmentUI(post) {
     ensureHomePostScrollFlow();
     if (!post) return '';
     if (_fbHiddenPosts.has(String(post.id))) return '';
+    if (post.userId && typeof _fxHiddenChannels !== 'undefined' && _fxHiddenChannels.has(String(post.userId))) return '';
 
     const titleText = post.title || post.caption || '';
     const plainCaption = post.caption || '';
@@ -4748,7 +5035,7 @@ function renderSinglePostSegmentUI(post) {
     setTimeout(() => registerPostReactionsListener(post.id), 0);
 
     return `
-        <div class="post-card fb-post" id="post-card-${post.id}">
+        <div class="post-card fb-post" id="post-card-${post.id}" data-fb-uid="${post.userId || ''}">
             <div class="fb-head">
                 <div class="fb-ring"><div class="fb-av live-avatar-${post.userId}"></div></div>
                 <div class="fb-who">
@@ -4759,7 +5046,7 @@ function renderSinglePostSegmentUI(post) {
                     <div class="fb-sub"><span>${fbTimeShort(post.createdAt)}</span><span class="fb-dot">·</span><i class="fas fa-globe-americas"></i></div>
                 </div>
                 ${isOwn ? '' : `<button id="${subBtnId}" class="fb-subbtn" onclick="toggleClipSubscribe('${post.userId}', this)">Subscribe</button>`}
-                <button class="fb-hbtn" onclick="typeof showUpcomingModal==='function' && showUpcomingModal()" aria-label="More">${FB_DOTS_SVG}</button>
+                <button class="fb-hbtn" onclick="event.stopPropagation(); fbOpenPostMenu('${post.id}')" aria-label="More options">${FB_DOTS_SVG}</button>
                 <button class="fb-hbtn fb-x" onclick="fbHidePost('${post.id}')" aria-label="Hide">${FB_X_SVG}</button>
             </div>
             ${captionHtml}
@@ -4808,10 +5095,11 @@ function togglePostTitleExpand(postId) {
     if (btn) btn.style.display = clamped ? 'inline' : 'none';
 }
 
-function fbHidePost(postId) {
+function fbHidePost(postId, persist) {
     playUI('click');
     const el = fbPickVisible(`post-card-${postId}`);
     _fbHiddenPosts.add(String(postId));
+    if (persist) fbPersistHiddenPosts();
     document.querySelectorAll(`[id="post-card-${postId}"]`).forEach(c => { if (c !== el) c.remove(); });
     if (!el) return;
     el.style.height = el.offsetHeight + 'px';
@@ -7537,7 +7825,7 @@ const AppNavigation = {
 
         const fxdSheetEl = document.getElementById('fx-dislike-sheet');
         if (fxdSheetEl) fxdSheetEl.style.display = 'none';
-        ['fx-video-menu', 'fx-report-dialog'].forEach(mid => { const el = document.getElementById(mid); if (el) el.style.display = 'none'; });
+        ['fx-video-menu', 'fx-report-dialog', 'fx-copyright-dialog'].forEach(mid => { const el = document.getElementById(mid); if (el) el.style.display = 'none'; });
 
         // Pages opened from You, including View Channel, appear directly without sliding.
         if ((activeTab === 'you' && activePage) || activePage === 'view-channel-page') {
@@ -10485,16 +10773,13 @@ function updateBottomNavAvatar() {
     if (currentUser) {
         const photoURL = currentUser.photoURL || '';
         if (photoURL) {
-            navAvatarContainer.innerHTML = `<img src="${photoURL}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            flSetNavAvatar(photoURL);
         } else {
             navAvatarContainer.innerHTML = `<div style="background: linear-gradient(135deg, var(--primary), #FF7A00); color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem;">${currentUser.email ? currentUser.email.charAt(0).toUpperCase() : 'U'}</div>`;
         }
     } else {
-        navAvatarContainer.innerHTML = `
-            <svg class="nav-icon-svg icon-unselected" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="currentColor"/>
-            </svg>
-        `;
+        // Offline / auth এখনও restore হয়নি: cached avatar, না থাকলে default You আইকন।
+        flSetNavAvatar(flNavSessionAvatarUrl());
     }
 }
 

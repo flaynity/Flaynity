@@ -195,7 +195,7 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
 
         const appScreen = document.createElement("div");
         appScreen.id = "app-screen";
-        const startupIds = new Set(["startupSound","toast-container","network-spinner-overlay","auth-screen","fl-create-channel","flcc-sheet-backdrop","flcc-launch-overlay","fl-email-verify-overlay"]);
+        const startupIds = new Set(["startupSound","toast-container","network-spinner-overlay","auth-screen","fl-create-channel","flcc-sheet-backdrop","flcc-launch-overlay"]);
 
         for (const node of homeNodes) {
             if (node.id && startupIds.has(node.id)) app.appendChild(node);
@@ -2027,7 +2027,7 @@ function applyAdminControls() {
 }
 
 
-/* Create your Channel & Email Verification Link pages live in pages/home.html */
+/* Create your Channel page lives in pages/home.html */
 
 function enforceContentAdminStatus(items, type) {
     const allowed = items.filter(item => {
@@ -2139,32 +2139,8 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
                 if (i === 0) await new Promise(r => setTimeout(r, 600));
             }
             if (hasChannel) { try { localStorage.setItem('flaynity_channel_created:' + user.uid, '1'); } catch (e) {} }
-            if (!hasChannel && (typeof window.showCreateChannelPage !== 'function' || typeof window.showEmailVerifyPopup !== 'function') && window.__flHomeScriptsReady) {
+            if (!hasChannel && typeof window.showCreateChannelPage !== 'function' && window.__flHomeScriptsReady) {
                 try { await window.__flWithTimeout(window.__flHomeScriptsReady, 5000); } catch (e) {}
-            }
-            // Handle Firebase continueUrl return (?fl_verify_uid=...)
-            try {
-                const _sp = new URLSearchParams(window.location.search || '');
-                const _vUid = _sp.get('fl_verify_uid');
-                if (_vUid && _vUid === user.uid) {
-                    await db.ref('users/' + user.uid + '/emailLinkVerified').set(true);
-                    firstData.emailLinkVerified = true;
-                    try { localStorage.setItem('flaynity_email_verified:' + user.uid, '1'); } catch (e) {}
-                    try { history.replaceState({}, document.title, window.location.pathname); } catch (e) {}
-                }
-            } catch (e) {}
-            let _emailVerifiedLocal = false;
-            try { _emailVerifiedLocal = localStorage.getItem('flaynity_email_verified:' + user.uid) === '1'; } catch (e) {}
-            const needsEmailVerify = !hasChannel && firstData.emailLinkVerified !== true && !_emailVerifiedLocal && typeof window.showEmailVerifyPopup === 'function';
-            if (needsEmailVerify) {
-                document.body.classList.remove('auth-active');
-                if (typeof window.__flaynityHideOnboarding === 'function') window.__flaynityHideOnboarding();
-                const _a = document.getElementById('auth-screen'), _s = document.getElementById('app-screen');
-                if (_a) _a.style.display = 'none';
-                if (_s) _s.style.display = 'none';
-                window.__flBootDone && window.__flBootDone();
-                window.showEmailVerifyPopup(user);
-                return;
             }
             needsChannel = !hasChannel && typeof window.showCreateChannelPage === 'function';
         } catch (channelCheckError) { console.warn('Create Channel check failed:', channelCheckError); }

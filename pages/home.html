@@ -1889,17 +1889,19 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 .fbcm-ai{gap:16px;padding:11px 14px;font-size:15.5px;}
 .fbcm-ai svg{width:22px;height:22px;}
 
-/* ===== CREATE YOUR CHANNEL & EMAIL VERIFY POPUP — COMPACT PREMIUM UI ===== */
+/* ===== CREATE YOUR CHANNEL & EMAIL VERIFY POPUP — PREMIUM CLEAN UI ===== */
 #fl-create-channel,#flcc-sheet-backdrop,#flcc-launch-overlay,#fl-email-verify-overlay{
-  --fc-bg:#F4F5F9;--fc-card:#FFFFFF;--fc-soft:#F1F2F7;--fc-ink:#111218;--fc-mut:#686D7C;--fc-sub:#989DAE;
-  --fc-bd:rgba(17,18,24,.08);--fc-sh:0 6px 20px rgba(17,18,24,.05);
+  --fc-bg:#F5F6FA;--fc-card:#FFFFFF;--fc-soft:#F1F2F7;--fc-ink:#111218;--fc-val:#3E4352;--fc-mut:#787E8F;--fc-sub:#989DAE;
+  --fc-bd:rgba(17,18,24,.07);--fc-card-bd:rgba(17,18,24,.045);--fc-sh:0 6px 20px rgba(17,18,24,.05);
+  --fc-row-sh:0 4px 18px rgba(17,24,39,.048);
   --fc-ac:#D80E45;--fc-grad:linear-gradient(135deg,#FF2E74 0%,#D80E45 62%,#B40738 100%);
   --fc-ac-soft:rgba(216,14,69,.10);--fc-ok:#10B981;--fc-ok-soft:rgba(16,185,129,.14);
   font-family:'Plus Jakarta Sans',sans-serif;color:var(--fc-ink);
 }
 [data-theme="dark"] #fl-create-channel,[data-theme="dark"] #flcc-sheet-backdrop,[data-theme="dark"] #flcc-launch-overlay,[data-theme="dark"] #fl-email-verify-overlay{
-  --fc-bg:#0B0C10;--fc-card:#15171F;--fc-soft:#1E212B;--fc-ink:#F7F8FC;--fc-mut:#9EA4B8;--fc-sub:#70768A;
-  --fc-bd:rgba(255,255,255,.08);--fc-sh:0 8px 24px rgba(0,0,0,.38);
+  --fc-bg:#0B0C10;--fc-card:#15171F;--fc-soft:#1E212B;--fc-ink:#F7F8FC;--fc-val:#D4D8E4;--fc-mut:#9EA4B8;--fc-sub:#70768A;
+  --fc-bd:rgba(255,255,255,.08);--fc-card-bd:rgba(255,255,255,.065);--fc-sh:0 8px 24px rgba(0,0,0,.38);
+  --fc-row-sh:0 6px 20px rgba(0,0,0,.32);
   --fc-ac-soft:rgba(255,46,116,.18);--fc-ok-soft:rgba(16,185,129,.20);
 }
 #fl-create-channel *,#flcc-sheet-backdrop *,#flcc-launch-overlay *,#fl-email-verify-overlay *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -1938,7 +1940,7 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 .fc-hero.has-bg .fc-dot-ok{display:inline-block;}
 
 /* Body & Avatar */
-.fc-body{position:relative;z-index:2;margin-top:-24px;background:var(--fc-bg);border-radius:26px 26px 0 0;padding:0 16px calc(30px + env(safe-area-inset-bottom,0px));min-height:calc(100% - 150px);}
+.fc-body{position:relative;z-index:2;margin-top:-24px;background:var(--fc-bg);border-radius:26px 26px 0 0;padding:0 16px calc(32px + env(safe-area-inset-bottom,0px));min-height:calc(100% - 150px);}
 .fc-av-wrap{display:flex;justify-content:center;height:78px;margin-bottom:8px;}
 .fc-av-ring{
   position:relative;margin-top:-52px;width:118px;height:118px;border-radius:50%;padding:3.5px;cursor:pointer;
@@ -1947,7 +1949,7 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 .fc-av-ring:active{transform:scale(.96);}
 .fc-av-in{width:100%;height:100%;border-radius:50%;border:4px solid var(--fc-bg);background:var(--fc-card);overflow:hidden;display:flex;align-items:center;justify-content:center;}
 .fc-av-in img{width:100%;height:100%;object-fit:cover;display:block;}
-.fc-av-ph{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--fc-ac);}
+.fc-av-ph{display:flex;flex-direction:column;align-items:center;gap:4px;color:#EC4899;}
 .fc-av-ph svg{width:28px;height:28px;}
 .fc-av-ph span{font-size:10.5px;font-weight:800;color:var(--fc-mut);}
 .fc-av-cam{
@@ -1961,7 +1963,7 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 
 /* Executive Step Progress Card */
 .fc-prog{
-  background:var(--fc-card);border:1px solid var(--fc-bd);border-radius:22px;padding:16px;margin-bottom:16px;box-shadow:var(--fc-sh);
+  background:var(--fc-card);border:1px solid var(--fc-card-bd);border-radius:22px;padding:16px;margin-bottom:18px;box-shadow:var(--fc-row-sh);
   transition:border-color .25s,box-shadow .25s;
 }
 .fc-prog.done{border-color:rgba(16,185,129,.45);box-shadow:0 10px 26px rgba(16,185,129,.12);}
@@ -1987,40 +1989,59 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
   font:700 11.5px 'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:transform .14s;
 }
 .fc-chip:active{transform:scale(.95);}
-.fc-chip svg{width:13px;height:13px;color:var(--fc-ac);flex-shrink:0;}
+.fc-chip svg{width:14px;height:14px;color:var(--chip-c,var(--fc-ac));flex-shrink:0;}
 .fc-ready{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:12px;background:var(--fc-ok-soft);color:var(--fc-ok);font-size:12px;font-weight:800;}
 .fc-ready svg{width:16px;height:16px;}
 
-/* Card Boxes & Field Rows */
-.fc-lbl{font-size:11.5px;font-weight:800;letter-spacing:.75px;text-transform:uppercase;color:var(--fc-mut);margin:16px 6px 8px;}
-.fc-card{background:var(--fc-card);border:1px solid var(--fc-bd);border-radius:20px;padding:5px;box-shadow:var(--fc-sh);display:flex;flex-direction:column;gap:2px;}
-.fc-row{
-  width:100%;border:0;background:transparent;color:var(--fc-ink);border-radius:15px;padding:12px 11px;
-  display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;font-family:inherit;transition:background .15s,transform .12s;
+/* Floating Pill Cards — Reference Design (Channel Identity & Basic Information) */
+.fc-lbl{
+  font-size:14px;font-weight:600;letter-spacing:-.1px;color:var(--fc-mut);
+  margin:22px 4px 12px;
 }
-.fc-row:active{background:var(--fc-soft);transform:scale(.99);}
-.fc-row.ro{cursor:default;}.fc-row.ro:active{background:transparent;transform:none;}
-.fc-ico{width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--fc-ac-soft);color:var(--fc-ac);}
-.fc-ico svg{width:19px;height:19px;}
-.fc-ico.c-pur{background:rgba(139,92,246,.13);color:#8B5CF6;}
-.fc-ico.c-blu{background:rgba(59,130,246,.13);color:#3B82F6;}
-.fc-ico.c-amb{background:rgba(245,158,11,.14);color:#F59E0B;}
-.fc-ico.c-em{background:rgba(16,185,129,.14);color:#10B981;}
-.fc-ico.c-tel{background:rgba(20,184,166,.14);color:#14B8A6;}
-.fc-ico.c-ind{background:rgba(99,102,241,.14);color:#6366F1;}
-.fc-ico.c-org{background:rgba(249,115,22,.14);color:#F97316;}
-.fc-rbody{flex:1;min-width:0;}
-.fc-rname{font-size:11.5px;font-weight:700;color:var(--fc-mut);}
-.fc-rval{margin-top:2px;font-size:14.5px;font-weight:700;color:var(--fc-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.fc-rval.set{color:var(--fc-ink);}
+.fc-card{
+  background:transparent;border:0;border-radius:0;padding:0;box-shadow:none;
+  display:flex;flex-direction:column;gap:12px;
+}
+.fc-row{
+  width:100%;border:1px solid var(--fc-card-bd);background:var(--fc-card);color:var(--fc-ink);
+  border-radius:22px;padding:17px 18px;box-shadow:var(--fc-row-sh);
+  display:flex;align-items:center;gap:16px;text-align:left;cursor:pointer;font-family:inherit;
+  transition:transform .14s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.fc-row:active{transform:scale(.985);border-color:rgba(216,14,69,.22);}
+.fc-row.ro{cursor:default;}
+.fc-row.ro:active{transform:none;border-color:var(--fc-card-bd);}
+.fc-ico{
+  width:30px;height:30px;border-radius:0;background:transparent;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  color:var(--ic-c,var(--fc-ac));
+}
+.fc-ico svg{width:24px;height:24px;display:block;}
+.fc-rbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+.fc-rname{font-size:15.5px;font-weight:700;color:var(--fc-ink);line-height:1.25;letter-spacing:-.15px;}
+.fc-rval{
+  font-size:13.5px;font-weight:500;color:var(--fc-mut);line-height:1.35;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.fc-rval.set{color:var(--fc-val);font-weight:600;}
 .fc-rval.ml{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4;}
-.fc-rend{display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.fc-rend{display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .fc-chk{width:20px;height:20px;border-radius:50%;background:var(--fc-ok-soft);color:var(--fc-ok);display:none;align-items:center;justify-content:center;}
 .fc-chk svg{width:12px;height:12px;}
 .fc-row.done .fc-chk{display:flex;}
-.fc-chv{color:var(--fc-sub);display:flex;}.fc-chv svg{width:17px;height:17px;}
-.fc-pill-ok{font-size:10.5px;font-weight:800;color:var(--fc-ok);background:var(--fc-ok-soft);padding:4px 9px;border-radius:999px;}
-.fc-stat{min-height:18px;margin:12px 6px 8px;text-align:center;font-size:12.5px;font-weight:700;color:var(--fc-ac);}
+.fc-chv{color:var(--fc-mut);display:flex;opacity:.85;}
+.fc-chv svg{width:17px;height:17px;}
+.fc-pill-ok{font-size:10.5px;font-weight:800;color:var(--fc-ok);background:var(--fc-ok-soft);padding:4px 10px;border-radius:999px;}
+.fc-flag{
+  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+  font-size:21px;line-height:1;display:inline-flex;align-items:center;justify-content:center;
+  min-width:26px;flex-shrink:0;
+}
+.fc-flag-sm{
+  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+  font-size:16px;line-height:1;display:inline-flex;align-items:center;vertical-align:middle;margin-right:5px;
+}
+.fc-stat{min-height:18px;margin:14px 6px 8px;text-align:center;font-size:12.5px;font-weight:700;color:var(--fc-ac);}
 .fc-submit{
   width:100%;height:56px;border:0;border-radius:18px;background:var(--fc-grad);color:#fff;
   font:800 15.5px 'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:9px;
@@ -2049,9 +2070,12 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 #flcc-sheet-backdrop.open .fc-sheet{transform:translateY(0);}
 .fc-grab{display:flex;justify-content:center;padding:11px 0 5px;cursor:grab;touch-action:none;flex-shrink:0;}
 .fc-grab span{width:42px;height:4.5px;border-radius:999px;background:rgba(128,132,148,.35);}
-.fc-shead{display:flex;align-items:center;gap:11px;padding:6px 16px 13px;border-bottom:1px solid var(--fc-bd);flex-shrink:0;}
-.fc-shead-ico{width:40px;height:40px;border-radius:13px;background:var(--fc-ac-soft);color:var(--fc-ac);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.fc-shead-ico svg{width:20px;height:20px;}
+.fc-shead{display:flex;align-items:center;gap:12px;padding:6px 16px 13px;border-bottom:1px solid var(--fc-bd);flex-shrink:0;}
+.fc-shead-ico{
+  width:42px;height:42px;border-radius:14px;background:var(--sh-bg,var(--fc-ac-soft));color:var(--sh-c,var(--fc-ac));
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.fc-shead-ico svg{width:21px;height:21px;}
 .fc-shead-txt{flex:1;min-width:0;}
 .fc-shead-txt h2{margin:0;font-size:17px;font-weight:800;letter-spacing:-.25px;}
 .fc-shead-txt p{margin:2px 0 0;font-size:12px;color:var(--fc-mut);font-weight:500;}
@@ -2064,7 +2088,7 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 .fc-ibox:focus-within{background:var(--fc-card);border-color:var(--fc-ac);box-shadow:0 0 0 3.5px var(--fc-ac-soft);}
 .fc-ibox.err{border-color:#EF4444;box-shadow:0 0 0 3.5px rgba(239,68,68,.14);}
 .fc-ibox.shake{animation:fcShake .34s ease;}
-.fc-pre{font-size:16px;font-weight:800;color:var(--fc-ac);margin-right:6px;flex-shrink:0;}
+.fc-pre{font-size:16px;font-weight:800;color:#7C3AED;margin-right:6px;flex-shrink:0;}
 .fc-in{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--fc-ink);font:600 15.5px 'Plus Jakarta Sans',sans-serif;padding:15px 0;caret-color:var(--fc-ac);}
 textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 .fc-clr{width:24px;height:24px;border-radius:50%;border:0;background:rgba(128,132,148,.35);color:var(--fc-card);display:flex;align-items:center;justify-content:center;cursor:pointer;margin-left:8px;flex-shrink:0;}
@@ -2096,7 +2120,7 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 }
 .fc-ccard:active{transform:scale(.97);}
 .fc-ccard.sel{border-color:var(--fc-ac);background:var(--fc-ac-soft);}
-.fc-cico{width:36px;height:36px;border-radius:11px;background:var(--fc-card);color:var(--fc-ac);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 7px rgba(0,0,0,.05);}
+.fc-cico{width:36px;height:36px;border-radius:11px;background:var(--fc-card);color:var(--cat-c,var(--fc-ac));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 7px rgba(0,0,0,.05);}
 .fc-cico svg{width:18px;height:18px;}
 .fc-ctxt{flex:1;min-width:0;}
 .fc-cname{font-size:12.5px;font-weight:800;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -2105,30 +2129,31 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 .fc-cchk svg{width:11px;height:11px;}
 .fc-ccard.sel .fc-cchk{display:flex;}
 
-.fc-list{max-height:50dvh;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:3px;}
+.fc-list{max-height:50dvh;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:4px;}
 .fc-opt{
-  width:100%;border:1.5px solid transparent;background:transparent;color:var(--fc-ink);border-radius:14px;padding:10px 12px;
+  width:100%;border:1.5px solid transparent;background:transparent;color:var(--fc-ink);border-radius:14px;padding:11px 12px;
   display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;font:600 14.5px 'Plus Jakarta Sans',sans-serif;
+  transition:background .14s;
 }
 .fc-opt:active{background:var(--fc-soft);}
 .fc-opt.sel{background:var(--fc-ac-soft);border-color:var(--fc-ac);font-weight:800;}
 .fc-iso{
-  min-width:36px;height:28px;padding:0 6px;border-radius:9px;background:var(--fc-soft);color:var(--fc-ac);
-  border:1px solid var(--fc-bd);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;letter-spacing:.5px;flex-shrink:0;
+  min-width:36px;height:26px;padding:0 6px;border-radius:8px;background:var(--fc-soft);color:var(--fc-mut);
+  border:1px solid var(--fc-bd);display:inline-flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;letter-spacing:.5px;flex-shrink:0;
 }
-.fc-iso svg{width:15px;height:15px;}
 .fc-onm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .fc-dial{color:var(--fc-ac);font-weight:800;font-size:13.5px;font-variant-numeric:tabular-nums;}
 .fc-otk{width:20px;height:20px;border-radius:50%;background:var(--fc-ac);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .fc-otk svg{width:12px;height:12px;}
 
 .fc-phbtn{width:100%;border:1.5px solid var(--fc-bd);background:var(--fc-soft);color:var(--fc-ink);border-radius:15px;padding:11px 13px;display:flex;align-items:center;gap:11px;margin-bottom:11px;cursor:pointer;font:700 14.5px 'Plus Jakarta Sans',sans-serif;}
-.fc-phsep{font-size:15.5px;font-weight:800;color:var(--fc-ac);padding-right:11px;margin-right:11px;border-right:1.5px solid var(--fc-bd);font-variant-numeric:tabular-nums;flex-shrink:0;}
+.fc-phsep{display:inline-flex;align-items:center;font-size:15.5px;font-weight:800;color:#0D9488;padding-right:11px;margin-right:11px;border-right:1.5px solid var(--fc-bd);font-variant-numeric:tabular-nums;flex-shrink:0;}
 .fc-rmbtn{border:0;background:transparent;color:#EF4444;font:700 13px 'Plus Jakarta Sans',sans-serif;padding:9px 2px 0;cursor:pointer;}
 .fc-sback{border:0;background:var(--fc-soft);color:var(--fc-ink);border-radius:11px;padding:8px 12px;font:700 12.5px 'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:6px;margin-bottom:11px;cursor:pointer;}
 .fc-sback svg{width:15px;height:15px;}
 
-.fc-dobprev{background:var(--fc-ac-soft);color:var(--fc-ac);border-radius:14px;padding:13px;text-align:center;font-size:16px;font-weight:800;margin-bottom:12px;}
+.fc-dobprev{background:rgba(245,158,11,.12);color:#D97706;border-radius:14px;padding:13px;text-align:center;font-size:16px;font-weight:800;margin-bottom:12px;}
+[data-theme="dark"] .fc-dobprev{color:#FBBF24;}
 .fc-dobgrid{display:grid;grid-template-columns:1fr 1.35fr 1.15fr;gap:9px;}
 .fc-dobgrid label{display:block;font-size:11px;font-weight:800;color:var(--fc-mut);margin:0 0 5px 3px;text-transform:uppercase;letter-spacing:.4px;}
 .fc-dobsel{width:100%;height:48px;border-radius:14px;border:1.5px solid var(--fc-bd);background:var(--fc-soft);color:var(--fc-ink);font:700 14.5px 'Plus Jakarta Sans',sans-serif;padding:0 10px;outline:none;}
@@ -2141,8 +2166,8 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 }
 .fc-gcard:active{transform:scale(.98);}
 .fc-gcard.sel{border-color:var(--fc-ac);background:var(--fc-ac-soft);}
-.fc-gico{width:40px;height:40px;border-radius:13px;background:var(--fc-card);color:var(--fc-ac);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.fc-gico svg{width:19px;height:19px;}
+.fc-gico{width:40px;height:40px;border-radius:13px;background:var(--fc-card);color:var(--gen-c,var(--fc-ac));display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.fc-gico svg{width:20px;height:20px;}
 .fc-glbl{flex:1;font-size:15px;font-weight:800;}
 .fc-rad{width:20px;height:20px;border-radius:50%;border:2px solid var(--fc-sub);display:flex;align-items:center;justify-content:center;}
 .fc-gcard.sel .fc-rad{border-color:var(--fc-ac);background:var(--fc-ac);}
@@ -2644,14 +2669,14 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
   <div class="fc-hero" id="flcc-banner">
     <div class="fc-top">
       <button class="fc-gbtn fc-back" type="button" id="flcc-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <button class="fc-gbtn fc-cov" type="button" id="flcc-change"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 15l-4.5-4.5L7 20"/></svg><span id="flcc-cov-txt">Add Background</span><span class="fc-dot-ok"></span></button>
+      <button class="fc-gbtn fc-cov" type="button" id="flcc-change"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8.5 8a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM5.5 18l4.2-5.2 2.8 3.4 2.1-2.5L18.5 18h-13z"/></svg><span id="flcc-cov-txt">Add Background</span><span class="fc-dot-ok"></span></button>
     </div>
   </div>
   <div class="fc-body">
     <div class="fc-av-wrap">
       <div class="fc-av-ring" id="flcc-av-btn" role="button" tabindex="0" aria-label="Upload channel photo">
         <div class="fc-av-in" id="flcc-av-box">
-          <div class="fc-av-ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Add Photo</span></div>
+          <div class="fc-av-ph"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.4 4L7.8 6H5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V9a3 3 0 0 0-3-3h-2.8L14.6 4H9.4zM12 9.5A4.2 4.2 0 1 1 7.8 13.7 4.2 4.2 0 0 1 12 9.5zm0 2a2.2 2.2 0 1 0 2.2 2.2A2.2 2.2 0 0 0 12 11.5z"/></svg><span>Add Photo</span></div>
         </div>
         <button type="button" class="fc-av-cam" aria-label="Change photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
       </div>
@@ -2707,61 +2732,84 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const svg = (p, w) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w||2}" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  const fsvg = p => `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${p}</svg>`;
 
+  // Convert 2-letter ISO code to official country flag emoji
+  const isoToFlag = code => {
+    if (!code || !/^[A-Z]{2}$/.test(code)) return '🌐';
+    return String.fromCodePoint(0x1F1E6 + code.charCodeAt(0) - 65, 0x1F1E6 + code.charCodeAt(1) - 65);
+  };
+
+  // Distinct official accent color & soft tint for every field icon
+  const IC_STYLE = {
+    banner:   { c:'#F97316', bg:'rgba(249,115,22,.14)' },
+    avatar:   { c:'#EC4899', bg:'rgba(236,72,153,.14)' },
+    name:     { c:'#2563EB', bg:'rgba(37,99,235,.13)'  },
+    handle:   { c:'#7C3AED', bg:'rgba(124,58,237,.13)' },
+    bio:      { c:'#0284C7', bg:'rgba(2,132,199,.13)'  },
+    category: { c:'#E11D48', bg:'rgba(225,29,72,.13)'  },
+    email:    { c:'#10B981', bg:'rgba(16,185,129,.14)' },
+    phone:    { c:'#0D9488', bg:'rgba(13,148,136,.14)' },
+    country:  { c:'#4F46E5', bg:'rgba(79,70,229,.13)'  },
+    dob:      { c:'#F59E0B', bg:'rgba(245,158,11,.15)' },
+    gender:   { c:'#D946EF', bg:'rgba(217,70,239,.14)' }
+  };
+
+  // Official Solid / High-Craft Material & System Icons — Every icon newly designed
   const IC = {
-    banner: svg('<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 15l-4.5-4.5L7 20"/>'),
-    avatar: svg('<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>'),
-    name: svg('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
-    handle: svg('<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/>'),
-    bio: svg('<path d="M4 6h16M4 12h16M4 18h10"/>'),
-    category: svg('<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>'),
-    email: svg('<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3.5 7.5L12 13l8.5-5.5"/>'),
-    phone: svg('<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>'),
-    country: svg('<circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5a15 15 0 0 1 0 19M12 2.5a15 15 0 0 0 0 19"/>'),
-    dob: svg('<rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/>'),
-    gender: svg('<circle cx="10" cy="10" r="5"/><path d="M10 15v6M7 18h6M14 6l6-4M16 2h4v4"/>'),
+    banner: fsvg('<path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8.5 8a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM5.5 18l4.2-5.2 2.8 3.4 2.1-2.5L18.5 18h-13z"/>'),
+    avatar: fsvg('<path d="M9.4 4L7.8 6H5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V9a3 3 0 0 0-3-3h-2.8L14.6 4H9.4zM12 9.5A4.2 4.2 0 1 1 7.8 13.7 4.2 4.2 0 0 1 12 9.5zm0 2a2.2 2.2 0 1 0 2.2 2.2A2.2 2.2 0 0 0 12 11.5z"/>'),
+    name: fsvg('<path d="M12 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 12c4.42 0 8 2.02 8 4.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1.5c0-2.48 3.58-4.5 8-4.5z"/>'),
+    handle: fsvg('<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10h4.2a1.1 1.1 0 1 0 0-2.2H12c-4.3 0-7.8-3.5-7.8-7.8S7.7 4.2 12 4.2s7.8 3.5 7.8 7.8v1.2c0 .9-.65 1.6-1.5 1.6s-1.5-.7-1.5-1.6V12a4.8 4.8 0 1 0-1.55 3.54A3.55 3.55 0 0 0 18.3 17c2.05 0 3.7-1.7 3.7-3.8V12c0-5.52-4.48-10-10-10zm0 12.6A2.6 2.6 0 1 1 14.6 12 2.6 2.6 0 0 1 12 14.6z"/>'),
+    bio: fsvg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 13h8a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2zm0 4h5a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2z"/>'),
+    category: fsvg('<path d="M4.5 3h5A1.5 1.5 0 0 1 11 4.5v5A1.5 1.5 0 0 1 9.5 11h-5A1.5 1.5 0 0 1 3 9.5v-5A1.5 1.5 0 0 1 4.5 3zm10 0h5A1.5 1.5 0 0 1 21 4.5v5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 13 9.5v-5A1.5 1.5 0 0 1 14.5 3zm-10 10h5a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 9.5 21h-5A1.5 1.5 0 0 1 3 19.5v-5A1.5 1.5 0 0 1 4.5 13zm10 0h5a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5h-5a1.5 1.5 0 0 1-1.5-1.5v-5a1.5 1.5 0 0 1 1.5-1.5z"/>'),
+    email: fsvg('<path d="M4 5h16a2.2 2.2 0 0 1 2.2 2.2v9.6A2.2 2.2 0 0 1 20 19H4a2.2 2.2 0 0 1-2.2-2.2V7.2A2.2 2.2 0 0 1 4 5zm8 7.4L20.1 7.3a.75.75 0 0 0-.4-.2H4.3a.75.75 0 0 0-.4.2L12 12.4z"/>'),
+    phone: fsvg('<path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.24.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/>'),
+    country: fsvg('<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm6.93 6h-3.17a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.93 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2H4.26zm.81 2h3.17c.32 1.25.78 2.45 1.38 3.56A7.99 7.99 0 0 1 5.07 16zm3.17-8H5.07a7.99 7.99 0 0 1 4.55-3.56C9.02 5.55 8.56 6.75 8.24 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2s.07-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2zm.04 5.56c.6-1.11 1.06-2.31 1.38-3.56h3.17a8.03 8.03 0 0 1-4.55 3.56zM16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/>'),
+    dob: fsvg('<path d="M19 4h-1V2.5a1 1 0 1 0-2 0V4H8V2.5a1 1 0 1 0-2 0V4H5a2.5 2.5 0 0 0-2.5 2.5v13A2.5 2.5 0 0 0 5 22h14a2.5 2.5 0 0 0 2.5-2.5v-13A2.5 2.5 0 0 0 19 4zm.5 15.5a.5.5 0 0 1-.5.5H5a.5.5 0 0 1-.5-.5V10h15v9.5zM7 12h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-8 4h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2z"/>'),
+    gender: fsvg('<path d="M21 3h-5a1 1 0 1 0 0 2h2.59l-2.3 2.3A5.48 5.48 0 0 0 13 6.2a5.5 5.5 0 0 0-3.7 1.43A5.5 5.5 0 0 0 2 12.7a5.5 5.5 0 0 0 4.5 5.41V20H5a1 1 0 1 0 0 2h1.5v1a1 1 0 1 0 2 0v-1H10a1 1 0 1 0 0-2H8.5v-1.89a5.5 5.5 0 0 0 4.2-3.44 5.5 5.5 0 0 0 5.8-5.47c0-1.08-.31-2.09-.85-2.94L20 6.41V9a1 1 0 1 0 2 0V4a1 1 0 0 0-1-1zM7.5 16.2a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7zm5.5-2.5c-.3 0-.6-.04-.88-.1a5.48 5.48 0 0 0 .88-3c0-.8-.17-1.56-.48-2.25.16-.03.32-.05.48-.05a3.5 3.5 0 1 1 0 7z"/>'),
     search: svg('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>', 2.2),
     check: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 2.8),
     chev: svg('<path d="M9 6l6 6-6 6"/>', 2.2),
     back: svg('<path d="M19 12H5M11 6l-6 6 6 6"/>', 2.2),
     x: svg('<path d="M6 6l12 12M18 6L6 18"/>', 2.6),
-    spark: svg('<path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/>', 2.1),
-    okC: svg('<circle cx="12" cy="12" r="9.5"/><path d="M7.8 12.4l2.9 2.9 5.5-6"/>', 2.3),
-    badC: svg('<circle cx="12" cy="12" r="9.5"/><path d="M9 9l6 6M15 9l-6 6"/>', 2.3),
-    shield: svg('<path d="M12 2l7 3v6c0 5-3.4 9.2-7 11-3.6-1.8-7-6-7-11V5l7-3z"/><path d="M8.8 12.3l2.2 2.2 4.4-4.6"/>', 2.2),
+    spark: fsvg('<path d="M12 2l2.3 6.3L21 10.5l-6.7 2.2L12 19l-2.3-6.3L3 10.5l6.7-2.2L12 2z"/>'),
+    okC: fsvg('<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm4.7 8.2l-5.3 5.3a1 1 0 0 1-1.4 0l-2.7-2.7a1 1 0 1 1 1.4-1.4l2 2 4.6-4.6a1 1 0 0 1 1.4 1.4z"/>'),
+    badC: fsvg('<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm3.7 12.3a1 1 0 0 1-1.4 1.4L12 13.4l-2.3 2.3a1 1 0 0 1-1.4-1.4l2.3-2.3-2.3-2.3a1 1 0 0 1 1.4-1.4L12 10.6l2.3-2.3a1 1 0 0 1 1.4 1.4L13.4 12l2.3 2.3z"/>'),
+    shield: fsvg('<path d="M12 2l7.5 3.2V11c0 5.1-3.3 9.4-7.5 11-4.2-1.6-7.5-5.9-7.5-11V5.2L12 2zm-1 13.6l5-5.1-1.4-1.4-3.6 3.7-1.6-1.6L8 12.6l3 3z"/>'),
     refresh: svg('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>', 2.2)
   };
 
-  // 24 Categories — 100% crisp SVG icons, zero emojis
+  // 24 Categories — Distinct official icons with unique vibrant colors
   const CATS = [
-    ['Creator','Original content','<path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/>'],
-    ['Entertainment','Shows & fun','<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 9l5 3-5 3V9z"/>'],
-    ['Education','Learn & teach','<path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>'],
-    ['Gaming','Play & streams','<rect x="2" y="6" width="20" height="12" rx="4"/><path d="M6 12h4M8 10v4M15 11h.01M18 13h.01"/>'],
-    ['Music','Songs & beats','<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'],
-    ['Technology','Tech & gadgets','<rect x="4" y="4" width="16" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>'],
-    ['Business','Brands & growth','<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>'],
-    ['Film & Animation','Cinema & VFX','<rect x="2" y="3" width="20" height="18" rx="2"/><path d="M7 3v18M17 3v18M2 9h5M2 15h5M17 9h5M17 15h5"/>'],
-    ['Comedy','Skits & laughs','<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2.5 4 2.5 4-2.5 4-2.5M9 9h.01M15 9h.01"/>'],
-    ['Sports & Fitness','Active & health','<path d="M6 9H4a2 2 0 0 1 0-4h2M18 9h2a2 2 0 0 0 0-4h-2M6 5h12v6a6 6 0 0 1-12 0V5zM12 17v4M8 21h8"/>'],
-    ['Travel & Adventure','Explore world','<path d="M17.8 19.2L16 11l3.5-3.5a2.1 2.1 0 0 0-3-3L13 8 4.8 6.2 3 8l7 4-3 3-3-.5L3 16l4 2 2 4 1.5-1-.5-3 3-3 4 7 1.8-1.8z"/>'],
-    ['Food & Cooking','Recipes & taste','<path d="M3 2v7c0 2 1.5 3.5 3.5 3.5S10 11 10 9V2M6.5 2v20M18 2v20M15 2v6a3 3 0 0 0 3 3"/>'],
-    ['Fashion & Beauty','Style & trends','<path d="M20.4 4.6a5.5 5.5 0 0 0-7.8 0L12 5.2l-.6-.6a5.5 5.5 0 0 0-7.8 7.8l.6.6L12 21l7.8-8 .6-.6a5.5 5.5 0 0 0 0-7.8z"/>'],
-    ['Science & Innovation','Discoveries','<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6A2 2 0 0 0 19 18l-5-9V3"/>'],
-    ['News & Politics','World updates','<path d="M4 20h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v12a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-7h4M10 9h8M10 13h8M10 17h5"/>'],
-    ['Lifestyle & Vlogs','Daily stories','<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'],
-    ['Art & Design','Creative works','<path d="M12 2a10 10 0 1 0 0 20c1.6 0 2.5-1 2.5-2.2 0-.6-.2-1.1-.6-1.5-.4-.4-.6-.9-.6-1.5 0-1.1.9-2 2-2h2.2A4.5 4.5 0 0 0 22 10.3C22 5.7 17.5 2 12 2z"/>'],
-    ['Photography','Visual craft','<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>'],
-    ['Health & Wellness','Mind & body','<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>'],
-    ['Finance & Crypto','Money & markets','<path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/>'],
-    ['Autos & Vehicles','Cars & bikes','<path d="M5 17h14v-5l-2-5H7l-2 5v5z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/>'],
-    ['Pets & Animals','Animal lovers','<circle cx="11" cy="5" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="6" cy="8" r="2"/><path d="M12 11c-3.5 0-6 2.5-6 5.5 0 1.8 1.5 2.5 3 2.5 1.2 0 2-.5 3-.5s1.8.5 3 .5c1.5 0 3-.7 3-2.5 0-3-2.5-5.5-6-5.5z"/>'],
-    ['Motivation & Mindset','Self growth','<path d="M12 2c2 3.5 5 6 5 10a5 5 0 0 1-10 0c0-2 1-4 2-5.5 0 1.5 1 2.5 2 2.5 0-3 1-5.5 1-7z"/>'],
-    ['Personal & Community','Friends & groups','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>']
+    ['Creator','Original content','<path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/>','#E11D48'],
+    ['Entertainment','Shows & fun','<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 9l5 3-5 3V9z"/>','#F43F5E'],
+    ['Education','Learn & teach','<path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>','#2563EB'],
+    ['Gaming','Play & streams','<rect x="2" y="6" width="20" height="12" rx="4"/><path d="M6 12h4M8 10v4M15 11h.01M18 13h.01"/>','#7C3AED'],
+    ['Music','Songs & beats','<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>','#EC4899'],
+    ['Technology','Tech & gadgets','<rect x="4" y="4" width="16" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>','#0284C7'],
+    ['Business','Brands & growth','<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>','#0F766E'],
+    ['Film & Animation','Cinema & VFX','<rect x="2" y="3" width="20" height="18" rx="2"/><path d="M7 3v18M17 3v18M2 9h5M2 15h5M17 9h5M17 15h5"/>','#9333EA'],
+    ['Comedy','Skits & laughs','<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2.5 4 2.5 4-2.5 4-2.5M9 9h.01M15 9h.01"/>','#F59E0B'],
+    ['Sports & Fitness','Active & health','<path d="M6 9H4a2 2 0 0 1 0-4h2M18 9h2a2 2 0 0 0 0-4h-2M6 5h12v6a6 6 0 0 1-12 0V5zM12 17v4M8 21h8"/>','#16A34A'],
+    ['Travel & Adventure','Explore world','<path d="M17.8 19.2L16 11l3.5-3.5a2.1 2.1 0 0 0-3-3L13 8 4.8 6.2 3 8l7 4-3 3-3-.5L3 16l4 2 2 4 1.5-1-.5-3 3-3 4 7 1.8-1.8z"/>','#0EA5E9'],
+    ['Food & Cooking','Recipes & taste','<path d="M3 2v7c0 2 1.5 3.5 3.5 3.5S10 11 10 9V2M6.5 2v20M18 2v20M15 2v6a3 3 0 0 0 3 3"/>','#EA580C'],
+    ['Fashion & Beauty','Style & trends','<path d="M20.4 4.6a5.5 5.5 0 0 0-7.8 0L12 5.2l-.6-.6a5.5 5.5 0 0 0-7.8 7.8l.6.6L12 21l7.8-8 .6-.6a5.5 5.5 0 0 0 0-7.8z"/>','#DB2777'],
+    ['Science & Innovation','Discoveries','<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6A2 2 0 0 0 19 18l-5-9V3"/>','#4F46E5'],
+    ['News & Politics','World updates','<path d="M4 20h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v12a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-7h4M10 9h8M10 13h8M10 17h5"/>','#DC2626'],
+    ['Lifestyle & Vlogs','Daily stories','<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>','#D97706'],
+    ['Art & Design','Creative works','<path d="M12 2a10 10 0 1 0 0 20c1.6 0 2.5-1 2.5-2.2 0-.6-.2-1.1-.6-1.5-.4-.4-.6-.9-.6-1.5 0-1.1.9-2 2-2h2.2A4.5 4.5 0 0 0 22 10.3C22 5.7 17.5 2 12 2z"/>','#C026D3'],
+    ['Photography','Visual craft','<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>','#0891B2'],
+    ['Health & Wellness','Mind & body','<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>','#10B981'],
+    ['Finance & Crypto','Money & markets','<path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/>','#059669'],
+    ['Autos & Vehicles','Cars & bikes','<path d="M5 17h14v-5l-2-5H7l-2 5v5z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/>','#475569'],
+    ['Pets & Animals','Animal lovers','<circle cx="11" cy="5" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="6" cy="8" r="2"/><path d="M12 11c-3.5 0-6 2.5-6 5.5 0 1.8 1.5 2.5 3 2.5 1.2 0 2-.5 3-.5s1.8.5 3 .5c1.5 0 3-.7 3-2.5 0-3-2.5-5.5-6-5.5z"/>','#B45309'],
+    ['Motivation & Mindset','Self growth','<path d="M12 2c2 3.5 5 6 5 10a5 5 0 0 1-10 0c0-2 1-4 2-5.5 0 1.5 1 2.5 2 2.5 0-3 1-5.5 1-7z"/>','#F97316'],
+    ['Personal & Community','Friends & groups','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>','#6366F1']
   ];
 
   const RAW_GEO = 'AF:Afghanistan:93|AL:Albania:355|DZ:Algeria:213|AD:Andorra:376|AO:Angola:244|AG:Antigua & Barbuda:1268|AR:Argentina:54|AM:Armenia:374|AU:Australia:61|AT:Austria:43|AZ:Azerbaijan:994|BS:Bahamas:1242|BH:Bahrain:973|BD:Bangladesh:880|BB:Barbados:1246|BY:Belarus:375|BE:Belgium:32|BZ:Belize:501|BJ:Benin:229|BT:Bhutan:975|BO:Bolivia:591|BA:Bosnia & Herzegovina:387|BW:Botswana:267|BR:Brazil:55|BN:Brunei:673|BG:Bulgaria:359|BF:Burkina Faso:226|BI:Burundi:257|KH:Cambodia:855|CM:Cameroon:237|CA:Canada:1|CV:Cape Verde:238|CF:Central African Republic:236|TD:Chad:235|CL:Chile:56|CN:China:86|CO:Colombia:57|KM:Comoros:269|CG:Congo:242|CD:DR Congo:243|CR:Costa Rica:506|CI:Côte d’Ivoire:225|HR:Croatia:385|CU:Cuba:53|CY:Cyprus:357|CZ:Czechia:420|DK:Denmark:45|DJ:Djibouti:253|DM:Dominica:1767|DO:Dominican Republic:1809|EC:Ecuador:593|EG:Egypt:20|SV:El Salvador:503|EE:Estonia:372|ET:Ethiopia:251|FJ:Fiji:679|FI:Finland:358|FR:France:33|GA:Gabon:241|GM:Gambia:220|GE:Georgia:995|DE:Germany:49|GH:Ghana:233|GR:Greece:30|GT:Guatemala:502|GN:Guinea:224|GY:Guyana:592|HT:Haiti:509|HN:Honduras:504|HK:Hong Kong:852|HU:Hungary:36|IS:Iceland:354|IN:India:91|ID:Indonesia:62|IR:Iran:98|IQ:Iraq:964|IE:Ireland:353|IL:Israel:972|IT:Italy:39|JM:Jamaica:1876|JP:Japan:81|JO:Jordan:962|KZ:Kazakhstan:7|KE:Kenya:254|KW:Kuwait:965|KG:Kyrgyzstan:996|LA:Laos:856|LV:Latvia:371|LB:Lebanon:961|LY:Libya:218|LT:Lithuania:370|LU:Luxembourg:352|MO:Macao:853|MG:Madagascar:261|MW:Malawi:265|MY:Malaysia:60|MV:Maldives:960|ML:Mali:223|MT:Malta:356|MU:Mauritius:230|MX:Mexico:52|MD:Moldova:373|MC:Monaco:377|MN:Mongolia:976|ME:Montenegro:382|MA:Morocco:212|MZ:Mozambique:258|MM:Myanmar:95|NA:Namibia:264|NP:Nepal:977|NL:Netherlands:31|NZ:New Zealand:64|NI:Nicaragua:505|NE:Niger:227|NG:Nigeria:234|MK:North Macedonia:389|NO:Norway:47|OM:Oman:968|PK:Pakistan:92|PS:Palestine:970|PA:Panama:507|PG:Papua New Guinea:675|PY:Paraguay:595|PE:Peru:51|PH:Philippines:63|PL:Poland:48|PT:Portugal:351|PR:Puerto Rico:1787|QA:Qatar:974|RO:Romania:40|RU:Russia:7|RW:Rwanda:250|SA:Saudi Arabia:966|SN:Senegal:221|RS:Serbia:381|SG:Singapore:65|SK:Slovakia:421|SI:Slovenia:386|SO:Somalia:252|ZA:South Africa:27|KR:South Korea:82|ES:Spain:34|LK:Sri Lanka:94|SD:Sudan:249|SE:Sweden:46|CH:Switzerland:41|SY:Syria:963|TW:Taiwan:886|TJ:Tajikistan:992|TZ:Tanzania:255|TH:Thailand:66|TN:Tunisia:216|TR:Türkiye:90|TM:Turkmenistan:993|UG:Uganda:256|UA:Ukraine:380|AE:United Arab Emirates:971|GB:United Kingdom:44|US:United States:1|UY:Uruguay:598|UZ:Uzbekistan:998|VE:Venezuela:58|VN:Vietnam:84|YE:Yemen:967|ZM:Zambia:260|ZW:Zimbabwe:263';
-  const GEO = RAW_GEO.split('|').map(x => { const p = x.split(':'); return { code: p[0], name: p[1], dial: p[2] }; }).sort((a,b) => a.name.localeCompare(b.name));
+  const GEO = RAW_GEO.split('|').map(x => { const p = x.split(':'); return { code: p[0], name: p[1], dial: p[2], flag: isoToFlag(p[0]) }; }).sort((a,b) => a.name.localeCompare(b.name));
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
   const S = { banner:null, avatar:null, name:'', handle:'', bio:'', category:'', email:'', phone:'', country:'', countryCode:'', dob:'', gender:'', saving:false, sheet:false, wired:false, uid:null };
@@ -2822,22 +2870,41 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
   }
 
   function buildRows() {
-    const mk = (id, key, icoCls, icoKey, lbl, ph, ml, ro) => ro
-      ? `<div class="fc-row ro" id="fc-r-${id}"><span class="fc-ico ${icoCls}">${IC[icoKey]}</span><span class="fc-rbody"><span class="fc-rname">${lbl}</span><span class="fc-rval set" id="fc-v-${id}">—</span></span><span class="fc-rend"><span class="fc-pill-ok">Verified</span></span></div>`
-      : `<button type="button" class="fc-row" id="fc-r-${id}" data-pop="${key}"><span class="fc-ico ${icoCls}">${IC[icoKey]}</span><span class="fc-rbody"><span class="fc-rname">${lbl}</span><span class="fc-rval${ml?' ml':''}" id="fc-v-${id}">${ph}</span></span><span class="fc-rend"><span class="fc-chk">${IC.check}</span><span class="fc-chv">${IC.chev}</span></span></button>`;
+    const mk = (id, key, icoKey, lbl, ph, ml, ro) => {
+      const col = (IC_STYLE[icoKey] && IC_STYLE[icoKey].c) || '#D80E45';
+      return ro
+        ? `<div class="fc-row ro" id="fc-r-${id}"><span class="fc-ico" style="--ic-c:${col}">${IC[icoKey]}</span><span class="fc-rbody"><span class="fc-rname">${lbl}</span><span class="fc-rval set" id="fc-v-${id}">—</span></span><span class="fc-rend"><span class="fc-pill-ok">Verified</span></span></div>`
+        : `<button type="button" class="fc-row" id="fc-r-${id}" data-pop="${key}"><span class="fc-ico" style="--ic-c:${col}">${IC[icoKey]}</span><span class="fc-rbody"><span class="fc-rname">${lbl}</span><span class="fc-rval${ml?' ml':''}" id="fc-v-${id}">${ph}</span></span><span class="fc-rend"><span class="fc-chk">${IC.check}</span><span class="fc-chv">${IC.chev}</span></span></button>`;
+    };
 
     $('flcc-card-id').innerHTML =
-      mk('name','name','','name','Name','Add your channel name') +
-      mk('handle','handle','c-pur','handle','Handle','Choose your @handle') +
-      mk('bio','bio','c-blu','bio','Description','Tell viewers what your channel is about', true);
+      mk('name','name','name','Name','Add your channel name') +
+      mk('handle','handle','handle','Handle','Choose your @handle') +
+      mk('bio','bio','bio','Description','Add channel description', true);
 
     $('flcc-card-basic').innerHTML =
-      mk('category','category','c-amb','category','Category','Select from 24 categories') +
-      mk('email','email','c-em','email','Email','', false, true) +
-      mk('phone','phone','c-tel','phone','Phone Number','Add phone number') +
-      mk('country','country','c-ind','country','Country','Select country') +
-      mk('dob','dob','c-org','dob','Date of Birth','Select date of birth') +
-      mk('gender','gender','','gender','Gender','Select gender');
+      mk('category','category','category','Category','Select category') +
+      mk('email','email','email','Email','', false, true) +
+      mk('phone','phone','phone','Phone Number','Add phone number') +
+      mk('country','country','country','Country','Select country') +
+      mk('dob','dob','dob','Date of Birth','Select date of birth') +
+      mk('gender','gender','gender','Gender','Select gender');
+  }
+
+  function formatCountryDisplay() {
+    if (!S.country) return '';
+    if (S.country.toLowerCase() === 'others') return '🌐 Others';
+    const match = S.countryCode
+      ? GEO.find(c => c.code === S.countryCode)
+      : GEO.find(c => c.name.toLowerCase() === S.country.toLowerCase());
+    const flag = match ? match.flag : isoToFlag(S.countryCode);
+    return `${flag} ${S.country}`;
+  }
+
+  function formatPhoneDisplay() {
+    if (!S.phone) return '';
+    const p = parsePhone(S.phone);
+    return p && p.sel ? `${p.sel.flag} ${S.phone}` : S.phone;
   }
 
   function syncUI() {
@@ -2850,11 +2917,11 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     };
     setR('name', S.name, 'Add your channel name', map.name);
     setR('handle', S.handle ? '@' + S.handle : '', 'Choose your @handle', map.handle);
-    setR('bio', S.bio, 'Tell viewers what your channel is about', map.bio);
-    setR('category', S.category, 'Select from 24 categories', map.category);
+    setR('bio', S.bio, 'Add channel description', map.bio);
+    setR('category', S.category, 'Select category', map.category);
     if ($('fc-v-email')) $('fc-v-email').textContent = S.email || '—';
-    setR('phone', S.phone, 'Add phone number', map.phone);
-    setR('country', S.country ? (S.countryCode ? `${S.country} (${S.countryCode})` : S.country) : '', 'Select country', map.country);
+    setR('phone', formatPhoneDisplay(), 'Add phone number', map.phone);
+    setR('country', formatCountryDisplay(), 'Select country', map.country);
     setR('dob', fmtDob(S.dob), 'Select date of birth', map.dob);
     setR('gender', S.gender, 'Select gender', map.gender);
 
@@ -2871,7 +2938,10 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     $('flcc-ring-fg').style.strokeDashoffset = (163.36 * (1 - done / total)).toFixed(2);
     $('flcc-segs').innerHTML = steps.map((_, i) => `<span class="fc-seg${i < done ? ' on' : ''}"></span>`).join('');
     $('flcc-chips').innerHTML = miss.length
-      ? miss.map(m => `<button type="button" class="fc-chip" data-jump="${m.k}">${IC[m.k]||IC.spark}<span>${esc(m.l)}</span></button>`).join('')
+      ? miss.map(m => {
+          const col = (IC_STYLE[m.k] && IC_STYLE[m.k].c) || '#D80E45';
+          return `<button type="button" class="fc-chip" style="--chip-c:${col}" data-jump="${m.k}">${IC[m.k]||IC.spark}<span>${esc(m.l)}</span></button>`;
+        }).join('')
       : `<span class="fc-ready">${IC.shield}<span>All 10 steps complete — Ready to create</span></span>`;
     if (!S.saving) $('flcc-submit').disabled = miss.length > 0;
   }
@@ -2891,8 +2961,13 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 
   function openSheet(o) {
     ensureOverlaysOnBody();
-    const bd = $('flcc-sheet-backdrop'), sh = $('flcc-sheet'), ct = $('flcc-scont');
-    $('flcc-sico').innerHTML = o.icon || IC.spark;
+    const bd = $('flcc-sheet-backdrop'), sh = $('flcc-sheet'), ct = $('flcc-scont'), sico = $('flcc-sico');
+    const st = o.key && IC_STYLE[o.key];
+    if (sico) {
+      sico.style.setProperty('--sh-c', st ? st.c : 'var(--fc-ac)');
+      sico.style.setProperty('--sh-bg', st ? st.bg : 'var(--fc-ac-soft)');
+      sico.innerHTML = o.icon || IC.spark;
+    }
     $('flcc-stitle').textContent = o.title || '';
     $('flcc-ssub').textContent = o.sub || '';
     ct.innerHTML = o.html || '';
@@ -2930,7 +3005,7 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 
   function popName() {
     openSheet({
-      icon: IC.name, title: 'Channel Name', sub: 'Can be changed once every 7 days.',
+      key: 'name', icon: IC.name, title: 'Channel Name', sub: 'Can be changed once every 7 days.',
       html: `<div class="fc-ibox" id="fc-p-b"><input id="fc-p-i" class="fc-in" maxlength="30" placeholder="Enter channel name" autocomplete="off"><button type="button" class="fc-clr" id="fc-p-c" hidden>${IC.x}</button></div><div class="fc-imeta"><span class="fc-ierr" id="fc-p-e"></span><span class="fc-icnt" id="fc-p-n">0/30</span></div><button type="button" class="fc-save" id="fc-p-s">Save Name</button>`,
       mount(b) {
         const i = b.querySelector('#fc-p-i'), c = b.querySelector('#fc-p-c'), e = b.querySelector('#fc-p-e'), n = b.querySelector('#fc-p-n'), bx = b.querySelector('#fc-p-b'), sv = b.querySelector('#fc-p-s');
@@ -2951,7 +3026,7 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 
   function popHandle() {
     openSheet({
-      icon: IC.handle, title: 'Channel Handle', sub: 'Letters, numbers, underscores (_) and periods (.) only.',
+      key: 'handle', icon: IC.handle, title: 'Channel Handle', sub: 'Letters, numbers, underscores (_) and periods (.) only.',
       html: `<div class="fc-ibox" id="fc-h-b"><span class="fc-pre">@</span><input id="fc-h-i" class="fc-in" maxlength="24" placeholder="yourhandle" autocapitalize="none" autocomplete="off" spellcheck="false"><button type="button" class="fc-clr" id="fc-h-c" hidden>${IC.x}</button></div><div class="fc-live" id="fc-h-l" hidden></div><div class="fc-imeta"><span class="fc-icnt" id="fc-h-n">0/24</span></div><button type="button" class="fc-save" id="fc-h-s" disabled>Save Handle</button>`,
       mount(b) {
         const i = b.querySelector('#fc-h-i'), c = b.querySelector('#fc-h-c'), l = b.querySelector('#fc-h-l'), n = b.querySelector('#fc-h-n'), sv = b.querySelector('#fc-h-s');
@@ -2986,7 +3061,7 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 
   function popBio() {
     openSheet({
-      icon: IC.bio, title: 'Channel Description', sub: 'Tell viewers what your channel is about.',
+      key: 'bio', icon: IC.bio, title: 'Channel Description', sub: 'Tell viewers what your channel is about.',
       html: `<div class="fc-ibox"><textarea id="fc-b-i" class="fc-in" maxlength="160" placeholder="Write a short description..."></textarea></div><div class="fc-imeta"><span class="fc-icnt" id="fc-b-n">0/160</span></div><button type="button" class="fc-save" id="fc-b-s">Save Description</button>`,
       mount(b) {
         const i = b.querySelector('#fc-b-i'), n = b.querySelector('#fc-b-n'), sv = b.querySelector('#fc-b-s');
@@ -3001,7 +3076,7 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 
   function popCategory() {
     openSheet({
-      icon: IC.category, title: 'Select Category', sub: 'Choose from 24 creator categories.',
+      key: 'category', icon: IC.category, title: 'Select Category', sub: 'Choose from 24 creator categories.',
       html: `<div class="fc-sbar">${IC.search}<input id="fc-cq" type="text" placeholder="Search categories..." autocomplete="off"></div><div class="fc-cgrid" id="fc-cg"></div>`,
       mount(b) {
         const q = b.querySelector('#fc-cq'), g = b.querySelector('#fc-cg');
@@ -3009,7 +3084,7 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
           const k = (t||'').trim().toLowerCase();
           const arr = k ? CATS.filter(c => c[0].toLowerCase().includes(k) || c[1].toLowerCase().includes(k)) : CATS;
           g.innerHTML = arr.length ? arr.map(c =>
-            `<button type="button" class="fc-ccard${S.category===c[0]?' sel':''}" data-c="${esc(c[0])}"><span class="fc-cico">${svg(c[2],1.9)}</span><span class="fc-ctxt"><div class="fc-cname">${esc(c[0])}</div><div class="fc-ctag">${esc(c[1])}</div></span><span class="fc-cchk">${IC.check}</span></button>`
+            `<button type="button" class="fc-ccard${S.category===c[0]?' sel':''}" data-c="${esc(c[0])}"><span class="fc-cico" style="--cat-c:${c[3]||'#E11D48'}">${svg(c[2],1.9)}</span><span class="fc-ctxt"><div class="fc-cname">${esc(c[0])}</div><div class="fc-ctag">${esc(c[1])}</div></span><span class="fc-cchk">${IC.check}</span></button>`
           ).join('') : `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--fc-mut);font-size:13px;">No matching category.</div>`;
         };
         draw(''); q.oninput = () => draw(q.value);
@@ -3035,7 +3110,7 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
   function popPhone() {
     const init = parsePhone(S.phone); let cur = init.sel, num = init.nat;
     const renderMain = b => {
-      b.innerHTML = `<button type="button" class="fc-phbtn" id="fc-pp"><span class="fc-iso">${cur.code}</span><span class="fc-onm">${esc(cur.name)}</span><span class="fc-dial">+${cur.dial}</span><span class="fc-chv">${IC.chev}</span></button><div class="fc-ibox" id="fc-pb"><span class="fc-phsep">+${cur.dial}</span><input id="fc-pi" class="fc-in" type="tel" inputmode="numeric" maxlength="16" placeholder="Phone number"></div><div class="fc-imeta"><span class="fc-ierr" id="fc-pe"></span></div>${S.phone?'<button type="button" class="fc-rmbtn" id="fc-pr">Remove phone number</button>':''}<button type="button" class="fc-save" id="fc-ps">Save Phone Number</button>`;
+      b.innerHTML = `<button type="button" class="fc-phbtn" id="fc-pp"><span class="fc-flag">${cur.flag}</span><span class="fc-onm">${esc(cur.name)}</span><span class="fc-dial">+${cur.dial}</span><span class="fc-chv">${IC.chev}</span></button><div class="fc-ibox" id="fc-pb"><span class="fc-phsep"><span class="fc-flag-sm">${cur.flag}</span>+${cur.dial}</span><input id="fc-pi" class="fc-in" type="tel" inputmode="numeric" maxlength="16" placeholder="Phone number"></div><div class="fc-imeta"><span class="fc-ierr" id="fc-pe"></span></div>${S.phone?'<button type="button" class="fc-rmbtn" id="fc-pr">Remove phone number</button>':''}<button type="button" class="fc-save" id="fc-ps">Save Phone Number</button>`;
       const i = b.querySelector('#fc-pi'), e = b.querySelector('#fc-pe'), bx = b.querySelector('#fc-pb'), sv = b.querySelector('#fc-ps');
       i.value = num;
       const nat = () => i.value.replace(/\D/g,'').replace(/^0/,'');
@@ -3060,18 +3135,18 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
       const draw = t => {
         const k = (t||'').trim().toLowerCase().replace(/^\+/,'');
         const arr = k ? GEO.filter(c => c.name.toLowerCase().includes(k) || c.dial.startsWith(k) || c.code.toLowerCase()===k) : GEO;
-        l.innerHTML = arr.length ? arr.map(c => `<button type="button" class="fc-opt${c.code===cur.code?' sel':''}" data-c="${c.code}"><span class="fc-iso">${c.code}</span><span class="fc-onm">${esc(c.name)}</span><span class="fc-dial">+${c.dial}</span></button>`).join('') : '<div style="text-align:center;padding:24px;color:var(--fc-mut);font-size:13px;">No country found.</div>';
+        l.innerHTML = arr.length ? arr.map(c => `<button type="button" class="fc-opt${c.code===cur.code?' sel':''}" data-c="${c.code}"><span class="fc-flag">${c.flag}</span><span class="fc-onm">${esc(c.name)}</span><span class="fc-dial">+${c.dial}</span></button>`).join('') : '<div style="text-align:center;padding:24px;color:var(--fc-mut);font-size:13px;">No country found.</div>';
       };
       draw(''); q.oninput = () => draw(q.value);
       b.querySelector('#fc-db').onclick = () => renderMain(b);
       l.onclick = ev => { const r = ev.target.closest('.fc-opt'); if (!r) return; const f = GEO.find(c => c.code === r.dataset.c); if (f) cur = f; renderMain(b); };
     };
-    openSheet({ icon: IC.phone, title: 'Phone Number', sub: 'Select country code and enter your mobile number.', html: '', mount: renderMain });
+    openSheet({ key: 'phone', icon: IC.phone, title: 'Phone Number', sub: 'Select country code and enter your mobile number.', html: '', mount: renderMain });
   }
 
   function popCountry() {
     openSheet({
-      icon: IC.country, title: 'Select Country', sub: 'Choose where your channel is based.',
+      key: 'country', icon: IC.country, title: 'Select Country', sub: 'Choose where your channel is based.',
       html: `<div class="fc-sbar">${IC.search}<input id="fc-kq" type="text" placeholder="Search country..." autocomplete="off"></div><div class="fc-list" id="fc-kl"></div>`,
       mount(b) {
         const q = b.querySelector('#fc-kq'), l = b.querySelector('#fc-kl'), cur = (S.country||'').toLowerCase();
@@ -3080,11 +3155,11 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
           const arr = k ? GEO.filter(c => c.name.toLowerCase().includes(k) || c.code.toLowerCase()===k) : GEO;
           let h = arr.map(c => {
             const on = cur === c.name.toLowerCase();
-            return `<button type="button" class="fc-opt${on?' sel':''}" data-c="${c.code}" data-n="${esc(c.name)}"><span class="fc-iso">${c.code}</span><span class="fc-onm">${esc(c.name)}</span>${on?`<span class="fc-otk">${IC.check}</span>`:''}</button>`;
+            return `<button type="button" class="fc-opt${on?' sel':''}" data-c="${c.code}" data-n="${esc(c.name)}"><span class="fc-flag">${c.flag}</span><span class="fc-onm">${esc(c.name)}</span>${on?`<span class="fc-otk">${IC.check}</span>`:`<span class="fc-iso">${c.code}</span>`}</button>`;
           }).join('');
           if (!k || 'others'.includes(k)) {
             const on = cur === 'others';
-            h += `<button type="button" class="fc-opt${on?' sel':''}" data-c="" data-n="Others"><span class="fc-iso">${IC.country}</span><span class="fc-onm">Others</span>${on?`<span class="fc-otk">${IC.check}</span>`:''}</button>`;
+            h += `<button type="button" class="fc-opt${on?' sel':''}" data-c="" data-n="Others"><span class="fc-flag">🌐</span><span class="fc-onm">Others</span>${on?`<span class="fc-otk">${IC.check}</span>`:''}</button>`;
           }
           l.innerHTML = h || '<div style="text-align:center;padding:24px;color:var(--fc-mut);font-size:13px;">No country found.</div>';
         };
@@ -3100,7 +3175,7 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     const yOpt = Array.from({ length: 100 }, (_, i) => cy - i).map(y => `<option value="${y}"${y===y0?' selected':''}>${y}</option>`).join('');
     const mOpt = MONTHS.map((m, i) => `<option value="${i}"${i===m0?' selected':''}>${m}</option>`).join('');
     openSheet({
-      icon: IC.dob, title: 'Date of Birth', sub: 'Select your day, month and year of birth.',
+      key: 'dob', icon: IC.dob, title: 'Date of Birth', sub: 'Select your day, month and year of birth.',
       html: `<div class="fc-dobprev" id="fc-dp"></div><div class="fc-dobgrid"><div><label>Day</label><select id="fc-dd" class="fc-dobsel"></select></div><div><label>Month</label><select id="fc-dm" class="fc-dobsel">${mOpt}</select></div><div><label>Year</label><select id="fc-dy" class="fc-dobsel">${yOpt}</select></div></div><div class="fc-imeta"><span class="fc-ierr" id="fc-de"></span></div><button type="button" class="fc-save" id="fc-ds">Save Date of Birth</button>`,
       mount(b) {
         const dd = b.querySelector('#fc-dd'), dm = b.querySelector('#fc-dm'), dy = b.querySelector('#fc-dy'), pv = b.querySelector('#fc-dp'), er = b.querySelector('#fc-de'), sv = b.querySelector('#fc-ds');
@@ -3125,14 +3200,14 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 
   function popGender() {
     const G = [
-      ['Male', '<circle cx="10" cy="14" r="5"/><path d="M13.5 10.5L20 4M15 4h5v5"/>'],
-      ['Female', '<circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/>'],
-      ['Non-binary', '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v5.5M12 16.5V22M7 5h10"/>'],
-      ['Prefer not to say', '<circle cx="12" cy="12" r="9"/><path d="M9 12h6"/>']
+      ['Male', '<circle cx="10" cy="14" r="5"/><path d="M13.5 10.5L20 4M15 4h5v5"/>', '#2563EB'],
+      ['Female', '<circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/>', '#EC4899'],
+      ['Non-binary', '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v5.5M12 16.5V22M7 5h10"/>', '#8B5CF6'],
+      ['Prefer not to say', '<circle cx="12" cy="12" r="9"/><path d="M9 12h6"/>', '#64748B']
     ];
     openSheet({
-      icon: IC.gender, title: 'Select Gender', sub: 'Choose the option that best represents you.',
-      html: `<div class="fc-glist">${G.map(g => `<button type="button" class="fc-gcard${S.gender===g[0]?' sel':''}" data-g="${esc(g[0])}"><span class="fc-gico">${svg(g[1])}</span><span class="fc-glbl">${esc(g[0])}</span><span class="fc-rad"></span></button>`).join('')}</div>`,
+      key: 'gender', icon: IC.gender, title: 'Select Gender', sub: 'Choose the option that best represents you.',
+      html: `<div class="fc-glist">${G.map(g => `<button type="button" class="fc-gcard${S.gender===g[0]?' sel':''}" data-g="${esc(g[0])}"><span class="fc-gico" style="--gen-c:${g[2]}">${svg(g[1], 2.2)}</span><span class="fc-glbl">${esc(g[0])}</span><span class="fc-rad"></span></button>`).join('')}</div>`,
       mount(b) {
         b.querySelector('.fc-glist').onclick = ev => { const c = ev.target.closest('.fc-gcard'); if (!c) return; S.gender = c.dataset.g; syncUI(); closeSheet(false); };
       }
@@ -3262,14 +3337,12 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
       }, 1350);
     };
 
-    // Realtime listener: unlocks automatically the moment continueUrl marks emailLinkVerified = true
     try {
       evRef = db.ref('users/' + user.uid + '/emailLinkVerified');
       evCb = snap => { if (snap.val() === true) completeVerification(); };
       evRef.on('value', evCb);
     } catch(e){}
 
-    // Auto-send link on first open (avoid resending if sent within last 45s)
     let prevSent = 0;
     try { prevSent = parseInt(localStorage.getItem('flaynity_ev_sent:' + user.uid) || '0', 10) || 0; } catch(e){}
     if (Date.now() - prevSent < 45000) {

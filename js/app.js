@@ -2321,6 +2321,10 @@ function handleAvatarClick() {
     playUI('click');
     const choice = confirm("Profile Options:\n\n[OK] - Upload Profile Picture\n[Cancel] - Log Out");
     if (choice) {
+        if (typeof window.openMediaPicker === 'function' && mpBridge() && mpEl('media-picker')) {
+            window.openMediaPicker('user-avatar', function(file) { uploadUserAvatarToR2Engine({ files: [file] }); });
+            return;
+        }
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = 'image/*';
@@ -9694,6 +9698,11 @@ function openCreateChannelPage() {
 
 function triggerAvatarSelection(mode) {
     playUI('click');
+    const pickMode = mode === 'create' ? 'create-avatar' : 'edit-avatar';
+    if (typeof window.openMediaPicker === 'function') {
+        window.openMediaPicker(pickMode, function(file) { handleChannelAvatarSelect({ target: { files: [file] } }, mode); });
+        return;
+    }
     const id = mode === 'create' ? 'create-avatar-input' : 'edit-avatar-input';
     const input = document.getElementById(id);
     if (input) input.click();
@@ -9701,6 +9710,10 @@ function triggerAvatarSelection(mode) {
 
 function triggerBannerSelection() {
     playUI('click');
+    if (typeof window.openMediaPicker === 'function') {
+        window.openMediaPicker('edit-banner', function(file) { handleChannelBannerSelect({ target: { files: [file] } }); });
+        return;
+    }
     const input = document.getElementById('edit-banner-input');
     if (input) input.click();
 }
@@ -12347,19 +12360,26 @@ function mpInit() {
 //       'thumb'                     (Custom Thumbnail on the Add Details pages, photos)
 //       'ed-video' | 'ed-rpl'       (Feels editor: add clip / replace clip, videos)
 //       'ed-image'                  (Feels editor: overlay image, photos)
-const MP_PHOTO_MODES = ['post', 'thumb', 'ed-image'];
+const MP_PHOTO_MODES = ['post', 'thumb', 'ed-image', 'flcc-banner', 'flcc-avatar', 'user-avatar', 'create-avatar', 'edit-avatar', 'edit-banner', 'photos'];
 const MP_INPUT_IDS = { video: 'video-file-input', short: 'short-file-input', post: 'post-image-input',
-                       thumb: 'custom-thumb-input', 'ed-video': 'ce-in-video', 'ed-rpl': 'ce-in-rpl', 'ed-image': 'ce-in-image' };
-function openMediaPicker(mode) {
+                       thumb: 'custom-thumb-input', 'ed-video': 'ce-in-video', 'ed-rpl': 'ce-in-rpl', 'ed-image': 'ce-in-image',
+                       'flcc-banner': 'flcc-banner-file', 'flcc-avatar': 'flcc-avatar-file',
+                       'create-avatar': 'create-avatar-input', 'edit-avatar': 'edit-avatar-input', 'edit-banner': 'edit-banner-input' };
+function openMediaPicker(mode, onPick) {
     const b = mpBridge();
-    if (!b) {                              // normal browser: old file input
+    const el = mpEl('media-picker');
+    if (!b || !el) {                       // normal browser or picker DOM not mounted yet: fallback to file input
         const inp = mpEl(MP_INPUT_IDS[mode] || 'post-image-input'); if (inp) inp.click();
         return;
     }
     if (MP.open) return;
+    // Always mount on <body> above #fl-create-channel so it works even when #app-screen is hidden
+    if (el.parentElement !== document.body) document.body.appendChild(el);
+    el.style.zIndex = '2147483150';
     mpInit();
     MP.mode = mode;
-    MP.only = MP_PHOTO_MODES.indexOf(mode) > -1 ? 'photos' : 'videos';   // Video / Feels = videos only, Post / thumbnail / overlay = images only
+    MP.onPick = typeof onPick === 'function' ? onPick : null;
+    MP.only = MP_PHOTO_MODES.indexOf(mode) > -1 ? 'photos' : 'videos';   // Video / Feels = videos only, Post / Home photos / thumbnail / overlay = images only
     MP.tab = MP.only;
     MP.album = 'all'; MP.albumName = 'Recents'; MP.view = 'grid';
     mpEl('mp-album-name').textContent = 'Recents';
@@ -12369,7 +12389,6 @@ function openMediaPicker(mode) {
     mpRenderTabs();
     mpEl('mp-grid').innerHTML = '';
 
-    const el = mpEl('media-picker');
     el.style.display = 'flex';
     requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
     MP.open = true;
@@ -12379,18 +12398,20 @@ function openMediaPicker(mode) {
     if (b.hasMediaPermission()) mpLoad(true);
     else mpAskPermission();
 }
+window.openMediaPicker = openMediaPicker;
 
 function closeMediaPicker(silent) {
     if (!MP.open) return false;
     if (!silent && MP.view === 'albums') { mpHideAlbums(); return true; }     // Back inside the album list
     MP.open = false;
+    if (!silent) MP.onPick = null;
     try { const b = mpBridge(); if (b) b.setMediaPickerOpen(false); } catch (e) {}
     const el = mpEl('media-picker');
     el.classList.remove('show');
     setTimeout(() => { if (!MP.open) el.style.display = 'none'; }, 260);
     mpStatusBar(false);
     // user pressed X / Back in the Video or Post tab: go back to the Feels camera instead of an empty page
-    if (!silent && MP.mode !== 'short' && typeof currentUploadMode !== 'undefined' && currentUploadMode === MP.mode) {
+    if (!silent && (MP.mode === 'video' || MP.mode === 'post') && typeof currentUploadMode !== 'undefined' && currentUploadMode === MP.mode) {
         try { switchUploadMode('short'); } catch (e) {}
     }
     return true;
@@ -12571,11 +12592,17 @@ async function mpPick(cell) {
         const type = cell.dataset.m || blob.type || (isVideo ? 'video/mp4' : 'image/jpeg');
         const file = new File([blob], name, { type: type, lastModified: Date.now() });
         const pickMode = MP.mode;
+        const onPickCb = MP.onPick;
+        MP.onPick = null;
         closeMediaPicker(true);
-        if (pickMode === 'thumb') {
+        if (typeof onPickCb === 'function') {
+            onPickCb(file);
+        } else if (pickMode === 'thumb') {
             handleCustomThumbSelected({ target: { files: [file] } });
-        } else if (pickMode === 'ed-video' || pickMode === 'ed-rpl' || pickMode === 'ed-image') {
-            const inp = mpEl(MP_INPUT_IDS[pickMode]);          // the editor's own handler (set in upload.html)
+        } else if (pickMode === 'user-avatar') {
+            uploadUserAvatarToR2Engine({ files: [file] });
+        } else if (pickMode === 'ed-video' || pickMode === 'ed-rpl' || pickMode === 'ed-image' || pickMode === 'flcc-banner' || pickMode === 'flcc-avatar') {
+            const inp = mpEl(MP_INPUT_IDS[pickMode]);          // the page's own handler
             if (inp && typeof inp.onchange === 'function') inp.onchange({ target: { files: [file], value: '' } });
         } else if (isVideo) {
             isShortFromCamera = false;     // picked from the gallery, not recorded

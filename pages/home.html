@@ -3412,27 +3412,40 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     ensureOverlaysOnBody();
 
     const r = $('fl-create-channel'), bi = $('flcc-banner-file'), ai = $('flcc-avatar-file'), st = $('flcc-status');
-    $('flcc-change').onclick = () => bi.click();
-    $('flcc-av-btn').onclick = () => ai.click();
 
-    bi.onchange = () => {
-      const f = bi.files && bi.files[0]; if (!f) return;
-      if (!f.type.startsWith('image/')) { st.textContent = 'Please choose an image file.'; return; }
+    const applyBannerFile = f => {
+      if (!f) return;
+      if (f.type && !f.type.startsWith('image/')) { st.textContent = 'Please choose an image file.'; return; }
       S.banner = f;
       const fr = new FileReader();
       fr.onload = () => { const h = $('flcc-banner'); h.style.backgroundImage = `url("${String(fr.result).replace(/"/g,'%22')}")`; h.classList.add('has-bg'); $('flcc-cov-txt').textContent = 'Change Background'; };
       fr.readAsDataURL(f); st.textContent = ''; syncUI();
     };
-    ai.onchange = () => {
-      const f = ai.files && ai.files[0]; if (!f) return;
-      if (!f.type.startsWith('image/')) { st.textContent = 'Please choose an image file.'; return; }
+    const applyAvatarFile = f => {
+      if (!f) return;
+      if (f.type && !f.type.startsWith('image/')) { st.textContent = 'Please choose an image file.'; return; }
       S.avatar = f;
       const fr = new FileReader();
       fr.onload = () => { $('flcc-av-box').innerHTML = `<img alt="Channel photo" src="${fr.result}">`; };
       fr.readAsDataURL(f); st.textContent = ''; syncUI();
     };
 
-    const actions = { banner: () => bi.click(), avatar: () => ai.click(), name: popName, handle: popHandle, bio: popBio, category: popCategory, phone: popPhone, country: popCountry, dob: popDob, gender: popGender };
+    const pickBanner = () => {
+      if (typeof window.openMediaPicker === 'function') window.openMediaPicker('flcc-banner', applyBannerFile);
+      else bi.click();
+    };
+    const pickAvatar = () => {
+      if (typeof window.openMediaPicker === 'function') window.openMediaPicker('flcc-avatar', applyAvatarFile);
+      else ai.click();
+    };
+
+    $('flcc-change').onclick = pickBanner;
+    $('flcc-av-btn').onclick = pickAvatar;
+
+    bi.onchange = e => applyBannerFile((e && e.target && e.target.files && e.target.files[0]) || (bi.files && bi.files[0]));
+    ai.onchange = e => applyAvatarFile((e && e.target && e.target.files && e.target.files[0]) || (ai.files && ai.files[0]));
+
+    const actions = { banner: pickBanner, avatar: pickAvatar, name: popName, handle: popHandle, bio: popBio, category: popCategory, phone: popPhone, country: popCountry, dob: popDob, gender: popGender };
     r.addEventListener('click', ev => {
       const row = ev.target.closest('.fc-row[data-pop]');
       if (row && actions[row.dataset.pop]) { actions[row.dataset.pop](); return; }

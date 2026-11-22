@@ -195,7 +195,7 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
 
         const appScreen = document.createElement("div");
         appScreen.id = "app-screen";
-        const startupIds = new Set(["startupSound","toast-container","network-spinner-overlay","auth-screen","fl-create-channel"]);
+        const startupIds = new Set(["startupSound","toast-container","network-spinner-overlay","auth-screen","fl-create-channel","flcc-sheet-backdrop","flcc-launch-overlay"]);
 
         for (const node of homeNodes) {
             if (node.id && startupIds.has(node.id)) app.appendChild(node);
@@ -2027,7 +2027,7 @@ function applyAdminControls() {
 }
 
 
-/* Create your Channel page now lives in pages/home.html */
+/* Create your Channel page lives in pages/home.html */
 
 function enforceContentAdminStatus(items, type) {
     const allowed = items.filter(item => {

@@ -2676,19 +2676,69 @@ window.authEmailSignup = async function () {
         if (typeof window.authShowView === 'function') window.authShowView('signup', true);
     };
 
-    // Terms / Privacy
+    // Terms / Privacy — always open directly in the external browser
+    const FL_TERMS_URL = 'https://flaynity.com/terms-of-service';
+    const FL_PRIVACY_URL = 'https://flaynity.com/privacy-policy';
     let legalUrl = '';
+
+    function resolveLegalUrl(url, title) {
+        const u = String(url || '').toLowerCase();
+        const t = String(title || '').toLowerCase();
+        if (u.includes('privacy') || t.includes('privacy')) return FL_PRIVACY_URL;
+        if (u.includes('terms') || t.includes('terms')) return FL_TERMS_URL;
+        return url || FL_TERMS_URL;
+    }
+
+    function openInBrowser(targetUrl) {
+        if (!targetUrl) return;
+        try {
+            if (window.AndroidBridge) {
+                if (typeof window.AndroidBridge.openExternalUrl === 'function') { window.AndroidBridge.openExternalUrl(targetUrl); return; }
+                if (typeof window.AndroidBridge.openBrowser === 'function') { window.AndroidBridge.openBrowser(targetUrl); return; }
+                if (typeof window.AndroidBridge.openUrl === 'function') { window.AndroidBridge.openUrl(targetUrl); return; }
+            }
+        } catch (e) {}
+        try {
+            const win = window.open(targetUrl, '_blank', 'noopener,noreferrer');
+            if (win) return;
+        } catch (e) {}
+        try {
+            const a = document.createElement('a');
+            a.href = targetUrl;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            return;
+        } catch (e) {}
+        try { window.location.href = targetUrl; } catch (e) {}
+    }
+
     window.vfOpenLegal = function (url, title) {
-        legalUrl = url;
-        $('vf-legal-title').textContent = title;
-        $('vf-legal-frame').src = url;
-        $('vf-legal-page').classList.add('open');
+        legalUrl = resolveLegalUrl(url, title);
+        openInBrowser(legalUrl);
     };
     window.vfCloseLegal = function () {
-        $('vf-legal-page').classList.remove('open');
-        $('vf-legal-frame').src = 'about:blank';
+        const p = $('vf-legal-page'); if (p) p.classList.remove('open');
+        const f = $('vf-legal-frame'); if (f) f.src = 'about:blank';
     };
-    window.vfLegalExternal = function () { try { window.open(legalUrl, '_blank'); } catch (e) { location.href = legalUrl; } };
+    window.vfLegalExternal = function () { openInBrowser(legalUrl || FL_TERMS_URL); };
+
+    // Global capture: any Terms of Service or Privacy Policy button/link opens directly in the browser
+    document.addEventListener('click', function (e) {
+        const el = e.target && e.target.closest ? e.target.closest('a, button, [role="button"], .you-menu-item, .setting-item, .sheet-option-item') : null;
+        if (!el) return;
+        const href = String(el.getAttribute('href') || '');
+        const txt = String(el.textContent || '').replace(/\s+/g, ' ').trim();
+        const isTerms = /terms[-_ ]?of[-_ ]?service/i.test(href) || /^terms of service$/i.test(txt) || txt === 'সেবার শর্তাবলি';
+        const isPrivacy = /privacy[-_ ]?policy/i.test(href) || /^privacy policy$/i.test(txt) || txt === 'গোপনীয়তা নীতি';
+        if (!isTerms && !isPrivacy) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openInBrowser(isPrivacy ? FL_PRIVACY_URL : FL_TERMS_URL);
+    }, true);
 
     // Digit boxes: type, backspace, paste
     document.addEventListener('input', function (e) {

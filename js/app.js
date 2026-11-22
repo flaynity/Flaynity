@@ -9715,10 +9715,12 @@ function triggerBannerSelection() {
             currentUrl: tempEditBannerUrl || (currentChannelData && currentChannelData.bannerUrl) || '',
             channelName: (document.getElementById('edit-channel-name') && document.getElementById('edit-channel-name').value) || (currentChannelData && currentChannelData.channelName) || 'Your Channel',
             avatarUrl: tempEditAvatarUrl || (currentChannelData && currentChannelData.avatarUrl) || '',
-            onApply: function(file, previewUrl) {
+            onApply: async function(file, previewUrl) {
                 const banner = document.getElementById('edit-channel-banner-img');
                 if (banner && previewUrl) banner.src = previewUrl;
-                handleChannelBannerSelect({ target: { files: [file] } });
+                const viewBanner = document.getElementById('view-channel-banner');
+                if (viewBanner && previewUrl) viewBanner.src = previewUrl;
+                await handleChannelBannerSelect({ target: { files: [file] } }, true);
             }
         });
         return;
@@ -9769,19 +9771,40 @@ async function handleChannelAvatarSelect(e, mode, _skipCrop) {
     }
 }
 
-async function handleChannelBannerSelect(e) {
-    const file = e.target.files[0];
+async function handleChannelBannerSelect(e, saveDirectly) {
+    const file = e && e.target && e.target.files ? e.target.files[0] : null;
     if (!file) return;
-    
-    showNotification("Uploading channel banner...", "success");
+
+    showNotification("Saving channel cover...", "success");
     try {
         const secureUrl = await uploadImageToR2(file, "banners");
         tempEditBannerUrl = secureUrl;
         const banner = document.getElementById('edit-channel-banner-img');
         if (banner) banner.src = secureUrl;
-        showNotification("Banner uploaded successfully!", "success");
+        const viewBanner = document.getElementById('view-channel-banner');
+        if (viewBanner) viewBanner.src = secureUrl;
+        if (saveDirectly && typeof auth !== 'undefined' && auth.currentUser && typeof db !== 'undefined') {
+            const uid = auth.currentUser.uid;
+            const upd = {};
+            upd[`channels/${uid}/bannerUrl`] = secureUrl;
+            upd[`channels/${uid}/channelBannerUrl`] = secureUrl;
+            upd[`channels/${uid}/updatedDate`] = Date.now();
+            await db.ref().update(upd);
+            if (typeof currentChannelData !== 'undefined' && currentChannelData) {
+                currentChannelData.bannerUrl = secureUrl;
+                currentChannelData.channelBannerUrl = secureUrl;
+                try {
+                    localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                    localStorage.setItem('flaynity_channel_cache:' + uid, JSON.stringify(currentChannelData));
+                    localStorage.setItem('flaynity_cached_channel_banner_url:' + uid, secureUrl);
+                    localStorage.removeItem('flaynity_cached_channel_banner:' + uid);
+                } catch (err2) {}
+            }
+        }
+        showNotification("Cover saved successfully!", "success");
     } catch(err) {
-        showNotification("Failed to upload banner.", "error");
+        showNotification("Failed to save cover.", "error");
+        throw err;
     }
 }
 
@@ -12434,7 +12457,7 @@ function openMediaPicker(mode, onPick) {
     if (MP.open) return;
     // Always mount on <body> above #fl-create-channel so it works even when #app-screen is hidden
     if (el.parentElement !== document.body) document.body.appendChild(el);
-    el.style.zIndex = '2147483150';
+    el.style.zIndex = '2147483250';
     mpInit();
     MP.mode = mode;
     MP.onPick = typeof onPick === 'function' ? onPick : null;
@@ -16534,11 +16557,12 @@ function closeFeelsDescSheet() {
 })();
 
 /* =====================================================================
-   FLAYNITY CHANNEL STUDIO MODULE
-   1. Profile Photo Crop & Zoom (openProfilePhotoCropper)
-   2. Channel Cover Studio: Photo + Ready-made Templates + Gradients + Live Preview (openChannelCoverPicker)
-   3. Pure-JS ISO/IEC 18004 QR Code Generator + Unique Channel QR Modal (openChannelQRModal)
-   4. Public/Private Channel Profile Opener + QR Deep-Link Routing (openChannelProfile)
+   FLAYNITY CHANNEL STUDIO MODULE v2
+   1. Profile Photo Crop & Zoom (White clean studio background)
+   2. Channel Cover Studio: Photo + Ready-made Templates + Gradients + Exact 1.8:1 Live Preview + Direct Save
+   3. Pure-JS ISO/IEC 18004 QR Code Generator + Branded Gradient QR Card (matching design)
+   4. Full-Screen QR Code Scan System Page (Live Camera + Torch + Gallery Decode)
+   5. Public/Private Channel Profile Opener + Scan Deep-Link Routing
    ===================================================================== */
 (function () {
     'use strict';
@@ -16546,14 +16570,15 @@ function closeFeelsDescSheet() {
     window.__flaynityChannelStudioLoaded = true;
 
     function ensureStudioStyles() {
-        if (document.getElementById('fl-studio-styles')) return;
+        const old = document.getElementById('fl-studio-styles');
+        if (old) old.remove();
         const st = document.createElement('style');
         st.id = 'fl-studio-styles';
         st.textContent = `
-/* --- Profile Photo Crop & Zoom Modal --- */
+/* --- 1. Profile Photo Crop & Zoom Modal (Clean White Background) --- */
 #fl-cropper-modal {
-    position: fixed; inset: 0; z-index: 2147483220;
-    background: #0a0b0f; color: #fff;
+    position: fixed; inset: 0; z-index: 2147483260;
+    background: #ffffff; color: #0f172a;
     display: none; flex-direction: column;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     touch-action: none; user-select: none; -webkit-user-select: none;
@@ -16562,55 +16587,57 @@ function closeFeelsDescSheet() {
 .flcr-top {
     display: flex; align-items: center; justify-content: space-between;
     padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px;
-    border-bottom: 1px solid rgba(255,255,255,.1);
+    background: #ffffff; border-bottom: 1px solid rgba(15,23,42,.08);
 }
-.flcr-top h3 { margin: 0; font-size: 1.02rem; font-weight: 800; letter-spacing: -.2px; }
+.flcr-top h3 { margin: 0; font-size: 1.04rem; font-weight: 850; letter-spacing: -.2px; color: #0f172a; }
 .flcr-tbtn {
-    border: 0; background: rgba(255,255,255,.1); color: #fff;
+    border: 1px solid rgba(15,23,42,.12); background: #f8fafc; color: #0f172a;
     border-radius: 999px; height: 36px; padding: 0 14px;
-    font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer;
+    font: inherit; font-size: .85rem; font-weight: 750; cursor: pointer;
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
 }
-.flcr-tbtn:active { opacity: .75; }
+.flcr-tbtn:active { background: #e2e8f0; }
 .flcr-stage-wrap {
     flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center;
-    padding: 18px; position: relative; overflow: hidden;
+    padding: 20px; position: relative; overflow: hidden; background: #ffffff;
 }
 .flcr-stage {
-    position: relative; width: min(84vw, 330px); height: min(84vw, 330px);
-    border-radius: 20px; overflow: hidden; background: #14161d;
-    box-shadow: 0 20px 50px rgba(0,0,0,.55); cursor: grab; touch-action: none;
+    position: relative; width: min(86vw, 340px); height: min(86vw, 340px);
+    border-radius: 24px; overflow: hidden; background: #f1f5f9;
+    box-shadow: 0 14px 36px rgba(15,23,42,.12); border: 1px solid rgba(15,23,42,.08);
+    cursor: grab; touch-action: none;
 }
 .flcr-stage:active { cursor: grabbing; }
 .flcr-stage canvas { width: 100%; height: 100%; display: block; }
 .flcr-controls {
     padding: 16px 20px calc(22px + env(safe-area-inset-bottom, 0px));
-    background: #11131a; border-top: 1px solid rgba(255,255,255,.08);
+    background: #ffffff; border-top: 1px solid rgba(15,23,42,.08);
     display: flex; flex-direction: column; gap: 14px;
 }
 .flcr-zoom-row { display: flex; align-items: center; gap: 10px; }
 .flcr-zbtn {
-    width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,.18);
-    background: rgba(255,255,255,.08); color: #fff; font-size: 1rem; font-weight: 800;
+    width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(15,23,42,.14);
+    background: #f8fafc; color: #0f172a; font-size: 1.05rem; font-weight: 800;
     cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
 }
+.flcr-zbtn:active { background: #e2e8f0; }
 .flcr-slider { flex: 1; accent-color: #D80E45; height: 6px; cursor: pointer; }
-.flcr-zpct { min-width: 44px; text-align: right; font-size: .8rem; font-weight: 800; color: rgba(255,255,255,.8); }
+.flcr-zpct { min-width: 46px; text-align: right; font-size: .82rem; font-weight: 800; color: #334155; }
 .flcr-actions { display: flex; gap: 10px; }
 .flcr-act-sec {
-    height: 48px; padding: 0 16px; border-radius: 14px;
-    border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.07);
-    color: #fff; font: inherit; font-size: .9rem; font-weight: 700; cursor: pointer;
+    height: 48px; padding: 0 18px; border-radius: 14px;
+    border: 1px solid rgba(15,23,42,.14); background: #f8fafc;
+    color: #0f172a; font: inherit; font-size: .9rem; font-weight: 750; cursor: pointer;
     display: inline-flex; align-items: center; justify-content: center; gap: 7px;
 }
 .flcr-act-pri {
     flex: 1; height: 48px; border-radius: 14px; border: 0;
     background: #D80E45; color: #fff; font: inherit; font-size: .95rem; font-weight: 800;
-    cursor: pointer; box-shadow: 0 8px 22px rgba(216,14,69,.38);
+    cursor: pointer; box-shadow: 0 8px 20px rgba(216,14,69,.32);
 }
 .flcr-act-pri:active, .flcr-act-sec:active { transform: scale(.98); }
 
-/* --- Channel Background / Cover Studio Modal --- */
+/* --- 2. Channel Background / Cover Studio Modal (Exact 1.8:1 Live Preview) --- */
 #fl-cover-modal {
     position: fixed; inset: 0; z-index: 2147483210;
     background: rgba(10,11,15,.58); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
@@ -16638,11 +16665,11 @@ function closeFeelsDescSheet() {
 }
 .flcv-preview-wrap { padding: 14px 16px 10px; }
 .flcv-preview-card {
-    position: relative; width: 100%; aspect-ratio: 2.35 / 1;
+    position: relative; width: 100%; aspect-ratio: 1.8 / 1;
     border-radius: 16px; overflow: hidden; background: #1e293b;
     box-shadow: 0 8px 24px rgba(0,0,0,.16);
 }
-.flcv-preview-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.flcv-preview-card img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
 .flcv-preview-fade {
     position: absolute; inset: 0;
     background: linear-gradient(180deg, rgba(0,0,0,.05) 0%, rgba(0,0,0,.55) 100%);
@@ -16665,9 +16692,7 @@ function closeFeelsDescSheet() {
     width: 32px; height: 32px; border-radius: 50%; object-fit: cover;
     border: 2px solid #fff; background: #D80E45;
 }
-.flcv-tabs {
-    display: flex; gap: 6px; padding: 0 16px 10px;
-}
+.flcv-tabs { display: flex; gap: 6px; padding: 0 16px 10px; }
 .flcv-tab {
     flex: 1; height: 38px; border-radius: 12px; border: 1px solid rgba(127,127,127,.2);
     background: transparent; color: inherit; font: inherit; font-size: .84rem; font-weight: 800;
@@ -16678,14 +16703,12 @@ function closeFeelsDescSheet() {
     box-shadow: 0 4px 12px rgba(216,14,69,.28);
 }
 .flcv-body {
-    flex: 1; min-height: 180px; max-height: 38vh; overflow-y: auto;
+    flex: 1; min-height: 170px; max-height: 36vh; overflow-y: auto;
     padding: 4px 16px 14px; -webkit-overflow-scrolling: touch;
 }
-.flcv-grid {
-    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
-}
+.flcv-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .flcv-tile {
-    position: relative; aspect-ratio: 2.2 / 1; border-radius: 13px; overflow: hidden;
+    position: relative; aspect-ratio: 1.8 / 1; border-radius: 13px; overflow: hidden;
     border: 2.5px solid transparent; cursor: pointer; background: #1e293b;
     padding: 0; transition: transform .12s ease, border-color .15s ease;
 }
@@ -16732,73 +16755,240 @@ function closeFeelsDescSheet() {
     background: #D80E45; color: #fff; font: inherit; font-size: .95rem; font-weight: 800;
     cursor: pointer; box-shadow: 0 8px 20px rgba(216,14,69,.3);
 }
+.flcv-apply:disabled { opacity: .65; }
 .flcv-apply:active { transform: scale(.98); }
 
-/* --- Channel QR Code Modal --- */
+/* --- 3. Channel QR Code Modal (Premium White + Pink/Purple Gradient Design) --- */
 #fl-qr-modal {
     position: fixed; inset: 0; z-index: 2147483200;
-    background: rgba(10,11,15,.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-    display: none; align-items: center; justify-content: center; padding: 20px;
+    background: rgba(15,16,24,.64); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    display: none; align-items: center; justify-content: center; padding: 16px;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 #fl-qr-modal.open { display: flex; }
 .flqr-card {
-    width: 100%; max-width: 356px; border-radius: 28px; overflow: hidden;
-    background: var(--surface, #fff); color: var(--text-main, #0f172a);
-    box-shadow: 0 24px 60px rgba(0,0,0,.35); text-align: center;
-    padding: 22px 20px 20px; position: relative;
+    width: 100%; max-width: 364px; border-radius: 30px; overflow: hidden;
+    background: #ffffff; color: #0f172a;
+    box-shadow: 0 24px 64px rgba(0,0,0,.38), 0 0 0 1.5px rgba(217,70,239,.28);
+    text-align: center; padding: 18px 18px 26px; position: relative;
 }
-[data-theme="dark"] .flqr-card { background: #181920; color: #fff; }
+.flqr-wave-top {
+    position: absolute; top: 0; left: 0; width: 135px; height: 95px;
+    pointer-events: none; z-index: 0;
+}
+.flqr-wave-bot {
+    position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 42px;
+    pointer-events: none; z-index: 0;
+}
 .flqr-close {
-    position: absolute; top: 14px; right: 14px; width: 34px; height: 34px;
-    border-radius: 50%; border: 0; background: rgba(127,127,127,.14);
-    color: inherit; font-size: 1.15rem; cursor: pointer;
+    position: absolute; top: 14px; right: 14px; z-index: 4;
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid rgba(15,23,42,.08); background: #f8fafc;
+    color: #0f172a; font-size: 1.2rem; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(15,23,42,.08);
+}
+.flqr-close:active { transform: scale(.92); }
+.flqr-inner { position: relative; z-index: 2; }
+.flqr-av-row {
+    display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px;
+}
+.flqr-sparks { width: 22px; height: 34px; flex: 0 0 auto; }
+.flqr-av-ring {
+    width: 74px; height: 74px; border-radius: 50%; padding: 3px;
+    background: linear-gradient(135deg, #FF007A 0%, #B814C9 52%, #5B21FF 100%);
+    box-shadow: 0 0 18px rgba(216,14,105,.35), 0 0 24px rgba(124,58,237,.22);
     display: flex; align-items: center; justify-content: center;
 }
 .flqr-av {
-    width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
-    border: 3px solid #D80E45; margin: 0 auto 8px; display: block; background: #1e293b;
+    width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+    display: block; background: #1e293b; border: 2px solid #fff;
 }
-.flqr-name { margin: 0; font-size: 1.15rem; font-weight: 900; letter-spacing: -.2px; }
-.flqr-handle { margin: 2px 0 14px; font-size: .85rem; font-weight: 700; color: var(--text-muted, #64748b); }
+.flqr-name-row {
+    display: flex; align-items: center; justify-content: center; gap: 10px; margin: 2px 6px 2px;
+}
+.flqr-line-l, .flqr-line-r {
+    flex: 1; height: 2px; border-radius: 2px; max-width: 68px;
+}
+.flqr-line-l { background: linear-gradient(90deg, rgba(255,0,122,0) 0%, #FF007A 55%, #6D28D9 100%); }
+.flqr-line-r { background: linear-gradient(90deg, #FF007A 0%, #6D28D9 55%, rgba(109,40,217,0) 100%); }
+.flqr-name {
+    margin: 0; font-size: 1.22rem; font-weight: 900; letter-spacing: -.3px; color: #0b0f19;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 195px;
+}
+.flqr-handle { margin: 0 0 14px; font-size: .86rem; font-weight: 700; color: #64748b; }
+.flqr-frame-wrap {
+    position: relative; display: inline-block; margin: 0 auto 14px;
+}
+.flqr-scan-badge {
+    position: absolute; top: -11px; left: -11px; z-index: 4;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: linear-gradient(135deg, #F40F7A 0%, #7C14E8 55%, #4F14FF 100%);
+    box-shadow: 0 6px 16px rgba(124,20,232,.42);
+    border: 2.5px solid #ffffff;
+    display: flex; align-items: center; justify-content: center; color: #fff;
+}
+.flqr-scan-badge svg { width: 20px; height: 20px; display: block; }
+.flqr-frame {
+    position: relative; padding: 3px; border-radius: 22px;
+    background: linear-gradient(135deg, #FF007A 0%, #C026D3 50%, #5B21FF 100%);
+    box-shadow: 0 10px 28px rgba(168,85,247,.2), 0 0 18px rgba(255,0,122,.14);
+}
 .flqr-box {
-    display: inline-flex; padding: 14px; border-radius: 22px;
-    background: #ffffff; box-shadow: 0 8px 26px rgba(0,0,0,.09);
-    border: 1px solid rgba(15,23,42,.08);
+    position: relative; background: #ffffff; border-radius: 19.5px; padding: 14px;
+    display: flex; align-items: center; justify-content: center;
 }
-.flqr-box canvas { width: 210px; height: 210px; display: block; border-radius: 8px; }
-.flqr-hint {
-    margin: 12px 0 16px; font-size: .78rem; font-weight: 600;
-    color: var(--text-muted, #64748b); line-height: 1.4;
+.flqr-box canvas { width: 188px; height: 188px; display: block; border-radius: 6px; }
+.flqr-corner {
+    position: absolute; width: 18px; height: 18px; pointer-events: none;
 }
-.flqr-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.flqr-c-tr { top: 8px; right: 8px; border-top: 2.8px solid #D946EF; border-right: 2.8px solid #7C3AED; border-radius: 0 6px 0 0; }
+.flqr-c-bl { bottom: 8px; left: 8px; border-bottom: 2.8px solid #FF007A; border-left: 2.8px solid #FF007A; border-radius: 0 0 0 6px; }
+.flqr-c-br { bottom: 8px; right: 8px; border-bottom: 2.8px solid #5B21FF; border-right: 2.8px solid #5B21FF; border-radius: 0 0 6px 0; }
+
+.flqr-scan-cta-row {
+    display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0 0 12px;
+}
+.flqr-scan-cta {
+    flex: 1; height: 48px; border-radius: 999px; border: 0; padding: 0 12px 0 16px;
+    background: linear-gradient(90deg, #F40F52 0%, #B814C9 52%, #4F14FF 100%);
+    color: #ffffff; font: inherit; font-size: .96rem; font-weight: 850;
+    cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    box-shadow: 0 8px 22px rgba(184,20,201,.34), inset 0 1px 1px rgba(255,255,255,.35);
+}
+.flqr-scan-cta:active { transform: scale(.98); }
+.flqr-scan-cta-l { display: inline-flex; align-items: center; gap: 10px; }
+.flqr-scan-div { width: 1.5px; height: 20px; background: rgba(255,255,255,.42); border-radius: 2px; }
+.flqr-scan-chev {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,.55); background: rgba(255,255,255,.14);
+    display: inline-flex; align-items: center; justify-content: center; font-size: .78rem;
+}
+
+.flqr-info-pill {
+    display: flex; align-items: center; gap: 10px; text-align: left;
+    padding: 10px 12px; border-radius: 16px; margin: 0 0 14px;
+    background: #f5f6fb; border: 1px solid rgba(124,58,237,.14);
+}
+.flqr-info-ico {
+    width: 22px; height: 22px; border-radius: 50%; flex: 0 0 22px;
+    background: linear-gradient(135deg, #7C3AED, #4F14FF); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: .72rem; font-weight: 900;
+}
+.flqr-info-txt {
+    margin: 0; font-size: .76rem; font-weight: 700; color: #1e293b; line-height: 1.38;
+}
+.flqr-info-txt b { color: #E11D74; font-weight: 850; }
+
+.flqr-btns { display: grid; grid-template-columns: 1.08fr 1fr 1fr; gap: 9px; position: relative; z-index: 2; }
 .flqr-btn {
-    height: 44px; border-radius: 13px; border: 1px solid rgba(127,127,127,.22);
-    background: rgba(127,127,127,.08); color: inherit;
-    font: inherit; font-size: .8rem; font-weight: 800; cursor: pointer;
-    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    height: 44px; border-radius: 999px; border: 1px solid rgba(15,23,42,.12);
+    background: #ffffff; color: #0f172a;
+    font: inherit; font-size: .84rem; font-weight: 800; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    box-shadow: 0 4px 12px rgba(15,23,42,.06);
 }
-.flqr-btn.pri { background: #D80E45; color: #fff; border-color: #D80E45; }
+.flqr-btn.pri {
+    border: 0; color: #ffffff;
+    background: linear-gradient(90deg, #F40F52 0%, #8B14E8 100%);
+    box-shadow: 0 6px 16px rgba(244,15,82,.32);
+}
 .flqr-btn:active { transform: scale(.96); }
+
+/* --- 4. Full-Screen QR Code Scan System Page (matching 1000163074.jpg) --- */
+#fl-qr-scanner-modal {
+    position: fixed; inset: 0; z-index: 2147483240;
+    background: #000000; color: #ffffff;
+    display: none; flex-direction: column;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow: hidden;
+}
+#fl-qr-scanner-modal.open { display: flex; }
+.flsc-video {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; background: #000; z-index: 0;
+}
+.flsc-scrim {
+    position: absolute; inset: 0; z-index: 1;
+    background: radial-gradient(circle at 50% 44%, rgba(0,0,0,.05) 0%, rgba(0,0,0,.58) 72%, rgba(0,0,0,.85) 100%);
+    pointer-events: none;
+}
+.flsc-top {
+    position: relative; z-index: 3;
+    display: flex; align-items: center; justify-content: center;
+    height: 56px; padding-top: env(safe-area-inset-top, 0px);
+}
+.flsc-back {
+    position: absolute; left: 10px; top: calc(6px + env(safe-area-inset-top, 0px));
+    width: 44px; height: 44px; border: 0; background: transparent; color: #fff;
+    font-size: 1.35rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.flsc-title { margin: 0; font-size: 1.15rem; font-weight: 800; letter-spacing: -.1px; }
+.flsc-center {
+    position: relative; z-index: 3; flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 0 24px;
+}
+.flsc-frame {
+    position: relative; width: min(74vw, 260px); height: min(74vw, 260px);
+    overflow: hidden;
+}
+.flsc-br {
+    position: absolute; width: 26px; height: 26px; border-color: #ffffff; border-style: solid; border-width: 0;
+}
+.flsc-tl { top: 0; left: 0; border-top-width: 3.5px; border-left-width: 3.5px; border-top-left-radius: 6px; }
+.flsc-tr { top: 0; right: 0; border-top-width: 3.5px; border-right-width: 3.5px; border-top-right-radius: 6px; }
+.flsc-bl { bottom: 0; left: 0; border-bottom-width: 3.5px; border-left-width: 3.5px; border-bottom-left-radius: 6px; }
+.flsc-br2 { bottom: 0; right: 0; border-bottom-width: 3.5px; border-right-width: 3.5px; border-bottom-right-radius: 6px; }
+.flsc-laser {
+    position: absolute; left: 6px; right: 6px; height: 56px;
+    background:
+        repeating-linear-gradient(90deg, rgba(255,255,255,.22) 0 1px, transparent 1px 8px),
+        repeating-linear-gradient(0deg, rgba(255,255,255,.22) 0 1px, transparent 1px 8px),
+        linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.32) 88%, rgba(255,255,255,.95) 100%);
+    border-bottom: 2px solid #ffffff;
+    box-shadow: 0 4px 18px rgba(255,255,255,.45);
+    animation: flscSweep 2.4s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes flscSweep {
+    0%   { top: 4px; opacity: .9; }
+    50%  { top: calc(100% - 60px); opacity: 1; }
+    100% { top: 4px; opacity: .9; }
+}
+.flsc-torch {
+    margin-top: 22px; border: 0; background: transparent; color: #ffffff;
+    font: inherit; font-size: .95rem; font-weight: 700; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px;
+}
+.flsc-torch.on { color: #fde047; }
+.flsc-sub {
+    margin: 10px 0 0; font-size: .88rem; font-weight: 600; color: rgba(255,255,255,.78);
+    text-align: center;
+}
+.flsc-status {
+    margin: 8px 0 0; min-height: 18px; font-size: .78rem; font-weight: 700; color: #fb7185;
+    text-align: center;
+}
+.flsc-bottom {
+    position: relative; z-index: 3;
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 16px 32px calc(30px + env(safe-area-inset-bottom, 0px));
+}
+.flsc-act {
+    border: 0; background: transparent; color: #ffffff; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 8px; font: inherit;
+}
+.flsc-act-circle {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: rgba(255,255,255,.16); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+}
+.flsc-act:active .flsc-act-circle { transform: scale(.93); background: rgba(255,255,255,.26); }
+.flsc-act-circle svg { width: 26px; height: 26px; display: block; }
+.flsc-act span { font-size: .82rem; font-weight: 700; color: rgba(255,255,255,.88); }
 `;
         document.head.appendChild(st);
-    }
-
-    function canvasToJpegFile(canvas, filename, quality) {
-        return new Promise((resolve) => {
-            const q = quality || 0.92;
-            const dataUrl = canvas.toDataURL('image/jpeg', q);
-            if (canvas.toBlob) {
-                canvas.toBlob((blob) => {
-                    if (blob) {
-                        try { resolve({ file: new File([blob], filename, { type: 'image/jpeg' }), dataUrl }); return; } catch (e) {}
-                    }
-                    resolve({ file: dataUrlToFile(dataUrl, filename), dataUrl });
-                }, 'image/jpeg', q);
-            } else {
-                resolve({ file: dataUrlToFile(dataUrl, filename), dataUrl });
-            }
-        });
     }
 
     function dataUrlToFile(dataUrl, filename) {
@@ -16811,8 +17001,22 @@ function closeFeelsDescSheet() {
         try { return new File([u8], filename, { type: mime }); } catch (e) { return new Blob([u8], { type: mime }); }
     }
 
+    function canvasToJpegFileSync(canvas, filename, quality) {
+        const dataUrl = canvas.toDataURL('image/jpeg', quality || 0.92);
+        return { file: dataUrlToFile(dataUrl, filename), dataUrl };
+    }
+
+    function drawImageCover(ctx, img, W, H) {
+        const ir = (img.width || 1) / (img.height || 1);
+        const cr = W / H;
+        let dw = W, dh = H, dx = 0, dy = 0;
+        if (ir > cr) { dh = H; dw = H * ir; dx = (W - dw) / 2; }
+        else { dw = W; dh = W / ir; dy = (H - dh) / 2; }
+        ctx.drawImage(img, dx, dy, dw, dh);
+    }
+
     /* =================================================================
-       1. PROFILE PHOTO CROP & ZOOM
+       1. PROFILE PHOTO CROP & ZOOM (WHITE STUDIO)
        ================================================================= */
     window.openProfilePhotoCropper = function (file, onDone) {
         if (!file) return;
@@ -16870,7 +17074,7 @@ function closeFeelsDescSheet() {
         function draw(withOverlay) {
             const W = canvas.width, H = canvas.height;
             ctx.clearRect(0, 0, W, H);
-            ctx.fillStyle = '#0f1118';
+            ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, W, H);
             if (!state.img) return;
             clampPan();
@@ -16885,24 +17089,23 @@ function closeFeelsDescSheet() {
             if (withOverlay) {
                 const r = W * 0.46;
                 ctx.save();
-                ctx.fillStyle = 'rgba(0,0,0,0.52)';
+                ctx.fillStyle = 'rgba(255,255,255,0.68)';
                 ctx.beginPath();
                 ctx.rect(0, 0, W, H);
                 ctx.arc(W / 2, H / 2, r, 0, Math.PI * 2, true);
                 ctx.fill('evenodd');
 
-                ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+                ctx.strokeStyle = '#D80E45';
                 ctx.lineWidth = 4;
                 ctx.beginPath();
                 ctx.arc(W / 2, H / 2, r, 0, Math.PI * 2);
                 ctx.stroke();
 
-                // Subtle rule-of-thirds inside circle
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(W / 2, H / 2, r, 0, Math.PI * 2);
                 ctx.clip();
-                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.strokeStyle = 'rgba(255,255,255,0.45)';
                 ctx.lineWidth = 1.5;
                 for (let i = 1; i <= 2; i++) {
                     const p = W / 2 - r + (2 * r * i) / 3;
@@ -16921,7 +17124,6 @@ function closeFeelsDescSheet() {
             draw(true);
         }
 
-        // Load image
         const img = new Image();
         const objectUrl = URL.createObjectURL(file);
         img.onload = () => {
@@ -16938,7 +17140,6 @@ function closeFeelsDescSheet() {
         };
         img.src = objectUrl;
 
-        // Drag & Pinch handlers
         let dragging = false, lx = 0, ly = 0, pinchDist = 0, pinchStartZoom = 1;
         function toCanvasScale(dx) {
             const rect = stage.getBoundingClientRect();
@@ -16977,10 +17178,7 @@ function closeFeelsDescSheet() {
             draw(true);
         };
         const onUp = () => { dragging = false; pinchDist = 0; };
-        const onWheel = (e) => {
-            e.preventDefault();
-            setZoom(state.zoom + (e.deltaY < 0 ? 0.12 : -0.12));
-        };
+        const onWheel = (e) => { e.preventDefault(); setZoom(state.zoom + (e.deltaY < 0 ? 0.12 : -0.12)); };
 
         stage.onmousedown = onDown;
         stage.ontouchstart = onDown;
@@ -17005,15 +17203,13 @@ function closeFeelsDescSheet() {
         document.getElementById('flcr-rotate').onclick = () => { state.rot = (state.rot + 90) % 360; draw(true); };
         document.getElementById('flcr-reset').onclick = () => { state.x = 0; state.y = 0; state.rot = 0; setZoom(1); };
         document.getElementById('flcr-cancel').onclick = () => cleanup();
-        document.getElementById('flcr-apply').onclick = async () => {
-            // Render clean un-masked crop matching the circular viewport area (inner 92%)
+        document.getElementById('flcr-apply').onclick = () => {
             const out = document.createElement('canvas');
             out.width = 640; out.height = 640;
             const octx = out.getContext('2d');
-            octx.fillStyle = '#0f1118';
+            octx.fillStyle = '#ffffff';
             octx.fillRect(0, 0, 640, 640);
             octx.save();
-            // Scale slightly so the circle edge fills the 640x640 avatar cleanly
             const boost = 1 / 0.92;
             octx.translate(320 + state.x * boost, 320 + state.y * boost);
             octx.rotate(state.rot * Math.PI / 180);
@@ -17021,14 +17217,14 @@ function closeFeelsDescSheet() {
             octx.scale(sc, sc);
             octx.drawImage(state.img, -state.img.width / 2, -state.img.height / 2);
             octx.restore();
-            const res = await canvasToJpegFile(out, 'avatar_cropped.jpg', 0.92);
+            const res = canvasToJpegFileSync(out, 'avatar_cropped.jpg', 0.92);
             cleanup();
             if (typeof onDone === 'function') onDone(res.file, res.dataUrl);
         };
     };
 
     /* =================================================================
-       2. CHANNEL BACKGROUND / COVER STUDIO (Templates + Gradients + Live Preview)
+       2. CHANNEL BACKGROUND / COVER STUDIO (EXACT 1.8:1 RATIO + DIRECT SAVE)
        ================================================================= */
     const COVER_TEMPLATES = [
         { id: 'aurora', name: 'Aurora Mesh', draw(ctx, W, H) {
@@ -17155,6 +17351,35 @@ function closeFeelsDescSheet() {
         return cv;
     }
 
+    function normalizePhotoCoverFile(file) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            const objUrl = URL.createObjectURL(file);
+            img.onload = () => {
+                try {
+                    const cv = document.createElement('canvas');
+                    cv.width = 1620; cv.height = 900; // Exact 1.8:1 ratio
+                    drawImageCover(cv.getContext('2d'), img, 1620, 900);
+                    const res = canvasToJpegFileSync(cv, 'channel_cover_photo.jpg', 0.92);
+                    URL.revokeObjectURL(objUrl);
+                    resolve(res);
+                } catch (e) {
+                    URL.revokeObjectURL(objUrl);
+                    const fr = new FileReader();
+                    fr.onload = () => resolve({ file, dataUrl: fr.result });
+                    fr.readAsDataURL(file);
+                }
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(objUrl);
+                const fr = new FileReader();
+                fr.onload = () => resolve({ file, dataUrl: fr.result });
+                fr.readAsDataURL(file);
+            };
+            img.src = objUrl;
+        });
+    }
+
     window.openChannelCoverPicker = function (opts) {
         opts = opts || {};
         ensureStudioStyles();
@@ -17216,25 +17441,22 @@ function closeFeelsDescSheet() {
             }
             if (selection.kind === 'template') {
                 const tpl = COVER_TEMPLATES.find(t => t.id === selection.id) || COVER_TEMPLATES[0];
-                prevImg.src = renderTemplateCanvas(tpl, 640, 272).toDataURL('image/jpeg', 0.88);
+                prevImg.src = renderTemplateCanvas(tpl, 648, 360).toDataURL('image/jpeg', 0.88);
                 return;
             }
             if (selection.kind === 'gradient') {
-                prevImg.src = renderGradientCanvas(selection.c1, selection.c2, selection.ang, 640, 272).toDataURL('image/jpeg', 0.88);
+                prevImg.src = renderGradientCanvas(selection.c1, selection.c2, selection.ang, 648, 360).toDataURL('image/jpeg', 0.88);
             }
         }
 
-        if (opts.currentUrl) {
-            prevImg.src = opts.currentUrl;
-        } else {
-            updateLivePreview();
-        }
+        if (opts.currentUrl) prevImg.src = opts.currentUrl;
+        else updateLivePreview();
 
         function renderTab() {
             modal.querySelectorAll('.flcv-tab').forEach(b => b.classList.toggle('active', b.dataset.ctab === activeTab));
             if (activeTab === 'templates') {
                 body.innerHTML = `<div class="flcv-grid">${COVER_TEMPLATES.map(t => {
-                    const thumb = renderTemplateCanvas(t, 320, 145).toDataURL('image/jpeg', 0.82);
+                    const thumb = renderTemplateCanvas(t, 324, 180).toDataURL('image/jpeg', 0.82);
                     const on = selection.kind === 'template' && selection.id === t.id;
                     return `<button type="button" class="flcv-tile${on ? ' selected' : ''}" data-tpl="${t.id}"><img src="${thumb}" alt="${t.name}"><span class="flcv-tile-lbl">${t.name}</span></button>`;
                 }).join('')}</div>`;
@@ -17295,17 +17517,14 @@ function closeFeelsDescSheet() {
                     <div class="flcv-photo-box" id="flcv-pick-photo">
                         <i class="fas fa-images"></i>
                         <p>Choose Photo from Gallery</p>
-                        <span>Opens Custom Media Picker with live cover preview</span>
+                        <span>Opens Custom Media Picker with exact 1.8:1 live preview</span>
                     </div>
                     <input type="file" id="flcv-photo-fallback" accept="image/*" style="display:none;">`;
-                const onPhotoPicked = (f) => {
+                const onPhotoPicked = async (f) => {
                     if (!f) return;
-                    const fr = new FileReader();
-                    fr.onload = () => {
-                        selection = { ...selection, kind: 'photo', file: f, previewUrl: fr.result };
-                        updateLivePreview();
-                    };
-                    fr.readAsDataURL(f);
+                    const res = await normalizePhotoCoverFile(f);
+                    selection = { ...selection, kind: 'photo', file: res.file, previewUrl: res.dataUrl };
+                    updateLivePreview();
                 };
                 document.getElementById('flcv-pick-photo').onclick = () => {
                     if (typeof window.openMediaPicker === 'function') {
@@ -17322,26 +17541,34 @@ function closeFeelsDescSheet() {
             btn.onclick = () => { activeTab = btn.dataset.ctab; renderTab(); };
         });
         document.getElementById('flcv-close').onclick = () => modal.classList.remove('open');
+        applyBtn.textContent = 'Apply Cover';
+        applyBtn.disabled = false;
         applyBtn.onclick = async () => {
+            if (applyBtn.disabled) return;
             applyBtn.disabled = true;
+            applyBtn.textContent = 'Saving Cover...';
             try {
+                let res;
                 if (selection.kind === 'photo' && selection.file) {
-                    modal.classList.remove('open');
-                    if (typeof opts.onApply === 'function') opts.onApply(selection.file, selection.previewUrl);
-                    return;
-                }
-                let cv;
-                if (selection.kind === 'gradient') {
-                    cv = renderGradientCanvas(selection.c1, selection.c2, selection.ang, 1600, 680);
+                    res = { file: selection.file, dataUrl: selection.previewUrl };
+                } else if (selection.kind === 'gradient') {
+                    const cv = renderGradientCanvas(selection.c1, selection.c2, selection.ang, 1620, 900);
+                    res = canvasToJpegFileSync(cv, `channel_cover_${selection.id || 'custom'}.jpg`, 0.92);
                 } else {
                     const tpl = COVER_TEMPLATES.find(t => t.id === selection.id) || COVER_TEMPLATES[0];
-                    cv = renderTemplateCanvas(tpl, 1600, 680);
+                    const cv = renderTemplateCanvas(tpl, 1620, 900);
+                    res = canvasToJpegFileSync(cv, `channel_cover_${tpl.id}.jpg`, 0.92);
                 }
-                const res = await canvasToJpegFile(cv, `channel_cover_${selection.id || 'custom'}.jpg`, 0.92);
+                if (typeof opts.onApply === 'function') {
+                    await Promise.resolve(opts.onApply(res.file, res.dataUrl));
+                }
                 modal.classList.remove('open');
-                if (typeof opts.onApply === 'function') opts.onApply(res.file, res.dataUrl);
+            } catch (err) {
+                console.error('Apply cover failed:', err);
+                if (typeof showNotification === 'function') showNotification('Failed to save cover. Please try again.', 'error');
             } finally {
                 applyBtn.disabled = false;
+                applyBtn.textContent = 'Apply Cover';
             }
         };
 
@@ -17388,7 +17615,6 @@ function closeFeelsDescSheet() {
             return res;
         }
 
-        // Version table for EC Level M: [totalCodewords, ecPerBlock, blocksG1, dataG1, blocksG2, dataG2, alignCoords]
         const VER_M = [
             null,
             [26,  10, 1, 16, 0, 0, []],
@@ -17404,7 +17630,6 @@ function closeFeelsDescSheet() {
         ];
 
         function bchFormat(mask) {
-            // EC Level M = 00 (2 bits), mask = 3 bits
             const data = (0b00 << 3) | mask;
             let rem = data << 10;
             for (let i = 4; i >= 0; i--) {
@@ -17425,7 +17650,7 @@ function closeFeelsDescSheet() {
             let ver = 0;
             for (let v = 1; v < VER_M.length; v++) {
                 const cap = VER_M[v][2] * VER_M[v][3] + VER_M[v][4] * VER_M[v][5];
-                const hdrBytes = (v <= 9) ? 2 : 3; // 4-bit mode + 8/16-bit len + 4-bit term
+                const hdrBytes = (v <= 9) ? 2 : 3;
                 if (bytes.length + hdrBytes <= cap) { ver = v; break; }
             }
             if (!ver) ver = VER_M.length - 1;
@@ -17434,7 +17659,7 @@ function closeFeelsDescSheet() {
 
             const bits = [];
             const pushBits = (val, n) => { for (let i = n - 1; i >= 0; i--) bits.push((val >>> i) & 1); };
-            pushBits(0b0100, 4); // Byte mode
+            pushBits(0b0100, 4);
             pushBits(bytes.length, ver <= 9 ? 8 : 16);
             for (let i = 0; i < bytes.length; i++) pushBits(bytes[i], 8);
             const maxBits = dataCap * 8;
@@ -17451,7 +17676,6 @@ function closeFeelsDescSheet() {
                 dataCW[i] = b;
             }
 
-            // Split blocks & compute RS EC
             const blocks = [], ecs = [];
             let off = 0;
             for (let i = 0; i < b1; i++) {
@@ -17497,9 +17721,8 @@ function closeFeelsDescSheet() {
                 setFn(6, i, (i & 1) === 0);
                 setFn(i, 6, (i & 1) === 0);
             }
-            setFn(N - 8, 8, 1); // Dark module
+            setFn(N - 8, 8, 1);
 
-            // Alignment patterns
             for (let i = 0; i < aligns.length; i++) {
                 for (let j = 0; j < aligns.length; j++) {
                     const r = aligns[i], c = aligns[j];
@@ -17513,13 +17736,11 @@ function closeFeelsDescSheet() {
                 }
             }
 
-            // Reserve format info areas
             for (let i = 0; i < 9; i++) {
                 if (i !== 6) { fn[8][i] = 1; fn[i][8] = 1; }
             }
             for (let i = N - 8; i < N; i++) { fn[8][i] = 1; fn[i][8] = 1; }
 
-            // Version info for v >= 7
             if (ver >= 7) {
                 const vbits = bchVersion(ver);
                 for (let i = 0; i < 18; i++) {
@@ -17529,7 +17750,6 @@ function closeFeelsDescSheet() {
                 }
             }
 
-            // Place data bits zigzag
             let bitIdx = 0;
             const totalBits = stream.length * 8;
             for (let col = N - 1; col >= 1; col -= 2) {
@@ -17548,7 +17768,6 @@ function closeFeelsDescSheet() {
                 }
             }
 
-            // Evaluate 8 masks, pick lowest penalty
             const maskFn = [
                 (r, c) => ((r + c) & 1) === 0,
                 (r, c) => (r & 1) === 0,
@@ -17560,7 +17779,7 @@ function closeFeelsDescSheet() {
                 (r, c) => ((((r + c) & 1) + ((r * c) % 3)) & 1) === 0
             ];
 
-            let bestMask = 0, bestPen = Infinity, bestMat = null;
+            let bestPen = Infinity, bestMat = null;
             for (let m = 0; m < 8; m++) {
                 const mat = Array.from({ length: N }, (_, r) => {
                     const row = new Uint8Array(N);
@@ -17575,7 +17794,6 @@ function closeFeelsDescSheet() {
                     mat[coords1[i][0]][coords1[i][1]] = b;
                     mat[coords2[i][0]][coords2[i][1]] = b;
                 }
-                // Simple penalty score (runs + 2x2 blocks + balance)
                 let pen = 0, dark = 0;
                 for (let r = 0; r < N; r++) {
                     let runR = 1, runC = 1;
@@ -17589,7 +17807,7 @@ function closeFeelsDescSheet() {
                     }
                 }
                 pen += Math.floor(Math.abs(dark * 100 / (N * N) - 50) / 5) * 10;
-                if (pen < bestPen) { bestPen = pen; bestMask = m; bestMat = mat; }
+                if (pen < bestPen) { bestPen = pen; bestMat = mat; }
             }
             return bestMat;
         }
@@ -17602,14 +17820,14 @@ function closeFeelsDescSheet() {
     function drawQRToCanvas(canvas, text) {
         const mat = QR.encode(text);
         const N = mat.length;
-        const quiet = 4;
+        const quiet = 2;
         const total = N + quiet * 2;
         const size = canvas.width;
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, size, size);
         const cell = size / total;
-        ctx.fillStyle = '#111827';
+        ctx.fillStyle = '#09090b';
         for (let r = 0; r < N; r++) {
             for (let c = 0; c < N; c++) {
                 if (mat[r][c]) {
@@ -17632,6 +17850,9 @@ function closeFeelsDescSheet() {
         return 'https://flaynity.com/' + (params.length ? '?' + params.join('&') : '');
     };
 
+    const SPARKS_L = `<svg class="flqr-sparks" viewBox="0 0 24 36" fill="none"><line x1="18" y1="6" x2="8" y2="3" stroke="#EC4899" stroke-width="2.6" stroke-linecap="round"/><line x1="17" y1="18" x2="5" y2="18" stroke="#A855F7" stroke-width="2.6" stroke-linecap="round"/><line x1="18" y1="30" x2="8" y2="33" stroke="#7C3AED" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+    const SPARKS_R = `<svg class="flqr-sparks" viewBox="0 0 24 36" fill="none"><line x1="6" y1="6" x2="16" y2="3" stroke="#EC4899" stroke-width="2.6" stroke-linecap="round"/><line x1="7" y1="18" x2="19" y2="18" stroke="#A855F7" stroke-width="2.6" stroke-linecap="round"/><line x1="6" y1="30" x2="16" y2="33" stroke="#7C3AED" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+
     window.openChannelQRModal = function (targetChannel) {
         ensureStudioStyles();
         if (typeof playUI === 'function') playUI('click');
@@ -17646,16 +17867,59 @@ function closeFeelsDescSheet() {
             modal.id = 'fl-qr-modal';
             modal.innerHTML = `
                 <div class="flqr-card" onclick="event.stopPropagation()">
-                    <button type="button" class="flqr-close" id="flqr-close">&times;</button>
-                    <img class="flqr-av" id="flqr-av" alt="Avatar" src="">
-                    <h3 class="flqr-name" id="flqr-name">Channel</h3>
-                    <p class="flqr-handle" id="flqr-handle">@handle</p>
-                    <div class="flqr-box"><canvas id="flqr-canvas" width="420" height="420"></canvas></div>
-                    <p class="flqr-hint">Scan this unique QR code with any camera to open this Flaynity channel instantly.</p>
-                    <div class="flqr-btns">
-                        <button type="button" class="flqr-btn pri" id="flqr-download"><i class="fas fa-download"></i> Save</button>
-                        <button type="button" class="flqr-btn" id="flqr-share"><i class="fas fa-share-nodes"></i> Share</button>
-                        <button type="button" class="flqr-btn" id="flqr-copy"><i class="fas fa-link"></i> Copy</button>
+                    <svg class="flqr-wave-top" viewBox="0 0 140 100" preserveAspectRatio="none"><defs><linearGradient id="flqrWT" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF007A"/><stop offset="100%" stop-color="#7C14E8"/></linearGradient></defs><path d="M0,0 L125,0 C75,18 32,48 0,92 Z" fill="url(#flqrWT)" opacity=".92"/></svg>
+                    <svg class="flqr-wave-bot" viewBox="0 0 360 44" preserveAspectRatio="none"><defs><linearGradient id="flqrWB" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#FF007A"/><stop offset="52%" stop-color="#A21CAF"/><stop offset="100%" stop-color="#3B00FF"/></linearGradient></defs><path d="M0,12 C95,44 215,-2 360,22 L360,44 L0,44 Z" fill="url(#flqrWB)"/></svg>
+                    <button type="button" class="flqr-close" id="flqr-close" aria-label="Close">&times;</button>
+                    <div class="flqr-inner">
+                        <div class="flqr-av-row">
+                            ${SPARKS_L}
+                            <div class="flqr-av-ring"><img class="flqr-av" id="flqr-av" alt="Avatar" src=""></div>
+                            ${SPARKS_R}
+                        </div>
+                        <div class="flqr-name-row">
+                            <span class="flqr-line-l"></span>
+                            <h3 class="flqr-name" id="flqr-name">Channel</h3>
+                            <span class="flqr-line-r"></span>
+                        </div>
+                        <p class="flqr-handle" id="flqr-handle">@handle</p>
+
+                        <div class="flqr-frame-wrap">
+                            <div class="flqr-scan-badge" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none"/></svg>
+                            </div>
+                            <div class="flqr-frame">
+                                <div class="flqr-box">
+                                    <span class="flqr-corner flqr-c-tr"></span>
+                                    <span class="flqr-corner flqr-c-bl"></span>
+                                    <span class="flqr-corner flqr-c-br"></span>
+                                    <canvas id="flqr-canvas" width="420" height="420"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flqr-scan-cta-row">
+                            ${SPARKS_L}
+                            <button type="button" class="flqr-scan-cta" id="flqr-open-scanner">
+                                <span class="flqr-scan-cta-l">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
+                                    <span class="flqr-scan-div"></span>
+                                </span>
+                                <span>QR Scan System</span>
+                                <span class="flqr-scan-chev"><i class="fas fa-chevron-right"></i></span>
+                            </button>
+                            ${SPARKS_R}
+                        </div>
+
+                        <div class="flqr-info-pill">
+                            <span class="flqr-info-ico">i</span>
+                            <p class="flqr-info-txt">Scan this unique QR code with any camera to open this <b>Flaynity</b> channel instantly.</p>
+                        </div>
+
+                        <div class="flqr-btns">
+                            <button type="button" class="flqr-btn pri" id="flqr-download"><i class="fas fa-download"></i> Save</button>
+                            <button type="button" class="flqr-btn" id="flqr-share"><i class="fas fa-share-nodes"></i> Share</button>
+                            <button type="button" class="flqr-btn" id="flqr-copy"><i class="fas fa-link"></i> Copy</button>
+                        </div>
                     </div>
                 </div>`;
             modal.onclick = () => modal.classList.remove('open');
@@ -17664,8 +17928,7 @@ function closeFeelsDescSheet() {
 
         const url = window.getChannelShareUrl(ch);
         const av = document.getElementById('flqr-av');
-        const avUrl = ch.avatarUrl || ch.channelImageUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop';
-        av.src = avUrl;
+        av.src = ch.avatarUrl || ch.channelImageUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop';
         document.getElementById('flqr-name').textContent = ch.channelName || 'Flaynity Channel';
         document.getElementById('flqr-handle').textContent = '@' + String(ch.handle || 'channel').replace(/^@/, '');
 
@@ -17673,6 +17936,10 @@ function closeFeelsDescSheet() {
         drawQRToCanvas(qrCanvas, url);
 
         document.getElementById('flqr-close').onclick = () => modal.classList.remove('open');
+        document.getElementById('flqr-open-scanner').onclick = () => {
+            modal.classList.remove('open');
+            window.openQRScannerPage();
+        };
         document.getElementById('flqr-copy').onclick = () => {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(url).then(() => {
@@ -17691,32 +17958,29 @@ function closeFeelsDescSheet() {
             else document.getElementById('flqr-copy').click();
         };
         document.getElementById('flqr-download').onclick = () => {
-            // Render a branded shareable PNG card
             const card = document.createElement('canvas');
             card.width = 720; card.height = 920;
             const ctx = card.getContext('2d');
             const bg = ctx.createLinearGradient(0, 0, 720, 920);
-            bg.addColorStop(0, '#0f172a'); bg.addColorStop(1, '#1e1b4b');
+            bg.addColorStop(0, '#FF007A'); bg.addColorStop(.5, '#7C14E8'); bg.addColorStop(1, '#3B00FF');
             ctx.fillStyle = bg; ctx.fillRect(0, 0, 720, 920);
-            // White inner card
             ctx.fillStyle = '#ffffff';
-            ctx.beginPath(); ctx.roundRect(60, 70, 600, 780, 44); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(52, 60, 616, 800, 48); ctx.fill();
             ctx.fillStyle = '#D80E45';
-            ctx.font = '800 34px sans-serif'; ctx.textAlign = 'center';
-            ctx.fillText('FLAYNITY', 360, 145);
+            ctx.font = '900 34px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('FLAYNITY', 360, 138);
             ctx.fillStyle = '#0f172a';
             ctx.font = '800 36px sans-serif';
-            ctx.fillText(String(ch.channelName || 'Flaynity Channel').slice(0, 26), 360, 210);
+            ctx.fillText(String(ch.channelName || 'Flaynity Channel').slice(0, 26), 360, 204);
             ctx.fillStyle = '#64748b';
-            ctx.font = '600 24px sans-serif';
-            ctx.fillText('@' + String(ch.handle || 'channel').replace(/^@/, ''), 360, 250);
-            ctx.drawImage(qrCanvas, 150, 290, 420, 420);
+            ctx.font = '700 24px sans-serif';
+            ctx.fillText('@' + String(ch.handle || 'channel').replace(/^@/, ''), 360, 246);
+            ctx.drawImage(qrCanvas, 150, 286, 420, 420);
             ctx.fillStyle = '#64748b';
             ctx.font = '600 21px sans-serif';
-            ctx.fillText('Scan to open channel on Flaynity', 360, 775);
-            const dataUrl = card.toDataURL('image/png');
+            ctx.fillText('Scan to open channel on Flaynity', 360, 774);
             const a = document.createElement('a');
-            a.href = dataUrl;
+            a.href = card.toDataURL('image/png');
             a.download = `flaynity_qr_${String(ch.handle || 'channel').replace(/[^a-z0-9._-]/gi, '')}.png`;
             document.body.appendChild(a); a.click(); a.remove();
             if (typeof showNotification === 'function') showNotification('QR Code saved!', 'success');
@@ -17726,7 +17990,191 @@ function closeFeelsDescSheet() {
     };
 
     /* =================================================================
-       4. PRIVACY HELPERS & SCAN-TO-OPEN CHANNEL PROFILE DEEP LINK
+       4. FULL-SCREEN QR CODE SCAN SYSTEM PAGE (matching 1000163074.jpg)
+       ================================================================= */
+    function parseChannelTargetFromQR(rawText) {
+        const txt = String(rawText || '').trim();
+        if (!txt) return null;
+        try {
+            const u = new URL(txt);
+            const ch = u.searchParams.get('channel') || u.searchParams.get('ch') || u.searchParams.get('handle');
+            if (ch) return ch;
+            if (/^\/@[A-Za-z0-9._-]+/.test(u.pathname)) return u.pathname.slice(1).split('/')[0];
+            if (u.hash && /^#(?:channel=|@)([A-Za-z0-9._-]+)/.test(u.hash)) {
+                const m = u.hash.match(/^#(?:channel=|@)([A-Za-z0-9._-]+)/);
+                return u.hash.startsWith('#@') ? '@' + m[1] : m[1];
+            }
+        } catch (e) {}
+        if (/^@[A-Za-z0-9._-]{3,30}$/.test(txt)) return txt;
+        return null;
+    }
+
+    window.openQRScannerPage = function () {
+        ensureStudioStyles();
+        if (typeof playUI === 'function') playUI('click');
+        let modal = document.getElementById('fl-qr-scanner-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'fl-qr-scanner-modal';
+            modal.innerHTML = `
+                <video class="flsc-video" id="flsc-video" autoplay playsinline muted></video>
+                <div class="flsc-scrim"></div>
+                <header class="flsc-top">
+                    <button type="button" class="flsc-back" id="flsc-back" aria-label="Back"><i class="fas fa-arrow-left"></i></button>
+                    <h3 class="flsc-title">Scan</h3>
+                </header>
+                <div class="flsc-center">
+                    <div class="flsc-frame">
+                        <span class="flsc-br flsc-tl"></span>
+                        <span class="flsc-br flsc-tr"></span>
+                        <span class="flsc-br flsc-bl"></span>
+                        <span class="flsc-br flsc-br2"></span>
+                        <div class="flsc-laser"></div>
+                    </div>
+                    <button type="button" class="flsc-torch" id="flsc-torch">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6c0 2-2 2-2 4v10a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V10c0-2-2-2-2-4V2h12z"/><line x1="6" y1="6" x2="18" y2="6"/><line x1="12" y1="12" x2="12" y2="12.01"/></svg>
+                        <span id="flsc-torch-txt">Tap to turn light on</span>
+                    </button>
+                    <p class="flsc-sub">Scan your friend's QR code to connect</p>
+                    <p class="flsc-status" id="flsc-status"></p>
+                </div>
+                <div class="flsc-bottom">
+                    <button type="button" class="flsc-act" id="flsc-my-qr">
+                        <span class="flsc-act-circle">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 14h2v2M14 19h2v2M19 19h2v2"/></svg>
+                        </span>
+                        <span>My QR code</span>
+                    </button>
+                    <button type="button" class="flsc-act" id="flsc-gallery">
+                        <span class="flsc-act-circle">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4.5-4.5L7 20"/></svg>
+                        </span>
+                        <span>Gallery</span>
+                    </button>
+                </div>
+                <input type="file" id="flsc-file" accept="image/*" style="display:none;">`;
+            document.body.appendChild(modal);
+        }
+
+        const video = document.getElementById('flsc-video');
+        const statusEl = document.getElementById('flsc-status');
+        const torchBtn = document.getElementById('flsc-torch');
+        const torchTxt = document.getElementById('flsc-torch-txt');
+        let stream = null, track = null, rafId = 0, active = true, torchOn = false;
+        const detector = (typeof window.BarcodeDetector === 'function') ? new window.BarcodeDetector({ formats: ['qr_code'] }) : null;
+
+        function stopScanner() {
+            active = false;
+            if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+            if (stream) {
+                stream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
+                stream = null; track = null;
+            }
+            video.srcObject = null;
+            torchOn = false;
+            torchBtn.classList.remove('on');
+            torchTxt.textContent = 'Tap to turn light on';
+            modal.classList.remove('open');
+        }
+
+        function handleScannedText(raw) {
+            const target = parseChannelTargetFromQR(raw);
+            if (!target) {
+                statusEl.textContent = 'Invalid Flaynity QR code.';
+                return false;
+            }
+            stopScanner();
+            if (typeof showNotification === 'function') showNotification('Opening channel...', 'success');
+            window.openChannelProfile(target);
+            return true;
+        }
+
+        async function scanLoop() {
+            if (!active) return;
+            if (detector && video.readyState >= 2) {
+                try {
+                    const codes = await detector.detect(video);
+                    if (codes && codes.length && codes[0].rawValue) {
+                        if (handleScannedText(codes[0].rawValue)) return;
+                    }
+                } catch (e) {}
+            }
+            rafId = requestAnimationFrame(() => setTimeout(scanLoop, 180));
+        }
+
+        statusEl.textContent = '';
+        modal.classList.add('open');
+
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: false
+            }).then((s) => {
+                if (!active) { s.getTracks().forEach(t => t.stop()); return; }
+                stream = s;
+                track = s.getVideoTracks()[0] || null;
+                video.srcObject = s;
+                video.play().catch(() => {});
+                scanLoop();
+            }).catch(() => {
+                statusEl.textContent = 'Camera unavailable — tap Gallery to scan a saved QR image.';
+            });
+        } else {
+            statusEl.textContent = 'Camera unavailable — tap Gallery to scan a saved QR image.';
+        }
+
+        torchBtn.onclick = async () => {
+            if (!track || !track.applyConstraints) {
+                if (typeof showNotification === 'function') showNotification('Flashlight not supported on this device.', 'error');
+                return;
+            }
+            try {
+                torchOn = !torchOn;
+                await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+                torchBtn.classList.toggle('on', torchOn);
+                torchTxt.textContent = torchOn ? 'Tap to turn light off' : 'Tap to turn light on';
+            } catch (e) {
+                torchOn = false;
+                if (typeof showNotification === 'function') showNotification('Flashlight not available.', 'error');
+            }
+        };
+
+        async function decodeGalleryFile(file) {
+            if (!file) return;
+            statusEl.textContent = 'Scanning image...';
+            try {
+                const bmp = await createImageBitmap(file);
+                if (detector) {
+                    const codes = await detector.detect(bmp);
+                    if (codes && codes.length && codes[0].rawValue) {
+                        if (handleScannedText(codes[0].rawValue)) return;
+                    }
+                    statusEl.textContent = 'No Flaynity QR code found in this image.';
+                } else {
+                    statusEl.textContent = 'QR decoding is not supported on this browser.';
+                }
+            } catch (e) {
+                statusEl.textContent = 'Could not read QR code from this image.';
+            }
+        }
+
+        document.getElementById('flsc-back').onclick = stopScanner;
+        document.getElementById('flsc-my-qr').onclick = () => {
+            stopScanner();
+            window.openChannelQRModal();
+        };
+        document.getElementById('flsc-gallery').onclick = () => {
+            if (typeof window.openMediaPicker === 'function') {
+                window.openMediaPicker('photos', decodeGalleryFile);
+            } else {
+                document.getElementById('flsc-file').click();
+            }
+        };
+        document.getElementById('flsc-file').onchange = (e) => decodeGalleryFile(e.target.files && e.target.files[0]);
+    };
+
+    /* =================================================================
+       5. PRIVACY HELPERS & SCAN-TO-OPEN CHANNEL PROFILE DEEP LINK
        ================================================================= */
     window.setEditChannelPrivacy = function (val) {
         const clean = val === 'private' ? 'private' : 'public';

@@ -21,9 +21,25 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
             Promise.resolve(promise).then(function (v) { clearTimeout(t); resolve(v); }, function (e) { clearTimeout(t); reject(e); });
         });
     };
-    // Safety net: if the login check is still stuck after 12s, open the app for a saved user (or the normal signed-out screen).
-    // HOME READY: the startup splash stays on screen until the Home feed really has content.
+    if (typeof window.flCheckLiveInternet !== 'function') {
+        window.flCheckLiveInternet = function (timeoutMs) {
+            var ms = timeoutMs || 3500;
+            if (!navigator.onLine) { window.__flaynityLiveOnline = false; return Promise.resolve(false); }
+            var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            var timer = setTimeout(function () { if (ctrl) try { ctrl.abort(); } catch (e) {} }, ms);
+            return fetch('https://www.gstatic.com/generate_204?_=' + Date.now(), {
+                method: 'GET', mode: 'no-cors', cache: 'no-store', signal: ctrl ? ctrl.signal : undefined
+            }).then(function () {
+                clearTimeout(timer); window.__flaynityLiveOnline = true; return true;
+            }).catch(function () {
+                clearTimeout(timer); window.__flaynityLiveOnline = false; return false;
+            });
+        };
+    }
+
+    // HOME READY: the startup splash stays on screen until the Home feed really has content (when online).
     window.__flaynityHomeReady = false;
+    window.__flInitialFeedFetched = false;
     window.__flHomeHasContent = function () {
         const c = document.getElementById('home-feed-container');
         if (!c || !c.children.length) return false;
@@ -40,17 +56,24 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
         };
         const iv = setInterval(function () {
             tries++;
-            if (!navigator.onLine || window.__flHomeHasContent()) { clearInterval(iv); setTimeout(finish, 300); return; }
-            // Data arrived but Home still shows skeleton / nothing: draw the feed again.
-            if (tries % 15 === 0) {
+            if (window.__flaynityLiveOnline === false) { clearInterval(iv); finish(); return; }
+            if (window.__flHomeHasContent()) { clearInterval(iv); setTimeout(finish, 180); return; }
+            if (window.__flInitialFeedFetched && tries >= 15) {
+                try { buildHomeFeed(); } catch (e) {}
+                if (window.__flHomeHasContent() || tries >= 25) { clearInterval(iv); finish(); return; }
+            }
+            // Data arrived but Home still shows nothing: draw the feed again.
+            if (tries % 8 === 0) {
                 try {
                     if ((allLongVideos && allLongVideos.length) || (allFeels && allFeels.length) || (allCommunityPosts && allCommunityPosts.length)) {
                         previousLongsCount = -1; previousFeelsCount = -1; previousPostsCount = -1;
                         buildHomeFeed();
+                    } else if (tries === 16 && typeof SyncManager !== 'undefined' && !SyncManager.isRefreshing) {
+                        SyncManager.refreshEverything({ force: true });
                     }
                 } catch (e) {}
             }
-            if (tries >= 110) { clearInterval(iv); finish(); }   // ~11s max, never stuck
+            if (tries >= 140) { clearInterval(iv); finish(); }   // ~14s max, never stuck
         }, 100);
     };
     window.__flBootTimer = setTimeout(function () {
@@ -62,11 +85,16 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
                 if (a) a.style.display = 'none';
                 if (s) s.style.display = 'block';
                 document.body.classList.remove('auth-active');
+                if (window.__flaynityLiveOnline !== false && typeof SyncManager !== 'undefined' && !SyncManager.isRefreshing) {
+                    SyncManager.refreshEverything({ force: true });
+                }
             }
         } catch (e) {}
-        window.__flaynityHomeReady = true;
+        if (window.__flaynityLiveOnline === false || window.__flHomeHasContent()) {
+            window.__flaynityHomeReady = true;
+        }
         window.__flBootDone();
-    }, 10000);
+    }, 11500);
 })();
 (async function () {
     const pageFiles = [["home","pages/home.html"],["feels","pages/feels.html"],["posts","pages/posts.html"],["upload","pages/upload.html"],["discover","pages/discover.html"],["you","pages/you.html"],["analytics","pages/analytics.html"]];
@@ -129,8 +157,8 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
         });
     }
 
-    function showOfflineCachedApp() {
-        if (navigator.onLine) return;
+    function showOfflineCachedApp(forceOffline) {
+        if (!forceOffline && navigator.onLine && window.__flaynityLiveOnline !== false) return;
         let cachedSession = null;
         try { cachedSession = localStorage.getItem('flaynity_user_session_cache'); } catch (e) {}
         if (!cachedSession) return;
@@ -143,8 +171,17 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
         if (window.__flBootDone) window.__flBootDone();
         try { window.__flWatchHomeReady && window.__flWatchHomeReady(); } catch (e) {}
         try { firebase.database().goOffline(); } catch (e) {}
+        try { if (typeof renderAllSkeletons === 'function') renderAllSkeletons(); } catch (e) {}
         try { setTimeout(() => { typeof flEnsureNavYouIcon === 'function' && flEnsureNavYouIcon(); }, 400); } catch (e) {}
     }
+    try {
+        if (window.__flaynityLiveCheckPromise && typeof window.__flaynityLiveCheckPromise.then === 'function') {
+            window.__flaynityLiveCheckPromise.then(function (isOnline) {
+                if (!isOnline) showOfflineCachedApp(true);
+                else { try { firebase.database().goOnline(); } catch (e) {} }
+            });
+        }
+    } catch (e) {}
 
     try {
         const app = document.getElementById("app");
@@ -886,8 +923,11 @@ let _networkOnlineDebounceTimer = null;
 window.addEventListener('online', () => { window.FlaynityNetworkOnline(); });
 window.addEventListener('offline', () => { window.FlaynityNetworkOffline(); });
 
-window.FlaynityNetworkOnline = function() {
-    if (!navigator.onLine) return;
+window.FlaynityNetworkOnline = async function() {
+    const isLive = typeof window.flCheckLiveInternet === 'function'
+        ? await window.flCheckLiveInternet(3500)
+        : navigator.onLine;
+    if (!isLive) return;
     if (_networkOnlineDebounceTimer) return;
     _networkOnlineDebounceTimer = setTimeout(() => {
         _networkOnlineDebounceTimer = null;
@@ -896,6 +936,8 @@ window.FlaynityNetworkOnline = function() {
     const spinner = document.getElementById('network-spinner-overlay');
     if (spinner) spinner.style.display = 'none';
 
+    window.__flaynityLiveOnline = true;
+    window.__flaynityOfflineSessionActive = false;
     try { firebase.database().goOnline(); } catch(e) {}
     showNotification("Network Restored! Syncing Live Data...", "success");
 
@@ -906,7 +948,7 @@ window.FlaynityNetworkOnline = function() {
     }
 
     syncOfflineLikes();
-    SyncManager.refreshEverything();
+    SyncManager.refreshEverything({ force: true });
 
     const activeVideo = document.querySelector('.short-slide video[src]');
     if (activeVideo && activeVideo.paused && activeVideo.readyState > 2) {
@@ -915,6 +957,7 @@ window.FlaynityNetworkOnline = function() {
 };
 
 window.FlaynityNetworkOffline = function() {
+    window.__flaynityLiveOnline = false;
     try { firebase.database().goOffline(); } catch(e) {}
     showNotification("Offline Mode. Showing Skeletons.", "error");
 
@@ -926,10 +969,16 @@ window.FlaynityNetworkOffline = function() {
     }
 };
 
-window.FlaynityNativeRefresh = function() {
-    if (!navigator.onLine) return;
+window.FlaynityNativeRefresh = async function() {
+    const isLive = typeof window.flCheckLiveInternet === 'function'
+        ? await window.flCheckLiveInternet(4000)
+        : navigator.onLine;
+    if (!isLive) {
+        showNotification("No internet connection", "error");
+        return;
+    }
     if (SyncManager.isRefreshing) return;
-    SyncManager.refreshEverything();
+    SyncManager.refreshEverything({ force: true });
 };
 
 // =========================================================
@@ -937,10 +986,16 @@ window.FlaynityNativeRefresh = function() {
 // =========================================================
 const SyncManager = {
     isRefreshing: false,
-    refreshEverything: async function() {
+    refreshEverything: async function(options) {
+        const opts = options || {};
         // A refresh that hangs (flaky network) must never block every later refresh: treat a lock older than 25s as stale.
-        if (this.isRefreshing && (Date.now() - (this._startedAt || 0)) < 25000) return;
-        if (!navigator.onLine) return;
+        if (this.isRefreshing && (Date.now() - (this._startedAt || 0)) < 25000) return false;
+        if (!opts.force) {
+            const isLive = typeof window.flCheckLiveInternet === 'function'
+                ? await window.flCheckLiveInternet(3500)
+                : navigator.onLine;
+            if (!isLive) return false;
+        }
         this.isRefreshing = true;
         this._startedAt = Date.now();
         const myRun = this._run = (this._run || 0) + 1;
@@ -948,6 +1003,7 @@ const SyncManager = {
         let loaded = false;
 
         try {
+            try { firebase.database().goOnline(); } catch (e) {}
             _detachAllGlobalFeedListeners();
 
             previousFeelsCount = -1;
@@ -957,26 +1013,45 @@ const SyncManager = {
             // The profile must never block (or break) the feed download.
             try { await withTimeout(this.refreshProfile(), 6000); } catch (e) { console.warn('refreshProfile skipped:', e); }
 
-            const [longsSnap, feelsSnap, legacyShortsSnap, postsSnap] = await withTimeout(Promise.all([
+            const results = await withTimeout(Promise.allSettled([
                 db.ref('admin_panel/movies/user_uploads').once('value'),
                 db.ref('admin_panel/movies/feels').once('value'),
                 db.ref('admin_panel/movies/shorts').once('value'),
                 db.ref('admin_panel/posts').once('value')
             ]), 12000);
 
-            const now = Date.now();
-            allLongVideos      = longsSnap.val()  ? Object.values(longsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
-            const feelsData = feelsSnap.val() ? Object.values(feelsSnap.val()) : [];
-            const legacyShortsData = legacyShortsSnap.val() ? Object.values(legacyShortsSnap.val()) : [];
-            const seenFeelIds = new Set();
-            allFeels = [...feelsData, ...legacyShortsData].filter(m => {
-                if (!m || (m.scheduledTime && m.scheduledTime > now) || !m.id || seenFeelIds.has(String(m.id))) return false;
-                seenFeelIds.add(String(m.id));
-                return true;
-            });
-            allCommunityPosts  = postsSnap.val()  ? Object.values(postsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now)  : [];
+            const longsSnap = results[0].status === 'fulfilled' ? results[0].value : null;
+            const feelsSnap = results[1].status === 'fulfilled' ? results[1].value : null;
+            const legacyShortsSnap = results[2].status === 'fulfilled' ? results[2].value : null;
+            const postsSnap = results[3].status === 'fulfilled' ? results[3].value : null;
 
-            loaded = true;
+            const now = Date.now();
+            if (longsSnap) {
+                allLongVideos = longsSnap.val()
+                    ? enforceContentAdminStatus(Object.values(longsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'video')
+                    : [];
+                allLongVideos.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            }
+            if (feelsSnap || legacyShortsSnap) {
+                const feelsData = (feelsSnap && feelsSnap.val()) ? Object.values(feelsSnap.val()) : [];
+                const legacyShortsData = (legacyShortsSnap && legacyShortsSnap.val()) ? Object.values(legacyShortsSnap.val()) : [];
+                const seenFeelIds = new Set();
+                allFeels = enforceContentAdminStatus([...feelsData, ...legacyShortsData].filter(m => {
+                    if (!m || (m.scheduledTime && m.scheduledTime > now) || !m.id || seenFeelIds.has(String(m.id))) return false;
+                    seenFeelIds.add(String(m.id));
+                    return true;
+                }), 'short');
+                allFeels.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            }
+            if (postsSnap) {
+                allCommunityPosts = postsSnap.val()
+                    ? enforceContentAdminStatus(Object.values(postsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'post')
+                    : [];
+                allCommunityPosts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            }
+
+            loaded = !!(longsSnap || feelsSnap || legacyShortsSnap || postsSnap);
+            window.__flInitialFeedFetched = true;
             startRealtimeFeedsListener();
 
             buildHomeFeed();
@@ -985,10 +1060,13 @@ const SyncManager = {
             if (feelsTab && feelsTab.classList.contains('active')) buildFeelsPage();
 
             this.refreshAnalytics();
+            return loaded;
 
         } catch (err) {
             console.error("SyncManager Execution Error:", err);
+            return false;
         } finally {
+            window.__flInitialFeedFetched = true;
             if (!loaded) {
                 // Download failed / timed out: the live listeners were detached above, so put them back.
                 // They deliver the feed as soon as the connection is ready (no more empty Home).
@@ -1120,7 +1198,7 @@ function isPTRAllowedOnCurrentView() {
 
     // Feels has its own vertical scroller and must never trigger page PTR.
     if (activeTabId === 'feels') return false;
-    return activeTabId === 'home' && getMainScrollTop() <= 0;
+    return activeTabId === 'home' && getMainScrollTop() <= 2;
 }
 
 
@@ -1319,7 +1397,7 @@ function initPullToRefresh() {
         if (!isPTRActive || isRefreshingNow || !e.touches || !e.touches.length) return;
 
         // The gesture is valid only if the page is still exactly at the top.
-        if (!ptrStartAtTop || getMainScrollTop() > 0 || !isPTRAllowedOnCurrentView()) {
+        if (!ptrStartAtTop || getMainScrollTop() > 2 || !isPTRAllowedOnCurrentView()) {
             isPTRActive = false;
             resetPTRIndicator();
             return;
@@ -1362,7 +1440,7 @@ function initPullToRefresh() {
         const deltaY = touchMoveY - touchStartY;
         isPTRActive = false;
 
-        if (deltaY >= PTR_TRIGGER_DISTANCE && getMainScrollTop() <= 0 && isPTRAllowedOnCurrentView()) {
+        if (deltaY >= PTR_TRIGGER_DISTANCE && getMainScrollTop() <= 2 && isPTRAllowedOnCurrentView()) {
             isRefreshingNow = true;
             if (ptrIndicator) {
                 ptrIndicator.style.setProperty('display', 'flex', 'important');
@@ -1395,14 +1473,31 @@ function initPullToRefresh() {
 
 async function triggerUniversalPullToRefresh() {
     playUI('click');
-    if (!navigator.onLine) {
-        showNotification("Offline - Cannot Refresh", "error");
+    const isLive = typeof window.flCheckLiveInternet === 'function'
+        ? await window.flCheckLiveInternet(4000)
+        : navigator.onLine;
+    if (!isLive) {
+        window.__flaynityLiveOnline = false;
+        showNotification("No internet connection", "error");
         return;
     }
 
+    window.__flaynityLiveOnline = true;
+    window.__flaynityOfflineSessionActive = false;
+    try { firebase.database().goOnline(); } catch (e) {}
+    try { if (typeof attachAdminControlListener === 'function') attachAdminControlListener(); } catch (e) {}
+
     try {
-        await hfRunHomeRefresh(() => SyncManager.refreshEverything());
-        showNotification("Feed Updated!", "success");
+        let ok = false;
+        await hfRunHomeRefresh(async () => {
+            ok = await SyncManager.refreshEverything({ force: true });
+        });
+        if (ok) {
+            try { syncOfflineLikes(); } catch (e) {}
+            showNotification("Feed Updated!", "success");
+        } else {
+            showNotification("Could not load data. Pull to try again.", "error");
+        }
     } catch (e) {
         console.error("PTR Refresh Exception:", e);
         showNotification("Refresh failed: " + e.message, "error");
@@ -2603,6 +2698,37 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         }
         window.__flaynityActiveDataUid = user.uid;
 
+        const isLiveOnline = typeof window.flCheckLiveInternet === 'function'
+            ? await (window.__flaynityLiveCheckPromise || window.flCheckLiveInternet(3500))
+            : navigator.onLine;
+
+        if (!isLiveOnline) {
+            let knownOffline = false;
+            try {
+                knownOffline = !!(
+                    localStorage.getItem('flaynity_user_session_cache') ||
+                    localStorage.getItem('flaynity_channel_created:' + user.uid) ||
+                    localStorage.getItem('flaynity_channel_cache:' + user.uid)
+                );
+            } catch (x) {}
+            if (knownOffline) {
+                const a = document.getElementById('auth-screen'), s = document.getElementById('app-screen');
+                if (a) a.style.display = 'none';
+                if (s) s.style.display = 'block';
+                document.body.classList.remove('auth-active');
+                window.__flaynityOfflineSessionActive = true;
+                try { window.__flaynityHideOnboarding && window.__flaynityHideOnboarding(); } catch (x) {}
+                try { firebase.database().goOffline(); } catch (x) {}
+                window.__flaynityHomeReady = true;
+                window.__flBootDone && window.__flBootDone();
+                try { renderAllSkeletons(); } catch (x) {}
+                try { if (typeof initYouTabUI === 'function') initYouTabUI(); } catch (x) {}
+                return;
+            }
+        }
+
+        try { firebase.database().goOnline(); } catch (e) {}
+
         // Always verify the account status from Firebase before exposing the app.
         const userRef = db.ref(`users/${user.uid}`);
         const firstSnap = await window.__flWithTimeout(userRef.once('value'), 8000);
@@ -2677,8 +2803,9 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         });
 
         _feedListenersAttached = false;
-        // Start fresh listeners for this Firebase UID and redraw account-bound screens immediately.
+        // Start fresh listeners + direct parallel feed fetch so Home is populated before splash closes.
         startRealtimeFeedsListener();
+        try { SyncManager.refreshEverything({ force: true }); } catch (e) {}
         try { window.__flWatchHomeReady && window.__flWatchHomeReady(); } catch (e) {}
         try { prefetchYouPageData(user.uid); } catch (e) {}
         restoreQueueFromLocalStorage();
@@ -2778,6 +2905,8 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
                 document.body.classList.remove('auth-active');
                 try { window.__flaynityHideOnboarding && window.__flaynityHideOnboarding(); } catch (x) {}
                 window.__flBootDone && window.__flBootDone();
+                try { startRealtimeFeedsListener(); } catch (x) {}
+                try { if (window.__flaynityLiveOnline !== false) SyncManager.refreshEverything({ force: true }); } catch (x) {}
                 try { window.__flWatchHomeReady && window.__flWatchHomeReady(); } catch (x) {}
             }
             window.__flAuthRetry = (window.__flAuthRetry || 0) + 1;
@@ -3623,7 +3752,9 @@ function startRealtimeFeedsListener() {
             allLongVideos = enforceContentAdminStatus(allLongVideos, 'video');
             allFeels = enforceContentAdminStatus(allFeels, 'short');
             allCommunityPosts = enforceContentAdminStatus(allCommunityPosts, 'post');
-            buildHomeFeed();
+            if ((allLongVideos && allLongVideos.length) || (allFeels && allFeels.length) || (allCommunityPosts && allCommunityPosts.length) || window.__flInitialFeedFetched) {
+                buildHomeFeed();
+            }
         });
 
         db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
@@ -3830,7 +3961,7 @@ function buildHomeFeed() {
 
     if (_hfHoldRender) return;   // pull-to-refresh in progress: it rebuilds once data is ready
 
-    if (!navigator.onLine) {
+    if (!navigator.onLine || window.__flaynityLiveOnline === false) {
         renderAllSkeletons();
         return;
     }
@@ -3924,7 +4055,9 @@ function buildHomeFeed() {
     let postIdx = 0;
 
     if (feels.length === 0 && longs.length === 0 && posts.length === 0) {
-        container.innerHTML = getHomeSkeletonHTML();
+        if (window.__flInitialFeedFetched) {
+            container.innerHTML = '<div style="padding:56px 20px;text-align:center;color:var(--text-muted);font-weight:700;">No content available yet. Pull down to refresh.</div>';
+        }
         return;
     }
 
@@ -5724,8 +5857,9 @@ function feelsPtrAllowed(sw, target) {
     let cur = null;
     try { cur = AppNavigation.current(); } catch (e) {}
     if (!cur || cur.type !== 'tab' || cur.id !== 'feels') return false;   // no page / modal / sheet on top
-    if (!sw.querySelector('.short-slide')) return false;
-    if (sw.scrollTop > 2) return false;                                    // first Feels only
+    const hasOfflineSkel = !!(sw.querySelector && sw.querySelector('.offline-feels-screen'));
+    if (!hasOfflineSkel && !sw.querySelector('.short-slide')) return false;
+    if ((sw.scrollTop || 0) > 2) return false;                             // first Feels only
     if (sw.classList.contains('feels-switching')) return false;
     if (sw.querySelector('.short-slide.scrubbing')) return false;
     if (target && target.closest && target.closest('.short-progress-container')) return false;
@@ -5767,12 +5901,6 @@ async function feelsRunPullRefresh() {
     const container = document.getElementById('feels-swiper-container');
     if (!sw || !container) { feelsPtrReset(true); return; }
 
-    if (!navigator.onLine) {
-        feelsPtrReset(true);
-        try { showNotification('Offline - Cannot Refresh', 'error'); } catch (e) {}
-        return;
-    }
-
     p.refreshing = true;
     const ind = feelsPtrIndicator();
     feelsPtrRender(FEELS_PTR_HOLD, true);
@@ -5781,17 +5909,32 @@ async function feelsRunPullRefresh() {
     try { playUI('click'); } catch (e) {}
 
     try {
+        const isLive = typeof window.flCheckLiveInternet === 'function'
+            ? await window.flCheckLiveInternet(4000)
+            : navigator.onLine;
+        if (!isLive) {
+            window.__flaynityLiveOnline = false;
+            try { showNotification('No internet connection', 'error'); } catch (e) {}
+            return;
+        }
+
+        window.__flaynityLiveOnline = true;
+        window.__flaynityOfflineSessionActive = false;
+        try { firebase.database().goOnline(); } catch (e) {}
+
         const t0 = Date.now();
         container.querySelectorAll('video').forEach(v => { try { v.pause(); } catch (e) {} });
+
+        await SyncManager.refreshEverything({ force: true });
 
         // New random session for the CURRENT mode (For You or Subscribe)
         feelsStartSession(feelsFeedMode, null);
 
-        const wait = Math.max(0, 700 - (Date.now() - t0));
+        const wait = Math.max(0, 500 - (Date.now() - t0));
         await new Promise(r => setTimeout(r, wait));
 
         // Old feed fades out, new random feed replaces it and starts from its first Feels
-        sw.classList.add('feels-switching');
+        if (sw.classList) sw.classList.add('feels-switching');
         await new Promise(r => setTimeout(r, 190));
 
         feelsProgrammaticTargetId = null;
@@ -5825,7 +5968,7 @@ async function feelsRunPullRefresh() {
         p.pulling = false;
         if (p.refreshing || !e.touches || e.touches.length !== 1) return;
         const t = e.target;
-        const sw = t && t.closest ? t.closest('#feels-swiper-container .feels-swiper') : null;
+        const sw = t && t.closest ? (t.closest('#feels-swiper-container .feels-swiper') || t.closest('#feels-swiper-container')) : null;
         if (!sw || !feelsPtrAllowed(sw, t)) return;
         p.tracking = true;
         p.swiper = sw;

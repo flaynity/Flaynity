@@ -345,8 +345,55 @@
     var FADE_OUT = 400;       // reveal fade + safety margin
 
     var t0 = Date.now(), startAt = 0;
-    var started = false, finished = false, animDone = false, domReady = false;
+    var started = false, finished = false, animDone = false, domReady = false, liveCheckDone = false;
     var reduced = false, darkPref = false;
+
+    // Live Internet Check during Loading Screen (does not trust stale navigator.onLine alone)
+    window.flCheckLiveInternet = function (timeoutMs) {
+        var ms = timeoutMs || 3500;
+        if (!navigator.onLine) {
+            window.__flaynityLiveOnline = false;
+            return Promise.resolve(false);
+        }
+        var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        var timer = setTimeout(function () { if (ctrl) try { ctrl.abort(); } catch (e) {} }, ms);
+        return fetch('https://www.gstatic.com/generate_204?_=' + Date.now(), {
+            method: 'GET',
+            mode: 'no-cors',
+            cache: 'no-store',
+            signal: ctrl ? ctrl.signal : undefined
+        }).then(function () {
+            clearTimeout(timer);
+            window.__flaynityLiveOnline = true;
+            return true;
+        }).catch(function () {
+            clearTimeout(timer);
+            var ctrl2 = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            var timer2 = setTimeout(function () { if (ctrl2) try { ctrl2.abort(); } catch (e) {} }, Math.min(2000, ms));
+            return fetch('https://www.google.com/favicon.ico?_=' + Date.now(), {
+                method: 'GET',
+                mode: 'no-cors',
+                cache: 'no-store',
+                signal: ctrl2 ? ctrl2.signal : undefined
+            }).then(function () {
+                clearTimeout(timer2);
+                window.__flaynityLiveOnline = true;
+                return true;
+            }).catch(function () {
+                clearTimeout(timer2);
+                window.__flaynityLiveOnline = false;
+                return false;
+            });
+        });
+    };
+    window.__flaynityLiveCheckPromise = window.flCheckLiveInternet(3500).then(function (ok) {
+        liveCheckDone = true;
+        return ok;
+    }, function () {
+        liveCheckDone = true;
+        window.__flaynityLiveOnline = false;
+        return false;
+    });
     try { darkPref = localStorage.getItem('flaynity-theme-pref') === 'dark'; if (darkPref) splash.classList.add('fs-dark'); } catch (e) {}
     var surfaceColor = darkPref ? '#161618' : '#FFFFFF';
     try { reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
@@ -380,7 +427,10 @@
             if (window.__flaynityNeedsChannelBoot === true) return true;
             if (document.body && document.body.classList.contains('auth-active')) return true;
             var a = document.getElementById('app-screen');
-            if (a && window.getComputedStyle(a).display !== 'none') return window.__flaynityHomeReady !== false;   // wait until Home feed is loaded
+            if (a && window.getComputedStyle(a).display !== 'none') {
+                if (window.__flaynityLiveOnline === false) return true;
+                return window.__flaynityHomeReady === true;   // online: wait until Home feed is loaded (no skeleton)
+            }
         } catch (e) {}
         return false;
     }
@@ -407,7 +457,7 @@
         var now = Date.now();
         if (now - t0 >= T_MAX) { reveal(); return; }      // safety timeout (e.g. loader error page)
         if (started && !animDone && now - startAt >= (reduced ? T_REDUCED : T_STAGES + 150)) animDone = true;
-        if (animDone && domReady && surfaceReady()) reveal();
+        if (animDone && domReady && liveCheckDone && surfaceReady()) reveal();
         else if (animDone) splash.classList.add('is-waiting');   // app needs longer: show centred glass logo
     }
     var poll = setInterval(evaluate, 80);

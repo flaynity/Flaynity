@@ -195,7 +195,7 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
 
         const appScreen = document.createElement("div");
         appScreen.id = "app-screen";
-        const startupIds = new Set(["startupSound","toast-container","network-spinner-overlay","auth-screen","fl-create-channel","flcc-sheet-backdrop","flcc-launch-overlay"]);
+        const startupIds = new Set(["startupSound","toast-container","network-spinner-overlay","auth-screen","vf-legal-page","fl-create-channel","flcc-sheet-backdrop","flcc-launch-overlay","fl-email-verify-overlay"]);
 
         for (const node of homeNodes) {
             if (node.id && startupIds.has(node.id)) app.appendChild(node);
@@ -2676,7 +2676,7 @@ window.authEmailSignup = async function () {
         if (typeof window.authShowView === 'function') window.authShowView('signup', true);
     };
 
-    // Terms / Privacy — always open directly in the external browser
+    // Terms / Privacy — open in external browser without navigating/refreshing the WebView
     const FL_TERMS_URL = 'https://flaynity.com/terms-of-service';
     const FL_PRIVACY_URL = 'https://flaynity.com/privacy-policy';
     let legalUrl = '';
@@ -2689,18 +2689,55 @@ window.authEmailSignup = async function () {
         return url || FL_TERMS_URL;
     }
 
-    function openInBrowser(targetUrl) {
-        if (!targetUrl) return;
+    function openViaAndroidBridge(targetUrl) {
         try {
-            if (window.AndroidBridge) {
-                if (typeof window.AndroidBridge.openExternalUrl === 'function') { window.AndroidBridge.openExternalUrl(targetUrl); return; }
-                if (typeof window.AndroidBridge.openBrowser === 'function') { window.AndroidBridge.openBrowser(targetUrl); return; }
-                if (typeof window.AndroidBridge.openUrl === 'function') { window.AndroidBridge.openUrl(targetUrl); return; }
+            const b = window.AndroidBridge;
+            if (!b) return false;
+            const methods = ['openExternalUrl', 'openExternalBrowser', 'openInBrowser', 'openBrowser', 'openUrl'];
+            for (let i = 0; i < methods.length; i++) {
+                if (typeof b[methods[i]] === 'function') {
+                    b[methods[i]](targetUrl);
+                    return true;
+                }
             }
         } catch (e) {}
+        return false;
+    }
+
+    function openLegalOverlay(targetUrl, title) {
+        const page = $('vf-legal-page');
+        const frame = $('vf-legal-frame');
+        const heading = $('vf-legal-title');
+        if (!page || !frame) return false;
+        if (page.parentElement !== document.body) document.body.appendChild(page);
+        if (heading) heading.textContent = title || (targetUrl.includes('privacy') ? 'Privacy Policy' : 'Terms of Service');
+        frame.src = targetUrl;
+        page.classList.add('open');
         try {
-            const win = window.open(targetUrl, '_blank', 'noopener,noreferrer');
-            if (win) return;
+            if (window.AndroidBridge && typeof window.AndroidBridge.setBackStackStatus === 'function') {
+                window.AndroidBridge.setBackStackStatus(true);
+            }
+        } catch (e) {}
+        return true;
+    }
+
+    function openInBrowser(targetUrl, title) {
+        if (!targetUrl) return;
+        // 1. Native Android external browser bridge (never touches WebView history)
+        if (openViaAndroidBridge(targetUrl)) return;
+
+        // 2. Inside Android WebView without a native openExternalUrl bridge:
+        //    Do NOT call window.location.href or top-frame <a> click (which unloads the app and refreshes on Back).
+        //    Open inside the non-destructive overlay so Back returns cleanly without refreshing the app.
+        const isWebView = !!window.AndroidBridge || /; wv\)/i.test(navigator.userAgent || '');
+        if (isWebView) {
+            if (openLegalOverlay(targetUrl, title)) return;
+        }
+
+        // 3. Normal mobile/desktop browser: open in a new tab (app tab stays untouched)
+        try {
+            const win = window.open(targetUrl, '_blank');
+            if (win) { try { win.opener = null; } catch (e) {} return; }
         } catch (e) {}
         try {
             const a = document.createElement('a');
@@ -2711,25 +2748,32 @@ window.authEmailSignup = async function () {
             document.body.appendChild(a);
             a.click();
             a.remove();
-            return;
         } catch (e) {}
-        try { window.location.href = targetUrl; } catch (e) {}
     }
 
     window.vfOpenLegal = function (url, title) {
         legalUrl = resolveLegalUrl(url, title);
-        openInBrowser(legalUrl);
+        openInBrowser(legalUrl, title);
     };
     window.vfCloseLegal = function () {
         const p = $('vf-legal-page'); if (p) p.classList.remove('open');
         const f = $('vf-legal-frame'); if (f) f.src = 'about:blank';
+        try { if (window.AppNavigation && typeof AppNavigation.updateBridge === 'function') AppNavigation.updateBridge(); } catch (e) {}
     };
-    window.vfLegalExternal = function () { openInBrowser(legalUrl || FL_TERMS_URL); };
+    window.vfLegalExternal = function () {
+        const target = legalUrl || FL_TERMS_URL;
+        if (openViaAndroidBridge(target)) { window.vfCloseLegal(); return; }
+        try {
+            const win = window.open(target, '_blank');
+            if (win) { try { win.opener = null; } catch (e) {} }
+        } catch (e) {}
+    };
 
-    // Global capture: any Terms of Service or Privacy Policy button/link opens directly in the browser
+    // Global capture: intercept any Terms of Service / Privacy Policy tap so WebView never navigates away
     document.addEventListener('click', function (e) {
         const el = e.target && e.target.closest ? e.target.closest('a, button, [role="button"], .you-menu-item, .setting-item, .sheet-option-item') : null;
         if (!el) return;
+        if (el.closest && el.closest('#vf-legal-page')) return;
         const href = String(el.getAttribute('href') || '');
         const txt = String(el.textContent || '').replace(/\s+/g, ' ').trim();
         const isTerms = /terms[-_ ]?of[-_ ]?service/i.test(href) || /^terms of service$/i.test(txt) || txt === 'সেবার শর্তাবলি';
@@ -2737,7 +2781,9 @@ window.authEmailSignup = async function () {
         if (!isTerms && !isPrivacy) return;
         e.preventDefault();
         e.stopPropagation();
-        openInBrowser(isPrivacy ? FL_PRIVACY_URL : FL_TERMS_URL);
+        const targetUrl = isPrivacy ? FL_PRIVACY_URL : FL_TERMS_URL;
+        const targetTitle = isPrivacy ? 'Privacy Policy' : 'Terms of Service';
+        window.vfOpenLegal(targetUrl, targetTitle);
     }, true);
 
     // Digit boxes: type, backspace, paste
@@ -7863,6 +7909,7 @@ window.addEventListener('scroll', function () {
 }, { passive: true });
 
 function executeBackAction() {
+    { const _lp = document.getElementById('vf-legal-page'); if (_lp && _lp.classList.contains('open') && typeof window.vfCloseLegal === 'function') { window.vfCloseLegal(); return; } }
     { const _c = AppNavigation.current(); if (_c && _c.type === 'modal' && _c.id === 'fx-report-page' && typeof rpBack === 'function') { rpBack(); return; } }
     const ttF = document.getElementById('tt-foot'), ttM = document.getElementById('tt-comment-modal');
     if (ttF && ttM && ttM.style.display !== 'none' && ttF.classList.contains('open')) { ttCollapse(); return; }

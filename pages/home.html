@@ -2051,8 +2051,8 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 .fc-submit:disabled{opacity:.42;box-shadow:none;cursor:not-allowed;}
 .fc-submit svg{width:19px;height:19px;}
 .fc-terms{text-align:center;font-size:11.5px;line-height:1.55;color:var(--fc-mut);margin:12px 14px 0;}
-.fc-terms a{color:var(--fc-ink);font-weight:700;text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
-.fc-terms a:active{opacity:.7;}
+.fc-terms .fc-tlink{border:0;background:transparent;padding:0;margin:0;font:700 inherit;color:var(--fc-ink);text-decoration:underline;text-underline-offset:2px;cursor:pointer;display:inline;}
+.fc-terms .fc-tlink:active{opacity:.7;}
 
 /* ===== FIXED VIEWPORT BOTTOM POP-UP SHEET ===== */
 #flcc-sheet-backdrop{
@@ -2708,7 +2708,7 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     <div class="fc-card" id="flcc-card-basic"></div>
     <p class="fc-stat" id="flcc-status" role="status"></p>
     <button class="fc-submit" id="flcc-submit" type="button" disabled><span>Create Channel</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-    <p class="fc-terms">By creating a channel, you agree to Flaynity’s <a href="https://flaynity.com/terms-of-service" target="_blank" rel="noopener noreferrer" onclick="event.preventDefault();vfOpenLegal('https://flaynity.com/terms-of-service','Terms of Service')">Terms of Service</a> and <a href="https://flaynity.com/privacy-policy" target="_blank" rel="noopener noreferrer" onclick="event.preventDefault();vfOpenLegal('https://flaynity.com/privacy-policy','Privacy Policy')">Privacy Policy</a>.</p>
+    <p class="fc-terms">By creating a channel, you agree to Flaynity’s <button type="button" class="fc-tlink" onclick="vfOpenLegal('https://flaynity.com/terms-of-service','Terms of Service')">Terms of Service</button> and <button type="button" class="fc-tlink" onclick="vfOpenLegal('https://flaynity.com/privacy-policy','Privacy Policy')">Privacy Policy</button>.</p>
   </div>
   <input id="flcc-banner-file" type="file" accept="image/*" hidden>
   <input id="flcc-avatar-file" type="file" accept="image/*" hidden>

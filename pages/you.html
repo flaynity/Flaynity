@@ -1077,6 +1077,117 @@ html[data-theme="dark"] #view-channel-page .banner-gradient,
     -webkit-mask-image:linear-gradient(to bottom,transparent 0%,transparent 34%,rgba(0,0,0,.35) 52%,rgba(0,0,0,.8) 68%,#000 80%);
             mask-image:linear-gradient(to bottom,transparent 0%,transparent 34%,rgba(0,0,0,.35) 52%,rgba(0,0,0,.8) 68%,#000 80%)}
 #view-channel-page .channel-profile-section{margin-top:-78px !important}
+
+/* ---- Channel QR Code button & Privacy badge on View Channel ---- */
+#view-channel-page .view-channel-qr-btn {
+    position: absolute !important;
+    top: max(12px, env(safe-area-inset-top, 0px)) !important;
+    right: 60px !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    border: 0 !important;
+    padding: 0 !important;
+    background: rgba(0,0,0,.38) !important;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    color: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 1002 !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+    -webkit-tap-highlight-color: transparent;
+}
+#view-channel-page .view-channel-qr-btn:active { transform: scale(.93); }
+#view-channel-page .view-channel-qr-btn svg { width: 20px; height: 20px; display: block; }
+
+#view-channel-page .view-handle-row {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin: 0 0 14px 0 !important;
+}
+#view-channel-page .view-handle-row #view-channel-handle-txt {
+    margin: 0 !important;
+}
+#view-channel-page .ch-privacy-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    background: rgba(216, 14, 69, 0.12);
+    color: #D80E45;
+    border: 1px solid rgba(216, 14, 69, 0.28);
+    line-height: 1.2;
+}
+html[data-theme="dark"] #view-channel-page .ch-privacy-pill {
+    background: rgba(255, 46, 85, 0.18);
+    color: #ff6b8b;
+    border-color: rgba(255, 46, 85, 0.35);
+}
+
+/* ---- Edit Channel Privacy Toggle Cards ---- */
+.edit-privacy-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.edit-privacy-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 13px 14px;
+    border-radius: 14px;
+    border: 1.5px solid var(--glass-border);
+    background: var(--surface);
+    color: var(--text-main);
+    cursor: pointer;
+    text-align: left;
+    transition: border-color .18s ease, background .18s ease, transform .12s ease;
+    font-family: inherit;
+}
+.edit-privacy-card:active { transform: scale(.98); }
+.edit-privacy-card.active {
+    border-color: var(--primary, #D80E45);
+    background: var(--primary-glow, rgba(216, 14, 69, 0.08));
+}
+.edit-privacy-card .epc-top {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.9rem;
+    font-weight: 800;
+}
+.edit-privacy-card .epc-sub {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    line-height: 1.35;
+}
+
+/* ---- You Page Posts Tab: match Home Page Post Card edge-to-edge ---- */
+#view-channel-page .channel-posts-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+#view-channel-page .channel-posts-container .post-card.fb-post {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
 </style></head><body>
 <div class="tab-content" id="you-tab">
 <!-- You profile card removed. Hidden anchor kept only so initYouTabUI() can still load/cache channel data. -->
@@ -1120,6 +1231,7 @@ html[data-theme="dark"] #view-channel-page .banner-gradient,
 
 <!-- Banner area: 2.35:1 Ratio -->
 <div class="channel-banner-container">
+<button class="view-channel-qr-btn" id="view-channel-qr-btn" type="button" onclick="openChannelQRModal()" aria-label="Channel QR Code" title="Channel QR Code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 14h2v2M14 19h2v2M19 19h2v2"/></svg></button>
 <button class="view-channel-settings-btn" type="button" onclick="openYouQuickMenu()" aria-label="Open menu" title="Menu"><i class="fas fa-bars"></i></button>
 <img class="channel-banner-img" id="view-channel-banner" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="/>
 <div class="banner-gradient"></div>
@@ -1130,7 +1242,7 @@ html[data-theme="dark"] #view-channel-page .banner-gradient,
 <div class="profile-row-main">
 <div class="channel-main-meta">
 <h2 id="view-channel-name-txt">Your Name</h2>
-<p id="view-channel-handle-txt">@handle</p>
+<div class="view-handle-row"><p id="view-channel-handle-txt">@handle</p><span class="ch-privacy-pill" id="view-channel-privacy-badge" style="display:none;"><i class="fas fa-lock" style="font-size:.66rem;"></i> Private</span></div>
 <div class="channel-stats-row">
 <div class="channel-stat-item">
 <span class="channel-stat-num" id="view-sub-count-val">0</span>
@@ -1185,7 +1297,7 @@ html[data-theme="dark"] #view-channel-page .banner-gradient,
 <!-- You Page right-side menu drawer -->
 <div class="you-quick-menu-overlay" id="you-quick-menu-overlay" onclick="handleYouQuickMenuOverlay(event)" aria-hidden="true">
   <aside class="you-quick-menu-panel" role="dialog" aria-modal="true" aria-label="Menu">
-<section class="you-quick-menu-section"><h3 class="you-quick-menu-section-title">Account</h3><div class="you-quick-menu-list"><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openAnalyticsPage)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span><span class="quick-menu-label">Analytics</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openEditChannelPage)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 15H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21.378 16.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/></svg></span><span class="quick-menu-label">Edit Channel</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openMonetizationPage)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg></span><span class="quick-menu-label">Flay Earning</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openEditChannelPage)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="quick-menu-label">Edit Profile</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openAccountSwitcher)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg></span><span class="quick-menu-label">Switch Account</span><i class="yqm-chev" aria-hidden="true"></i></button></div></section>
+<section class="you-quick-menu-section"><h3 class="you-quick-menu-section-title">Account</h3><div class="you-quick-menu-list"><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openAnalyticsPage)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span><span class="quick-menu-label">Analytics</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openEditChannelPage)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 15H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21.378 16.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/></svg></span><span class="quick-menu-label">Edit Channel</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openChannelQRModal)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 14h2v2M14 19h2v2M19 19h2v2"/></svg></span><span class="quick-menu-label">Channel QR Code</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openMonetizationPage)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg></span><span class="quick-menu-label">Flay Earning</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openEditChannelPage)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="quick-menu-label">Edit Profile</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(openAccountSwitcher)"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg></span><span class="quick-menu-label">Switch Account</span><i class="yqm-chev" aria-hidden="true"></i></button></div></section>
 <section class="you-quick-menu-section"><h3 class="you-quick-menu-section-title">Flaynity features</h3><div class="you-quick-menu-list"><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('flay-verified-badge')})"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg></span><span class="quick-menu-label">Flay Verified Badge</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('upgrade-pro')})"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></svg></span><span class="quick-menu-label">Upgrade Pro</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('boost-content')})"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></span><span class="quick-menu-label">Boost Content</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('flay-pay')})"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg></span><span class="quick-menu-label">Flay Pay</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){AppNavigation.pushPremiumService('flay-payout')})"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg></span><span class="quick-menu-label">Flay Payout</span><i class="yqm-chev" aria-hidden="true"></i></button></div></section>
 <section class="you-quick-menu-section"><h3 class="you-quick-menu-section-title">Appearance</h3><div class="you-quick-menu-list"><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){openBottomSheet('sheet-theme')})"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".6" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".6" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".6" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".6" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg></span><span class="quick-menu-label">Switch Theme</span><i class="yqm-chev" aria-hidden="true"></i></button><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){openBottomSheet('sheet-language')})"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></span><span class="quick-menu-label">App Language</span><i class="yqm-chev" aria-hidden="true"></i></button></div></section>
 <section class="you-quick-menu-section"><h3 class="you-quick-menu-section-title">Support</h3><div class="you-quick-menu-list"><button class="you-quick-menu-item" type="button" onclick="runYouQuickMenuAction(function(){openSupportLink('help-center')})"><span class="yqm-icon"><svg class="yqm-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span><span class="quick-menu-label">Help Center</span><i class="yqm-chev" aria-hidden="true"></i></button></div></section>
@@ -1405,7 +1517,7 @@ html[data-theme="dark"] #view-channel-page .banner-gradient,
 <img class="edit-banner-preview" id="edit-channel-banner-img" src=""/>
 <div class="edit-banner-overlay">
 <i class="fas fa-camera"></i>
-<span>Change Banner</span>
+<span>Change Cover / Templates</span>
 </div>
 <input accept="image/*" id="edit-banner-input" onchange="handleChannelBannerSelect(event)" style="display:none;" type="file"/>
 </div>
@@ -1460,6 +1572,20 @@ html[data-theme="dark"] #view-channel-page .banner-gradient,
 <option value="Vlogs">Vlogs</option>
 <option value="Others">Others</option>
 </select>
+</div>
+<div class="form-group" style="margin: 0 0 20px 0;">
+<label class="form-label">Channel Privacy</label>
+<input type="hidden" id="edit-channel-privacy" value="public"/>
+<div class="edit-privacy-grid" id="edit-privacy-grid">
+<button type="button" class="edit-privacy-card active" data-privacy="public" onclick="setEditChannelPrivacy('public')">
+<span class="epc-top"><i class="fas fa-globe" style="color:#0EA5E9;"></i> Public</span>
+<span class="epc-sub">Anyone can find &amp; view your channel</span>
+</button>
+<button type="button" class="edit-privacy-card" data-privacy="private" onclick="setEditChannelPrivacy('private')">
+<span class="epc-top"><i class="fas fa-lock" style="color:#D80E45;"></i> Private</span>
+<span class="epc-sub">Only approved followers can view</span>
+</button>
+</div>
 </div>
 <button class="btn-primary-action" id="btn-save-edit" onclick="saveChannelEdits()" style="margin: 30px 0 0 0; width: 100%;">Save Changes</button>
 </div>
@@ -1707,11 +1833,11 @@ html[data-theme="dark"] #view-channel-page .banner-gradient,
         <div class="sheet-drag-handle"></div>
         <h3 class="sheet-title">Private Account</h3>
         <div class="sheet-options-list">
-            <div class="sheet-option-item selected" onclick="selectGenericOption(this, 'sheet-private-account')">
+            <div class="sheet-option-item selected" data-value="public" onclick="selectGenericOption(this, 'sheet-private-account')">
                 <span class="sheet-option-label">Public</span>
                 <div class="sheet-radio-indicator"></div>
             </div>
-            <div class="sheet-option-item" onclick="selectGenericOption(this, 'sheet-private-account')">
+            <div class="sheet-option-item" data-value="private" onclick="selectGenericOption(this, 'sheet-private-account')">
                 <span class="sheet-option-label">Private</span>
                 <div class="sheet-radio-indicator"></div>
             </div>

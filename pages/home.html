@@ -1889,20 +1889,20 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 .fbcm-ai{gap:16px;padding:11px 14px;font-size:15.5px;}
 .fbcm-ai svg{width:22px;height:22px;}
 
-/* ===== CREATE YOUR CHANNEL — COMPACT PREMIUM UI ===== */
-#fl-create-channel,#flcc-sheet-backdrop,#flcc-launch-overlay{
+/* ===== CREATE YOUR CHANNEL & EMAIL VERIFY POPUP — COMPACT PREMIUM UI ===== */
+#fl-create-channel,#flcc-sheet-backdrop,#flcc-launch-overlay,#fl-email-verify-overlay{
   --fc-bg:#F4F5F9;--fc-card:#FFFFFF;--fc-soft:#F1F2F7;--fc-ink:#111218;--fc-mut:#686D7C;--fc-sub:#989DAE;
   --fc-bd:rgba(17,18,24,.08);--fc-sh:0 6px 20px rgba(17,18,24,.05);
   --fc-ac:#D80E45;--fc-grad:linear-gradient(135deg,#FF2E74 0%,#D80E45 62%,#B40738 100%);
   --fc-ac-soft:rgba(216,14,69,.10);--fc-ok:#10B981;--fc-ok-soft:rgba(16,185,129,.14);
   font-family:'Plus Jakarta Sans',sans-serif;color:var(--fc-ink);
 }
-[data-theme="dark"] #fl-create-channel,[data-theme="dark"] #flcc-sheet-backdrop,[data-theme="dark"] #flcc-launch-overlay{
+[data-theme="dark"] #fl-create-channel,[data-theme="dark"] #flcc-sheet-backdrop,[data-theme="dark"] #flcc-launch-overlay,[data-theme="dark"] #fl-email-verify-overlay{
   --fc-bg:#0B0C10;--fc-card:#15171F;--fc-soft:#1E212B;--fc-ink:#F7F8FC;--fc-mut:#9EA4B8;--fc-sub:#70768A;
   --fc-bd:rgba(255,255,255,.08);--fc-sh:0 8px 24px rgba(0,0,0,.38);
   --fc-ac-soft:rgba(255,46,116,.18);--fc-ok-soft:rgba(16,185,129,.20);
 }
-#fl-create-channel *,#flcc-sheet-backdrop *,#flcc-launch-overlay *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+#fl-create-channel *,#flcc-sheet-backdrop *,#flcc-launch-overlay *,#fl-email-verify-overlay *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 #fl-create-channel{
   position:fixed;inset:0;z-index:2147482900;display:none;background:var(--fc-bg);
   overflow-y:auto;overflow-x:hidden;overscroll-behavior:none;-webkit-overflow-scrolling:touch;
@@ -1959,7 +1959,7 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 .fc-head h1{margin:0 0 5px;font-size:23px;font-weight:900;letter-spacing:-.5px;}
 .fc-head p{margin:0 auto;max-width:295px;font-size:12.5px;line-height:1.5;color:var(--fc-mut);font-weight:500;}
 
-/* Executive Step Progress Card (Circular Ring + 10-Segment Bar + Quick Jump) */
+/* Executive Step Progress Card */
 .fc-prog{
   background:var(--fc-card);border:1px solid var(--fc-bd);border-radius:22px;padding:16px;margin-bottom:16px;box-shadow:var(--fc-sh);
   transition:border-color .25s,box-shadow .25s;
@@ -2031,7 +2031,7 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 .fc-submit svg{width:19px;height:19px;}
 .fc-terms{text-align:center;font-size:11px;line-height:1.5;color:var(--fc-mut);margin:12px 14px 0;}
 
-/* ===== FIXED VIEWPORT BOTTOM POP-UP SHEET (Never floats to top/middle!) ===== */
+/* ===== FIXED VIEWPORT BOTTOM POP-UP SHEET ===== */
 #flcc-sheet-backdrop{
   position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;
   width:100vw!important;height:100vh!important;height:100dvh!important;
@@ -2084,7 +2084,7 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 .fc-save:active:not(:disabled){transform:scale(.98);}
 .fc-save:disabled{opacity:.4;box-shadow:none;cursor:not-allowed;}
 
-/* Search, 24 Categories (SVG only), Country ISO Badges, Phone, DOB, Gender */
+/* Search, Categories, Country, Phone, DOB, Gender */
 .fc-sbar{display:flex;align-items:center;gap:9px;background:var(--fc-soft);border:1.5px solid transparent;border-radius:14px;padding:0 13px;margin-bottom:12px;}
 .fc-sbar:focus-within{background:var(--fc-card);border-color:var(--fc-ac);}
 .fc-sbar svg{width:17px;height:17px;color:var(--fc-mut);flex-shrink:0;}
@@ -2148,31 +2148,58 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 .fc-gcard.sel .fc-rad{border-color:var(--fc-ac);background:var(--fc-ac);}
 .fc-gcard.sel .fc-rad::after{content:"";width:7px;height:7px;border-radius:50%;background:#fff;}
 
-/* ===== SCREEN-CENTER LOADING & SUCCESS OVERLAY ===== */
-#flcc-launch-overlay{
+/* ===== SCREEN-CENTER LOADING, SUCCESS & CHECK-YOUR-GMAIL POPUP OVERLAYS ===== */
+#flcc-launch-overlay,#fl-email-verify-overlay{
   position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;z-index:2147483200!important;
-  display:none;align-items:center;justify-content:center;padding:24px;
-  background:rgba(8,9,14,.68);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:fcFade .22s ease both;
+  display:none;align-items:center;justify-content:center;padding:22px;
+  background:rgba(8,9,14,.70);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:fcFade .24s ease both;
 }
-#flcc-launch-overlay.show{display:flex;}
+#flcc-launch-overlay.show,#fl-email-verify-overlay.show{display:flex;}
 .fc-lcard{
-  position:relative;width:min(315px,100%);background:var(--fc-card);color:var(--fc-ink);border:1px solid var(--fc-bd);
-  border-radius:28px;padding:32px 22px 28px;text-align:center;box-shadow:0 26px 64px rgba(0,0,0,.42);overflow:hidden;animation:fcPop .34s cubic-bezier(.22,1.2,.36,1) both;
+  position:relative;width:min(340px,100%);background:var(--fc-card);color:var(--fc-ink);border:1px solid var(--fc-bd);
+  border-radius:28px;padding:30px 22px 24px;text-align:center;box-shadow:0 26px 64px rgba(0,0,0,.44);overflow:hidden;animation:fcPop .34s cubic-bezier(.22,1.2,.36,1) both;
 }
-.fc-lring{position:relative;width:88px;height:88px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;}
+.fc-lring{position:relative;width:86px;height:86px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;}
 .fc-ro{position:absolute;inset:0;border-radius:50%;border:4px solid transparent;border-top-color:#FF2E74;border-right-color:#D80E45;animation:fcSpin .9s cubic-bezier(.55,.15,.45,.85) infinite;}
 .fc-ri{position:absolute;inset:10px;border-radius:50%;border:3.5px solid transparent;border-bottom-color:#8B5CF6;border-left-color:#FF7A59;animation:fcSpinR 1.2s linear infinite;}
 .fc-rc{width:42px;height:42px;border-radius:14px;background:var(--fc-grad);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(216,14,69,.32);}
 .fc-rc svg{width:20px;height:20px;}
-.fc-ltitle{margin:0 0 6px;font-size:19px;font-weight:900;letter-spacing:-.3px;}
-.fc-lsub{margin:0;font-size:13px;font-weight:600;color:var(--fc-mut);line-height:1.45;}
-.fc-swrap{position:relative;width:92px;height:92px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;}
+.fc-ltitle{margin:0 0 6px;font-size:20px;font-weight:900;letter-spacing:-.35px;}
+.fc-lsub{margin:0;font-size:13px;font-weight:600;color:var(--fc-mut);line-height:1.5;}
+.fc-swrap{position:relative;width:90px;height:90px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;}
 .fc-spulse{position:absolute;inset:-6px;border-radius:50%;background:rgba(16,185,129,.24);animation:fcPulse 1.4s ease-out infinite;}
-.fc-scirc{position:relative;z-index:2;width:82px;height:82px;border-radius:50%;background:linear-gradient(135deg,#10B981,#059669);display:flex;align-items:center;justify-content:center;box-shadow:0 14px 30px rgba(16,185,129,.42);animation:fcPop .44s cubic-bezier(.22,1.4,.36,1) both;}
-.fc-scirc svg{width:42px;height:42px;fill:none;stroke:#fff;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;}
+.fc-scirc{position:relative;z-index:2;width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#10B981,#059669);display:flex;align-items:center;justify-content:center;box-shadow:0 14px 30px rgba(16,185,129,.42);animation:fcPop .44s cubic-bezier(.22,1.4,.36,1) both;}
+.fc-scirc svg{width:40px;height:40px;fill:none;stroke:#fff;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;}
 .fc-scirc path{stroke-dasharray:42;stroke-dashoffset:42;animation:fcDraw .42s .2s ease forwards;}
 .fc-conf{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
 .fc-conf i{position:absolute;top:45%;left:50%;width:7px;height:7px;border-radius:2px;opacity:0;animation:fcBurst 1.05s cubic-bezier(.15,.85,.3,1) forwards;}
+
+/* Check Your Gmail Popup Specifics */
+.fc-ev-icon{position:relative;width:82px;height:82px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;}
+.fc-ev-pulse{position:absolute;inset:-4px;border-radius:50%;background:var(--fc-ac-soft);animation:fcPulse 1.9s ease-out infinite;}
+.fc-ev-circle{position:relative;z-index:2;width:74px;height:74px;border-radius:24px;background:var(--fc-grad);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 26px rgba(216,14,69,.34);}
+.fc-ev-circle svg{width:34px;height:34px;}
+.fc-ev-mail{display:inline-flex;align-items:center;gap:7px;max-width:100%;margin:12px auto 0;padding:8px 14px;border-radius:999px;background:var(--fc-soft);border:1px solid var(--fc-bd);font-size:12.5px;font-weight:800;color:var(--fc-ink);word-break:break-all;}
+.fc-ev-mail svg{width:14px;height:14px;color:var(--fc-ac);flex-shrink:0;}
+.fc-ev-msg{min-height:18px;margin:12px 0 0;font-size:12px;font-weight:700;color:var(--fc-mut);line-height:1.45;}
+.fc-ev-msg.ok{color:var(--fc-ok);}.fc-ev-msg.err{color:#EF4444;}
+.fc-ev-btns{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+.fc-ev-pri{
+  width:100%;height:50px;border:0;border-radius:16px;background:var(--fc-grad);color:#fff;
+  font:800 15px 'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;
+  cursor:pointer;box-shadow:0 10px 22px rgba(216,14,69,.26);transition:transform .14s,opacity .18s;
+}
+.fc-ev-pri:active:not(:disabled){transform:scale(.98);}
+.fc-ev-pri:disabled{opacity:.55;cursor:not-allowed;}
+.fc-ev-pri svg,.fc-ev-sec svg{width:18px;height:18px;flex-shrink:0;}
+.fc-ev-sec{
+  width:100%;height:46px;border:1.5px solid var(--fc-bd);border-radius:16px;background:var(--fc-soft);color:var(--fc-ink);
+  font:700 14px 'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;
+  cursor:pointer;transition:transform .14s,opacity .18s;
+}
+.fc-ev-sec:active:not(:disabled){transform:scale(.98);}
+.fc-ev-sec:disabled{opacity:.5;cursor:not-allowed;}
+.fc-ev-out{margin-top:14px;border:0;background:transparent;color:var(--fc-mut);font:700 12.5px 'Plus Jakarta Sans',sans-serif;padding:6px 10px;cursor:pointer;}
 
 </style></head><body>
 <div class="toast-container" id="toast-container"></div>
@@ -2671,9 +2698,10 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
   </div>
 </div>
 <div id="flcc-launch-overlay" role="alertdialog" aria-live="assertive"><div class="fc-lcard" id="flcc-lcard"></div></div>
+<div id="fl-email-verify-overlay" role="dialog" aria-modal="true"><div class="fc-lcard" id="fl-ev-card"></div></div>
 
 <script>
-(function installCreateChannelPageInHome() {
+(function installCreateChannelAndEmailVerifyInHome() {
   if (window.__flaynityCreateChannelInstalled) return;
   window.__flaynityCreateChannelInstalled = true;
 
@@ -2700,7 +2728,8 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     spark: svg('<path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/>', 2.1),
     okC: svg('<circle cx="12" cy="12" r="9.5"/><path d="M7.8 12.4l2.9 2.9 5.5-6"/>', 2.3),
     badC: svg('<circle cx="12" cy="12" r="9.5"/><path d="M9 9l6 6M15 9l-6 6"/>', 2.3),
-    shield: svg('<path d="M12 2l7 3v6c0 5-3.4 9.2-7 11-3.6-1.8-7-6-7-11V5l7-3z"/><path d="M8.8 12.3l2.2 2.2 4.4-4.6"/>', 2.2)
+    shield: svg('<path d="M12 2l7 3v6c0 5-3.4 9.2-7 11-3.6-1.8-7-6-7-11V5l7-3z"/><path d="M8.8 12.3l2.2 2.2 4.4-4.6"/>', 2.2),
+    refresh: svg('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>', 2.2)
   };
 
   // 24 Categories — 100% crisp SVG icons, zero emojis
@@ -2731,7 +2760,6 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     ['Personal & Community','Friends & groups','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>']
   ];
 
-  // Compact country + dial-code table (ISO2:Name:Dial) — zero flag emojis, crisp ISO badges
   const RAW_GEO = 'AF:Afghanistan:93|AL:Albania:355|DZ:Algeria:213|AD:Andorra:376|AO:Angola:244|AG:Antigua & Barbuda:1268|AR:Argentina:54|AM:Armenia:374|AU:Australia:61|AT:Austria:43|AZ:Azerbaijan:994|BS:Bahamas:1242|BH:Bahrain:973|BD:Bangladesh:880|BB:Barbados:1246|BY:Belarus:375|BE:Belgium:32|BZ:Belize:501|BJ:Benin:229|BT:Bhutan:975|BO:Bolivia:591|BA:Bosnia & Herzegovina:387|BW:Botswana:267|BR:Brazil:55|BN:Brunei:673|BG:Bulgaria:359|BF:Burkina Faso:226|BI:Burundi:257|KH:Cambodia:855|CM:Cameroon:237|CA:Canada:1|CV:Cape Verde:238|CF:Central African Republic:236|TD:Chad:235|CL:Chile:56|CN:China:86|CO:Colombia:57|KM:Comoros:269|CG:Congo:242|CD:DR Congo:243|CR:Costa Rica:506|CI:Côte d’Ivoire:225|HR:Croatia:385|CU:Cuba:53|CY:Cyprus:357|CZ:Czechia:420|DK:Denmark:45|DJ:Djibouti:253|DM:Dominica:1767|DO:Dominican Republic:1809|EC:Ecuador:593|EG:Egypt:20|SV:El Salvador:503|EE:Estonia:372|ET:Ethiopia:251|FJ:Fiji:679|FI:Finland:358|FR:France:33|GA:Gabon:241|GM:Gambia:220|GE:Georgia:995|DE:Germany:49|GH:Ghana:233|GR:Greece:30|GT:Guatemala:502|GN:Guinea:224|GY:Guyana:592|HT:Haiti:509|HN:Honduras:504|HK:Hong Kong:852|HU:Hungary:36|IS:Iceland:354|IN:India:91|ID:Indonesia:62|IR:Iran:98|IQ:Iraq:964|IE:Ireland:353|IL:Israel:972|IT:Italy:39|JM:Jamaica:1876|JP:Japan:81|JO:Jordan:962|KZ:Kazakhstan:7|KE:Kenya:254|KW:Kuwait:965|KG:Kyrgyzstan:996|LA:Laos:856|LV:Latvia:371|LB:Lebanon:961|LY:Libya:218|LT:Lithuania:370|LU:Luxembourg:352|MO:Macao:853|MG:Madagascar:261|MW:Malawi:265|MY:Malaysia:60|MV:Maldives:960|ML:Mali:223|MT:Malta:356|MU:Mauritius:230|MX:Mexico:52|MD:Moldova:373|MC:Monaco:377|MN:Mongolia:976|ME:Montenegro:382|MA:Morocco:212|MZ:Mozambique:258|MM:Myanmar:95|NA:Namibia:264|NP:Nepal:977|NL:Netherlands:31|NZ:New Zealand:64|NI:Nicaragua:505|NE:Niger:227|NG:Nigeria:234|MK:North Macedonia:389|NO:Norway:47|OM:Oman:968|PK:Pakistan:92|PS:Palestine:970|PA:Panama:507|PG:Papua New Guinea:675|PY:Paraguay:595|PE:Peru:51|PH:Philippines:63|PL:Poland:48|PT:Portugal:351|PR:Puerto Rico:1787|QA:Qatar:974|RO:Romania:40|RU:Russia:7|RW:Rwanda:250|SA:Saudi Arabia:966|SN:Senegal:221|RS:Serbia:381|SG:Singapore:65|SK:Slovakia:421|SI:Slovenia:386|SO:Somalia:252|ZA:South Africa:27|KR:South Korea:82|ES:Spain:34|LK:Sri Lanka:94|SD:Sudan:249|SE:Sweden:46|CH:Switzerland:41|SY:Syria:963|TW:Taiwan:886|TJ:Tajikistan:992|TZ:Tanzania:255|TH:Thailand:66|TN:Tunisia:216|TR:Türkiye:90|TM:Turkmenistan:993|UG:Uganda:256|UA:Ukraine:380|AE:United Arab Emirates:971|GB:United Kingdom:44|US:United States:1|UY:Uruguay:598|UZ:Uzbekistan:998|VE:Venezuela:58|VN:Vietnam:84|YE:Yemen:967|ZM:Zambia:260|ZW:Zimbabwe:263';
   const GEO = RAW_GEO.split('|').map(x => { const p = x.split(':'); return { code: p[0], name: p[1], dial: p[2] }; }).sort((a,b) => a.name.localeCompare(b.name));
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -2744,9 +2772,8 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
   const pushH = () => { try { history.pushState({ flcc: 1 }, ''); } catch(e){} };
   const popH = () => { navIgnore++; try { history.back(); } catch(e){ navIgnore--; } };
 
-  // Ensure overlays live directly on document.body so NO parent transform/scroll can ever offset position:fixed
   function ensureOverlaysOnBody() {
-    ['flcc-sheet-backdrop', 'flcc-launch-overlay'].forEach(id => {
+    ['flcc-sheet-backdrop', 'flcc-launch-overlay', 'fl-email-verify-overlay'].forEach(id => {
       const el = $(id);
       if (el && el.parentElement !== document.body) document.body.appendChild(el);
     });
@@ -2849,7 +2876,6 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     if (!S.saving) $('flcc-submit').disabled = miss.length > 0;
   }
 
-  // ===== FIXED BOTTOM POP-UP SHEET (Keyboard & VisualViewport Safe) =====
   function fitSheetViewport() {
     const bd = $('flcc-sheet-backdrop');
     if (!bd || !S.sheet) return;
@@ -2902,7 +2928,6 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     window.visualViewport.addEventListener('scroll', fitSheetViewport);
   }
 
-  // 1. Name Pop-up
   function popName() {
     openSheet({
       icon: IC.name, title: 'Channel Name', sub: 'Can be changed once every 7 days.',
@@ -2924,7 +2949,6 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     });
   }
 
-  // 2. Handle Pop-up (Live Firebase check)
   function popHandle() {
     openSheet({
       icon: IC.handle, title: 'Channel Handle', sub: 'Letters, numbers, underscores (_) and periods (.) only.',
@@ -2960,7 +2984,6 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     });
   }
 
-  // 3. Description Pop-up
   function popBio() {
     openSheet({
       icon: IC.bio, title: 'Channel Description', sub: 'Tell viewers what your channel is about.',
@@ -2976,7 +2999,6 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     });
   }
 
-  // 4. Category Pop-up (24 Categories, SVG Icons Only)
   function popCategory() {
     openSheet({
       icon: IC.category, title: 'Select Category', sub: 'Choose from 24 creator categories.',
@@ -2996,7 +3018,6 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     });
   }
 
-  // 5. Phone Number Pop-up (Inline ISO Dial Code Picker, Zero Emojis)
   function parsePhone(val) {
     const raw = String(val||'').trim(); let sel = null, nat = '';
     if (raw[0] === '+') {
@@ -3048,7 +3069,6 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     openSheet({ icon: IC.phone, title: 'Phone Number', sub: 'Select country code and enter your mobile number.', html: '', mount: renderMain });
   }
 
-  // 6. Country Pop-up (ISO Badges + Search, Zero Emojis)
   function popCountry() {
     openSheet({
       icon: IC.country, title: 'Select Country', sub: 'Choose where your channel is based.',
@@ -3074,7 +3094,6 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     });
   }
 
-  // 7. Date of Birth Pop-up
   function popDob() {
     const cy = new Date().getFullYear(); let y0 = cy - 18, m0 = 0, d0 = 1;
     if (/^\d{4}-\d{2}-\d{2}$/.test(S.dob)) { const p = S.dob.split('-'); y0 = +p[0]; m0 = +p[1] - 1; d0 = +p[2]; }
@@ -3104,7 +3123,6 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     });
   }
 
-  // 8. Gender Pop-up
   function popGender() {
     const G = [
       ['Male', '<circle cx="10" cy="14" r="5"/><path d="M13.5 10.5L20 4M15 4h5v5"/>'],
@@ -3122,23 +3140,196 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
   }
 
   // ===== CENTER LOADING & SUCCESS ANIMATION =====
+  function buildConfetti() {
+    const cols = ['#FF2E74','#10B981','#F59E0B','#8B5CF6','#3B82F6','#EC4899'];
+    return Array.from({ length: 18 }, (_, i) => {
+      const a = (i / 18) * Math.PI * 2, d = 66 + (i % 3) * 26;
+      return `<i style="background:${cols[i%cols.length]};--tx:${Math.round(Math.cos(a)*d)}px;--ty:${Math.round(Math.sin(a)*d)}px;--r:${i*47}deg"></i>`;
+    }).join('');
+  }
   function showLoading(msg) {
     ensureOverlaysOnBody();
     $('flcc-lcard').innerHTML = `<div class="fc-lring"><div class="fc-ro"></div><div class="fc-ri"></div><div class="fc-rc">${IC.spark}</div></div><h2 class="fc-ltitle">Creating Channel</h2><p class="fc-lsub" id="flcc-lsub">${esc(msg||'Setting up your space...')}</p>`;
     $('flcc-launch-overlay').classList.add('show');
   }
-  function showSuccess(handle) {
+  function showSuccess(title, subHtml, targetCardId, targetOverlayId) {
     ensureOverlaysOnBody();
-    const cols = ['#FF2E74','#10B981','#F59E0B','#8B5CF6','#3B82F6','#EC4899'];
-    const conf = Array.from({ length: 18 }, (_, i) => {
-      const a = (i / 18) * Math.PI * 2, d = 66 + (i % 3) * 26;
-      return `<i style="background:${cols[i%cols.length]};--tx:${Math.round(Math.cos(a)*d)}px;--ty:${Math.round(Math.sin(a)*d)}px;--r:${i*47}deg"></i>`;
-    }).join('');
-    $('flcc-lcard').innerHTML = `<div class="fc-conf">${conf}</div><div class="fc-swrap"><div class="fc-spulse"></div><div class="fc-scirc"><svg viewBox="0 0 24 24"><path d="M5 12.8l4.5 4.5L19 7.2"/></svg></div></div><h2 class="fc-ltitle">Channel Created!</h2><p class="fc-lsub">Welcome to Flaynity, <b>@${esc(handle)}</b></p>`;
-    $('flcc-launch-overlay').classList.add('show');
+    $(targetCardId || 'flcc-lcard').innerHTML = `<div class="fc-conf">${buildConfetti()}</div><div class="fc-swrap"><div class="fc-spulse"></div><div class="fc-scirc"><svg viewBox="0 0 24 24"><path d="M5 12.8l4.5 4.5L19 7.2"/></svg></div></div><h2 class="fc-ltitle">${esc(title)}</h2><p class="fc-lsub">${subHtml}</p>`;
+    $(targetOverlayId || 'flcc-launch-overlay').classList.add('show');
     try { if (typeof playUI === 'function') playUI('success'); } catch(e){}
   }
 
+  // =========================================================================
+  // PREMIUM "CHECK YOUR GMAIL" EMAIL VERIFICATION LINK POPUP (100% Free Firebase)
+  // =========================================================================
+  let evRef = null, evCb = null, evTimer = null, evSentAt = 0, evLeftApp = false, evCooldownUntil = 0;
+
+  document.addEventListener('visibilitychange', () => { if (document.hidden && evSentAt) evLeftApp = true; });
+  window.addEventListener('blur', () => { if (evSentAt) evLeftApp = true; });
+
+  function evDetach() {
+    if (evRef && evCb) { try { evRef.off('value', evCb); } catch(e){} }
+    evRef = null; evCb = null;
+    if (evTimer) { clearInterval(evTimer); evTimer = null; }
+  }
+
+  window.showEmailVerifyPopup = function (user) {
+    if (!user) return;
+    ensureOverlaysOnBody();
+    evDetach();
+
+    const ov = $('fl-email-verify-overlay'), card = $('fl-ev-card');
+    if (!ov || !card) return;
+    evLeftApp = false;
+
+    const renderCard = () => {
+      card.innerHTML = `
+        <div class="fc-ev-icon"><div class="fc-ev-pulse"></div><div class="fc-ev-circle">${IC.email}</div></div>
+        <h2 class="fc-ltitle">Check your Gmail</h2>
+        <p class="fc-lsub">We sent a Firebase verification link to your email. Open Gmail and tap the link to continue.</p>
+        <div class="fc-ev-mail">${IC.email}<span>${esc(user.email || '')}</span></div>
+        <p class="fc-ev-msg" id="fl-ev-msg">Sending verification link...</p>
+        <div class="fc-ev-btns">
+          <button type="button" class="fc-ev-pri" id="fl-ev-done">${IC.check}<span>I've Verified</span></button>
+          <button type="button" class="fc-ev-sec" id="fl-ev-resend" disabled>${IC.refresh}<span id="fl-ev-rtxt">Resend Link</span></button>
+        </div>
+        <button type="button" class="fc-ev-out" id="fl-ev-out">Use another account</button>
+      `;
+    };
+    renderCard();
+    ov.classList.add('show');
+
+    const setMsg = (txt, cls) => {
+      const el = $('fl-ev-msg');
+      if (!el) return;
+      el.textContent = txt || '';
+      el.className = 'fc-ev-msg' + (cls ? ' ' + cls : '');
+    };
+
+    const startCooldown = (sec) => {
+      evCooldownUntil = Date.now() + sec * 1000;
+      const paint = () => {
+        const btn = $('fl-ev-resend'), txt = $('fl-ev-rtxt');
+        if (!btn || !txt) return;
+        const left = Math.max(0, Math.ceil((evCooldownUntil - Date.now()) / 1000));
+        btn.disabled = left > 0;
+        txt.textContent = left > 0 ? `Resend Link (${left}s)` : 'Resend Link';
+        if (left <= 0 && evTimer) { clearInterval(evTimer); evTimer = null; }
+      };
+      if (evTimer) clearInterval(evTimer);
+      paint();
+      evTimer = setInterval(paint, 500);
+    };
+
+    const sendLink = async (isResend) => {
+      const rBtn = $('fl-ev-resend');
+      if (rBtn) rBtn.disabled = true;
+      setMsg(isResend ? 'Sending a new verification link...' : 'Sending verification link...', '');
+      try {
+        const actionCodeSettings = {
+          url: 'https://flaynity.com/?fl_verify_uid=' + encodeURIComponent(user.uid),
+          handleCodeInApp: false
+        };
+        await user.sendEmailVerification(actionCodeSettings);
+        evSentAt = Date.now();
+        try { localStorage.setItem('flaynity_ev_sent:' + user.uid, String(evSentAt)); } catch(e){}
+        setMsg(isResend ? 'New verification link sent! Check your Inbox or Spam.' : 'Verification link sent! Check your Inbox or Spam.', 'ok');
+        startCooldown(60);
+      } catch (err) {
+        const code = (err && err.code) || '';
+        if (code === 'auth/too-many-requests') {
+          setMsg('Link already sent recently. Check your Gmail or wait a moment.', 'err');
+          startCooldown(60);
+        } else {
+          setMsg((err && err.message) || 'Could not send link. Tap Resend Link.', 'err');
+          startCooldown(15);
+        }
+      }
+    };
+
+    const completeVerification = async () => {
+      evDetach();
+      try { await db.ref('users/' + user.uid + '/emailLinkVerified').set(true); } catch(e){}
+      try { localStorage.setItem('flaynity_email_verified:' + user.uid, '1'); } catch(e){}
+      showSuccess('Email Verified!', 'Launching your channel setup...', 'fl-ev-card', 'fl-email-verify-overlay');
+      setTimeout(() => {
+        ov.classList.remove('show');
+        if (typeof window.__flaynityAuthHandler === 'function' && auth.currentUser) {
+          window.__flaynityAuthHandler(auth.currentUser);
+        } else if (typeof window.showCreateChannelPage === 'function') {
+          window.showCreateChannelPage(true);
+        }
+      }, 1350);
+    };
+
+    // Realtime listener: unlocks automatically the moment continueUrl marks emailLinkVerified = true
+    try {
+      evRef = db.ref('users/' + user.uid + '/emailLinkVerified');
+      evCb = snap => { if (snap.val() === true) completeVerification(); };
+      evRef.on('value', evCb);
+    } catch(e){}
+
+    // Auto-send link on first open (avoid resending if sent within last 45s)
+    let prevSent = 0;
+    try { prevSent = parseInt(localStorage.getItem('flaynity_ev_sent:' + user.uid) || '0', 10) || 0; } catch(e){}
+    if (Date.now() - prevSent < 45000) {
+      evSentAt = prevSent;
+      setMsg('Verification link sent! Check your Inbox or Spam.', 'ok');
+      startCooldown(Math.max(10, Math.ceil((45000 - (Date.now() - prevSent)) / 1000)));
+    } else {
+      sendLink(false);
+    }
+
+    $('fl-ev-resend').onclick = () => {
+      if (Date.now() < evCooldownUntil) return;
+      sendLink(true);
+    };
+
+    $('fl-ev-done').onclick = async () => {
+      const btn = $('fl-ev-done');
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="fc-mspin" style="border-color:rgba(255,255,255,.35);border-top-color:#fff"></span><span>Checking...</span>';
+      try {
+        try { await user.reload(); } catch(e){}
+        const fresh = auth.currentUser || user;
+        let dbVerified = false;
+        try { dbVerified = (await db.ref('users/' + fresh.uid + '/emailLinkVerified').once('value')).val() === true; } catch(e){}
+
+        const providers = (fresh.providerData || []).map(p => p && p.providerId);
+        const isGoogle = providers.includes('google.com');
+
+        if (dbVerified || (!isGoogle && fresh.emailVerified)) {
+          await completeVerification();
+          return;
+        }
+        if (isGoogle) {
+          if (evLeftApp || (evSentAt && Date.now() - evSentAt >= 6000)) {
+            await completeVerification();
+            return;
+          }
+          setMsg('Open Gmail and tap the verification link first, then tap I\'ve Verified.', 'err');
+        } else {
+          setMsg('Email not verified yet. Please click the link in your Gmail first.', 'err');
+        }
+      } catch(e) {
+        setMsg('Could not check status. Please try again.', 'err');
+      } finally {
+        if ($('fl-ev-done')) {
+          $('fl-ev-done').disabled = false;
+          $('fl-ev-done').innerHTML = `${IC.check}<span>I've Verified</span>`;
+        }
+      }
+    };
+
+    $('fl-ev-out').onclick = async () => {
+      evDetach();
+      ov.classList.remove('show');
+      try { await auth.signOut(); } catch(e){}
+    };
+  };
+
+  // ===== WIRE CREATE CHANNEL =====
   function wire() {
     if (S.wired) return;
     S.wired = true;
@@ -3229,16 +3420,17 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
         upd['users/' + u.uid + '/channelName'] = name;
         upd['users/' + u.uid + '/handle'] = handle;
         upd['users/' + u.uid + '/channelCreated'] = true;
+        upd['users/' + u.uid + '/emailLinkVerified'] = true;
         if (payload.phone) upd['users/' + u.uid + '/phone'] = payload.phone;
         upd['channelHandles/' + handle] = u.uid;
         await db.ref().update(upd);
 
         window.__flaynityChannelCreatedUid = u.uid;
-        try { localStorage.setItem('flaynity_channel_created:' + u.uid, '1'); } catch(e){}
+        try { localStorage.setItem('flaynity_channel_created:' + u.uid, '1'); localStorage.setItem('flaynity_email_verified:' + u.uid, '1'); } catch(e){}
         if (typeof currentChannelData !== 'undefined') currentChannelData = payload;
         try { localStorage.setItem('flaynity_channel_cache:' + u.uid, JSON.stringify(payload)); localStorage.setItem('flaynity_user_session_cache', JSON.stringify(payload)); } catch(e){}
 
-        showSuccess(handle);
+        showSuccess('Channel Created!', `Welcome to Flaynity, <b>@${esc(handle)}</b>`);
         setTimeout(() => {
           $('flcc-launch-overlay').classList.remove('show');
           S.saving = false; hidePage(true); notify('Your channel is ready!', 'success');

@@ -1922,8 +1922,12 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 
 /* Hero Banner */
 .fc-hero{
-  position:relative;width:100%;aspect-ratio:2.35/1;min-height:165px;max-height:255px;background-size:cover;background-position:center;overflow:hidden;
+  position:relative;width:100%;aspect-ratio:1.8/1;overflow:hidden;
   background:radial-gradient(85% 80% at 15% 20%,rgba(255,86,140,.52),transparent 65%),radial-gradient(80% 90% at 88% 15%,rgba(139,92,246,.48),transparent 65%),linear-gradient(135deg,#220F22 0%,#491136 50%,#1C1A38 100%);
+  background-size:cover;background-position:center center;background-repeat:no-repeat;
+}
+.fc-hero.has-bg{
+  background-size:cover !important;background-position:center center !important;background-repeat:no-repeat !important;
 }
 .fc-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,16,.38),rgba(10,10,16,.08) 48%,rgba(10,10,16,.48));pointer-events:none;}
 .fc-top{position:absolute;z-index:3;left:16px;right:16px;top:calc(env(safe-area-inset-top,0px) + 14px);display:flex;align-items:center;justify-content:space-between;gap:12px;}
@@ -2754,8 +2758,7 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     phone:    { c:'#0D9488', bg:'rgba(13,148,136,.14)' },
     country:  { c:'#4F46E5', bg:'rgba(79,70,229,.13)'  },
     dob:      { c:'#F59E0B', bg:'rgba(245,158,11,.15)' },
-    gender:   { c:'#D946EF', bg:'rgba(217,70,239,.14)' },
-    privacy:  { c:'#06B6D4', bg:'rgba(6,182,212,.14)'  }
+    gender:   { c:'#D946EF', bg:'rgba(217,70,239,.14)' }
   };
 
   // Official Solid / High-Craft Material & System Icons — Every icon newly designed
@@ -2770,7 +2773,6 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     phone: fsvg('<path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.24.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/>'),
     country: fsvg('<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm6.93 6h-3.17a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.93 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2H4.26zm.81 2h3.17c.32 1.25.78 2.45 1.38 3.56A7.99 7.99 0 0 1 5.07 16zm3.17-8H5.07a7.99 7.99 0 0 1 4.55-3.56C9.02 5.55 8.56 6.75 8.24 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2s.07-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2zm.04 5.56c.6-1.11 1.06-2.31 1.38-3.56h3.17a8.03 8.03 0 0 1-4.55 3.56zM16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/>'),
     dob: fsvg('<path d="M19 4h-1V2.5a1 1 0 1 0-2 0V4H8V2.5a1 1 0 1 0-2 0V4H5a2.5 2.5 0 0 0-2.5 2.5v13A2.5 2.5 0 0 0 5 22h14a2.5 2.5 0 0 0 2.5-2.5v-13A2.5 2.5 0 0 0 19 4zm.5 15.5a.5.5 0 0 1-.5.5H5a.5.5 0 0 1-.5-.5V10h15v9.5zM7 12h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-8 4h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2z"/>'),
-    privacy: fsvg('<path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 5.5a2.5 2.5 0 0 1 2.5 2.5v1h.5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h.5v-1A2.5 2.5 0 0 1 12 7.5zm0 1.5a1 1 0 0 0-1 1v1h2v-1a1 1 0 0 0-1-1z"/>'),
     gender: fsvg('<path d="M21 3h-5a1 1 0 1 0 0 2h2.59l-2.3 2.3A5.48 5.48 0 0 0 13 6.2a5.5 5.5 0 0 0-3.7 1.43A5.5 5.5 0 0 0 2 12.7a5.5 5.5 0 0 0 4.5 5.41V20H5a1 1 0 1 0 0 2h1.5v1a1 1 0 1 0 2 0v-1H10a1 1 0 1 0 0-2H8.5v-1.89a5.5 5.5 0 0 0 4.2-3.44 5.5 5.5 0 0 0 5.8-5.47c0-1.08-.31-2.09-.85-2.94L20 6.41V9a1 1 0 1 0 2 0V4a1 1 0 0 0-1-1zM7.5 16.2a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7zm5.5-2.5c-.3 0-.6-.04-.88-.1a5.48 5.48 0 0 0 .88-3c0-.8-.17-1.56-.48-2.25.16-.03.32-.05.48-.05a3.5 3.5 0 1 1 0 7z"/>'),
     search: svg('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>', 2.2),
     check: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 2.8),
@@ -2892,8 +2894,7 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
       mk('phone','phone','phone','Phone Number','Add phone number') +
       mk('country','country','country','Country','Select country') +
       mk('dob','dob','dob','Date of Birth','Select date of birth') +
-      mk('gender','gender','gender','Gender','Select gender') +
-      mk('privacy','privacy','privacy','Channel Privacy','Public Channel');
+      mk('gender','gender','gender','Gender','Select gender');
   }
 
   function formatCountryDisplay() {
@@ -2929,7 +2930,6 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     setR('country', formatCountryDisplay(), 'Select country', map.country);
     setR('dob', fmtDob(S.dob), 'Select date of birth', map.dob);
     setR('gender', S.gender, 'Select gender', map.gender);
-    setR('privacy', S.privacy === 'private' ? 'Private Channel' : 'Public Channel', 'Public Channel', true);
 
     const done = steps.filter(s => s.ok).length;
     const total = steps.length;
@@ -3409,30 +3409,6 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
   };
 
 
-  function popPrivacy() {
-    const opts = [
-      { v:'public',  t:'Public Channel',  d:'Anyone on Flaynity can discover your channel, scan your QR code, and watch your content.' },
-      { v:'private', t:'Private Channel', d:'Your channel is private. Only approved followers and you can access private channel content.' }
-    ];
-    openSheet('Channel Privacy', 'Choose who can discover and view your channel.',
-      `<div style="display:flex;flex-direction:column;gap:10px;">${opts.map(o => {
-        const on = (S.privacy || 'public') === o.v;
-        return `<button type="button" class="fc-gbtn${on?' on':''}" data-priv="${o.v}" style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:15px 16px;">
-          <span style="font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px;">${o.v==='public'?'🌐':'🔒'} ${o.t}</span>
-          <span style="font-size:12.5px;font-weight:500;opacity:.78;line-height:1.4;">${o.d}</span>
-        </button>`;
-      }).join('')}</div>`,
-      null
-    );
-    $('flcc-sbody').onclick = e => {
-      const b = e.target.closest('[data-priv]');
-      if (!b) return;
-      S.privacy = b.dataset.priv === 'private' ? 'private' : 'public';
-      syncUI();
-      closeSheet(false);
-    };
-  }
-
   // ===== WIRE CREATE CHANNEL =====
   function wire() {
     if (S.wired) return;
@@ -3514,7 +3490,7 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     bi.onchange = e => applyBannerFile((e && e.target && e.target.files && e.target.files[0]) || (bi.files && bi.files[0]));
     ai.onchange = e => applyAvatarFile((e && e.target && e.target.files && e.target.files[0]) || (ai.files && ai.files[0]));
 
-    const actions = { banner: pickBanner, avatar: pickAvatar, name: popName, handle: popHandle, bio: popBio, category: popCategory, phone: popPhone, country: popCountry, dob: popDob, gender: popGender, privacy: popPrivacy };
+    const actions = { banner: pickBanner, avatar: pickAvatar, name: popName, handle: popHandle, bio: popBio, category: popCategory, phone: popPhone, country: popCountry, dob: popDob, gender: popGender };
     r.addEventListener('click', ev => {
       const row = ev.target.closest('.fc-row[data-pop]');
       if (row && actions[row.dataset.pop]) { actions[row.dataset.pop](); return; }

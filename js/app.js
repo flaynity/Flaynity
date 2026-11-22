@@ -9710,6 +9710,19 @@ function triggerAvatarSelection(mode) {
 
 function triggerBannerSelection() {
     playUI('click');
+    if (typeof window.openChannelCoverPicker === 'function') {
+        window.openChannelCoverPicker({
+            currentUrl: tempEditBannerUrl || (currentChannelData && currentChannelData.bannerUrl) || '',
+            channelName: (document.getElementById('edit-channel-name') && document.getElementById('edit-channel-name').value) || (currentChannelData && currentChannelData.channelName) || 'Your Channel',
+            avatarUrl: tempEditAvatarUrl || (currentChannelData && currentChannelData.avatarUrl) || '',
+            onApply: function(file, previewUrl) {
+                const banner = document.getElementById('edit-channel-banner-img');
+                if (banner && previewUrl) banner.src = previewUrl;
+                handleChannelBannerSelect({ target: { files: [file] } });
+            }
+        });
+        return;
+    }
     if (typeof window.openMediaPicker === 'function') {
         window.openMediaPicker('edit-banner', function(file) { handleChannelBannerSelect({ target: { files: [file] } }); });
         return;
@@ -9718,10 +9731,21 @@ function triggerBannerSelection() {
     if (input) input.click();
 }
 
-async function handleChannelAvatarSelect(e, mode) {
-    const file = e.target.files[0];
+async function handleChannelAvatarSelect(e, mode, _skipCrop) {
+    const file = e && e.target && e.target.files ? e.target.files[0] : null;
     if (!file) return;
-    
+    if (!_skipCrop && typeof window.openProfilePhotoCropper === 'function') {
+        window.openProfilePhotoCropper(file, function(croppedFile, previewUrl) {
+            if (previewUrl) {
+                const pId = mode === 'create' ? 'create-avatar-img' : 'edit-avatar-img';
+                const pEl = document.getElementById(pId);
+                if (pEl) { pEl.src = previewUrl; pEl.style.display = 'block'; }
+            }
+            handleChannelAvatarSelect({ target: { files: [croppedFile] } }, mode, true);
+        });
+        return;
+    }
+
     showNotification("Uploading profile image...", "success");
     try {
         const secureUrl = await uploadImageToR2(file, "avatars");
@@ -9971,6 +9995,9 @@ function openSupportLink(type) {
 function openBottomSheet(sheetId) {
     const overlay = document.getElementById(sheetId);
     if (!overlay) return;
+    if (sheetId === 'sheet-private-account' && typeof window.syncChannelPrivacyUI === 'function') {
+        window.syncChannelPrivacyUI(currentChannelData);
+    }
     overlay.style.display = 'flex';
     requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('active')));
 }
@@ -10000,6 +10027,10 @@ function selectGenericOption(element, sheetId) {
     if (sheetId === 'sheet-language' && typeof window.setFlaynityLanguage === 'function') {
         const label = element.querySelector('.sheet-option-label');
         window.setFlaynityLanguage(label ? label.textContent : element.textContent);
+    }
+    if (sheetId === 'sheet-private-account' && typeof window.saveChannelPrivacySetting === 'function') {
+        const rawVal = element.getAttribute('data-value') || ((element.textContent || '').trim().toLowerCase().includes('private') ? 'private' : 'public');
+        window.saveChannelPrivacySetting(rawVal);
     }
     setTimeout(() => closeBottomSheet(sheetId), 220);
 }
@@ -10135,8 +10166,10 @@ function openViewChannelPage() {
         if (viewAvatar.getAttribute('src') !== avatarSrc) viewAvatar.src = avatarSrc;
         viewAvatar.style.visibility = 'visible';
     }
+    window.__activeViewedChannel = data;
     if (viewName) viewName.innerText = data.channelName;
     if (viewHandle) viewHandle.innerText = "@" + data.handle;
+    if (typeof window.syncChannelPrivacyUI === 'function') window.syncChannelPrivacyUI(data);
     if (viewDesc) viewDesc.innerText = data.description || "No description provided yet.";
     if (viewSub) viewSub.innerText = formatCount(data.subscribersCount) + " Subscriber" + (data.subscribersCount === 1 ? "" : "s");
 
@@ -10478,10 +10511,29 @@ function paintChannelPosts() {
         grid.innerHTML = '<p class="ch-empty">No posts yet.</p>';
         return;
     }
-    grid.innerHTML = list.map(p => buildChannelPostCard({
-        id: p.id, caption: p.caption, images: p.images || [],
-        likes: p.likes || 0, comments: p.comments || 0, createdAt: p.createdAt
-    }, p.username)).join('');
+    // Merge channel posts into allCommunityPosts so share/menu/reactions work identically to Home Page
+    if (typeof allCommunityPosts !== 'undefined' && Array.isArray(allCommunityPosts)) {
+        list.forEach(p => {
+            if (p && p.id && !allCommunityPosts.some(x => x && String(x.id) === String(p.id))) {
+                allCommunityPosts.push(p);
+            }
+        });
+    }
+    const uids = new Set();
+    grid.innerHTML = list.map(p => {
+        if (!p) return '';
+        if (p.userId) uids.add(p.userId);
+        if (typeof renderSinglePostSegmentUI === 'function') {
+            return renderSinglePostSegmentUI(p);
+        }
+        return buildChannelPostCard({
+            id: p.id, caption: p.caption, images: p.images || [],
+            likes: p.likes || 0, comments: p.comments || 0, createdAt: p.createdAt
+        }, p.username);
+    }).join('');
+    if (typeof bindLiveChannelUI === 'function') {
+        uids.forEach(uid => bindLiveChannelUI(uid));
+    }
 }
 
 function renderChannelVideos(userId) {
@@ -10968,6 +11020,9 @@ function openEditChannelPage() {
     if (inputHandle) inputHandle.value = data.handle;
     if (inputDesc) inputDesc.value = data.description || "";
     if (inputCategory) inputCategory.value = data.category || "Gaming";
+    if (typeof window.setEditChannelPrivacy === 'function') {
+        window.setEditChannelPrivacy((data.privacy === 'private' || data.isPrivate === true) ? 'private' : 'public');
+    }
     if (descCounter) descCounter.innerText = (data.description || "").length;
     if (handleFeedback) handleFeedback.innerHTML = "";
     if (saveBtn) saveBtn.disabled = false;
@@ -11018,12 +11073,16 @@ async function saveChannelEdits() {
             await db.ref(`handles/${handle}`).set(auth.currentUser.uid);
         }
 
+        const privacyInput = document.getElementById('edit-channel-privacy');
+        const privacyVal = (privacyInput && privacyInput.value === 'private') ? 'private' : 'public';
         const updatedData = {
             ...currentChannelData,
             channelName: name,
             handle: handle,
             description: desc,
             category: category,
+            privacy: privacyVal,
+            isPrivate: privacyVal === 'private',
             avatarUrl: tempEditAvatarUrl,
             bannerUrl: tempEditBannerUrl,
             updatedDate: Date.now()
@@ -16472,4 +16531,1338 @@ function closeFeelsDescSheet() {
         }).observe(document.body, { childList: true, subtree: true, characterData: true });
     }
     if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+})();
+
+/* =====================================================================
+   FLAYNITY CHANNEL STUDIO MODULE
+   1. Profile Photo Crop & Zoom (openProfilePhotoCropper)
+   2. Channel Cover Studio: Photo + Ready-made Templates + Gradients + Live Preview (openChannelCoverPicker)
+   3. Pure-JS ISO/IEC 18004 QR Code Generator + Unique Channel QR Modal (openChannelQRModal)
+   4. Public/Private Channel Profile Opener + QR Deep-Link Routing (openChannelProfile)
+   ===================================================================== */
+(function () {
+    'use strict';
+    if (window.__flaynityChannelStudioLoaded) return;
+    window.__flaynityChannelStudioLoaded = true;
+
+    function ensureStudioStyles() {
+        if (document.getElementById('fl-studio-styles')) return;
+        const st = document.createElement('style');
+        st.id = 'fl-studio-styles';
+        st.textContent = `
+/* --- Profile Photo Crop & Zoom Modal --- */
+#fl-cropper-modal {
+    position: fixed; inset: 0; z-index: 2147483220;
+    background: #0a0b0f; color: #fff;
+    display: none; flex-direction: column;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+}
+#fl-cropper-modal.open { display: flex; }
+.flcr-top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.flcr-top h3 { margin: 0; font-size: 1.02rem; font-weight: 800; letter-spacing: -.2px; }
+.flcr-tbtn {
+    border: 0; background: rgba(255,255,255,.1); color: #fff;
+    border-radius: 999px; height: 36px; padding: 0 14px;
+    font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.flcr-tbtn:active { opacity: .75; }
+.flcr-stage-wrap {
+    flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center;
+    padding: 18px; position: relative; overflow: hidden;
+}
+.flcr-stage {
+    position: relative; width: min(84vw, 330px); height: min(84vw, 330px);
+    border-radius: 20px; overflow: hidden; background: #14161d;
+    box-shadow: 0 20px 50px rgba(0,0,0,.55); cursor: grab; touch-action: none;
+}
+.flcr-stage:active { cursor: grabbing; }
+.flcr-stage canvas { width: 100%; height: 100%; display: block; }
+.flcr-controls {
+    padding: 16px 20px calc(22px + env(safe-area-inset-bottom, 0px));
+    background: #11131a; border-top: 1px solid rgba(255,255,255,.08);
+    display: flex; flex-direction: column; gap: 14px;
+}
+.flcr-zoom-row { display: flex; align-items: center; gap: 10px; }
+.flcr-zbtn {
+    width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,.18);
+    background: rgba(255,255,255,.08); color: #fff; font-size: 1rem; font-weight: 800;
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+}
+.flcr-slider { flex: 1; accent-color: #D80E45; height: 6px; cursor: pointer; }
+.flcr-zpct { min-width: 44px; text-align: right; font-size: .8rem; font-weight: 800; color: rgba(255,255,255,.8); }
+.flcr-actions { display: flex; gap: 10px; }
+.flcr-act-sec {
+    height: 48px; padding: 0 16px; border-radius: 14px;
+    border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.07);
+    color: #fff; font: inherit; font-size: .9rem; font-weight: 700; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+}
+.flcr-act-pri {
+    flex: 1; height: 48px; border-radius: 14px; border: 0;
+    background: #D80E45; color: #fff; font: inherit; font-size: .95rem; font-weight: 800;
+    cursor: pointer; box-shadow: 0 8px 22px rgba(216,14,69,.38);
+}
+.flcr-act-pri:active, .flcr-act-sec:active { transform: scale(.98); }
+
+/* --- Channel Background / Cover Studio Modal --- */
+#fl-cover-modal {
+    position: fixed; inset: 0; z-index: 2147483210;
+    background: rgba(10,11,15,.58); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+    display: none; align-items: flex-end; justify-content: center;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+#fl-cover-modal.open { display: flex; }
+.flcv-sheet {
+    width: 100%; max-width: 520px; max-height: 92dvh;
+    background: var(--surface, #ffffff); color: var(--text-main, #0f172a);
+    border-radius: 26px 26px 0 0; overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: 0 -16px 48px rgba(0,0,0,.28);
+}
+[data-theme="dark"] .flcv-sheet { background: #14151a; color: #fff; }
+.flcv-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px 10px; border-bottom: 1px solid rgba(127,127,127,.16);
+}
+.flcv-head h3 { margin: 0; font-size: 1.05rem; font-weight: 850; }
+.flcv-close {
+    width: 34px; height: 34px; border-radius: 50%; border: 0;
+    background: rgba(127,127,127,.14); color: inherit; font-size: 1.15rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.flcv-preview-wrap { padding: 14px 16px 10px; }
+.flcv-preview-card {
+    position: relative; width: 100%; aspect-ratio: 2.35 / 1;
+    border-radius: 16px; overflow: hidden; background: #1e293b;
+    box-shadow: 0 8px 24px rgba(0,0,0,.16);
+}
+.flcv-preview-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.flcv-preview-fade {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,.05) 0%, rgba(0,0,0,.55) 100%);
+    pointer-events: none;
+}
+.flcv-preview-meta {
+    position: absolute; left: 12px; right: 12px; bottom: 10px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.flcv-preview-badge {
+    background: rgba(0,0,0,.48); backdrop-filter: blur(6px); color: #fff;
+    font-size: .7rem; font-weight: 800; padding: 4px 9px; border-radius: 999px;
+    letter-spacing: .3px; text-transform: uppercase;
+}
+.flcv-preview-ch {
+    display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 800; font-size: .88rem;
+    text-shadow: 0 1px 4px rgba(0,0,0,.6);
+}
+.flcv-preview-av {
+    width: 32px; height: 32px; border-radius: 50%; object-fit: cover;
+    border: 2px solid #fff; background: #D80E45;
+}
+.flcv-tabs {
+    display: flex; gap: 6px; padding: 0 16px 10px;
+}
+.flcv-tab {
+    flex: 1; height: 38px; border-radius: 12px; border: 1px solid rgba(127,127,127,.2);
+    background: transparent; color: inherit; font: inherit; font-size: .84rem; font-weight: 800;
+    cursor: pointer; transition: all .15s ease;
+}
+.flcv-tab.active {
+    background: #D80E45; color: #fff; border-color: #D80E45;
+    box-shadow: 0 4px 12px rgba(216,14,69,.28);
+}
+.flcv-body {
+    flex: 1; min-height: 180px; max-height: 38vh; overflow-y: auto;
+    padding: 4px 16px 14px; -webkit-overflow-scrolling: touch;
+}
+.flcv-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+}
+.flcv-tile {
+    position: relative; aspect-ratio: 2.2 / 1; border-radius: 13px; overflow: hidden;
+    border: 2.5px solid transparent; cursor: pointer; background: #1e293b;
+    padding: 0; transition: transform .12s ease, border-color .15s ease;
+}
+.flcv-tile:active { transform: scale(.97); }
+.flcv-tile.selected { border-color: #D80E45; box-shadow: 0 0 0 2px rgba(216,14,69,.25); }
+.flcv-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.flcv-tile-lbl {
+    position: absolute; left: 6px; bottom: 5px;
+    background: rgba(0,0,0,.55); color: #fff; font-size: .68rem; font-weight: 700;
+    padding: 2px 7px; border-radius: 999px;
+}
+.flcv-custom-grad {
+    margin-top: 12px; padding: 12px; border-radius: 14px;
+    border: 1px solid rgba(127,127,127,.2); background: rgba(127,127,127,.06);
+}
+.flcv-cg-title { font-size: .8rem; font-weight: 800; margin: 0 0 8px; }
+.flcv-cg-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.flcv-color-pill {
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px;
+    border-radius: 10px; border: 1px solid rgba(127,127,127,.24);
+    font-size: .78rem; font-weight: 700;
+}
+.flcv-color-pill input[type="color"] { width: 24px; height: 24px; border: 0; background: none; padding: 0; cursor: pointer; }
+.flcv-angles { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.flcv-ang {
+    padding: 5px 10px; border-radius: 8px; border: 1px solid rgba(127,127,127,.25);
+    background: transparent; color: inherit; font: inherit; font-size: .75rem; font-weight: 700; cursor: pointer;
+}
+.flcv-ang.active { background: #D80E45; color: #fff; border-color: #D80E45; }
+.flcv-photo-box {
+    border: 2px dashed rgba(216,14,69,.38); border-radius: 16px;
+    padding: 26px 16px; text-align: center; cursor: pointer;
+    background: rgba(216,14,69,.04);
+}
+.flcv-photo-box i { font-size: 1.8rem; color: #D80E45; margin-bottom: 8px; display: block; }
+.flcv-photo-box p { margin: 0; font-size: .92rem; font-weight: 800; }
+.flcv-photo-box span { display: block; margin-top: 4px; font-size: .76rem; opacity: .7; font-weight: 600; }
+.flcv-foot {
+    padding: 12px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid rgba(127,127,127,.14); display: flex; gap: 10px;
+}
+.flcv-apply {
+    flex: 1; height: 48px; border: 0; border-radius: 14px;
+    background: #D80E45; color: #fff; font: inherit; font-size: .95rem; font-weight: 800;
+    cursor: pointer; box-shadow: 0 8px 20px rgba(216,14,69,.3);
+}
+.flcv-apply:active { transform: scale(.98); }
+
+/* --- Channel QR Code Modal --- */
+#fl-qr-modal {
+    position: fixed; inset: 0; z-index: 2147483200;
+    background: rgba(10,11,15,.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+#fl-qr-modal.open { display: flex; }
+.flqr-card {
+    width: 100%; max-width: 356px; border-radius: 28px; overflow: hidden;
+    background: var(--surface, #fff); color: var(--text-main, #0f172a);
+    box-shadow: 0 24px 60px rgba(0,0,0,.35); text-align: center;
+    padding: 22px 20px 20px; position: relative;
+}
+[data-theme="dark"] .flqr-card { background: #181920; color: #fff; }
+.flqr-close {
+    position: absolute; top: 14px; right: 14px; width: 34px; height: 34px;
+    border-radius: 50%; border: 0; background: rgba(127,127,127,.14);
+    color: inherit; font-size: 1.15rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+.flqr-av {
+    width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
+    border: 3px solid #D80E45; margin: 0 auto 8px; display: block; background: #1e293b;
+}
+.flqr-name { margin: 0; font-size: 1.15rem; font-weight: 900; letter-spacing: -.2px; }
+.flqr-handle { margin: 2px 0 14px; font-size: .85rem; font-weight: 700; color: var(--text-muted, #64748b); }
+.flqr-box {
+    display: inline-flex; padding: 14px; border-radius: 22px;
+    background: #ffffff; box-shadow: 0 8px 26px rgba(0,0,0,.09);
+    border: 1px solid rgba(15,23,42,.08);
+}
+.flqr-box canvas { width: 210px; height: 210px; display: block; border-radius: 8px; }
+.flqr-hint {
+    margin: 12px 0 16px; font-size: .78rem; font-weight: 600;
+    color: var(--text-muted, #64748b); line-height: 1.4;
+}
+.flqr-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.flqr-btn {
+    height: 44px; border-radius: 13px; border: 1px solid rgba(127,127,127,.22);
+    background: rgba(127,127,127,.08); color: inherit;
+    font: inherit; font-size: .8rem; font-weight: 800; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+}
+.flqr-btn.pri { background: #D80E45; color: #fff; border-color: #D80E45; }
+.flqr-btn:active { transform: scale(.96); }
+`;
+        document.head.appendChild(st);
+    }
+
+    function canvasToJpegFile(canvas, filename, quality) {
+        return new Promise((resolve) => {
+            const q = quality || 0.92;
+            const dataUrl = canvas.toDataURL('image/jpeg', q);
+            if (canvas.toBlob) {
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        try { resolve({ file: new File([blob], filename, { type: 'image/jpeg' }), dataUrl }); return; } catch (e) {}
+                    }
+                    resolve({ file: dataUrlToFile(dataUrl, filename), dataUrl });
+                }, 'image/jpeg', q);
+            } else {
+                resolve({ file: dataUrlToFile(dataUrl, filename), dataUrl });
+            }
+        });
+    }
+
+    function dataUrlToFile(dataUrl, filename) {
+        const arr = dataUrl.split(',');
+        const mime = (arr[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8 = new Uint8Array(n);
+        while (n--) u8[n] = bstr.charCodeAt(n);
+        try { return new File([u8], filename, { type: mime }); } catch (e) { return new Blob([u8], { type: mime }); }
+    }
+
+    /* =================================================================
+       1. PROFILE PHOTO CROP & ZOOM
+       ================================================================= */
+    window.openProfilePhotoCropper = function (file, onDone) {
+        if (!file) return;
+        ensureStudioStyles();
+        let modal = document.getElementById('fl-cropper-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'fl-cropper-modal';
+            modal.innerHTML = `
+                <div class="flcr-top">
+                    <button type="button" class="flcr-tbtn" id="flcr-cancel">Cancel</button>
+                    <h3>Crop &amp; Zoom Photo</h3>
+                    <button type="button" class="flcr-tbtn" id="flcr-reset">Reset</button>
+                </div>
+                <div class="flcr-stage-wrap">
+                    <div class="flcr-stage" id="flcr-stage">
+                        <canvas id="flcr-canvas" width="640" height="640"></canvas>
+                    </div>
+                </div>
+                <div class="flcr-controls">
+                    <div class="flcr-zoom-row">
+                        <button type="button" class="flcr-zbtn" id="flcr-zout" aria-label="Zoom out">&minus;</button>
+                        <input type="range" class="flcr-slider" id="flcr-slider" min="1" max="3.5" step="0.01" value="1">
+                        <button type="button" class="flcr-zbtn" id="flcr-zin" aria-label="Zoom in">+</button>
+                        <span class="flcr-zpct" id="flcr-zpct">100%</span>
+                    </div>
+                    <div class="flcr-actions">
+                        <button type="button" class="flcr-act-sec" id="flcr-rotate"><i class="fas fa-rotate-right"></i> Rotate</button>
+                        <button type="button" class="flcr-act-pri" id="flcr-apply">Apply Photo</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+        }
+
+        const canvas = document.getElementById('flcr-canvas');
+        const ctx = canvas.getContext('2d');
+        const stage = document.getElementById('flcr-stage');
+        const slider = document.getElementById('flcr-slider');
+        const zpct = document.getElementById('flcr-zpct');
+
+        const state = { img: null, zoom: 1, x: 0, y: 0, rot: 0, baseScale: 1 };
+
+        function clampPan() {
+            if (!state.img) return;
+            const W = canvas.width, H = canvas.height;
+            const swap = (state.rot % 180) !== 0;
+            const iw = (swap ? state.img.height : state.img.width) * state.baseScale * state.zoom;
+            const ih = (swap ? state.img.width : state.img.height) * state.baseScale * state.zoom;
+            const maxX = Math.max(0, (iw - W) / 2);
+            const maxY = Math.max(0, (ih - H) / 2);
+            state.x = Math.max(-maxX, Math.min(maxX, state.x));
+            state.y = Math.max(-maxY, Math.min(maxY, state.y));
+        }
+
+        function draw(withOverlay) {
+            const W = canvas.width, H = canvas.height;
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = '#0f1118';
+            ctx.fillRect(0, 0, W, H);
+            if (!state.img) return;
+            clampPan();
+            ctx.save();
+            ctx.translate(W / 2 + state.x, H / 2 + state.y);
+            ctx.rotate(state.rot * Math.PI / 180);
+            const sc = state.baseScale * state.zoom;
+            ctx.scale(sc, sc);
+            ctx.drawImage(state.img, -state.img.width / 2, -state.img.height / 2);
+            ctx.restore();
+
+            if (withOverlay) {
+                const r = W * 0.46;
+                ctx.save();
+                ctx.fillStyle = 'rgba(0,0,0,0.52)';
+                ctx.beginPath();
+                ctx.rect(0, 0, W, H);
+                ctx.arc(W / 2, H / 2, r, 0, Math.PI * 2, true);
+                ctx.fill('evenodd');
+
+                ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(W / 2, H / 2, r, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Subtle rule-of-thirds inside circle
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(W / 2, H / 2, r, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 1.5;
+                for (let i = 1; i <= 2; i++) {
+                    const p = W / 2 - r + (2 * r * i) / 3;
+                    ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, H); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(0, p); ctx.lineTo(W, p); ctx.stroke();
+                }
+                ctx.restore();
+                ctx.restore();
+            }
+        }
+
+        function setZoom(z) {
+            state.zoom = Math.max(1, Math.min(3.5, z));
+            slider.value = state.zoom.toFixed(2);
+            zpct.textContent = Math.round(state.zoom * 100) + '%';
+            draw(true);
+        }
+
+        // Load image
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.onload = () => {
+            state.img = img;
+            const minDim = Math.min(img.width, img.height) || 1;
+            state.baseScale = canvas.width / minDim;
+            state.zoom = 1; state.x = 0; state.y = 0; state.rot = 0;
+            setZoom(1);
+            modal.classList.add('open');
+        };
+        img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            if (typeof onDone === 'function') onDone(file);
+        };
+        img.src = objectUrl;
+
+        // Drag & Pinch handlers
+        let dragging = false, lx = 0, ly = 0, pinchDist = 0, pinchStartZoom = 1;
+        function toCanvasScale(dx) {
+            const rect = stage.getBoundingClientRect();
+            return dx * (canvas.width / Math.max(1, rect.width));
+        }
+
+        const onDown = (e) => {
+            if (e.touches && e.touches.length === 2) {
+                dragging = false;
+                pinchDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                pinchStartZoom = state.zoom;
+                return;
+            }
+            const pt = e.touches ? e.touches[0] : e;
+            dragging = true; lx = pt.clientX; ly = pt.clientY;
+        };
+        const onMove = (e) => {
+            if (e.touches && e.touches.length === 2 && pinchDist > 0) {
+                if (e.cancelable) e.preventDefault();
+                const d = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                setZoom(pinchStartZoom * (d / pinchDist));
+                return;
+            }
+            if (!dragging) return;
+            if (e.cancelable) e.preventDefault();
+            const pt = e.touches ? e.touches[0] : e;
+            state.x += toCanvasScale(pt.clientX - lx);
+            state.y += toCanvasScale(pt.clientY - ly);
+            lx = pt.clientX; ly = pt.clientY;
+            draw(true);
+        };
+        const onUp = () => { dragging = false; pinchDist = 0; };
+        const onWheel = (e) => {
+            e.preventDefault();
+            setZoom(state.zoom + (e.deltaY < 0 ? 0.12 : -0.12));
+        };
+
+        stage.onmousedown = onDown;
+        stage.ontouchstart = onDown;
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('touchmove', onMove, { passive: false });
+        window.addEventListener('mouseup', onUp);
+        window.addEventListener('touchend', onUp);
+        stage.onwheel = onWheel;
+
+        function cleanup() {
+            modal.classList.remove('open');
+            URL.revokeObjectURL(objectUrl);
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('touchmove', onMove);
+            window.removeEventListener('mouseup', onUp);
+            window.removeEventListener('touchend', onUp);
+        }
+
+        slider.oninput = () => setZoom(parseFloat(slider.value));
+        document.getElementById('flcr-zout').onclick = () => setZoom(state.zoom - 0.15);
+        document.getElementById('flcr-zin').onclick = () => setZoom(state.zoom + 0.15);
+        document.getElementById('flcr-rotate').onclick = () => { state.rot = (state.rot + 90) % 360; draw(true); };
+        document.getElementById('flcr-reset').onclick = () => { state.x = 0; state.y = 0; state.rot = 0; setZoom(1); };
+        document.getElementById('flcr-cancel').onclick = () => cleanup();
+        document.getElementById('flcr-apply').onclick = async () => {
+            // Render clean un-masked crop matching the circular viewport area (inner 92%)
+            const out = document.createElement('canvas');
+            out.width = 640; out.height = 640;
+            const octx = out.getContext('2d');
+            octx.fillStyle = '#0f1118';
+            octx.fillRect(0, 0, 640, 640);
+            octx.save();
+            // Scale slightly so the circle edge fills the 640x640 avatar cleanly
+            const boost = 1 / 0.92;
+            octx.translate(320 + state.x * boost, 320 + state.y * boost);
+            octx.rotate(state.rot * Math.PI / 180);
+            const sc = state.baseScale * state.zoom * boost;
+            octx.scale(sc, sc);
+            octx.drawImage(state.img, -state.img.width / 2, -state.img.height / 2);
+            octx.restore();
+            const res = await canvasToJpegFile(out, 'avatar_cropped.jpg', 0.92);
+            cleanup();
+            if (typeof onDone === 'function') onDone(res.file, res.dataUrl);
+        };
+    };
+
+    /* =================================================================
+       2. CHANNEL BACKGROUND / COVER STUDIO (Templates + Gradients + Live Preview)
+       ================================================================= */
+    const COVER_TEMPLATES = [
+        { id: 'aurora', name: 'Aurora Mesh', draw(ctx, W, H) {
+            const bg = ctx.createLinearGradient(0, 0, W, H);
+            bg.addColorStop(0, '#0f172a'); bg.addColorStop(1, '#1e1b4b');
+            ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+            [[W*.22, H*.35, W*.42, 'rgba(216,14,69,.58)'], [W*.78, H*.3, W*.45, 'rgba(56,189,248,.52)'], [W*.52, H*.85, W*.4, 'rgba(168,85,247,.5)']].forEach(([x,y,r,c]) => {
+                const g = ctx.createRadialGradient(x,y,0,x,y,r);
+                g.addColorStop(0, c); g.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+            });
+        }},
+        { id: 'flaynity-pulse', name: 'Flaynity Pulse', draw(ctx, W, H) {
+            const bg = ctx.createLinearGradient(0, 0, W, H);
+            bg.addColorStop(0, '#D80E45'); bg.addColorStop(.55, '#ff3366'); bg.addColorStop(1, '#ff7a45');
+            ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = 'rgba(255,255,255,.12)';
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, H * (.35 + i * .15));
+                ctx.bezierCurveTo(W*.33, H*(.15 + i*.12), W*.66, H*(.75 + i*.08), W, H*(.3 + i*.14));
+                ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+            }
+        }},
+        { id: 'midnight-grid', name: 'Midnight Grid', draw(ctx, W, H) {
+            const bg = ctx.createLinearGradient(0, 0, 0, H);
+            bg.addColorStop(0, '#090d16'); bg.addColorStop(1, '#111827');
+            ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+            ctx.strokeStyle = 'rgba(56,189,248,.22)'; ctx.lineWidth = 2;
+            const step = Math.round(W / 20);
+            for (let x = 0; x <= W; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+            for (let y = 0; y <= H; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+            const g = ctx.createRadialGradient(W*.5, H*.4, 0, W*.5, H*.4, W*.55);
+            g.addColorStop(0, 'rgba(14,165,233,.34)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+        }},
+        { id: 'golden-luxury', name: 'Golden Luxury', draw(ctx, W, H) {
+            const bg = ctx.createLinearGradient(0, 0, W, H);
+            bg.addColorStop(0, '#141414'); bg.addColorStop(1, '#262118');
+            ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+            const gold = ctx.createLinearGradient(0, 0, W, H);
+            gold.addColorStop(0, 'rgba(245,158,11,.08)'); gold.addColorStop(.5, 'rgba(251,191,36,.35)'); gold.addColorStop(1, 'rgba(217,119,6,.1)');
+            ctx.fillStyle = gold;
+            ctx.beginPath(); ctx.moveTo(W*.15, 0); ctx.lineTo(W*.55, 0); ctx.lineTo(W*.25, H); ctx.lineTo(-W*.1, H); ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(W*.68, 0); ctx.lineTo(W*.9, 0); ctx.lineTo(W*.6, H); ctx.lineTo(W*.38, H); ctx.closePath(); ctx.fill();
+        }},
+        { id: 'ocean-waves', name: 'Oceanic Waves', draw(ctx, W, H) {
+            const bg = ctx.createLinearGradient(0, 0, W, H);
+            bg.addColorStop(0, '#0284c7'); bg.addColorStop(.5, '#0d9488'); bg.addColorStop(1, '#0f766e');
+            ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+            [0.25, 0.45, 0.65].forEach((k, i) => {
+                ctx.fillStyle = `rgba(255,255,255,${0.09 + i*0.05})`;
+                ctx.beginPath();
+                ctx.moveTo(0, H*k);
+                ctx.quadraticCurveTo(W*.25, H*(k-.18), W*.5, H*k);
+                ctx.quadraticCurveTo(W*.75, H*(k+.18), W, H*(k-.05));
+                ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+            });
+        }},
+        { id: 'sunset-bokeh', name: 'Sunset Bokeh', draw(ctx, W, H) {
+            const bg = ctx.createLinearGradient(0, 0, W, H);
+            bg.addColorStop(0, '#4c1d95'); bg.addColorStop(.5, '#be185d'); bg.addColorStop(1, '#f97316');
+            ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+            [[.15,.25,.14],[.38,.65,.18],[.65,.3,.16],[.85,.7,.2],[.5,.18,.1]].forEach(([x,y,r]) => {
+                ctx.fillStyle = 'rgba(255,255,255,.14)';
+                ctx.beginPath(); ctx.arc(W*x, H*y, W*r, 0, Math.PI*2); ctx.fill();
+            });
+        }},
+        { id: 'minimal-zen', name: 'Minimalist Zen', draw(ctx, W, H) {
+            const bg = ctx.createLinearGradient(0, 0, W, H);
+            bg.addColorStop(0, '#f8fafc'); bg.addColorStop(1, '#e2e8f0');
+            ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+            ctx.strokeStyle = 'rgba(216,14,69,.22)'; ctx.lineWidth = Math.max(4, W * .006);
+            [0.22, 0.36, 0.5].forEach(r => { ctx.beginPath(); ctx.arc(W*.82, H*.5, W*r, 0, Math.PI*2); ctx.stroke(); });
+            ctx.fillStyle = 'rgba(216,14,69,.14)';
+            ctx.beginPath(); ctx.arc(W*.16, H*.78, W*.16, 0, Math.PI*2); ctx.fill();
+        }},
+        { id: 'cyber-neon', name: 'Cyber Neon', draw(ctx, W, H) {
+            const bg = ctx.createLinearGradient(0, 0, W, H);
+            bg.addColorStop(0, '#09090b'); bg.addColorStop(1, '#1e1b4b');
+            ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = 'rgba(236,72,153,.35)';
+            ctx.beginPath(); ctx.moveTo(0, H); ctx.lineTo(W*.45, 0); ctx.lineTo(W*.65, 0); ctx.lineTo(W*.2, H); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = 'rgba(34,211,238,.32)';
+            ctx.beginPath(); ctx.moveTo(W*.48, H); ctx.lineTo(W*.92, 0); ctx.lineTo(W, 0); ctx.lineTo(W*.68, H); ctx.closePath(); ctx.fill();
+        }}
+    ];
+
+    const COVER_GRADIENTS = [
+        { id: 'rose',     name: 'Flaynity Rose',  c1: '#D80E45', c2: '#FF6B6B', ang: 135 },
+        { id: 'sunset',   name: 'Sunset Glow',    c1: '#F97316', c2: '#EC4899', ang: 135 },
+        { id: 'ocean',    name: 'Ocean Blue',     c1: '#0284C7', c2: '#2DD4BF', ang: 135 },
+        { id: 'violet',   name: 'Royal Violet',   c1: '#4F46E5', c2: '#C026D3', ang: 135 },
+        { id: 'emerald',  name: 'Emerald Mint',   c1: '#059669', c2: '#34D399', ang: 135 },
+        { id: 'midnight', name: 'Midnight Slate', c1: '#0F172A', c2: '#334155', ang: 135 },
+        { id: 'peach',    name: 'Peach Sorbet',   c1: '#FB7185', c2: '#FBBF24', ang: 135 },
+        { id: 'crimson',  name: 'Crimson Night',  c1: '#18181B', c2: '#BE123C', ang: 135 },
+        { id: 'sky',      name: 'Electric Sky',   c1: '#2563EB', c2: '#38BDF8', ang: 90  },
+        { id: 'cotton',   name: 'Cotton Candy',   c1: '#8B5CF6', c2: '#F472B6', ang: 45  }
+    ];
+
+    function renderGradientCanvas(c1, c2, angleDeg, W, H) {
+        const cv = document.createElement('canvas');
+        cv.width = W; cv.height = H;
+        const ctx = cv.getContext('2d');
+        const rad = (angleDeg - 90) * Math.PI / 180;
+        const cx = W / 2, cy = H / 2;
+        const len = Math.hypot(W, H) / 2;
+        const g = ctx.createLinearGradient(
+            cx - Math.cos(rad) * len, cy - Math.sin(rad) * len,
+            cx + Math.cos(rad) * len, cy + Math.sin(rad) * len
+        );
+        g.addColorStop(0, c1);
+        g.addColorStop(1, c2);
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, W, H);
+        return cv;
+    }
+
+    function renderTemplateCanvas(tpl, W, H) {
+        const cv = document.createElement('canvas');
+        cv.width = W; cv.height = H;
+        tpl.draw(cv.getContext('2d'), W, H);
+        return cv;
+    }
+
+    window.openChannelCoverPicker = function (opts) {
+        opts = opts || {};
+        ensureStudioStyles();
+        let modal = document.getElementById('fl-cover-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'fl-cover-modal';
+            modal.innerHTML = `
+                <div class="flcv-sheet" onclick="event.stopPropagation()">
+                    <div class="flcv-head">
+                        <h3>Channel Background / Cover</h3>
+                        <button type="button" class="flcv-close" id="flcv-close">&times;</button>
+                    </div>
+                    <div class="flcv-preview-wrap">
+                        <div class="flcv-preview-card">
+                            <img id="flcv-prev-img" alt="Cover preview" src="">
+                            <div class="flcv-preview-fade"></div>
+                            <div class="flcv-preview-meta">
+                                <div class="flcv-preview-ch">
+                                    <img class="flcv-preview-av" id="flcv-prev-av" alt="" src="">
+                                    <span id="flcv-prev-name">Your Channel</span>
+                                </div>
+                                <span class="flcv-preview-badge">Live Preview</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flcv-tabs">
+                        <button type="button" class="flcv-tab active" data-ctab="templates">Templates</button>
+                        <button type="button" class="flcv-tab" data-ctab="gradients">Gradients</button>
+                        <button type="button" class="flcv-tab" data-ctab="photo">Photo</button>
+                    </div>
+                    <div class="flcv-body" id="flcv-body"></div>
+                    <div class="flcv-foot">
+                        <button type="button" class="flcv-apply" id="flcv-apply">Apply Cover</button>
+                    </div>
+                </div>`;
+            modal.onclick = () => modal.classList.remove('open');
+            document.body.appendChild(modal);
+        }
+
+        const prevImg = document.getElementById('flcv-prev-img');
+        const prevAv = document.getElementById('flcv-prev-av');
+        const prevName = document.getElementById('flcv-prev-name');
+        const body = document.getElementById('flcv-body');
+        const applyBtn = document.getElementById('flcv-apply');
+
+        prevName.textContent = opts.channelName || (typeof currentChannelData !== 'undefined' && currentChannelData && currentChannelData.channelName) || 'Your Channel';
+        const avSrc = opts.avatarUrl || (typeof currentChannelData !== 'undefined' && currentChannelData && currentChannelData.avatarUrl) || '';
+        if (avSrc) { prevAv.src = avSrc; prevAv.style.display = 'block'; }
+        else { prevAv.style.display = 'none'; }
+
+        let activeTab = 'templates';
+        let selection = { kind: 'template', id: COVER_TEMPLATES[0].id, c1: '#D80E45', c2: '#4F46E5', ang: 135, file: null, previewUrl: '' };
+
+        function updateLivePreview() {
+            if (selection.kind === 'photo' && selection.previewUrl) {
+                prevImg.src = selection.previewUrl;
+                return;
+            }
+            if (selection.kind === 'template') {
+                const tpl = COVER_TEMPLATES.find(t => t.id === selection.id) || COVER_TEMPLATES[0];
+                prevImg.src = renderTemplateCanvas(tpl, 640, 272).toDataURL('image/jpeg', 0.88);
+                return;
+            }
+            if (selection.kind === 'gradient') {
+                prevImg.src = renderGradientCanvas(selection.c1, selection.c2, selection.ang, 640, 272).toDataURL('image/jpeg', 0.88);
+            }
+        }
+
+        if (opts.currentUrl) {
+            prevImg.src = opts.currentUrl;
+        } else {
+            updateLivePreview();
+        }
+
+        function renderTab() {
+            modal.querySelectorAll('.flcv-tab').forEach(b => b.classList.toggle('active', b.dataset.ctab === activeTab));
+            if (activeTab === 'templates') {
+                body.innerHTML = `<div class="flcv-grid">${COVER_TEMPLATES.map(t => {
+                    const thumb = renderTemplateCanvas(t, 320, 145).toDataURL('image/jpeg', 0.82);
+                    const on = selection.kind === 'template' && selection.id === t.id;
+                    return `<button type="button" class="flcv-tile${on ? ' selected' : ''}" data-tpl="${t.id}"><img src="${thumb}" alt="${t.name}"><span class="flcv-tile-lbl">${t.name}</span></button>`;
+                }).join('')}</div>`;
+                body.querySelectorAll('[data-tpl]').forEach(btn => {
+                    btn.onclick = () => {
+                        selection = { ...selection, kind: 'template', id: btn.dataset.tpl };
+                        body.querySelectorAll('.flcv-tile').forEach(x => x.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        updateLivePreview();
+                    };
+                });
+            } else if (activeTab === 'gradients') {
+                body.innerHTML = `
+                    <div class="flcv-grid">${COVER_GRADIENTS.map(g => {
+                        const on = selection.kind === 'gradient' && selection.id === g.id;
+                        return `<button type="button" class="flcv-tile${on ? ' selected' : ''}" data-grad="${g.id}" style="background:linear-gradient(${g.ang}deg,${g.c1},${g.c2});"><span class="flcv-tile-lbl">${g.name}</span></button>`;
+                    }).join('')}</div>
+                    <div class="flcv-custom-grad">
+                        <div class="flcv-cg-title">Custom Gradient</div>
+                        <div class="flcv-cg-row">
+                            <label class="flcv-color-pill">Color 1 <input type="color" id="flcv-c1" value="${selection.c1}"></label>
+                            <label class="flcv-color-pill">Color 2 <input type="color" id="flcv-c2" value="${selection.c2}"></label>
+                        </div>
+                        <div class="flcv-angles">
+                            ${[0, 45, 90, 135, 180].map(a => `<button type="button" class="flcv-ang${selection.ang === a ? ' active' : ''}" data-ang="${a}">${a}&deg;</button>`).join('')}
+                        </div>
+                    </div>`;
+                body.querySelectorAll('[data-grad]').forEach(btn => {
+                    btn.onclick = () => {
+                        const g = COVER_GRADIENTS.find(x => x.id === btn.dataset.grad);
+                        if (!g) return;
+                        selection = { ...selection, kind: 'gradient', id: g.id, c1: g.c1, c2: g.c2, ang: g.ang };
+                        document.getElementById('flcv-c1').value = g.c1;
+                        document.getElementById('flcv-c2').value = g.c2;
+                        body.querySelectorAll('.flcv-tile').forEach(x => x.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        body.querySelectorAll('.flcv-ang').forEach(x => x.classList.toggle('active', Number(x.dataset.ang) === g.ang));
+                        updateLivePreview();
+                    };
+                });
+                const syncCustom = () => {
+                    selection = { ...selection, kind: 'gradient', id: 'custom', c1: document.getElementById('flcv-c1').value, c2: document.getElementById('flcv-c2').value };
+                    body.querySelectorAll('.flcv-tile').forEach(x => x.classList.remove('selected'));
+                    updateLivePreview();
+                };
+                document.getElementById('flcv-c1').oninput = syncCustom;
+                document.getElementById('flcv-c2').oninput = syncCustom;
+                body.querySelectorAll('.flcv-ang').forEach(btn => {
+                    btn.onclick = () => {
+                        selection.ang = Number(btn.dataset.ang);
+                        selection.kind = 'gradient';
+                        body.querySelectorAll('.flcv-ang').forEach(x => x.classList.toggle('active', x === btn));
+                        updateLivePreview();
+                    };
+                });
+            } else {
+                body.innerHTML = `
+                    <div class="flcv-photo-box" id="flcv-pick-photo">
+                        <i class="fas fa-images"></i>
+                        <p>Choose Photo from Gallery</p>
+                        <span>Opens Custom Media Picker with live cover preview</span>
+                    </div>
+                    <input type="file" id="flcv-photo-fallback" accept="image/*" style="display:none;">`;
+                const onPhotoPicked = (f) => {
+                    if (!f) return;
+                    const fr = new FileReader();
+                    fr.onload = () => {
+                        selection = { ...selection, kind: 'photo', file: f, previewUrl: fr.result };
+                        updateLivePreview();
+                    };
+                    fr.readAsDataURL(f);
+                };
+                document.getElementById('flcv-pick-photo').onclick = () => {
+                    if (typeof window.openMediaPicker === 'function') {
+                        window.openMediaPicker('edit-banner', onPhotoPicked);
+                    } else {
+                        document.getElementById('flcv-photo-fallback').click();
+                    }
+                };
+                document.getElementById('flcv-photo-fallback').onchange = (e) => onPhotoPicked(e.target.files && e.target.files[0]);
+            }
+        }
+
+        modal.querySelectorAll('.flcv-tab').forEach(btn => {
+            btn.onclick = () => { activeTab = btn.dataset.ctab; renderTab(); };
+        });
+        document.getElementById('flcv-close').onclick = () => modal.classList.remove('open');
+        applyBtn.onclick = async () => {
+            applyBtn.disabled = true;
+            try {
+                if (selection.kind === 'photo' && selection.file) {
+                    modal.classList.remove('open');
+                    if (typeof opts.onApply === 'function') opts.onApply(selection.file, selection.previewUrl);
+                    return;
+                }
+                let cv;
+                if (selection.kind === 'gradient') {
+                    cv = renderGradientCanvas(selection.c1, selection.c2, selection.ang, 1600, 680);
+                } else {
+                    const tpl = COVER_TEMPLATES.find(t => t.id === selection.id) || COVER_TEMPLATES[0];
+                    cv = renderTemplateCanvas(tpl, 1600, 680);
+                }
+                const res = await canvasToJpegFile(cv, `channel_cover_${selection.id || 'custom'}.jpg`, 0.92);
+                modal.classList.remove('open');
+                if (typeof opts.onApply === 'function') opts.onApply(res.file, res.dataUrl);
+            } finally {
+                applyBtn.disabled = false;
+            }
+        };
+
+        renderTab();
+        modal.classList.add('open');
+    };
+
+    /* =================================================================
+       3. PURE-JS ISO/IEC 18004 QR CODE ENCODER (Byte mode, EC Level M, V1-V10)
+       ================================================================= */
+    const QR = (function () {
+        const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
+        let x = 1;
+        for (let i = 0; i < 255; i++) {
+            EXP[i] = x; LOG[x] = i;
+            x <<= 1; if (x & 256) x ^= 285;
+        }
+        for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+
+        function gfMul(a, b) { return (a === 0 || b === 0) ? 0 : EXP[LOG[a] + LOG[b]]; }
+        function rsGenPoly(deg) {
+            let p = [1];
+            for (let i = 0; i < deg; i++) {
+                const next = new Array(p.length + 1).fill(0);
+                for (let j = 0; j < p.length; j++) {
+                    next[j] ^= p[j];
+                    next[j + 1] ^= gfMul(p[j], EXP[i]);
+                }
+                p = next;
+            }
+            return p;
+        }
+        function rsEncode(data, ecLen) {
+            const gen = rsGenPoly(ecLen);
+            const res = new Uint8Array(ecLen);
+            for (let i = 0; i < data.length; i++) {
+                const factor = data[i] ^ res[0];
+                for (let j = 0; j < ecLen - 1; j++) res[j] = res[j + 1];
+                res[ecLen - 1] = 0;
+                if (factor !== 0) {
+                    for (let j = 0; j < ecLen; j++) res[j] ^= gfMul(gen[j + 1], factor);
+                }
+            }
+            return res;
+        }
+
+        // Version table for EC Level M: [totalCodewords, ecPerBlock, blocksG1, dataG1, blocksG2, dataG2, alignCoords]
+        const VER_M = [
+            null,
+            [26,  10, 1, 16, 0, 0, []],
+            [44,  16, 1, 28, 0, 0, [6, 18]],
+            [70,  26, 1, 44, 0, 0, [6, 22]],
+            [100, 18, 2, 32, 0, 0, [6, 26]],
+            [134, 24, 2, 43, 0, 0, [6, 30]],
+            [172, 16, 4, 27, 0, 0, [6, 34]],
+            [196, 18, 4, 31, 0, 0, [6, 22, 38]],
+            [242, 22, 2, 38, 2, 39, [6, 24, 42]],
+            [292, 22, 3, 36, 2, 37, [6, 26, 46]],
+            [346, 26, 4, 43, 1, 44, [6, 28, 50]]
+        ];
+
+        function bchFormat(mask) {
+            // EC Level M = 00 (2 bits), mask = 3 bits
+            const data = (0b00 << 3) | mask;
+            let rem = data << 10;
+            for (let i = 4; i >= 0; i--) {
+                if ((rem >>> (i + 10)) & 1) rem ^= (0x537 << i);
+            }
+            return ((data << 10) | rem) ^ 0x5412;
+        }
+        function bchVersion(ver) {
+            let rem = ver << 12;
+            for (let i = 5; i >= 0; i--) {
+                if ((rem >>> (i + 12)) & 1) rem ^= (0x1F25 << i);
+            }
+            return (ver << 12) | rem;
+        }
+
+        function encode(text) {
+            const bytes = new TextEncoder().encode(String(text));
+            let ver = 0;
+            for (let v = 1; v < VER_M.length; v++) {
+                const cap = VER_M[v][2] * VER_M[v][3] + VER_M[v][4] * VER_M[v][5];
+                const hdrBytes = (v <= 9) ? 2 : 3; // 4-bit mode + 8/16-bit len + 4-bit term
+                if (bytes.length + hdrBytes <= cap) { ver = v; break; }
+            }
+            if (!ver) ver = VER_M.length - 1;
+            const [totalCW, ecPerBlk, b1, d1, b2, d2, aligns] = VER_M[ver];
+            const dataCap = b1 * d1 + b2 * d2;
+
+            const bits = [];
+            const pushBits = (val, n) => { for (let i = n - 1; i >= 0; i--) bits.push((val >>> i) & 1); };
+            pushBits(0b0100, 4); // Byte mode
+            pushBits(bytes.length, ver <= 9 ? 8 : 16);
+            for (let i = 0; i < bytes.length; i++) pushBits(bytes[i], 8);
+            const maxBits = dataCap * 8;
+            for (let i = 0; i < 4 && bits.length < maxBits; i++) bits.push(0);
+            while (bits.length % 8 !== 0) bits.push(0);
+            const pads = [0xEC, 0x11];
+            let pi = 0;
+            while (bits.length < maxBits) { pushBits(pads[pi++ & 1], 8); }
+
+            const dataCW = new Uint8Array(dataCap);
+            for (let i = 0; i < dataCap; i++) {
+                let b = 0;
+                for (let j = 0; j < 8; j++) b = (b << 1) | bits[i * 8 + j];
+                dataCW[i] = b;
+            }
+
+            // Split blocks & compute RS EC
+            const blocks = [], ecs = [];
+            let off = 0;
+            for (let i = 0; i < b1; i++) {
+                const blk = dataCW.slice(off, off + d1); off += d1;
+                blocks.push(blk); ecs.push(rsEncode(blk, ecPerBlk));
+            }
+            for (let i = 0; i < b2; i++) {
+                const blk = dataCW.slice(off, off + d2); off += d2;
+                blocks.push(blk); ecs.push(rsEncode(blk, ecPerBlk));
+            }
+
+            const stream = [];
+            const maxD = Math.max(d1, d2);
+            for (let i = 0; i < maxD; i++) {
+                for (let b = 0; b < blocks.length; b++) if (i < blocks[b].length) stream.push(blocks[b][i]);
+            }
+            for (let i = 0; i < ecPerBlk; i++) {
+                for (let b = 0; b < ecs.length; b++) stream.push(ecs[b][i]);
+            }
+
+            const N = ver * 4 + 17;
+            const mod = Array.from({ length: N }, () => new Int8Array(N));
+            const fn = Array.from({ length: N }, () => new Uint8Array(N));
+
+            function setFn(r, c, v) {
+                if (r < 0 || c < 0 || r >= N || c >= N) return;
+                mod[r][c] = v ? 1 : 0; fn[r][c] = 1;
+            }
+            function drawFinder(r, c) {
+                for (let dr = -1; dr <= 7; dr++) {
+                    for (let dc = -1; dc <= 7; dc++) {
+                        const rr = r + dr, cc = c + dc;
+                        if (rr < 0 || cc < 0 || rr >= N || cc >= N) continue;
+                        const on = (dr >= 0 && dr <= 6 && dc >= 0 && dc <= 6) &&
+                            (dr === 0 || dr === 6 || dc === 0 || dc === 6 || (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4));
+                        setFn(rr, cc, on);
+                    }
+                }
+            }
+            drawFinder(0, 0); drawFinder(0, N - 7); drawFinder(N - 7, 0);
+
+            for (let i = 8; i < N - 8; i++) {
+                setFn(6, i, (i & 1) === 0);
+                setFn(i, 6, (i & 1) === 0);
+            }
+            setFn(N - 8, 8, 1); // Dark module
+
+            // Alignment patterns
+            for (let i = 0; i < aligns.length; i++) {
+                for (let j = 0; j < aligns.length; j++) {
+                    const r = aligns[i], c = aligns[j];
+                    if (fn[r][c]) continue;
+                    for (let dr = -2; dr <= 2; dr++) {
+                        for (let dc = -2; dc <= 2; dc++) {
+                            const on = Math.max(Math.abs(dr), Math.abs(dc)) !== 1;
+                            setFn(r + dr, c + dc, on);
+                        }
+                    }
+                }
+            }
+
+            // Reserve format info areas
+            for (let i = 0; i < 9; i++) {
+                if (i !== 6) { fn[8][i] = 1; fn[i][8] = 1; }
+            }
+            for (let i = N - 8; i < N; i++) { fn[8][i] = 1; fn[i][8] = 1; }
+
+            // Version info for v >= 7
+            if (ver >= 7) {
+                const vbits = bchVersion(ver);
+                for (let i = 0; i < 18; i++) {
+                    const b = (vbits >>> i) & 1;
+                    const a = Math.floor(i / 3), k = N - 11 + (i % 3);
+                    setFn(a, k, b); setFn(k, a, b);
+                }
+            }
+
+            // Place data bits zigzag
+            let bitIdx = 0;
+            const totalBits = stream.length * 8;
+            for (let col = N - 1; col >= 1; col -= 2) {
+                if (col === 6) col--;
+                const up = (((N - 1 - col) >> 1) & 1) === 0;
+                for (let step = 0; step < N; step++) {
+                    const r = up ? (N - 1 - step) : step;
+                    for (let dc = 0; dc < 2; dc++) {
+                        const c = col - dc;
+                        if (fn[r][c]) continue;
+                        let bit = 0;
+                        if (bitIdx < totalBits) bit = (stream[bitIdx >> 3] >>> (7 - (bitIdx & 7))) & 1;
+                        bitIdx++;
+                        mod[r][c] = bit;
+                    }
+                }
+            }
+
+            // Evaluate 8 masks, pick lowest penalty
+            const maskFn = [
+                (r, c) => ((r + c) & 1) === 0,
+                (r, c) => (r & 1) === 0,
+                (r, c) => (c % 3) === 0,
+                (r, c) => ((r + c) % 3) === 0,
+                (r, c) => (((r >> 1) + Math.floor(c / 3)) & 1) === 0,
+                (r, c) => ((r * c) & 1) + ((r * c) % 3) === 0,
+                (r, c) => ((((r * c) & 1) + ((r * c) % 3)) & 1) === 0,
+                (r, c) => ((((r + c) & 1) + ((r * c) % 3)) & 1) === 0
+            ];
+
+            let bestMask = 0, bestPen = Infinity, bestMat = null;
+            for (let m = 0; m < 8; m++) {
+                const mat = Array.from({ length: N }, (_, r) => {
+                    const row = new Uint8Array(N);
+                    for (let c = 0; c < N; c++) row[c] = fn[r][c] ? mod[r][c] : (mod[r][c] ^ (maskFn[m](r, c) ? 1 : 0));
+                    return row;
+                });
+                const fmt = bchFormat(m);
+                const coords1 = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+                const coords2 = [[N-1,8],[N-2,8],[N-3,8],[N-4,8],[N-5,8],[N-6,8],[N-7,8],[8,N-8],[8,N-7],[8,N-6],[8,N-5],[8,N-4],[8,N-3],[8,N-2],[8,N-1]];
+                for (let i = 0; i < 15; i++) {
+                    const b = (fmt >>> (14 - i)) & 1;
+                    mat[coords1[i][0]][coords1[i][1]] = b;
+                    mat[coords2[i][0]][coords2[i][1]] = b;
+                }
+                // Simple penalty score (runs + 2x2 blocks + balance)
+                let pen = 0, dark = 0;
+                for (let r = 0; r < N; r++) {
+                    let runR = 1, runC = 1;
+                    for (let c = 0; c < N; c++) {
+                        dark += mat[r][c];
+                        if (c > 0) {
+                            if (mat[r][c] === mat[r][c - 1]) { runR++; if (runR === 5) pen += 3; else if (runR > 5) pen++; } else runR = 1;
+                            if (mat[c][r] === mat[c - 1][r]) { runC++; if (runC === 5) pen += 3; else if (runC > 5) pen++; } else runC = 1;
+                        }
+                        if (r > 0 && c > 0 && mat[r][c] === mat[r-1][c] && mat[r][c] === mat[r][c-1] && mat[r][c] === mat[r-1][c-1]) pen += 3;
+                    }
+                }
+                pen += Math.floor(Math.abs(dark * 100 / (N * N) - 50) / 5) * 10;
+                if (pen < bestPen) { bestPen = pen; bestMask = m; bestMat = mat; }
+            }
+            return bestMat;
+        }
+
+        return { encode };
+    })();
+
+    window.flaynityGenerateQRMatrix = QR.encode;
+
+    function drawQRToCanvas(canvas, text) {
+        const mat = QR.encode(text);
+        const N = mat.length;
+        const quiet = 4;
+        const total = N + quiet * 2;
+        const size = canvas.width;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+        const cell = size / total;
+        ctx.fillStyle = '#111827';
+        for (let r = 0; r < N; r++) {
+            for (let c = 0; c < N; c++) {
+                if (mat[r][c]) {
+                    const x = Math.floor((c + quiet) * cell);
+                    const y = Math.floor((r + quiet) * cell);
+                    const w = Math.ceil((c + quiet + 1) * cell) - x;
+                    const h = Math.ceil((r + quiet + 1) * cell) - y;
+                    ctx.fillRect(x, y, w, h);
+                }
+            }
+        }
+    }
+
+    window.getChannelShareUrl = function (ch) {
+        const uid = (ch && (ch.uid || ch.userId)) || (typeof auth !== 'undefined' && auth.currentUser && auth.currentUser.uid) || '';
+        const handle = (ch && ch.handle) ? String(ch.handle).replace(/^@/, '') : '';
+        const params = [];
+        if (uid) params.push('channel=' + encodeURIComponent(uid));
+        if (handle) params.push('handle=' + encodeURIComponent(handle));
+        return 'https://flaynity.com/' + (params.length ? '?' + params.join('&') : '');
+    };
+
+    window.openChannelQRModal = function (targetChannel) {
+        ensureStudioStyles();
+        if (typeof playUI === 'function') playUI('click');
+        const ch = targetChannel || window.__activeViewedChannel || (typeof currentChannelData !== 'undefined' ? currentChannelData : null);
+        if (!ch) {
+            if (typeof showNotification === 'function') showNotification('Channel info not loaded yet.', 'error');
+            return;
+        }
+        let modal = document.getElementById('fl-qr-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'fl-qr-modal';
+            modal.innerHTML = `
+                <div class="flqr-card" onclick="event.stopPropagation()">
+                    <button type="button" class="flqr-close" id="flqr-close">&times;</button>
+                    <img class="flqr-av" id="flqr-av" alt="Avatar" src="">
+                    <h3 class="flqr-name" id="flqr-name">Channel</h3>
+                    <p class="flqr-handle" id="flqr-handle">@handle</p>
+                    <div class="flqr-box"><canvas id="flqr-canvas" width="420" height="420"></canvas></div>
+                    <p class="flqr-hint">Scan this unique QR code with any camera to open this Flaynity channel instantly.</p>
+                    <div class="flqr-btns">
+                        <button type="button" class="flqr-btn pri" id="flqr-download"><i class="fas fa-download"></i> Save</button>
+                        <button type="button" class="flqr-btn" id="flqr-share"><i class="fas fa-share-nodes"></i> Share</button>
+                        <button type="button" class="flqr-btn" id="flqr-copy"><i class="fas fa-link"></i> Copy</button>
+                    </div>
+                </div>`;
+            modal.onclick = () => modal.classList.remove('open');
+            document.body.appendChild(modal);
+        }
+
+        const url = window.getChannelShareUrl(ch);
+        const av = document.getElementById('flqr-av');
+        const avUrl = ch.avatarUrl || ch.channelImageUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop';
+        av.src = avUrl;
+        document.getElementById('flqr-name').textContent = ch.channelName || 'Flaynity Channel';
+        document.getElementById('flqr-handle').textContent = '@' + String(ch.handle || 'channel').replace(/^@/, '');
+
+        const qrCanvas = document.getElementById('flqr-canvas');
+        drawQRToCanvas(qrCanvas, url);
+
+        document.getElementById('flqr-close').onclick = () => modal.classList.remove('open');
+        document.getElementById('flqr-copy').onclick = () => {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                    if (typeof showNotification === 'function') showNotification('Channel link copied!', 'success');
+                }).catch(() => {});
+            } else {
+                const ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select();
+                try { document.execCommand('copy'); } catch (e) {}
+                ta.remove();
+                if (typeof showNotification === 'function') showNotification('Channel link copied!', 'success');
+            }
+        };
+        document.getElementById('flqr-share').onclick = () => {
+            const shareData = { title: (ch.channelName || 'Flaynity') + ' on Flaynity', text: `Check out ${ch.channelName || 'this channel'} on Flaynity!`, url };
+            if (navigator.share) navigator.share(shareData).catch(() => {});
+            else document.getElementById('flqr-copy').click();
+        };
+        document.getElementById('flqr-download').onclick = () => {
+            // Render a branded shareable PNG card
+            const card = document.createElement('canvas');
+            card.width = 720; card.height = 920;
+            const ctx = card.getContext('2d');
+            const bg = ctx.createLinearGradient(0, 0, 720, 920);
+            bg.addColorStop(0, '#0f172a'); bg.addColorStop(1, '#1e1b4b');
+            ctx.fillStyle = bg; ctx.fillRect(0, 0, 720, 920);
+            // White inner card
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.roundRect(60, 70, 600, 780, 44); ctx.fill();
+            ctx.fillStyle = '#D80E45';
+            ctx.font = '800 34px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('FLAYNITY', 360, 145);
+            ctx.fillStyle = '#0f172a';
+            ctx.font = '800 36px sans-serif';
+            ctx.fillText(String(ch.channelName || 'Flaynity Channel').slice(0, 26), 360, 210);
+            ctx.fillStyle = '#64748b';
+            ctx.font = '600 24px sans-serif';
+            ctx.fillText('@' + String(ch.handle || 'channel').replace(/^@/, ''), 360, 250);
+            ctx.drawImage(qrCanvas, 150, 290, 420, 420);
+            ctx.fillStyle = '#64748b';
+            ctx.font = '600 21px sans-serif';
+            ctx.fillText('Scan to open channel on Flaynity', 360, 775);
+            const dataUrl = card.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = `flaynity_qr_${String(ch.handle || 'channel').replace(/[^a-z0-9._-]/gi, '')}.png`;
+            document.body.appendChild(a); a.click(); a.remove();
+            if (typeof showNotification === 'function') showNotification('QR Code saved!', 'success');
+        };
+
+        modal.classList.add('open');
+    };
+
+    /* =================================================================
+       4. PRIVACY HELPERS & SCAN-TO-OPEN CHANNEL PROFILE DEEP LINK
+       ================================================================= */
+    window.setEditChannelPrivacy = function (val) {
+        const clean = val === 'private' ? 'private' : 'public';
+        const inp = document.getElementById('edit-channel-privacy');
+        if (inp) inp.value = clean;
+        document.querySelectorAll('#edit-privacy-grid .edit-privacy-card').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.privacy === clean);
+        });
+    };
+
+    window.syncChannelPrivacyUI = function (data) {
+        const isPriv = !!(data && (data.privacy === 'private' || data.isPrivate === true));
+        const badge = document.getElementById('view-channel-privacy-badge');
+        if (badge) badge.style.display = isPriv ? 'inline-flex' : 'none';
+        const sheet = document.getElementById('sheet-private-account');
+        if (sheet) {
+            sheet.querySelectorAll('.sheet-option-item').forEach(el => {
+                const v = el.getAttribute('data-value') || ((el.textContent || '').trim().toLowerCase().includes('private') ? 'private' : 'public');
+                el.classList.toggle('selected', isPriv ? v === 'private' : v === 'public');
+            });
+        }
+    };
+
+    window.saveChannelPrivacySetting = async function (privacyVal) {
+        const clean = privacyVal === 'private' ? 'private' : 'public';
+        const isPriv = clean === 'private';
+        const u = (typeof auth !== 'undefined') ? auth.currentUser : null;
+        if (typeof currentChannelData !== 'undefined' && currentChannelData) {
+            currentChannelData.privacy = clean;
+            currentChannelData.isPrivate = isPriv;
+            try { localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData)); } catch (e) {}
+            window.syncChannelPrivacyUI(currentChannelData);
+        }
+        if (u && typeof db !== 'undefined') {
+            try {
+                const upd = {};
+                upd[`channels/${u.uid}/privacy`] = clean;
+                upd[`channels/${u.uid}/isPrivate`] = isPriv;
+                upd[`users/${u.uid}/channelPrivacy`] = clean;
+                await db.ref().update(upd);
+                if (typeof showNotification === 'function') {
+                    showNotification(isPriv ? 'Channel set to Private' : 'Channel set to Public', 'success');
+                }
+            } catch (e) {
+                if (typeof showNotification === 'function') showNotification('Failed to update privacy setting.', 'error');
+            }
+        }
+    };
+
+    window.openChannelProfile = async function (channelIdOrHandle) {
+        if (!channelIdOrHandle || typeof db === 'undefined') return;
+        let uid = String(channelIdOrHandle).trim();
+        try {
+            if (uid.startsWith('@')) {
+                const h = uid.slice(1).toLowerCase();
+                let snap = await db.ref('channelHandles/' + h).once('value');
+                if (!snap.exists()) snap = await db.ref('handles/' + h).once('value');
+                if (snap.exists()) uid = snap.val();
+            }
+            let snap = await db.ref('channels/' + uid).once('value');
+            if (!snap.exists()) {
+                const h = uid.toLowerCase();
+                let hSnap = await db.ref('channelHandles/' + h).once('value');
+                if (!hSnap.exists()) hSnap = await db.ref('handles/' + h).once('value');
+                if (hSnap.exists()) {
+                    uid = hSnap.val();
+                    snap = await db.ref('channels/' + uid).once('value');
+                }
+            }
+            if (!snap.exists()) {
+                if (typeof showNotification === 'function') showNotification('Channel not found.', 'error');
+                return;
+            }
+            const data = snap.val();
+            data.uid = data.uid || uid;
+            const myUid = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.uid : null;
+            if (myUid && uid === myUid && typeof openViewChannelPage === 'function') {
+                window.__activeViewedChannel = currentChannelData || data;
+                openViewChannelPage();
+                return;
+            }
+            window.__activeViewedChannel = data;
+            if (typeof ensureYouPageLoaded === 'function') await ensureYouPageLoaded();
+            const viewBanner = document.getElementById('view-channel-banner');
+            const viewAvatar = document.getElementById('view-channel-avatar');
+            const viewName = document.getElementById('view-channel-name-txt');
+            const viewHandle = document.getElementById('view-channel-handle-txt');
+            const viewDesc = document.getElementById('view-channel-desc');
+            const viewSub = document.getElementById('view-sub-count');
+            const isPriv = data.privacy === 'private' || data.isPrivate === true;
+
+            if (viewBanner) viewBanner.src = data.bannerUrl || data.channelBannerUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop';
+            if (viewAvatar) viewAvatar.src = data.avatarUrl || data.channelImageUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop';
+            if (viewName) viewName.innerText = data.channelName || 'Flaynity Channel';
+            if (viewHandle) viewHandle.innerText = '@' + String(data.handle || '').replace(/^@/, '');
+            if (viewDesc) viewDesc.innerText = isPriv ? 'This channel is private.' : (data.description || 'No description provided yet.');
+            if (viewSub && typeof formatCount === 'function') viewSub.innerText = formatCount(data.subscribersCount || 0) + ' Subscribers';
+            window.syncChannelPrivacyUI(data);
+
+            if (isPriv) {
+                ['channel-videos-grid', 'channel-feels-grid', 'channel-posts-feed'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerHTML = '<div class="ch-empty" style="padding:36px 16px;"><i class="fas fa-lock" style="font-size:1.8rem;margin-bottom:10px;display:block;color:#D80E45;"></i>This channel is private.</div>';
+                });
+            } else {
+                if (typeof renderChannelVideos === 'function') renderChannelVideos(uid);
+                if (typeof renderChannelFeels === 'function') renderChannelFeels(uid);
+                if (typeof renderChannelPosts === 'function') renderChannelPosts(uid);
+            }
+            if (typeof switchChannelTab === 'function') switchChannelTab('videos');
+            if (typeof AppNavigation !== 'undefined' && AppNavigation.pushPage) AppNavigation.pushPage('view-channel-page');
+        } catch (e) {
+            console.error('openChannelProfile error:', e);
+        }
+    };
+
+    function checkIncomingChannelDeepLink() {
+        try {
+            const params = new URLSearchParams(window.location.search || '');
+            let target = params.get('channel') || params.get('ch') || params.get('handle');
+            if (!target && window.location.hash) {
+                const m = window.location.hash.match(/^#(?:channel=|@)([A-Za-z0-9._-]+)/);
+                if (m) target = window.location.hash.startsWith('#@') ? '@' + m[1] : m[1];
+            }
+            if (!target && window.location.pathname && /^\/@[A-Za-z0-9._-]+$/.test(window.location.pathname)) {
+                target = window.location.pathname.slice(1);
+            }
+            if (target) {
+                setTimeout(() => { window.openChannelProfile(target); }, 900);
+            }
+        } catch (e) {}
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', checkIncomingChannelDeepLink);
+    } else {
+        checkIncomingChannelDeepLink();
+    }
 })();

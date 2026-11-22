@@ -1888,6 +1888,1260 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 .fbcm-act-cap{font-size:13.5px;margin:10px 0 10px;}
 .fbcm-ai{gap:16px;padding:11px 14px;font-size:15.5px;}
 .fbcm-ai svg{width:22px;height:22px;}
+
+/* =====================================================================
+   CREATE YOUR CHANNEL — PREMIUM CARD-BOX & BOTTOM POP-UP UI ENGINE
+   ===================================================================== */
+#fl-create-channel {
+    --flcc-bg: #F5F6FA;
+    --flcc-surface: #FFFFFF;
+    --flcc-surface-soft: #F2F3F8;
+    --flcc-text: #12131A;
+    --flcc-muted: #6C7080;
+    --flcc-subtle: #9A9EAE;
+    --flcc-border: rgba(18, 19, 26, 0.08);
+    --flcc-shadow: 0 10px 30px rgba(18, 19, 26, 0.06);
+    --flcc-shadow-sm: 0 4px 14px rgba(18, 19, 26, 0.045);
+    --flcc-accent: #D80E45;
+    --flcc-accent-2: #FF3D77;
+    --flcc-accent-grad: linear-gradient(135deg, #FF2E74 0%, #D80E45 60%, #B8083B 100%);
+    --flcc-accent-soft: rgba(216, 14, 69, 0.10);
+    --flcc-green: #10B981;
+    --flcc-green-soft: rgba(16, 185, 129, 0.14);
+    position: fixed;
+    inset: 0;
+    z-index: 2147483000;
+    display: none;
+    background: var(--flcc-bg);
+    color: var(--flcc-text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    animation: flccPageIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+[data-theme="dark"] #fl-create-channel {
+    --flcc-bg: #0B0C10;
+    --flcc-surface: #15171F;
+    --flcc-surface-soft: #1E212C;
+    --flcc-text: #F7F8FC;
+    --flcc-muted: #A1A6B8;
+    --flcc-subtle: #73788B;
+    --flcc-border: rgba(255, 255, 255, 0.08);
+    --flcc-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+    --flcc-shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.32);
+    --flcc-accent-soft: rgba(255, 46, 116, 0.18);
+    --flcc-green-soft: rgba(16, 185, 129, 0.2);
+}
+#fl-create-channel *, #fl-create-channel *::before, #fl-create-channel *::after {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+#fl-create-channel.flcc-sheet-locked {
+    overflow: hidden !important;
+}
+@keyframes flccPageIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Cover Banner */
+.flcc-hero {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2.3 / 1;
+    min-height: 170px;
+    max-height: 265px;
+    background:
+        radial-gradient(90% 80% at 15% 20%, rgba(255, 86, 140, 0.55) 0%, transparent 65%),
+        radial-gradient(85% 90% at 85% 15%, rgba(139, 92, 246, 0.52) 0%, transparent 65%),
+        radial-gradient(80% 80% at 50% 95%, rgba(251, 146, 60, 0.42) 0%, transparent 70%),
+        linear-gradient(135deg, #241023 0%, #4A1238 48%, #1E1B3A 100%);
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+}
+.flcc-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(10, 10, 16, 0.36) 0%, rgba(10, 10, 16, 0.08) 45%, rgba(10, 10, 16, 0.48) 100%);
+    pointer-events: none;
+}
+.flcc-hero-mesh {
+    position: absolute;
+    inset: 0;
+    opacity: 0.28;
+    background-image: radial-gradient(rgba(255,255,255,0.6) 1px, transparent 1px);
+    background-size: 20px 20px;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+.flcc-hero.has-banner .flcc-hero-mesh { opacity: 0; }
+
+.flcc-topbar {
+    position: absolute;
+    z-index: 3;
+    left: 16px;
+    right: 16px;
+    top: calc(env(safe-area-inset-top, 0px) + 14px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.flcc-glass-btn {
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    background: rgba(18, 19, 26, 0.46);
+    color: #FFFFFF;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    font: 700 13.5px 'Plus Jakarta Sans', sans-serif;
+    transition: transform 0.16s ease, background 0.18s ease;
+}
+.flcc-glass-btn:active {
+    transform: scale(0.95);
+    background: rgba(18, 19, 26, 0.72);
+}
+.flcc-back-btn {
+    width: 42px;
+    border-radius: 50%;
+    padding: 0;
+}
+.flcc-cover-btn {
+    border-radius: 999px;
+    padding: 0 16px;
+}
+.flcc-cover-btn svg, .flcc-back-btn svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+.flcc-cover-done-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10B981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.28);
+    display: none;
+}
+.flcc-hero.has-banner .flcc-cover-done-dot { display: inline-block; }
+
+/* Main Content Sheet */
+.flcc-body {
+    position: relative;
+    z-index: 2;
+    margin-top: -26px;
+    background: var(--flcc-bg);
+    border-radius: 28px 28px 0 0;
+    padding: 0 16px calc(32px + env(safe-area-inset-bottom, 0px));
+    min-height: calc(100% - 160px);
+}
+
+/* Avatar */
+.flcc-avatar-stage {
+    display: flex;
+    justify-content: center;
+    height: 82px;
+    margin-bottom: 10px;
+}
+.flcc-avatar-ring {
+    position: relative;
+    margin-top: -54px;
+    width: 122px;
+    height: 122px;
+    border-radius: 50%;
+    padding: 4px;
+    background: linear-gradient(135deg, #FF2E74, #FF7A59, #8B5CF6);
+    box-shadow: 0 12px 28px rgba(216, 14, 69, 0.24);
+    cursor: pointer;
+    transition: transform 0.18s ease;
+}
+.flcc-avatar-ring:active { transform: scale(0.96); }
+.flcc-avatar-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 4px solid var(--flcc-bg);
+    background: var(--flcc-surface);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+.flcc-avatar-inner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.flcc-avatar-ph {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--flcc-accent);
+}
+.flcc-avatar-ph svg { width: 32px; height: 32px; }
+.flcc-avatar-ph span {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--flcc-muted);
+}
+.flcc-avatar-cam {
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 3px solid var(--flcc-bg);
+    background: var(--flcc-accent-grad);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 14px rgba(216, 14, 69, 0.35);
+    cursor: pointer;
+}
+.flcc-avatar-cam svg { width: 15px; height: 15px; }
+
+/* Title */
+.flcc-header-txt {
+    text-align: center;
+    margin-bottom: 18px;
+}
+.flcc-header-txt h1 {
+    margin: 0 0 6px;
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: -0.6px;
+    color: var(--flcc-text);
+}
+.flcc-header-txt p {
+    margin: 0 auto;
+    max-width: 300px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--flcc-muted);
+    font-weight: 500;
+}
+
+/* Premium Step Progress Card (Step 0/10 Done) */
+.flcc-progress-card {
+    background: var(--flcc-surface);
+    border: 1px solid var(--flcc-border);
+    border-radius: 22px;
+    padding: 16px;
+    margin-bottom: 18px;
+    box-shadow: var(--flcc-shadow-sm);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.flcc-progress-card.all-done {
+    border-color: rgba(16, 185, 129, 0.45);
+    box-shadow: 0 10px 26px rgba(16, 185, 129, 0.12);
+}
+.flcc-prog-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.flcc-prog-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.flcc-prog-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    background: var(--flcc-accent-soft);
+    color: var(--flcc-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.25s ease, color 0.25s ease;
+}
+.flcc-progress-card.all-done .flcc-prog-badge {
+    background: var(--flcc-green-soft);
+    color: var(--flcc-green);
+}
+.flcc-prog-badge svg { width: 19px; height: 19px; }
+.flcc-prog-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--flcc-text);
+    line-height: 1.2;
+}
+.flcc-prog-sub {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--flcc-muted);
+    margin-top: 2px;
+}
+.flcc-prog-pct {
+    font-size: 13px;
+    font-weight: 800;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--flcc-accent-soft);
+    color: var(--flcc-accent);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    transition: background 0.25s ease, color 0.25s ease;
+}
+.flcc-progress-card.all-done .flcc-prog-pct {
+    background: var(--flcc-green-soft);
+    color: var(--flcc-green);
+}
+.flcc-prog-track {
+    width: 100%;
+    height: 9px;
+    border-radius: 999px;
+    background: var(--flcc-surface-soft);
+    overflow: hidden;
+    position: relative;
+}
+.flcc-prog-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: var(--flcc-accent-grad);
+    transition: width 0.42s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s ease;
+    position: relative;
+}
+.flcc-progress-card.all-done .flcc-prog-fill {
+    background: linear-gradient(90deg, #10B981, #34D399);
+}
+.flcc-prog-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+}
+.flcc-step-chip {
+    border: 1px solid var(--flcc-border);
+    background: var(--flcc-surface-soft);
+    color: var(--flcc-muted);
+    border-radius: 999px;
+    padding: 5px 10px;
+    font: 700 11px 'Plus Jakarta Sans', sans-serif;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: transform 0.14s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.flcc-step-chip:active { transform: scale(0.94); }
+.flcc-step-chip .flcc-chip-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--flcc-accent);
+}
+.flcc-step-ready-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--flcc-green-soft);
+    color: var(--flcc-green);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+/* Section Labels & Card Boxes */
+.flcc-group-label {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    color: var(--flcc-muted);
+    margin: 18px 6px 10px;
+}
+.flcc-card-box {
+    background: var(--flcc-surface);
+    border: 1px solid var(--flcc-border);
+    border-radius: 22px;
+    padding: 6px;
+    box-shadow: var(--flcc-shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.flcc-row {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--flcc-text);
+    border-radius: 16px;
+    padding: 13px 12px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.16s ease, transform 0.14s ease;
+}
+.flcc-row:active {
+    background: var(--flcc-surface-soft);
+    transform: scale(0.99);
+}
+.flcc-row.is-readonly {
+    cursor: default;
+}
+.flcc-row.is-readonly:active {
+    background: transparent;
+    transform: none;
+}
+.flcc-row-ico {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: var(--flcc-accent-soft);
+    color: var(--flcc-accent);
+}
+.flcc-row-ico svg { width: 20px; height: 20px; }
+.flcc-row-ico.ico-purple { background: rgba(139, 92, 246, 0.13); color: #8B5CF6; }
+.flcc-row-ico.ico-blue { background: rgba(59, 130, 246, 0.13); color: #3B82F6; }
+.flcc-row-ico.ico-amber { background: rgba(245, 158, 11, 0.14); color: #F59E0B; }
+.flcc-row-ico.ico-teal { background: rgba(20, 184, 166, 0.14); color: #14B8A6; }
+.flcc-row-ico.ico-indigo { background: rgba(99, 102, 241, 0.14); color: #6366F1; }
+.flcc-row-ico.ico-emerald { background: rgba(16, 185, 129, 0.14); color: #10B981; }
+.flcc-row-ico.ico-orange { background: rgba(249, 115, 22, 0.14); color: #F97316; }
+
+.flcc-row-body {
+    flex: 1;
+    min-width: 0;
+}
+.flcc-row-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--flcc-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.flcc-row-value {
+    margin-top: 3px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--flcc-subtle);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.flcc-row-value.filled {
+    color: var(--flcc-text);
+}
+.flcc-row-value.multiline {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.4;
+}
+.flcc-row-end {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.flcc-done-check {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--flcc-green-soft);
+    color: var(--flcc-green);
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.flcc-done-check svg { width: 13px; height: 13px; }
+.flcc-row.is-done .flcc-done-check { display: flex; }
+.flcc-chev {
+    color: var(--flcc-subtle);
+    display: flex;
+    align-items: center;
+}
+.flcc-chev svg { width: 18px; height: 18px; }
+.flcc-lock-pill {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--flcc-green);
+    background: var(--flcc-green-soft);
+    padding: 4px 9px;
+    border-radius: 999px;
+}
+
+/* Status & Submit Button */
+.flcc-status-msg {
+    min-height: 18px;
+    margin: 14px 6px 8px;
+    text-align: center;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--flcc-accent);
+}
+.flcc-submit-btn {
+    width: 100%;
+    height: 58px;
+    border: 0;
+    border-radius: 20px;
+    background: var(--flcc-accent-grad);
+    color: #FFFFFF;
+    font: 800 16px 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: 0.1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    box-shadow: 0 12px 26px rgba(216, 14, 69, 0.30);
+    transition: transform 0.16s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+}
+.flcc-submit-btn:active:not(:disabled) {
+    transform: scale(0.98);
+}
+.flcc-submit-btn:disabled {
+    opacity: 0.44;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+.flcc-submit-btn svg { width: 20px; height: 20px; }
+.flcc-terms {
+    text-align: center;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--flcc-muted);
+    margin: 14px 16px 0;
+}
+
+/* =====================================================================
+   PREMIUM BOTTOM POP-UP SHEET (Name, Handle, Desc, Category, Phone, Country, DOB, Gender)
+   ===================================================================== */
+.flcc-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483100;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(8, 9, 14, 0);
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+    transition: background 0.26s ease, backdrop-filter 0.26s ease, -webkit-backdrop-filter 0.26s ease;
+}
+.flcc-sheet-backdrop.open {
+    background: rgba(8, 9, 14, 0.56);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+.flcc-sheet-panel {
+    width: 100%;
+    max-width: 560px;
+    max-height: 86vh;
+    background: var(--flcc-surface);
+    color: var(--flcc-text);
+    border-radius: 28px 28px 0 0;
+    border-top: 1px solid var(--flcc-border);
+    box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.28);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateY(105%);
+    transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.flcc-sheet-backdrop.open .flcc-sheet-panel {
+    transform: translateY(0);
+}
+.flcc-sheet-grab {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0 6px;
+    cursor: grab;
+    touch-action: none;
+    flex-shrink: 0;
+}
+.flcc-sheet-grab span {
+    width: 44px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--flcc-border);
+    background: color-mix(in srgb, var(--flcc-muted) 35%, transparent);
+}
+.flcc-sheet-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 18px 14px;
+    border-bottom: 1px solid var(--flcc-border);
+    flex-shrink: 0;
+}
+.flcc-sheet-head-ico {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    background: var(--flcc-accent-soft);
+    color: var(--flcc-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.flcc-sheet-head-ico svg { width: 21px; height: 21px; }
+.flcc-sheet-head-txt { flex: 1; min-width: 0; }
+.flcc-sheet-head-txt h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: var(--flcc-text);
+}
+.flcc-sheet-head-txt p {
+    margin: 2px 0 0;
+    font-size: 12.5px;
+    color: var(--flcc-muted);
+    font-weight: 500;
+}
+.flcc-sheet-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 0;
+    background: var(--flcc-surface-soft);
+    color: var(--flcc-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.flcc-sheet-close svg { width: 18px; height: 18px; }
+.flcc-sheet-content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 18px;
+}
+
+/* Sheet Inputs */
+.flcc-in-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--flcc-surface-soft);
+    border: 1.5px solid transparent;
+    border-radius: 18px;
+    padding: 0 14px;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.flcc-in-box:focus-within {
+    background: var(--flcc-surface);
+    border-color: var(--flcc-accent);
+    box-shadow: 0 0 0 4px var(--flcc-accent-soft);
+}
+.flcc-in-box.is-err {
+    border-color: #EF4444;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.14);
+}
+.flcc-in-box.shake {
+    animation: flccShake 0.36s ease;
+}
+@keyframes flccShake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-7px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(3px); }
+}
+.flcc-in-prefix {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--flcc-accent);
+    margin-right: 6px;
+    flex-shrink: 0;
+}
+.flcc-in-field {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--flcc-text);
+    font: 600 16px 'Plus Jakarta Sans', sans-serif;
+    padding: 16px 0;
+    caret-color: var(--flcc-accent);
+}
+textarea.flcc-in-field {
+    min-height: 132px;
+    resize: none;
+    line-height: 1.55;
+    padding: 14px 0;
+}
+.flcc-in-clear {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 0;
+    background: color-mix(in srgb, var(--flcc-muted) 30%, transparent);
+    color: var(--flcc-surface);
+    font-size: 15px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+.flcc-in-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 10px;
+    font-size: 12.5px;
+    min-height: 20px;
+}
+.flcc-in-err { color: #EF4444; font-weight: 700; }
+.flcc-in-count { color: var(--flcc-muted); font-weight: 600; margin-left: auto; font-variant-numeric: tabular-nums; }
+.flcc-live-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--flcc-muted);
+}
+.flcc-live-check.ok { color: var(--flcc-green); }
+.flcc-live-check.bad { color: #EF4444; }
+.flcc-mini-spin {
+    width: 16px;
+    height: 16px;
+    border: 2.2px solid var(--flcc-border);
+    border-top-color: var(--flcc-accent);
+    border-radius: 50%;
+    animation: flccSpin 0.7s linear infinite;
+}
+@keyframes flccSpin { to { transform: rotate(360deg); } }
+
+.flcc-sheet-save {
+    width: 100%;
+    height: 52px;
+    margin-top: 18px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--flcc-accent-grad);
+    color: #FFFFFF;
+    font: 800 15.5px 'Plus Jakarta Sans', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 10px 22px rgba(216, 14, 69, 0.25);
+    transition: transform 0.14s ease, opacity 0.18s ease;
+}
+.flcc-sheet-save:active:not(:disabled) { transform: scale(0.98); }
+.flcc-sheet-save:disabled { opacity: 0.42; box-shadow: none; cursor: not-allowed; }
+
+/* Search inside Bottom Pop-up (Category / Country / Dial) */
+.flcc-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--flcc-surface-soft);
+    border: 1.5px solid transparent;
+    border-radius: 16px;
+    padding: 0 14px;
+    margin-bottom: 14px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+.flcc-search-bar:focus-within {
+    background: var(--flcc-surface);
+    border-color: var(--flcc-accent);
+}
+.flcc-search-bar svg { width: 18px; height: 18px; color: var(--flcc-muted); flex-shrink: 0; }
+.flcc-search-bar input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--flcc-text);
+    font: 600 14.5px 'Plus Jakarta Sans', sans-serif;
+    padding: 13px 0;
+}
+
+/* Category 2-Column Premium Cards (24 Categories) */
+.flcc-cat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+.flcc-cat-card {
+    border: 1.5px solid var(--flcc-border);
+    background: var(--flcc-surface-soft);
+    color: var(--flcc-text);
+    border-radius: 18px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    position: relative;
+    transition: transform 0.14s ease, border-color 0.18s ease, background 0.18s ease;
+}
+.flcc-cat-card:active { transform: scale(0.97); }
+.flcc-cat-card.sel {
+    border-color: var(--flcc-accent);
+    background: var(--flcc-accent-soft);
+}
+.flcc-cat-em {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: var(--flcc-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.flcc-cat-txt { flex: 1; min-width: 0; }
+.flcc-cat-name {
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--flcc-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.flcc-cat-tag {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--flcc-muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.flcc-cat-chk {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--flcc-accent);
+    color: #FFFFFF;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 900;
+}
+.flcc-cat-card.sel .flcc-cat-chk { display: flex; }
+
+/* Country / Dial List inside Bottom Pop-up */
+.flcc-list-wrap {
+    max-height: 52vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.flcc-opt-row {
+    width: 100%;
+    border: 1.5px solid transparent;
+    background: transparent;
+    color: var(--flcc-text);
+    border-radius: 15px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    text-align: left;
+    cursor: pointer;
+    font: 600 15px 'Plus Jakarta Sans', sans-serif;
+    transition: background 0.14s ease, border-color 0.16s ease;
+}
+.flcc-opt-row:active { background: var(--flcc-surface-soft); }
+.flcc-opt-row.sel {
+    background: var(--flcc-accent-soft);
+    border-color: var(--flcc-accent);
+    font-weight: 800;
+}
+.flcc-flag {
+    font-size: 24px;
+    line-height: 1;
+    width: 30px;
+    text-align: center;
+    flex-shrink: 0;
+    font-family: 'Apple Color Emoji', 'Noto Color Emoji', 'Segoe UI Emoji', sans-serif;
+}
+.flcc-opt-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.flcc-dial-code { color: var(--flcc-accent); font-weight: 800; font-size: 14px; font-variant-numeric: tabular-nums; }
+.flcc-opt-tick {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--flcc-accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    flex-shrink: 0;
+}
+
+/* Phone Number Pop-up */
+.flcc-phone-country-btn {
+    width: 100%;
+    border: 1.5px solid var(--flcc-border);
+    background: var(--flcc-surface-soft);
+    color: var(--flcc-text);
+    border-radius: 16px;
+    padding: 13px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    font: 700 15px 'Plus Jakarta Sans', sans-serif;
+}
+.flcc-phone-dial-sep {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--flcc-accent);
+    padding-right: 12px;
+    margin-right: 12px;
+    border-right: 1.5px solid var(--flcc-border);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+.flcc-link-danger {
+    border: 0;
+    background: transparent;
+    color: #EF4444;
+    font: 700 13.5px 'Plus Jakarta Sans', sans-serif;
+    padding: 10px 4px 0;
+    cursor: pointer;
+}
+.flcc-sub-back {
+    border: 0;
+    background: var(--flcc-surface-soft);
+    color: var(--flcc-text);
+    border-radius: 12px;
+    padding: 8px 12px;
+    font: 700 13px 'Plus Jakarta Sans', sans-serif;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+    cursor: pointer;
+}
+
+/* Date of Birth Premium 3-Column Selector Pop-up */
+.flcc-dob-preview {
+    background: var(--flcc-accent-soft);
+    color: var(--flcc-accent);
+    border-radius: 16px;
+    padding: 14px 16px;
+    text-align: center;
+    font-size: 17px;
+    font-weight: 800;
+    margin-bottom: 14px;
+}
+.flcc-dob-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.35fr 1.15fr;
+    gap: 10px;
+}
+.flcc-dob-col label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--flcc-muted);
+    margin: 0 0 6px 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.flcc-dob-select {
+    width: 100%;
+    height: 50px;
+    border-radius: 15px;
+    border: 1.5px solid var(--flcc-border);
+    background: var(--flcc-surface-soft);
+    color: var(--flcc-text);
+    font: 700 15px 'Plus Jakarta Sans', sans-serif;
+    padding: 0 12px;
+    outline: none;
+}
+.flcc-dob-select:focus { border-color: var(--flcc-accent); }
+
+/* Gender Cards Pop-up */
+.flcc-gender-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.flcc-gender-card {
+    width: 100%;
+    border: 1.5px solid var(--flcc-border);
+    background: var(--flcc-surface-soft);
+    color: var(--flcc-text);
+    border-radius: 18px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: transform 0.14s ease, border-color 0.18s ease, background 0.18s ease;
+}
+.flcc-gender-card:active { transform: scale(0.98); }
+.flcc-gender-card.sel {
+    border-color: var(--flcc-accent);
+    background: var(--flcc-accent-soft);
+}
+.flcc-gender-ico {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    background: var(--flcc-surface);
+    color: var(--flcc-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.flcc-gender-ico svg { width: 20px; height: 20px; }
+.flcc-gender-label { flex: 1; font-size: 15.5px; font-weight: 800; }
+.flcc-radio {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--flcc-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.flcc-gender-card.sel .flcc-radio {
+    border-color: var(--flcc-accent);
+    background: var(--flcc-accent);
+}
+.flcc-gender-card.sel .flcc-radio::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #FFFFFF;
+}
+
+/* =====================================================================
+   SCREEN-CENTER PREMIUM LOADING & SUCCESS ANIMATION OVERLAY
+   ===================================================================== */
+.flcc-launch-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(8, 9, 14, 0.68);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    animation: flccFadeIn 0.24s ease both;
+}
+.flcc-launch-overlay.show { display: flex; }
+@keyframes flccFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.flcc-launch-card {
+    position: relative;
+    width: min(320px, 100%);
+    background: var(--flcc-surface);
+    color: var(--flcc-text);
+    border: 1px solid var(--flcc-border);
+    border-radius: 30px;
+    padding: 34px 24px 30px;
+    text-align: center;
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.42);
+    overflow: hidden;
+    animation: flccPopCard 0.36s cubic-bezier(0.22, 1.25, 0.36, 1) both;
+}
+@keyframes flccPopCard {
+    from { opacity: 0; transform: scale(0.86) translateY(14px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Loading State */
+.flcc-loader-wrap {
+    position: relative;
+    width: 92px;
+    height: 92px;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.flcc-ring-outer {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 4px solid transparent;
+    border-top-color: #FF2E74;
+    border-right-color: #D80E45;
+    animation: flccSpin 0.95s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+}
+.flcc-ring-inner {
+    position: absolute;
+    inset: 11px;
+    border-radius: 50%;
+    border: 3.5px solid transparent;
+    border-bottom-color: #8B5CF6;
+    border-left-color: #FF7A59;
+    animation: flccSpinRev 1.25s linear infinite;
+}
+@keyframes flccSpinRev { to { transform: rotate(-360deg); } }
+.flcc-ring-core {
+    width: 44px;
+    height: 44px;
+    border-radius: 16px;
+    background: var(--flcc-accent-grad);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(216, 14, 69, 0.35);
+    animation: flccCorePulse 1.4s ease-in-out infinite;
+}
+.flcc-ring-core svg { width: 22px; height: 22px; }
+@keyframes flccCorePulse {
+    0%,100% { transform: scale(0.94); }
+    50% { transform: scale(1.06); }
+}
+.flcc-launch-title {
+    margin: 0 0 6px;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: -0.4px;
+    color: var(--flcc-text);
+}
+.flcc-launch-sub {
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--flcc-muted);
+    line-height: 1.45;
+}
+
+/* Success State */
+.flcc-success-wrap {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.flcc-success-pulse {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.24);
+    animation: flccSucPulse 1.5s ease-out infinite;
+}
+@keyframes flccSucPulse {
+    0% { transform: scale(0.85); opacity: 0.9; }
+    100% { transform: scale(1.45); opacity: 0; }
+}
+.flcc-success-circle {
+    position: relative;
+    z-index: 2;
+    width: 86px;
+    height: 86px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 14px 32px rgba(16, 185, 129, 0.42);
+    animation: flccSucPop 0.48s cubic-bezier(0.22, 1.45, 0.36, 1) both;
+}
+@keyframes flccSucPop {
+    from { transform: scale(0.35); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+.flcc-success-circle svg {
+    width: 44px;
+    height: 44px;
+    fill: none;
+    stroke: #FFFFFF;
+    stroke-width: 3.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.flcc-success-circle path {
+    stroke-dasharray: 42;
+    stroke-dashoffset: 42;
+    animation: flccDrawTick 0.45s 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes flccDrawTick { to { stroke-dashoffset: 0; } }
+
+.flcc-confetti {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+.flcc-confetti i {
+    position: absolute;
+    top: 46%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    opacity: 0;
+    animation: flccBurst 1.1s cubic-bezier(0.15, 0.85, 0.3, 1) forwards;
+}
+@keyframes flccBurst {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(0.4) rotate(0deg); }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.1) rotate(var(--rot)); }
+}
+
 </style></head><body>
 <div class="toast-container" id="toast-container"></div>
 
@@ -2326,4 +3580,1384 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 <span class="nav-label">You</span>
 </div>
 </div>
+
+<!-- =====================================================================
+     CREATE YOUR CHANNEL — FULL PREMIUM PAGE (Lives directly in home.html)
+     ===================================================================== -->
+<section id="fl-create-channel" aria-label="Create your Channel">
+    <div class="flcc-hero" id="flcc-banner">
+        <div class="flcc-hero-mesh"></div>
+        <div class="flcc-topbar">
+            <button class="flcc-glass-btn flcc-back-btn" type="button" id="flcc-back" aria-label="Back">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+            </button>
+            <button class="flcc-glass-btn flcc-cover-btn" type="button" id="flcc-change">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 15l-4.5-4.5L7 20"/></svg>
+                <span id="flcc-cover-btn-txt">Add Background</span>
+                <span class="flcc-cover-done-dot"></span>
+            </button>
+        </div>
+    </div>
+
+    <div class="flcc-body">
+        <div class="flcc-avatar-stage">
+            <div class="flcc-avatar-ring" id="flcc-avatar-trigger" role="button" tabindex="0" aria-label="Upload channel photo">
+                <div class="flcc-avatar-inner" id="flcc-avatar-box">
+                    <div class="flcc-avatar-ph">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        <span>Add Photo</span>
+                    </div>
+                </div>
+                <button type="button" class="flcc-avatar-cam" id="flcc-avatar-pick" aria-label="Change photo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="flcc-header-txt">
+            <h1>Create your Channel</h1>
+            <p>Craft your creator identity. Complete all 10 quick steps to launch your Flaynity space.</p>
+        </div>
+
+        <!-- Step 0/10 Done Premium Progress Card -->
+        <div class="flcc-progress-card" id="flcc-progress-card">
+            <div class="flcc-prog-top">
+                <div class="flcc-prog-left">
+                    <div class="flcc-prog-badge" id="flcc-prog-badge">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/></svg>
+                    </div>
+                    <div>
+                        <div class="flcc-prog-title" id="flcc-step-title">Step 0/10 Done</div>
+                        <div class="flcc-prog-sub" id="flcc-step-sub">Tap any remaining step below to complete</div>
+                    </div>
+                </div>
+                <div class="flcc-prog-pct" id="flcc-step-pct">0%</div>
+            </div>
+            <div class="flcc-prog-track"><div class="flcc-prog-fill" id="flcc-step-fill"></div></div>
+            <div class="flcc-prog-chips" id="flcc-step-chips"></div>
+        </div>
+
+        <!-- Card Box 1: Channel Identity -->
+        <div class="flcc-group-label">Channel Identity</div>
+        <div class="flcc-card-box">
+            <button type="button" class="flcc-row" id="flcc-row-name" data-popup="name">
+                <span class="flcc-row-ico">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </span>
+                <span class="flcc-row-body">
+                    <span class="flcc-row-label">Name</span>
+                    <span class="flcc-row-value" id="flcc-disp-name">Add your channel name</span>
+                </span>
+                <span class="flcc-row-end">
+                    <span class="flcc-done-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+                    <span class="flcc-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+                </span>
+            </button>
+
+            <button type="button" class="flcc-row" id="flcc-row-handle" data-popup="handle">
+                <span class="flcc-row-ico ico-purple">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg>
+                </span>
+                <span class="flcc-row-body">
+                    <span class="flcc-row-label">Handle</span>
+                    <span class="flcc-row-value" id="flcc-disp-handle">Choose your @handle</span>
+                </span>
+                <span class="flcc-row-end">
+                    <span class="flcc-done-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+                    <span class="flcc-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+                </span>
+            </button>
+
+            <button type="button" class="flcc-row" id="flcc-row-bio" data-popup="bio">
+                <span class="flcc-row-ico ico-blue">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+                </span>
+                <span class="flcc-row-body">
+                    <span class="flcc-row-label">Description</span>
+                    <span class="flcc-row-value multiline" id="flcc-disp-bio">Tell viewers what your channel is about</span>
+                </span>
+                <span class="flcc-row-end">
+                    <span class="flcc-done-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+                    <span class="flcc-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+                </span>
+            </button>
+        </div>
+
+        <!-- Card Box 2: Basic Information -->
+        <div class="flcc-group-label">Basic Information</div>
+        <div class="flcc-card-box">
+            <button type="button" class="flcc-row" id="flcc-row-category" data-popup="category">
+                <span class="flcc-row-ico ico-amber">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+                </span>
+                <span class="flcc-row-body">
+                    <span class="flcc-row-label">Category</span>
+                    <span class="flcc-row-value" id="flcc-disp-category">Select from 24 categories</span>
+                </span>
+                <span class="flcc-row-end">
+                    <span class="flcc-done-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+                    <span class="flcc-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+                </span>
+            </button>
+
+            <div class="flcc-row is-readonly" id="flcc-row-email">
+                <span class="flcc-row-ico ico-emerald">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3.5 7.5L12 13l8.5-5.5"/></svg>
+                </span>
+                <span class="flcc-row-body">
+                    <span class="flcc-row-label">Email</span>
+                    <span class="flcc-row-value filled" id="flcc-disp-email">—</span>
+                </span>
+                <span class="flcc-row-end">
+                    <span class="flcc-lock-pill">Verified</span>
+                </span>
+            </div>
+
+            <button type="button" class="flcc-row" id="flcc-row-phone" data-popup="phone">
+                <span class="flcc-row-ico ico-teal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </span>
+                <span class="flcc-row-body">
+                    <span class="flcc-row-label">Phone Number</span>
+                    <span class="flcc-row-value" id="flcc-disp-phone">Add phone number</span>
+                </span>
+                <span class="flcc-row-end">
+                    <span class="flcc-done-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+                    <span class="flcc-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+                </span>
+            </button>
+
+            <button type="button" class="flcc-row" id="flcc-row-country" data-popup="country">
+                <span class="flcc-row-ico ico-indigo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5a15 15 0 0 1 0 19M12 2.5a15 15 0 0 0 0 19"/></svg>
+                </span>
+                <span class="flcc-row-body">
+                    <span class="flcc-row-label">Country</span>
+                    <span class="flcc-row-value" id="flcc-disp-country">Select country</span>
+                </span>
+                <span class="flcc-row-end">
+                    <span class="flcc-done-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+                    <span class="flcc-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+                </span>
+            </button>
+
+            <button type="button" class="flcc-row" id="flcc-row-dob" data-popup="dob">
+                <span class="flcc-row-ico ico-orange">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                </span>
+                <span class="flcc-row-body">
+                    <span class="flcc-row-label">Date of Birth</span>
+                    <span class="flcc-row-value" id="flcc-disp-dob">Select date of birth</span>
+                </span>
+                <span class="flcc-row-end">
+                    <span class="flcc-done-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+                    <span class="flcc-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+                </span>
+            </button>
+
+            <button type="button" class="flcc-row" id="flcc-row-gender" data-popup="gender">
+                <span class="flcc-row-ico">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="5"/><path d="M10 15v6M7 18h6M14 6l6-4M16 2h4v4"/></svg>
+                </span>
+                <span class="flcc-row-body">
+                    <span class="flcc-row-label">Gender</span>
+                    <span class="flcc-row-value" id="flcc-disp-gender">Select gender</span>
+                </span>
+                <span class="flcc-row-end">
+                    <span class="flcc-done-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+                    <span class="flcc-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+                </span>
+            </button>
+        </div>
+
+        <p class="flcc-status-msg" id="flcc-status" role="status"></p>
+
+        <button class="flcc-submit-btn" id="flcc-submit" type="button" disabled>
+            <span>Create Channel</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+
+        <p class="flcc-terms">By creating a channel, you agree to Flaynity’s Terms of Service and Privacy Policy.</p>
+    </div>
+
+    <!-- Hidden file inputs -->
+    <input id="flcc-banner-file" type="file" accept="image/*" hidden>
+    <input id="flcc-avatar-file" type="file" accept="image/*" hidden>
+
+    <!-- Shared Premium Bottom Pop-up Sheet -->
+    <div class="flcc-sheet-backdrop" id="flcc-sheet-backdrop" role="dialog" aria-modal="true">
+        <div class="flcc-sheet-panel" id="flcc-sheet-panel">
+            <div class="flcc-sheet-grab" id="flcc-sheet-grab"><span></span></div>
+            <div class="flcc-sheet-head">
+                <div class="flcc-sheet-head-ico" id="flcc-sheet-ico"></div>
+                <div class="flcc-sheet-head-txt">
+                    <h2 id="flcc-sheet-title">Edit</h2>
+                    <p id="flcc-sheet-sub"></p>
+                </div>
+                <button type="button" class="flcc-sheet-close" id="flcc-sheet-close" aria-label="Close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </div>
+            <div class="flcc-sheet-content" id="flcc-sheet-content"></div>
+        </div>
+    </div>
+
+    <!-- Screen-Center Premium Loading & Success Overlay -->
+    <div class="flcc-launch-overlay" id="flcc-launch-overlay" role="alertdialog" aria-live="assertive">
+        <div class="flcc-launch-card" id="flcc-launch-card"></div>
+    </div>
+</section>
+
+<script>
+(function installCreateChannelPageInHome() {
+    if (window.__flaynityCreateChannelInstalled) return;
+    window.__flaynityCreateChannelInstalled = true;
+
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[ch]));
+
+    const CATEGORIES = [
+        { name: 'Creator', em: '✨', tag: 'Original content' },
+        { name: 'Entertainment', em: '🎬', tag: 'Fun & shows' },
+        { name: 'Education', em: '📚', tag: 'Learn & teach' },
+        { name: 'Gaming', em: '🎮', tag: 'Play & streams' },
+        { name: 'Music', em: '🎵', tag: 'Songs & beats' },
+        { name: 'Technology', em: '💻', tag: 'Tech & gadgets' },
+        { name: 'Business', em: '💼', tag: 'Brands & growth' },
+        { name: 'Film & Animation', em: '🎞️', tag: 'Cinema & VFX' },
+        { name: 'Comedy', em: '😂', tag: 'Skits & laughs' },
+        { name: 'Sports & Fitness', em: '⚽', tag: 'Active & health' },
+        { name: 'Travel & Adventure', em: '✈️', tag: 'Explore world' },
+        { name: 'Food & Cooking', em: '🍳', tag: 'Recipes & taste' },
+        { name: 'Fashion & Beauty', em: '💄', tag: 'Style & trends' },
+        { name: 'Science & Innovation', em: '🔬', tag: 'Discoveries' },
+        { name: 'News & Politics', em: '📰', tag: 'World updates' },
+        { name: 'Lifestyle & Vlogs', em: '🌟', tag: 'Daily stories' },
+        { name: 'Art & Design', em: '🎨', tag: 'Creative works' },
+        { name: 'Photography', em: '📸', tag: 'Visual craft' },
+        { name: 'Health & Wellness', em: '🧘', tag: 'Mind & body' },
+        { name: 'Finance & Crypto', em: '📈', tag: 'Money & markets' },
+        { name: 'Autos & Vehicles', em: '🏎️', tag: 'Cars & bikes' },
+        { name: 'Pets & Animals', em: '🐾', tag: 'Cute companions' },
+        { name: 'Motivation & Mindset', em: '🔥', tag: 'Self growth' },
+        { name: 'Personal & Community', em: '🤝', tag: 'Friends & groups' }
+    ];
+
+    const COUNTRY_DATA = 'AF:Afghanistan|AL:Albania|DZ:Algeria|AS:American Samoa|AD:Andorra|AO:Angola|AI:Anguilla|AG:Antigua & Barbuda|AR:Argentina|AM:Armenia|AW:Aruba|AU:Australia|AT:Austria|AZ:Azerbaijan|BS:Bahamas|BH:Bahrain|BD:Bangladesh|BB:Barbados|BY:Belarus|BE:Belgium|BZ:Belize|BJ:Benin|BM:Bermuda|BT:Bhutan|BO:Bolivia|BA:Bosnia & Herzegovina|BW:Botswana|BR:Brazil|BN:Brunei|BG:Bulgaria|BF:Burkina Faso|BI:Burundi|KH:Cambodia|CM:Cameroon|CA:Canada|CV:Cape Verde|KY:Cayman Islands|CF:Central African Republic|TD:Chad|CL:Chile|CN:China|CO:Colombia|KM:Comoros|CG:Congo - Brazzaville|CD:Congo - Kinshasa|CR:Costa Rica|CI:Côte d’Ivoire|HR:Croatia|CU:Cuba|CY:Cyprus|CZ:Czechia|DK:Denmark|DJ:Djibouti|DM:Dominica|DO:Dominican Republic|EC:Ecuador|EG:Egypt|SV:El Salvador|GQ:Equatorial Guinea|ER:Eritrea|EE:Estonia|SZ:Eswatini|ET:Ethiopia|FJ:Fiji|FI:Finland|FR:France|GA:Gabon|GM:Gambia|GE:Georgia|DE:Germany|GH:Ghana|GI:Gibraltar|GR:Greece|GL:Greenland|GD:Grenada|GU:Guam|GT:Guatemala|GN:Guinea|GW:Guinea-Bissau|GY:Guyana|HT:Haiti|HN:Honduras|HK:Hong Kong|HU:Hungary|IS:Iceland|IN:India|ID:Indonesia|IR:Iran|IQ:Iraq|IE:Ireland|IL:Israel|IT:Italy|JM:Jamaica|JP:Japan|JO:Jordan|KZ:Kazakhstan|KE:Kenya|KI:Kiribati|XK:Kosovo|KW:Kuwait|KG:Kyrgyzstan|LA:Laos|LV:Latvia|LB:Lebanon|LS:Lesotho|LR:Liberia|LY:Libya|LI:Liechtenstein|LT:Lithuania|LU:Luxembourg|MO:Macao|MG:Madagascar|MW:Malawi|MY:Malaysia|MV:Maldives|ML:Mali|MT:Malta|MR:Mauritania|MU:Mauritius|MX:Mexico|MD:Moldova|MC:Monaco|MN:Mongolia|ME:Montenegro|MA:Morocco|MZ:Mozambique|MM:Myanmar|NA:Namibia|NP:Nepal|NL:Netherlands|NZ:New Zealand|NI:Nicaragua|NE:Niger|NG:Nigeria|KP:North Korea|MK:North Macedonia|NO:Norway|OM:Oman|PK:Pakistan|PS:Palestine|PA:Panama|PG:Papua New Guinea|PY:Paraguay|PE:Peru|PH:Philippines|PL:Poland|PT:Portugal|PR:Puerto Rico|QA:Qatar|RO:Romania|RU:Russia|RW:Rwanda|WS:Samoa|SM:San Marino|SA:Saudi Arabia|SN:Senegal|RS:Serbia|SC:Seychelles|SL:Sierra Leone|SG:Singapore|SK:Slovakia|SI:Slovenia|SB:Solomon Islands|SO:Somalia|ZA:South Africa|KR:South Korea|SS:South Sudan|ES:Spain|LK:Sri Lanka|SD:Sudan|SR:Suriname|SE:Sweden|CH:Switzerland|SY:Syria|TW:Taiwan|TJ:Tajikistan|TZ:Tanzania|TH:Thailand|TL:Timor-Leste|TG:Togo|TO:Tonga|TT:Trinidad & Tobago|TN:Tunisia|TR:Türkiye|TM:Turkmenistan|UG:Uganda|UA:Ukraine|AE:United Arab Emirates|GB:United Kingdom|US:United States|UY:Uruguay|UZ:Uzbekistan|VU:Vanuatu|VA:Vatican City|VE:Venezuela|VN:Vietnam|YE:Yemen|ZM:Zambia|ZW:Zimbabwe';
+    const DIAL_DATA = 'AF:93|AL:355|DZ:213|AS:1684|AD:376|AO:244|AI:1264|AG:1268|AR:54|AM:374|AW:297|AU:61|AT:43|AZ:994|BS:1242|BH:973|BD:880|BB:1246|BY:375|BE:32|BZ:501|BJ:229|BM:1441|BT:975|BO:591|BA:387|BW:267|BR:55|BN:673|BG:359|BF:226|BI:257|KH:855|CM:237|CA:1|CV:238|KY:1345|CF:236|TD:235|CL:56|CN:86|CO:57|KM:269|CG:242|CD:243|CR:506|CI:225|HR:385|CU:53|CY:357|CZ:420|DK:45|DJ:253|DM:1767|DO:1809|EC:593|EG:20|SV:503|GQ:240|ER:291|EE:372|SZ:268|ET:251|FJ:679|FI:358|FR:33|GA:241|GM:220|GE:995|DE:49|GH:233|GI:350|GR:30|GL:299|GD:1473|GU:1671|GT:502|GN:224|GW:245|GY:592|HT:509|HN:504|HK:852|HU:36|IS:354|IN:91|ID:62|IR:98|IQ:964|IE:353|IL:972|IT:39|JM:1876|JP:81|JO:962|KZ:7|KE:254|KI:686|XK:383|KW:965|KG:996|LA:856|LV:371|LB:961|LS:266|LR:231|LY:218|LI:423|LT:370|LU:352|MO:853|MG:261|MW:265|MY:60|MV:960|ML:223|MT:356|MR:222|MU:230|MX:52|MD:373|MC:377|MN:976|ME:382|MA:212|MZ:258|MM:95|NA:264|NP:977|NL:31|NZ:64|NI:505|NE:227|NG:234|KP:850|MK:389|NO:47|OM:968|PK:92|PS:970|PA:507|PG:675|PY:595|PE:51|PH:63|PL:48|PT:351|PR:1787|QA:974|RO:40|RU:7|RW:250|WS:685|SM:378|SA:966|SN:221|RS:381|SC:248|SL:232|SG:65|SK:421|SI:386|SB:677|SO:252|ZA:27|KR:82|SS:211|ES:34|LK:94|SD:249|SR:597|SE:46|CH:41|SY:963|TW:886|TJ:992|TZ:255|TH:66|TL:670|TG:228|TO:676|TT:1868|TN:216|TR:90|TM:993|UG:256|UA:380|AE:971|GB:44|US:1|UY:598|UZ:998|VU:678|VA:379|VE:58|VN:84|YE:967|ZM:260|ZW:263';
+
+    const COUNTRIES = COUNTRY_DATA.split('|').map(x => {
+        const i = x.indexOf(':');
+        return { code: x.slice(0, i), name: x.slice(i + 1) };
+    }).sort((a, b) => a.name.localeCompare(b.name));
+
+    const DIAL_MAP = {};
+    DIAL_DATA.split('|').forEach(x => {
+        const i = x.indexOf(':');
+        DIAL_MAP[x.slice(0, i)] = x.slice(i + 1);
+    });
+    const DIAL_LIST = COUNTRIES.filter(c => DIAL_MAP[c.code]).map(c => ({
+        code: c.code, name: c.name, dial: DIAL_MAP[c.code]
+    }));
+    const flagOf = (c) => c ? String.fromCodePoint(...[...c].map(ch => 127397 + ch.charCodeAt(0))) : '🌐';
+    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+    const ICONS = {
+        name: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+        handle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg>',
+        bio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
+        category: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>',
+        phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+        country: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5a15 15 0 0 1 0 19M12 2.5a15 15 0 0 0 0 19"/></svg>',
+        dob: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+        gender: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="5"/><path d="M10 15v6M7 18h6M14 6l6-4M16 2h4v4"/></svg>',
+        search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>',
+        spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/></svg>',
+        check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+        okCircle: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M7.8 12.4l2.9 2.9 5.5-6"/></svg>',
+        badCircle: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M9 9l6 6M15 9l-6 6"/></svg>'
+    };
+
+    const state = {
+        bannerFile: null,
+        avatarFile: null,
+        name: '',
+        handle: '',
+        bio: '',
+        category: '',
+        email: '',
+        phone: '',
+        country: '',
+        countryCode: '',
+        dob: '',
+        gender: '',
+        saving: false,
+        sheetOpen: false,
+        wired: false,
+        uid: null
+    };
+
+    let navStack = [];
+    let navIgnore = 0;
+    let navRootPushed = false;
+
+    const getRoot = () => document.getElementById('fl-create-channel');
+    const notify = (m, type) => {
+        try { if (typeof showNotification === 'function') showNotification(m, type || 'error'); } catch (e) {}
+    };
+
+    function pushHist() { try { history.pushState({ flcc: 1 }, ''); } catch (e) {} }
+    function popHist() { navIgnore++; try { history.back(); } catch (e) { navIgnore--; } }
+
+    function hidePage(dropHistory) {
+        const root = getRoot();
+        if (root) {
+            root.style.display = 'none';
+            root.classList.remove('flcc-sheet-locked');
+        }
+        document.documentElement.style.overscrollBehaviorY = '';
+        document.body.style.overscrollBehaviorY = '';
+        if (dropHistory && navRootPushed) {
+            navRootPushed = false;
+            popHist();
+        }
+    }
+
+    window.addEventListener('popstate', () => {
+        if (navIgnore > 0) { navIgnore--; return; }
+        const root = getRoot();
+        if (!root || root.style.display === 'none') return;
+        if (state.sheetOpen) {
+            closeSheet(true);
+            return;
+        }
+        if (state.saving) {
+            pushHist();
+            return;
+        }
+        if (window.__flaynityNeedsChannelBoot) {
+            pushHist();
+            notify('Complete your channel setup to continue.');
+        } else {
+            navRootPushed = false;
+            hidePage(false);
+        }
+    });
+
+    function formatDobDisplay(iso) {
+        if (!iso) return '';
+        const parts = iso.split('-');
+        if (parts.length !== 3) return iso;
+        const y = parseInt(parts[0], 10), m = parseInt(parts[1], 10) - 1, d = parseInt(parts[2], 10);
+        if (isNaN(y) || isNaN(m) || isNaN(d) || !MONTHS[m]) return iso;
+        return `${d} ${MONTHS[m]} ${y}`;
+    }
+
+    function getStepsStatus() {
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const validHandle = /^[a-z0-9._]{3,24}$/.test(state.handle.trim().replace(/^@/, '').toLowerCase());
+        const validDob = !!state.dob && !isNaN(Date.parse(state.dob)) && state.dob <= todayIso;
+        return [
+            { key: 'banner', label: 'Background', done: !!state.bannerFile },
+            { key: 'avatar', label: 'Photo', done: !!state.avatarFile },
+            { key: 'name', label: 'Name', done: state.name.trim().length >= 2 },
+            { key: 'handle', label: 'Handle', done: validHandle },
+            { key: 'bio', label: 'Description', done: state.bio.trim().length > 0 },
+            { key: 'category', label: 'Category', done: state.category.trim().length > 0 },
+            { key: 'phone', label: 'Phone Number', done: state.phone.trim().length > 0 },
+            { key: 'country', label: 'Country', done: state.country.trim().length > 0 },
+            { key: 'dob', label: 'Date of Birth', done: validDob },
+            { key: 'gender', label: 'Gender', done: state.gender.trim().length > 0 }
+        ];
+    }
+
+    function syncUI() {
+        const root = getRoot();
+        if (!root) return;
+
+        const setRow = (id, dispId, val, placeholder, isDone) => {
+            const row = root.querySelector('#' + id);
+            const disp = root.querySelector('#' + dispId);
+            if (disp) {
+                disp.textContent = val || placeholder;
+                disp.classList.toggle('filled', !!val);
+            }
+            if (row) row.classList.toggle('is-done', !!isDone);
+        };
+
+        const steps = getStepsStatus();
+        const stepMap = {};
+        steps.forEach(s => { stepMap[s.key] = s.done; });
+
+        setRow('flcc-row-name', 'flcc-disp-name', state.name, 'Add your channel name', stepMap.name);
+        setRow('flcc-row-handle', 'flcc-disp-handle', state.handle ? '@' + state.handle : '', 'Choose your @handle', stepMap.handle);
+        setRow('flcc-row-bio', 'flcc-disp-bio', state.bio, 'Tell viewers what your channel is about', stepMap.bio);
+
+        const catObj = CATEGORIES.find(c => c.name === state.category);
+        setRow('flcc-row-category', 'flcc-disp-category', state.category ? (catObj ? catObj.em + ' ' + catObj.name : state.category) : '', 'Select from 24 categories', stepMap.category);
+
+        const emailDisp = root.querySelector('#flcc-disp-email');
+        if (emailDisp) emailDisp.textContent = state.email || '—';
+
+        setRow('flcc-row-phone', 'flcc-disp-phone', state.phone, 'Add phone number', stepMap.phone);
+        setRow('flcc-row-country', 'flcc-disp-country', state.country ? (state.countryCode ? flagOf(state.countryCode) + ' ' + state.country : state.country) : '', 'Select country', stepMap.country);
+        setRow('flcc-row-dob', 'flcc-disp-dob', formatDobDisplay(state.dob), 'Select date of birth', stepMap.dob);
+        setRow('flcc-row-gender', 'flcc-disp-gender', state.gender, 'Select gender', stepMap.gender);
+
+        const doneCount = steps.filter(s => s.done).length;
+        const total = steps.length;
+        const pct = Math.round((doneCount / total) * 100);
+        const missing = steps.filter(s => !s.done);
+
+        const card = root.querySelector('#flcc-progress-card');
+        const title = root.querySelector('#flcc-step-title');
+        const sub = root.querySelector('#flcc-step-sub');
+        const pctEl = root.querySelector('#flcc-step-pct');
+        const fill = root.querySelector('#flcc-step-fill');
+        const chips = root.querySelector('#flcc-step-chips');
+        const badge = root.querySelector('#flcc-prog-badge');
+        const submitBtn = root.querySelector('#flcc-submit');
+
+        if (card) card.classList.toggle('all-done', doneCount === total);
+        if (title) title.textContent = `Step ${doneCount}/${total} Done`;
+        if (sub) sub.textContent = doneCount === total
+            ? 'All set! Tap Create Channel to launch'
+            : `${missing.length} remaining — tap a chip to jump right in`;
+        if (pctEl) pctEl.textContent = pct + '%';
+        if (fill) fill.style.width = pct + '%';
+        if (badge) badge.innerHTML = doneCount === total ? ICONS.check : ICONS.spark;
+
+        if (chips) {
+            if (missing.length === 0) {
+                chips.innerHTML = `<span class="flcc-step-ready-pill">${ICONS.okCircle} All 10 steps completed!</span>`;
+            } else {
+                chips.innerHTML = missing.map(m =>
+                    `<button type="button" class="flcc-step-chip" data-jump="${m.key}"><span class="flcc-chip-dot"></span>${esc(m.label)}</button>`
+                ).join('');
+            }
+        }
+        if (submitBtn && !state.saving) {
+            submitBtn.disabled = missing.length > 0;
+        }
+    }
+
+    // =========================================================================
+    // PREMIUM BOTTOM POP-UP CONTROLLER
+    // =========================================================================
+    function openSheet(opts) {
+        const root = getRoot();
+        if (!root) return;
+        const backdrop = root.querySelector('#flcc-sheet-backdrop');
+        const panel = root.querySelector('#flcc-sheet-panel');
+        const ico = root.querySelector('#flcc-sheet-ico');
+        const title = root.querySelector('#flcc-sheet-title');
+        const sub = root.querySelector('#flcc-sheet-sub');
+        const content = root.querySelector('#flcc-sheet-content');
+
+        ico.innerHTML = opts.icon || ICONS.spark;
+        title.textContent = opts.title || '';
+        sub.textContent = opts.sub || '';
+        content.innerHTML = opts.html || '';
+        content.scrollTop = 0;
+
+        panel.style.transform = '';
+        backdrop.style.display = 'flex';
+        root.classList.add('flcc-sheet-locked');
+        if (!state.sheetOpen) {
+            state.sheetOpen = true;
+            pushHist();
+        }
+        requestAnimationFrame(() => requestAnimationFrame(() => backdrop.classList.add('open')));
+        if (typeof opts.mount === 'function') opts.mount(content);
+    }
+
+    function closeSheet(viaPop) {
+        const root = getRoot();
+        if (!root || !state.sheetOpen) return;
+        state.sheetOpen = false;
+        const backdrop = root.querySelector('#flcc-sheet-backdrop');
+        const panel = root.querySelector('#flcc-sheet-panel');
+        backdrop.classList.remove('open');
+        root.classList.remove('flcc-sheet-locked');
+        if (!viaPop) popHist();
+        setTimeout(() => {
+            if (!state.sheetOpen) {
+                backdrop.style.display = 'none';
+                panel.style.transform = '';
+            }
+        }, 280);
+    }
+
+    // 1. Name Bottom Pop-up
+    function openNamePopup() {
+        openSheet({
+            icon: ICONS.name,
+            title: 'Channel Name',
+            sub: 'Your name can only be changed once every 7 days.',
+            html: `
+                <div class="flcc-in-box" id="flcc-p-box">
+                    <input id="flcc-p-in" class="flcc-in-field" type="text" maxlength="30" placeholder="Enter your channel name" autocomplete="off">
+                    <button type="button" class="flcc-in-clear" id="flcc-p-clr" hidden>×</button>
+                </div>
+                <div class="flcc-in-meta"><span class="flcc-in-err" id="flcc-p-err"></span><span class="flcc-in-count" id="flcc-p-cnt">0/30</span></div>
+                <button type="button" class="flcc-sheet-save" id="flcc-p-save">Save Name</button>
+            `,
+            mount(box) {
+                const inp = box.querySelector('#flcc-p-in');
+                const clr = box.querySelector('#flcc-p-clr');
+                const err = box.querySelector('#flcc-p-err');
+                const cnt = box.querySelector('#flcc-p-cnt');
+                const wrap = box.querySelector('#flcc-p-box');
+                const saveBtn = box.querySelector('#flcc-p-save');
+                inp.value = state.name || '';
+
+                const refresh = () => {
+                    cnt.textContent = inp.value.length + '/30';
+                    clr.hidden = !inp.value.length;
+                    saveBtn.disabled = inp.value.trim().length < 2;
+                };
+                const setErr = (m) => {
+                    err.textContent = m || '';
+                    wrap.classList.toggle('is-err', !!m);
+                    if (m) { wrap.classList.remove('shake'); void wrap.offsetWidth; wrap.classList.add('shake'); }
+                };
+                inp.addEventListener('input', () => { setErr(''); refresh(); });
+                clr.addEventListener('click', () => { inp.value = ''; setErr(''); refresh(); inp.focus(); });
+                const doSave = () => {
+                    const v = inp.value.trim();
+                    if (v.length < 2) { setErr('Name must be at least 2 characters.'); return; }
+                    state.name = v;
+                    syncUI();
+                    closeSheet(false);
+                };
+                saveBtn.addEventListener('click', doSave);
+                inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doSave(); } });
+                refresh();
+                setTimeout(() => { try { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } catch (e) {} }, 260);
+            }
+        });
+    }
+
+    // 2. Handle Bottom Pop-up (with live Firebase availability check)
+    function openHandlePopup() {
+        openSheet({
+            icon: ICONS.handle,
+            title: 'Channel Handle',
+            sub: 'Letters, numbers, underscores (_) and periods (.) only.',
+            html: `
+                <div class="flcc-in-box" id="flcc-h-box">
+                    <span class="flcc-in-prefix">@</span>
+                    <input id="flcc-h-in" class="flcc-in-field" type="text" maxlength="24" placeholder="yourhandle" autocapitalize="none" autocomplete="off" spellcheck="false">
+                    <button type="button" class="flcc-in-clear" id="flcc-h-clr" hidden>×</button>
+                </div>
+                <div class="flcc-live-check" id="flcc-h-live" hidden></div>
+                <div class="flcc-in-meta"><span class="flcc-in-err" id="flcc-h-err"></span><span class="flcc-in-count" id="flcc-h-cnt">0/24</span></div>
+                <button type="button" class="flcc-sheet-save" id="flcc-h-save" disabled>Save Handle</button>
+            `,
+            mount(box) {
+                const inp = box.querySelector('#flcc-h-in');
+                const clr = box.querySelector('#flcc-h-clr');
+                const live = box.querySelector('#flcc-h-live');
+                const err = box.querySelector('#flcc-h-err');
+                const cnt = box.querySelector('#flcc-h-cnt');
+                const wrap = box.querySelector('#flcc-h-box');
+                const saveBtn = box.querySelector('#flcc-h-save');
+                inp.value = state.handle || '';
+
+                let timer = null, tok = 0, liveStatus = '';
+                const setLive = (st, msg) => {
+                    liveStatus = st || '';
+                    if (!st) { live.hidden = true; live.className = 'flcc-live-check'; live.innerHTML = ''; return; }
+                    live.hidden = false;
+                    live.className = 'flcc-live-check ' + (st === 'ok' ? 'ok' : st === 'bad' ? 'bad' : '');
+                    live.innerHTML = (st === 'checking' ? '<span class="flcc-mini-spin"></span>' : st === 'ok' ? ICONS.okCircle : ICONS.badCircle) + `<span>${esc(msg)}</span>`;
+                };
+                const refresh = () => {
+                    cnt.textContent = inp.value.length + '/24';
+                    clr.hidden = !inp.value.length;
+                    saveBtn.disabled = liveStatus !== 'ok';
+                };
+                const runCheck = () => {
+                    clearTimeout(timer);
+                    const myTok = ++tok;
+                    const v = inp.value.replace(/^@/, '').toLowerCase().replace(/\s/g, '');
+                    if (v !== inp.value) inp.value = v;
+                    err.textContent = '';
+                    wrap.classList.remove('is-err');
+                    if (!v) { setLive('', ''); refresh(); return; }
+                    if (v.length < 3) { setLive('bad', 'At least 3 characters required'); refresh(); return; }
+                    if (!/^[a-z0-9._]+$/.test(v)) { setLive('bad', 'Only letters, numbers, _ and . allowed'); refresh(); return; }
+                    setLive('checking', 'Checking availability...');
+                    refresh();
+                    timer = setTimeout(async () => {
+                        try {
+                            const snap = await db.ref('channelHandles/' + v).once('value');
+                            if (myTok !== tok) return;
+                            const claimed = snap.val();
+                            if (claimed && claimed !== state.uid) {
+                                setLive('bad', 'Handle is already taken');
+                            } else {
+                                setLive('ok', 'Handle is available!');
+                            }
+                        } catch (e) {
+                            if (myTok !== tok) return;
+                            setLive('bad', 'Could not verify handle. Check connection.');
+                        }
+                        refresh();
+                    }, 380);
+                };
+                inp.addEventListener('input', runCheck);
+                clr.addEventListener('click', () => { inp.value = ''; runCheck(); inp.focus(); });
+                const doSave = () => {
+                    if (saveBtn.disabled) return;
+                    state.handle = inp.value.trim();
+                    syncUI();
+                    closeSheet(false);
+                };
+                saveBtn.addEventListener('click', doSave);
+                inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doSave(); } });
+                runCheck();
+                setTimeout(() => { try { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } catch (e) {} }, 260);
+            }
+        });
+    }
+
+    // 3. Description Bottom Pop-up
+    function openBioPopup() {
+        openSheet({
+            icon: ICONS.bio,
+            title: 'Channel Description',
+            sub: 'Introduce yourself and what viewers can expect from you.',
+            html: `
+                <div class="flcc-in-box" id="flcc-b-box">
+                    <textarea id="flcc-b-in" class="flcc-in-field" maxlength="160" placeholder="Write a short bio about your channel..."></textarea>
+                </div>
+                <div class="flcc-in-meta"><span class="flcc-in-err" id="flcc-b-err"></span><span class="flcc-in-count" id="flcc-b-cnt">0/160</span></div>
+                <button type="button" class="flcc-sheet-save" id="flcc-b-save">Save Description</button>
+            `,
+            mount(box) {
+                const inp = box.querySelector('#flcc-b-in');
+                const cnt = box.querySelector('#flcc-b-cnt');
+                const err = box.querySelector('#flcc-b-err');
+                const wrap = box.querySelector('#flcc-b-box');
+                const saveBtn = box.querySelector('#flcc-b-save');
+                inp.value = state.bio || '';
+                const refresh = () => {
+                    cnt.textContent = inp.value.length + '/160';
+                    saveBtn.disabled = !inp.value.trim().length;
+                };
+                inp.addEventListener('input', () => { err.textContent = ''; wrap.classList.remove('is-err'); refresh(); });
+                saveBtn.addEventListener('click', () => {
+                    const v = inp.value.trim();
+                    if (!v) { err.textContent = 'Please add a short description.'; wrap.classList.add('is-err'); return; }
+                    state.bio = v;
+                    syncUI();
+                    closeSheet(false);
+                });
+                refresh();
+                setTimeout(() => { try { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } catch (e) {} }, 260);
+            }
+        });
+    }
+
+    // 4. Category Bottom Pop-up (24 Categories + Search)
+    function openCategoryPopup() {
+        openSheet({
+            icon: ICONS.category,
+            title: 'Select Category',
+            sub: 'Choose from 24 creator categories that fit your channel.',
+            html: `
+                <div class="flcc-search-bar">${ICONS.search}<input id="flcc-cat-q" type="text" placeholder="Search categories..." autocomplete="off"></div>
+                <div class="flcc-cat-grid" id="flcc-cat-grid"></div>
+            `,
+            mount(box) {
+                const q = box.querySelector('#flcc-cat-q');
+                const grid = box.querySelector('#flcc-cat-grid');
+                const render = (term) => {
+                    const t = (term || '').trim().toLowerCase();
+                    const list = t ? CATEGORIES.filter(c => c.name.toLowerCase().includes(t) || c.tag.toLowerCase().includes(t)) : CATEGORIES;
+                    if (!list.length) {
+                        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:28px 12px;color:var(--flcc-muted);font-size:13.5px;font-weight:600;">No category matched “${esc(term)}”.</div>`;
+                        return;
+                    }
+                    grid.innerHTML = list.map(c => {
+                        const sel = state.category === c.name;
+                        return `<button type="button" class="flcc-cat-card${sel ? ' sel' : ''}" data-cat="${esc(c.name)}">
+                            <span class="flcc-cat-em">${c.em}</span>
+                            <span class="flcc-cat-txt">
+                                <div class="flcc-cat-name">${esc(c.name)}</div>
+                                <div class="flcc-cat-tag">${esc(c.tag)}</div>
+                            </span>
+                            <span class="flcc-cat-chk">✓</span>
+                        </button>`;
+                    }).join('');
+                };
+                render('');
+                q.addEventListener('input', () => render(q.value));
+                grid.addEventListener('click', e => {
+                    const card = e.target.closest('.flcc-cat-card');
+                    if (!card) return;
+                    state.category = card.dataset.cat;
+                    syncUI();
+                    closeSheet(false);
+                });
+            }
+        });
+    }
+
+    // Helper for parsing existing phone number
+    function parsePhone(val) {
+        const raw = String(val || '').trim();
+        let sel = null, nat = '';
+        if (raw.charAt(0) === '+') {
+            const digits = raw.replace(/\D/g, '');
+            let best = null;
+            DIAL_LIST.forEach(c => {
+                if (digits.indexOf(c.dial) === 0) {
+                    if (!best || c.dial.length > best.dial.length || (c.dial.length === best.dial.length && (c.code === 'US' || c.code === 'RU'))) best = c;
+                }
+            });
+            if (best) { sel = best; nat = digits.slice(best.dial.length); }
+        }
+        if (!sel) {
+            const cn = (state.country || '').trim().toLowerCase();
+            sel = DIAL_LIST.find(c => c.name.toLowerCase() === cn) || DIAL_LIST.find(c => c.code === 'BD') || DIAL_LIST[0];
+            nat = raw.replace(/\D/g, '');
+        }
+        return { sel, nat };
+    }
+
+    // 5. Phone Number Bottom Pop-up (with inline 195+ dial code picker)
+    function openPhonePopup() {
+        const init = parsePhone(state.phone);
+        let selectedDial = init.sel;
+        let currentNat = init.nat;
+
+        function renderMainPhone(box) {
+            box.innerHTML = `
+                <button type="button" class="flcc-phone-country-btn" id="flcc-ph-pick">
+                    <span class="flcc-flag">${flagOf(selectedDial.code)}</span>
+                    <span class="flcc-opt-name">${esc(selectedDial.name)}</span>
+                    <span class="flcc-dial-code">+${esc(selectedDial.dial)}</span>
+                    <span class="flcc-chev"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+                </button>
+                <div class="flcc-in-box" id="flcc-ph-box">
+                    <span class="flcc-phone-dial-sep">+${esc(selectedDial.dial)}</span>
+                    <input id="flcc-ph-in" class="flcc-in-field" type="tel" inputmode="numeric" maxlength="16" placeholder="Phone number" autocomplete="tel-national">
+                </div>
+                <div class="flcc-in-meta"><span class="flcc-in-err" id="flcc-ph-err"></span></div>
+                ${state.phone ? '<button type="button" class="flcc-link-danger" id="flcc-ph-rm">Remove phone number</button>' : ''}
+                <button type="button" class="flcc-sheet-save" id="flcc-ph-save">Save Phone Number</button>
+            `;
+            const inp = box.querySelector('#flcc-ph-in');
+            const err = box.querySelector('#flcc-ph-err');
+            const wrap = box.querySelector('#flcc-ph-box');
+            const saveBtn = box.querySelector('#flcc-ph-save');
+            inp.value = currentNat;
+
+            const natVal = () => inp.value.replace(/\D/g, '').replace(/^0/, '');
+            const refresh = () => { saveBtn.disabled = natVal().length < 5; };
+            const setErr = (m) => {
+                err.textContent = m || '';
+                wrap.classList.toggle('is-err', !!m);
+                if (m) { wrap.classList.remove('shake'); void wrap.offsetWidth; wrap.classList.add('shake'); }
+            };
+
+            inp.addEventListener('input', () => {
+                inp.value = inp.value.replace(/\D/g, '').slice(0, 15);
+                currentNat = inp.value;
+                setErr('');
+                refresh();
+            });
+            box.querySelector('#flcc-ph-pick').addEventListener('click', () => renderDialPicker(box));
+            const rm = box.querySelector('#flcc-ph-rm');
+            if (rm) rm.addEventListener('click', () => { state.phone = ''; syncUI(); closeSheet(false); });
+
+            const doSave = () => {
+                const n = natVal();
+                if (selectedDial.dial === '880') {
+                    if (!/^1[3-9]\d{8}$/.test(n)) { setErr('Enter a valid Bangladesh mobile number (e.g. 1712345678).'); return; }
+                } else if (n.length < 6 || n.length > 14) {
+                    setErr('Please enter a valid phone number.'); return;
+                }
+                state.phone = '+' + selectedDial.dial + n;
+                syncUI();
+                closeSheet(false);
+            };
+            saveBtn.addEventListener('click', doSave);
+            inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doSave(); } });
+            refresh();
+            setTimeout(() => { try { inp.focus(); } catch (e) {} }, 220);
+        }
+
+        function renderDialPicker(box) {
+            box.innerHTML = `
+                <button type="button" class="flcc-sub-back" id="flcc-dial-back">← Back to phone number</button>
+                <div class="flcc-search-bar">${ICONS.search}<input id="flcc-dial-q" type="text" placeholder="Search country or dial code..." autocomplete="off"></div>
+                <div class="flcc-list-wrap" id="flcc-dial-list"></div>
+            `;
+            const q = box.querySelector('#flcc-dial-q');
+            const list = box.querySelector('#flcc-dial-list');
+            const paint = (term) => {
+                const t = (term || '').trim().toLowerCase().replace(/^\+/, '');
+                const items = t ? DIAL_LIST.filter(c => c.name.toLowerCase().includes(t) || c.dial.startsWith(t)) : DIAL_LIST;
+                list.innerHTML = items.length ? items.map(c =>
+                    `<button type="button" class="flcc-opt-row${c.code === selectedDial.code ? ' sel' : ''}" data-code="${c.code}">
+                        <span class="flcc-flag">${flagOf(c.code)}</span>
+                        <span class="flcc-opt-name">${esc(c.name)}</span>
+                        <span class="flcc-dial-code">+${c.dial}</span>
+                    </button>`
+                ).join('') : '<div style="text-align:center;padding:28px;color:var(--flcc-muted);font-size:13.5px;">No country found.</div>';
+            };
+            paint('');
+            q.addEventListener('input', () => paint(q.value));
+            box.querySelector('#flcc-dial-back').addEventListener('click', () => renderMainPhone(box));
+            list.addEventListener('click', e => {
+                const row = e.target.closest('.flcc-opt-row');
+                if (!row) return;
+                const found = DIAL_LIST.find(c => c.code === row.dataset.code);
+                if (found) selectedDial = found;
+                renderMainPhone(box);
+            });
+            setTimeout(() => { try { q.focus(); } catch (e) {} }, 120);
+        }
+
+        openSheet({
+            icon: ICONS.phone,
+            title: 'Phone Number',
+            sub: 'Choose your country code and enter your mobile number.',
+            html: '',
+            mount: renderMainPhone
+        });
+    }
+
+    // 6. Country Bottom Pop-up (200+ Countries + Search)
+    function openCountryPopup() {
+        openSheet({
+            icon: ICONS.country,
+            title: 'Select Country',
+            sub: 'Choose the country where your channel is based.',
+            html: `
+                <div class="flcc-search-bar">${ICONS.search}<input id="flcc-cnt-q" type="text" placeholder="Search country..." autocomplete="off"></div>
+                <div class="flcc-list-wrap" id="flcc-cnt-list"></div>
+            `,
+            mount(box) {
+                const q = box.querySelector('#flcc-cnt-q');
+                const list = box.querySelector('#flcc-cnt-list');
+                const cur = (state.country || '').toLowerCase();
+                const render = (term) => {
+                    const t = (term || '').trim().toLowerCase();
+                    const items = t ? COUNTRIES.filter(c => c.name.toLowerCase().includes(t)) : COUNTRIES;
+                    let html = items.map(c => {
+                        const sel = cur === c.name.toLowerCase();
+                        return `<button type="button" class="flcc-opt-row${sel ? ' sel' : ''}" data-code="${c.code}" data-name="${esc(c.name)}">
+                            <span class="flcc-flag">${flagOf(c.code)}</span>
+                            <span class="flcc-opt-name">${esc(c.name)}</span>
+                            ${sel ? '<span class="flcc-opt-tick">✓</span>' : ''}
+                        </button>`;
+                    }).join('');
+                    if (!t || 'others'.includes(t)) {
+                        const selOth = cur === 'others';
+                        html += `<button type="button" class="flcc-opt-row${selOth ? ' sel' : ''}" data-code="" data-name="Others">
+                            <span class="flcc-flag">🌐</span>
+                            <span class="flcc-opt-name">Others</span>
+                            ${selOth ? '<span class="flcc-opt-tick">✓</span>' : ''}
+                        </button>`;
+                    }
+                    if (!html) html = `<div style="text-align:center;padding:28px;color:var(--flcc-muted);font-size:13.5px;">No country found for “${esc(term)}”.</div>`;
+                    list.innerHTML = html;
+                };
+                render('');
+                q.addEventListener('input', () => { render(q.value); list.scrollTop = 0; });
+                list.addEventListener('click', e => {
+                    const row = e.target.closest('.flcc-opt-row');
+                    if (!row) return;
+                    state.country = row.dataset.name;
+                    state.countryCode = row.dataset.code || '';
+                    syncUI();
+                    closeSheet(false);
+                });
+            }
+        });
+    }
+
+    // 7. Date of Birth Bottom Pop-up (Premium Day / Month / Year Selector)
+    function openDobPopup() {
+        const now = new Date();
+        const curYear = now.getFullYear();
+        let initY = curYear - 18, initM = 0, initD = 1;
+        if (state.dob && /^\d{4}-\d{2}-\d{2}$/.test(state.dob)) {
+            const p = state.dob.split('-');
+            initY = parseInt(p[0], 10); initM = parseInt(p[1], 10) - 1; initD = parseInt(p[2], 10);
+        }
+        const yearsHtml = Array.from({ length: 100 }, (_, i) => curYear - i)
+            .map(y => `<option value="${y}"${y === initY ? ' selected' : ''}>${y}</option>`).join('');
+        const monthsHtml = MONTHS
+            .map((m, i) => `<option value="${i}"${i === initM ? ' selected' : ''}>${m}</option>`).join('');
+
+        openSheet({
+            icon: ICONS.dob,
+            title: 'Date of Birth',
+            sub: 'Your birthday helps personalize your Flaynity experience.',
+            html: `
+                <div class="flcc-dob-preview" id="flcc-dob-prev"></div>
+                <div class="flcc-dob-grid">
+                    <div class="flcc-dob-col">
+                        <label for="flcc-dob-d">Day</label>
+                        <select id="flcc-dob-d" class="flcc-dob-select"></select>
+                    </div>
+                    <div class="flcc-dob-col">
+                        <label for="flcc-dob-m">Month</label>
+                        <select id="flcc-dob-m" class="flcc-dob-select">${monthsHtml}</select>
+                    </div>
+                    <div class="flcc-dob-col">
+                        <label for="flcc-dob-y">Year</label>
+                        <select id="flcc-dob-y" class="flcc-dob-select">${yearsHtml}</select>
+                    </div>
+                </div>
+                <div class="flcc-in-meta"><span class="flcc-in-err" id="flcc-dob-err"></span></div>
+                <button type="button" class="flcc-sheet-save" id="flcc-dob-save">Save Date of Birth</button>
+            `,
+            mount(box) {
+                const dSel = box.querySelector('#flcc-dob-d');
+                const mSel = box.querySelector('#flcc-dob-m');
+                const ySel = box.querySelector('#flcc-dob-y');
+                const prev = box.querySelector('#flcc-dob-prev');
+                const err = box.querySelector('#flcc-dob-err');
+                const saveBtn = box.querySelector('#flcc-dob-save');
+
+                let selDay = initD;
+                const fillDays = () => {
+                    const y = parseInt(ySel.value, 10), m = parseInt(mSel.value, 10);
+                    const maxD = new Date(y, m + 1, 0).getDate();
+                    if (selDay > maxD) selDay = maxD;
+                    dSel.innerHTML = Array.from({ length: maxD }, (_, i) => i + 1)
+                        .map(d => `<option value="${d}"${d === selDay ? ' selected' : ''}>${d}</option>`).join('');
+                };
+                const getIso = () => {
+                    const y = ySel.value;
+                    const m = String(parseInt(mSel.value, 10) + 1).padStart(2, '0');
+                    const d = String(parseInt(dSel.value, 10)).padStart(2, '0');
+                    return `${y}-${m}-${d}`;
+                };
+                const refresh = () => {
+                    selDay = parseInt(dSel.value, 10) || selDay;
+                    const iso = getIso();
+                    prev.textContent = formatDobDisplay(iso);
+                    const todayIso = new Date().toISOString().slice(0, 10);
+                    if (iso > todayIso) {
+                        err.textContent = 'Date of birth cannot be in the future.';
+                        saveBtn.disabled = true;
+                    } else {
+                        err.textContent = '';
+                        saveBtn.disabled = false;
+                    }
+                };
+                fillDays();
+                refresh();
+                mSel.addEventListener('change', () => { fillDays(); refresh(); });
+                ySel.addEventListener('change', () => { fillDays(); refresh(); });
+                dSel.addEventListener('change', refresh);
+                saveBtn.addEventListener('click', () => {
+                    if (saveBtn.disabled) return;
+                    state.dob = getIso();
+                    syncUI();
+                    closeSheet(false);
+                });
+            }
+        });
+    }
+
+    // 8. Gender Bottom Pop-up
+    function openGenderPopup() {
+        const opts = [
+            { val: 'Male', ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="14" r="5"/><path d="M13.5 10.5L20 4M15 4h5v5"/></svg>' },
+            { val: 'Female', ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/></svg>' },
+            { val: 'Non-binary', ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v5.5M12 16.5V22M7 5l10 0"/></svg>' },
+            { val: 'Prefer not to say', ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12h6"/></svg>' }
+        ];
+        openSheet({
+            icon: ICONS.gender,
+            title: 'Select Gender',
+            sub: 'Choose the option that best represents you.',
+            html: `<div class="flcc-gender-list">${opts.map(o => `
+                <button type="button" class="flcc-gender-card${state.gender === o.val ? ' sel' : ''}" data-g="${esc(o.val)}">
+                    <span class="flcc-gender-ico">${o.ico}</span>
+                    <span class="flcc-gender-label">${esc(o.val)}</span>
+                    <span class="flcc-radio"></span>
+                </button>`).join('')}</div>`,
+            mount(box) {
+                box.querySelector('.flcc-gender-list').addEventListener('click', e => {
+                    const card = e.target.closest('.flcc-gender-card');
+                    if (!card) return;
+                    state.gender = card.dataset.g;
+                    syncUI();
+                    closeSheet(false);
+                });
+            }
+        });
+    }
+
+    // =========================================================================
+    // SCREEN-CENTER PREMIUM LOADING & SUCCESS ANIMATION
+    // =========================================================================
+    function showCenterLoading(subtitle) {
+        const root = getRoot();
+        if (!root) return;
+        const overlay = root.querySelector('#flcc-launch-overlay');
+        const card = root.querySelector('#flcc-launch-card');
+        if (!overlay || !card) return;
+        card.innerHTML = `
+            <div class="flcc-loader-wrap">
+                <div class="flcc-ring-outer"></div>
+                <div class="flcc-ring-inner"></div>
+                <div class="flcc-ring-core">${ICONS.spark}</div>
+            </div>
+            <h2 class="flcc-launch-title">Creating Channel</h2>
+            <p class="flcc-launch-sub" id="flcc-launch-sub">${esc(subtitle || 'Setting up your creator space...')}</p>
+        `;
+        overlay.classList.add('show');
+    }
+
+    function updateCenterLoadingText(subtitle) {
+        const root = getRoot();
+        const el = root && root.querySelector('#flcc-launch-sub');
+        if (el) el.textContent = subtitle;
+    }
+
+    function showCenterSuccess(handle) {
+        const root = getRoot();
+        if (!root) return;
+        const overlay = root.querySelector('#flcc-launch-overlay');
+        const card = root.querySelector('#flcc-launch-card');
+        if (!overlay || !card) return;
+
+        const colors = ['#FF2E74', '#10B981', '#F59E0B', '#8B5CF6', '#3B82F6', '#EC4899'];
+        const particles = Array.from({ length: 18 }, (_, i) => {
+            const angle = (i / 18) * Math.PI * 2;
+            const dist = 68 + (i % 3) * 28;
+            const tx = Math.round(Math.cos(angle) * dist) + 'px';
+            const ty = Math.round(Math.sin(angle) * dist) + 'px';
+            const rot = (i * 47) + 'deg';
+            const col = colors[i % colors.length];
+            return `<i style="background:${col};--tx:${tx};--ty:${ty};--rot:${rot}"></i>`;
+        }).join('');
+
+        card.innerHTML = `
+            <div class="flcc-confetti">${particles}</div>
+            <div class="flcc-success-wrap">
+                <div class="flcc-success-pulse"></div>
+                <div class="flcc-success-circle">
+                    <svg viewBox="0 0 24 24"><path d="M5 12.8l4.5 4.5L19 7.2"/></svg>
+                </div>
+            </div>
+            <h2 class="flcc-launch-title">Channel Created!</h2>
+            <p class="flcc-launch-sub">Welcome to Flaynity, <b>@${esc(handle)}</b></p>
+        `;
+        overlay.classList.add('show');
+        try { if (typeof playUI === 'function') playUI('success'); } catch (e) {}
+    }
+
+    function hideCenterOverlay() {
+        const root = getRoot();
+        const overlay = root && root.querySelector('#flcc-launch-overlay');
+        if (overlay) overlay.classList.remove('show');
+    }
+
+    // =========================================================================
+    // WIRE ALL EVENTS ONCE
+    // =========================================================================
+    function wireEvents() {
+        const root = getRoot();
+        if (!root || state.wired) return;
+        state.wired = true;
+
+        const bannerInput = root.querySelector('#flcc-banner-file');
+        const avatarInput = root.querySelector('#flcc-avatar-file');
+        const statusEl = root.querySelector('#flcc-status');
+
+        root.querySelector('#flcc-change').addEventListener('click', () => bannerInput.click());
+        root.querySelector('#flcc-avatar-trigger').addEventListener('click', () => avatarInput.click());
+
+        bannerInput.addEventListener('change', () => {
+            const file = bannerInput.files && bannerInput.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) { statusEl.textContent = 'Please choose an image file.'; return; }
+            state.bannerFile = file;
+            const reader = new FileReader();
+            reader.onload = () => {
+                const hero = root.querySelector('#flcc-banner');
+                hero.style.backgroundImage = 'url("' + String(reader.result).replace(/"/g, '%22') + '")';
+                hero.classList.add('has-banner');
+                const txt = root.querySelector('#flcc-cover-btn-txt');
+                if (txt) txt.textContent = 'Change Background';
+            };
+            reader.readAsDataURL(file);
+            statusEl.textContent = '';
+            syncUI();
+        });
+
+        avatarInput.addEventListener('change', () => {
+            const file = avatarInput.files && avatarInput.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) { statusEl.textContent = 'Please choose an image file.'; return; }
+            state.avatarFile = file;
+            const reader = new FileReader();
+            reader.onload = () => {
+                root.querySelector('#flcc-avatar-box').innerHTML = '<img alt="Channel photo" src="' + reader.result + '">';
+            };
+            reader.readAsDataURL(file);
+            statusEl.textContent = '';
+            syncUI();
+        });
+
+        // Row click -> Premium Bottom Pop-up
+        const popupMap = {
+            banner: () => bannerInput.click(),
+            avatar: () => avatarInput.click(),
+            name: openNamePopup,
+            handle: openHandlePopup,
+            bio: openBioPopup,
+            category: openCategoryPopup,
+            phone: openPhonePopup,
+            country: openCountryPopup,
+            dob: openDobPopup,
+            gender: openGenderPopup
+        };
+
+        root.querySelectorAll('.flcc-row[data-popup]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const fn = popupMap[btn.dataset.popup];
+                if (fn) fn();
+            });
+        });
+
+        // Clicking any remaining step chip jumps directly to that picker/pop-up
+        root.querySelector('#flcc-step-chips').addEventListener('click', e => {
+            const chip = e.target.closest('.flcc-step-chip');
+            if (!chip) return;
+            const fn = popupMap[chip.dataset.jump];
+            if (fn) fn();
+        });
+
+        // Bottom Pop-up close & swipe-down gesture
+        const backdrop = root.querySelector('#flcc-sheet-backdrop');
+        const panel = root.querySelector('#flcc-sheet-panel');
+        const grab = root.querySelector('#flcc-sheet-grab');
+        backdrop.addEventListener('click', e => { if (e.target === backdrop) closeSheet(false); });
+        root.querySelector('#flcc-sheet-close').addEventListener('click', () => closeSheet(false));
+
+        let dragY = 0, startY = 0, dragging = false;
+        grab.addEventListener('touchstart', e => {
+            dragging = true; startY = e.touches[0].clientY; dragY = 0;
+            panel.style.transition = 'none';
+        }, { passive: true });
+        grab.addEventListener('touchmove', e => {
+            if (!dragging) return;
+            dragY = Math.max(0, e.touches[0].clientY - startY);
+            panel.style.transform = `translateY(${dragY}px)`;
+        }, { passive: true });
+        const endDrag = () => {
+            if (!dragging) return;
+            dragging = false;
+            panel.style.transition = '';
+            if (dragY > 90) closeSheet(false);
+            else panel.style.transform = '';
+        };
+        grab.addEventListener('touchend', endDrag);
+        grab.addEventListener('touchcancel', endDrag);
+
+        // Top Back button
+        root.querySelector('#flcc-back').addEventListener('click', () => {
+            if (state.sheetOpen) { closeSheet(false); return; }
+            if (state.saving) return;
+            if (window.__flaynityNeedsChannelBoot) {
+                statusEl.textContent = 'Complete all 10 steps to continue.';
+                notify('Create your channel to continue.');
+                return;
+            }
+            hidePage(true);
+        });
+
+        // Prevent pull-to-refresh inside Create Channel
+        let ptrSy = 0;
+        root.addEventListener('touchstart', e => { ptrSy = e.touches[0].clientY; }, { passive: true });
+        root.addEventListener('touchmove', e => {
+            if (root.scrollTop <= 0 && e.touches[0].clientY > ptrSy && !e.target.closest('.flcc-sheet-content')) {
+                if (e.cancelable) e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Submit Create Channel
+        root.querySelector('#flcc-submit').addEventListener('click', async () => {
+            if (state.saving) return;
+            const missing = getStepsStatus().filter(s => !s.done);
+            if (missing.length) {
+                statusEl.textContent = `Please complete: ${missing.map(m => m.label).join(', ')}`;
+                syncUI();
+                return;
+            }
+            const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
+            if (!user) { notify('Please sign in first.'); return; }
+
+            const name = state.name.trim();
+            const handle = state.handle.trim().replace(/^@/, '').toLowerCase();
+            if (name.length < 2) { statusEl.textContent = 'Enter a channel name (at least 2 characters).'; return; }
+            if (!/^[a-z0-9._]{3,24}$/.test(handle)) { statusEl.textContent = 'Handle must be 3–24 letters, numbers, dot or underscore.'; return; }
+
+            state.saving = true;
+            statusEl.textContent = '';
+            root.querySelector('#flcc-submit').disabled = true;
+            showCenterLoading('Uploading background banner...');
+
+            try {
+                let bannerUrl = '', avatarUrl = '';
+                if (state.bannerFile) {
+                    if (typeof uploadImageToR2 !== 'function') throw new Error('Image upload service is unavailable.');
+                    bannerUrl = await uploadImageToR2(state.bannerFile, 'channel-banners');
+                }
+                updateCenterLoadingText('Uploading channel photo...');
+                if (state.avatarFile) {
+                    if (typeof uploadImageToR2 !== 'function') throw new Error('Image upload service is unavailable.');
+                    avatarUrl = await uploadImageToR2(state.avatarFile, 'channel-images');
+                }
+                updateCenterLoadingText('Verifying handle & saving channel...');
+                const handleSnap = await db.ref('channelHandles/' + handle).once('value');
+                const claimed = handleSnap.val();
+                if (claimed && claimed !== user.uid) {
+                    throw new Error('This handle is already taken. Try another one.');
+                }
+
+                const payload = {
+                    uid: user.uid,
+                    userId: user.uid,
+                    channelName: name,
+                    handle: handle,
+                    description: state.bio.trim(),
+                    bio: state.bio.trim(),
+                    category: state.category,
+                    email: user.email || '',
+                    phone: state.phone.trim(),
+                    country: state.country.trim(),
+                    countryCode: state.countryCode || '',
+                    dateOfBirth: state.dob,
+                    gender: state.gender,
+                    avatarUrl: avatarUrl || user.photoURL || '',
+                    channelImageUrl: avatarUrl || user.photoURL || '',
+                    bannerUrl: bannerUrl,
+                    channelBannerUrl: bannerUrl,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP,
+                    updatedAt: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                const updates = {};
+                updates['channels/' + user.uid] = payload;
+                updates['users/' + user.uid + '/channelName'] = name;
+                updates['users/' + user.uid + '/handle'] = handle;
+                updates['users/' + user.uid + '/channelCreated'] = true;
+                if (payload.phone) updates['users/' + user.uid + '/phone'] = payload.phone;
+                updates['channelHandles/' + handle] = user.uid;
+
+                await db.ref().update(updates);
+
+                window.__flaynityChannelCreatedUid = user.uid;
+                try { localStorage.setItem('flaynity_channel_created:' + user.uid, '1'); } catch (e) {}
+                if (typeof currentChannelData !== 'undefined') currentChannelData = payload;
+                try {
+                    localStorage.setItem('flaynity_channel_cache:' + user.uid, JSON.stringify(payload));
+                    localStorage.setItem('flaynity_user_session_cache', JSON.stringify(payload));
+                } catch (e) {}
+
+                // Show Center Success Animation!
+                showCenterSuccess(handle);
+
+                setTimeout(() => {
+                    hideCenterOverlay();
+                    state.saving = false;
+                    hidePage(true);
+                    notify('Your channel is ready!', 'success');
+                    if (window.__flaynityNeedsChannelBoot) {
+                        window.__flaynityNeedsChannelBoot = false;
+                        if (typeof window.__flaynityAuthHandler === 'function' && auth.currentUser) {
+                            window.__flaynityAuthHandler(auth.currentUser);
+                        } else {
+                            location.reload();
+                        }
+                    } else if (typeof initYouTabUI === 'function') {
+                        initYouTabUI();
+                    }
+                }, 1650);
+            } catch (err) {
+                hideCenterOverlay();
+                state.saving = false;
+                statusEl.textContent = (err && err.message) || 'Could not create channel. Please try again.';
+                notify(statusEl.textContent, 'error');
+                syncUI();
+            }
+        });
+    }
+
+    // =========================================================================
+    // PUBLIC ENTRYPOINT: window.showCreateChannelPage(force)
+    // =========================================================================
+    window.showCreateChannelPage = async function (force) {
+        const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
+        if (!user) return;
+        let channel = null;
+        try { const snap = await db.ref('channels/' + user.uid).once('value'); channel = snap.val(); } catch (e) {}
+        let localHas = false;
+        try {
+            localHas = localStorage.getItem('flaynity_channel_created:' + user.uid) === '1' ||
+                       !!localStorage.getItem('flaynity_channel_cache:' + user.uid);
+        } catch (e) {}
+        if (!force && (channel || localHas || window.__flaynityChannelCreatedUid === user.uid)) return;
+
+        const root = getRoot();
+        if (!root) return;
+        wireEvents();
+
+        if (state.uid && state.uid !== user.uid) {
+            state.bannerFile = null; state.avatarFile = null;
+            state.name = ''; state.handle = ''; state.bio = '';
+            state.category = ''; state.phone = ''; state.country = '';
+            state.countryCode = ''; state.dob = ''; state.gender = '';
+            const hero = root.querySelector('#flcc-banner');
+            if (hero) { hero.style.backgroundImage = ''; hero.classList.remove('has-banner'); }
+            const ct = root.querySelector('#flcc-cover-btn-txt');
+            if (ct) ct.textContent = 'Add Background';
+            const av = root.querySelector('#flcc-avatar-box');
+            if (av) av.innerHTML = '<div class="flcc-avatar-ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Add Photo</span></div>';
+        }
+        state.uid = user.uid;
+        state.email = user.email || '';
+        if (!state.name && user.displayName) state.name = user.displayName.slice(0, 30);
+        if (!state.handle) {
+            state.handle = String(user.displayName || (user.email ? user.email.split('@')[0] : '') || '')
+                .toLowerCase().replace(/[^a-z0-9._]/g, '').slice(0, 24);
+        }
+        if (!state.phone) {
+            state.phone = user.phoneNumber || '';
+            if (!state.phone) {
+                try {
+                    db.ref('users/' + user.uid + '/phone').once('value').then(sn => {
+                        if (sn.val() && !state.phone) { state.phone = sn.val(); syncUI(); }
+                    });
+                } catch (e) {}
+            }
+        }
+
+        document.documentElement.style.overscrollBehaviorY = 'none';
+        document.body.style.overscrollBehaviorY = 'none';
+        root.style.display = 'block';
+        root.scrollTop = 0;
+        if (!navRootPushed) {
+            navRootPushed = true;
+            pushHist();
+        }
+        syncUI();
+    };
+})();
+</script>
+
 </body></html>

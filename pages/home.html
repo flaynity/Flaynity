@@ -2232,6 +2232,247 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 .fc-ev-sec:disabled{opacity:.5;cursor:not-allowed;}
 .fc-ev-out{margin-top:14px;border:0;background:transparent;color:var(--fc-mut);font:700 12.5px 'Plus Jakarta Sans',sans-serif;padding:6px 10px;cursor:pointer;}
 
+/* ===== PREMIUM CREATE CHANNEL WELCOME POPUP (POST-LOGIN / SIGN-UP) ===== */
+#fl-cc-welcome-popup {
+  --ccw-card: #FFFFFF;
+  --ccw-soft: #F4F5FA;
+  --ccw-ink: #0F1118;
+  --ccw-mut: #646B7C;
+  --ccw-bd: rgba(15, 17, 24, 0.08);
+  --ccw-grad: linear-gradient(135deg, #FF2E74 0%, #D80E45 55%, #8B5CF6 100%);
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  z-index: 2147483150 !important;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(8, 9, 15, 0);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  transition: background 0.28s ease, backdrop-filter 0.28s ease, -webkit-backdrop-filter 0.28s ease;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  box-sizing: border-box;
+}
+[data-theme="dark"] #fl-cc-welcome-popup {
+  --ccw-card: #14161F;
+  --ccw-soft: #1E212D;
+  --ccw-ink: #F8F9FC;
+  --ccw-mut: #9BA2B8;
+  --ccw-bd: rgba(255, 255, 255, 0.1);
+}
+#fl-cc-welcome-popup.show {
+  display: flex;
+}
+#fl-cc-welcome-popup.open {
+  background: rgba(8, 9, 15, 0.68);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+#fl-cc-welcome-popup * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+.ccw-card {
+  position: relative;
+  width: min(372px, 100%);
+  background: var(--ccw-card);
+  color: var(--ccw-ink);
+  border: 1px solid var(--ccw-bd);
+  border-radius: 32px;
+  padding: 28px 22px 22px;
+  text-align: center;
+  overflow: hidden;
+  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 46, 116, 0.14);
+  opacity: 0;
+  transform: translateY(24px) scale(0.93);
+  transition: opacity 0.3s ease, transform 0.38s cubic-bezier(0.22, 1.25, 0.36, 1);
+}
+#fl-cc-welcome-popup.open .ccw-card {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.ccw-glow {
+  position: absolute;
+  top: -70px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  height: 150px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 46, 116, 0.28) 0%, rgba(139, 92, 246, 0.16) 50%, transparent 75%);
+  pointer-events: none;
+}
+.ccw-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--ccw-bd);
+  background: var(--ccw-soft);
+  color: var(--ccw-mut);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.ccw-close:active { transform: scale(0.9); }
+.ccw-close svg { width: 16px; height: 16px; }
+.ccw-emblem {
+  position: relative;
+  width: 82px;
+  height: 82px;
+  margin: 4px auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ccw-pulse {
+  position: absolute;
+  inset: -4px;
+  border-radius: 28px;
+  background: var(--ccw-grad);
+  opacity: 0.24;
+  animation: fcPulse 2s ease-out infinite;
+}
+.ccw-badge {
+  position: relative;
+  z-index: 2;
+  width: 74px;
+  height: 74px;
+  border-radius: 24px;
+  background: var(--ccw-grad);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 14px 30px rgba(216, 14, 69, 0.36);
+  overflow: hidden;
+}
+.ccw-badge img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ccw-badge svg { width: 34px; height: 34px; }
+.ccw-verified-dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  z-index: 3;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #10B981;
+  border: 3px solid var(--ccw-card);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+}
+.ccw-verified-dot svg { width: 13px; height: 13px; }
+.ccw-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(216, 14, 69, 0.1);
+  color: #D80E45;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+[data-theme="dark"] .ccw-pill {
+  background: rgba(255, 46, 116, 0.18);
+  color: #FF5C8F;
+}
+.ccw-title {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.4px;
+  line-height: 1.22;
+}
+.ccw-sub {
+  margin: 0 auto 18px;
+  max-width: 300px;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: var(--ccw-mut);
+}
+.ccw-perks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+.ccw-perk {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: var(--ccw-soft);
+  border: 1px solid var(--ccw-bd);
+}
+.ccw-perk-ic {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--p-c, #D80E45);
+  background: var(--p-bg, rgba(216, 14, 69, 0.12));
+}
+.ccw-perk-ic svg { width: 17px; height: 17px; }
+.ccw-perk-tx { min-width: 0; flex: 1; }
+.ccw-perk-tx b { display: block; font-size: 13px; font-weight: 800; line-height: 1.2; }
+.ccw-perk-tx span { display: block; font-size: 11.5px; font-weight: 500; color: var(--ccw-mut); margin-top: 2px; }
+.ccw-cta {
+  width: 100%;
+  height: 54px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--ccw-grad);
+  color: #FFFFFF;
+  font: 800 15.5px 'Plus Jakarta Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(216, 14, 69, 0.34);
+  transition: transform 0.14s ease, box-shadow 0.18s ease;
+}
+.ccw-cta:active { transform: scale(0.975); }
+.ccw-cta svg { width: 19px; height: 19px; }
+.ccw-later {
+  margin-top: 10px;
+  width: 100%;
+  height: 44px;
+  border: 1px solid var(--ccw-bd);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--ccw-mut);
+  font: 700 13.5px 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.ccw-later:active { background: var(--ccw-soft); color: var(--ccw-ink); }
+
+
 </style></head><body>
 <div class="toast-container" id="toast-container"></div>
 
@@ -2730,6 +2971,7 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 </div>
 <div id="flcc-launch-overlay" role="alertdialog" aria-live="assertive"><div class="fc-lcard" id="flcc-lcard"></div></div>
 <div id="fl-email-verify-overlay" role="dialog" aria-modal="true"><div class="fc-lcard" id="fl-ev-card"></div></div>
+<div id="fl-cc-welcome-popup" role="dialog" aria-modal="true" aria-label="Create Channel"><div class="ccw-card" id="fl-ccw-card"></div></div>
 
 <script>
 (function installCreateChannelAndEmailVerifyInHome() {
@@ -2827,7 +3069,7 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
   const popH = () => { navIgnore++; try { history.back(); } catch(e){ navIgnore--; } };
 
   function ensureOverlaysOnBody() {
-    ['flcc-sheet-backdrop', 'flcc-launch-overlay', 'fl-email-verify-overlay'].forEach(id => {
+    ['flcc-sheet-backdrop', 'flcc-launch-overlay', 'fl-email-verify-overlay', 'fl-cc-welcome-popup'].forEach(id => {
       const el = $(id);
       if (el && el.parentElement !== document.body) document.body.appendChild(el);
     });
@@ -3582,6 +3824,91 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
       }
     };
   }
+
+
+  // =========================================================================
+  // PREMIUM CREATE CHANNEL WELCOME POPUP (shown right after Sign-Up / Login)
+  // =========================================================================
+  window.hideCreateChannelWelcomePopup = function () {
+    const ov = $('fl-cc-welcome-popup');
+    if (!ov) return;
+    ov.classList.remove('open');
+    setTimeout(() => {
+      if (!ov.classList.contains('open')) ov.classList.remove('show');
+    }, 280);
+  };
+
+  window.showCreateChannelWelcomePopup = function (user) {
+    const u = user || (typeof auth !== 'undefined' ? auth.currentUser : null);
+    if (!u) return;
+    // Never show if the full Create Channel screen is already open or channel already exists.
+    const fullPage = $('fl-create-channel');
+    if (fullPage && fullPage.style.display === 'block') return;
+    if (window.__flaynityChannelCreatedUid === u.uid) return;
+
+    ensureOverlaysOnBody();
+    const ov = $('fl-cc-welcome-popup');
+    const card = $('fl-ccw-card');
+    if (!ov || !card) return;
+
+    const rawName = (u.displayName || (u.email ? u.email.split('@')[0] : '') || 'Creator').trim();
+    const firstName = rawName.split(/\s+/)[0] || 'Creator';
+    const photo = u.photoURL || '';
+    const avatarInner = photo
+      ? `<img src="${esc(photo)}" alt="" onerror="this.remove()">`
+      : IC.spark;
+
+    card.innerHTML = `
+      <div class="ccw-glow" aria-hidden="true"></div>
+      <button type="button" class="ccw-close" id="fl-ccw-close" aria-label="Close">${IC.x}</button>
+      <div class="ccw-emblem">
+        <div class="ccw-pulse"></div>
+        <div class="ccw-badge">${avatarInner}</div>
+        <div class="ccw-verified-dot">${IC.check}</div>
+      </div>
+      <div class="ccw-pill">Welcome, ${esc(firstName)}</div>
+      <h2 class="ccw-title">Create Your Channel</h2>
+      <p class="ccw-sub">Your account is connected! Launch your official Flaynity channel to unlock all creator features.</p>
+      <div class="ccw-perks">
+        <div class="ccw-perk">
+          <span class="ccw-perk-ic" style="--p-c:#FF2E74;--p-bg:rgba(255,46,116,0.14)">${IC.spark}</span>
+          <div class="ccw-perk-tx"><b>Upload Videos, Feels &amp; Posts</b><span>Share your stories with the Flaynity community</span></div>
+        </div>
+        <div class="ccw-perk">
+          <span class="ccw-perk-ic" style="--p-c:#7C3AED;--p-bg:rgba(124,58,237,0.14)">${IC.handle}</span>
+          <div class="ccw-perk-tx"><b>Claim Your Unique @Handle</b><span>Personalize your channel identity &amp; QR code</span></div>
+        </div>
+        <div class="ccw-perk">
+          <span class="ccw-perk-ic" style="--p-c:#10B981;--p-bg:rgba(16,185,129,0.14)">${IC.shield}</span>
+          <div class="ccw-perk-tx"><b>Analytics &amp; Monetization Ready</b><span>Track growth, views, and creator rewards</span></div>
+        </div>
+      </div>
+      <button type="button" class="ccw-cta" id="fl-ccw-create">
+        <span>Create Channel</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+      <button type="button" class="ccw-later" id="fl-ccw-later">Explore App First</button>
+    `;
+
+    ov.onclick = (e) => {
+      if (e.target === ov) window.hideCreateChannelWelcomePopup();
+    };
+    const closeBtn = $('fl-ccw-close');
+    const laterBtn = $('fl-ccw-later');
+    const createBtn = $('fl-ccw-create');
+    if (closeBtn) closeBtn.onclick = () => { try { playUI('click'); } catch (e) {} window.hideCreateChannelWelcomePopup(); };
+    if (laterBtn) laterBtn.onclick = () => { try { playUI('click'); } catch (e) {} window.hideCreateChannelWelcomePopup(); };
+    if (createBtn) createBtn.onclick = () => {
+      try { playUI('click'); } catch (e) {}
+      window.hideCreateChannelWelcomePopup();
+      setTimeout(() => {
+        if (typeof window.showCreateChannelPage === 'function') window.showCreateChannelPage(true);
+      }, 140);
+    };
+
+    ov.classList.add('show');
+    requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('open')));
+  };
 
   window.showCreateChannelPage = async function (force) {
     const u = typeof auth !== 'undefined' ? auth.currentUser : null;

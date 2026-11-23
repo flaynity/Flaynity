@@ -2182,6 +2182,7 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
 
         // New email sign-ups must finish the 4-digit code step before entering the app.
         if (user && window.vfGate && window.vfGate(user)) { window.__flBootDone && window.__flBootDone(); return; }
+        if (user && typeof flaynityResumePendingHlsJobs === 'function') { try { flaynityResumePendingHlsJobs(user.uid); } catch (e) {} }
         if (!user) {
             window.__flJustSignedIn = false;
             cleanupUserSessionData();
@@ -3088,39 +3089,35 @@ async function startS3DirectUpload(item) {
         item.key = upload.key;
         if (item.status === 'cancelled') return;
 
-        // Original MP4 uploaded to R2 — now queue Modal GPU FFmpeg HLS (360p/480p/720p/1080p + master.m3u8)
+        // Original MP4 uploaded to R2 — publish immediately, then transcode HLS (360p–1080p) in background
         const rawMp4Url = normalizeFlaynityMediaUrl(upload.publicUrl || flaynityMediaUrl(upload.key));
         item.mp4FallbackUrl = rawMp4Url;
         item.sourceKey = upload.key;
         item.videoProvider = "r2";
         item.videoUrl = rawMp4Url;
         item.videoLink = rawMp4Url;
+        item.hlsStatus = "idle";
+        item.hlsJobId = "";
 
         item.status = "processing";
         item.retryCount = 0;
-        item.processingMsg = "Transcoding HLS (360p–1080p)...";
+        item.processingMsg = "Publishing Feed...";
         item.progress = 100;
         updateManagerUI();
 
+        // Fire quick non-blocking queue request (<1s) so Modal starts encoding while we publish right away
         try {
-            const hlsResult = await flaynityTranscodeToHls(item, upload.key, rawMp4Url);
-            if (hlsResult && hlsResult.masterUrl) {
-                item.videoProvider = "r2-hls";
-                item.hlsUrl = normalizeFlaynityMediaUrl(hlsResult.masterUrl);
-                item.videoUrl = item.hlsUrl;
-                item.videoLink = item.hlsUrl;
-                item.hlsRenditions = Array.isArray(hlsResult.renditions) ? hlsResult.renditions : [];
-                if (!item.thumbBlob && hlsResult.thumbnailUrl) {
-                    item.streamThumbnail = normalizeFlaynityMediaUrl(hlsResult.thumbnailUrl);
-                }
+            const queued = await flaynityQueueHlsTranscode(item, upload.key, rawMp4Url);
+            if (queued && queued.jobId) {
+                item.hlsJobId = queued.jobId;
+                item.hlsStatus = "processing";
+                item.hlsPendingApiBase = queued.apiBase;
             }
         } catch (hlsErr) {
-            console.warn("Modal HLS transcode fallback to MP4:", hlsErr);
+            console.warn("Modal HLS background queue skipped (MP4 active):", hlsErr);
         }
 
         if (item.status === 'cancelled') return;
-        item.processingMsg = "Publishing Feed...";
-        updateManagerUI();
         await runPostUploadProcessingSequence(item);
     } catch (err) {
         if (item.status === 'cancelled') return;
@@ -3224,6 +3221,8 @@ async function pushVideoMetadataToDatabase(item) {
         hlsUrl: item.hlsUrl || '',
         mp4FallbackUrl: item.mp4FallbackUrl || item.videoUrl,
         hlsRenditions: item.hlsRenditions || [],
+        hlsJobId: item.hlsJobId || '',
+        hlsStatus: item.hlsStatus || (item.videoProvider === 'r2-hls' ? 'ready' : 'idle'),
         videoProvider: item.videoProvider || 'r2',
         streamUid: '',
         sourceKey: item.sourceKey || item.key || '',
@@ -3255,6 +3254,18 @@ async function pushVideoMetadataToDatabase(item) {
         : `admin_panel/movies/user_uploads/${item.id}`;
         
     await db.ref(targetPath).set(moviePayload);
+
+    if (item.hlsJobId && item.hlsStatus === 'processing') {
+        flaynityTrackBackgroundHlsJob({
+            jobId: item.hlsJobId,
+            itemId: item.id,
+            targetPath,
+            isShort: item.type === 'video-short',
+            ownerId: user.uid,
+            apiBase: item.hlsPendingApiBase || flaynityApiOriginFromMedia(item.mp4FallbackUrl || item.videoUrl),
+            createdAt: Date.now()
+        });
+    }
 
     if (!isScheduled) {
         if (item.type === 'video-short') {
@@ -7463,7 +7474,39 @@ function flaynityApiOriginFromMedia(mediaUrl) {
     return 'https://api.flaynity-app.indevs.in';
 }
 
-async function flaynityTranscodeToHls(item, inputKey, fallbackMp4Url) {
+const FLAYNITY_PENDING_HLS_STORAGE_KEY = 'flaynity_pending_hls_jobs_v1';
+const __flaynityActiveHlsWatchers = new Set();
+
+function flaynityReadPendingHlsJobs() {
+    try {
+        const raw = localStorage.getItem(FLAYNITY_PENDING_HLS_STORAGE_KEY);
+        const list = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(list)) return [];
+        const cutoff = Date.now() - (6 * 60 * 60 * 1000);
+        return list.filter(j => j && j.jobId && j.targetPath && (!j.createdAt || j.createdAt > cutoff));
+    } catch (e) {
+        return [];
+    }
+}
+
+function flaynityWritePendingHlsJobs(jobs) {
+    try {
+        localStorage.setItem(FLAYNITY_PENDING_HLS_STORAGE_KEY, JSON.stringify(jobs || []));
+    } catch (e) {}
+}
+
+function flaynitySavePendingHlsJob(job) {
+    const list = flaynityReadPendingHlsJobs().filter(j => j.jobId !== job.jobId);
+    list.push(job);
+    flaynityWritePendingHlsJobs(list);
+}
+
+function flaynityRemovePendingHlsJob(jobId) {
+    const list = flaynityReadPendingHlsJobs().filter(j => j.jobId !== jobId);
+    flaynityWritePendingHlsJobs(list);
+}
+
+async function flaynityQueueHlsTranscode(item, inputKey, fallbackMp4Url) {
     const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
     if (!user) return null;
     const idToken = await user.getIdToken();
@@ -7484,30 +7527,94 @@ async function flaynityTranscodeToHls(item, inputKey, fallbackMp4Url) {
     });
     const startData = await startRes.json().catch(() => ({}));
     if (!startRes.ok || !startData.ok) {
-        throw new Error(startData.error || `Transcode request failed (${startRes.status})`);
+        throw new Error(startData.error || `Transcode queue failed (${startRes.status})`);
     }
+    return {
+        jobId: startData.jobId || item.id,
+        masterUrl: startData.masterUrl || '',
+        statusUrl: startData.statusUrl || '',
+        apiBase
+    };
+}
 
-    const jobId = startData.jobId || item.id;
-    const maxPolls = 180; // up to ~6 minutes for longer videos
-    for (let i = 0; i < maxPolls; i++) {
-        if (item.status === 'cancelled') return null;
-        await new Promise(r => setTimeout(r, 2000));
-        const stRes = await fetch(`${apiBase}/api/v1/transcode/status/${encodeURIComponent(jobId)}`, {
-            cache: 'no-store'
-        }).catch(() => null);
-        if (!stRes || !stRes.ok) continue;
-        const st = await stRes.json().catch(() => null);
-        if (!st) continue;
-        if (st.status === 'processing') {
-            item.processingMsg = 'GPU Transcoding (360p–1080p)...';
-            updateManagerUI();
-        } else if (st.status === 'ready' && st.masterUrl) {
-            return st;
-        } else if (st.status === 'failed') {
-            throw new Error(st.error || 'GPU HLS transcode failed');
+function flaynityApplyHlsUpgradeInMemory(itemId, isShort, patch) {
+    try {
+        const list = isShort ? (typeof allFeels !== 'undefined' ? allFeels : null) : (typeof allLongVideos !== 'undefined' ? allLongVideos : null);
+        if (Array.isArray(list)) {
+            const idx = list.findIndex(v => v && v.id === itemId);
+            if (idx !== -1) Object.assign(list[idx], patch);
         }
-    }
-    throw new Error('HLS transcode polling timed out');
+    } catch (e) {}
+}
+
+function flaynityTrackBackgroundHlsJob(job) {
+    if (!job || !job.jobId || !job.targetPath) return;
+    flaynitySavePendingHlsJob(job);
+    if (__flaynityActiveHlsWatchers.has(job.jobId)) return;
+    __flaynityActiveHlsWatchers.add(job.jobId);
+
+    (async () => {
+        const apiBase = job.apiBase || 'https://api.flaynity-app.indevs.in';
+        const maxPolls = 225; // ~15 minutes at 4s interval in background
+        try {
+            for (let i = 0; i < maxPolls; i++) {
+                await new Promise(r => setTimeout(r, i === 0 ? 3000 : 4000));
+                const stRes = await fetch(`${apiBase}/api/v1/transcode/status/${encodeURIComponent(job.jobId)}`, {
+                    cache: 'no-store'
+                }).catch(() => null);
+                if (!stRes || !stRes.ok) continue;
+                const st = await stRes.json().catch(() => null);
+                if (!st) continue;
+
+                if (st.status === 'ready' && st.masterUrl) {
+                    const masterUrl = normalizeFlaynityMediaUrl(st.masterUrl);
+                    const patch = {
+                        videoLink: masterUrl,
+                        hlsUrl: masterUrl,
+                        hlsRenditions: Array.isArray(st.renditions) ? st.renditions : [],
+                        videoProvider: 'r2-hls',
+                        hlsStatus: 'ready',
+                        updateTime: Date.now()
+                    };
+                    const curUser = (typeof auth !== 'undefined') ? auth.currentUser : null;
+                    if (curUser && (!job.ownerId || curUser.uid === job.ownerId)) {
+                        try {
+                            await db.ref(job.targetPath).update(patch);
+                            flaynityApplyHlsUpgradeInMemory(job.itemId, job.isShort, patch);
+                            flaynityRemovePendingHlsJob(job.jobId);
+                        } catch (dbErr) {
+                            console.warn("Background HLS Firebase update retry needed:", dbErr);
+                        }
+                    }
+                    return;
+                } else if (st.status === 'failed') {
+                    const curUser = (typeof auth !== 'undefined') ? auth.currentUser : null;
+                    if (curUser && (!job.ownerId || curUser.uid === job.ownerId)) {
+                        try {
+                            await db.ref(job.targetPath).update({
+                                hlsStatus: 'failed',
+                                updateTime: Date.now()
+                            });
+                        } catch (e) {}
+                    }
+                    flaynityRemovePendingHlsJob(job.jobId);
+                    return;
+                }
+            }
+        } finally {
+            __flaynityActiveHlsWatchers.delete(job.jobId);
+        }
+    })();
+}
+
+function flaynityResumePendingHlsJobs(uid) {
+    if (!uid) return;
+    const jobs = flaynityReadPendingHlsJobs();
+    jobs.forEach(job => {
+        if (!job.ownerId || job.ownerId === uid) {
+            flaynityTrackBackgroundHlsJob(job);
+        }
+    });
 }
 
 function flaynityDestroyHls(videoElement) {

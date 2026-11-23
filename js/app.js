@@ -195,7 +195,7 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
 
         const appScreen = document.createElement("div");
         appScreen.id = "app-screen";
-        const startupIds = new Set(["startupSound","toast-container","network-spinner-overlay","auth-screen","vf-legal-page","fl-create-channel","flcc-sheet-backdrop","flcc-launch-overlay","fl-email-verify-overlay"]);
+        const startupIds = new Set(["startupSound","toast-container","network-spinner-overlay","auth-screen","vf-legal-page","fl-create-channel","flcc-sheet-backdrop","flcc-launch-overlay","fl-email-verify-overlay","fl-cc-welcome-popup"]);
 
         for (const node of homeNodes) {
             if (node.id && startupIds.has(node.id)) app.appendChild(node);
@@ -213,6 +213,17 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
 
         // Let Home render before any permission dialog can appear.
         window.dispatchEvent(new Event('flaynity-dom-ready'));
+
+        // Safety net: if Firebase Auth already resolved before home.html mounted, re-run entry now.
+        try {
+            if (typeof auth !== 'undefined' && auth.currentUser && typeof window.__flaynityAuthHandler === 'function') {
+                const _as = document.getElementById('auth-screen');
+                const _ap = document.getElementById('app-screen');
+                if (_as && _ap && getComputedStyle(_ap).display === 'none' && (!window.vfGate || !window.vfGate(auth.currentUser))) {
+                    window.__flaynityAuthHandler(auth.currentUser);
+                }
+            }
+        } catch (e) {}
 
         setTimeout(() => {
             if (window.AndroidBridge && typeof window.AndroidBridge.requestNotificationPermission === 'function') {
@@ -2042,14 +2053,57 @@ function enforceContentAdminStatus(items, type) {
     return allowed;
 }
 
+window.__flaynityEnterAppScreen = function () {
+    document.body.classList.remove('auth-active');
+    try { if (typeof window.__flaynityHideOnboarding === 'function') window.__flaynityHideOnboarding(); } catch (e) {}
+    const authScr = document.getElementById('auth-screen');
+    const appScr = document.getElementById('app-screen');
+    if (authScr) {
+        authScr.style.display = 'none';
+        authScr.querySelectorAll('.au-view').forEach(v => v.classList.remove('active'));
+    }
+    if (appScr) appScr.style.display = 'block';
+    window.__flBootDone && window.__flBootDone();
+};
+
+window.__flaynityEnsureSignedInEntry = function (user) {
+    if (!user) return;
+    window.__flJustSignedInUid = user.uid;
+    window.__flaynityLiveOnline = true;
+    try { localStorage.removeItem('flaynity-verify-pending'); } catch (e) {}
+    // Wait briefly for Firebase onAuthStateChanged; if it didn't run or auth screen is still stuck, force entry.
+    setTimeout(() => {
+        const cur = (typeof auth !== 'undefined' && auth.currentUser) || user;
+        if (!cur) return;
+        const authScr = document.getElementById('auth-screen');
+        const appScr = document.getElementById('app-screen');
+        const stuckOnAuth = !!(authScr && getComputedStyle(authScr).display !== 'none') ||
+                            !!(appScr && getComputedStyle(appScr).display === 'none');
+        if (stuckOnAuth && !window.__flAuthInProgress && typeof window.__flaynityAuthHandler === 'function') {
+            window.__flaynityAuthHandler(cur);
+        }
+    }, 180);
+};
+
 auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
+    const myAuthRun = (window.__flAuthRunId = (window.__flAuthRunId || 0) + 1);
+    window.__flAuthInProgress = true;
     try {
         clearUserStatusListener();
         detachAdminControlListener();
+
+        // Wait for home.html DOM & scripts so #auth-screen, #app-screen, and popups always exist.
+        if (window.__flHomeScriptsReady && (!document.getElementById('auth-screen') || !document.getElementById('app-screen'))) {
+            try { await window.__flWithTimeout(window.__flHomeScriptsReady, 6000); } catch (e) {}
+        }
+        if (window.__flAuthRunId !== myAuthRun) return;
+
         // New email sign-ups must finish the 4-digit code step before entering the app.
         if (user && window.vfGate && window.vfGate(user)) { window.__flBootDone && window.__flBootDone(); return; }
         if (!user) {
+            window.__flJustSignedInUid = null;
             cleanupUserSessionData();
+            try { if (typeof window.hideCreateChannelWelcomePopup === 'function') window.hideCreateChannelWelcomePopup(); } catch (e) {}
             document.body.classList.add('auth-active');
             const appScr = document.getElementById('app-screen');
             const authScr = document.getElementById('auth-screen');
@@ -2077,11 +2131,21 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         }
         window.__flaynityActiveDataUid = user.uid;
 
-        const isLiveOnline = typeof window.flCheckLiveInternet === 'function'
-            ? await (window.__flaynityLiveCheckPromise || window.flCheckLiveInternet(3500))
-            : navigator.onLine;
+        const justSignedIn = window.__flJustSignedInUid === user.uid;
+        let isLiveOnline = true;
+        if (justSignedIn) {
+            // Firebase Auth just succeeded, so the connection is live.
+            isLiveOnline = true;
+            window.__flaynityLiveOnline = true;
+            window.__flaynityOfflineSessionActive = false;
+        } else if (typeof window.flCheckLiveInternet === 'function') {
+            isLiveOnline = await window.flCheckLiveInternet(3000);
+        } else {
+            isLiveOnline = navigator.onLine;
+        }
+        if (window.__flAuthRunId !== myAuthRun) return;
 
-        if (!isLiveOnline) {
+        if (!isLiveOnline && !justSignedIn) {
             let knownOffline = false;
             try {
                 knownOffline = !!(
@@ -2091,15 +2155,10 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
                 );
             } catch (x) {}
             if (knownOffline) {
-                const a = document.getElementById('auth-screen'), s = document.getElementById('app-screen');
-                if (a) a.style.display = 'none';
-                if (s) s.style.display = 'block';
-                document.body.classList.remove('auth-active');
+                window.__flaynityEnterAppScreen();
                 window.__flaynityOfflineSessionActive = true;
-                try { window.__flaynityHideOnboarding && window.__flaynityHideOnboarding(); } catch (x) {}
                 try { firebase.database().goOffline(); } catch (x) {}
                 window.__flaynityHomeReady = true;
-                window.__flBootDone && window.__flBootDone();
                 try { renderAllSkeletons(); } catch (x) {}
                 try { if (typeof initYouTabUI === 'function') initYouTabUI(); } catch (x) {}
                 return;
@@ -2108,10 +2167,17 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
 
         try { firebase.database().goOnline(); } catch (e) {}
 
-        // Always verify the account status from Firebase before exposing the app.
+        // Verify account status from Firebase without ever trapping a valid user on Login/Sign-Up if RTDB is slow.
         const userRef = db.ref(`users/${user.uid}`);
-        const firstSnap = await window.__flWithTimeout(userRef.once('value'), 8000);
-        const firstData = firstSnap.val() || {};
+        let firstData = {};
+        try {
+            const firstSnap = await window.__flWithTimeout(userRef.once('value'), 5000);
+            firstData = firstSnap.val() || {};
+        } catch (userReadErr) {
+            console.warn('User status check timed out or failed, proceeding into app:', userReadErr);
+        }
+        if (window.__flAuthRunId !== myAuthRun) return;
+
         const firstStatus = String(firstData.userStatus || firstData.accountStatus || '').toLowerCase();
         if (firstStatus === 'banned') {
             document.body.classList.add('auth-active');
@@ -2125,46 +2191,44 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
             return;
         }
 
-        // Users without a channel must create one BEFORE the app is shown (Home never opens first).
-        let needsChannel = false;
+        // Check whether this user already has a channel.
+        let hasChannel = firstData.channelCreated === true || window.__flaynityChannelCreatedUid === user.uid;
         try {
-            let hasChannel = firstData.channelCreated === true || window.__flaynityChannelCreatedUid === user.uid;
+            if (localStorage.getItem('flaynity_channel_created:' + user.uid) === '1' || localStorage.getItem('flaynity_channel_cache:' + user.uid)) {
+                hasChannel = true;
+            }
+        } catch (e) {}
+        if (!hasChannel) {
             try {
-                if (localStorage.getItem('flaynity_channel_created:' + user.uid) === '1' || localStorage.getItem('flaynity_channel_cache:' + user.uid)) hasChannel = true;
-            } catch (e) {}
-            // Read the channel (twice if it looks missing) so one empty read never shows the page by mistake.
-            for (let i = 0; i < 2 && !hasChannel; i++) {
-                const channelSnap = await window.__flWithTimeout(db.ref('channels/' + user.uid).once('value'), 8000);
-                if (channelSnap.exists()) { hasChannel = true; break; }
-                if (i === 0) await new Promise(r => setTimeout(r, 600));
+                const channelSnap = await window.__flWithTimeout(db.ref('channels/' + user.uid).once('value'), 5000);
+                if (channelSnap.exists()) {
+                    hasChannel = true;
+                    try { localStorage.setItem('flaynity_channel_created:' + user.uid, '1'); } catch (e) {}
+                }
+            } catch (channelCheckError) {
+                console.warn('Create Channel check failed:', channelCheckError);
             }
-            if (hasChannel) { try { localStorage.setItem('flaynity_channel_created:' + user.uid, '1'); } catch (e) {} }
-            if (!hasChannel && typeof window.showCreateChannelPage !== 'function' && window.__flHomeScriptsReady) {
-                try { await window.__flWithTimeout(window.__flHomeScriptsReady, 5000); } catch (e) {}
-            }
-            needsChannel = !hasChannel && typeof window.showCreateChannelPage === 'function';
-        } catch (channelCheckError) { console.warn('Create Channel check failed:', channelCheckError); }
+        }
+        if (window.__flAuthRunId !== myAuthRun) return;
         if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
 
-        document.body.classList.remove('auth-active');
-        if (typeof window.__flaynityHideOnboarding === 'function') {
-            window.__flaynityHideOnboarding();
-        }
-        const authScr = document.getElementById('auth-screen');
-        const appScr = document.getElementById('app-screen');
-        if (authScr) authScr.style.display = 'none';
-        if (needsChannel) {
-            // Keep the app hidden. The app starts only after the channel is created.
-            if (appScr) appScr.style.display = 'none';
-            window.__flaynityNeedsChannelBoot = true;
-            window.__flBootDone && window.__flBootDone();
-            await window.showCreateChannelPage();
-            return;
-        }
+        // Always enter the app cleanly right after login/sign-up (never stay stuck on Login/Sign-Up screen).
         window.__flaynityNeedsChannelBoot = false;
-        if (appScr) appScr.style.display = 'block';
-        window.__flBootDone && window.__flBootDone();
+        window.__flaynityEnterAppScreen();
         window.__flAuthRetry = 0;
+
+        // Show the premium Create Channel popup screen after sign-up or login when the user hasn't created a channel yet.
+        const shouldShowCreatePopup = !hasChannel && typeof window.showCreateChannelWelcomePopup === 'function';
+        if (justSignedIn) window.__flJustSignedInUid = null;
+        if (shouldShowCreatePopup) {
+            setTimeout(() => {
+                try {
+                    if (auth.currentUser && auth.currentUser.uid === user.uid && typeof window.showCreateChannelWelcomePopup === 'function') {
+                        window.showCreateChannelWelcomePopup(user);
+                    }
+                } catch (e) {}
+            }, 120);
+        }
 
         saveAccountToList(user);
         attachAdminControlListener();
@@ -2277,20 +2341,11 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         const realAuthProblem = /^auth\/(user-disabled|user-not-found|user-token-expired|invalid-user-token|requires-recent-login)$/.test(code);
         const cu = auth.currentUser;
         if (cu && !realAuthProblem) {
-            let known = false;
-            try { known = !!(localStorage.getItem('flaynity_channel_created:' + cu.uid) || localStorage.getItem('flaynity_channel_cache:' + cu.uid)); } catch (x) {}
-            if (known) {
-                // Returning user: open the app now, then finish loading in the background.
-                const a = document.getElementById('auth-screen'), s = document.getElementById('app-screen');
-                if (a) a.style.display = 'none';
-                if (s) s.style.display = 'block';
-                document.body.classList.remove('auth-active');
-                try { window.__flaynityHideOnboarding && window.__flaynityHideOnboarding(); } catch (x) {}
-                window.__flBootDone && window.__flBootDone();
-                try { startRealtimeFeedsListener(); } catch (x) {}
-                try { if (window.__flaynityLiveOnline !== false) SyncManager.refreshEverything({ force: true }); } catch (x) {}
-                try { window.__flWatchHomeReady && window.__flWatchHomeReady(); } catch (x) {}
-            }
+            // Never trap an authenticated user on the Login/Sign-Up screen.
+            if (typeof window.__flaynityEnterAppScreen === 'function') window.__flaynityEnterAppScreen();
+            try { startRealtimeFeedsListener(); } catch (x) {}
+            try { if (window.__flaynityLiveOnline !== false) SyncManager.refreshEverything({ force: true }); } catch (x) {}
+            try { window.__flWatchHomeReady && window.__flWatchHomeReady(); } catch (x) {}
             window.__flAuthRetry = (window.__flAuthRetry || 0) + 1;
             if (window.__flAuthRetry <= 5) {
                 setTimeout(function () {
@@ -2301,6 +2356,8 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
             window.__flBootDone && window.__flBootDone();
             try { await auth.signOut(); } catch (err) {}
         }
+    } finally {
+        if (window.__flAuthRunId === myAuthRun) window.__flAuthInProgress = false;
     }
 });
 
@@ -2355,28 +2412,35 @@ async function uploadUserAvatarToR2Engine(fileInput) {
 
 async function signInWithGoogle() {
     playUI('click');
+    try { localStorage.removeItem('flaynity-verify-pending'); } catch (e) {}
     if (window.AndroidBridge && typeof window.AndroidBridge.triggerGoogleSignIn === 'function') {
         window.AndroidBridge.triggerGoogleSignIn(); 
     } else {
         try { 
+            await authApplyPersistence();
             const provider = new firebase.auth.GoogleAuthProvider();
             provider.setCustomParameters({ prompt: 'select_account' });
             const result = await auth.signInWithPopup(provider); 
             saveAccountToList(result.user);
-            showNotification("Google Sign-In Successful!", "success"); 
+            showNotification("Google Sign-In Successful!", "success");
+            window.__flaynityEnsureSignedInEntry(result.user);
         } catch (err) { 
-            showNotification(err.message, "error"); 
+            showNotification(authFriendlyError(err), "error"); 
         }
     }
 }
 
 window.handleNativeGoogleSignIn = function(idToken) {
     showNotification("Connecting secure session...", "success");
+    try { localStorage.removeItem('flaynity-verify-pending'); } catch (e) {}
     const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
-    auth.signInWithCredential(credential)
+    authApplyPersistence()
+        .catch(() => {})
+        .then(() => auth.signInWithCredential(credential))
         .then((result) => { 
             saveAccountToList(result.user);
-            showNotification("Google Sign-In Successful!", "success"); 
+            showNotification("Google Sign-In Successful!", "success");
+            window.__flaynityEnsureSignedInEntry(result.user);
         })
         .catch(err => { showNotification("Native Auth Error: " + err.message, "error"); });
 };
@@ -2448,10 +2512,12 @@ window.authEmailLogin = async function () {
     if (!email || !pass) { showNotification('Please enter your email and password.', 'error'); return; }
     authSetBusy('au-login-btn', true, 'Log In');
     try {
+        try { localStorage.removeItem('flaynity-verify-pending'); } catch (e) {}
         await authApplyPersistence();
         const result = await auth.signInWithEmailAndPassword(email, pass);
         saveAccountToList(result.user);
         showNotification('Welcome back!', 'success');
+        window.__flaynityEnsureSignedInEntry(result.user);
     } catch (err) {
         showNotification(authFriendlyError(err), 'error');
     } finally {
@@ -2662,9 +2728,9 @@ window.authEmailSignup = async function () {
         done = false;
         const hideVerify = () => { const v = $('au-verify'); if (v) v.classList.remove('active'); };
         if (typeof window.__flaynityAuthHandler === 'function' && auth.currentUser) {
-            // Keep the verify page until the next page (Create your Channel) is on screen.
+            window.__flJustSignedInUid = auth.currentUser.uid;
             Promise.resolve(window.__flaynityAuthHandler(auth.currentUser)).then(hideVerify, hideVerify);
-            setTimeout(hideVerify, 6000);
+            setTimeout(hideVerify, 4000);
         } else { hideVerify(); location.reload(); }
     };
 
@@ -2839,10 +2905,12 @@ window.authSocialSignIn = async function (kind) {
         if (kind === 'facebook') provider = new firebase.auth.FacebookAuthProvider();
         else if (kind === 'apple') provider = new firebase.auth.OAuthProvider('apple.com');
         else return signInWithGoogle();
+        try { localStorage.removeItem('flaynity-verify-pending'); } catch (e) {}
         await authApplyPersistence();
         const result = await auth.signInWithPopup(provider);
         saveAccountToList(result.user);
         showNotification('Signed in successfully!', 'success');
+        window.__flaynityEnsureSignedInEntry(result.user);
     } catch (err) {
         showNotification(authFriendlyError(err), 'error');
     }
@@ -7913,6 +7981,7 @@ window.addEventListener('scroll', function () {
 }, { passive: true });
 
 function executeBackAction() {
+    { const _wp = document.getElementById('fl-cc-welcome-popup'); if (_wp && _wp.classList.contains('show') && typeof window.hideCreateChannelWelcomePopup === 'function') { window.hideCreateChannelWelcomePopup(); return; } }
     { const _lp = document.getElementById('vf-legal-page'); if (_lp && _lp.classList.contains('open') && typeof window.vfCloseLegal === 'function') { window.vfCloseLegal(); return; } }
     { const _c = AppNavigation.current(); if (_c && _c.type === 'modal' && _c.id === 'fx-report-page' && typeof rpBack === 'function') { rpBack(); return; } }
     const ttF = document.getElementById('tt-foot'), ttM = document.getElementById('tt-comment-modal');

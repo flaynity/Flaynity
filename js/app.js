@@ -3075,6 +3075,20 @@ async function startS3DirectUpload(item) {
     item.status = "uploading"; item.progress = item.progress || 0; ensureLiveUploadStyles(); updateManagerUI();
     const startTime = Date.now();
     try {
+        if (item.file && item.file.isLazyNativeFile && item.file.sourceUrl) {
+            item.processingMsg = "Preparing video file...";
+            updateManagerUI();
+            const fRes = await fetch(item.file.sourceUrl);
+            if (!fRes.ok) throw new Error('Failed to read local video (' + fRes.status + ')');
+            const fBlob = await fRes.blob();
+            if (!fBlob.size) throw new Error('Selected video file is empty');
+            item.file = new File([fBlob], item.file.name || (`video_${Date.now()}.mp4`), {
+                type: item.file.type || fBlob.type || 'video/mp4',
+                lastModified: Date.now()
+            });
+            item.processingMsg = "";
+            updateManagerUI();
+        }
         const uploadFolder = item.type === 'video-short' ? 'feels' : 'videos';
         const upload = item.upload || await uploadMediaToFlaynity(item.file, uploadFolder, (loaded, total) => {
             if (item.status !== 'uploading') return;
@@ -6306,8 +6320,19 @@ function setupDoubleTapListeners() {
 }
 
 // ---------------- Premium video-quality sheet ----------------
-function feelsQualityPref() { try { return localStorage.getItem('feels_quality_pref') === 'original' ? 'original' : 'auto'; } catch (e) { return 'auto'; } }
-function feelsQualityLabel() { return feelsQualityPref() === 'original' ? 'Original' : 'Auto'; }
+function feelsQualityPref() {
+    try {
+        const v = String(localStorage.getItem('feels_quality_pref') || 'auto').toLowerCase();
+        if (['1080', '720', '480', '360', 'original'].includes(v)) {
+            return v === 'original' ? '1080' : v;
+        }
+        return 'auto';
+    } catch (e) { return 'auto'; }
+}
+function feelsQualityLabel() {
+    const p = feelsQualityPref();
+    return p === 'auto' ? 'Auto' : `${p}p`;
+}
 
 function ttqEnsure() {
     let el = document.getElementById('feels-quality-sheet');
@@ -6315,7 +6340,7 @@ function ttqEnsure() {
     const st = document.createElement('style');
     st.textContent = `
     #feels-quality-sheet{position:fixed;inset:0;z-index:3000;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);animation:ttFade .2s ease}
-    #feels-quality-sheet .fq-sheet{width:100%;box-sizing:border-box;background:var(--surface,#fff);color:var(--text-main,#161823);border-radius:26px 26px 0 0;padding:10px 18px calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.28);animation:ttUp .32s cubic-bezier(.22,1,.36,1)}
+    #feels-quality-sheet .fq-sheet{width:100%;max-height:82vh;overflow-y:auto;box-sizing:border-box;background:var(--surface,#fff);color:var(--text-main,#161823);border-radius:26px 26px 0 0;padding:10px 18px calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.28);animation:ttUp .32s cubic-bezier(.22,1,.36,1)}
     .fq-grab{width:42px;height:5px;border-radius:3px;background:rgba(128,128,128,.4);margin:0 auto 14px}
     .fq-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
     .fq-title{font-size:20px;font-weight:800;letter-spacing:-.2px}
@@ -6353,7 +6378,10 @@ function ttqRender() {
         <div class="fq-head"><div class="fq-title">Video quality</div><button type="button" class="fq-x" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button></div>
         <p class="fq-sub">Choose how Feels videos play</p>
         ${opt('auto', 'Auto', 'Adjusts to your connection for smooth playback', '<svg viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg>', 'Recommended')}
-        ${opt('original', 'Original', 'Highest quality, uses more data', '<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg>', '')}
+        ${opt('1080', '1080p', 'Full HD — sharpest quality, uses more data', '<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg>', 'HD')}
+        ${opt('720', '720p', 'High definition — clear & balanced', '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 9h6v6H9z"/></svg>', '')}
+        ${opt('480', '480p', 'Standard quality — smooth on average networks', '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M10 9l5 3-5 3z"/></svg>', '')}
+        ${opt('360', '360p', 'Data saver — fastest load & least buffering', '<svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4M5 20h14"/></svg>', 'Fast')}
     </div>`;
     el.querySelector('.fq-x').addEventListener('click', closeFeelsQualitySheet);
     el.querySelectorAll('.fq-opt').forEach(b => b.addEventListener('click', () => {
@@ -7645,11 +7673,26 @@ function flaynityApplyFeelsQualityPref(videoElement) {
     const hls = videoElement && videoElement._flaynityHls;
     if (!hls || !Array.isArray(hls.levels) || !hls.levels.length) return;
     const pref = (typeof feelsQualityPref === 'function') ? feelsQualityPref() : 'auto';
-    if (pref === 'original') {
-        hls.currentLevel = hls.levels.length - 1;
-    } else {
+    if (pref === 'auto') {
         hls.currentLevel = -1; // Auto ABR: fast network rises 360p->480p->720p->1080p, slow stays low
+        return;
     }
+    const targetQ = parseInt(pref, 10);
+    if (!isFinite(targetQ)) {
+        hls.currentLevel = -1;
+        return;
+    }
+    let bestIdx = 0;
+    let bestDiff = Infinity;
+    hls.levels.forEach((lvl, idx) => {
+        const q = Math.min(lvl.width || 0, lvl.height || 0) || lvl.height || 360;
+        const diff = Math.abs(q - targetQ);
+        if (diff < bestDiff) {
+            bestDiff = diff;
+            bestIdx = idx;
+        }
+    });
+    hls.currentLevel = bestIdx;
 }
 
 function refreshFeelsQualityMenu(shortId, video) {
@@ -12764,7 +12807,7 @@ function triggerShortDownloadLocal() {
     playUI('click');
     if(!currentUploadFile) return;
     
-    const url = URL.createObjectURL(currentUploadFile);
+    const url = (currentUploadFile.isLazyNativeFile && currentUploadFile.sourceUrl) ? currentUploadFile.sourceUrl : URL.createObjectURL(currentUploadFile);
     const a = document.createElement('a');
     a.href = url;
     a.download = `flaynity_recorded_${Date.now()}.mp4`;
@@ -12833,22 +12876,56 @@ async function handlePremiumFileSelected(e, type) {
     }
 
     currentUploadFile = file;
+    const previewSrc = (file && file.isLazyNativeFile && file.sourceUrl)
+        ? file.sourceUrl
+        : URL.createObjectURL(file);
 
     // Thumbnail + duration are prepared in the background; the preview opens immediately.
     currentUploadFrameMeta = null;
-    window.__uploadMetaPromise = Promise.race([
-        captureFrameAndDuration(file),
-        new Promise(res => setTimeout(() => res(null), 10000))
-    ]).catch(() => null).then(m => {
-        const meta = m || { duration: 60, dataUrl: "", blob: null };
-        if (currentUploadFile === file) currentUploadFrameMeta = meta;
-        return meta;
-    });
+    if (file && file.isLazyNativeFile) {
+        window.__uploadMetaPromise = (async () => {
+            let thumbBlob = null;
+            let dataUrl = "";
+            if (file.thumbUrl) {
+                try {
+                    const tr = await fetch(file.thumbUrl);
+                    if (tr.ok) {
+                        thumbBlob = await tr.blob();
+                        dataUrl = await new Promise(res => {
+                            const fr = new FileReader();
+                            fr.onload = () => res(fr.result || "");
+                            fr.onerror = () => res("");
+                            fr.readAsDataURL(thumbBlob);
+                        });
+                    }
+                } catch (e) {}
+            }
+            const dur = (file.durationSec && isFinite(file.durationSec) && file.durationSec > 0) ? file.durationSec : 60;
+            const meta = { duration: dur, dataUrl, blob: thumbBlob };
+            if (currentUploadFile === file) currentUploadFrameMeta = meta;
+            return meta;
+        })();
+    } else {
+        window.__uploadMetaPromise = Promise.race([
+            captureFrameAndDuration(file),
+            new Promise(res => setTimeout(() => res(null), 10000))
+        ]).catch(() => null).then(m => {
+            const meta = m || { duration: 60, dataUrl: "", blob: null };
+            if (currentUploadFile === file) currentUploadFrameMeta = meta;
+            return meta;
+        });
+    }
 
-    // Only a Long Video needs its duration up front (under 3 min = Short). Metadata read is instant.
+    // Check duration instantly from native metadata when available, or quick metadata probe (capped at 1.2s so preview never stalls)
     if (type === 'video-long') {
-        const d = await quickVideoDuration(file);
-        if (isFinite(d) && d < 180) {
+        let d = (file && file.isLazyNativeFile && file.durationSec > 0) ? file.durationSec : NaN;
+        if (!isFinite(d)) {
+            d = await Promise.race([
+                quickVideoDuration(file),
+                new Promise(res => setTimeout(() => res(NaN), 1200))
+            ]);
+        }
+        if (isFinite(d) && d > 0 && d < 180) {
             showNotification("Video < 3 min! Automatically switching to Short format.", "success");
             type = 'video-short';
             isShortFromCamera = false;
@@ -12861,8 +12938,8 @@ async function handlePremiumFileSelected(e, type) {
     if (type === 'video-short') {
         const vidEl = document.getElementById('short-preview-el');
         if (vidEl) {
-            vidEl.src = URL.createObjectURL(file);
-            vidEl.playbackRate = currentRecordSpeed; 
+            vidEl.src = previewSrc;
+            vidEl.playbackRate = currentRecordSpeed;
         }
         
         const dlBtn = document.getElementById('short-preview-download-btn');
@@ -12873,7 +12950,7 @@ async function handlePremiumFileSelected(e, type) {
         AppNavigation.pushPage('short-preview-page');
     } else {
         const vidEl = document.getElementById('video-preview-el');
-        if (vidEl) vidEl.src = URL.createObjectURL(file);
+        if (vidEl) vidEl.src = previewSrc;
         
         // Timeline removed for video preview as requested
         AppNavigation.pushPage('video-preview-page');
@@ -13161,7 +13238,7 @@ function mpLoad(reset) {
             const cell = document.createElement('div');
             cell.className = 'mp-cell';
             cell.dataset.id = it.id; cell.dataset.k = it.v ? 'v' : 'i';
-            cell.dataset.n = it.n || ''; cell.dataset.m = it.m || ''; cell.dataset.t = it.t || '';
+            cell.dataset.n = it.n || ''; cell.dataset.m = it.m || ''; cell.dataset.t = it.t || ''; cell.dataset.d = it.d || '';
             const img = new Image();
             img.decoding = 'async'; img.loading = 'lazy'; img.alt = ''; img.draggable = false;
             img.onerror = () => { img.style.visibility = 'hidden'; };
@@ -13188,18 +13265,46 @@ function mpLoad(reset) {
 async function mpPick(cell) {
     if (MP.picking) return;
     MP.picking = true;
+    const isVideo = cell.dataset.k === 'v';
+    const pickMode = MP.mode;
+    const onPickCb = MP.onPick;
+    const fileUrl = MP_HOST + '/file/' + cell.dataset.id + '?k=' + cell.dataset.k + '&t=' + MP.token;
+    const thumbUrl = MP_HOST + '/thumb/' + cell.dataset.id + '?k=' + cell.dataset.k + '&t=' + MP.token;
+    const name = cell.dataset.n || ((isVideo ? 'video_' : 'image_') + Date.now() + (isVideo ? '.mp4' : '.jpg'));
+    const type = cell.dataset.m || (isVideo ? 'video/mp4' : 'image/jpeg');
+    const durationMs = Number(cell.dataset.d || 0);
+
+    // Fast path for Upload Video / Feels: stream directly into preview without reading GBs into RAM first!
+    if (isVideo && !onPickCb && (pickMode === 'video' || pickMode === 'short')) {
+        try {
+            MP.onPick = null;
+            closeMediaPicker(true);
+            isShortFromCamera = false;
+            const lazyFile = {
+                name,
+                type,
+                size: 0,
+                isLazyNativeFile: true,
+                sourceUrl: fileUrl,
+                thumbUrl,
+                durationSec: durationMs > 0 ? (durationMs / 1000) : 0
+            };
+            handlePremiumFileSelected({ target: { files: [lazyFile] } }, pickMode === 'short' ? 'video-short' : 'video-long');
+        } finally {
+            MP.picking = false;
+            mpEl('mp-busy').classList.remove('show');
+        }
+        return;
+    }
+
     mpEl('mp-busy').classList.add('show');
     try {
-        const isVideo = cell.dataset.k === 'v';
-        const res = await fetch(MP_HOST + '/file/' + cell.dataset.id + '?k=' + cell.dataset.k + '&t=' + MP.token);
+        const res = await fetch(fileUrl);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const blob = await res.blob();
         if (!blob.size) throw new Error('empty file');
-        const name = cell.dataset.n || ((isVideo ? 'video_' : 'image_') + Date.now() + (isVideo ? '.mp4' : '.jpg'));
-        const type = cell.dataset.m || blob.type || (isVideo ? 'video/mp4' : 'image/jpeg');
-        const file = new File([blob], name, { type: type, lastModified: Date.now() });
-        const pickMode = MP.mode;
-        const onPickCb = MP.onPick;
+        const mimeType = type || blob.type || (isVideo ? 'video/mp4' : 'image/jpeg');
+        const file = new File([blob], name, { type: mimeType, lastModified: Date.now() });
         MP.onPick = null;
         closeMediaPicker(true);
         if (typeof onPickCb === 'function') {
@@ -13475,10 +13580,15 @@ async function publishPremiumVideoOrShort(modeType) {
     const uniqueId = "st_" + Date.now() + "_" + Math.floor(Math.random()*1000);
     const fileKey = `uploads/${uniqueId}/${currentUploadFile.name.replace(/\s+/g, '_')}`;
     
+    const safeMeta = currentUploadFrameMeta || {
+        duration: (currentUploadFile && currentUploadFile.durationSec > 0) ? currentUploadFile.durationSec : 60,
+        dataUrl: "",
+        blob: null
+    };
     // Convert active trim percentage to actual duration if trimmed
-    let finalDuration = currentUploadFrameMeta.duration;
+    let finalDuration = safeMeta.duration;
     if (isShort && activeTrimEnd !== undefined && activeTrimStart !== undefined) {
-        finalDuration = (activeTrimEnd - activeTrimStart) * currentUploadFrameMeta.duration;
+        finalDuration = (activeTrimEnd - activeTrimStart) * safeMeta.duration;
     }
 
     const queueItem = {
@@ -13495,8 +13605,8 @@ async function publishPremiumVideoOrShort(modeType) {
         status: "waiting", 
         progress: 0,
         duration: finalDuration,
-        thumbDataUrl: currentUploadFrameMeta.dataUrl,
-        thumbBlob: currentUploadFrameMeta.blob, 
+        thumbDataUrl: safeMeta.dataUrl,
+        thumbBlob: safeMeta.blob, 
         thumbKey: `uploads/${uniqueId}/thumbnail.jpg`,
         createdAt: Date.now(),
         scheduledTime: visibility === 'Schedule' && scheduleDate ? new Date(scheduleDate).getTime() : 0,

@@ -6323,8 +6323,8 @@ function setupDoubleTapListeners() {
 function feelsQualityPref() {
     try {
         const v = String(localStorage.getItem('feels_quality_pref') || 'auto').toLowerCase();
-        if (['1080', '720', '480', '360', 'original'].includes(v)) {
-            return v === 'original' ? '1080' : v;
+        if (['720', '480', '360', '1080', 'original'].includes(v)) {
+            return (v === 'original' || v === '1080') ? '720' : v;
         }
         return 'auto';
     } catch (e) { return 'auto'; }
@@ -6378,7 +6378,6 @@ function ttqRender() {
         <div class="fq-head"><div class="fq-title">Video quality</div><button type="button" class="fq-x" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button></div>
         <p class="fq-sub">Choose how Feels videos play</p>
         ${opt('auto', 'Auto', 'Adjusts to your connection for smooth playback', '<svg viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg>', 'Recommended')}
-        ${opt('1080', '1080p', 'Full HD — sharpest quality, uses more data', '<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg>', 'HD')}
         ${opt('720', '720p', 'High definition — clear & balanced', '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 9h6v6H9z"/></svg>', '')}
         ${opt('480', '480p', 'Standard quality — smooth on average networks', '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M10 9l5 3-5 3z"/></svg>', '')}
         ${opt('360', '360p', 'Data saver — fastest load & least buffering', '<svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4M5 20h14"/></svg>', 'Fast')}
@@ -7549,8 +7548,8 @@ async function flaynityQueueHlsTranscode(item, inputKey, fallbackMp4Url) {
         body: JSON.stringify({
             jobId: item.id,
             inputKey,
-            qualities: ['360p', '480p', '720p', '1080p'],
-            deleteOriginal: false
+            qualities: ['360p', '480p', '720p'],
+            deleteOriginal: true
         })
     });
     const startData = await startRes.json().catch(() => ({}));
@@ -12935,11 +12934,38 @@ async function handlePremiumFileSelected(e, type) {
     // Remember where the user came from so Back returns to the camera / media picker
     window.__uploadStudioResume = { mode: currentUploadMode, picker: !!mpBridge() && !isShortFromCamera };
 
+    const startPreviewPlay = (vidEl, iconId) => {
+        if (!vidEl) return;
+        const icon = document.getElementById(iconId);
+        if (icon) {
+            icon.innerHTML = '<i class="fas fa-play"></i>';
+            icon.classList.remove('show');
+        }
+        vidEl.preload = 'auto';
+        if (file && file.thumbUrl) vidEl.poster = file.thumbUrl;
+        else vidEl.removeAttribute('poster');
+        vidEl.muted = false;
+        vidEl.src = previewSrc;
+        vidEl.load();
+        vidEl.onplaying = () => { if (icon) icon.classList.remove('show'); };
+        const p = vidEl.play();
+        if (p && typeof p.catch === 'function') {
+            p.catch(() => {
+                // Retry muted if WebView blocks unmuted autoplay, or show play button
+                vidEl.muted = true;
+                const p2 = vidEl.play();
+                if (p2 && typeof p2.catch === 'function') {
+                    p2.catch(() => { if (icon) icon.classList.add('show'); });
+                }
+            });
+        }
+    };
+
     if (type === 'video-short') {
         const vidEl = document.getElementById('short-preview-el');
         if (vidEl) {
-            vidEl.src = previewSrc;
             vidEl.playbackRate = currentRecordSpeed;
+            startPreviewPlay(vidEl, 'sp-play-icon');
         }
         
         const dlBtn = document.getElementById('short-preview-download-btn');
@@ -12950,7 +12976,7 @@ async function handlePremiumFileSelected(e, type) {
         AppNavigation.pushPage('short-preview-page');
     } else {
         const vidEl = document.getElementById('video-preview-el');
-        if (vidEl) vidEl.src = previewSrc;
+        startPreviewPlay(vidEl, 'vp-play-icon');
         
         // Timeline removed for video preview as requested
         AppNavigation.pushPage('video-preview-page');

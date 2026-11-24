@@ -2150,21 +2150,25 @@ function attachAdminControlListener() {
     if (!adminChannelsVisibilityListener) {
         adminChannelsVisibilityListener = db.ref('channels');
         adminChannelsVisibilityListener.on('value', snap => {
-            const channels = snap.val() || {};
-            const nextHidden = new Set();
-            Object.entries(channels).forEach(([uid, ch]) => {
-                if (!ch) return;
-                const st = String(ch.status || '').toLowerCase();
-                if (ch.hidden === true || ch.isHidden === true || ch.deleted === true || st === 'hidden' || st === 'deleted') {
-                    nextHidden.add(String(uid));
+            try {
+                const channels = snap.val() || {};
+                const nextHidden = new Set();
+                Object.entries(channels).forEach(([uid, ch]) => {
+                    if (!ch) return;
+                    const st = String(ch.status || '').toLowerCase();
+                    if (ch.hidden === true || ch.isHidden === true || ch.deleted === true || st === 'hidden' || st === 'deleted') {
+                        nextHidden.add(String(uid));
+                    }
+                });
+                hiddenChannelIds = nextHidden;
+                if (Array.isArray(allLongVideos) && allLongVideos.length) allLongVideos = enforceContentAdminStatus(allLongVideos, 'video');
+                if (Array.isArray(allFeels) && allFeels.length) allFeels = enforceContentAdminStatus(allFeels, 'short');
+                if (Array.isArray(allCommunityPosts) && allCommunityPosts.length) allCommunityPosts = enforceContentAdminStatus(allCommunityPosts, 'post');
+                if (typeof buildHomeFeed === 'function' && ((allLongVideos && allLongVideos.length) || (allFeels && allFeels.length) || (allCommunityPosts && allCommunityPosts.length))) {
+                    buildHomeFeed();
                 }
-            });
-            hiddenChannelIds = nextHidden;
-            if (typeof allLongVideos !== 'undefined') allLongVideos = enforceContentAdminStatus(allLongVideos, 'video');
-            if (typeof allFeels !== 'undefined') allFeels = enforceContentAdminStatus(allFeels, 'short');
-            if (typeof allCommunityPosts !== 'undefined') allCommunityPosts = enforceContentAdminStatus(allCommunityPosts, 'post');
-            if (typeof buildHomeFeed === 'function') buildHomeFeed();
-        });
+            } catch (e) { console.warn('Channel visibility sync error:', e); }
+        }, err => console.warn('Channels listener skipped:', err && err.message));
     }
 }
 
@@ -11452,11 +11456,19 @@ async function fetchLiveMonetizationMetrics() {
 }
 
 async function refreshMonetizationPageLive(forceFetch) {
-    if (forceFetch || !lastMonetizationMetrics) {
-        await fetchLiveMonetizationMetrics();
+    try {
+        const monPage = document.getElementById('monetization-page');
+        const isMonOpen = !!(monPage && (monPage.classList.contains('active') || monPage.style.display === 'block' || monPage.style.display === 'flex'));
+        if (forceFetch || (isMonOpen && !lastMonetizationMetrics)) {
+            await fetchLiveMonetizationMetrics();
+        }
+        if (lastMonetizationMetrics || isMonOpen) {
+            const m = lastMonetizationMetrics || { subs: 0, hours: 0, views: 0 };
+            updateMonetizationEligibility(m.subs, m.hours, m.views);
+        }
+    } catch (e) {
+        console.warn('refreshMonetizationPageLive error:', e);
     }
-    const m = lastMonetizationMetrics || { subs: 0, hours: 0, views: 0 };
-    updateMonetizationEligibility(m.subs, m.hours, m.views);
 }
 
 function openMonetizationPage() {

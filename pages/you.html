@@ -1592,151 +1592,200 @@ html[data-theme="dark"] #view-channel-page .ch-privacy-pill {
 </div>
 </div>
 
-<!-- Monetization Page -->
+<!-- Monetization Page (Premium Studio UI + Real-Time Admin Sync) -->
 <div class="fullscreen-page" id="monetization-page" style="z-index: 1530; background: var(--bg-color);">
-<header class="appbar" style="height: 56px; background: var(--surface); display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; justify-content: space-between;">
-<button class="appbar-back-btn" onclick="executeBackAction()"><i class="fas fa-arrow-left"></i></button>
-<h3 class="appbar-title" style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); position: absolute; left: 50%; transform: translateX(-50%); margin: 0; font-family: 'Plus Jakarta Sans', sans-serif;">Monetization</h3>
-<div style="width: 40px;"></div>
+<style>
+#monetization-page { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; }
+#monetization-page .mon-appbar { height: 58px; background: var(--surface); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 20; }
+#monetization-page .mon-title { font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin: 0; letter-spacing: -0.02em; }
+#monetization-page .mon-body { padding: 20px 18px 80px; overflow-y: auto; max-width: 680px; margin: 0 auto; }
+
+/* Status Hero Card */
+#monetization-page .mon-hero { background: var(--surface); border: 1px solid var(--border-color); border-radius: 20px; padding: 22px 20px; margin-bottom: 18px; position: relative; overflow: hidden; }
+#monetization-page .mon-hero.is-active { border-color: rgba(16, 185, 129, 0.45); background: linear-gradient(145deg, rgba(16, 185, 129, 0.08), var(--surface) 60%); }
+#monetization-page .mon-hero.is-pending { border-color: rgba(245, 158, 11, 0.45); background: linear-gradient(145deg, rgba(245, 158, 11, 0.08), var(--surface) 60%); }
+#monetization-page .mon-hero.is-rejected { border-color: rgba(239, 68, 68, 0.45); background: linear-gradient(145deg, rgba(239, 68, 68, 0.08), var(--surface) 60%); }
+#monetization-page .mon-hero.is-eligible { border-color: rgba(255, 26, 94, 0.45); background: linear-gradient(145deg, rgba(255, 26, 94, 0.08), var(--surface) 60%); }
+
+#monetization-page .mon-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; margin-bottom: 12px; background: var(--border-color); color: var(--text-muted); }
+#monetization-page .mon-pill .mon-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+#monetization-page .mon-pill.active { background: rgba(16, 185, 129, 0.14); color: #059669; }
+#monetization-page .mon-pill.pending { background: rgba(245, 158, 11, 0.14); color: #D97706; }
+#monetization-page .mon-pill.rejected { background: rgba(239, 68, 68, 0.14); color: #DC2626; }
+#monetization-page .mon-pill.eligible { background: rgba(255, 26, 94, 0.12); color: #FF1A5E; }
+
+#monetization-page .mon-hero-h1 { font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 700; line-height: 1.22; color: var(--text-main); margin: 0 0 6px; letter-spacing: -0.02em; }
+#monetization-page .mon-hero-p { font-size: 13.5px; color: var(--text-muted); line-height: 1.5; margin: 0; }
+#monetization-page .mon-reject-note { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); color: #DC2626; font-size: 13px; font-weight: 600; line-height: 1.45; }
+#monetization-page .mon-reject-note.show { display: block; }
+
+/* Revenue Status Strip */
+#monetization-page .mon-rev-strip { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-color); }
+#monetization-page .mon-rev-lbl { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+#monetization-page .mon-rev-val { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: var(--text-main); }
+
+/* Benefits Horizontal Cards */
+#monetization-page .mon-sec-title { font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700; color: var(--text-main); margin: 22px 0 12px; display: flex; align-items: center; justify-content: space-between; }
+#monetization-page .mon-sec-sub { font-size: 12px; font-weight: 600; color: var(--text-muted); font-family: 'Plus Jakarta Sans', sans-serif; }
+#monetization-page .mon-ways { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
+#monetization-page .mon-ways::-webkit-scrollbar { display: none; }
+#monetization-page .mon-way-card { flex: 0 0 156px; background: var(--surface); border: 1px solid var(--border-color); border-radius: 16px; padding: 14px; }
+#monetization-page .mon-way-ico { width: 38px; height: 38px; border-radius: 11px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; background: rgba(255, 26, 94, 0.1); color: #FF1A5E; }
+#monetization-page .mon-way-card h4 { font-size: 13.5px; font-weight: 700; color: var(--text-main); margin: 0 0 4px; }
+#monetization-page .mon-way-card p { font-size: 11.5px; color: var(--text-muted); margin: 0; line-height: 1.38; }
+
+/* Eligibility Cards */
+#monetization-page .mon-elig-card { background: var(--surface); border: 1px solid var(--border-color); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+#monetization-page .mon-req-item { display: flex; flex-direction: column; gap: 7px; }
+#monetization-page .mon-req-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#monetization-page .mon-req-name { font-size: 13.5px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 7px; }
+#monetization-page .mon-req-chip { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--border-color); color: var(--text-muted); }
+#monetization-page .mon-req-chip.met { background: rgba(16, 185, 129, 0.14); color: #059669; }
+#monetization-page .mon-req-val { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+#monetization-page .mon-bar-track { width: 100%; height: 9px; background: var(--border-color); border-radius: 999px; overflow: hidden; }
+#monetization-page .mon-bar-fill { height: 100%; width: 0%; border-radius: 999px; background: #FF1A5E; transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s ease; }
+#monetization-page .mon-bar-fill.met { background: #10B981; }
+
+/* Apply CTA */
+#monetization-page .mon-cta-wrap { margin-top: 20px; }
+#monetization-page .mon-apply-btn { width: 100%; height: 52px; border: 0; border-radius: 16px; font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif; font-size: 15.5px; font-weight: 700; color: #FFFFFF; background: #FF1A5E; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.15s ease, opacity 0.2s ease, background 0.2s ease; }
+#monetization-page .mon-apply-btn:active:not(:disabled) { transform: scale(0.98); }
+#monetization-page .mon-apply-btn:disabled { background: var(--border-color); color: var(--text-muted); cursor: not-allowed; opacity: 0.85; }
+#monetization-page .mon-apply-btn.state-active { background: #059669; color: #FFFFFF; opacity: 1; cursor: default; }
+#monetization-page .mon-apply-btn.state-pending { background: #D97706; color: #FFFFFF; opacity: 0.95; cursor: default; }
+
+/* Premium Animated Monetization Popup Modal */
+#fl-mon-popup-overlay { position: fixed; inset: 0; z-index: 2147483000; display: none; align-items: center; justify-content: center; padding: 22px; background: rgba(9, 12, 20, 0.68); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); opacity: 0; transition: opacity 0.28s ease; }
+#fl-mon-popup-overlay.show { display: flex; opacity: 1; }
+#fl-mon-popup-overlay .mon-pop-card { width: min(380px, 100%); background: var(--surface, #FFFFFF); color: var(--text-main, #0F172A); border: 1px solid var(--border-color, #E2E6EC); border-radius: 26px; padding: 30px 24px 24px; text-align: center; position: relative; overflow: hidden; transform: scale(0.84) translateY(20px); opacity: 0; animation: flMonSpringIn 0.46s cubic-bezier(0.22, 1.25, 0.36, 1) forwards; }
+@keyframes flMonSpringIn { to { transform: scale(1) translateY(0); opacity: 1; } }
+#fl-mon-popup-overlay .mon-pop-ring { width: 78px; height: 78px; border-radius: 50%; margin: 0 auto 18px; display: flex; align-items: center; justify-content: center; position: relative; }
+#fl-mon-popup-overlay .mon-pop-ring::after { content: ''; position: absolute; inset: -8px; border-radius: 50%; border: 2px solid currentColor; opacity: 0.25; animation: flMonPulse 1.7s ease-out infinite; }
+@keyframes flMonPulse { 0% { transform: scale(0.92); opacity: 0.4; } 100% { transform: scale(1.24); opacity: 0; } }
+#fl-mon-popup-overlay .mon-pop-ring.submitted { background: rgba(255, 26, 94, 0.12); color: #FF1A5E; }
+#fl-mon-popup-overlay .mon-pop-ring.approved { background: rgba(16, 185, 129, 0.14); color: #059669; }
+#fl-mon-popup-overlay .mon-pop-ring.rejected { background: rgba(239, 68, 68, 0.12); color: #DC2626; }
+#fl-mon-popup-overlay .mon-pop-title { font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif; font-size: 21px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.02em; }
+#fl-mon-popup-overlay .mon-pop-desc { font-size: 13.5px; color: var(--text-muted, #64748B); line-height: 1.55; margin: 0 0 18px; }
+#fl-mon-popup-overlay .mon-pop-reason { display: none; text-align: left; padding: 12px 14px; border-radius: 12px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.22); color: #DC2626; font-size: 12.5px; font-weight: 600; margin-bottom: 18px; line-height: 1.45; }
+#fl-mon-popup-overlay .mon-pop-reason.show { display: block; }
+#fl-mon-popup-overlay .mon-pop-btn { width: 100%; height: 46px; border: 0; border-radius: 14px; font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif; font-size: 14.5px; font-weight: 700; color: #FFFFFF; background: #FF1A5E; cursor: pointer; }
+#fl-mon-popup-overlay .mon-pop-btn.approved { background: #059669; }
+#fl-mon-popup-overlay .mon-pop-btn.rejected { background: #DC2626; }
+#fl-mon-popup-overlay .mon-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+#fl-mon-popup-overlay .mon-confetti i { position: absolute; top: 32%; left: 50%; width: 7px; height: 12px; border-radius: 2px; opacity: 0; animation: flMonBurst 1.15s cubic-bezier(0.12, 0.8, 0.32, 1) forwards; }
+@keyframes flMonBurst {
+    0% { transform: translate(-50%, -50%) scale(0.4) rotate(0deg); opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1) rotate(var(--rot)); opacity: 0; }
+}
+</style>
+
+<header class="mon-appbar">
+    <button class="appbar-back-btn" onclick="executeBackAction()" aria-label="Back"><i class="fas fa-arrow-left"></i></button>
+    <h3 class="mon-title">Monetization Studio</h3>
+    <div style="width: 36px;"></div>
 </header>
-<div class="page-content" style="padding: 24px 20px 60px 20px; overflow-y: auto;">
-<div class="monetization-header" style="margin-bottom: 28px;">
-<h1 style="font-size: 34px; font-weight: 900; line-height: 1.2; color: var(--text-main); margin: 0 0 16px 0; font-family: 'Plus Jakarta Sans', sans-serif;">Become a Flaynity Partner</h1>
-<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
-<span style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted);">Next milestone</span>
-<div style="width: 24px; height: 24px; border-radius: 50%; background: var(--border-color); display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
-<i class="fas fa-lock" style="font-size: 0.75rem;"></i>
+
+<div class="page-content mon-body">
+    <!-- Live Status Hero Card -->
+    <div class="mon-hero" id="mon-status-card">
+        <div class="mon-pill" id="mon-status-pill"><span class="mon-dot"></span><span id="mon-status-pill-txt">Checking Status</span></div>
+        <h1 class="mon-hero-h1" id="mon-status-title">Earn with Flaynity Partner Program</h1>
+        <p class="mon-hero-p" id="mon-status-desc">Meet the live eligibility requirements below to unlock ad revenue, memberships, and creator payouts.</p>
+        <div class="mon-reject-note" id="mon-rejection-box"></div>
+        <div class="mon-rev-strip">
+            <span class="mon-rev-lbl">Earning Revenue Status</span>
+            <span class="mon-rev-val" id="mon-rev-status-val">Locked until Active</span>
+        </div>
+    </div>
+
+    <!-- Ways to Earn -->
+    <div class="mon-sec-title">
+        <span>Ways to Earn</span>
+        <span class="mon-sec-sub">Partner Benefits</span>
+    </div>
+    <div class="mon-ways">
+        <div class="mon-way-card">
+            <div class="mon-way-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="4" width="20" height="14" rx="3"/><polygon points="10 8 15 11 10 14 10 8" fill="currentColor" stroke="none"/></svg></div>
+            <h4>Watch Page Ads</h4>
+            <p>Earn revenue from ads on your long-form videos.</p>
+        </div>
+        <div class="mon-way-card">
+            <div class="mon-way-ico" style="background:rgba(16,185,129,0.12);color:#059669;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="6" y="2" width="12" height="20" rx="3"/><polygon points="10 9 15 12 10 15 10 9" fill="currentColor" stroke="none"/></svg></div>
+            <h4>Feels Feed Ads</h4>
+            <p>Share revenue from ads between Feels clips.</p>
+        </div>
+        <div class="mon-way-card">
+            <div class="mon-way-ico" style="background:rgba(37,99,235,0.12);color:#2563EB;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg></div>
+            <h4>Memberships</h4>
+            <p>Offer exclusive perks to monthly channel members.</p>
+        </div>
+        <div class="mon-way-card">
+            <div class="mon-way-ico" style="background:rgba(217,119,6,0.12);color:#D97706;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+            <h4>Supers &amp; Tips</h4>
+            <p>Receive direct fan support on videos and posts.</p>
+        </div>
+    </div>
+
+    <!-- Live Eligibility Tracker -->
+    <div class="mon-sec-title">
+        <span>Eligibility Tracker</span>
+        <span class="mon-sec-sub">Live as of <span id="eligibility-date-val">Today</span></span>
+    </div>
+    <div class="mon-elig-card">
+        <div class="mon-req-item">
+            <div class="mon-req-top">
+                <span class="mon-req-name">Subscribers <span class="mon-req-chip" id="req-subs-chip">0%</span></span>
+                <span class="mon-req-val" id="req-subs-txt">0 / 500</span>
+            </div>
+            <div class="mon-bar-track"><div class="mon-bar-fill" id="req-subs-bar"></div></div>
+        </div>
+
+        <div class="mon-req-item">
+            <div class="mon-req-top">
+                <span class="mon-req-name">Valid Public Watch Hours <span class="mon-req-chip" id="req-hours-chip">0%</span></span>
+                <span class="mon-req-val" id="req-hours-txt">0 / 50 Hours</span>
+            </div>
+            <div class="mon-bar-track"><div class="mon-bar-fill" id="req-hours-bar"></div></div>
+        </div>
+
+        <div class="mon-req-item">
+            <div class="mon-req-top">
+                <span class="mon-req-name">Public Views (Videos &amp; Feels) <span class="mon-req-chip" id="req-views-chip">0%</span></span>
+                <span class="mon-req-val" id="req-views-txt">0 / 10K</span>
+            </div>
+            <div class="mon-bar-track"><div class="mon-bar-fill" id="req-views-bar"></div></div>
+        </div>
+
+        <div class="mon-req-item">
+            <div class="mon-req-top">
+                <span class="mon-req-name">Minimum Channel Age <span class="mon-req-chip" id="req-age-chip">0%</span></span>
+                <span class="mon-req-val" id="req-age-txt">0 / 0 Days</span>
+            </div>
+            <div class="mon-bar-track"><div class="mon-bar-fill" id="req-age-bar"></div></div>
+        </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="mon-cta-wrap">
+        <button class="mon-apply-btn" disabled id="btn-monetization-apply" onclick="handleMonetizationApply()">Apply Now</button>
+    </div>
 </div>
 </div>
-<h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0;">Flaynity your earning journey</h3>
-<p style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.5; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Earn income by showing ads and connecting with your fans, and gain access to creator tools and support.</p>
-</div>
-<div class="slider-outer-container">
-<div id="premium-features-slider">
-<div class="slider-card">
-<div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-<svg fill="none" height="80" viewbox="0 0 80 80" width="80" xmlns="http://www.w3.org/2000/svg">
-<rect fill="var(--primary-glow)" height="80" rx="20" width="80"></rect>
-<rect fill="none" height="28" rx="6" stroke="var(--primary)" stroke-width="3" width="44" x="18" y="22"></rect>
-<path d="M36 31L47 36L36 41V31Z" fill="var(--primary)"></path>
-<path d="M28 58H52" stroke="var(--primary)" stroke-linecap="round" stroke-width="3"></path>
-<path d="M40 50V58" stroke="var(--primary)" stroke-width="3"></path>
-</svg>
-</div>
-<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Watch Page Ads</h4>
-<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Earn from ads and premium subscribers on long videos.</p>
-</div>
-<div class="slider-card">
-<div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-<svg fill="none" height="80" viewbox="0 0 80 80" width="80" xmlns="http://www.w3.org/2000/svg">
-<rect fill="rgba(16, 185, 129, 0.1)" height="80" rx="20" width="80"></rect>
-<rect fill="none" height="48" rx="8" stroke="#10B981" stroke-width="3" width="28" x="26" y="16"></rect>
-<path d="M40 28L43 33H37L40 28Z" fill="#10B981"></path>
-<path d="M40 40V50M36 45H44" stroke="#10B981" stroke-linecap="round" stroke-width="3"></path>
-</svg>
-</div>
-<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Feels Feed Ads</h4>
-<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Earn from ads shown in the Feels Feed.</p>
-</div>
-<div class="slider-card">
-<div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-<svg fill="none" height="80" viewbox="0 0 80 80" width="80" xmlns="http://www.w3.org/2000/svg">
-<rect fill="rgba(59, 130, 246, 0.1)" height="80" rx="20" width="80"></rect>
-<path d="M24 50L28 30L40 38L52 30L56 50H24Z" fill="#3B82F6" stroke="#3B82F6" stroke-linejoin="round" stroke-width="2"></path>
-<circle cx="28" cy="26" fill="#3B82F6" r="3"></circle>
-<circle cx="40" cy="34" fill="#3B82F6" r="3"></circle>
-<circle cx="52" cy="26" fill="#3B82F6" r="3"></circle>
-</svg>
-</div>
-<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Memberships</h4>
-<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Create exclusive memberships for your biggest supporters.</p>
-</div>
-<div class="slider-card">
-<div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-<svg fill="none" height="80" viewbox="0 0 80 80" width="80" xmlns="http://www.w3.org/2000/svg">
-<rect fill="rgba(245, 158, 11, 0.1)" height="80" rx="20" width="80"></rect>
-<path d="M40 54L36.5 50.8C24.2 39.7 16 32.2 16 23C16 15.5 21.8 9.7 29.3 9.7C33.5 9.7 37.5 11.7 40 14.8C42.5 11.7 46.5 9.7 50.7 9.7C58.2 9.7 64 15.5 64 23C64 32.2 55.8 39.7 43.5 50.8L40 54Z" fill="#F59E0B"></path>
-<path d="M40 22L42.5 27L48 27.8L44 31.7L45 37L40 34.5L35 37L36 31.7L32 27.8L37.5 27L40 22Z" fill="#FFFFFF"></path>
-</svg>
-</div>
-<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Supers</h4>
-<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Receive fan support through one-time purchases.</p>
-</div>
-<div class="slider-card">
-<div style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-<svg fill="none" height="80" viewbox="0 0 80 80" width="80" xmlns="http://www.w3.org/2000/svg">
-<rect fill="rgba(236, 72, 153, 0.1)" height="80" rx="20" width="80"></rect>
-<path d="M26 28H54L58 56H22L26 28Z" fill="#D80E45" stroke="#D80E45" stroke-linejoin="round" stroke-width="2"></path>
-<path d="M34 28V22C34 18.7 36.7 16 40 16C43.3 16 46 18.7 46 22V28" stroke="#D80E45" stroke-linecap="round" stroke-width="3"></path>
-</svg>
-</div>
-<h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 8px 0; text-align: center;">Shopping</h4>
-<p style="font-size: 0.9rem; color: var(--text-muted); text-align: center; margin: 0; line-height: 1.4;">Recommend products and earn from shopping.</p>
-</div>
-</div>
-<div class="slider-dots">
-<span class="slider-dot active"></span>
-<span class="slider-dot"></span>
-<span class="slider-dot"></span>
-<span class="slider-dot"></span>
-<span class="slider-dot"></span>
-</div>
-</div>
-<div class="eligibility-section" style="margin-bottom: 32px;">
-<h2 style="font-size: 1.6rem; font-weight: 850; color: var(--text-main); margin: 0 0 16px 0;">Eligibility</h2>
-<div style="background: var(--border-color); border-radius: 20px; padding: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
-<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px; font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">
-<i class="fas fa-lock" style="color: var(--primary);"></i>
-<span>Showing data as of <span id="eligibility-date-val">July 16, 2026</span></span>
-</div>
-<div style="margin-bottom: 18px;">
-<div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem; margin-bottom: 6px;">
-<span style="color: var(--text-main);">Subscribers</span>
-<span id="req-subs-txt" style="color: var(--text-muted);">0 / 500</span>
-</div>
-<div style="width: 100%; height: 10px; background: #CBD5E1; border-radius: 5px; overflow: hidden;">
-<div id="req-subs-bar" style="width: 0%; height: 100%; background: var(--primary); border-radius: 5px; transition: width 0.5s ease-out;"></div>
-</div>
-</div>
-<div style="margin-bottom: 18px;">
-<div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem; margin-bottom: 4px;">
-<span style="color: var(--text-main);">Valid Public Watch Hours</span>
-<span id="req-hours-txt" style="color: var(--text-muted);">0 / 50 Hours</span>
-</div>
-<div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px;">Last 365 Days</div>
-<div style="width: 100%; height: 10px; background: #CBD5E1; border-radius: 5px; overflow: hidden;">
-<div id="req-hours-bar" style="width: 0%; height: 100%; background: var(--primary); border-radius: 5px; transition: width 0.5s ease-out;"></div>
-</div>
-</div>
-<div style="margin-bottom: 8px;">
-<div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem; margin-bottom: 4px;">
-<span style="color: var(--text-main);">Public Views (Feels &amp; Videos)</span>
-<span id="req-views-txt" style="color: var(--text-muted);">0 / 10K</span>
-</div>
-<div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px;">Last 365 Days</div>
-<div style="width: 100%; height: 10px; background: #CBD5E1; border-radius: 5px; overflow: hidden;">
-<div id="req-views-bar" style="width: 0%; height: 100%; background: var(--primary); border-radius: 5px; transition: width 0.5s ease-out;"></div>
-</div>
-</div>
-</div>
-<p style="text-align: center; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-top: 16px; padding: 0 10px;">Some monetization features may have additional eligibility requirements.</p>
-</div>
-<div class="next-steps-section" style="margin-bottom: 24px;">
-<h2 style="font-size: 1.6rem; font-weight: 850; color: var(--text-main); margin: 0 0 16px 0;">Next Steps</h2>
-<button class="btn-primary-action" disabled="" id="btn-monetization-apply" onclick="handleMonetizationApply()" style="margin: 0; width: 100%; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 1.05rem;">
-                    Apply Now
-                </button>
-</div>
-</div>
-</div>
-<div class="upcoming-modal" id="eligibility-success-modal" style="display: none; z-index: 100000;">
-<div class="upcoming-content" style="background: var(--surface); border-radius: 28px; padding: 32px 24px; text-align: center;">
-<div class="success-checkmark-container" style="width: 80px; height: 80px; background: rgba(0, 200, 83, 0.1); border-radius: 50%; color: var(--success); font-size: 2.5rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; animation: md3ScaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;">
-<i class="fas fa-check"></i>
-</div>
-<h2 style="font-size: 1.5rem; font-weight: 850; margin: 0 0 10px; color: var(--text-main);">Application Submitted!</h2>
-<p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin: 0;">Congratulations! Your partner application is now under review. We will notify you soon.</p>
-</div>
+
+<!-- Premium Animated Monetization Decision / Application Popup -->
+<div id="fl-mon-popup-overlay" role="dialog" aria-modal="true" aria-labelledby="fl-mon-pop-title">
+    <div class="mon-pop-card">
+        <div class="mon-confetti" id="fl-mon-confetti"></div>
+        <div class="mon-pop-ring submitted" id="fl-mon-pop-ring">
+            <svg id="fl-mon-pop-svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 class="mon-pop-title" id="fl-mon-pop-title">Application Submitted!</h2>
+        <p class="mon-pop-desc" id="fl-mon-pop-desc">Your partner application is now under review. You will be notified in real time once reviewed.</p>
+        <div class="mon-pop-reason" id="fl-mon-pop-reason"></div>
+        <button type="button" class="mon-pop-btn" id="fl-mon-pop-btn" onclick="closeMonetizationPremiumPopup()">Continue</button>
+    </div>
 </div>
 
 <!-- ========================================================= -->

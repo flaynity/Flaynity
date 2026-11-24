@@ -517,6 +517,10 @@
             fpSettings.rocket = s.rocket || "019XXXXXXXX";
 
             document.getElementById('fp-limits-text').innerText = `Limits: ($${fpSettings.minUsd} - $${fpSettings.maxUsd})`;
+            const gwNumEl = document.getElementById('finalGatewayNumber');
+            if (gwNumEl && document.getElementById('fp-fsPayPage')?.classList.contains('active')) {
+                gwNumEl.innerText = selectedSubGW === 'nagad' ? fpSettings.nagad : selectedSubGW === 'rocket' ? fpSettings.rocket : fpSettings.bkash;
+            }
             if (typeof window.fpCalcBdtRate === 'function') window.fpCalcBdtRate();
         });
 

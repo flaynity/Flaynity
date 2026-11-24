@@ -1944,10 +1944,108 @@ function cleanupUserSessionData() {
 // ADMIN CONTROL + ACCOUNT BAN ENFORCEMENT
 // =========================================================
 let adminControlFeatures = {};
+let adminUploadSettings = {
+    videoEnabled: true,
+    feelsEnabled: true,
+    postEnabled: true,
+    dailyVideoLimit: -1,
+    dailyFeelsLimit: -1,
+    dailyPostLimit: -1,
+    maxVideoSizeBytes: 500 * 1024 * 1024,
+    maxFeelsSizeBytes: 150 * 1024 * 1024,
+    maxPostImageSizeBytes: 10 * 1024 * 1024
+};
+let adminMonetizationSettings = {
+    minimumSubscribers: 500,
+    validPublicWatchHours: 50,
+    minimumPublicViews: 10000,
+    minimumChannelAgeDays: 0
+};
+let lastMonetizationMetrics = null;
 let bannedUserIds = new Set();
+let hiddenChannelIds = new Set();
 let adminControlListener = null;
+let adminUploadSettingsListener = null;
+let adminMonetizationSettingsListener = null;
+let adminChannelsVisibilityListener = null;
 let userStatusListener = null;
 let banPopupVisible = false;
+
+function formatAdminSizeBytes(bytes) {
+    const b = Number(bytes) || 0;
+    if (b >= 1024 * 1024 * 1024) return (b / (1024 * 1024 * 1024)).toFixed(2).replace(/\.00$/, '') + ' GB';
+    if (b >= 1024 * 1024) return (b / (1024 * 1024)).toFixed(1).replace(/\.0$/, '') + ' MB';
+    return Math.round(b / 1024) + ' KB';
+}
+
+function getDhakaTodayStartMs() {
+    const offset = 6 * 60 * 60 * 1000;
+    const nowDhaka = new Date(Date.now() + offset);
+    return Date.UTC(nowDhaka.getUTCFullYear(), nowDhaka.getUTCMonth(), nowDhaka.getUTCDate(), 0, 0, 0, 0) - offset;
+}
+
+async function checkAdminUploadConstraints(kind, fileObj) {
+    if (!isAdminFeatureEnabled('uploadSystemEnabled')) {
+        return { allowed: false, message: 'Uploading is currently disabled by the administrator.' };
+    }
+    const enabledMap = {
+        video: adminUploadSettings.videoEnabled !== false && isAdminFeatureEnabled('uploadVideoEnabled'),
+        short: adminUploadSettings.feelsEnabled !== false && isAdminFeatureEnabled('uploadFeelsEnabled'),
+        post: adminUploadSettings.postEnabled !== false && isAdminFeatureEnabled('uploadPostsEnabled')
+    };
+    if (!enabledMap[kind]) {
+        return { allowed: false, message: 'This upload type is currently disabled by the administrator.' };
+    }
+
+    const maxBytesMap = {
+        video: Number(adminUploadSettings.maxVideoSizeBytes) || 0,
+        short: Number(adminUploadSettings.maxFeelsSizeBytes) || 0,
+        post: Number(adminUploadSettings.maxPostImageSizeBytes) || 0
+    };
+    const maxBytes = maxBytesMap[kind];
+    if (fileObj && Number(fileObj.size) > 0 && maxBytes > 0 && Number(fileObj.size) > maxBytes) {
+        return {
+            allowed: false,
+            message: 'File exceeds maximum allowed size (' + formatAdminSizeBytes(maxBytes) + ').'
+        };
+    }
+
+    const dailyLimitMap = {
+        video: Number(adminUploadSettings.dailyVideoLimit),
+        short: Number(adminUploadSettings.dailyFeelsLimit),
+        post: Number(adminUploadSettings.dailyPostLimit)
+    };
+    const dailyLimit = dailyLimitMap[kind];
+    if (Number.isFinite(dailyLimit) && dailyLimit >= 0) {
+        if (dailyLimit === 0) {
+            return { allowed: false, message: 'Daily upload limit is set to 0 by the administrator.' };
+        }
+        const user = auth && auth.currentUser;
+        if (user) {
+            const pathMap = {
+                video: 'admin_panel/movies/user_uploads',
+                short: 'admin_panel/movies/feels',
+                post: 'admin_panel/posts'
+            };
+            const snap = await db.ref(pathMap[kind]).orderByChild('userId').equalTo(user.uid).once('value');
+            const todayStart = getDhakaTodayStartMs();
+            let countToday = 0;
+            if (snap.exists()) {
+                Object.values(snap.val() || {}).forEach(item => {
+                    const ts = Number(item && (item.createdAt || item.uploadTime)) || 0;
+                    if (ts >= todayStart) countToday++;
+                });
+            }
+            if (countToday >= dailyLimit) {
+                return {
+                    allowed: false,
+                    message: 'Daily upload limit reached (' + countToday + ' / ' + dailyLimit + ' today).'
+                };
+            }
+        }
+    }
+    return { allowed: true };
+}
 
 function isAdminFeatureEnabled(flag, defaultValue = true) {
     return Object.prototype.hasOwnProperty.call(adminControlFeatures, flag)
@@ -1987,12 +2085,55 @@ function clearUserStatusListener() {
 }
 
 function attachAdminControlListener() {
-    if (adminControlListener) return;
-    adminControlListener = db.ref('admin_control/features');
-    adminControlListener.on('value', snap => {
-        adminControlFeatures = snap.val() || {};
-        applyAdminControls();
-    });
+    if (!adminControlListener) {
+        adminControlListener = db.ref('admin_control/features');
+        adminControlListener.on('value', snap => {
+            adminControlFeatures = snap.val() || {};
+            applyAdminControls();
+        });
+    }
+    if (!adminUploadSettingsListener) {
+        adminUploadSettingsListener = db.ref('admin_control/upload_settings');
+        adminUploadSettingsListener.on('value', snap => {
+            const val = snap.val() || {};
+            adminUploadSettings = Object.assign({}, adminUploadSettings, val);
+            applyAdminControls();
+        });
+    }
+    if (!adminMonetizationSettingsListener) {
+        adminMonetizationSettingsListener = db.ref('admin_control/monetization_settings');
+        adminMonetizationSettingsListener.on('value', snap => {
+            const val = snap.val() || {};
+            adminMonetizationSettings = {
+                minimumSubscribers: Number.isFinite(Number(val.minimumSubscribers)) ? Number(val.minimumSubscribers) : 500,
+                validPublicWatchHours: Number.isFinite(Number(val.validPublicWatchHours)) ? Number(val.validPublicWatchHours) : 50,
+                minimumPublicViews: Number.isFinite(Number(val.minimumPublicViews)) ? Number(val.minimumPublicViews) : 10000,
+                minimumChannelAgeDays: Number.isFinite(Number(val.minimumChannelAgeDays)) ? Number(val.minimumChannelAgeDays) : 0
+            };
+            if (lastMonetizationMetrics) {
+                updateMonetizationEligibility(lastMonetizationMetrics.subs, lastMonetizationMetrics.hours, lastMonetizationMetrics.views);
+            }
+        });
+    }
+    if (!adminChannelsVisibilityListener) {
+        adminChannelsVisibilityListener = db.ref('channels');
+        adminChannelsVisibilityListener.on('value', snap => {
+            const channels = snap.val() || {};
+            const nextHidden = new Set();
+            Object.entries(channels).forEach(([uid, ch]) => {
+                if (!ch) return;
+                const st = String(ch.status || '').toLowerCase();
+                if (ch.hidden === true || ch.isHidden === true || ch.deleted === true || st === 'hidden' || st === 'deleted') {
+                    nextHidden.add(String(uid));
+                }
+            });
+            hiddenChannelIds = nextHidden;
+            if (typeof allLongVideos !== 'undefined') allLongVideos = enforceContentAdminStatus(allLongVideos, 'video');
+            if (typeof allFeels !== 'undefined') allFeels = enforceContentAdminStatus(allFeels, 'short');
+            if (typeof allCommunityPosts !== 'undefined') allCommunityPosts = enforceContentAdminStatus(allCommunityPosts, 'post');
+            if (typeof buildHomeFeed === 'function') buildHomeFeed();
+        });
+    }
 }
 
 function detachAdminControlListener() {
@@ -2000,7 +2141,20 @@ function detachAdminControlListener() {
         try { adminControlListener.off(); } catch(e) {}
         adminControlListener = null;
     }
+    if (adminUploadSettingsListener) {
+        try { adminUploadSettingsListener.off(); } catch(e) {}
+        adminUploadSettingsListener = null;
+    }
+    if (adminMonetizationSettingsListener) {
+        try { adminMonetizationSettingsListener.off(); } catch(e) {}
+        adminMonetizationSettingsListener = null;
+    }
+    if (adminChannelsVisibilityListener) {
+        try { adminChannelsVisibilityListener.off(); } catch(e) {}
+        adminChannelsVisibilityListener = null;
+    }
     adminControlFeatures = {};
+    hiddenChannelIds = new Set();
 }
 
 function applyAdminControls() {
@@ -2034,6 +2188,8 @@ function enforceContentAdminStatus(items, type) {
         const status = String(item?.status || item?.visibility || 'published').toLowerCase();
         if (status === 'hidden' || status === 'deleted' || status === 'disabled' || status === 'banned') return false;
         if (item?.userId && bannedUserIds.has(String(item.userId))) return false;
+        if (item?.userId && hiddenChannelIds.has(String(item.userId))) return false;
+        if (item?.channelId && hiddenChannelIds.has(String(item.channelId))) return false;
         if (type === 'video' && !isAdminFeatureEnabled('homeVideosEnabled')) return false;
         if (type === 'short' && !isAdminFeatureEnabled('homeFeelsEnabled')) return false;
         if (type === 'post' && !isAdminFeatureEnabled('homePostsEnabled')) return false;
@@ -11140,50 +11296,80 @@ function openMonetizationPage() {
 }
 
 function updateMonetizationEligibility(subs, hours, views) {
-    const targetSubs = 500;
-    const subPct = Math.min(100, (subs / targetSubs) * 100);
+    lastMonetizationMetrics = { subs, hours, views };
+    const targetSubs = Math.max(0, Number(adminMonetizationSettings.minimumSubscribers) || 0);
+    const subPct = targetSubs === 0 ? 100 : Math.min(100, (subs / targetSubs) * 100);
     const reqSubsTxt = document.getElementById('req-subs-txt');
     const reqSubsBar = document.getElementById('req-subs-bar');
     if (reqSubsTxt) reqSubsTxt.innerText = `${subs} / ${targetSubs}`;
     if (reqSubsBar) reqSubsBar.style.width = `${subPct}%`;
 
-    const targetHours = 50;
-    const hourPct = Math.min(100, (hours / targetHours) * 100);
+    const targetHours = Math.max(0, Number(adminMonetizationSettings.validPublicWatchHours) || 0);
+    const hourPct = targetHours === 0 ? 100 : Math.min(100, (hours / targetHours) * 100);
     const reqHoursTxt = document.getElementById('req-hours-txt');
     const reqHoursBar = document.getElementById('req-hours-bar');
     if (reqHoursTxt) reqHoursTxt.innerText = `${hours} / ${targetHours} Hours`;
     if (reqHoursBar) reqHoursBar.style.width = `${hourPct}%`;
 
-    const targetViews = 10000;
-    const viewPct = Math.min(100, (views / targetViews) * 100);
+    const targetViews = Math.max(0, Number(adminMonetizationSettings.minimumPublicViews) || 0);
+    const viewPct = targetViews === 0 ? 100 : Math.min(100, (views / targetViews) * 100);
     const reqViewsTxt = document.getElementById('req-views-txt');
     const reqViewsBar = document.getElementById('req-views-bar');
-    if (reqViewsTxt) reqViewsTxt.innerText = `${formatCount(views)} / 10K`;
+    if (reqViewsTxt) reqViewsTxt.innerText = `${formatCount(views)} / ${formatCount(targetViews)}`;
     if (reqViewsBar) reqViewsBar.style.width = `${viewPct}%`;
 
+    const minAgeDays = Math.max(0, Number(adminMonetizationSettings.minimumChannelAgeDays) || 0);
+    const createdAt = currentChannelData && Number(currentChannelData.createdAt) ? Number(currentChannelData.createdAt) : 0;
+    const channelAgeDays = createdAt ? Math.floor((Date.now() - createdAt) / (24 * 60 * 60 * 1000)) : 0;
+    const ageOk = minAgeDays === 0 || channelAgeDays >= minAgeDays;
+
+    const alreadyMonetized = !!(currentChannelData && (currentChannelData.monetized === true || String(currentChannelData.monetizationStatus || '').toLowerCase() === 'active'));
     const applyBtn = document.getElementById('btn-monetization-apply');
     if (applyBtn) {
-        if (subs >= targetSubs && hours >= targetHours && views >= targetViews) {
+        if (alreadyMonetized) {
+            applyBtn.disabled = true;
+            applyBtn.innerText = 'Monetization Active';
+            applyBtn.style.background = '#059669';
+            applyBtn.style.cursor = 'default';
+        } else if (subs >= targetSubs && hours >= targetHours && views >= targetViews && ageOk) {
             applyBtn.disabled = false;
+            applyBtn.innerText = 'Apply Now';
             applyBtn.style.background = "var(--primary)";
             applyBtn.style.cursor = "pointer";
         } else {
             applyBtn.disabled = true;
+            applyBtn.innerText = 'Apply Now';
             applyBtn.style.background = "#CBD5E1";
             applyBtn.style.cursor = "not-allowed";
         }
     }
 }
 
-function handleMonetizationApply() {
-    playUI('success');
-    const modal = document.getElementById('eligibility-success-modal');
-    if (modal) {
-        modal.style.display = 'flex';
-        setTimeout(() => {
-            modal.style.display = 'none';
-            executeBackAction();
-        }, 3000);
+async function handleMonetizationApply() {
+    const user = auth && auth.currentUser;
+    if (!user) {
+        showNotification("Please sign in to apply for monetization.", "error");
+        return;
+    }
+    try {
+        await db.ref(`monetization_requests/${user.uid}`).set({
+            userId: user.uid,
+            channelId: user.uid,
+            channelName: (currentChannelData && currentChannelData.channelName) || user.displayName || '',
+            status: 'pending',
+            createdAt: firebase.database.ServerValue.TIMESTAMP
+        });
+        playUI('success');
+        const modal = document.getElementById('eligibility-success-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                modal.style.display = 'none';
+                executeBackAction();
+            }, 3000);
+        }
+    } catch (err) {
+        showNotification("Could not submit monetization application: " + (err && err.message || "Error"), "error");
     }
 }
 
@@ -13130,6 +13316,17 @@ async function publishPremiumVideoOrShort(modeType) {
         return;
     }
 
+    try {
+        const uploadCheck = await checkAdminUploadConstraints(isShort ? 'short' : 'video', currentUploadFile);
+        if (!uploadCheck.allowed) {
+            showNotification(uploadCheck.message, "error");
+            return;
+        }
+    } catch (checkErr) {
+        showNotification("Upload policy check failed: " + (checkErr && checkErr.message || "Try again"), "error");
+        return;
+    }
+
     const uniqueId = "st_" + Date.now() + "_" + Math.floor(Math.random()*1000);
     const fileKey = `uploads/${uniqueId}/${currentUploadFile.name.replace(/\s+/g, '_')}`;
     
@@ -13189,7 +13386,18 @@ async function publishPremiumPostAction() {
         showNotification("Title/Caption is required!", "error");
         return;
     }
-    
+
+    try {
+        const postCheck = await checkAdminUploadConstraints('post', currentUploadFile);
+        if (!postCheck.allowed) {
+            showNotification(postCheck.message, "error");
+            return;
+        }
+    } catch (checkErr) {
+        showNotification("Upload policy check failed: " + (checkErr && checkErr.message || "Try again"), "error");
+        return;
+    }
+
     showNotification("Publishing post...", "success");
     const pubBtn = document.getElementById('premium-post-publish-btn');
     if (pubBtn) pubBtn.disabled = true;

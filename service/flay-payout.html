@@ -1410,6 +1410,7 @@
             
             const CONFIG = {
                 MIN_WITHDRAWAL: 5,
+                MAX_WITHDRAWAL: 5000,
                 EXCHANGE_RATE: 120.50,
                 FEE_RATE: 0.015,
                 METHODS: {
@@ -1473,7 +1474,7 @@
                     })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
                     const revenue = Math.max(0, Number(analytics.totalRevenue || 0));
                     const pending = history.filter(item => item.status === 'pending').reduce((sum, item) => sum + item.grossUSDT, 0);
-                    const paid = history.filter(item => item.status === 'paid').reduce((sum, item) => sum + item.grossUSDT, 0);
+                    const paid = history.filter(item => item.status === 'paid' || item.status === 'approved').reduce((sum, item) => sum + item.grossUSDT, 0);
                     return { revenue, available: Math.max(0, revenue - pending - paid), pending, paid, history };
                 },
                 async submitWithdrawal(data) {
@@ -1482,6 +1483,8 @@
                     if (!data || !Number.isFinite(Number(data.amountUSDT)) || Number(data.amountUSDT) <= 0) {
                         throw new Error("Enter a valid withdrawal amount.");
                     }
+                    if (Number(data.amountUSDT) < CONFIG.MIN_WITHDRAWAL) throw new Error(`Minimum withdrawal is $${CONFIG.MIN_WITHDRAWAL} USDT.`);
+                    if (CONFIG.MAX_WITHDRAWAL && Number(data.amountUSDT) > CONFIG.MAX_WITHDRAWAL) throw new Error(`Maximum withdrawal is $${CONFIG.MAX_WITHDRAWAL} USDT.`);
                     if (Number(data.amountUSDT) > STATE.available) throw new Error("Insufficient available balance.");
                     const database = firebase.database();
                     const requestRef = database.ref(`payout_requests/${user.uid}`).push();
@@ -1529,6 +1532,21 @@
                         });
                         database.ref(`payout_requests/${user.uid}`).on('value', () => {
                             refreshDashboardFromFirebase().catch(error => console.error('Flay Payout request refresh failed:', error));
+                        });
+                        database.ref('admin_control/flay_payout_settings').on('value', snap => {
+                            const s = snap.val() || {};
+                            if (Number(s.rate) > 0) CONFIG.EXCHANGE_RATE = Number(s.rate);
+                            if (Number.isFinite(Number(s.processingFeePercent)) && Number(s.processingFeePercent) >= 0) {
+                                CONFIG.FEE_RATE = Number(s.processingFeePercent) / 100;
+                            } else if (Number.isFinite(Number(s.feeRate)) && Number(s.feeRate) >= 0) {
+                                CONFIG.FEE_RATE = Number(s.feeRate);
+                            }
+                            if (Number(s.minUsd) > 0) CONFIG.MIN_WITHDRAWAL = Number(s.minUsd);
+                            if (Number(s.maxUsd) > 0) CONFIG.MAX_WITHDRAWAL = Number(s.maxUsd);
+                            updateDashboard();
+                            if (typeof calcLocalAmount === 'function') {
+                                try { calcLocalAmount(); } catch (e) {}
+                            }
                         });
                     }
                 } catch (e) {

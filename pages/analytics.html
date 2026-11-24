@@ -862,7 +862,7 @@ function period(E, a, b) {
     comments: E.comments.filter(function (e) { return inR(e.t, a, b); }).length,
     subs: E.subs.filter(function (e) { return e.t && inR(e.t, a, b); }).length,
     watch: Math.round(watchMin * 10) / 10,
-    revenue: (longV / 1000) * 0.30 + (feelV / 1000) * 0.15,
+    revenue: (S.ch && (S.ch.monetized === true || String(S.ch.monetizationStatus || '').toLowerCase() === 'active')) ? ((longV / 1000) * 0.30 + (feelV / 1000) * 0.15) : 0,
     created: Object.keys(S.items).filter(function (id) { return inR(S.items[id].created, a, b); }).length
   };
 }
@@ -1487,6 +1487,13 @@ function sourcesSheet() {
 
 function revenueSheet() {
   var M = compute(), c = M.cur, a = M.all;
+  var isMon = !!(S.ch && (S.ch.monetized === true || String(S.ch.monetizationStatus || '').toLowerCase() === 'active'));
+  if (!isMon) {
+    sheet('<h4>Estimated Revenue Details</h4>' +
+      '<div style="padding:8px 0 14px;border-bottom:1px solid var(--an-bd)"><small class="an-mu" style="font-weight:600">Monetization Inactive</small><div style="font-size:1.7rem;font-weight:800;letter-spacing:-.025em;font-variant-numeric:tabular-nums;margin-top:2px">$0.00 USDT</div></div>' +
+      '<div class="an-tip"><div>Earning revenue is locked until your channel monetization is approved and active.</div></div>');
+    return;
+  }
   sheet('<h4>Estimated Revenue Details</h4>' +
     '<div style="padding:8px 0 14px;border-bottom:1px solid var(--an-bd)"><small class="an-mu" style="font-weight:600">Current Period (' + esc(rangeLabel(M.b)) + ')</small><div style="font-size:1.7rem;font-weight:800;letter-spacing:-.025em;font-variant-numeric:tabular-nums;margin-top:2px">$' + c.revenue.toFixed(2) + ' USDT</div></div>' +
     '<div class="an-tip"><div>Long Videos (' + fmt(c.longV) + ' views × $0.30/1K)</div><b style="margin-left:auto">$' + ((c.longV / 1000) * 0.30).toFixed(3) + '</b></div>' +

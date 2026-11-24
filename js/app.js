@@ -2182,7 +2182,6 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
 
         // New email sign-ups must finish the 4-digit code step before entering the app.
         if (user && window.vfGate && window.vfGate(user)) { window.__flBootDone && window.__flBootDone(); return; }
-        if (user && typeof flaynityResumePendingHlsJobs === 'function') { try { flaynityResumePendingHlsJobs(user.uid); } catch (e) {} }
         if (!user) {
             window.__flJustSignedIn = false;
             cleanupUserSessionData();
@@ -3075,20 +3074,6 @@ async function startS3DirectUpload(item) {
     item.status = "uploading"; item.progress = item.progress || 0; ensureLiveUploadStyles(); updateManagerUI();
     const startTime = Date.now();
     try {
-        if (item.file && item.file.isLazyNativeFile && item.file.sourceUrl) {
-            item.processingMsg = "Preparing video file...";
-            updateManagerUI();
-            const fRes = await fetch(item.file.sourceUrl);
-            if (!fRes.ok) throw new Error('Failed to read local video (' + fRes.status + ')');
-            const fBlob = await fRes.blob();
-            if (!fBlob.size) throw new Error('Selected video file is empty');
-            item.file = new File([fBlob], item.file.name || (`video_${Date.now()}.mp4`), {
-                type: item.file.type || fBlob.type || 'video/mp4',
-                lastModified: Date.now()
-            });
-            item.processingMsg = "";
-            updateManagerUI();
-        }
         const uploadFolder = item.type === 'video-short' ? 'feels' : 'videos';
         const upload = item.upload || await uploadMediaToFlaynity(item.file, uploadFolder, (loaded, total) => {
             if (item.status !== 'uploading') return;
@@ -3103,35 +3088,14 @@ async function startS3DirectUpload(item) {
         item.key = upload.key;
         if (item.status === 'cancelled') return;
 
-        // Original MP4 uploaded to R2 — publish immediately, then transcode HLS (360p–1080p) in background
-        const rawMp4Url = normalizeFlaynityMediaUrl(upload.publicUrl || flaynityMediaUrl(upload.key));
-        item.mp4FallbackUrl = rawMp4Url;
-        item.sourceKey = upload.key;
+        // Direct R2 MP4: the object uploaded above is already the final playable
+        // video. There is intentionally no FFmpeg/transcode/HLS step here.
         item.videoProvider = "r2";
-        item.videoUrl = rawMp4Url;
-        item.videoLink = rawMp4Url;
-        item.hlsStatus = "idle";
-        item.hlsJobId = "";
+        item.videoUrl = normalizeFlaynityMediaUrl(upload.publicUrl || flaynityMediaUrl(upload.key));
+        item.videoLink = item.videoUrl;
+        item.sourceKey = upload.key;
 
-        item.status = "processing";
-        item.retryCount = 0;
-        item.processingMsg = "Publishing Feed...";
-        item.progress = 100;
-        updateManagerUI();
-
-        // Fire quick non-blocking queue request (<1s) so Modal starts encoding while we publish right away
-        try {
-            const queued = await flaynityQueueHlsTranscode(item, upload.key, rawMp4Url);
-            if (queued && queued.jobId) {
-                item.hlsJobId = queued.jobId;
-                item.hlsStatus = "processing";
-                item.hlsPendingApiBase = queued.apiBase;
-            }
-        } catch (hlsErr) {
-            console.warn("Modal HLS background queue skipped (MP4 active):", hlsErr);
-        }
-
-        if (item.status === 'cancelled') return;
+        item.status = "processing"; item.retryCount = 0; item.processingMsg = "Publishing Feed..."; item.progress = 100; updateManagerUI();
         await runPostUploadProcessingSequence(item);
     } catch (err) {
         if (item.status === 'cancelled') return;
@@ -3232,12 +3196,7 @@ async function pushVideoMetadataToDatabase(item) {
         poster: item.thumbUrl || item.thumbDataUrl || "",
         banner: item.thumbUrl || item.thumbDataUrl || "",
         videoLink: item.videoUrl,
-        hlsUrl: item.hlsUrl || '',
-        mp4FallbackUrl: item.mp4FallbackUrl || item.videoUrl,
-        hlsRenditions: item.hlsRenditions || [],
-        hlsJobId: item.hlsJobId || '',
-        hlsStatus: item.hlsStatus || (item.videoProvider === 'r2-hls' ? 'ready' : 'idle'),
-        videoProvider: item.videoProvider || 'r2',
+        videoProvider: 'r2',
         streamUid: '',
         sourceKey: item.sourceKey || item.key || '',
         uploadTime: Date.now(),
@@ -3268,18 +3227,6 @@ async function pushVideoMetadataToDatabase(item) {
         : `admin_panel/movies/user_uploads/${item.id}`;
         
     await db.ref(targetPath).set(moviePayload);
-
-    if (item.hlsJobId && item.hlsStatus === 'processing') {
-        flaynityTrackBackgroundHlsJob({
-            jobId: item.hlsJobId,
-            itemId: item.id,
-            targetPath,
-            isShort: item.type === 'video-short',
-            ownerId: user.uid,
-            apiBase: item.hlsPendingApiBase || flaynityApiOriginFromMedia(item.mp4FallbackUrl || item.videoUrl),
-            createdAt: Date.now()
-        });
-    }
 
     if (!isScheduled) {
         if (item.type === 'video-short') {
@@ -6320,19 +6267,8 @@ function setupDoubleTapListeners() {
 }
 
 // ---------------- Premium video-quality sheet ----------------
-function feelsQualityPref() {
-    try {
-        const v = String(localStorage.getItem('feels_quality_pref') || 'auto').toLowerCase();
-        if (['720', '480', '360', '1080', 'original'].includes(v)) {
-            return (v === 'original' || v === '1080') ? '720' : v;
-        }
-        return 'auto';
-    } catch (e) { return 'auto'; }
-}
-function feelsQualityLabel() {
-    const p = feelsQualityPref();
-    return p === 'auto' ? 'Auto' : `${p}p`;
-}
+function feelsQualityPref() { try { return localStorage.getItem('feels_quality_pref') === 'original' ? 'original' : 'auto'; } catch (e) { return 'auto'; } }
+function feelsQualityLabel() { return feelsQualityPref() === 'original' ? 'Original' : 'Auto'; }
 
 function ttqEnsure() {
     let el = document.getElementById('feels-quality-sheet');
@@ -6340,7 +6276,7 @@ function ttqEnsure() {
     const st = document.createElement('style');
     st.textContent = `
     #feels-quality-sheet{position:fixed;inset:0;z-index:3000;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);animation:ttFade .2s ease}
-    #feels-quality-sheet .fq-sheet{width:100%;max-height:82vh;overflow-y:auto;box-sizing:border-box;background:var(--surface,#fff);color:var(--text-main,#161823);border-radius:26px 26px 0 0;padding:10px 18px calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.28);animation:ttUp .32s cubic-bezier(.22,1,.36,1)}
+    #feels-quality-sheet .fq-sheet{width:100%;box-sizing:border-box;background:var(--surface,#fff);color:var(--text-main,#161823);border-radius:26px 26px 0 0;padding:10px 18px calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.28);animation:ttUp .32s cubic-bezier(.22,1,.36,1)}
     .fq-grab{width:42px;height:5px;border-radius:3px;background:rgba(128,128,128,.4);margin:0 auto 14px}
     .fq-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
     .fq-title{font-size:20px;font-weight:800;letter-spacing:-.2px}
@@ -6378,15 +6314,12 @@ function ttqRender() {
         <div class="fq-head"><div class="fq-title">Video quality</div><button type="button" class="fq-x" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button></div>
         <p class="fq-sub">Choose how Feels videos play</p>
         ${opt('auto', 'Auto', 'Adjusts to your connection for smooth playback', '<svg viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg>', 'Recommended')}
-        ${opt('720', '720p', 'High definition — clear & balanced', '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 9h6v6H9z"/></svg>', '')}
-        ${opt('480', '480p', 'Standard quality — smooth on average networks', '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M10 9l5 3-5 3z"/></svg>', '')}
-        ${opt('360', '360p', 'Data saver — fastest load & least buffering', '<svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4M5 20h14"/></svg>', 'Fast')}
+        ${opt('original', 'Original', 'Highest quality, uses more data', '<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg>', '')}
     </div>`;
     el.querySelector('.fq-x').addEventListener('click', closeFeelsQualitySheet);
     el.querySelectorAll('.fq-opt').forEach(b => b.addEventListener('click', () => {
         const q = b.dataset.q;
         try { localStorage.setItem('feels_quality_pref', q); } catch (e) {}
-        document.querySelectorAll('#feels-swiper-container .short-video-el').forEach(v => flaynityApplyFeelsQualityPref(v));
         triggerFeelsHaptic(10);
         document.querySelectorAll('.short-quality-label').forEach(n => { n.textContent = feelsQualityLabel(); });
         el.querySelectorAll('.fq-opt').forEach(o => o.classList.toggle('sel', o.dataset.q === q));
@@ -7489,237 +7422,16 @@ function preserveVideoFrame(video) {
     video.style.setProperty('transform', 'none', 'important');
 }
 
-function flaynityApiOriginFromMedia(mediaUrl) {
-    try {
-        if (typeof R2_CONFIG !== 'undefined' && R2_CONFIG.workerBaseUrl) {
-            return String(R2_CONFIG.workerBaseUrl).replace(/\/+$/, '');
-        }
-        if (mediaUrl && /^https?:\/\//i.test(mediaUrl)) {
-            return new URL(mediaUrl).origin;
-        }
-    } catch (e) {}
-    return 'https://api.flaynity-app.indevs.in';
-}
-
-const FLAYNITY_PENDING_HLS_STORAGE_KEY = 'flaynity_pending_hls_jobs_v1';
-const __flaynityActiveHlsWatchers = new Set();
-
-function flaynityReadPendingHlsJobs() {
-    try {
-        const raw = localStorage.getItem(FLAYNITY_PENDING_HLS_STORAGE_KEY);
-        const list = raw ? JSON.parse(raw) : [];
-        if (!Array.isArray(list)) return [];
-        const cutoff = Date.now() - (6 * 60 * 60 * 1000);
-        return list.filter(j => j && j.jobId && j.targetPath && (!j.createdAt || j.createdAt > cutoff));
-    } catch (e) {
-        return [];
-    }
-}
-
-function flaynityWritePendingHlsJobs(jobs) {
-    try {
-        localStorage.setItem(FLAYNITY_PENDING_HLS_STORAGE_KEY, JSON.stringify(jobs || []));
-    } catch (e) {}
-}
-
-function flaynitySavePendingHlsJob(job) {
-    const list = flaynityReadPendingHlsJobs().filter(j => j.jobId !== job.jobId);
-    list.push(job);
-    flaynityWritePendingHlsJobs(list);
-}
-
-function flaynityRemovePendingHlsJob(jobId) {
-    const list = flaynityReadPendingHlsJobs().filter(j => j.jobId !== jobId);
-    flaynityWritePendingHlsJobs(list);
-}
-
-async function flaynityQueueHlsTranscode(item, inputKey, fallbackMp4Url) {
-    const user = (typeof auth !== 'undefined') ? auth.currentUser : null;
-    if (!user) return null;
-    const idToken = await user.getIdToken();
-    const apiBase = flaynityApiOriginFromMedia(fallbackMp4Url);
-
-    const startRes = await fetch(`${apiBase}/api/v1/transcode/hls`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({
-            jobId: item.id,
-            inputKey,
-            qualities: ['360p', '480p', '720p'],
-            deleteOriginal: true
-        })
-    });
-    const startData = await startRes.json().catch(() => ({}));
-    if (!startRes.ok || !startData.ok) {
-        throw new Error(startData.error || `Transcode queue failed (${startRes.status})`);
-    }
-    return {
-        jobId: startData.jobId || item.id,
-        masterUrl: startData.masterUrl || '',
-        statusUrl: startData.statusUrl || '',
-        apiBase
-    };
-}
-
-function flaynityApplyHlsUpgradeInMemory(itemId, isShort, patch) {
-    try {
-        const list = isShort ? (typeof allFeels !== 'undefined' ? allFeels : null) : (typeof allLongVideos !== 'undefined' ? allLongVideos : null);
-        if (Array.isArray(list)) {
-            const idx = list.findIndex(v => v && v.id === itemId);
-            if (idx !== -1) Object.assign(list[idx], patch);
-        }
-    } catch (e) {}
-}
-
-function flaynityTrackBackgroundHlsJob(job) {
-    if (!job || !job.jobId || !job.targetPath) return;
-    flaynitySavePendingHlsJob(job);
-    if (__flaynityActiveHlsWatchers.has(job.jobId)) return;
-    __flaynityActiveHlsWatchers.add(job.jobId);
-
-    (async () => {
-        const apiBase = job.apiBase || 'https://api.flaynity-app.indevs.in';
-        const maxPolls = 225; // ~15 minutes at 4s interval in background
-        try {
-            for (let i = 0; i < maxPolls; i++) {
-                await new Promise(r => setTimeout(r, i === 0 ? 3000 : 4000));
-                const stRes = await fetch(`${apiBase}/api/v1/transcode/status/${encodeURIComponent(job.jobId)}`, {
-                    cache: 'no-store'
-                }).catch(() => null);
-                if (!stRes || !stRes.ok) continue;
-                const st = await stRes.json().catch(() => null);
-                if (!st) continue;
-
-                if (st.status === 'ready' && st.masterUrl) {
-                    const masterUrl = normalizeFlaynityMediaUrl(st.masterUrl);
-                    const patch = {
-                        videoLink: masterUrl,
-                        hlsUrl: masterUrl,
-                        hlsRenditions: Array.isArray(st.renditions) ? st.renditions : [],
-                        videoProvider: 'r2-hls',
-                        hlsStatus: 'ready',
-                        updateTime: Date.now()
-                    };
-                    const curUser = (typeof auth !== 'undefined') ? auth.currentUser : null;
-                    if (curUser && (!job.ownerId || curUser.uid === job.ownerId)) {
-                        try {
-                            await db.ref(job.targetPath).update(patch);
-                            flaynityApplyHlsUpgradeInMemory(job.itemId, job.isShort, patch);
-                            flaynityRemovePendingHlsJob(job.jobId);
-                        } catch (dbErr) {
-                            console.warn("Background HLS Firebase update retry needed:", dbErr);
-                        }
-                    }
-                    return;
-                } else if (st.status === 'failed') {
-                    const curUser = (typeof auth !== 'undefined') ? auth.currentUser : null;
-                    if (curUser && (!job.ownerId || curUser.uid === job.ownerId)) {
-                        try {
-                            await db.ref(job.targetPath).update({
-                                hlsStatus: 'failed',
-                                updateTime: Date.now()
-                            });
-                        } catch (e) {}
-                    }
-                    flaynityRemovePendingHlsJob(job.jobId);
-                    return;
-                }
-            }
-        } finally {
-            __flaynityActiveHlsWatchers.delete(job.jobId);
-        }
-    })();
-}
-
-function flaynityResumePendingHlsJobs(uid) {
-    if (!uid) return;
-    const jobs = flaynityReadPendingHlsJobs();
-    jobs.forEach(job => {
-        if (!job.ownerId || job.ownerId === uid) {
-            flaynityTrackBackgroundHlsJob(job);
-        }
-    });
-}
-
-function flaynityDestroyHls(videoElement) {
-    if (!videoElement) return;
-    if (videoElement._flaynityHls) {
-        try { videoElement._flaynityHls.destroy(); } catch (e) {}
-        videoElement._flaynityHls = null;
-    }
-    videoElement._flaynityHlsUrl = '';
-}
-
-function flaynityFind360pLevelIndex(levels) {
-    if (!Array.isArray(levels) || !levels.length) return 0;
-    let bestIdx = 0;
-    let bestDiff = Infinity;
-    levels.forEach((lvl, idx) => {
-        const shortSide = Math.min(lvl.width || 0, lvl.height || 0) || (lvl.height || 0);
-        const diff = Math.abs(shortSide - FLAYNITY_STREAM_START_HEIGHT);
-        if (diff < bestDiff) {
-            bestDiff = diff;
-            bestIdx = idx;
-        }
-    });
-    return bestIdx;
-}
-
-function flaynityApplyFeelsQualityPref(videoElement) {
-    const hls = videoElement && videoElement._flaynityHls;
-    if (!hls || !Array.isArray(hls.levels) || !hls.levels.length) return;
-    const pref = (typeof feelsQualityPref === 'function') ? feelsQualityPref() : 'auto';
-    if (pref === 'auto') {
-        hls.currentLevel = -1; // Auto ABR: fast network rises 360p->480p->720p->1080p, slow stays low
-        return;
-    }
-    const targetQ = parseInt(pref, 10);
-    if (!isFinite(targetQ)) {
-        hls.currentLevel = -1;
-        return;
-    }
-    let bestIdx = 0;
-    let bestDiff = Infinity;
-    hls.levels.forEach((lvl, idx) => {
-        const q = Math.min(lvl.width || 0, lvl.height || 0) || lvl.height || 360;
-        const diff = Math.abs(q - targetQ);
-        if (diff < bestDiff) {
-            bestDiff = diff;
-            bestIdx = idx;
-        }
-    });
-    hls.currentLevel = bestIdx;
-}
-
 function refreshFeelsQualityMenu(shortId, video) {
     const select = document.getElementById(`short-quality-${shortId}`);
     if (!select) return;
-    const hls = video && video._flaynityHls;
-    if (hls && Array.isArray(hls.levels) && hls.levels.length) {
-        let html = '<option value="-1">Auto</option>';
-        hls.levels.forEach((lvl, idx) => {
-            const q = Math.min(lvl.width || 0, lvl.height || 0) || lvl.height || 360;
-            html += `<option value="${idx}">${q}p</option>`;
-        });
-        select.innerHTML = html;
-        select.value = String(hls.autoLevelEnabled ? -1 : hls.currentLevel);
-        return;
-    }
     select.innerHTML = '<option value="0">Original</option>';
     select.value = '0';
 }
 
 function setFeelsQuality(shortId, value) {
     const video = document.getElementById(`slide-short-${shortId}`)?.querySelector('video');
-    if (!video) return;
-    if (video._flaynityHls) {
-        const idx = parseInt(value, 10);
-        video._flaynityHls.currentLevel = isNaN(idx) ? -1 : idx;
-    }
-    refreshFeelsQualityMenu(shortId, video);
+    if (video) refreshFeelsQualityMenu(shortId, video);
 }
 
 function refreshPublishedSources(items) {
@@ -7727,14 +7439,10 @@ function refreshPublishedSources(items) {
     if (currentActiveMovie && byId.has(String(currentActiveMovie.id))) Object.assign(currentActiveMovie, byId.get(String(currentActiveMovie.id)));
     document.querySelectorAll('.short-video-el, #fly-video').forEach(video => {
         const item = byId.get(video._flaynityContentId);
-        const preferred = item && (item.hlsUrl || item.videoLink || item.videoUrl);
-        if (!preferred) return;
+        if (!item || !item.videoUrl) return;
         video._flaynityItem = { ...item };
-        const nextUrl = normalizeFlaynityMediaUrl(preferred);
-        const curUrl = video._flaynityHlsUrl || video.src;
-        if (curUrl !== nextUrl) {
-            attachSmartAdaptiveSource(video, nextUrl, video.id === 'fly-video' ? 'fly_main' : video._flaynityContentId);
-        }
+        const nextUrl = normalizeFlaynityMediaUrl(item.videoUrl);
+        if (video.src !== nextUrl) { video.src = nextUrl; video.load(); }
     });
 }
 
@@ -7744,95 +7452,8 @@ function attachSmartAdaptiveSource(videoElement, url, shortId) {
     videoElement._flaynityContentId = item ? String(item.id) : '';
     videoElement._flaynityItem = item ? { ...item } : null;
     preserveVideoFrame(videoElement);
-
-    const rawPreferred = (item && item.hlsUrl) ? item.hlsUrl : (item && item.videoLink ? item.videoLink : url);
-    const normalizedUrl = normalizeFlaynityMediaUrl(rawPreferred);
-    const fallbackMp4 = item && item.mp4FallbackUrl ? normalizeFlaynityMediaUrl(item.mp4FallbackUrl) : '';
-    const isHls = /\.m3u8(\?|$)/i.test(normalizedUrl);
-    const isMainPlayer = shortId === 'fly_main';
-
-    if (videoElement._flaynityHlsUrl === normalizedUrl && videoElement._flaynityHls) {
-        return;
-    }
-
-    flaynityDestroyHls(videoElement);
-    videoElement.preload = isMainPlayer ? 'auto' : 'metadata';
-
-    if (isHls && window.Hls && window.Hls.isSupported()) {
-        // Fast-start 360p ABR configuration:
-        // - Always starts at 360p (level 0) for instant playback
-        // - Fast network rises rapidly: 360p -> 480p -> 720p -> 1080p
-        // - Slow network stays on lower quality to prevent buffering
-        const hls = new window.Hls({
-            enableWorker: true,
-            lowLatencyMode: false,
-            startLevel: 0,
-            startFragPrefetch: true,
-            abrEwmaDefaultEstimate: 850000,   // ~850 kbps initial -> instant 360p start
-            abrEwmaFastVoD: 2.0,              // quick upshift when network is fast
-            abrEwmaSlowVoD: 5.0,              // steady downshift protection on slow network
-            abrBandWidthUpFactor: 0.78,       // allows quick step-up 360p->480p->720p->1080p
-            abrBandWidthFactor: 0.90,         // stays conservative on weak network to avoid stalls
-            maxBufferLength: isMainPlayer ? 20 : 12,
-            maxMaxBufferLength: 35,
-            maxBufferHole: 0.5,
-            capLevelOnFPSDrop: true,
-            capLevelToPlayerSize: false
-        });
-
-        videoElement._flaynityHls = hls;
-        videoElement._flaynityHlsUrl = normalizedUrl;
-
-        hls.loadSource(normalizedUrl);
-        hls.attachMedia(videoElement);
-
-        hls.on(window.Hls.Events.MANIFEST_PARSED, (_evt, data) => {
-            const idx360 = flaynityFind360pLevelIndex(data.levels);
-            hls.startLevel = idx360;
-            hls.nextLoadLevel = idx360;
-            if (isMainPlayer) {
-                hls.currentLevel = -1; // Auto ABR starting from 360p
-                try { flyBuildQualityMenu(); } catch (e) {}
-            } else {
-                flaynityApplyFeelsQualityPref(videoElement);
-                try { refreshFeelsQualityMenu(shortId, videoElement); } catch (e) {}
-            }
-        });
-
-        hls.on(window.Hls.Events.LEVEL_SWITCHED, () => {
-            if (isMainPlayer) {
-                try { flyUpdateQualityLabel(); } catch (e) {}
-            }
-        });
-
-        let mediaRecoveries = 0;
-        hls.on(window.Hls.Events.ERROR, (_evt, data) => {
-            if (!data || !data.fatal) return;
-            if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
-                // Step down to 360p on network stall and resume
-                hls.nextLoadLevel = 0;
-                hls.startLoad();
-            } else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR && mediaRecoveries < 2) {
-                mediaRecoveries++;
-                hls.recoverMediaError();
-            } else {
-                flaynityDestroyHls(videoElement);
-                if (fallbackMp4 && fallbackMp4 !== normalizedUrl) {
-                    videoElement.src = fallbackMp4;
-                    videoElement.load();
-                }
-            }
-        });
-        return;
-    }
-
-    if (isHls && videoElement.canPlayType('application/vnd.apple.mpegurl')) {
-        videoElement._flaynityHlsUrl = normalizedUrl;
-        videoElement.src = normalizedUrl;
-        videoElement.load();
-        return;
-    }
-
+    const normalizedUrl = normalizeFlaynityMediaUrl(item?.videoUrl || url);
+    videoElement.preload = shortId === 'fly_main' ? 'auto' : 'metadata';
     videoElement.src = normalizedUrl;
     videoElement.load();
 }
@@ -7893,8 +7514,8 @@ function optimizeFeelsMemoryAndPreload(activeIndex) {
             if (video.getAttribute('poster') !== s.poster) video.setAttribute('poster', s.poster);
 
             video.preload = 'auto';
-            if (!video.getAttribute('src') && !video._flaynityHls) {
-                attachSmartAdaptiveSource(video, s.hlsUrl || s.videoLink, shortId);
+            if (!video.getAttribute('src')) {
+                attachSmartAdaptiveSource(video, s.videoLink, shortId);
             }
 
             if (idx === activeIndex) {
@@ -7913,7 +7534,6 @@ function optimizeFeelsMemoryAndPreload(activeIndex) {
             }
         } else {
             video.pause();
-            flaynityDestroyHls(video);
             video.removeAttribute('src');
             video.preload = 'none';
             video.load();
@@ -8421,11 +8041,7 @@ const AppNavigation = {
             try { lvCancelAd(); } catch (e) {}
             try { if (flyLandscape) flySetLandscape(false); } catch (e) {}
             const container = document.getElementById('video-player-container');
-            if (container) {
-                const oldFlyVid = container.querySelector('#fly-video');
-                if (oldFlyVid) flaynityDestroyHls(oldFlyVid);
-                container.innerHTML = '';
-            }
+            if (container) container.innerHTML = '';
             if (!activeModals.includes('comment-modal')) {
                 if (activeStatsRef) { activeStatsRef.off(); activeStatsRef = null; }
                 if (activeCommentsRef) { activeCommentsRef.off(); activeCommentsRef = null; }
@@ -12806,7 +12422,7 @@ function triggerShortDownloadLocal() {
     playUI('click');
     if(!currentUploadFile) return;
     
-    const url = (currentUploadFile.isLazyNativeFile && currentUploadFile.sourceUrl) ? currentUploadFile.sourceUrl : URL.createObjectURL(currentUploadFile);
+    const url = URL.createObjectURL(currentUploadFile);
     const a = document.createElement('a');
     a.href = url;
     a.download = `flaynity_recorded_${Date.now()}.mp4`;
@@ -12875,56 +12491,22 @@ async function handlePremiumFileSelected(e, type) {
     }
 
     currentUploadFile = file;
-    const previewSrc = (file && file.isLazyNativeFile && file.sourceUrl)
-        ? file.sourceUrl
-        : URL.createObjectURL(file);
 
     // Thumbnail + duration are prepared in the background; the preview opens immediately.
     currentUploadFrameMeta = null;
-    if (file && file.isLazyNativeFile) {
-        window.__uploadMetaPromise = (async () => {
-            let thumbBlob = null;
-            let dataUrl = "";
-            if (file.thumbUrl) {
-                try {
-                    const tr = await fetch(file.thumbUrl);
-                    if (tr.ok) {
-                        thumbBlob = await tr.blob();
-                        dataUrl = await new Promise(res => {
-                            const fr = new FileReader();
-                            fr.onload = () => res(fr.result || "");
-                            fr.onerror = () => res("");
-                            fr.readAsDataURL(thumbBlob);
-                        });
-                    }
-                } catch (e) {}
-            }
-            const dur = (file.durationSec && isFinite(file.durationSec) && file.durationSec > 0) ? file.durationSec : 60;
-            const meta = { duration: dur, dataUrl, blob: thumbBlob };
-            if (currentUploadFile === file) currentUploadFrameMeta = meta;
-            return meta;
-        })();
-    } else {
-        window.__uploadMetaPromise = Promise.race([
-            captureFrameAndDuration(file),
-            new Promise(res => setTimeout(() => res(null), 10000))
-        ]).catch(() => null).then(m => {
-            const meta = m || { duration: 60, dataUrl: "", blob: null };
-            if (currentUploadFile === file) currentUploadFrameMeta = meta;
-            return meta;
-        });
-    }
+    window.__uploadMetaPromise = Promise.race([
+        captureFrameAndDuration(file),
+        new Promise(res => setTimeout(() => res(null), 10000))
+    ]).catch(() => null).then(m => {
+        const meta = m || { duration: 60, dataUrl: "", blob: null };
+        if (currentUploadFile === file) currentUploadFrameMeta = meta;
+        return meta;
+    });
 
-    // Check duration instantly from native metadata when available, or quick metadata probe (capped at 1.2s so preview never stalls)
+    // Only a Long Video needs its duration up front (under 3 min = Short). Metadata read is instant.
     if (type === 'video-long') {
-        let d = (file && file.isLazyNativeFile && file.durationSec > 0) ? file.durationSec : NaN;
-        if (!isFinite(d)) {
-            d = await Promise.race([
-                quickVideoDuration(file),
-                new Promise(res => setTimeout(() => res(NaN), 1200))
-            ]);
-        }
-        if (isFinite(d) && d > 0 && d < 180) {
+        const d = await quickVideoDuration(file);
+        if (isFinite(d) && d < 180) {
             showNotification("Video < 3 min! Automatically switching to Short format.", "success");
             type = 'video-short';
             isShortFromCamera = false;
@@ -12934,38 +12516,11 @@ async function handlePremiumFileSelected(e, type) {
     // Remember where the user came from so Back returns to the camera / media picker
     window.__uploadStudioResume = { mode: currentUploadMode, picker: !!mpBridge() && !isShortFromCamera };
 
-    const startPreviewPlay = (vidEl, iconId) => {
-        if (!vidEl) return;
-        const icon = document.getElementById(iconId);
-        if (icon) {
-            icon.innerHTML = '<i class="fas fa-play"></i>';
-            icon.classList.remove('show');
-        }
-        vidEl.preload = 'auto';
-        if (file && file.thumbUrl) vidEl.poster = file.thumbUrl;
-        else vidEl.removeAttribute('poster');
-        vidEl.muted = false;
-        vidEl.src = previewSrc;
-        vidEl.load();
-        vidEl.onplaying = () => { if (icon) icon.classList.remove('show'); };
-        const p = vidEl.play();
-        if (p && typeof p.catch === 'function') {
-            p.catch(() => {
-                // Retry muted if WebView blocks unmuted autoplay, or show play button
-                vidEl.muted = true;
-                const p2 = vidEl.play();
-                if (p2 && typeof p2.catch === 'function') {
-                    p2.catch(() => { if (icon) icon.classList.add('show'); });
-                }
-            });
-        }
-    };
-
     if (type === 'video-short') {
         const vidEl = document.getElementById('short-preview-el');
         if (vidEl) {
-            vidEl.playbackRate = currentRecordSpeed;
-            startPreviewPlay(vidEl, 'sp-play-icon');
+            vidEl.src = URL.createObjectURL(file);
+            vidEl.playbackRate = currentRecordSpeed; 
         }
         
         const dlBtn = document.getElementById('short-preview-download-btn');
@@ -12976,7 +12531,7 @@ async function handlePremiumFileSelected(e, type) {
         AppNavigation.pushPage('short-preview-page');
     } else {
         const vidEl = document.getElementById('video-preview-el');
-        startPreviewPlay(vidEl, 'vp-play-icon');
+        if (vidEl) vidEl.src = URL.createObjectURL(file);
         
         // Timeline removed for video preview as requested
         AppNavigation.pushPage('video-preview-page');
@@ -13264,7 +12819,7 @@ function mpLoad(reset) {
             const cell = document.createElement('div');
             cell.className = 'mp-cell';
             cell.dataset.id = it.id; cell.dataset.k = it.v ? 'v' : 'i';
-            cell.dataset.n = it.n || ''; cell.dataset.m = it.m || ''; cell.dataset.t = it.t || ''; cell.dataset.d = it.d || '';
+            cell.dataset.n = it.n || ''; cell.dataset.m = it.m || ''; cell.dataset.t = it.t || '';
             const img = new Image();
             img.decoding = 'async'; img.loading = 'lazy'; img.alt = ''; img.draggable = false;
             img.onerror = () => { img.style.visibility = 'hidden'; };
@@ -13291,46 +12846,18 @@ function mpLoad(reset) {
 async function mpPick(cell) {
     if (MP.picking) return;
     MP.picking = true;
-    const isVideo = cell.dataset.k === 'v';
-    const pickMode = MP.mode;
-    const onPickCb = MP.onPick;
-    const fileUrl = MP_HOST + '/file/' + cell.dataset.id + '?k=' + cell.dataset.k + '&t=' + MP.token;
-    const thumbUrl = MP_HOST + '/thumb/' + cell.dataset.id + '?k=' + cell.dataset.k + '&t=' + MP.token;
-    const name = cell.dataset.n || ((isVideo ? 'video_' : 'image_') + Date.now() + (isVideo ? '.mp4' : '.jpg'));
-    const type = cell.dataset.m || (isVideo ? 'video/mp4' : 'image/jpeg');
-    const durationMs = Number(cell.dataset.d || 0);
-
-    // Fast path for Upload Video / Feels: stream directly into preview without reading GBs into RAM first!
-    if (isVideo && !onPickCb && (pickMode === 'video' || pickMode === 'short')) {
-        try {
-            MP.onPick = null;
-            closeMediaPicker(true);
-            isShortFromCamera = false;
-            const lazyFile = {
-                name,
-                type,
-                size: 0,
-                isLazyNativeFile: true,
-                sourceUrl: fileUrl,
-                thumbUrl,
-                durationSec: durationMs > 0 ? (durationMs / 1000) : 0
-            };
-            handlePremiumFileSelected({ target: { files: [lazyFile] } }, pickMode === 'short' ? 'video-short' : 'video-long');
-        } finally {
-            MP.picking = false;
-            mpEl('mp-busy').classList.remove('show');
-        }
-        return;
-    }
-
     mpEl('mp-busy').classList.add('show');
     try {
-        const res = await fetch(fileUrl);
+        const isVideo = cell.dataset.k === 'v';
+        const res = await fetch(MP_HOST + '/file/' + cell.dataset.id + '?k=' + cell.dataset.k + '&t=' + MP.token);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const blob = await res.blob();
         if (!blob.size) throw new Error('empty file');
-        const mimeType = type || blob.type || (isVideo ? 'video/mp4' : 'image/jpeg');
-        const file = new File([blob], name, { type: mimeType, lastModified: Date.now() });
+        const name = cell.dataset.n || ((isVideo ? 'video_' : 'image_') + Date.now() + (isVideo ? '.mp4' : '.jpg'));
+        const type = cell.dataset.m || blob.type || (isVideo ? 'video/mp4' : 'image/jpeg');
+        const file = new File([blob], name, { type: type, lastModified: Date.now() });
+        const pickMode = MP.mode;
+        const onPickCb = MP.onPick;
         MP.onPick = null;
         closeMediaPicker(true);
         if (typeof onPickCb === 'function') {
@@ -13606,15 +13133,10 @@ async function publishPremiumVideoOrShort(modeType) {
     const uniqueId = "st_" + Date.now() + "_" + Math.floor(Math.random()*1000);
     const fileKey = `uploads/${uniqueId}/${currentUploadFile.name.replace(/\s+/g, '_')}`;
     
-    const safeMeta = currentUploadFrameMeta || {
-        duration: (currentUploadFile && currentUploadFile.durationSec > 0) ? currentUploadFile.durationSec : 60,
-        dataUrl: "",
-        blob: null
-    };
     // Convert active trim percentage to actual duration if trimmed
-    let finalDuration = safeMeta.duration;
+    let finalDuration = currentUploadFrameMeta.duration;
     if (isShort && activeTrimEnd !== undefined && activeTrimStart !== undefined) {
-        finalDuration = (activeTrimEnd - activeTrimStart) * safeMeta.duration;
+        finalDuration = (activeTrimEnd - activeTrimStart) * currentUploadFrameMeta.duration;
     }
 
     const queueItem = {
@@ -13631,8 +13153,8 @@ async function publishPremiumVideoOrShort(modeType) {
         status: "waiting", 
         progress: 0,
         duration: finalDuration,
-        thumbDataUrl: safeMeta.dataUrl,
-        thumbBlob: safeMeta.blob, 
+        thumbDataUrl: currentUploadFrameMeta.dataUrl,
+        thumbBlob: currentUploadFrameMeta.blob, 
         thumbKey: `uploads/${uniqueId}/thumbnail.jpg`,
         createdAt: Date.now(),
         scheduledTime: visibility === 'Schedule' && scheduleDate ? new Date(scheduleDate).getTime() : 0,
@@ -13956,7 +13478,6 @@ function flyInitPlayer(link){
     // stalls after the initial range request. HLS has its own recovery logic.
     v.dataset.r2RecoveryCount='0';
     const recoverR2=()=>{
-            if(v._flaynityHls) return;
             if(v.dataset.r2RecoveryCount==='1') return;
         const pos=v.currentTime||0;
         v.dataset.r2RecoveryCount='1';
@@ -14069,46 +13590,16 @@ function flySetSpeed(val,e){ if(e) e.stopPropagation(); const v=document.getElem
     const lbl=document.getElementById('fly-speed-label'); if(lbl) lbl.innerText=val+'x';
     flyBuildSpeedMenu(); flyCloseAllMenus(); flyResetHideTimer(); }
 
-function flyUpdateQualityLabel(){
-    const v=document.getElementById('fly-video');
-    const lbl=document.getElementById('fly-quality-label');
-    if(!v||!lbl) return;
-    const hls=v._flaynityHls;
-    if(!hls||!Array.isArray(hls.levels)||!hls.levels.length){ lbl.innerText='Original'; return; }
-    const activeLvl=hls.levels[hls.currentLevel];
-    const activeH=activeLvl?(Math.min(activeLvl.width||0,activeLvl.height||0)||activeLvl.height||360):360;
-    lbl.innerText=hls.autoLevelEnabled?`Auto (${activeH}p)`:`${activeH}p`;
-}
-
 function flyBuildQualityMenu(){
     const list=document.getElementById('fly-quality-list');
-    const v=document.getElementById('fly-video');
     if(!list) return;
-    const hls=v&&v._flaynityHls;
-    if(!hls||!Array.isArray(hls.levels)||!hls.levels.length){
-        list.innerHTML='<div class="fly-menu-item active"><span>Original</span><i class="fas fa-check"></i></div>';
-        flyUpdateQualityLabel();
-        return;
-    }
-    const isAuto=hls.autoLevelEnabled;
-    const curIdx=hls.currentLevel;
-    let html=`<div class="fly-menu-item ${isAuto?'active':''}" onclick="flySetQuality(-1,'Auto',event)"><span>Auto (Fast 360p–1080p)</span>${isAuto?'<i class="fas fa-check"></i>':''}</div>`;
-    hls.levels.forEach((lvl,idx)=>{
-        const q=Math.min(lvl.width||0,lvl.height||0)||lvl.height||360;
-        const active=!isAuto && curIdx===idx;
-        html+=`<div class="fly-menu-item ${active?'active':''}" onclick="flySetQuality(${idx},'${q}p',event)"><span>${q}p</span>${active?'<i class="fas fa-check"></i>':''}</div>`;
-    });
-    list.innerHTML=html;
-    flyUpdateQualityLabel();
+    list.innerHTML='<div class="fly-menu-item active"><span>Original</span><i class="fas fa-check"></i></div>';
 }
 
-function flySetQuality(levelIndex,label,e){
+function flySetQuality(height,label,e){
     if(e) e.stopPropagation();
-    const v=document.getElementById('fly-video');
-    const hls=v&&v._flaynityHls;
-    if(hls){
-        hls.currentLevel=Number(levelIndex);
-    }
+    const lbl=document.getElementById('fly-quality-label');
+    if(lbl) lbl.innerText='Original';
     flyBuildQualityMenu();
     flyCloseAllMenus(); flyResetHideTimer();
 }

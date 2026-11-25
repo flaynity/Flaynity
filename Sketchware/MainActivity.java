@@ -2962,6 +2962,11 @@ public class MainActivity extends Activity {
         public void requestNotificationPermission() {
             runOnUiThread(() -> MainActivity.this.requestNotificationPermission());
         }
+
+        @JavascriptInterface
+        public void openExternalUrl(final String url) {
+            runOnUiThread(() -> openExternalUrlNow(url));
+        }
     }
 
     @Override
@@ -3821,8 +3826,40 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void openExternalUrlNow(String url) {
+        if (url == null) return;
+        String clean = url.trim();
+        if (!clean.startsWith("https://") && !clean.startsWith("http://")) return;
+        try {
+            appOpenSuppressNext = true; // returning from external browser is not a new app entry
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(clean));
+            intent.addCategory(Intent.CATEGORY_BROWSABLE);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        } catch (Exception e) {
+            android.util.Log.e("EXTERNAL_URL", "Failed to open URL: " + e.getMessage());
+        }
+    }
+
+    private boolean isExternalLegalUrl(String url) {
+        String lower = url.toLowerCase(Locale.US);
+        return lower.contains("/terms-of-service")
+            || lower.contains("/privacy-policy")
+            || lower.contains("flaynity-terms-of-service")
+            || lower.contains("flaynity-privacy-policy");
+    }
+
     private boolean handleUrlRouting(String url) {
         if (url == null) return false;
+
+        if (isExternalLegalUrl(url)) {
+            String lower = url.toLowerCase(Locale.US);
+            String target = lower.contains("privacy")
+                ? "https://flaynity.com/privacy-policy"
+                : "https://flaynity.com/terms-of-service";
+            openExternalUrlNow(target);
+            return true;
+        }
 
         if (url.startsWith("intent:") || url.contains("t.me") || url.contains("telegram.me") || url.startsWith("whatsapp:") || url.startsWith("mailto:") || url.startsWith("tel:") || url.startsWith("market:")) {
             try {

@@ -2,15 +2,16 @@
  * Single shared Firebase initialization for the application and service pages.
  */
 const firebaseConfig = {
-  apiKey: "AIzaSyCGA5jzc3qb9QtXpkTW38DsrQUCXkPur9k",
-  authDomain: "xflay-ai.firebaseapp.com",
-  databaseURL: "https://xflay-ai-default-rtdb.firebaseio.com",
-  projectId: "xflay-ai",
-  storageBucket: "xflay-ai.firebasestorage.app",
-  messagingSenderId: "745781159590",
-  appId: "1:745781159590:web:d44cb876b45d0f58d37667",
-  measurementId: "G-19SN58NC7H"
+    apiKey: "AIzaSyCiUTQp_QDSbBIOGJXKI7jJmzQHPu8L14I",
+    authDomain: "flaynity-app.firebaseapp.com",
+    databaseURL: "https://flaynity-app-default-rtdb.firebaseio.com",
+    projectId: "flaynity-app",
+    storageBucket: "flaynity-app.firebasestorage.app",
+    messagingSenderId: "587469287255",
+    appId: "1:587469287255:web:6ec177b0c1c802efc95812",
+    measurementId: "G-HPMF5TPJB2"
 };
+
 try {
     if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);

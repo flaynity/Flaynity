@@ -1889,28 +1889,40 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 .fbcm-ai{gap:16px;padding:11px 14px;font-size:15.5px;}
 .fbcm-ai svg{width:22px;height:22px;}
 
-/* ===== CREATE YOUR CHANNEL & EMAIL VERIFY POPUP — PREMIUM CLEAN UI ===== */
+/* ===== CREATE YOUR CHANNEL & EMAIL VERIFY POPUP — PREMIUM PINK/MAGENTA/NAVY MD3 UI ===== */
 #fl-create-channel,#flcc-sheet-backdrop,#flcc-launch-overlay,#fl-email-verify-overlay{
-  --fc-bg:#F5F6FA;--fc-card:#FFFFFF;--fc-soft:#F1F2F7;--fc-ink:#111218;--fc-val:#3E4352;--fc-mut:#787E8F;--fc-sub:#989DAE;
-  --fc-bd:rgba(17,18,24,.07);--fc-card-bd:rgba(17,18,24,.045);--fc-sh:0 6px 20px rgba(17,18,24,.05);
-  --fc-row-sh:0 4px 18px rgba(17,24,39,.048);
-  --fc-ac:#D80E45;--fc-grad:linear-gradient(135deg,#FF2E74 0%,#D80E45 62%,#B40738 100%);
-  --fc-ac-soft:rgba(216,14,69,.10);--fc-ok:#10B981;--fc-ok-soft:rgba(16,185,129,.14);
-  font-family:'Plus Jakarta Sans',sans-serif;color:var(--fc-ink);
+  --fc-bg:#F6F7FB;--fc-surface:#FFFFFF;--fc-card:#FFFFFF;--fc-soft:#EEF1F7;
+  --fc-ink:#0B1226;--fc-val:#1E293B;--fc-mut:#5D667B;--fc-sub:#8B93A7;
+  --fc-bd:rgba(11,18,38,.075);--fc-card-bd:rgba(15,23,42,.05);
+  --fc-sh:0 8px 24px rgba(11,18,38,.06);
+  --fc-row-sh:0 6px 20px rgba(15,23,42,.052),0 1.5px 4px rgba(15,23,42,.028);
+  --fc-ac:#E10E5A;--fc-pink:#FF247C;--fc-magenta:#C90852;--fc-navy:#0B1648;
+  --fc-grad:linear-gradient(95deg,#FF1F7A 0%,#E10B5C 50%,#9C064D 100%);
+  --fc-grad-v:linear-gradient(180deg,#FF2A85 0%,#D10055 100%);
+  --fc-ac-soft:rgba(255,36,124,.13);
+  --fc-ok:#10B981;--fc-ok-ink:#059669;--fc-ok-soft:rgba(16,185,129,.15);
+  font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  color:var(--fc-ink);
 }
 [data-theme="dark"] #fl-create-channel,[data-theme="dark"] #flcc-sheet-backdrop,[data-theme="dark"] #flcc-launch-overlay,[data-theme="dark"] #fl-email-verify-overlay{
-  --fc-bg:#0B0C10;--fc-card:#15171F;--fc-soft:#1E212B;--fc-ink:#F7F8FC;--fc-val:#D4D8E4;--fc-mut:#9EA4B8;--fc-sub:#70768A;
-  --fc-bd:rgba(255,255,255,.08);--fc-card-bd:rgba(255,255,255,.065);--fc-sh:0 8px 24px rgba(0,0,0,.38);
-  --fc-row-sh:0 6px 20px rgba(0,0,0,.32);
-  --fc-ac-soft:rgba(255,46,116,.18);--fc-ok-soft:rgba(16,185,129,.20);
+  --fc-bg:#080B16;--fc-surface:#111629;--fc-card:#13192E;--fc-soft:#1C233D;
+  --fc-ink:#F6F8FF;--fc-val:#DCE3F5;--fc-mut:#9AA5C2;--fc-sub:#6D7896;
+  --fc-bd:rgba(255,255,255,.085);--fc-card-bd:rgba(255,255,255,.07);
+  --fc-sh:0 10px 28px rgba(0,0,0,.44);
+  --fc-row-sh:0 8px 22px rgba(0,0,0,.34),0 1px 3px rgba(0,0,0,.22);
+  --fc-ac-soft:rgba(255,36,124,.20);--fc-ok-soft:rgba(16,185,129,.20);--fc-ok-ink:#34D399;
 }
-#fl-create-channel *,#flcc-sheet-backdrop *,#flcc-launch-overlay *,#fl-email-verify-overlay *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+#fl-create-channel *,#flcc-sheet-backdrop *,#flcc-launch-overlay *,#fl-email-verify-overlay *{
+  box-sizing:border-box;-webkit-tap-highlight-color:transparent;
+}
 #fl-create-channel{
   position:fixed;inset:0;z-index:2147482900;display:none;background:var(--fc-bg);
   overflow-y:auto;overflow-x:hidden;overscroll-behavior:none;-webkit-overflow-scrolling:touch;
-  animation:fcFade .26s ease both;
+  animation:fcFade .28s cubic-bezier(.22,1,.36,1) both;
 }
 #fl-create-channel.fc-lock{overflow:hidden!important;}
+
+/* Motion Graphics & Keyframes */
 @keyframes fcFade{from{opacity:0}to{opacity:1}}
 @keyframes fcSpin{to{transform:rotate(360deg)}}
 @keyframes fcSpinR{to{transform:rotate(-360deg)}}
@@ -1919,123 +1931,348 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
 @keyframes fcPulse{0%{transform:scale(.86);opacity:.85}100%{transform:scale(1.45);opacity:0}}
 @keyframes fcDraw{to{stroke-dashoffset:0}}
 @keyframes fcBurst{0%{opacity:1;transform:translate(-50%,-50%) scale(.4) rotate(0)}100%{opacity:0;transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1.1) rotate(var(--r))}}
+@keyframes fcHeroDriftA{0%{transform:translate3d(-6%,-4%,0) scale(1) rotate(0deg)}50%{transform:translate3d(6%,5%,0) scale(1.1) rotate(6deg)}100%{transform:translate3d(-6%,-4%,0) scale(1) rotate(0deg)}}
+@keyframes fcHeroDriftB{0%{transform:translate3d(5%,4%,0) scale(1.04) rotate(0deg)}50%{transform:translate3d(-5%,-6%,0) scale(.96) rotate(-7deg)}100%{transform:translate3d(5%,4%,0) scale(1.04) rotate(0deg)}}
+@keyframes fcBeamSweep{0%{transform:translateX(-18%) skewX(-24deg);opacity:.26}50%{transform:translateX(12%) skewX(-24deg);opacity:.44}100%{transform:translateX(-18%) skewX(-24deg);opacity:.26}}
+@keyframes fcAvGlow{0%,100%{box-shadow:0 12px 30px rgba(225,14,90,.30),0 0 0 0 rgba(255,36,124,.22)}50%{box-shadow:0 14px 36px rgba(225,14,90,.42),0 0 0 7px rgba(255,36,124,.08)}}
+@keyframes fcRiseIn{from{opacity:0;transform:translate3d(0,14px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+@keyframes fcCheckPop{0%{transform:scale(.45);opacity:0}65%{transform:scale(1.16);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes fcSheen{0%{transform:translateX(-130%) skewX(-22deg)}40%,100%{transform:translateX(260%) skewX(-22deg)}}
+@keyframes fcSegPop{0%{transform:scaleY(.6)}60%{transform:scaleY(1.22)}100%{transform:scaleY(1)}}
 
-/* Hero Banner */
+/* Hero Banner — Fluid Pink, Magenta & Deep Navy Motion Canvas */
 .fc-hero{
-  position:relative;width:100%;aspect-ratio:1.8/1;overflow:hidden;
-  background:radial-gradient(85% 80% at 15% 20%,rgba(255,86,140,.52),transparent 65%),radial-gradient(80% 90% at 88% 15%,rgba(139,92,246,.48),transparent 65%),linear-gradient(135deg,#220F22 0%,#491136 50%,#1C1A38 100%);
+  position:relative;width:100%;height:186px;min-height:176px;overflow:hidden;
+  background:linear-gradient(122deg,#DF0062 0%,#9A0852 36%,#3A0B4A 64%,#081447 88%,#040A2E 100%);
   background-size:cover;background-position:center center;background-repeat:no-repeat;
 }
 .fc-hero.has-bg{
   background-size:cover !important;background-position:center center !important;background-repeat:no-repeat !important;
 }
-.fc-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,16,.38),rgba(10,10,16,.08) 48%,rgba(10,10,16,.48));pointer-events:none;}
-.fc-top{position:absolute;z-index:3;left:16px;right:16px;top:calc(env(safe-area-inset-top,0px) + 14px);display:flex;align-items:center;justify-content:space-between;gap:12px;}
-.fc-gbtn{
-  height:40px;border:1px solid rgba(255,255,255,.24);background:rgba(16,17,24,.48);color:#fff;
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  cursor:pointer;font:700 13px 'Plus Jakarta Sans',sans-serif;transition:transform .14s;
+.fc-hero-fx{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1;transition:opacity .3s ease;}
+.fc-hero.has-bg .fc-hero-fx{opacity:0;}
+.fc-hero-orb{position:absolute;border-radius:50%;filter:blur(26px);will-change:transform;}
+.fc-hero-orb.o1{
+  width:240px;height:210px;left:-46px;top:-44px;
+  background:radial-gradient(circle at 40% 40%,rgba(255,42,133,.92) 0%,rgba(216,10,92,.58) 54%,transparent 76%);
+  animation:fcHeroDriftA 11s ease-in-out infinite;
 }
-.fc-gbtn:active{transform:scale(.95);}
-.fc-back{width:40px;border-radius:50%;padding:0;}
-.fc-cov{border-radius:999px;padding:0 15px;}
-.fc-gbtn svg{width:17px;height:17px;flex-shrink:0;}
-.fc-dot-ok{width:8px;height:8px;border-radius:50%;background:var(--fc-ok);box-shadow:0 0 0 3px rgba(16,185,129,.28);display:none;}
+.fc-hero-orb.o2{
+  width:230px;height:210px;right:-42px;top:-38px;
+  background:radial-gradient(circle at 55% 45%,rgba(29,78,216,.72) 0%,rgba(12,28,96,.82) 52%,transparent 78%);
+  animation:fcHeroDriftB 13s ease-in-out infinite;
+}
+.fc-hero-orb.o3{
+  width:200px;height:150px;left:28%;bottom:-48px;
+  background:radial-gradient(circle,rgba(190,18,118,.68) 0%,rgba(91,14,78,.36) 56%,transparent 76%);
+  animation:fcHeroDriftA 15s ease-in-out infinite reverse;
+}
+.fc-hero-wave{
+  position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.88;
+}
+.fc-hero-beam{
+  position:absolute;top:-30%;right:8%;width:92px;height:190%;
+  background:linear-gradient(180deg,rgba(56,118,255,.36) 0%,rgba(37,99,235,.14) 55%,transparent 100%);
+  filter:blur(10px);animation:fcBeamSweep 9s ease-in-out infinite;
+}
+.fc-hero::after{
+  content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:linear-gradient(180deg,rgba(8,9,20,.26) 0%,rgba(8,9,20,.04) 48%,rgba(10,8,24,.34) 100%);
+}
+.fc-top{
+  position:absolute;z-index:4;left:16px;right:16px;
+  top:calc(env(safe-area-inset-top,0px) + 14px);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.fc-gbtn{
+  height:42px;border:1px solid rgba(255,255,255,.20);
+  background:rgba(12,14,32,.52);color:#fff;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  cursor:pointer;font:700 13.5px 'Plus Jakarta Sans',sans-serif;letter-spacing:-.1px;
+  box-shadow:0 6px 18px rgba(0,0,0,.22);
+  transition:transform .16s cubic-bezier(.22,1,.36,1),background .18s ease,border-color .18s ease;
+}
+.fc-gbtn:active{transform:scale(.94);background:rgba(12,14,32,.72);}
+.fc-back{width:42px;border-radius:50%;padding:0;}
+.fc-cov{border-radius:999px;padding:0 16px;}
+.fc-gbtn svg{width:18px;height:18px;flex-shrink:0;}
+.fc-dot-ok{
+  width:8px;height:8px;border-radius:50%;background:var(--fc-ok);
+  box-shadow:0 0 0 3px rgba(16,185,129,.32);display:none;
+}
 .fc-hero.has-bg .fc-dot-ok{display:inline-block;}
 
-/* Body & Avatar */
-.fc-body{position:relative;z-index:2;margin-top:-24px;background:var(--fc-bg);border-radius:26px 26px 0 0;padding:0 16px calc(32px + env(safe-area-inset-bottom,0px));min-height:calc(100% - 150px);}
-.fc-av-wrap{display:flex;justify-content:center;height:78px;margin-bottom:8px;}
+/* Curved White Sheet Body with Signature Pink Arch Accent */
+.fc-body{
+  position:relative;z-index:3;margin-top:-32px;
+  background:linear-gradient(180deg,#FFFFFF 0%,#F9FAFD 26%,var(--fc-bg) 52%);
+  border-radius:32px 32px 0 0;
+  border-top:3px solid #F41A70;
+  box-shadow:0 -6px 26px rgba(244,26,112,.22);
+  padding:0 16px calc(34px + env(safe-area-inset-bottom,0px));
+  min-height:calc(100% - 154px);
+}
+[data-theme="dark"] .fc-body{
+  background:linear-gradient(180deg,#0E1324 0%,var(--fc-bg) 38%);
+  border-top-color:#FF2A85;
+  box-shadow:0 -8px 28px rgba(255,42,133,.24);
+}
+.fc-inner{width:100%;max-width:520px;margin:0 auto;}
+
+/* Floating Profile Avatar Ring */
+.fc-av-wrap{display:flex;justify-content:center;height:76px;margin-bottom:8px;}
 .fc-av-ring{
-  position:relative;margin-top:-52px;width:118px;height:118px;border-radius:50%;padding:3.5px;cursor:pointer;
-  background:linear-gradient(135deg,#FF2E74,#FF7A59,#8B5CF6);box-shadow:0 12px 26px rgba(216,14,69,.24);transition:transform .16s;
+  position:relative;margin-top:-62px;width:124px;height:124px;border-radius:50%;padding:4px;cursor:pointer;
+  background:linear-gradient(145deg,#FF5FA2 0%,#F21671 45%,#C90858 78%,#FF3D8E 100%);
+  animation:fcAvGlow 4.2s ease-in-out infinite;
+  transition:transform .2s cubic-bezier(.22,1.2,.36,1);
 }
-.fc-av-ring:active{transform:scale(.96);}
-.fc-av-in{width:100%;height:100%;border-radius:50%;border:4px solid var(--fc-bg);background:var(--fc-card);overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.fc-av-ring:active{transform:scale(.95);}
+.fc-av-in{
+  width:100%;height:100%;border-radius:50%;
+  border:4px solid #FFFFFF;background:#FFFFFF;
+  overflow:hidden;display:flex;align-items:center;justify-content:center;
+  box-shadow:inset 0 2px 8px rgba(15,23,42,.06);
+}
+[data-theme="dark"] .fc-av-in{border-color:#0E1324;background:#161D36;}
 .fc-av-in img{width:100%;height:100%;object-fit:cover;display:block;}
-.fc-av-ph{display:flex;flex-direction:column;align-items:center;gap:4px;color:#EC4899;}
-.fc-av-ph svg{width:28px;height:28px;}
-.fc-av-ph span{font-size:10.5px;font-weight:800;color:var(--fc-mut);}
+.fc-av-ph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#E6005C;}
+.fc-av-ph svg{width:34px;height:34px;filter:drop-shadow(0 3px 6px rgba(230,0,92,.18));}
+.fc-av-ph span{font-size:12px;font-weight:700;color:var(--fc-ink);letter-spacing:-.15px;}
 .fc-av-cam{
-  position:absolute;right:2px;bottom:2px;width:32px;height:32px;border-radius:50%;border:3px solid var(--fc-bg);
-  background:var(--fc-grad);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 5px 12px rgba(216,14,69,.32);
+  position:absolute;right:2px;bottom:2px;width:34px;height:34px;border-radius:50%;
+  border:2.5px solid #FFFFFF;
+  background:linear-gradient(135deg,#FF2A85 0%,#D40055 100%);
+  color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;
+  box-shadow:0 6px 14px rgba(212,0,85,.40);
+  transition:transform .16s ease;
 }
-.fc-av-cam svg{width:14px;height:14px;}
-.fc-head{text-align:center;margin-bottom:16px;}
-.fc-head h1{margin:0 0 5px;font-size:23px;font-weight:900;letter-spacing:-.5px;}
-.fc-head p{margin:0 auto;max-width:295px;font-size:12.5px;line-height:1.5;color:var(--fc-mut);font-weight:500;}
+[data-theme="dark"] .fc-av-cam{border-color:#0E1324;}
+.fc-av-cam:active{transform:scale(.9);}
+.fc-av-cam svg{width:16px;height:16px;}
 
-/* Executive Step Progress Card */
+/* Header Typography */
+.fc-head{text-align:center;margin-bottom:18px;animation:fcRiseIn .4s .04s cubic-bezier(.22,1,.36,1) both;}
+.fc-head h1{
+  margin:0 0 6px;font-size:25px;font-weight:900;letter-spacing:-.55px;line-height:1.18;
+  color:var(--fc-ink);
+}
+.fc-head p{
+  margin:0 auto;max-width:315px;font-size:13.5px;line-height:1.48;
+  color:var(--fc-mut);font-weight:500;
+}
+
+/* KPI Step Progress Card — Signature Pink/Magenta Glow Frame */
 .fc-prog{
-  background:var(--fc-card);border:1px solid var(--fc-card-bd);border-radius:22px;padding:16px;margin-bottom:18px;box-shadow:var(--fc-row-sh);
-  transition:border-color .25s,box-shadow .25s;
+  position:relative;overflow:hidden;
+  background:var(--fc-card);
+  border:1px solid rgba(225,14,90,.12);
+  border-radius:22px;padding:16px 16px 15px;margin-bottom:14px;
+  box-shadow:0 12px 30px rgba(225,14,90,.095),0 3px 10px rgba(15,23,42,.04);
+  transition:border-color .28s ease,box-shadow .28s ease;
+  animation:fcRiseIn .44s .08s cubic-bezier(.22,1,.36,1) both;
 }
-.fc-prog.done{border-color:rgba(16,185,129,.45);box-shadow:0 10px 26px rgba(16,185,129,.12);}
-.fc-prog-row{display:flex;align-items:center;gap:14px;}
-.fc-ring-box{position:relative;width:58px;height:58px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
-.fc-ring-box svg{width:58px;height:58px;transform:rotate(-90deg);}
-.fc-ring-bg{fill:none;stroke:var(--fc-soft);stroke-width:5.5;}
-.fc-ring-fg{fill:none;stroke:var(--fc-ac);stroke-width:5.5;stroke-linecap:round;transition:stroke-dashoffset .45s cubic-bezier(.22,1,.36,1),stroke .3s;}
+.fc-prog::before{
+  content:"";position:absolute;left:-26px;top:-24px;bottom:-24px;width:118px;pointer-events:none;
+  background:radial-gradient(ellipse at 22% 52%,rgba(255,36,124,.88) 0%,rgba(225,14,90,.55) 38%,rgba(255,140,190,.18) 64%,transparent 78%);
+  border-radius:50%;
+}
+.fc-prog::after{
+  content:"";position:absolute;right:-24px;bottom:-36px;width:185px;height:115px;pointer-events:none;
+  background:radial-gradient(ellipse at 70% 80%,rgba(255,42,133,.16) 0%,rgba(255,105,175,.08) 52%,transparent 76%);
+}
+[data-theme="dark"] .fc-prog{
+  border-color:rgba(255,42,133,.22);
+  box-shadow:0 12px 30px rgba(0,0,0,.38),0 0 22px rgba(255,42,133,.10);
+}
+[data-theme="dark"] .fc-prog::before{
+  background:radial-gradient(ellipse at 22% 52%,rgba(255,42,133,.52) 0%,rgba(201,8,82,.26) 44%,transparent 76%);
+}
+.fc-prog.done{
+  border-color:rgba(16,185,129,.42);
+  box-shadow:0 12px 28px rgba(16,185,129,.14);
+}
+.fc-prog.done::before{
+  background:radial-gradient(ellipse at 22% 52%,rgba(16,185,129,.48) 0%,rgba(16,185,129,.18) 46%,transparent 76%);
+}
+.fc-prog.done::after{
+  background:radial-gradient(ellipse at 70% 80%,rgba(16,185,129,.14) 0%,transparent 74%);
+}
+.fc-prog-row{position:relative;z-index:2;display:flex;align-items:center;gap:15px;}
+.fc-ring-box{
+  position:relative;width:74px;height:74px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:50%;background:var(--fc-card);
+  box-shadow:0 6px 18px rgba(15,23,42,.10),0 0 0 3px rgba(255,255,255,.72);
+}
+[data-theme="dark"] .fc-ring-box{box-shadow:0 6px 18px rgba(0,0,0,.45),0 0 0 2px rgba(255,255,255,.08);}
+.fc-ring-box svg{width:66px;height:66px;transform:rotate(-90deg);}
+.fc-ring-bg{fill:none;stroke:#E5E8F2;stroke-width:6;}
+[data-theme="dark"] .fc-ring-bg{stroke:#232B47;}
+.fc-ring-fg{
+  fill:none;stroke:url(#flccRingGrad);stroke-width:6;stroke-linecap:round;
+  transition:stroke-dashoffset .55s cubic-bezier(.22,1,.36,1),stroke .3s ease;
+}
 .fc-prog.done .fc-ring-fg{stroke:var(--fc-ok);}
-.fc-ring-num{position:absolute;font-size:13px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--fc-ink);}
+.fc-ring-num{
+  position:absolute;font-size:16.5px;font-weight:900;letter-spacing:-.4px;
+  font-variant-numeric:tabular-nums;color:var(--fc-ink);
+}
 .fc-prog-info{flex:1;min-width:0;}
-.fc-prog-eyebrow{font-size:10px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--fc-ac);margin-bottom:2px;}
-.fc-prog.done .fc-prog-eyebrow{color:var(--fc-ok);}
-.fc-prog-title{font-size:16px;font-weight:900;letter-spacing:-.2px;line-height:1.2;}
-.fc-prog-sub{font-size:12px;font-weight:600;color:var(--fc-mut);margin-top:2px;}
-.fc-segs{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:13px;}
-.fc-seg{height:5px;border-radius:999px;background:var(--fc-soft);transition:background .28s ease;}
-.fc-seg.on{background:var(--fc-grad);}
-.fc-prog.done .fc-seg.on{background:var(--fc-ok);}
-.fc-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--fc-bd);}
-.fc-chip{
-  border:1px solid var(--fc-bd);background:var(--fc-soft);color:var(--fc-ink);border-radius:10px;padding:6px 10px;
-  font:700 11.5px 'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:transform .14s;
+.fc-prog-eyebrow{
+  display:inline-flex;align-items:center;padding:4px 11px;border-radius:999px;
+  background:rgba(255,42,133,.14);color:#D90B5C;
+  font-size:10.5px;font-weight:800;letter-spacing:.75px;text-transform:uppercase;
+  margin-bottom:6px;
 }
-.fc-chip:active{transform:scale(.95);}
-.fc-chip svg{width:14px;height:14px;color:var(--chip-c,var(--fc-ac));flex-shrink:0;}
-.fc-ready{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:12px;background:var(--fc-ok-soft);color:var(--fc-ok);font-size:12px;font-weight:800;}
-.fc-ready svg{width:16px;height:16px;}
+[data-theme="dark"] .fc-prog-eyebrow{background:rgba(255,42,133,.22);color:#FF6AA8;}
+.fc-prog.done .fc-prog-eyebrow{background:var(--fc-ok-soft);color:var(--fc-ok-ink);}
+.fc-prog-title{font-size:18.5px;font-weight:900;letter-spacing:-.35px;line-height:1.18;color:var(--fc-ink);}
+.fc-prog-sub{font-size:12.5px;font-weight:600;color:var(--fc-mut);margin-top:4px;line-height:1.35;}
 
-/* Floating Pill Cards — Reference Design (Channel Identity & Basic Information) */
-.fc-lbl{
-  font-size:14px;font-weight:600;letter-spacing:-.1px;color:var(--fc-mut);
-  margin:22px 4px 12px;
+.fc-segs{
+  position:relative;z-index:2;
+  display:grid;grid-template-columns:repeat(10,1fr);gap:5px;margin-top:14px;
 }
+.fc-seg{
+  height:6px;border-radius:999px;background:#E5E8F2;
+  transition:background .32s ease,transform .25s ease,box-shadow .28s ease;
+}
+[data-theme="dark"] .fc-seg{background:#232B47;}
+.fc-seg.on{
+  background:linear-gradient(90deg,#FF247C 0%,#D40055 100%);
+  box-shadow:0 2px 6px rgba(225,14,90,.28);
+  animation:fcSegPop .34s cubic-bezier(.22,1.25,.36,1) both;
+}
+.fc-prog.done .fc-seg.on{background:linear-gradient(90deg,#10B981,#059669);box-shadow:0 2px 6px rgba(16,185,129,.28);}
+
+/* Quick Action Chips — Floating Pill Row Outside Progress Card */
+.fc-chips{
+  display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px;
+  animation:fcRiseIn .46s .12s cubic-bezier(.22,1,.36,1) both;
+}
+.fc-chip{
+  position:relative;border:1px solid rgba(15,23,42,.055);
+  background:var(--fc-card);color:var(--fc-ink);
+  border-radius:16px;padding:7px 12px 7px 9px;
+  font:700 12.5px 'Plus Jakarta Sans',sans-serif;letter-spacing:-.1px;
+  display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  box-shadow:0 5px 15px rgba(15,23,42,.055),0 1px 3px rgba(225,14,90,.04);
+  transition:transform .16s cubic-bezier(.22,1,.36,1),box-shadow .18s ease,border-color .18s ease;
+}
+[data-theme="dark"] .fc-chip{border-color:rgba(255,255,255,.08);box-shadow:0 5px 14px rgba(0,0,0,.30);}
+.fc-chip:active{
+  transform:scale(.94);
+  border-color:rgba(225,14,90,.30);
+  box-shadow:0 3px 10px rgba(225,14,90,.16);
+}
+.fc-chip-ico{
+  width:24px;height:24px;border-radius:9px;
+  background:var(--chip-bg,var(--fc-ac-soft));color:var(--chip-c,var(--fc-ac));
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.fc-chip-ico svg{width:15px;height:15px;display:block;}
+.fc-ready{
+  width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:10px 14px;border-radius:16px;
+  background:var(--fc-ok-soft);color:var(--fc-ok-ink);
+  border:1px solid rgba(16,185,129,.22);
+  font-size:12.5px;font-weight:800;
+}
+.fc-ready svg{width:17px;height:17px;}
+
+/* Section Headings — Pink Accent Bar + Hairline */
+.fc-lbl{
+  display:flex;align-items:center;gap:10px;
+  font-size:16px;font-weight:800;letter-spacing:-.25px;color:var(--fc-ink);
+  margin:22px 2px 12px;
+}
+.fc-lbl::before{
+  content:"";width:4px;height:18px;border-radius:999px;flex-shrink:0;
+  background:var(--fc-grad-v);
+  box-shadow:0 2px 8px rgba(225,14,90,.32);
+}
+.fc-lbl::after{
+  content:"";flex:1;height:1px;margin-left:4px;
+  background:linear-gradient(90deg,rgba(15,23,42,.10) 0%,rgba(15,23,42,.02) 100%);
+}
+[data-theme="dark"] .fc-lbl::after{
+  background:linear-gradient(90deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,.02) 100%);
+}
+
+/* Individual KPI / Field Cards */
 .fc-card{
   background:transparent;border:0;border-radius:0;padding:0;box-shadow:none;
-  display:flex;flex-direction:column;gap:12px;
+  display:flex;flex-direction:column;gap:11px;
 }
 .fc-row{
   width:100%;border:1px solid var(--fc-card-bd);background:var(--fc-card);color:var(--fc-ink);
-  border-radius:22px;padding:17px 18px;box-shadow:var(--fc-row-sh);
-  display:flex;align-items:center;gap:16px;text-align:left;cursor:pointer;font-family:inherit;
-  transition:transform .14s ease,box-shadow .18s ease,border-color .18s ease;
+  border-radius:20px;padding:13px 15px;box-shadow:var(--fc-row-sh);
+  display:flex;align-items:center;gap:14px;text-align:left;cursor:pointer;font-family:inherit;
+  transition:transform .16s cubic-bezier(.22,1,.36,1),box-shadow .2s ease,border-color .2s ease;
+  animation:fcRiseIn .42s cubic-bezier(.22,1,.36,1) both;
 }
-.fc-row:active{transform:scale(.985);border-color:rgba(216,14,69,.22);}
+.fc-row:nth-child(2){animation-delay:.04s;}
+.fc-row:nth-child(3){animation-delay:.08s;}
+.fc-row:nth-child(4){animation-delay:.11s;}
+.fc-row:nth-child(5){animation-delay:.14s;}
+.fc-row:nth-child(6){animation-delay:.17s;}
+.fc-row:active{
+  transform:scale(.982);
+  border-color:rgba(225,14,90,.26);
+  box-shadow:0 4px 14px rgba(225,14,90,.12);
+}
 .fc-row.ro{cursor:default;}
-.fc-row.ro:active{transform:none;border-color:var(--fc-card-bd);}
+.fc-row.ro:active{transform:none;border-color:var(--fc-card-bd);box-shadow:var(--fc-row-sh);}
+
+/* Circular Soft-Tinted Icon Container */
 .fc-ico{
-  width:30px;height:30px;border-radius:0;background:transparent;
+  width:44px;height:44px;border-radius:50%;
+  background:var(--ic-bg,var(--fc-ac-soft));
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
   color:var(--ic-c,var(--fc-ac));
+  transition:transform .2s cubic-bezier(.22,1.2,.36,1);
 }
-.fc-ico svg{width:24px;height:24px;display:block;}
-.fc-rbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
-.fc-rname{font-size:15.5px;font-weight:700;color:var(--fc-ink);line-height:1.25;letter-spacing:-.15px;}
+.fc-row:active:not(.ro) .fc-ico{transform:scale(1.06);}
+.fc-ico svg{width:22px;height:22px;display:block;}
+
+.fc-rbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:2.5px;}
+.fc-rname{font-size:15.5px;font-weight:800;color:var(--fc-ink);line-height:1.24;letter-spacing:-.2px;}
 .fc-rval{
   font-size:13.5px;font-weight:500;color:var(--fc-mut);line-height:1.35;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .fc-rval.set{color:var(--fc-val);font-weight:600;}
 .fc-rval.ml{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4;}
-.fc-rend{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.fc-chk{width:20px;height:20px;border-radius:50%;background:var(--fc-ok-soft);color:var(--fc-ok);display:none;align-items:center;justify-content:center;}
-.fc-chk svg{width:12px;height:12px;}
-.fc-row.done .fc-chk{display:flex;}
-.fc-chv{color:var(--fc-mut);display:flex;opacity:.85;}
+
+.fc-rend{display:flex;align-items:center;gap:9px;flex-shrink:0;}
+
+/* Double-Halo Emerald Checkmark Badge */
+.fc-chk{
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(16,185,129,.15);
+  display:none;align-items:center;justify-content:center;
+}
+.fc-chk-dot{
+  width:20px;height:20px;border-radius:50%;
+  background:linear-gradient(135deg,#18C98D 0%,#0FA971 100%);
+  color:#FFFFFF;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 3px 8px rgba(16,185,129,.32);
+}
+.fc-chk-dot svg{width:12px;height:12px;display:block;}
+.fc-row.done .fc-chk{display:flex;animation:fcCheckPop .34s cubic-bezier(.22,1.35,.36,1) both;}
+
+.fc-chv{color:#475569;display:flex;opacity:.82;transition:transform .16s ease;}
+[data-theme="dark"] .fc-chv{color:#94A3B8;}
+.fc-row:active:not(.ro) .fc-chv{transform:translateX(2px);}
 .fc-chv svg{width:17px;height:17px;}
-.fc-pill-ok{font-size:10.5px;font-weight:800;color:var(--fc-ok);background:var(--fc-ok-soft);padding:4px 10px;border-radius:999px;}
+
+.fc-pill-ok{
+  font-size:12px;font-weight:800;letter-spacing:-.1px;
+  color:var(--fc-ok-ink);background:var(--fc-ok-soft);
+  padding:6px 14px;border-radius:999px;
+}
 .fc-flag{
   font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
   font-size:21px;line-height:1;display:inline-flex;align-items:center;justify-content:center;
@@ -2045,17 +2282,44 @@ body.fly-landscape #full-movie-page .wp-back{display:none!important;}
   font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
   font-size:16px;line-height:1;display:inline-flex;align-items:center;vertical-align:middle;margin-right:5px;
 }
+
 .fc-stat{min-height:18px;margin:14px 6px 8px;text-align:center;font-size:12.5px;font-weight:700;color:var(--fc-ac);}
+
+/* Primary Pill CTA Button with Glossy Highlight & Motion Sheen */
 .fc-submit{
-  width:100%;height:56px;border:0;border-radius:18px;background:var(--fc-grad);color:#fff;
-  font:800 15.5px 'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:9px;
-  cursor:pointer;box-shadow:0 12px 24px rgba(216,14,69,.28);transition:transform .14s,opacity .18s;
+  position:relative;overflow:hidden;
+  width:100%;height:58px;border:0;border-radius:999px;
+  background:linear-gradient(95deg,#FF1F7A 0%,#E10B5C 48%,#8F054B 100%);
+  color:#fff;font:800 16.5px 'Plus Jakarta Sans',sans-serif;letter-spacing:-.2px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  cursor:pointer;
+  box-shadow:0 14px 30px rgba(225,11,92,.36),inset 0 1.5px 1px rgba(255,255,255,.36),inset 0 -2px 4px rgba(80,0,40,.22);
+  transition:transform .16s cubic-bezier(.22,1,.36,1),opacity .2s ease,box-shadow .2s ease;
 }
-.fc-submit:active:not(:disabled){transform:scale(.98);}
-.fc-submit:disabled{opacity:.42;box-shadow:none;cursor:not-allowed;}
-.fc-submit svg{width:19px;height:19px;}
-.fc-terms{text-align:center;font-size:11.5px;line-height:1.55;color:var(--fc-mut);margin:12px 14px 0;}
-.fc-terms .fc-tlink{border:0;background:transparent;padding:0;margin:0;font:700 inherit;color:var(--fc-ink);text-decoration:underline;text-underline-offset:2px;cursor:pointer;display:inline;}
+.fc-submit::after{
+  content:"";position:absolute;top:0;bottom:0;left:0;width:36%;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);
+  transform:translateX(-130%) skewX(-22deg);
+  animation:fcSheen 3.8s ease-in-out infinite;
+}
+.fc-submit:active:not(:disabled){transform:scale(.975);box-shadow:0 8px 18px rgba(225,11,92,.30);}
+.fc-submit:disabled{opacity:.48;box-shadow:0 8px 20px rgba(225,11,92,.16);cursor:not-allowed;}
+.fc-submit:disabled::after{animation:none;opacity:0;}
+.fc-submit svg{width:20px;height:20px;transition:transform .18s ease;}
+.fc-submit:active:not(:disabled) svg{transform:translateX(3px);}
+
+/* Footer Legal Terms — Pink Accent Links */
+.fc-terms{
+  text-align:center;font-size:12px;line-height:1.6;color:var(--fc-mut);
+  margin:14px 12px 0;font-weight:500;
+}
+.fc-terms .fc-tlink{
+  border:0;background:transparent;padding:0;margin:0;
+  font:700 inherit;color:#E10E5A;
+  text-decoration:underline;text-decoration-color:rgba(225,14,90,.55);text-underline-offset:2.5px;
+  cursor:pointer;display:inline;
+}
+[data-theme="dark"] .fc-terms .fc-tlink{color:#FF5B9B;text-decoration-color:rgba(255,91,155,.55);}
 .fc-terms .fc-tlink:active{opacity:.7;}
 
 /* ===== FIXED VIEWPORT BOTTOM POP-UP SHEET ===== */
@@ -2964,46 +3228,79 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 
 <section id="fl-create-channel" aria-label="Create your Channel">
   <div class="fc-hero" id="flcc-banner">
+    <div class="fc-hero-fx" aria-hidden="true">
+      <div class="fc-hero-orb o1"></div>
+      <div class="fc-hero-orb o2"></div>
+      <div class="fc-hero-orb o3"></div>
+      <div class="fc-hero-beam"></div>
+      <svg class="fc-hero-wave" viewBox="0 0 400 190" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="fcWaveA" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#FF3B8D" stop-opacity="0.34"/>
+            <stop offset="55%" stop-color="#9B0A56" stop-opacity="0.16"/>
+            <stop offset="100%" stop-color="#0B1648" stop-opacity="0.05"/>
+          </linearGradient>
+          <linearGradient id="fcWaveB" x1="100%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#2563EB" stop-opacity="0.28"/>
+            <stop offset="60%" stop-color="#4C1D95" stop-opacity="0.14"/>
+            <stop offset="100%" stop-color="#E10E5A" stop-opacity="0.10"/>
+          </linearGradient>
+        </defs>
+        <path d="M0,45 C75,18 135,105 225,74 C305,46 355,15 400,32 L400,190 L0,190 Z" fill="url(#fcWaveA)"/>
+        <path d="M0,120 C95,88 180,152 285,102 C345,74 378,56 400,66 L400,190 L0,190 Z" fill="url(#fcWaveB)"/>
+      </svg>
+    </div>
     <div class="fc-top">
-      <button class="fc-gbtn fc-back" type="button" id="flcc-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <button class="fc-gbtn fc-back" type="button" id="flcc-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
       <button class="fc-gbtn fc-cov" type="button" id="flcc-change"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8.5 8a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM5.5 18l4.2-5.2 2.8 3.4 2.1-2.5L18.5 18h-13z"/></svg><span id="flcc-cov-txt">Add Background</span><span class="fc-dot-ok"></span></button>
     </div>
   </div>
   <div class="fc-body">
-    <div class="fc-av-wrap">
-      <div class="fc-av-ring" id="flcc-av-btn" role="button" tabindex="0" aria-label="Upload channel photo">
-        <div class="fc-av-in" id="flcc-av-box">
-          <div class="fc-av-ph"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.4 4L7.8 6H5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V9a3 3 0 0 0-3-3h-2.8L14.6 4H9.4zM12 9.5A4.2 4.2 0 1 1 7.8 13.7 4.2 4.2 0 0 1 12 9.5zm0 2a2.2 2.2 0 1 0 2.2 2.2A2.2 2.2 0 0 0 12 11.5z"/></svg><span>Add Photo</span></div>
-        </div>
-        <button type="button" class="fc-av-cam" aria-label="Change photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
-      </div>
-    </div>
-    <div class="fc-head">
-      <h1>Create your Channel</h1>
-      <p>Build your creator profile. Complete all 10 quick steps to launch your Flaynity channel.</p>
-    </div>
-    <div class="fc-prog" id="flcc-prog">
-      <div class="fc-prog-row">
-        <div class="fc-ring-box">
-          <svg viewBox="0 0 64 64"><circle class="fc-ring-bg" cx="32" cy="32" r="26"/><circle class="fc-ring-fg" id="flcc-ring-fg" cx="32" cy="32" r="26" stroke-dasharray="163.36" stroke-dashoffset="163.36"/></svg>
-          <span class="fc-ring-num" id="flcc-ring-num">0%</span>
-        </div>
-        <div class="fc-prog-info">
-          <div class="fc-prog-eyebrow" id="flcc-eyebrow">Channel Setup</div>
-          <div class="fc-prog-title" id="flcc-step-title">Step 0/10 Done</div>
-          <div class="fc-prog-sub" id="flcc-step-sub">10 steps remaining to launch</div>
+    <div class="fc-inner">
+      <div class="fc-av-wrap">
+        <div class="fc-av-ring" id="flcc-av-btn" role="button" tabindex="0" aria-label="Upload channel photo">
+          <div class="fc-av-in" id="flcc-av-box">
+            <div class="fc-av-ph"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.4 4L7.8 6H5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V9a3 3 0 0 0-3-3h-2.8L14.6 4H9.4zM12 9.5A4.2 4.2 0 1 1 7.8 13.7 4.2 4.2 0 0 1 12 9.5zm0 2a2.2 2.2 0 1 0 2.2 2.2A2.2 2.2 0 0 0 12 11.5z"/></svg><span>Add Profile</span></div>
+          </div>
+          <button type="button" class="fc-av-cam" aria-label="Change photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </div>
       </div>
-      <div class="fc-segs" id="flcc-segs"></div>
+      <div class="fc-head">
+        <h1>Create your Channel</h1>
+        <p>Build your creator profile. Complete all 10 quick steps to launch your Flaynity channel.</p>
+      </div>
+      <div class="fc-prog" id="flcc-prog">
+        <div class="fc-prog-row">
+          <div class="fc-ring-box">
+            <svg viewBox="0 0 64 64">
+              <defs>
+                <linearGradient id="flccRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#FF2A85"/>
+                  <stop offset="100%" stop-color="#C90852"/>
+                </linearGradient>
+              </defs>
+              <circle class="fc-ring-bg" cx="32" cy="32" r="26"/>
+              <circle class="fc-ring-fg" id="flcc-ring-fg" cx="32" cy="32" r="26" stroke-dasharray="163.36" stroke-dashoffset="163.36"/>
+            </svg>
+            <span class="fc-ring-num" id="flcc-ring-num">0%</span>
+          </div>
+          <div class="fc-prog-info">
+            <div class="fc-prog-eyebrow" id="flcc-eyebrow">Channel Setup</div>
+            <div class="fc-prog-title" id="flcc-step-title">Step 0/10 Done</div>
+            <div class="fc-prog-sub" id="flcc-step-sub">10 steps remaining • Tap any item below</div>
+          </div>
+        </div>
+        <div class="fc-segs" id="flcc-segs"></div>
+      </div>
       <div class="fc-chips" id="flcc-chips"></div>
+      <div class="fc-lbl">Channel Identity</div>
+      <div class="fc-card" id="flcc-card-id"></div>
+      <div class="fc-lbl">Basic Information</div>
+      <div class="fc-card" id="flcc-card-basic"></div>
+      <p class="fc-stat" id="flcc-status" role="status"></p>
+      <button class="fc-submit" id="flcc-submit" type="button" disabled><span>Create Channel</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      <p class="fc-terms">By creating a channel, you agree to Flaynity’s<br><button type="button" class="fc-tlink" onclick="vfOpenLegal('https://flaynity.com/terms-of-service','Terms of Service')">Terms of Service</button> and <button type="button" class="fc-tlink" onclick="vfOpenLegal('https://flaynity.com/privacy-policy','Privacy Policy')">Privacy Policy</button></p>
     </div>
-    <div class="fc-lbl">Channel Identity</div>
-    <div class="fc-card" id="flcc-card-id"></div>
-    <div class="fc-lbl">Basic Information</div>
-    <div class="fc-card" id="flcc-card-basic"></div>
-    <p class="fc-stat" id="flcc-status" role="status"></p>
-    <button class="fc-submit" id="flcc-submit" type="button" disabled><span>Create Channel</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-    <p class="fc-terms">By creating a channel, you agree to Flaynity’s <button type="button" class="fc-tlink" onclick="vfOpenLegal('https://flaynity.com/terms-of-service','Terms of Service')">Terms of Service</button> and <button type="button" class="fc-tlink" onclick="vfOpenLegal('https://flaynity.com/privacy-policy','Privacy Policy')">Privacy Policy</button>.</p>
   </div>
   <input id="flcc-banner-file" type="file" accept="image/*" hidden>
   <input id="flcc-avatar-file" type="file" accept="image/*" hidden>
@@ -3040,17 +3337,17 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 
   // Distinct official accent color & soft tint for every field icon
   const IC_STYLE = {
-    banner:   { c:'#F97316', bg:'rgba(249,115,22,.14)' },
-    avatar:   { c:'#EC4899', bg:'rgba(236,72,153,.14)' },
-    name:     { c:'#2563EB', bg:'rgba(37,99,235,.13)'  },
-    handle:   { c:'#7C3AED', bg:'rgba(124,58,237,.13)' },
-    bio:      { c:'#0284C7', bg:'rgba(2,132,199,.13)'  },
-    category: { c:'#E11D48', bg:'rgba(225,29,72,.13)'  },
-    email:    { c:'#10B981', bg:'rgba(16,185,129,.14)' },
-    phone:    { c:'#0D9488', bg:'rgba(13,148,136,.14)' },
-    country:  { c:'#4F46E5', bg:'rgba(79,70,229,.13)'  },
-    dob:      { c:'#F59E0B', bg:'rgba(245,158,11,.15)' },
-    gender:   { c:'#D946EF', bg:'rgba(217,70,239,.14)' }
+    banner:   { c:'#F97316', bg:'rgba(249,115,22,.13)' },
+    avatar:   { c:'#F01672', bg:'rgba(240,22,114,.13)' },
+    name:     { c:'#1D6BF3', bg:'rgba(29,107,243,.11)' },
+    handle:   { c:'#7C3AED', bg:'rgba(124,58,237,.11)' },
+    bio:      { c:'#1E88E5', bg:'rgba(30,136,229,.11)' },
+    category: { c:'#E11D48', bg:'rgba(225,29,72,.11)'  },
+    email:    { c:'#10B981', bg:'rgba(16,185,129,.12)' },
+    phone:    { c:'#10B981', bg:'rgba(16,185,129,.12)' },
+    country:  { c:'#6D28D9', bg:'rgba(109,40,217,.11)' },
+    dob:      { c:'#F59E0B', bg:'rgba(245,158,11,.13)' },
+    gender:   { c:'#D946EF', bg:'rgba(217,70,239,.12)' }
   };
 
   // Official Solid / High-Craft Material & System Icons — Every icon newly designed
@@ -3169,10 +3466,10 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
 
   function buildRows() {
     const mk = (id, key, icoKey, lbl, ph, ml, ro) => {
-      const col = (IC_STYLE[icoKey] && IC_STYLE[icoKey].c) || '#D80E45';
+      const st = IC_STYLE[icoKey] || { c:'#E10E5A', bg:'rgba(225,14,90,.12)' };
       return ro
-        ? `<div class="fc-row ro" id="fc-r-${id}"><span class="fc-ico" style="--ic-c:${col}">${IC[icoKey]}</span><span class="fc-rbody"><span class="fc-rname">${lbl}</span><span class="fc-rval set" id="fc-v-${id}">—</span></span><span class="fc-rend"><span class="fc-pill-ok">Verified</span></span></div>`
-        : `<button type="button" class="fc-row" id="fc-r-${id}" data-pop="${key}"><span class="fc-ico" style="--ic-c:${col}">${IC[icoKey]}</span><span class="fc-rbody"><span class="fc-rname">${lbl}</span><span class="fc-rval${ml?' ml':''}" id="fc-v-${id}">${ph}</span></span><span class="fc-rend"><span class="fc-chk">${IC.check}</span><span class="fc-chv">${IC.chev}</span></span></button>`;
+        ? `<div class="fc-row ro" id="fc-r-${id}"><span class="fc-ico" style="--ic-c:${st.c};--ic-bg:${st.bg}">${IC[icoKey]}</span><span class="fc-rbody"><span class="fc-rname">${lbl}</span><span class="fc-rval set" id="fc-v-${id}">—</span></span><span class="fc-rend"><span class="fc-pill-ok">Verified</span></span></div>`
+        : `<button type="button" class="fc-row" id="fc-r-${id}" data-pop="${key}"><span class="fc-ico" style="--ic-c:${st.c};--ic-bg:${st.bg}">${IC[icoKey]}</span><span class="fc-rbody"><span class="fc-rname">${lbl}</span><span class="fc-rval${ml?' ml':''}" id="fc-v-${id}">${ph}</span></span><span class="fc-rend"><span class="fc-chk"><span class="fc-chk-dot">${IC.check}</span></span><span class="fc-chv">${IC.chev}</span></span></button>`;
     };
 
     $('flcc-card-id').innerHTML =
@@ -3231,14 +3528,14 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
     $('flcc-prog').classList.toggle('done', done === total);
     $('flcc-eyebrow').textContent = done === total ? 'Ready To Launch' : 'Channel Setup';
     $('flcc-step-title').textContent = `Step ${done}/${total} Done`;
-    $('flcc-step-sub').textContent = done === total ? 'All 10 profile steps verified' : `${miss.length} step${miss.length>1?'s':''} remaining — tap any item below`;
+    $('flcc-step-sub').textContent = done === total ? 'All 10 profile steps verified' : `${miss.length} step${miss.length>1?'s':''} remaining • Tap any item below`;
     $('flcc-ring-num').textContent = pct + '%';
     $('flcc-ring-fg').style.strokeDashoffset = (163.36 * (1 - done / total)).toFixed(2);
     $('flcc-segs').innerHTML = steps.map((_, i) => `<span class="fc-seg${i < done ? ' on' : ''}"></span>`).join('');
     $('flcc-chips').innerHTML = miss.length
       ? miss.map(m => {
-          const col = (IC_STYLE[m.k] && IC_STYLE[m.k].c) || '#D80E45';
-          return `<button type="button" class="fc-chip" style="--chip-c:${col}" data-jump="${m.k}">${IC[m.k]||IC.spark}<span>${esc(m.l)}</span></button>`;
+          const st = IC_STYLE[m.k] || { c:'#E10E5A', bg:'rgba(225,14,90,.12)' };
+          return `<button type="button" class="fc-chip" style="--chip-c:${st.c};--chip-bg:${st.bg}" data-jump="${m.k}"><span class="fc-chip-ico">${IC[m.k]||IC.spark}</span><span>${esc(m.l)}</span></button>`;
         }).join('')
       : `<span class="fc-ready">${IC.shield}<span>All 10 steps complete — Ready to create</span></span>`;
     if (!S.saving) $('flcc-submit').disabled = miss.length > 0;
@@ -3891,7 +4188,7 @@ textarea.fc-in{min-height:124px;resize:none;line-height:1.55;padding:13px 0;}
       Object.assign(S, { banner:null, bannerPreview:'', avatar:null, avatarPreview:'', name:'', handle:'', bio:'', category:'', phone:'', country:'', countryCode:'', dob:'', gender:'', privacy:'public' });
       const h = $('flcc-banner'); h.style.backgroundImage = ''; h.classList.remove('has-bg');
       $('flcc-cov-txt').textContent = 'Add Background';
-      $('flcc-av-box').innerHTML = `<div class="fc-av-ph">${IC.avatar}<span>Add Photo</span></div>`;
+      $('flcc-av-box').innerHTML = `<div class="fc-av-ph">${IC.avatar}<span>Add Profile</span></div>`;
     }
     S.uid = u.uid; S.email = u.email || '';
     if (!S.name && u.displayName) S.name = u.displayName.slice(0,30);

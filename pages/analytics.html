@@ -862,7 +862,7 @@ function period(E, a, b) {
     comments: E.comments.filter(function (e) { return inR(e.t, a, b); }).length,
     subs: E.subs.filter(function (e) { return e.t && inR(e.t, a, b); }).length,
     watch: Math.round(watchMin * 10) / 10,
-    revenue: (S.ch && (S.ch.monetized === true || String(S.ch.monetizationStatus || '').toLowerCase() === 'active')) ? ((longV / 1000) * 0.30 + (feelV / 1000) * 0.15) : 0,
+    revenue: (S.ch && (S.ch.monetized === true || ['active', 'approved'].includes(String(S.ch.monetizationStatus || '').toLowerCase()))) ? ((longV / 1000) * 0.30 + (feelV / 1000) * 0.15) : 0,
     created: Object.keys(S.items).filter(function (id) { return inR(S.items[id].created, a, b); }).length
   };
 }
@@ -1487,7 +1487,7 @@ function sourcesSheet() {
 
 function revenueSheet() {
   var M = compute(), c = M.cur, a = M.all;
-  var isMon = !!(S.ch && (S.ch.monetized === true || String(S.ch.monetizationStatus || '').toLowerCase() === 'active'));
+  var isMon = !!(S.ch && (S.ch.monetized === true || ['active', 'approved'].includes(String(S.ch.monetizationStatus || '').toLowerCase())));
   if (!isMon) {
     sheet('<h4>Estimated Revenue Details</h4>' +
       '<div style="padding:8px 0 14px;border-bottom:1px solid var(--an-bd)"><small class="an-mu" style="font-weight:600">Monetization Inactive</small><div style="font-size:1.7rem;font-weight:800;letter-spacing:-.025em;font-variant-numeric:tabular-nums;margin-top:2px">$0.00 USDT</div></div>' +
@@ -1510,9 +1510,12 @@ function tipsSheet() {
   else if (c.views > 0 && c.longV / c.views >= 0.5) tips.push('Long videos bring ' + Math.round(c.longV / c.views * 100) + '% of your views in this range — try pairing each with a short Feel.');
   var er = c.views ? (c.likes + c.comments) / c.views * 100 : 0;
   if (c.views > 0 && er < 5) tips.push('Your engagement rate is ' + pctS(er) + '. Ask a question in your content to get more likes and comments.');
-  if (M.subTotal < 500) tips.push('You need ' + (500 - M.subTotal) + ' more subscribers to reach the 500 monetization goal.');
+  var monCfg = window.adminMonetizationSettings || {};
+  var goalSubs = Number.isFinite(Number(monCfg.minimumSubscribers)) ? Math.max(0, Number(monCfg.minimumSubscribers)) : 500;
+  var goalHrs = Number.isFinite(Number(monCfg.validPublicWatchHours)) ? Math.max(0, Number(monCfg.validPublicWatchHours)) : 50;
+  if (goalSubs > 0 && M.subTotal < goalSubs) tips.push('You need ' + (goalSubs - M.subTotal) + ' more subscribers to reach the ' + goalSubs + ' monetization goal.');
   var hrs = a.watch / 60;
-  if (hrs < 50) tips.push('You have ' + (Math.round(hrs * 10) / 10) + ' of 50 required watch hours. Longer videos add watch time faster.');
+  if (goalHrs > 0 && hrs < goalHrs) tips.push('You have ' + (Math.round(hrs * 10) / 10) + ' of ' + goalHrs + ' required watch hours. Longer videos add watch time faster.');
   if (!tips.length) tips.push('Great work! Keep publishing consistently and replying to your comments.');
   sheet('<h4>Tips to grow your channel</h4>' + tips.slice(0, 5).map(function (t) {
     return '<div class="an-tip">' + icoBox('bulb') + '<div>' + esc(t) + '</div></div>';

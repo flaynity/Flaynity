@@ -1421,6 +1421,7 @@
             };
 
             const STATE = {
+                isMonetized: false,
                 revenue: 0,
                 available: 0,
                 pending: 0,
@@ -1456,12 +1457,16 @@
                     const user = firebase.auth().currentUser;
                     if (!user) throw new Error("Please sign in to view your payout.");
                     const database = firebase.database();
-                    const [analyticsSnap, requestsSnap] = await Promise.all([
+                    const [analyticsSnap, requestsSnap, channelSnap] = await Promise.all([
                         database.ref(`channel_analytics/${user.uid}`).once('value'),
-                        database.ref(`payout_requests/${user.uid}`).once('value')
+                        database.ref(`payout_requests/${user.uid}`).once('value'),
+                        database.ref(`channels/${user.uid}`).once('value')
                     ]);
                     const analytics = analyticsSnap.val() || {};
                     const rawRequests = requestsSnap.val() || {};
+                    const channel = channelSnap.val() || {};
+                    const monStatus = String(channel.monetizationStatus || '').toLowerCase();
+                    const isMonetized = channel.monetized === true || monStatus === 'active' || monStatus === 'approved';
                     const history = Object.entries(rawRequests).map(([key, item]) => ({
                         id: item.id || key,
                         date: item.date || (item.createdAt ? new Date(item.createdAt).toISOString() : new Date().toISOString()),
@@ -1472,14 +1477,15 @@
                         accountNo: item.accountNo || '',
                         accountName: item.accountName || ''
                     })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-                    const revenue = Math.max(0, Number(analytics.totalRevenue || 0));
+                    const revenue = isMonetized ? Math.max(0, Number(analytics.totalRevenue || 0)) : 0;
                     const pending = history.filter(item => item.status === 'pending').reduce((sum, item) => sum + item.grossUSDT, 0);
                     const paid = history.filter(item => item.status === 'paid' || item.status === 'approved').reduce((sum, item) => sum + item.grossUSDT, 0);
-                    return { revenue, available: Math.max(0, revenue - pending - paid), pending, paid, history };
+                    return { isMonetized, revenue, available: isMonetized ? Math.max(0, revenue - pending - paid) : 0, pending, paid, history };
                 },
                 async submitWithdrawal(data) {
                     const user = firebase.auth().currentUser;
                     if (!user) throw new Error("Please sign in before requesting a payout.");
+                    if (!STATE.isMonetized) throw new Error("Earning revenue is locked until your channel monetization is active.");
                     if (!data || !Number.isFinite(Number(data.amountUSDT)) || Number(data.amountUSDT) <= 0) {
                         throw new Error("Enter a valid withdrawal amount.");
                     }
@@ -1527,6 +1533,9 @@
                     const user = firebase.auth().currentUser;
                     if (user) {
                         const database = firebase.database();
+                        database.ref(`channels/${user.uid}`).on('value', () => {
+                            refreshDashboardFromFirebase().catch(error => console.error('Flay Payout channel refresh failed:', error));
+                        });
                         database.ref(`channel_analytics/${user.uid}`).on('value', () => {
                             refreshDashboardFromFirebase().catch(error => console.error('Flay Payout analytics refresh failed:', error));
                         });

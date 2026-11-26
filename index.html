@@ -351,7 +351,7 @@
     // Live Internet Check during Loading Screen (parallel multi-endpoint probe, never traps online WebView offline)
     window.flCheckLiveInternet = function (timeoutMs) {
         var ms = timeoutMs || 5000;
-        if (window.__flFirebaseConnected === true) {
+        if (window.__flFirebaseConnected === true || window.__flEarlyFeedData) {
             window.__flaynityLiveOnline = true;
             return Promise.resolve(true);
         }
@@ -396,7 +396,6 @@
     };
     window.__flaynityLiveCheckPromise = window.flCheckLiveInternet(5000).then(function (ok) {
         liveCheckDone = true;
-        // Never cache a failed startup probe forever; allow later checks to re-probe cleanly.
         if (!ok) window.__flaynityLiveCheckPromise = null;
         return ok;
     }, function () {

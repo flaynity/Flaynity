@@ -1957,17 +1957,23 @@ let adminUploadSettings = {
 };
 let adminMonetizationSettings = {
     minimumSubscribers: 500,
-    validPublicWatchHours: 50,
-    minimumPublicViews: 10000,
-    minimumChannelAgeDays: 0
+    validPublicWatchHours: 3000,
+    minimumPublicViews: 10000000,
+    minimumChannelAgeDays: 0,
+    updatedAt: null
 };
+window.adminMonetizationSettings = adminMonetizationSettings;
 let lastMonetizationMetrics = null;
+let currentMonetizationRequest = null;
 let bannedUserIds = new Set();
 let hiddenChannelIds = new Set();
 let adminControlListener = null;
 let adminUploadSettingsListener = null;
 let adminMonetizationSettingsListener = null;
 let adminChannelsVisibilityListener = null;
+let userMonetizationChannelListener = null;
+let userMonetizationRequestListener = null;
+let userMonetizationListenerUid = null;
 let userStatusListener = null;
 let banPopupVisible = false;
 
@@ -2105,15 +2111,20 @@ function attachAdminControlListener() {
         adminMonetizationSettingsListener.on('value', snap => {
             const val = snap.val() || {};
             adminMonetizationSettings = {
-                minimumSubscribers: Number.isFinite(Number(val.minimumSubscribers)) ? Number(val.minimumSubscribers) : 500,
-                validPublicWatchHours: Number.isFinite(Number(val.validPublicWatchHours)) ? Number(val.validPublicWatchHours) : 50,
-                minimumPublicViews: Number.isFinite(Number(val.minimumPublicViews)) ? Number(val.minimumPublicViews) : 10000,
-                minimumChannelAgeDays: Number.isFinite(Number(val.minimumChannelAgeDays)) ? Number(val.minimumChannelAgeDays) : 0
+                minimumSubscribers: Number.isFinite(Number(val.minimumSubscribers)) ? Math.max(0, Number(val.minimumSubscribers)) : 500,
+                validPublicWatchHours: Number.isFinite(Number(val.validPublicWatchHours)) ? Math.max(0, Number(val.validPublicWatchHours)) : 3000,
+                minimumPublicViews: Number.isFinite(Number(val.minimumPublicViews)) ? Math.max(0, Number(val.minimumPublicViews)) : 10000000,
+                minimumChannelAgeDays: Number.isFinite(Number(val.minimumChannelAgeDays)) ? Math.max(0, Number(val.minimumChannelAgeDays)) : 0,
+                updatedAt: val.updatedAt || null
             };
-            if (lastMonetizationMetrics) {
-                updateMonetizationEligibility(lastMonetizationMetrics.subs, lastMonetizationMetrics.hours, lastMonetizationMetrics.views);
+            window.adminMonetizationSettings = adminMonetizationSettings;
+            if (typeof renderMonetizationPageUI === 'function') {
+                renderMonetizationPageUI();
             }
         });
+    }
+    if (auth && auth.currentUser && typeof attachUserMonetizationListeners === 'function') {
+        attachUserMonetizationListeners(auth.currentUser.uid);
     }
     if (!adminChannelsVisibilityListener) {
         adminChannelsVisibilityListener = db.ref('channels');
@@ -2148,6 +2159,9 @@ function detachAdminControlListener() {
     if (adminMonetizationSettingsListener) {
         try { adminMonetizationSettingsListener.off(); } catch(e) {}
         adminMonetizationSettingsListener = null;
+    }
+    if (typeof detachUserMonetizationListeners === 'function') {
+        detachUserMonetizationListeners();
     }
     if (adminChannelsVisibilityListener) {
         try { adminChannelsVisibilityListener.off(); } catch(e) {}
@@ -11228,7 +11242,16 @@ async function calculateChannelAnalytics() {
         }
     }
 
-    const calculatedRevenue = ((longViews / 1000) * 0.30) + ((feelsViews / 1000) * 0.15);
+    if (navigator.onLine && !currentChannelData) {
+        try {
+            const chSnap = await db.ref(`channels/${userId}`).once('value');
+            if (chSnap.exists()) currentChannelData = chSnap.val();
+        } catch (e) {}
+    }
+    const monetizedActive = isChannelMonetized(currentChannelData);
+    const calculatedRevenue = monetizedActive
+        ? (((longViews / 1000) * 0.30) + ((feelsViews / 1000) * 0.15))
+        : 0;
     const estRevenueElement = document.getElementById('estimated-revenue-val');
     if (estRevenueElement) {
         estRevenueElement.innerText = '$' + calculatedRevenue.toFixed(2) + ' USDT';
@@ -11283,64 +11306,411 @@ async function calculateChannelAnalytics() {
 }
 
 // =========================================================
-// MONETIZATION WORKFLOW ENGINE
+// MONETIZATION WORKFLOW ENGINE (REAL-TIME ADMIN SYNC + POP-UPS)
 // =========================================================
+function isChannelMonetized(ch) {
+    const data = ch || currentChannelData;
+    if (!data) return false;
+    const st = String(data.monetizationStatus || '').toLowerCase();
+    return data.monetized === true || st === 'active' || st === 'approved';
+}
+
+function formatMonetizationExact(n) {
+    const num = Math.max(0, Number(n) || 0);
+    return num.toLocaleString('en-US');
+}
+
+function formatMonetizationCompact(n) {
+    const num = Math.max(0, Number(n) || 0);
+    if (num >= 1000000000) return (num / 1000000000).toFixed(num % 1000000000 === 0 ? 0 : 1) + 'B';
+    if (num >= 1000000) return (num / 1000000).toFixed(num % 1000000 === 0 ? 0 : 1) + 'M';
+    if (num >= 10000) return (num / 1000).toFixed(num % 1000 === 0 ? 0 : 1) + 'K';
+    return num.toLocaleString('en-US');
+}
+
+function detachUserMonetizationListeners() {
+    if (userMonetizationChannelListener) {
+        try { userMonetizationChannelListener.off(); } catch (e) {}
+        userMonetizationChannelListener = null;
+    }
+    if (userMonetizationRequestListener) {
+        try { userMonetizationRequestListener.off(); } catch (e) {}
+        userMonetizationRequestListener = null;
+    }
+    userMonetizationListenerUid = null;
+    currentMonetizationRequest = null;
+}
+
+function attachUserMonetizationListeners(uid) {
+    if (!uid || typeof db === 'undefined') return;
+    if (userMonetizationListenerUid === uid && userMonetizationChannelListener && userMonetizationRequestListener) {
+        return;
+    }
+    detachUserMonetizationListeners();
+    userMonetizationListenerUid = uid;
+
+    userMonetizationChannelListener = db.ref(`channels/${uid}`);
+    userMonetizationChannelListener.on('value', snap => {
+        if (!auth.currentUser || auth.currentUser.uid !== uid) return;
+        const freshCh = snap.val();
+        if (freshCh) {
+            const prevMon = isChannelMonetized(currentChannelData);
+            currentChannelData = freshCh;
+            try {
+                localStorage.setItem('flaynity_channel_cache:' + uid, JSON.stringify(freshCh));
+                localStorage.setItem('flaynity_user_session_cache', JSON.stringify(freshCh));
+            } catch (e) {}
+            const nowMon = isChannelMonetized(freshCh);
+            if (!nowMon) {
+                const estRevEl = document.getElementById('estimated-revenue-val');
+                if (estRevEl) estRevEl.innerText = '$0.00 USDT';
+                if (prevMon && navigator.onLine) {
+                    try { db.ref(`channel_analytics/${uid}/totalRevenue`).set('0.00'); } catch (e) {}
+                }
+            }
+        }
+        renderMonetizationPageUI();
+        checkMonetizationDecisionPopup();
+    });
+
+    userMonetizationRequestListener = db.ref(`monetization_requests/${uid}`);
+    userMonetizationRequestListener.on('value', snap => {
+        if (!auth.currentUser || auth.currentUser.uid !== uid) return;
+        currentMonetizationRequest = snap.val() || null;
+        renderMonetizationPageUI();
+        checkMonetizationDecisionPopup();
+    });
+}
+
+function isMonetizationPageVisible() {
+    const page = document.getElementById('monetization-page');
+    if (!page) return false;
+    const style = window.getComputedStyle(page);
+    if (style.display !== 'none' && style.visibility !== 'hidden') return true;
+    try {
+        const cur = window.AppNavigation && AppNavigation.current && AppNavigation.current();
+        if (cur && cur.id === 'monetization-page') return true;
+    } catch (e) {}
+    return false;
+}
+
+function initMonetizationSlider() {
+    const slider = document.getElementById('premium-features-slider');
+    const dots = document.querySelectorAll('#monetization-page .mp-slider-dot');
+    if (!slider || !dots.length) return;
+    if (slider.dataset.mpSliderBound === '1') return;
+    slider.dataset.mpSliderBound = '1';
+
+    const updateActiveDot = () => {
+        const w = slider.clientWidth || 1;
+        const idx = Math.max(0, Math.min(dots.length - 1, Math.round(slider.scrollLeft / w)));
+        dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+    };
+
+    slider.addEventListener('scroll', updateActiveDot, { passive: true });
+    dots.forEach((dot, idx) => {
+        dot.addEventListener('click', () => {
+            const w = slider.clientWidth || 1;
+            slider.scrollTo({ left: idx * w, behavior: 'smooth' });
+        });
+    });
+}
+
 function openMonetizationPage() {
     playUI('click');
-    const dateSpan = document.getElementById('eligibility-date-val');
-    if (dateSpan) {
-        const options = { year: 'numeric', month: 'long', day: 'numeric' };
-        dateSpan.innerText = new Date().toLocaleDateString('en-US', options);
+    attachAdminControlListener();
+    const user = auth && auth.currentUser;
+    if (user) {
+        attachUserMonetizationListeners(user.uid);
     }
+
     AppNavigation.pushPage('monetization-page');
+    initMonetizationSlider();
+    renderMonetizationPageUI();
+
+    // Fetch live authoritative settings + analytics in background so metrics & rules are always up-to-date
+    if (navigator.onLine) {
+        db.ref('admin_control/monetization_settings').once('value').then(snap => {
+            if (snap.exists()) {
+                const val = snap.val() || {};
+                adminMonetizationSettings = {
+                    minimumSubscribers: Number.isFinite(Number(val.minimumSubscribers)) ? Math.max(0, Number(val.minimumSubscribers)) : 500,
+                    validPublicWatchHours: Number.isFinite(Number(val.validPublicWatchHours)) ? Math.max(0, Number(val.validPublicWatchHours)) : 3000,
+                    minimumPublicViews: Number.isFinite(Number(val.minimumPublicViews)) ? Math.max(0, Number(val.minimumPublicViews)) : 10000000,
+                    minimumChannelAgeDays: Number.isFinite(Number(val.minimumChannelAgeDays)) ? Math.max(0, Number(val.minimumChannelAgeDays)) : 0,
+                    updatedAt: val.updatedAt || null
+                };
+                window.adminMonetizationSettings = adminMonetizationSettings;
+                renderMonetizationPageUI();
+            }
+        }).catch(() => {});
+
+        if (user) {
+            calculateChannelAnalytics().catch(() => {});
+        }
+    }
+
+    setTimeout(() => {
+        checkMonetizationDecisionPopup();
+    }, 320);
 }
 
 function updateMonetizationEligibility(subs, hours, views) {
-    lastMonetizationMetrics = { subs, hours, views };
+    lastMonetizationMetrics = {
+        subs: Math.max(0, Number(subs) || 0),
+        hours: Math.max(0, Number(hours) || 0),
+        views: Math.max(0, Number(views) || 0)
+    };
+    renderMonetizationPageUI();
+}
+
+function renderMonetizationPageUI() {
+    const subs = lastMonetizationMetrics
+        ? lastMonetizationMetrics.subs
+        : Math.max(0, Number(currentChannelData && currentChannelData.subscribersCount) || 0);
+    const hours = lastMonetizationMetrics ? lastMonetizationMetrics.hours : 0;
+    const views = lastMonetizationMetrics ? lastMonetizationMetrics.views : 0;
+
+    // Join date
+    const dateSpan = document.getElementById('eligibility-date-val');
+    if (dateSpan) {
+        let joinTs = null;
+        if (currentChannelData && currentChannelData.createdAt) {
+            joinTs = Number(currentChannelData.createdAt) || Date.parse(currentChannelData.createdAt);
+        } else if (auth && auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) {
+            joinTs = Date.parse(auth.currentUser.metadata.creationTime);
+        }
+        const dt = joinTs && Number.isFinite(joinTs) ? new Date(joinTs) : new Date();
+        dateSpan.innerText = dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
     const targetSubs = Math.max(0, Number(adminMonetizationSettings.minimumSubscribers) || 0);
     const subPct = targetSubs === 0 ? 100 : Math.min(100, (subs / targetSubs) * 100);
     const reqSubsTxt = document.getElementById('req-subs-txt');
     const reqSubsBar = document.getElementById('req-subs-bar');
-    if (reqSubsTxt) reqSubsTxt.innerText = `${subs} / ${targetSubs}`;
+    if (reqSubsTxt) reqSubsTxt.innerHTML = `<b>${formatMonetizationExact(subs)}</b> / ${formatMonetizationExact(targetSubs)}`;
     if (reqSubsBar) reqSubsBar.style.width = `${subPct}%`;
 
     const targetHours = Math.max(0, Number(adminMonetizationSettings.validPublicWatchHours) || 0);
     const hourPct = targetHours === 0 ? 100 : Math.min(100, (hours / targetHours) * 100);
     const reqHoursTxt = document.getElementById('req-hours-txt');
     const reqHoursBar = document.getElementById('req-hours-bar');
-    if (reqHoursTxt) reqHoursTxt.innerText = `${hours} / ${targetHours} Hours`;
+    if (reqHoursTxt) reqHoursTxt.innerHTML = `<b>${hours}</b> / ${formatMonetizationExact(targetHours)} Hours`;
     if (reqHoursBar) reqHoursBar.style.width = `${hourPct}%`;
 
     const targetViews = Math.max(0, Number(adminMonetizationSettings.minimumPublicViews) || 0);
     const viewPct = targetViews === 0 ? 100 : Math.min(100, (views / targetViews) * 100);
     const reqViewsTxt = document.getElementById('req-views-txt');
     const reqViewsBar = document.getElementById('req-views-bar');
-    if (reqViewsTxt) reqViewsTxt.innerText = `${formatCount(views)} / ${formatCount(targetViews)}`;
+    if (reqViewsTxt) reqViewsTxt.innerHTML = `<b>${formatMonetizationCompact(views)}</b> / ${formatMonetizationCompact(targetViews)}`;
     if (reqViewsBar) reqViewsBar.style.width = `${viewPct}%`;
 
     const minAgeDays = Math.max(0, Number(adminMonetizationSettings.minimumChannelAgeDays) || 0);
-    const createdAt = currentChannelData && Number(currentChannelData.createdAt) ? Number(currentChannelData.createdAt) : 0;
-    const channelAgeDays = createdAt ? Math.floor((Date.now() - createdAt) / (24 * 60 * 60 * 1000)) : 0;
+    const createdAtRaw = currentChannelData && currentChannelData.createdAt ? currentChannelData.createdAt : 0;
+    const createdAt = Number(createdAtRaw) || Date.parse(createdAtRaw) || 0;
+    const channelAgeDays = createdAt ? Math.max(0, Math.floor((Date.now() - createdAt) / (24 * 60 * 60 * 1000))) : 0;
     const ageOk = minAgeDays === 0 || channelAgeDays >= minAgeDays;
+    const ageRow = document.getElementById('req-age-row');
+    if (ageRow) {
+        if (minAgeDays > 0) {
+            ageRow.style.display = 'block';
+            const agePct = Math.min(100, (channelAgeDays / minAgeDays) * 100);
+            const reqAgeTxt = document.getElementById('req-age-txt');
+            const reqAgeBar = document.getElementById('req-age-bar');
+            if (reqAgeTxt) reqAgeTxt.innerHTML = `<b>${channelAgeDays}</b> / ${minAgeDays} Days`;
+            if (reqAgeBar) reqAgeBar.style.width = `${agePct}%`;
+        } else {
+            ageRow.style.display = 'none';
+        }
+    }
 
-    const alreadyMonetized = !!(currentChannelData && (currentChannelData.monetized === true || String(currentChannelData.monetizationStatus || '').toLowerCase() === 'active'));
+    const reqStatus = String((currentMonetizationRequest && currentMonetizationRequest.status) || '').toLowerCase();
+    const chStatus = String((currentChannelData && currentChannelData.monetizationStatus) || '').toLowerCase();
+    const isApproved = isChannelMonetized(currentChannelData) || reqStatus === 'approved';
+    const isPending = !isApproved && (reqStatus === 'pending' || chStatus === 'pending');
+    const isRejected = !isApproved && !isPending && (reqStatus === 'rejected' || chStatus === 'rejected');
+    const rejectionReason = (currentMonetizationRequest && currentMonetizationRequest.rejectionReason)
+        || (currentChannelData && currentChannelData.monetizationRejectionReason)
+        || '';
+    const allEligible = (subs >= targetSubs && hours >= targetHours && views >= targetViews && ageOk);
+
+    // Status Pill in Hero
+    const pill = document.getElementById('mp-status-pill');
+    const pillText = document.getElementById('mp-status-pill-text');
+    const pillIcon = document.getElementById('mp-status-pill-icon');
+    if (pill && pillText && pillIcon) {
+        pill.className = 'mp-status-pill';
+        if (isApproved) {
+            pill.classList.add('is-approved');
+            pillText.textContent = 'Monetized';
+            pillIcon.innerHTML = '<i class="fas fa-check"></i>';
+        } else if (isPending) {
+            pill.classList.add('is-pending');
+            pillText.textContent = 'Under Review';
+            pillIcon.innerHTML = '<i class="fas fa-clock"></i>';
+        } else if (isRejected) {
+            pill.classList.add('is-rejected');
+            pillText.textContent = 'Not Approved';
+            pillIcon.innerHTML = '<i class="fas fa-exclamation"></i>';
+        } else if (allEligible) {
+            pill.classList.add('is-eligible');
+            pillText.textContent = 'Eligible';
+            pillIcon.innerHTML = '<i class="fas fa-lock-open"></i>';
+        } else {
+            pillText.textContent = 'Monetization';
+            pillIcon.innerHTML = '<i class="fas fa-lock"></i>';
+        }
+    }
+
+    // Status Alert Banner below Eligibility
+    const banner = document.getElementById('mp-status-banner');
+    const bannerIcon = document.getElementById('mp-status-banner-icon');
+    const bannerText = document.getElementById('mp-status-banner-text');
+    if (banner && bannerIcon && bannerText) {
+        banner.className = 'mp-alert-card';
+        if (isApproved) {
+            banner.classList.add('is-approved');
+            bannerIcon.innerHTML = '<i class="fas fa-check"></i>';
+            bannerText.textContent = 'Monetization is active! Your channel is now earning revenue on eligible views.';
+        } else if (isPending) {
+            banner.classList.add('is-pending');
+            bannerIcon.innerHTML = '<i class="fas fa-clock"></i>';
+            bannerText.textContent = 'Your partner application is under review. You will be notified once approved.';
+        } else if (isRejected) {
+            banner.classList.add('is-rejected');
+            bannerIcon.innerHTML = '<i class="fas fa-times"></i>';
+            bannerText.textContent = rejectionReason
+                ? `Application rejected: ${rejectionReason}`
+                : 'Your application was not approved. Review the eligibility rules and try again.';
+        } else if (allEligible) {
+            banner.classList.add('is-eligible');
+            bannerIcon.innerHTML = '<i class="fas fa-check"></i>';
+            bannerText.textContent = 'All eligibility criteria are met! Tap Apply Now below to become a Flaynity Partner.';
+        } else {
+            bannerIcon.innerHTML = '<i class="fas fa-exclamation"></i>';
+            bannerText.textContent = 'Complete all criteria to start monetizing and unlock earning opportunities.';
+        }
+    }
+
+    // Next Steps Apply Button
     const applyBtn = document.getElementById('btn-monetization-apply');
     if (applyBtn) {
-        if (alreadyMonetized) {
-            applyBtn.disabled = true;
-            applyBtn.innerText = 'Monetization Active';
-            applyBtn.style.background = '#059669';
-            applyBtn.style.cursor = 'default';
-        } else if (subs >= targetSubs && hours >= targetHours && views >= targetViews && ageOk) {
+        applyBtn.className = 'mp-apply-btn';
+        applyBtn.dataset.monState = isApproved ? 'approved' : isPending ? 'pending' : (allEligible ? 'eligible' : 'locked');
+        if (isApproved) {
             applyBtn.disabled = false;
-            applyBtn.innerText = 'Apply Now';
-            applyBtn.style.background = "var(--primary)";
-            applyBtn.style.cursor = "pointer";
-        } else {
+            applyBtn.classList.add('is-approved');
+            applyBtn.innerHTML = '<i class="fas fa-check-circle" style="margin-right:8px;"></i> Monetization Active • View Payout';
+        } else if (isPending) {
             applyBtn.disabled = true;
-            applyBtn.innerText = 'Apply Now';
-            applyBtn.style.background = "#CBD5E1";
-            applyBtn.style.cursor = "not-allowed";
+            applyBtn.classList.add('is-pending');
+            applyBtn.innerHTML = '<i class="fas fa-hourglass-half" style="margin-right:8px;"></i> Application Under Review';
+        } else if (allEligible) {
+            applyBtn.disabled = false;
+            applyBtn.innerHTML = isRejected ? 'Re-apply Now' : 'Apply Now';
+        } else {
+            applyBtn.disabled = false;
+            applyBtn.classList.add('is-locked');
+            applyBtn.innerHTML = 'Apply Now';
+        }
+    }
+}
+
+function showMonetizationPopup(type, opts = {}) {
+    const modal = document.getElementById('monetization-status-modal');
+    if (!modal) return;
+    const card = modal.querySelector('.mp-popup-card');
+    const badge = document.getElementById('mp-popup-badge');
+    const title = document.getElementById('mp-popup-title');
+    const desc = document.getElementById('mp-popup-desc');
+    const reasonBox = document.getElementById('mp-popup-reason');
+    const reasonText = document.getElementById('mp-popup-reason-text');
+    const cta = document.getElementById('mp-popup-cta');
+    const confetti = document.getElementById('mp-popup-confetti');
+
+    if (card) {
+        card.className = 'mp-popup-card mp-popup-' + type;
+    }
+
+    if (confetti) {
+        confetti.innerHTML = '';
+        if (type === 'applied' || type === 'approved') {
+            const colors = type === 'approved'
+                ? ['#E10E49', '#FF4D7E', '#F59E0B', '#10B981', '#FBBF24', '#FB7185']
+                : ['#E10E49', '#FF4D7E', '#38BDF8', '#A855F7', '#F472B6'];
+            for (let i = 0; i < 24; i++) {
+                const piece = document.createElement('span');
+                piece.className = 'mp-confetti-piece';
+                const angle = (Math.PI * 2 * i) / 24 + (Math.random() * 0.25 - 0.125);
+                const dist = 75 + Math.random() * 75;
+                piece.style.setProperty('--tx', `${Math.round(Math.cos(angle) * dist)}px`);
+                piece.style.setProperty('--ty', `${Math.round(Math.sin(angle) * dist - 20)}px`);
+                piece.style.setProperty('--rot', `${Math.round(Math.random() * 540 - 270)}deg`);
+                piece.style.setProperty('--delay', `${(Math.random() * 0.18).toFixed(2)}s`);
+                piece.style.background = colors[i % colors.length];
+                confetti.appendChild(piece);
+            }
+        }
+    }
+
+    if (reasonBox) reasonBox.style.display = 'none';
+
+    if (type === 'approved') {
+        playUI('success');
+        if (badge) badge.innerHTML = '<i class="fas fa-crown"></i>';
+        if (title) title.textContent = 'Monetization Approved!';
+        if (desc) desc.textContent = 'Congratulations! Your channel is now an official Flaynity Partner and Earning Revenue is unlocked.';
+        if (cta) cta.textContent = "Awesome, Let's Go!";
+    } else if (type === 'rejected') {
+        playUI('error');
+        if (badge) badge.innerHTML = '<i class="fas fa-times-circle"></i>';
+        if (title) title.textContent = 'Application Not Approved';
+        if (desc) desc.textContent = 'Your monetization request was rejected by the review team. Please review the reason below before re-applying.';
+        if (opts.reason && reasonBox && reasonText) {
+            reasonText.textContent = String(opts.reason);
+            reasonBox.style.display = 'block';
+        }
+        if (cta) cta.textContent = 'Understood';
+    } else {
+        playUI('success');
+        if (badge) badge.innerHTML = '<i class="fas fa-check"></i>';
+        if (title) title.textContent = 'Application Submitted!';
+        if (desc) desc.textContent = "Your Flaynity Partner application has been sent and is now under review. We'll notify you once reviewed.";
+        if (cta) cta.textContent = 'Got It';
+    }
+
+    modal.classList.add('open');
+}
+
+function closeMonetizationPopup() {
+    const modal = document.getElementById('monetization-status-modal');
+    if (modal) modal.classList.remove('open');
+}
+
+function checkMonetizationDecisionPopup() {
+    const user = auth && auth.currentUser;
+    if (!user || !isMonetizationPageVisible()) return;
+
+    const req = currentMonetizationRequest || {};
+    const ch = currentChannelData || {};
+    const reqStatus = String(req.status || '').toLowerCase();
+    const chStatus = String(ch.monetizationStatus || '').toLowerCase();
+    const storageKey = 'flaynity_mon_popup_seen_' + user.uid;
+    let lastSeen = '';
+    try { lastSeen = localStorage.getItem(storageKey) || ''; } catch (e) {}
+
+    if (isChannelMonetized(ch) || reqStatus === 'approved') {
+        const sig = 'approved:' + String(req.reviewedAt || ch.monetizedAt || ch.monetizationReviewedAt || 'active');
+        if (lastSeen !== sig) {
+            try { localStorage.setItem(storageKey, sig); } catch (e) {}
+            showMonetizationPopup('approved');
+        }
+    } else if (reqStatus === 'rejected' || chStatus === 'rejected') {
+        const reason = req.rejectionReason || ch.monetizationRejectionReason || '';
+        const sig = 'rejected:' + String(req.reviewedAt || ch.monetizationReviewedAt || reason || 'rejected');
+        if (lastSeen !== sig) {
+            try { localStorage.setItem(storageKey, sig); } catch (e) {}
+            showMonetizationPopup('rejected', { reason });
         }
     }
 }
@@ -11351,7 +11721,49 @@ async function handleMonetizationApply() {
         showNotification("Please sign in to apply for monetization.", "error");
         return;
     }
+
+    const applyBtn = document.getElementById('btn-monetization-apply');
+    const monState = applyBtn ? applyBtn.dataset.monState : '';
+
+    if (monState === 'approved' || isChannelMonetized(currentChannelData)) {
+        playUI('click');
+        AppNavigation.pushPremiumService('flay-payout');
+        return;
+    }
+
+    if (monState === 'pending') {
+        showNotification("Your monetization application is already under review.", "info");
+        return;
+    }
+
+    // Verify all eligibility rules strictly before allowing submission
+    const subs = lastMonetizationMetrics
+        ? lastMonetizationMetrics.subs
+        : Math.max(0, Number(currentChannelData && currentChannelData.subscribersCount) || 0);
+    const hours = lastMonetizationMetrics ? lastMonetizationMetrics.hours : 0;
+    const views = lastMonetizationMetrics ? lastMonetizationMetrics.views : 0;
+    const targetSubs = Math.max(0, Number(adminMonetizationSettings.minimumSubscribers) || 0);
+    const targetHours = Math.max(0, Number(adminMonetizationSettings.validPublicWatchHours) || 0);
+    const targetViews = Math.max(0, Number(adminMonetizationSettings.minimumPublicViews) || 0);
+    const minAgeDays = Math.max(0, Number(adminMonetizationSettings.minimumChannelAgeDays) || 0);
+    const createdAtRaw = currentChannelData && currentChannelData.createdAt ? currentChannelData.createdAt : 0;
+    const createdAt = Number(createdAtRaw) || Date.parse(createdAtRaw) || 0;
+    const channelAgeDays = createdAt ? Math.max(0, Math.floor((Date.now() - createdAt) / (24 * 60 * 60 * 1000))) : 0;
+    const ageOk = minAgeDays === 0 || channelAgeDays >= minAgeDays;
+
+    if (!(subs >= targetSubs && hours >= targetHours && views >= targetViews && ageOk)) {
+        playUI('error');
+        if (applyBtn) {
+            applyBtn.classList.remove('mp-shake');
+            void applyBtn.offsetWidth;
+            applyBtn.classList.add('mp-shake');
+        }
+        showNotification("Complete all eligibility criteria first to apply for monetization.", "error");
+        return;
+    }
+
     try {
+        if (applyBtn) applyBtn.disabled = true;
         await db.ref(`monetization_requests/${user.uid}`).set({
             userId: user.uid,
             channelId: user.uid,
@@ -11359,16 +11771,16 @@ async function handleMonetizationApply() {
             status: 'pending',
             createdAt: firebase.database.ServerValue.TIMESTAMP
         });
-        playUI('success');
-        const modal = document.getElementById('eligibility-success-modal');
-        if (modal) {
-            modal.style.display = 'flex';
-            setTimeout(() => {
-                modal.style.display = 'none';
-                executeBackAction();
-            }, 3000);
-        }
+        currentMonetizationRequest = {
+            userId: user.uid,
+            channelId: user.uid,
+            status: 'pending',
+            createdAt: Date.now()
+        };
+        renderMonetizationPageUI();
+        showMonetizationPopup('applied');
     } catch (err) {
+        if (applyBtn) applyBtn.disabled = false;
         showNotification("Could not submit monetization application: " + (err && err.message || "Error"), "error");
     }
 }

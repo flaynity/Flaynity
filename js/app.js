@@ -173,7 +173,6 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
             window.__flaynityOfflineSessionActive = true;
             try { firebase.database().goOffline(); } catch (e) {}
         } else {
-            // Keep Firebase online when the OS reports internet is ON so a slow probe never traps the app offline.
             try { firebase.database().goOnline(); } catch (e) {}
         }
         if (window.__flBootDone) window.__flBootDone();
@@ -1020,24 +1019,37 @@ const SyncManager = {
             previousLongsCount  = -1;
             previousPostsCount  = -1;
 
-            // The profile must never block (or break) the feed download.
-            try { await withTimeout(this.refreshProfile(), 6500); } catch (e) { console.warn('refreshProfile skipped:', e); }
+            // Run profile refresh in parallel so it NEVER delays feed rendering on Home!
+            const profilePromise = withTimeout(this.refreshProfile(), 6500).catch(e => {
+                console.warn('refreshProfile skipped:', e);
+            });
 
-            const readPath = typeof window.flReadRtdbPath === 'function'
-                ? function (p) { return window.flReadRtdbPath(p, 7500); }
-                : function (p) { return withTimeout(db.ref(p).once('value'), 9000); };
+            // Reuse fresh t=0ms early prefetch if it just finished (< 6s ago) and wasn't a manual pull-to-refresh.
+            let longsSnap = null, feelsSnap = null, legacyShortsSnap = null, postsSnap = null;
+            const early = window.__flEarlyFeedData;
+            if (!opts.skipEarly && early && (Date.now() - (early.fetchedAt || 0)) < 6000) {
+                const wrap = (v) => ({ val: () => v });
+                if (early.hasLongs) longsSnap = wrap(early.longs);
+                if (early.hasFeels) feelsSnap = wrap(early.feels);
+                if (early.hasShorts) legacyShortsSnap = wrap(early.shorts);
+                if (early.hasPosts) postsSnap = wrap(early.posts);
+            } else {
+                const readPath = typeof window.flReadRtdbPath === 'function'
+                    ? function (p) { return window.flReadRtdbPath(p, 8000); }
+                    : function (p) { return withTimeout(db.ref(p).once('value'), 9000); };
 
-            const results = await withTimeout(Promise.allSettled([
-                readPath('admin_panel/movies/user_uploads'),
-                readPath('admin_panel/movies/feels'),
-                readPath('admin_panel/movies/shorts'),
-                readPath('admin_panel/posts')
-            ]), 15000);
+                const results = await withTimeout(Promise.allSettled([
+                    readPath('admin_panel/movies/user_uploads'),
+                    readPath('admin_panel/movies/feels'),
+                    readPath('admin_panel/movies/shorts'),
+                    readPath('admin_panel/posts')
+                ]), 15000);
 
-            const longsSnap = results[0].status === 'fulfilled' ? results[0].value : null;
-            const feelsSnap = results[1].status === 'fulfilled' ? results[1].value : null;
-            const legacyShortsSnap = results[2].status === 'fulfilled' ? results[2].value : null;
-            const postsSnap = results[3].status === 'fulfilled' ? results[3].value : null;
+                longsSnap = results[0].status === 'fulfilled' ? results[0].value : null;
+                feelsSnap = results[1].status === 'fulfilled' ? results[1].value : null;
+                legacyShortsSnap = results[2].status === 'fulfilled' ? results[2].value : null;
+                postsSnap = results[3].status === 'fulfilled' ? results[3].value : null;
+            }
 
             const now = Date.now();
             if (longsSnap) {
@@ -1081,6 +1093,7 @@ const SyncManager = {
             try { if (typeof window.__flRefreshDiscoverFeels === 'function') window.__flRefreshDiscoverFeels(allFeels); } catch (e) {}
 
             this.refreshAnalytics();
+            profilePromise.catch(() => {});
             return loaded;
 
         } catch (err) {
@@ -1089,7 +1102,6 @@ const SyncManager = {
             return false;
         } finally {
             if (!loaded) {
-                // Download failed / timed out: ensure live listeners are attached and nudge WebSocket.
                 try { if (typeof window.flKickFirebaseConnection === 'function') window.flKickFirebaseConnection(false); } catch (e) {}
                 try { startRealtimeFeedsListener(); } catch (e) {}
                 try { buildHomeFeed(); } catch (e) {}
@@ -1126,6 +1138,56 @@ const SyncManager = {
 };
 
 // =========================================================
+// INSTANT EARLY FEED HYDRATION (Applies t=0ms prefetched Firebase data
+// to Home Page BEFORE the Loading Screen fades out!)
+// =========================================================
+(function () {
+    function applyEarlyFeedNow() {
+        try {
+            const early = window.__flEarlyFeedData;
+            if (!early) return false;
+            const now = Date.now();
+            if (early.hasLongs) {
+                allLongVideos = early.longs
+                    ? enforceContentAdminStatus(Object.values(early.longs).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'video')
+                    : [];
+                allLongVideos.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            }
+            if (early.hasFeels || early.hasShorts) {
+                const feelsData = early.feels ? Object.values(early.feels) : [];
+                const legacyData = early.shorts ? Object.values(early.shorts) : [];
+                const seen = new Set();
+                allFeels = enforceContentAdminStatus([...feelsData, ...legacyData].filter(m => {
+                    if (!m || (m.scheduledTime && m.scheduledTime > now) || !m.id || seen.has(String(m.id))) return false;
+                    seen.add(String(m.id));
+                    return true;
+                }), 'short');
+                allFeels.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            }
+            if (early.hasPosts) {
+                allCommunityPosts = early.posts
+                    ? enforceContentAdminStatus(Object.values(early.posts).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'post')
+                    : [];
+                allCommunityPosts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            }
+            window.__flInitialFeedFetched = true;
+            window.__flLastFeedFetchFailed = false;
+            window.__flaynityLiveOnline = true;
+            previousLongsCount = -1; previousFeelsCount = -1; previousPostsCount = -1;
+            if (document.getElementById('home-feed-container')) {
+                buildHomeFeed();
+            }
+            try { if (typeof window.__flRefreshDiscoverFeels === 'function') window.__flRefreshDiscoverFeels(allFeels); } catch (e) {}
+            try { if (window.FlaynityPosts && typeof window.FlaynityPosts.refresh === 'function') window.FlaynityPosts.refresh(); } catch (e) {}
+            return true;
+        } catch (e) { return false; }
+    }
+    window.__flApplyEarlyFeedNow = applyEarlyFeedNow;
+    window.addEventListener('flaynity-dom-ready', applyEarlyFeedNow);
+    window.addEventListener('flaynity-early-feed-ready', applyEarlyFeedNow);
+})();
+
+// =========================================================
 // UNIVERSAL SELF-HEAL WATCHDOG: online but ANY tab (Home / Feels / Posts / Discover / You)
 // is blank or stuck on skeleton -> automatically recover WebSocket + fetch via SDK/REST.
 // =========================================================
@@ -1142,11 +1204,10 @@ const SyncManager = {
             window.flKickFirebaseConnection(false);
         }
         if (!SyncManager.isRefreshing) {
-            SyncManager.refreshEverything({ force: true });
+            SyncManager.refreshEverything({ force: true, skipEarly: true });
         }
     }
 
-    // Recover automatically when RTDB WebSocket connects or app returns to foreground.
     window.addEventListener('flaynity-firebase-connected', function () {
         var noFeeds = (!allLongVideos || !allLongVideos.length) && (!allFeels || !allFeels.length) && (!allCommunityPosts || !allCommunityPosts.length);
         if (noFeeds || window.__flLastFeedFetchFailed) {
@@ -1200,7 +1261,7 @@ const SyncManager = {
 
             if (youNeedsHeal && !window.__flYouHealBusy) {
                 window.__flYouHealBusy = true;
-                setTimeout(function () { window.__flYouHealBusy = false; }, 5000);
+                setTimeout(function () { window.__flYouHealBusy = false; }, 4000);
                 try { if (typeof switchTab === 'function') switchTab('you'); } catch (e) {}
             }
 
@@ -1211,7 +1272,7 @@ const SyncManager = {
 
             if (homeNeedsHeal && !home.children.length) buildHomeFeed();
 
-            var wait = attempts < 2 ? 4000 : (attempts < 5 ? 9000 : 20000);
+            var wait = attempts < 2 ? 3500 : (attempts < 5 ? 8000 : 18000);
             if (SyncManager.isRefreshing || Date.now() - lastTry < wait) return;
             lastTry = Date.now(); attempts++;
             triggerRecovery('watchdog-' + attempts);
@@ -1588,7 +1649,7 @@ async function triggerUniversalPullToRefresh() {
     try {
         let ok = false;
         await hfRunHomeRefresh(async () => {
-            ok = await SyncManager.refreshEverything({ force: true });
+            ok = await SyncManager.refreshEverything({ force: true, skipEarly: true });
         });
         if (ok) {
             try { syncOfflineLikes(); } catch (e) {}
@@ -2479,21 +2540,9 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         }
         window.__flaynityActiveDataUid = user.uid;
 
-        // If the user just actively signed in/up OR the OS reports online, do not trap the app in offline mode.
-        const justSignedIn = !!window.__flJustSignedIn;
-        const isLiveOnline = justSignedIn
-            ? true
-            : (!navigator.onLine
-                ? false
-                : (typeof window.flCheckLiveInternet === 'function'
-                    ? await (window.__flaynityLiveCheckPromise || window.flCheckLiveInternet(5000))
-                    : true));
-        if (isStale()) return;
-
         // Only enter strict offline mode when the device itself is actually offline (!navigator.onLine).
-        // When navigator.onLine is true (even if the initial probe was slow), stay online and let
-        // Firebase SDK + HTTPS REST fallback load data automatically.
-        if (!isLiveOnline && !navigator.onLine) {
+        // When online, NEVER block startup waiting on slow probes or sequential profile checks!
+        if (!navigator.onLine) {
             let knownOffline = false;
             try {
                 knownOffline = !!(
@@ -2522,18 +2571,31 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         window.__flaynityOfflineSessionActive = false;
         try { firebase.database().goOnline(); } catch (e) {}
 
-        // Resiliently verify account status from Firebase without letting a slow/denied read trap the user on Login/Sign-Up.
+        // Apply any t=0ms prefetched Firebase feed immediately so Home is ready before the Loading Screen fades out.
+        try { if (typeof window.__flApplyEarlyFeedNow === 'function') window.__flApplyEarlyFeedNow(); } catch (e) {}
+
         const userRef = db.ref(`users/${user.uid}`);
-        let firstData = {};
+        let cachedHasChannel = window.__flaynityChannelCreatedUid === user.uid;
         try {
-            const firstSnap = (typeof window.flReadRtdbPath === 'function')
-                ? await window.flReadRtdbPath(`users/${user.uid}`, 5500)
-                : await window.__flWithTimeout(userRef.once('value'), 5000);
-            firstData = firstSnap.val() || {};
-        } catch (userReadErr) {
-            console.warn('User profile read skipped during auth transition:', userReadErr);
+            if (localStorage.getItem('flaynity_channel_created:' + user.uid) === '1' || localStorage.getItem('flaynity_channel_cache:' + user.uid)) {
+                cachedHasChannel = true;
+            }
+        } catch (e) {}
+
+        let firstData = {};
+        // For returning users with a known channel, don't block Home for 5s waiting on users/<uid>:
+        // live ban enforcement still runs via userStatusListener immediately below!
+        if (!cachedHasChannel) {
+            try {
+                const firstSnap = (typeof window.flReadRtdbPath === 'function')
+                    ? await window.flReadRtdbPath(`users/${user.uid}`, 4500)
+                    : await window.__flWithTimeout(userRef.once('value'), 4500);
+                firstData = firstSnap.val() || {};
+            } catch (userReadErr) {
+                console.warn('User profile read skipped during auth transition:', userReadErr);
+            }
+            if (isStale() || !auth.currentUser || auth.currentUser.uid !== user.uid) return;
         }
-        if (isStale() || !auth.currentUser || auth.currentUser.uid !== user.uid) return;
 
         const firstStatus = String(firstData.userStatus || firstData.accountStatus || '').toLowerCase();
         if (firstStatus === 'banned') {
@@ -2565,23 +2627,29 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         // Users without a channel must create one BEFORE the app is shown (Home never opens first).
         let needsChannel = false;
         try {
-            let hasChannel = firstData.channelCreated === true || window.__flaynityChannelCreatedUid === user.uid;
-            try {
-                if (localStorage.getItem('flaynity_channel_created:' + user.uid) === '1' || localStorage.getItem('flaynity_channel_cache:' + user.uid)) hasChannel = true;
-            } catch (e) {}
+            let hasChannel = cachedHasChannel || firstData.channelCreated === true;
 
             let channelCheckConfirmedMissing = false;
             if (!hasChannel) {
                 for (let i = 0; i < 2 && !hasChannel; i++) {
                     try {
-                        const channelSnap = await window.__flWithTimeout(db.ref('channels/' + user.uid).once('value'), 5000);
-                        if (channelSnap.exists()) { hasChannel = true; break; }
+                        const channelSnap = (typeof window.flReadRtdbPath === 'function')
+                            ? await window.flReadRtdbPath('channels/' + user.uid, 4500)
+                            : await window.__flWithTimeout(db.ref('channels/' + user.uid).once('value'), 4500);
+                        if (channelSnap.exists()) {
+                            hasChannel = true;
+                            try {
+                                const chVal = channelSnap.val();
+                                if (chVal) localStorage.setItem('flaynity_channel_cache:' + user.uid, JSON.stringify(chVal));
+                            } catch (e) {}
+                            break;
+                        }
                         channelCheckConfirmedMissing = true;
                     } catch (chErr) {
                         console.warn('Channel lookup attempt failed:', chErr);
                         channelCheckConfirmedMissing = false;
                     }
-                    if (i === 0 && !hasChannel) await new Promise(r => setTimeout(r, 400));
+                    if (i === 0 && !hasChannel) await new Promise(r => setTimeout(r, 300));
                 }
             }
             if (hasChannel) { try { localStorage.setItem('flaynity_channel_created:' + user.uid, '1'); } catch (e) {} }
@@ -3762,8 +3830,6 @@ function startRealtimeFeedsListener() {
         };
         db.ref('admin_panel/movies/feels').on('value', _globalFeedCbs.feels, (err) => console.warn('feels listener error:', err));
 
-        // Keep existing Home Page Feels/Shorts cards compatible with the original Firebase path.
-        // The UI is named Feels, but older content is stored under /shorts.
         _globalFeedCbs.shorts = (snap) => {
             try {
                 const legacyData = snap.val() ? Object.values(snap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
@@ -9721,7 +9787,15 @@ async function switchTab(tabId) {
             return;
         }
 
-        // No cache yet (first ever open): fetch with timeout + REST fallback so You tab never hangs blank.
+        // Ensure #view-channel-page (from pages/you.html) is mounted before opening it.
+        if (!document.getElementById('view-channel-page')) {
+            await new Promise(resolve => {
+                const t = setTimeout(resolve, 3000);
+                window.addEventListener('flaynity-pages-ready', () => { clearTimeout(t); resolve(); }, { once: true });
+            });
+        }
+
+        // No cache yet: fetch with fast SDK + HTTPS REST race so You tab never hangs blank.
         if (navigator.onLine) {
             try {
                 const snapshot = (typeof window.flReadRtdbPath === 'function')
@@ -9743,7 +9817,20 @@ async function switchTab(tabId) {
             AppNavigation.pushPage('view-channel-page');
             renderOfflineChannelPageSkeletons();
         } else {
-            currentChannelData = null;
+            // Never leave the user on the hidden/blank #you-tab: synthesize a fallback channel view from auth user.
+            const fallbackName = user.displayName || (user.email ? user.email.split('@')[0] : 'My Channel');
+            const fallbackHandle = (user.email ? user.email.split('@')[0] : 'flaynity_user').toLowerCase().replace(/[^a-z0-9_]/g, '') || 'user';
+            currentChannelData = {
+                uid: user.uid,
+                userId: user.uid,
+                channelName: fallbackName,
+                handle: fallbackHandle,
+                avatarUrl: user.photoURL || '',
+                bannerUrl: '',
+                description: '',
+                subscribersCount: 0
+            };
+            openViewChannelPage();
             initYouTabUI();
         }
     }
@@ -17295,7 +17382,6 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
     function connectFeels() {
         var grid = document.getElementById("discover-feels-grid");
         if (!grid) return;
-        // If Home/SyncManager already loaded Feels, paint Discover immediately instead of waiting.
         if ((grid.dataset.state === "loading" || grid.dataset.state === "connecting" || !grid.children.length) &&
             typeof allFeels !== "undefined" && Array.isArray(allFeels) && allFeels.length) {
             renderFromArray(allFeels);
@@ -17324,14 +17410,12 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
                 console.error("Discover Feels Firebase error:", error);
                 fetchDiscoverViaRest();
             });
-            // If Firebase WebSocket hasn't answered within 4.5s, fetch directly via HTTPS REST fallback.
             setTimeout(function () {
                 var g = document.getElementById("discover-feels-grid");
                 if (g && g.dataset.state === "loading") {
                     fetchDiscoverViaRest();
                 }
-            }, 4500);
-            // Avoid an endless skeleton if Firebase never answers (permission/network error).
+            }, 3500);
             setTimeout(function () {
                 var g = document.getElementById("discover-feels-grid");
                 if (g && g.dataset.state === "loading") {

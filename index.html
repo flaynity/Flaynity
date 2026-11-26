@@ -348,50 +348,61 @@
     var started = false, finished = false, animDone = false, domReady = false, liveCheckDone = false;
     var reduced = false, darkPref = false;
 
-    // Live Internet Check during Loading Screen (does not trust stale navigator.onLine alone)
+    // Live Internet Check during Loading Screen (parallel multi-endpoint probe, never traps online WebView offline)
     window.flCheckLiveInternet = function (timeoutMs) {
-        var ms = timeoutMs || 3500;
+        var ms = timeoutMs || 5000;
+        if (window.__flFirebaseConnected === true) {
+            window.__flaynityLiveOnline = true;
+            return Promise.resolve(true);
+        }
         if (!navigator.onLine) {
             window.__flaynityLiveOnline = false;
             return Promise.resolve(false);
         }
-        var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        var timer = setTimeout(function () { if (ctrl) try { ctrl.abort(); } catch (e) {} }, ms);
-        return fetch('https://www.gstatic.com/generate_204?_=' + Date.now(), {
-            method: 'GET',
-            mode: 'no-cors',
-            cache: 'no-store',
-            signal: ctrl ? ctrl.signal : undefined
-        }).then(function () {
-            clearTimeout(timer);
-            window.__flaynityLiveOnline = true;
-            return true;
-        }).catch(function () {
-            clearTimeout(timer);
-            var ctrl2 = typeof AbortController !== 'undefined' ? new AbortController() : null;
-            var timer2 = setTimeout(function () { if (ctrl2) try { ctrl2.abort(); } catch (e) {} }, Math.min(2000, ms));
-            return fetch('https://www.google.com/favicon.ico?_=' + Date.now(), {
-                method: 'GET',
-                mode: 'no-cors',
-                cache: 'no-store',
-                signal: ctrl2 ? ctrl2.signal : undefined
-            }).then(function () {
-                clearTimeout(timer2);
-                window.__flaynityLiveOnline = true;
-                return true;
-            }).catch(function () {
-                clearTimeout(timer2);
-                window.__flaynityLiveOnline = false;
-                return false;
+        var endpoints = [
+            'https://www.gstatic.com/generate_204?_=' + Date.now(),
+            'https://flaynity-app-default-rtdb.firebaseio.com/.json?shallow=true&_=' + Date.now(),
+            'https://www.google.com/favicon.ico?_=' + Date.now()
+        ];
+        return new Promise(function (resolve) {
+            var settled = false;
+            var failed = 0;
+            var ctrls = [];
+            var done = function (ok) {
+                if (settled) return;
+                settled = true;
+                clearTimeout(hardTimer);
+                ctrls.forEach(function (c) { try { c.abort(); } catch (e) {} });
+                window.__flaynityLiveOnline = !!ok;
+                resolve(!!ok);
+            };
+            var hardTimer = setTimeout(function () { done(false); }, ms);
+            endpoints.forEach(function (url) {
+                var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                if (ctrl) ctrls.push(ctrl);
+                fetch(url, {
+                    method: 'GET',
+                    mode: 'no-cors',
+                    cache: 'no-store',
+                    signal: ctrl ? ctrl.signal : undefined
+                }).then(function () {
+                    done(true);
+                }).catch(function () {
+                    failed++;
+                    if (failed >= endpoints.length) done(false);
+                });
             });
         });
     };
-    window.__flaynityLiveCheckPromise = window.flCheckLiveInternet(3500).then(function (ok) {
+    window.__flaynityLiveCheckPromise = window.flCheckLiveInternet(5000).then(function (ok) {
         liveCheckDone = true;
+        // Never cache a failed startup probe forever; allow later checks to re-probe cleanly.
+        if (!ok) window.__flaynityLiveCheckPromise = null;
         return ok;
     }, function () {
         liveCheckDone = true;
         window.__flaynityLiveOnline = false;
+        window.__flaynityLiveCheckPromise = null;
         return false;
     });
     try { darkPref = localStorage.getItem('flaynity-theme-pref') === 'dark'; if (darkPref) splash.classList.add('fs-dark'); } catch (e) {}

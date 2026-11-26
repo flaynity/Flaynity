@@ -169,17 +169,22 @@ try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; 
         if (authScr) authScr.style.display = 'none';
         if (appScr) appScr.style.display = 'block';
         document.body.classList.remove('auth-active');
-        window.__flaynityOfflineSessionActive = true;
+        if (!navigator.onLine) {
+            window.__flaynityOfflineSessionActive = true;
+            try { firebase.database().goOffline(); } catch (e) {}
+        } else {
+            // Keep Firebase online when the OS reports internet is ON so a slow probe never traps the app offline.
+            try { firebase.database().goOnline(); } catch (e) {}
+        }
         if (window.__flBootDone) window.__flBootDone();
         try { window.__flWatchHomeReady && window.__flWatchHomeReady(); } catch (e) {}
-        try { firebase.database().goOffline(); } catch (e) {}
-        try { if (typeof renderAllSkeletons === 'function') renderAllSkeletons(); } catch (e) {}
+        try { if (typeof renderAllSkeletons === 'function' && (!window.__flHomeHasContent || !window.__flHomeHasContent())) renderAllSkeletons(); } catch (e) {}
         try { setTimeout(() => { typeof flEnsureNavYouIcon === 'function' && flEnsureNavYouIcon(); }, 400); } catch (e) {}
     }
     try {
         if (window.__flaynityLiveCheckPromise && typeof window.__flaynityLiveCheckPromise.then === 'function') {
             window.__flaynityLiveCheckPromise.then(function (isOnline) {
-                if (!isOnline) showOfflineCachedApp(true);
+                if (!isOnline && !navigator.onLine) showOfflineCachedApp(true);
                 else { try { firebase.database().goOnline(); } catch (e) {} }
             });
         }
@@ -1008,21 +1013,26 @@ const SyncManager = {
 
         try {
             try { firebase.database().goOnline(); } catch (e) {}
-            _detachAllGlobalFeedListeners();
+            window.__flaynityLiveOnline = true;
+            window.__flaynityOfflineSessionActive = false;
 
             previousFeelsCount = -1;
             previousLongsCount  = -1;
             previousPostsCount  = -1;
 
             // The profile must never block (or break) the feed download.
-            try { await withTimeout(this.refreshProfile(), 6000); } catch (e) { console.warn('refreshProfile skipped:', e); }
+            try { await withTimeout(this.refreshProfile(), 6500); } catch (e) { console.warn('refreshProfile skipped:', e); }
+
+            const readPath = typeof window.flReadRtdbPath === 'function'
+                ? function (p) { return window.flReadRtdbPath(p, 7500); }
+                : function (p) { return withTimeout(db.ref(p).once('value'), 9000); };
 
             const results = await withTimeout(Promise.allSettled([
-                db.ref('admin_panel/movies/user_uploads').once('value'),
-                db.ref('admin_panel/movies/feels').once('value'),
-                db.ref('admin_panel/movies/shorts').once('value'),
-                db.ref('admin_panel/posts').once('value')
-            ]), 12000);
+                readPath('admin_panel/movies/user_uploads'),
+                readPath('admin_panel/movies/feels'),
+                readPath('admin_panel/movies/shorts'),
+                readPath('admin_panel/posts')
+            ]), 15000);
 
             const longsSnap = results[0].status === 'fulfilled' ? results[0].value : null;
             const feelsSnap = results[1].status === 'fulfilled' ? results[1].value : null;
@@ -1055,25 +1065,32 @@ const SyncManager = {
             }
 
             loaded = !!(longsSnap || feelsSnap || legacyShortsSnap || postsSnap);
-            window.__flInitialFeedFetched = true;
+            window.__flLastFeedFetchFailed = !loaded;
+            if (loaded) window.__flInitialFeedFetched = true;
+
             startRealtimeFeedsListener();
 
             buildHomeFeed();
 
             const feelsTab = document.getElementById('feels-tab');
-            if (feelsTab && feelsTab.classList.contains('active')) buildFeelsPage();
+            const feelsBox = document.getElementById('feels-swiper-container');
+            if ((feelsTab && feelsTab.classList.contains('active')) || (feelsBox && feelsBox.querySelector('.skel-box'))) {
+                try { buildFeelsPage(); } catch (e) {}
+            }
+            try { if (window.FlaynityPosts && typeof window.FlaynityPosts.refresh === 'function') window.FlaynityPosts.refresh(); } catch (e) {}
+            try { if (typeof window.__flRefreshDiscoverFeels === 'function') window.__flRefreshDiscoverFeels(allFeels); } catch (e) {}
 
             this.refreshAnalytics();
             return loaded;
 
         } catch (err) {
             console.error("SyncManager Execution Error:", err);
+            window.__flLastFeedFetchFailed = true;
             return false;
         } finally {
-            window.__flInitialFeedFetched = true;
             if (!loaded) {
-                // Download failed / timed out: the live listeners were detached above, so put them back.
-                // They deliver the feed as soon as the connection is ready (no more empty Home).
+                // Download failed / timed out: ensure live listeners are attached and nudge WebSocket.
+                try { if (typeof window.flKickFirebaseConnection === 'function') window.flKickFirebaseConnection(false); } catch (e) {}
                 try { startRealtimeFeedsListener(); } catch (e) {}
                 try { buildHomeFeed(); } catch (e) {}
             }
@@ -1084,13 +1101,17 @@ const SyncManager = {
     refreshProfile: async function() {
         const currentUser = auth.currentUser;
         if (currentUser) {
-            try { db.ref(`channels/${currentUser.uid}`).off(); } catch(e) {}
-            try { db.ref(`users/${currentUser.uid}`).off(); } catch(e) {}
+            const readPath = typeof window.flReadRtdbPath === 'function'
+                ? function (p) { return window.flReadRtdbPath(p, 6000); }
+                : function (p) { return db.ref(p).once('value'); };
 
-            const snap = await db.ref(`channels/${currentUser.uid}`).once('value');
+            const snap = await readPath(`channels/${currentUser.uid}`);
             currentChannelData = snap.val();
             if (currentChannelData) {
-                localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                try {
+                    localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                    localStorage.setItem('flaynity_channel_cache:' + currentUser.uid, JSON.stringify(currentChannelData));
+                } catch (e) {}
             }
             initYouTabUI();
             if (typeof attachUserMonetizationListeners === 'function') {
@@ -1105,42 +1126,109 @@ const SyncManager = {
 };
 
 // =========================================================
-// HOME SELF-HEAL: online but Home is blank / stuck on the skeleton -> recover automatically
-// (redraw if data exists, otherwise download the feeds again with a back-off).
+// UNIVERSAL SELF-HEAL WATCHDOG: online but ANY tab (Home / Feels / Posts / Discover / You)
+// is blank or stuck on skeleton -> automatically recover WebSocket + fetch via SDK/REST.
 // =========================================================
 (function () {
     var lastTry = 0, attempts = 0;
+
+    function triggerRecovery(reason) {
+        if (!navigator.onLine || document.hidden) return;
+        if (typeof auth === 'undefined' || !auth.currentUser) return;
+        window.__flaynityLiveOnline = true;
+        window.__flaynityOfflineSessionActive = false;
+        try { firebase.database().goOnline(); } catch (e) {}
+        if (!window.__flFirebaseConnected && typeof window.flKickFirebaseConnection === 'function') {
+            window.flKickFirebaseConnection(false);
+        }
+        if (!SyncManager.isRefreshing) {
+            SyncManager.refreshEverything({ force: true });
+        }
+    }
+
+    // Recover automatically when RTDB WebSocket connects or app returns to foreground.
+    window.addEventListener('flaynity-firebase-connected', function () {
+        var noFeeds = (!allLongVideos || !allLongVideos.length) && (!allFeels || !allFeels.length) && (!allCommunityPosts || !allCommunityPosts.length);
+        if (noFeeds || window.__flLastFeedFetchFailed) {
+            triggerRecovery('firebase-connected');
+        }
+        try { if (typeof window.__flRefreshDiscoverFeels === 'function') window.__flRefreshDiscoverFeels(); } catch (e) {}
+    });
+
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden && navigator.onLine) {
+            try { firebase.database().goOnline(); } catch (e) {}
+            var noFeeds = (!allLongVideos || !allLongVideos.length) && (!allFeels || !allFeels.length) && (!allCommunityPosts || !allCommunityPosts.length);
+            if (noFeeds || window.__flLastFeedFetchFailed) {
+                triggerRecovery('resume');
+            }
+        }
+    });
+
     setInterval(function () {
         try {
             if (!navigator.onLine || document.hidden) return;
-            var home = document.getElementById('home-feed-container');
-            var homeTab = document.getElementById('home-tab');
-            if (!home || !homeTab || !homeTab.classList.contains('active')) return;
             if (typeof _hfHoldRender !== 'undefined' && _hfHoldRender) return;
             if (typeof auth === 'undefined' || !auth.currentUser) return;
-            if (!isAdminFeatureEnabled('homeFeedEnabled')) return;
 
-            home.classList.remove('hf-leaving');
-            var blank = !home.children.length || !!home.querySelector('.offline-home-skeleton');
-            if (!blank) { attempts = 0; return; }
+            var hasAnyFeed = (allLongVideos && allLongVideos.length) || (allFeels && allFeels.length) || (allCommunityPosts && allCommunityPosts.length);
+            var home = document.getElementById('home-feed-container');
+            var homeTab = document.getElementById('home-tab');
+            var feelsTab = document.getElementById('feels-tab');
+            var feelsBox = document.getElementById('feels-swiper-container');
+            var postsTab = document.getElementById('posts-tab');
+            var postsBox = document.getElementById('posts-feed-container');
+            var discoverGrid = document.getElementById('discover-feels-grid');
+            var youTab = document.getElementById('you-tab');
 
-            var hasData = (allLongVideos && allLongVideos.length) || (allFeels && allFeels.length);
-            if (hasData) { buildHomeFeed(); return; }
-            if (!home.children.length) buildHomeFeed();   // at least the skeleton, never a blank screen
+            var homeNeedsHeal = !!(home && homeTab && homeTab.classList.contains('active') && isAdminFeatureEnabled('homeFeedEnabled') &&
+                (!home.children.length || !!home.querySelector('.offline-home-skeleton') || !!home.querySelector('.fl-empty-retry-state')));
+            var feelsNeedsHeal = !!(feelsTab && feelsTab.classList.contains('active') && feelsBox && (!feelsBox.children.length || !!feelsBox.querySelector('.skel-box')));
+            var postsNeedsHeal = !!(postsTab && postsTab.classList.contains('active') && postsBox && (!postsBox.children.length || !!postsBox.querySelector('.offline-home-skeleton')));
+            var discoverNeedsHeal = !!(discoverGrid && (discoverGrid.dataset.state === 'loading' || discoverGrid.dataset.state === 'connecting'));
+            var youNeedsHeal = !!(youTab && youTab.classList.contains('active'));
 
-            var wait = attempts < 3 ? 5000 : 30000;
+            if (home && homeTab && homeTab.classList.contains('active')) home.classList.remove('hf-leaving');
+
+            if (hasAnyFeed) {
+                if (homeNeedsHeal) { previousLongsCount = -1; previousFeelsCount = -1; previousPostsCount = -1; buildHomeFeed(); }
+                if (feelsNeedsHeal && allFeels && allFeels.length) { buildFeelsPage(); }
+                if (postsNeedsHeal && window.FlaynityPosts) { window.FlaynityPosts.refresh(); }
+                if (discoverNeedsHeal && typeof window.__flRefreshDiscoverFeels === 'function') { window.__flRefreshDiscoverFeels(allFeels); }
+                if (!youNeedsHeal) { attempts = 0; return; }
+            }
+
+            if (youNeedsHeal && !window.__flYouHealBusy) {
+                window.__flYouHealBusy = true;
+                setTimeout(function () { window.__flYouHealBusy = false; }, 5000);
+                try { if (typeof switchTab === 'function') switchTab('you'); } catch (e) {}
+            }
+
+            if (!homeNeedsHeal && !feelsNeedsHeal && !postsNeedsHeal && !discoverNeedsHeal && hasAnyFeed) {
+                attempts = 0;
+                return;
+            }
+
+            if (homeNeedsHeal && !home.children.length) buildHomeFeed();
+
+            var wait = attempts < 2 ? 4000 : (attempts < 5 ? 9000 : 20000);
             if (SyncManager.isRefreshing || Date.now() - lastTry < wait) return;
             lastTry = Date.now(); attempts++;
-            SyncManager.refreshEverything();
+            triggerRecovery('watchdog-' + attempts);
         } catch (e) {}
     }, 2000);
 })();
 
+const _globalFeedCbs = {};
 function _detachAllGlobalFeedListeners() {
-    try { db.ref('admin_panel/movies/user_uploads').off(); } catch(e) {}
-    try { db.ref('admin_panel/movies/feels').off(); } catch(e) {}
-        try { db.ref('admin_panel/movies/shorts').off(); } catch(e) {}
-    try { db.ref('admin_panel/posts').off(); } catch(e) {}
+    if (_globalFeedCbs.users) { try { db.ref('users').off('value', _globalFeedCbs.users); } catch(e) {} delete _globalFeedCbs.users; }
+    if (_globalFeedCbs.user_uploads) { try { db.ref('admin_panel/movies/user_uploads').off('value', _globalFeedCbs.user_uploads); } catch(e) {} delete _globalFeedCbs.user_uploads; }
+    if (_globalFeedCbs.feels) { try { db.ref('admin_panel/movies/feels').off('value', _globalFeedCbs.feels); } catch(e) {} delete _globalFeedCbs.feels; }
+    if (_globalFeedCbs.shorts) { try { db.ref('admin_panel/movies/shorts').off('value', _globalFeedCbs.shorts); } catch(e) {} delete _globalFeedCbs.shorts; }
+    if (_globalFeedCbs.posts) { try { db.ref('admin_panel/posts').off('value', _globalFeedCbs.posts); } catch(e) {} delete _globalFeedCbs.posts; }
+    if (_globalFeedCbs.channelRef && _globalFeedCbs.channelCb) { try { _globalFeedCbs.channelRef.off('value', _globalFeedCbs.channelCb); } catch(e) {} delete _globalFeedCbs.channelRef; delete _globalFeedCbs.channelCb; }
+    if (_globalFeedCbs.selfUserRef && _globalFeedCbs.selfUserCb) { try { _globalFeedCbs.selfUserRef.off('value', _globalFeedCbs.selfUserCb); } catch(e) {} delete _globalFeedCbs.selfUserRef; delete _globalFeedCbs.selfUserCb; }
+    _feedListenersAttached = false;
 
     Object.keys(boundChannelListeners).forEach(uid => {
         try { db.ref(`channels/${uid}`).off(); } catch(e) {}
@@ -2391,16 +2479,21 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         }
         window.__flaynityActiveDataUid = user.uid;
 
-        // If the user just actively signed in/up, they are online; do not reuse a stale offline boot promise.
+        // If the user just actively signed in/up OR the OS reports online, do not trap the app in offline mode.
         const justSignedIn = !!window.__flJustSignedIn;
         const isLiveOnline = justSignedIn
             ? true
-            : (typeof window.flCheckLiveInternet === 'function'
-                ? await (window.__flaynityLiveCheckPromise || window.flCheckLiveInternet(3500))
-                : navigator.onLine);
+            : (!navigator.onLine
+                ? false
+                : (typeof window.flCheckLiveInternet === 'function'
+                    ? await (window.__flaynityLiveCheckPromise || window.flCheckLiveInternet(5000))
+                    : true));
         if (isStale()) return;
 
-        if (!isLiveOnline) {
+        // Only enter strict offline mode when the device itself is actually offline (!navigator.onLine).
+        // When navigator.onLine is true (even if the initial probe was slow), stay online and let
+        // Firebase SDK + HTTPS REST fallback load data automatically.
+        if (!isLiveOnline && !navigator.onLine) {
             let knownOffline = false;
             try {
                 knownOffline = !!(
@@ -2433,7 +2526,9 @@ auth.onAuthStateChanged(window.__flaynityAuthHandler = async (user) => {
         const userRef = db.ref(`users/${user.uid}`);
         let firstData = {};
         try {
-            const firstSnap = await window.__flWithTimeout(userRef.once('value'), 5000);
+            const firstSnap = (typeof window.flReadRtdbPath === 'function')
+                ? await window.flReadRtdbPath(`users/${user.uid}`, 5500)
+                : await window.__flWithTimeout(userRef.once('value'), 5000);
             firstData = firstSnap.val() || {};
         } catch (userReadErr) {
             console.warn('User profile read skipped during auth transition:', userReadErr);
@@ -3577,10 +3672,13 @@ let _feedListenersAttached = false;
 
 function startRealtimeFeedsListener() {
     if (_feedListenersAttached) {
-        try { db.ref('admin_panel/movies/user_uploads').off(); } catch(e) {}
-        try { db.ref('admin_panel/movies/feels').off(); } catch(e) {}
-        try { db.ref('admin_panel/movies/shorts').off(); } catch(e) {}
-        try { db.ref('admin_panel/posts').off(); } catch(e) {}
+        if (_globalFeedCbs.users) { try { db.ref('users').off('value', _globalFeedCbs.users); } catch(e) {} delete _globalFeedCbs.users; }
+        if (_globalFeedCbs.user_uploads) { try { db.ref('admin_panel/movies/user_uploads').off('value', _globalFeedCbs.user_uploads); } catch(e) {} delete _globalFeedCbs.user_uploads; }
+        if (_globalFeedCbs.feels) { try { db.ref('admin_panel/movies/feels').off('value', _globalFeedCbs.feels); } catch(e) {} delete _globalFeedCbs.feels; }
+        if (_globalFeedCbs.shorts) { try { db.ref('admin_panel/movies/shorts').off('value', _globalFeedCbs.shorts); } catch(e) {} delete _globalFeedCbs.shorts; }
+        if (_globalFeedCbs.posts) { try { db.ref('admin_panel/posts').off('value', _globalFeedCbs.posts); } catch(e) {} delete _globalFeedCbs.posts; }
+        if (_globalFeedCbs.channelRef && _globalFeedCbs.channelCb) { try { _globalFeedCbs.channelRef.off('value', _globalFeedCbs.channelCb); } catch(e) {} delete _globalFeedCbs.channelRef; delete _globalFeedCbs.channelCb; }
+        if (_globalFeedCbs.selfUserRef && _globalFeedCbs.selfUserCb) { try { _globalFeedCbs.selfUserRef.off('value', _globalFeedCbs.selfUserCb); } catch(e) {} delete _globalFeedCbs.selfUserRef; delete _globalFeedCbs.selfUserCb; }
         _feedListenersAttached = false;
     }
 
@@ -3588,7 +3686,7 @@ function startRealtimeFeedsListener() {
         _feedListenersAttached = true;
         const now = Date.now();
 
-        db.ref('users').on('value', (snap) => {
+        _globalFeedCbs.users = (snap) => {
             const users = snap.val() || {};
             bannedUserIds = new Set(Object.entries(users).filter(([uid,u]) => String(u?.userStatus || u?.accountStatus || '').toLowerCase() === 'banned').map(([uid]) => String(uid)));
             allLongVideos = enforceContentAdminStatus(allLongVideos, 'video');
@@ -3597,13 +3695,16 @@ function startRealtimeFeedsListener() {
             if ((allLongVideos && allLongVideos.length) || (allFeels && allFeels.length) || (allCommunityPosts && allCommunityPosts.length) || window.__flInitialFeedFetched) {
                 buildHomeFeed();
             }
-        });
+        };
+        db.ref('users').on('value', _globalFeedCbs.users, (err) => console.warn('users listener error:', err));
 
-        db.ref('admin_panel/movies/user_uploads').on('value', (snap) => {
+        _globalFeedCbs.user_uploads = (snap) => {
             try {
                 const data = snap.val();
                 allLongVideos = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'video') : [];
                 allLongVideos.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                window.__flInitialFeedFetched = true;
+                window.__flLastFeedFetchFailed = false;
                 refreshPublishedSources(allLongVideos);
                 
                 allLongVideos.forEach(m => {
@@ -3622,14 +3723,18 @@ function startRealtimeFeedsListener() {
                     });
                 }
             } catch (e) {}
-        });
+        };
+        db.ref('admin_panel/movies/user_uploads').on('value', _globalFeedCbs.user_uploads, (err) => console.warn('user_uploads listener error:', err));
 
-        db.ref('admin_panel/movies/feels').on('value', (snap) => {
+        _globalFeedCbs.feels = (snap) => {
             try {
                 const data = snap.val();
                 allFeels = data ? enforceContentAdminStatus(Object.values(data).filter(m => !m.scheduledTime || m.scheduledTime <= now), 'short') : [];
                 allFeels.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                window.__flInitialFeedFetched = true;
+                window.__flLastFeedFetchFailed = false;
                 refreshPublishedSources(allFeels);
+                try { if (typeof window.__flRefreshDiscoverFeels === 'function') window.__flRefreshDiscoverFeels(allFeels); } catch (e) {}
                 
                 if(allFeels.length !== previousFeelsCount) {
                     previousFeelsCount = allFeels.length;
@@ -3654,13 +3759,15 @@ function startRealtimeFeedsListener() {
                     });
                 }
             } catch (e) {}
-        });
+        };
+        db.ref('admin_panel/movies/feels').on('value', _globalFeedCbs.feels, (err) => console.warn('feels listener error:', err));
 
         // Keep existing Home Page Feels/Shorts cards compatible with the original Firebase path.
         // The UI is named Feels, but older content is stored under /shorts.
-        db.ref('admin_panel/movies/shorts').on('value', (snap) => {
+        _globalFeedCbs.shorts = (snap) => {
             try {
                 const legacyData = snap.val() ? Object.values(snap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
+                if (!legacyData.length && allFeels && allFeels.length) return;
                 db.ref('admin_panel/movies/feels').once('value', (feelsSnap) => {
                     const feelsData = feelsSnap.val() ? Object.values(feelsSnap.val()).filter(m => !m.scheduledTime || m.scheduledTime <= now) : [];
                     const merged = [...feelsData, ...legacyData];
@@ -3675,28 +3782,34 @@ function startRealtimeFeedsListener() {
                     buildHomeFeed();
                 });
             } catch (e) {}
-        });
+        };
+        db.ref('admin_panel/movies/shorts').on('value', _globalFeedCbs.shorts, (err) => console.warn('shorts listener error:', err));
 
-        db.ref('admin_panel/posts').on('value', (snap) => {
+        _globalFeedCbs.posts = (snap) => {
             try {
                 const data = snap.val();
                 allCommunityPosts = data ? enforceContentAdminStatus(Object.values(data).filter(p => !p.scheduledTime || p.scheduledTime <= now), 'post') : [];
                 allCommunityPosts.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                window.__flInitialFeedFetched = true;
+                window.__flLastFeedFetchFailed = false;
                 
                 if (allCommunityPosts.length !== previousPostsCount) {
                     previousPostsCount = allCommunityPosts.length;
                     buildHomeFeed();
                 }
             } catch (e) {}
-        });
+        };
+        db.ref('admin_panel/posts').on('value', _globalFeedCbs.posts, (err) => console.warn('posts listener error:', err));
 
         const currentUser = auth.currentUser;
         if (currentUser) {
-            db.ref(`channels/${currentUser.uid}`).on('value', (snapshot) => {
+            _globalFeedCbs.channelRef = db.ref(`channels/${currentUser.uid}`);
+            _globalFeedCbs.channelCb = (snapshot) => {
                 try {
                     currentChannelData = snapshot.val();
                     if (currentChannelData) {
                         localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
+                        localStorage.setItem('flaynity_channel_cache:' + currentUser.uid, JSON.stringify(currentChannelData));
                     }
                     if (currentChannelData) prefetchYouPageData(currentUser.uid, currentChannelData);
                     const activeNav = document.querySelector('.nav-item.active');
@@ -3705,15 +3818,18 @@ function startRealtimeFeedsListener() {
                     }
                     updateBottomNavAvatar();
                 } catch (e) {}
-            });
+            };
+            _globalFeedCbs.channelRef.on('value', _globalFeedCbs.channelCb, (err) => console.warn('channel listener error:', err));
 
-            db.ref(`users/${currentUser.uid}`).on('value', (snapshot) => {
+            _globalFeedCbs.selfUserRef = db.ref(`users/${currentUser.uid}`);
+            _globalFeedCbs.selfUserCb = (snapshot) => {
                 try {
                     const userData = snapshot.val();
                     const photoURL = userData?.photoURL || currentUser.photoURL || '';
                     renderUserAvatar(photoURL, currentUser.email);
                 } catch (e) {}
-            });
+            };
+            _globalFeedCbs.selfUserRef.on('value', _globalFeedCbs.selfUserCb, (err) => console.warn('selfUser listener error:', err));
         }
     } catch (err) {
         console.error("Global database binding exception:", err);
@@ -3897,8 +4013,10 @@ function buildHomeFeed() {
     let postIdx = 0;
 
     if (feels.length === 0 && longs.length === 0 && posts.length === 0) {
-        if (window.__flInitialFeedFetched) {
-            container.innerHTML = '<div style="padding:56px 20px;text-align:center;color:var(--text-muted);font-weight:700;">No content available yet. Pull down to refresh.</div>';
+        if (window.__flInitialFeedFetched && !window.__flLastFeedFetchFailed) {
+            container.innerHTML = '<div class="fl-empty-retry-state" style="padding:56px 20px;text-align:center;color:var(--text-muted);font-weight:700;">No content available yet. Pull down to refresh.</div>';
+        } else {
+            container.innerHTML = getHomeSkeletonHTML();
         }
         return;
     }
@@ -9603,13 +9721,18 @@ async function switchTab(tabId) {
             return;
         }
 
-        // No cache yet (first ever open): fetch once.
+        // No cache yet (first ever open): fetch with timeout + REST fallback so You tab never hangs blank.
         if (navigator.onLine) {
             try {
-                const snapshot = await db.ref('channels/' + user.uid).once('value');
+                const snapshot = (typeof window.flReadRtdbPath === 'function')
+                    ? await window.flReadRtdbPath('channels/' + user.uid, 6500)
+                    : await db.ref('channels/' + user.uid).once('value');
                 if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
                 channel = snapshot.val() || null;
-                if (channel) prefetchYouPageData(user.uid, channel);
+                if (channel) {
+                    try { localStorage.setItem('flaynity_channel_cache:' + user.uid, JSON.stringify(channel)); } catch (e) {}
+                    prefetchYouPageData(user.uid, channel);
+                }
             } catch (e) {}
         }
 
@@ -9788,7 +9911,7 @@ function initYouTabUI() {
     }
     wrap.innerHTML = '<div class="skel-box" style="width:100%;height:48px;border-radius:20px;"></div>';
 
-    db.ref('channels/' + uid).once('value')
+    (typeof window.flReadRtdbPath === 'function' ? window.flReadRtdbPath('channels/' + uid, 6500) : db.ref('channels/' + uid).once('value'))
         .then(snapshot => {
             if (!isCurrent()) return;
             const data = snapshot.val() || null;
@@ -17133,10 +17256,56 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
         grid.appendChild(cols[0]);
         grid.appendChild(cols[1]);
     }
+    function renderFromArray(arr) {
+        if (!Array.isArray(arr) || !arr.length) return false;
+        var map = {};
+        arr.forEach(function (item, idx) {
+            if (item && typeof item === "object") map[item.id || ("f_" + idx)] = item;
+        });
+        renderFeels({ val: function () { return map; } });
+        return true;
+    }
+
+    function fetchDiscoverViaRest() {
+        if (typeof window.flRtdbFetchJson !== "function") return;
+        if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+        window.flRtdbFetchJson(FEELS_PATH, 8000).then(function (data) {
+            if (data && typeof data === "object") {
+                renderFeels({ val: function () { return data; } });
+            }
+        }).catch(function () {});
+    }
+
+    window.__flRefreshDiscoverFeels = function (feelsArr) {
+        var g = document.getElementById("discover-feels-grid");
+        if (!g) return;
+        if (Array.isArray(feelsArr) && feelsArr.length) {
+            renderFromArray(feelsArr);
+            return;
+        }
+        if (typeof allFeels !== "undefined" && Array.isArray(allFeels) && allFeels.length) {
+            renderFromArray(allFeels);
+            return;
+        }
+        if (g.dataset.state === "loading" || g.dataset.state === "connecting") {
+            fetchDiscoverViaRest();
+        }
+    };
+
     function connectFeels() {
         var grid = document.getElementById("discover-feels-grid");
         if (!grid) return;
-        if (boundGrid === grid && listenerRef) return;
+        // If Home/SyncManager already loaded Feels, paint Discover immediately instead of waiting.
+        if ((grid.dataset.state === "loading" || grid.dataset.state === "connecting" || !grid.children.length) &&
+            typeof allFeels !== "undefined" && Array.isArray(allFeels) && allFeels.length) {
+            renderFromArray(allFeels);
+        }
+        if (boundGrid === grid && listenerRef) {
+            if (grid.dataset.state === "loading" || grid.dataset.state === "connecting") {
+                fetchDiscoverViaRest();
+            }
+            return;
+        }
         boundGrid = grid;
         if (!window.firebase || typeof window.firebase.database !== "function") {
             if (retryCount++ < 20) {
@@ -17153,16 +17322,27 @@ window.addEventListener('flaynity-tab-changed', initFlaynityDiscoverSearch);
             listenerRef = window.firebase.database().ref(FEELS_PATH);
             listenerRef.on("value", renderFeels, function (error) {
                 console.error("Discover Feels Firebase error:", error);
-                showState(document.getElementById("discover-feels-grid"), "Unable to load Feels. Check Firebase access.");
+                fetchDiscoverViaRest();
             });
+            // If Firebase WebSocket hasn't answered within 4.5s, fetch directly via HTTPS REST fallback.
+            setTimeout(function () {
+                var g = document.getElementById("discover-feels-grid");
+                if (g && g.dataset.state === "loading") {
+                    fetchDiscoverViaRest();
+                }
+            }, 4500);
             // Avoid an endless skeleton if Firebase never answers (permission/network error).
             setTimeout(function () {
                 var g = document.getElementById("discover-feels-grid");
-                if (g && g.dataset.state === "loading") showState(g, "Connecting to Feels…");
-            }, 8000);
+                if (g && g.dataset.state === "loading") {
+                    showState(g, "Connecting to Feels…");
+                    g.dataset.state = "connecting";
+                    fetchDiscoverViaRest();
+                }
+            }, 10000);
         } catch (error) {
             console.error("Discover Feels initialization error:", error);
-            showState(grid, "Unable to load Feels");
+            fetchDiscoverViaRest();
         }
     }
     function initAfterInjection() {

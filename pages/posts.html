@@ -276,7 +276,11 @@
         box.innerHTML = '';
 
         if (!list.length) {
-            box.innerHTML = (typeof getHomeSkeletonHTML === 'function') ? getHomeSkeletonHTML() : '';
+            if (window.__flInitialFeedFetched && !window.__flLastFeedFetchFailed && navigator.onLine) {
+                box.innerHTML = '<div style="padding:56px 20px;text-align:center;color:var(--text-muted);font-weight:700;">No posts yet.</div>';
+            } else {
+                box.innerHTML = (typeof getHomeSkeletonHTML === 'function') ? getHomeSkeletonHTML() : '';
+            }
             return;
         }
         var end = Math.min(keep, list.length);

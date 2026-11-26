@@ -1595,11 +1595,17 @@ html[data-theme="dark"] #view-channel-page .ch-privacy-pill {
 <!-- Monetization Page (Redesigned Premium Partner UI) -->
 <style>
 #monetization-page {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    min-height: 100vh !important;
+    z-index: 2500 !important;
+    flex-direction: column !important;
     background: #FFFFFF !important;
     color: #111827;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    position: relative;
-    overflow: hidden;
+    overflow: hidden !important;
 }
 #monetization-page::before {
     content: "";
@@ -1667,9 +1673,15 @@ html[data-theme="dark"] #view-channel-page .ch-privacy-pill {
 #monetization-page .mp-scroll-body {
     position: relative;
     z-index: 2;
-    padding: 12px 18px 46px 18px !important;
-    overflow-y: auto;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    width: 100%;
+    padding: 12px 18px 68px 18px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
 }
 
 /* Hero */
@@ -2105,6 +2117,33 @@ html[data-theme="dark"] #view-channel-page .ch-privacy-pill {
     opacity: 0.92;
     cursor: default;
 }
+.mp-status-pill.is-disabled {
+    background: #F1F5F9;
+    border-color: rgba(100, 116, 139, 0.28);
+    color: #475569;
+}
+.mp-status-pill.is-disabled .mp-status-pill-icon {
+    background: #475569;
+    color: #FFFFFF;
+}
+.mp-alert-card.is-disabled {
+    background: #F1F5F9;
+    border-color: rgba(100, 116, 139, 0.26);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+.mp-alert-card.is-disabled .mp-alert-icon {
+    background: #475569;
+    box-shadow: 0 4px 10px rgba(71, 85, 105, 0.26);
+}
+.mp-alert-card.is-disabled .mp-alert-text {
+    color: #334155;
+}
+.mp-apply-btn.is-disabled {
+    background: linear-gradient(180deg, #64748B 0%, #475569 100%);
+    box-shadow: 0 8px 20px rgba(71, 85, 105, 0.24);
+    opacity: 0.88;
+    cursor: not-allowed;
+}
 @keyframes mpShake {
     0%, 100% { transform: translateX(0); }
     20% { transform: translateX(-6px); }
@@ -2206,7 +2245,7 @@ html[data-theme="dark"] #monetization-page .mp-status-pill-icon {
 }
 
 /* ========================================================= */
-/* PREMIUM ANIMATED MONETIZATION POP-UP MODAL                */
+/* CINEMA-GRADE MOTION GRAPHICS MONETIZATION POP-UP MODAL    */
 /* ========================================================= */
 .mp-popup-overlay {
     position: fixed;
@@ -2215,14 +2254,14 @@ html[data-theme="dark"] #monetization-page .mp-status-pill-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 22px;
-    background: rgba(15, 23, 42, 0.62);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    padding: 20px;
+    background: radial-gradient(circle at 50% 42%, rgba(15, 23, 42, 0.56) 0%, rgba(7, 10, 19, 0.82) 100%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.28s ease, visibility 0.28s ease;
+    transition: opacity 0.32s ease, visibility 0.32s ease;
 }
 .mp-popup-overlay.open {
     opacity: 1;
@@ -2230,146 +2269,229 @@ html[data-theme="dark"] #monetization-page .mp-status-pill-icon {
     pointer-events: auto;
 }
 .mp-popup-card {
-    width: min(360px, 100%);
-    background: #FFFFFF;
+    width: min(370px, 100%);
+    background: linear-gradient(180deg, #FFFFFF 0%, #FFF9FB 100%);
     color: #0F172A;
-    border-radius: 28px;
-    padding: 32px 24px 24px 24px;
+    border-radius: 32px;
+    padding: 34px 24px 26px 24px;
     text-align: center;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 28px 70px rgba(15, 23, 42, 0.34);
-    transform: scale(0.84) translateY(22px);
-    transition: transform 0.42s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1.5px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 32px 84px rgba(15, 23, 42, 0.42), 0 0 0 1px rgba(225, 14, 73, 0.08);
+    transform: scale(0.8) translateY(34px);
+    opacity: 0;
+    transition: transform 0.52s cubic-bezier(0.16, 1.18, 0.3, 1), opacity 0.34s ease;
 }
 .mp-popup-overlay.open .mp-popup-card {
     transform: scale(1) translateY(0);
+    opacity: 1;
 }
+.mp-popup-aurora {
+    position: absolute;
+    top: -70px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    height: 190px;
+    border-radius: 50%;
+    filter: blur(32px);
+    opacity: 0.42;
+    pointer-events: none;
+    z-index: 0;
+    animation: mpAuroraFloat 4.5s ease-in-out infinite alternate;
+}
+@keyframes mpAuroraFloat {
+    0% { transform: translateX(-50%) scale(0.95) rotate(-4deg); opacity: 0.34; }
+    100% { transform: translateX(-50%) scale(1.12) rotate(4deg); opacity: 0.52; }
+}
+.mp-popup-applied .mp-popup-aurora { background: radial-gradient(circle, #FF3B7F 0%, #FFB3CC 60%, transparent 100%); }
+.mp-popup-approved .mp-popup-aurora { background: radial-gradient(circle, #10B981 0%, #FBBF24 55%, transparent 100%); }
+.mp-popup-rejected .mp-popup-aurora { background: radial-gradient(circle, #EF4444 0%, #FDA4AF 60%, transparent 100%); }
+.mp-popup-disabled .mp-popup-aurora { background: radial-gradient(circle, #64748B 0%, #CBD5E1 60%, transparent 100%); }
+
 .mp-popup-confetti {
     position: absolute;
-    top: 76px;
+    top: 86px;
     left: 50%;
     width: 0;
     height: 0;
     pointer-events: none;
-    z-index: 1;
+    z-index: 2;
 }
 .mp-confetti-piece {
     position: absolute;
-    width: 8px;
-    height: 8px;
-    border-radius: 2px;
+    width: var(--w, 8px);
+    height: var(--h, 8px);
+    border-radius: var(--rad, 2px);
     opacity: 0;
-    animation: mpConfettiBurst 1.15s cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0s) forwards;
+    animation: mpConfettiBurst var(--dur, 1.35s) cubic-bezier(0.14, 0.92, 0.28, 1) var(--delay, 0s) forwards;
 }
 @keyframes mpConfettiBurst {
-    0% { transform: translate(0, 0) rotate(0deg) scale(0.4); opacity: 1; }
-    65% { opacity: 1; }
-    100% { transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(1); opacity: 0; }
+    0% { transform: translate(0, 0) rotate(0deg) scale(0.2); opacity: 1; }
+    55% { opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(1.05); opacity: 0; }
 }
-.mp-popup-badge-wrap {
+
+/* Motion Graphics Stage */
+.mp-popup-stage {
     position: relative;
-    width: 88px;
-    height: 88px;
-    margin: 0 auto 20px auto;
+    width: 118px;
+    height: 118px;
+    margin: 0 auto 18px auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 2;
+    z-index: 3;
+}
+.mp-popup-orbit {
+    position: absolute;
+    inset: 2px;
+    border-radius: 50%;
+    border: 2px dashed rgba(225, 14, 73, 0.28);
+    animation: mpOrbitSpin 12s linear infinite;
+}
+.mp-popup-approved .mp-popup-orbit { border-color: rgba(16, 185, 129, 0.36); }
+.mp-popup-rejected .mp-popup-orbit { border-color: rgba(239, 68, 68, 0.34); }
+.mp-popup-disabled .mp-popup-orbit { border-color: rgba(100, 116, 139, 0.32); }
+@keyframes mpOrbitSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 .mp-popup-ring {
     position: absolute;
-    inset: 0;
+    inset: 12px;
     border-radius: 50%;
     opacity: 0;
-    animation: mpPulseRing 1.9s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+    animation: mpPulseRing 2.1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
-.mp-popup-ring.r2 {
-    animation-delay: 0.65s;
-}
+.mp-popup-ring.r2 { animation-delay: 0.75s; }
 @keyframes mpPulseRing {
-    0% { transform: scale(0.85); opacity: 0.55; }
-    100% { transform: scale(1.65); opacity: 0; }
+    0% { transform: scale(0.84); opacity: 0.6; }
+    100% { transform: scale(1.68); opacity: 0; }
 }
+.mp-popup-applied .mp-popup-ring { border: 2.5px solid rgba(225, 14, 73, 0.45); }
+.mp-popup-approved .mp-popup-ring { border: 2.5px solid rgba(16, 185, 129, 0.5); }
+.mp-popup-rejected .mp-popup-ring { border: 2.5px solid rgba(239, 68, 68, 0.45); }
+.mp-popup-disabled .mp-popup-ring { border: 2.5px solid rgba(100, 116, 139, 0.42); }
+
 .mp-popup-badge {
-    width: 82px;
-    height: 82px;
+    width: 86px;
+    height: 86px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 34px;
     color: #FFFFFF;
     position: relative;
-    z-index: 2;
-    animation: mpBadgePop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    z-index: 3;
+    animation: mpBadgePop 0.62s cubic-bezier(0.16, 1.24, 0.3, 1) forwards;
 }
 @keyframes mpBadgePop {
-    0% { transform: scale(0.35) rotate(-18deg); }
-    70% { transform: scale(1.08) rotate(4deg); }
-    100% { transform: scale(1) rotate(0deg); }
+    0% { transform: scale(0.25) rotate(-22deg); opacity: 0; }
+    68% { transform: scale(1.1) rotate(5deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 .mp-popup-applied .mp-popup-badge {
-    background: linear-gradient(135deg, #FF2A68 0%, #E10E49 100%);
-    box-shadow: 0 14px 30px rgba(225, 14, 73, 0.38);
-}
-.mp-popup-applied .mp-popup-ring {
-    border: 2.5px solid rgba(225, 14, 73, 0.45);
+    background: linear-gradient(140deg, #FF3B7B 0%, #E10E49 62%, #B8083A 100%);
+    box-shadow: 0 16px 34px rgba(225, 14, 73, 0.42), inset 0 2px 4px rgba(255, 255, 255, 0.35);
 }
 .mp-popup-approved .mp-popup-badge {
-    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-    box-shadow: 0 14px 32px rgba(5, 150, 105, 0.42);
-}
-.mp-popup-approved .mp-popup-ring {
-    border: 2.5px solid rgba(16, 185, 129, 0.5);
+    background: linear-gradient(140deg, #34D399 0%, #059669 60%, #047857 100%);
+    box-shadow: 0 16px 38px rgba(5, 150, 105, 0.46), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+    animation: mpBadgePop 0.62s cubic-bezier(0.16, 1.24, 0.3, 1) forwards, mpFloatBob 2.8s ease-in-out 0.65s infinite;
 }
 .mp-popup-rejected .mp-popup-badge {
-    background: linear-gradient(135deg, #EF4444 0%, #B91C1C 100%);
-    box-shadow: 0 14px 30px rgba(220, 38, 38, 0.38);
-    animation: mpShake 0.52s ease;
+    background: linear-gradient(140deg, #F87171 0%, #DC2626 60%, #991B1B 100%);
+    box-shadow: 0 16px 34px rgba(220, 38, 38, 0.42), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+    animation: mpBadgePop 0.48s ease forwards, mpShake 0.55s ease 0.45s;
 }
-.mp-popup-rejected .mp-popup-ring {
-    border: 2.5px solid rgba(239, 68, 68, 0.45);
+.mp-popup-disabled .mp-popup-badge {
+    background: linear-gradient(140deg, #64748B 0%, #475569 60%, #334155 100%);
+    box-shadow: 0 16px 34px rgba(51, 65, 85, 0.42), inset 0 2px 4px rgba(255, 255, 255, 0.25);
 }
-.mp-popup-title {
-    font-size: 21px;
-    font-weight: 850;
-    margin: 0 0 8px 0;
-    letter-spacing: -0.02em;
+@keyframes mpFloatBob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+.mp-svg-draw {
+    stroke-dasharray: 120;
+    stroke-dashoffset: 120;
+    animation: mpStrokeDraw 0.72s cubic-bezier(0.22, 1, 0.36, 1) 0.22s forwards;
+}
+@keyframes mpStrokeDraw {
+    to { stroke-dashoffset: 0; }
+}
+
+/* Status Chip inside Pop-up */
+.mp-popup-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
     position: relative;
-    z-index: 2;
+    z-index: 3;
+    animation: mpSlideUpFade 0.45s ease 0.14s both;
+}
+.mp-popup-applied .mp-popup-chip { background: #FDE7EE; color: #D80E45; }
+.mp-popup-approved .mp-popup-chip { background: #ECFDF5; color: #047857; }
+.mp-popup-rejected .mp-popup-chip { background: #FEF2F2; color: #DC2626; }
+.mp-popup-disabled .mp-popup-chip { background: #F1F5F9; color: #475569; }
+
+.mp-popup-title {
+    font-size: 22px;
+    font-weight: 900;
+    margin: 0 0 8px 0;
+    letter-spacing: -0.022em;
+    position: relative;
+    z-index: 3;
+    animation: mpSlideUpFade 0.48s ease 0.2s both;
 }
 .mp-popup-desc {
     font-size: 13.5px;
-    line-height: 1.55;
+    line-height: 1.56;
     color: #475569;
     margin: 0 0 18px 0;
     position: relative;
-    z-index: 2;
+    z-index: 3;
+    animation: mpSlideUpFade 0.5s ease 0.26s both;
+}
+@keyframes mpSlideUpFade {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 .mp-popup-reason {
     display: none;
-    background: #FEF2F2;
-    border: 1px solid rgba(220, 38, 38, 0.18);
-    border-radius: 14px;
+    background: rgba(254, 242, 242, 0.92);
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    border-radius: 16px;
     padding: 12px 14px;
     margin: 0 0 18px 0;
     text-align: left;
-    font-size: 12.5px;
+    font-size: 12.8px;
     color: #991B1B;
-    line-height: 1.45;
+    line-height: 1.48;
+    position: relative;
+    z-index: 3;
+    animation: mpSlideUpFade 0.5s ease 0.3s both;
 }
 .mp-popup-reason strong {
     display: block;
-    font-size: 11px;
+    font-size: 10.5px;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 3px;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
     color: #DC2626;
 }
 .mp-popup-cta {
     width: 100%;
-    height: 48px;
+    height: 50px;
     border: none;
     border-radius: 999px;
     background: linear-gradient(180deg, #FF2A68 0%, #E10E49 100%);
@@ -2377,23 +2499,43 @@ html[data-theme="dark"] #monetization-page .mp-status-pill-icon {
     font-size: 15px;
     font-weight: 800;
     cursor: pointer;
-    box-shadow: 0 8px 20px rgba(225, 14, 73, 0.3);
+    box-shadow: 0 10px 24px rgba(225, 14, 73, 0.34);
     position: relative;
-    z-index: 2;
+    overflow: hidden;
+    z-index: 3;
+    animation: mpSlideUpFade 0.52s ease 0.32s both;
+}
+.mp-popup-cta::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.38), transparent);
+    animation: mpBtnShine 2.6s ease-in-out infinite;
+}
+@keyframes mpBtnShine {
+    0% { left: -75%; }
+    45%, 100% { left: 130%; }
 }
 .mp-popup-approved .mp-popup-cta {
     background: linear-gradient(180deg, #10B981 0%, #059669 100%);
-    box-shadow: 0 8px 20px rgba(5, 150, 105, 0.32);
+    box-shadow: 0 10px 24px rgba(5, 150, 105, 0.36);
 }
 .mp-popup-rejected .mp-popup-cta {
     background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%);
-    box-shadow: 0 8px 20px rgba(220, 38, 38, 0.28);
+    box-shadow: 0 10px 24px rgba(220, 38, 38, 0.32);
+}
+.mp-popup-disabled .mp-popup-cta {
+    background: linear-gradient(180deg, #64748B 0%, #475569 100%);
+    box-shadow: 0 10px 22px rgba(71, 85, 105, 0.32);
 }
 body.dark-mode .mp-popup-card,
 html[data-theme="dark"] .mp-popup-card {
-    background: #171820;
+    background: linear-gradient(180deg, #191B24 0%, #13141C 100%);
     color: #F8FAFC;
-    border: 1px solid #2A2D3E;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 body.dark-mode .mp-popup-desc,
 html[data-theme="dark"] .mp-popup-desc {
@@ -2401,7 +2543,7 @@ html[data-theme="dark"] .mp-popup-desc {
 }
 body.dark-mode .mp-popup-reason,
 html[data-theme="dark"] .mp-popup-reason {
-    background: rgba(220, 38, 38, 0.14);
+    background: rgba(220, 38, 38, 0.15);
     color: #FCA5A5;
 }
 </style>
@@ -2695,15 +2837,18 @@ html[data-theme="dark"] .mp-popup-reason {
     </div>
 </div>
 
-<!-- Premium Animated Monetization Status Modal (Apply / Approved / Rejected) -->
+<!-- Cinema-Grade Motion Graphics Monetization Status Modal (Apply / Approved / Rejected / Disabled) -->
 <div class="mp-popup-overlay" id="monetization-status-modal" onclick="if(event.target===this) closeMonetizationPopup()">
     <div class="mp-popup-card mp-popup-applied">
+        <div class="mp-popup-aurora"></div>
         <div class="mp-popup-confetti" id="mp-popup-confetti"></div>
-        <div class="mp-popup-badge-wrap">
+        <div class="mp-popup-stage">
+            <span class="mp-popup-orbit"></span>
             <span class="mp-popup-ring"></span>
             <span class="mp-popup-ring r2"></span>
-            <div class="mp-popup-badge" id="mp-popup-badge"><i class="fas fa-check"></i></div>
+            <div class="mp-popup-badge" id="mp-popup-badge"></div>
         </div>
+        <div class="mp-popup-chip" id="mp-popup-chip">UNDER REVIEW</div>
         <h3 class="mp-popup-title" id="mp-popup-title">Application Submitted!</h3>
         <p class="mp-popup-desc" id="mp-popup-desc">Your Flaynity Partner application is now under review. We will notify you soon.</p>
         <div class="mp-popup-reason" id="mp-popup-reason">

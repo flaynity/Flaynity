@@ -1093,6 +1093,9 @@ const SyncManager = {
                 localStorage.setItem('flaynity_user_session_cache', JSON.stringify(currentChannelData));
             }
             initYouTabUI();
+            if (typeof attachUserMonetizationListeners === 'function') {
+                attachUserMonetizationListeners(currentUser.uid, true);
+            }
         }
     },
 
@@ -1143,6 +1146,9 @@ function _detachAllGlobalFeedListeners() {
         try { db.ref(`channels/${uid}`).off(); } catch(e) {}
     });
     for (let key in boundChannelListeners) delete boundChannelListeners[key];
+    if (typeof auth !== 'undefined' && auth && auth.currentUser && typeof attachUserMonetizationListeners === 'function') {
+        attachUserMonetizationListeners(auth.currentUser.uid, true);
+    }
 
     _detachAllPostReactionListeners();
 }
@@ -2139,6 +2145,9 @@ function attachAdminControlListener() {
                 }
             });
             hiddenChannelIds = nextHidden;
+            if (auth && auth.currentUser && channels[auth.currentUser.uid] && typeof handleLiveUserChannelUpdate === 'function') {
+                handleLiveUserChannelUpdate(auth.currentUser.uid, channels[auth.currentUser.uid]);
+            }
             if (typeof allLongVideos !== 'undefined') allLongVideos = enforceContentAdminStatus(allLongVideos, 'video');
             if (typeof allFeels !== 'undefined') allFeels = enforceContentAdminStatus(allFeels, 'short');
             if (typeof allCommunityPosts !== 'undefined') allCommunityPosts = enforceContentAdminStatus(allCommunityPosts, 'post');
@@ -8149,8 +8158,16 @@ const AppNavigation = {
         }
 
         // Keep the global bottom navigation visible and tappable only on View Channel.
-        if (activePage === 'view-channel-page' && globalBottomNav) {
-            globalBottomNav.classList.add('view-channel-visible');
+        if (globalBottomNav) {
+            if (activePage === 'view-channel-page') {
+                globalBottomNav.classList.add('view-channel-visible');
+                globalBottomNav.style.display = '';
+            } else if (activePage === 'monetization-page') {
+                globalBottomNav.classList.remove('view-channel-visible');
+                globalBottomNav.style.display = 'none';
+            } else {
+                globalBottomNav.style.display = '';
+            }
         }
 
         document.querySelectorAll('.tab-content, .nav-item').forEach(el => el.classList.remove('active'));
@@ -11306,11 +11323,22 @@ async function calculateChannelAnalytics() {
 }
 
 // =========================================================
-// MONETIZATION WORKFLOW ENGINE (REAL-TIME ADMIN SYNC + POP-UPS)
+// MONETIZATION WORKFLOW ENGINE (REAL-TIME ADMIN SYNC + MOTION GRAPHICS POP-UPS)
 // =========================================================
+let userMonetizationChannelCb = null;
+let userMonetizationRequestCb = null;
+
+function isChannelMonetizationDisabled(ch) {
+    const data = ch || currentChannelData;
+    if (!data) return false;
+    const st = String(data.monetizationStatus || '').toLowerCase();
+    return data.monetized === false && (st === 'off' || st === 'disabled' || st === 'revoked');
+}
+
 function isChannelMonetized(ch) {
     const data = ch || currentChannelData;
     if (!data) return false;
+    if (isChannelMonetizationDisabled(data)) return false;
     const st = String(data.monetizationStatus || '').toLowerCase();
     return data.monetized === true || st === 'active' || st === 'approved';
 }
@@ -11328,58 +11356,91 @@ function formatMonetizationCompact(n) {
     return num.toLocaleString('en-US');
 }
 
+function handleLiveUserChannelUpdate(uid, freshCh) {
+    if (!freshCh || !auth || !auth.currentUser || auth.currentUser.uid !== uid) return;
+    const prevMon = isChannelMonetized(currentChannelData);
+    const prevVer = !!(currentChannelData && (currentChannelData.verified || currentChannelData.isVerified));
+    const prevSubs = Number(currentChannelData && currentChannelData.subscribersCount) || 0;
+    const prevStatus = String((currentChannelData && currentChannelData.monetizationStatus) || '').toLowerCase();
+
+    currentChannelData = freshCh;
+    try {
+        localStorage.setItem('flaynity_channel_cache:' + uid, JSON.stringify(freshCh));
+        localStorage.setItem('flaynity_user_session_cache', JSON.stringify(freshCh));
+    } catch (e) {}
+
+    const nowMon = isChannelMonetized(freshCh);
+    const nowVer = !!(freshCh.verified || freshCh.isVerified);
+    const nowSubs = Number(freshCh.subscribersCount) || 0;
+    const nowStatus = String(freshCh.monetizationStatus || '').toLowerCase();
+
+    if (!nowMon) {
+        const estRevEl = document.getElementById('estimated-revenue-val');
+        if (estRevEl) estRevEl.innerText = '$0.00 USDT';
+        if (prevMon && navigator.onLine) {
+            try { db.ref(`channel_analytics/${uid}/totalRevenue`).set('0.00'); } catch (e) {}
+        }
+    }
+
+    if (lastMonetizationMetrics) {
+        lastMonetizationMetrics.subs = Math.max(0, nowSubs);
+    }
+
+    renderMonetizationPageUI();
+    checkMonetizationDecisionPopup();
+
+    // Live refresh You tab & Analytics if key channel attributes changed from Admin Panel
+    if (prevMon !== nowMon || prevVer !== nowVer || prevSubs !== nowSubs || prevStatus !== nowStatus) {
+        try { if (typeof initYouTabUI === 'function') initYouTabUI(); } catch (e) {}
+        try { if (window.FlayAnalytics && typeof window.FlayAnalytics.refresh === 'function') window.FlayAnalytics.refresh(); } catch (e) {}
+    }
+}
+
 function detachUserMonetizationListeners() {
-    if (userMonetizationChannelListener) {
+    if (userMonetizationChannelListener && userMonetizationChannelCb) {
+        try { userMonetizationChannelListener.off('value', userMonetizationChannelCb); } catch (e) {}
+    } else if (userMonetizationChannelListener) {
         try { userMonetizationChannelListener.off(); } catch (e) {}
-        userMonetizationChannelListener = null;
     }
-    if (userMonetizationRequestListener) {
+    if (userMonetizationRequestListener && userMonetizationRequestCb) {
+        try { userMonetizationRequestListener.off('value', userMonetizationRequestCb); } catch (e) {}
+    } else if (userMonetizationRequestListener) {
         try { userMonetizationRequestListener.off(); } catch (e) {}
-        userMonetizationRequestListener = null;
     }
+    userMonetizationChannelListener = null;
+    userMonetizationChannelCb = null;
+    userMonetizationRequestListener = null;
+    userMonetizationRequestCb = null;
     userMonetizationListenerUid = null;
     currentMonetizationRequest = null;
 }
 
-function attachUserMonetizationListeners(uid) {
+function attachUserMonetizationListeners(uid, forceReattach = false) {
     if (!uid || typeof db === 'undefined') return;
-    if (userMonetizationListenerUid === uid && userMonetizationChannelListener && userMonetizationRequestListener) {
+    if (!forceReattach && userMonetizationListenerUid === uid && userMonetizationChannelListener && userMonetizationRequestListener) {
         return;
     }
     detachUserMonetizationListeners();
     userMonetizationListenerUid = uid;
 
     userMonetizationChannelListener = db.ref(`channels/${uid}`);
-    userMonetizationChannelListener.on('value', snap => {
+    userMonetizationChannelCb = snap => {
         if (!auth.currentUser || auth.currentUser.uid !== uid) return;
         const freshCh = snap.val();
         if (freshCh) {
-            const prevMon = isChannelMonetized(currentChannelData);
-            currentChannelData = freshCh;
-            try {
-                localStorage.setItem('flaynity_channel_cache:' + uid, JSON.stringify(freshCh));
-                localStorage.setItem('flaynity_user_session_cache', JSON.stringify(freshCh));
-            } catch (e) {}
-            const nowMon = isChannelMonetized(freshCh);
-            if (!nowMon) {
-                const estRevEl = document.getElementById('estimated-revenue-val');
-                if (estRevEl) estRevEl.innerText = '$0.00 USDT';
-                if (prevMon && navigator.onLine) {
-                    try { db.ref(`channel_analytics/${uid}/totalRevenue`).set('0.00'); } catch (e) {}
-                }
-            }
+            handleLiveUserChannelUpdate(uid, freshCh);
         }
-        renderMonetizationPageUI();
-        checkMonetizationDecisionPopup();
-    });
+    };
+    userMonetizationChannelListener.on('value', userMonetizationChannelCb);
 
     userMonetizationRequestListener = db.ref(`monetization_requests/${uid}`);
-    userMonetizationRequestListener.on('value', snap => {
+    userMonetizationRequestCb = snap => {
         if (!auth.currentUser || auth.currentUser.uid !== uid) return;
         currentMonetizationRequest = snap.val() || null;
         renderMonetizationPageUI();
         checkMonetizationDecisionPopup();
-    });
+    };
+    userMonetizationRequestListener.on('value', userMonetizationRequestCb);
 }
 
 function isMonetizationPageVisible() {
@@ -11421,14 +11482,16 @@ function openMonetizationPage() {
     attachAdminControlListener();
     const user = auth && auth.currentUser;
     if (user) {
-        attachUserMonetizationListeners(user.uid);
+        attachUserMonetizationListeners(user.uid, true);
     }
 
     AppNavigation.pushPage('monetization-page');
+    const scrollBody = document.querySelector('#monetization-page .mp-scroll-body');
+    if (scrollBody) scrollBody.scrollTop = 0;
+
     initMonetizationSlider();
     renderMonetizationPageUI();
 
-    // Fetch live authoritative settings + analytics in background so metrics & rules are always up-to-date
     if (navigator.onLine) {
         db.ref('admin_control/monetization_settings').once('value').then(snap => {
             if (snap.exists()) {
@@ -11526,9 +11589,10 @@ function renderMonetizationPageUI() {
 
     const reqStatus = String((currentMonetizationRequest && currentMonetizationRequest.status) || '').toLowerCase();
     const chStatus = String((currentChannelData && currentChannelData.monetizationStatus) || '').toLowerCase();
-    const isApproved = isChannelMonetized(currentChannelData) || reqStatus === 'approved';
-    const isPending = !isApproved && (reqStatus === 'pending' || chStatus === 'pending');
-    const isRejected = !isApproved && !isPending && (reqStatus === 'rejected' || chStatus === 'rejected');
+    const isDisabled = isChannelMonetizationDisabled(currentChannelData);
+    const isApproved = !isDisabled && (isChannelMonetized(currentChannelData) || (reqStatus === 'approved' && chStatus !== 'off' && chStatus !== 'disabled' && chStatus !== 'rejected'));
+    const isPending = !isDisabled && !isApproved && (reqStatus === 'pending' || chStatus === 'pending');
+    const isRejected = !isDisabled && !isApproved && !isPending && (reqStatus === 'rejected' || chStatus === 'rejected');
     const rejectionReason = (currentMonetizationRequest && currentMonetizationRequest.rejectionReason)
         || (currentChannelData && currentChannelData.monetizationRejectionReason)
         || '';
@@ -11540,7 +11604,11 @@ function renderMonetizationPageUI() {
     const pillIcon = document.getElementById('mp-status-pill-icon');
     if (pill && pillText && pillIcon) {
         pill.className = 'mp-status-pill';
-        if (isApproved) {
+        if (isDisabled) {
+            pill.classList.add('is-disabled');
+            pillText.textContent = 'Monetization Disabled';
+            pillIcon.innerHTML = '<i class="fas fa-ban"></i>';
+        } else if (isApproved) {
             pill.classList.add('is-approved');
             pillText.textContent = 'Monetized';
             pillIcon.innerHTML = '<i class="fas fa-check"></i>';
@@ -11568,7 +11636,11 @@ function renderMonetizationPageUI() {
     const bannerText = document.getElementById('mp-status-banner-text');
     if (banner && bannerIcon && bannerText) {
         banner.className = 'mp-alert-card';
-        if (isApproved) {
+        if (isDisabled) {
+            banner.classList.add('is-disabled');
+            bannerIcon.innerHTML = '<i class="fas fa-ban"></i>';
+            bannerText.textContent = 'Your channel monetization has been disabled by an administrator. Earning revenue is currently paused.';
+        } else if (isApproved) {
             banner.classList.add('is-approved');
             bannerIcon.innerHTML = '<i class="fas fa-check"></i>';
             bannerText.textContent = 'Monetization is active! Your channel is now earning revenue on eligible views.';
@@ -11596,8 +11668,12 @@ function renderMonetizationPageUI() {
     const applyBtn = document.getElementById('btn-monetization-apply');
     if (applyBtn) {
         applyBtn.className = 'mp-apply-btn';
-        applyBtn.dataset.monState = isApproved ? 'approved' : isPending ? 'pending' : (allEligible ? 'eligible' : 'locked');
-        if (isApproved) {
+        applyBtn.dataset.monState = isDisabled ? 'disabled' : isApproved ? 'approved' : isPending ? 'pending' : (allEligible ? 'eligible' : 'locked');
+        if (isDisabled) {
+            applyBtn.disabled = true;
+            applyBtn.classList.add('is-disabled');
+            applyBtn.innerHTML = '<i class="fas fa-ban" style="margin-right:8px;"></i> Monetization Disabled';
+        } else if (isApproved) {
             applyBtn.disabled = false;
             applyBtn.classList.add('is-approved');
             applyBtn.innerHTML = '<i class="fas fa-check-circle" style="margin-right:8px;"></i> Monetization Active • View Payout';
@@ -11621,6 +11697,7 @@ function showMonetizationPopup(type, opts = {}) {
     if (!modal) return;
     const card = modal.querySelector('.mp-popup-card');
     const badge = document.getElementById('mp-popup-badge');
+    const chip = document.getElementById('mp-popup-chip');
     const title = document.getElementById('mp-popup-title');
     const desc = document.getElementById('mp-popup-desc');
     const reasonBox = document.getElementById('mp-popup-reason');
@@ -11628,28 +11705,40 @@ function showMonetizationPopup(type, opts = {}) {
     const cta = document.getElementById('mp-popup-cta');
     const confetti = document.getElementById('mp-popup-confetti');
 
+    // Reset animation state cleanly before re-opening
+    modal.classList.remove('open');
     if (card) {
         card.className = 'mp-popup-card mp-popup-' + type;
+        void card.offsetWidth;
     }
 
     if (confetti) {
         confetti.innerHTML = '';
-        if (type === 'applied' || type === 'approved') {
-            const colors = type === 'approved'
-                ? ['#E10E49', '#FF4D7E', '#F59E0B', '#10B981', '#FBBF24', '#FB7185']
-                : ['#E10E49', '#FF4D7E', '#38BDF8', '#A855F7', '#F472B6'];
-            for (let i = 0; i < 24; i++) {
-                const piece = document.createElement('span');
-                piece.className = 'mp-confetti-piece';
-                const angle = (Math.PI * 2 * i) / 24 + (Math.random() * 0.25 - 0.125);
-                const dist = 75 + Math.random() * 75;
-                piece.style.setProperty('--tx', `${Math.round(Math.cos(angle) * dist)}px`);
-                piece.style.setProperty('--ty', `${Math.round(Math.sin(angle) * dist - 20)}px`);
-                piece.style.setProperty('--rot', `${Math.round(Math.random() * 540 - 270)}deg`);
-                piece.style.setProperty('--delay', `${(Math.random() * 0.18).toFixed(2)}s`);
-                piece.style.background = colors[i % colors.length];
-                confetti.appendChild(piece);
-            }
+        const count = type === 'approved' ? 36 : type === 'applied' ? 24 : 12;
+        const palette = type === 'approved'
+            ? ['#10B981', '#FBBF24', '#FF2A68', '#34D399', '#F59E0B', '#FDE047', '#FB7185']
+            : type === 'applied'
+                ? ['#E10E49', '#FF4D7E', '#F472B6', '#38BDF8', '#A855F7', '#FBBF24']
+                : type === 'rejected'
+                    ? ['#EF4444', '#F87171', '#FCA5A5', '#DC2626']
+                    : ['#64748B', '#94A3B8', '#CBD5E1'];
+        for (let i = 0; i < count; i++) {
+            const piece = document.createElement('span');
+            piece.className = 'mp-confetti-piece';
+            const angle = (Math.PI * 2 * i) / count + (Math.random() * 0.28 - 0.14);
+            const dist = (type === 'approved' ? 92 : 76) + Math.random() * 78;
+            const isRibbon = i % 3 === 0;
+            const isDot = i % 3 === 1;
+            piece.style.setProperty('--tx', `${Math.round(Math.cos(angle) * dist)}px`);
+            piece.style.setProperty('--ty', `${Math.round(Math.sin(angle) * dist - 18)}px`);
+            piece.style.setProperty('--rot', `${Math.round(Math.random() * 640 - 320)}deg`);
+            piece.style.setProperty('--delay', `${(Math.random() * 0.22).toFixed(2)}s`);
+            piece.style.setProperty('--dur', `${(1.05 + Math.random() * 0.55).toFixed(2)}s`);
+            piece.style.setProperty('--w', isRibbon ? '11px' : isDot ? '7px' : '8px');
+            piece.style.setProperty('--h', isRibbon ? '5px' : isDot ? '7px' : '8px');
+            piece.style.setProperty('--rad', isDot ? '50%' : '2px');
+            piece.style.background = palette[i % palette.length];
+            confetti.appendChild(piece);
         }
     }
 
@@ -11657,29 +11746,47 @@ function showMonetizationPopup(type, opts = {}) {
 
     if (type === 'approved') {
         playUI('success');
-        if (badge) badge.innerHTML = '<i class="fas fa-crown"></i>';
-        if (title) title.textContent = 'Monetization Approved!';
-        if (desc) desc.textContent = 'Congratulations! Your channel is now an official Flaynity Partner and Earning Revenue is unlocked.';
+        if (badge) {
+            badge.innerHTML = '<svg width="44" height="44" viewBox="0 0 48 48" fill="none"><path class="mp-svg-draw" d="M8 34L12 16L20 23L24 12L28 23L36 16L40 34H8Z" stroke="#FFFFFF" stroke-width="3.6" stroke-linejoin="round" fill="rgba(255,255,255,0.18)"/><path class="mp-svg-draw" d="M10 39H38" stroke="#FDE047" stroke-width="3.6" stroke-linecap="round"/></svg>';
+        }
+        if (chip) chip.innerHTML = '<i class="fas fa-bolt"></i> Earning Revenue Unlocked';
+        if (title) title.textContent = "Monetization Approved!";
+        if (desc) desc.textContent = "Congratulations! Your channel is now an official Flaynity Partner and Earning Revenue is active.";
         if (cta) cta.textContent = "Awesome, Let's Go!";
     } else if (type === 'rejected') {
         playUI('error');
-        if (badge) badge.innerHTML = '<i class="fas fa-times-circle"></i>';
-        if (title) title.textContent = 'Application Not Approved';
-        if (desc) desc.textContent = 'Your monetization request was rejected by the review team. Please review the reason below before re-applying.';
+        if (badge) {
+            badge.innerHTML = '<svg width="42" height="42" viewBox="0 0 48 48" fill="none"><path class="mp-svg-draw" d="M15 15L33 33" stroke="#FFFFFF" stroke-width="4.2" stroke-linecap="round"/><path class="mp-svg-draw" d="M33 15L15 33" stroke="#FFFFFF" stroke-width="4.2" stroke-linecap="round"/></svg>';
+        }
+        if (chip) chip.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Review Decision';
+        if (title) title.textContent = "Application Not Approved";
+        if (desc) desc.textContent = "Your monetization request was rejected by the review team. Please check the reason below before re-applying.";
         if (opts.reason && reasonBox && reasonText) {
             reasonText.textContent = String(opts.reason);
             reasonBox.style.display = 'block';
         }
-        if (cta) cta.textContent = 'Understood';
+        if (cta) cta.textContent = "Understood";
+    } else if (type === 'disabled') {
+        playUI('error');
+        if (badge) {
+            badge.innerHTML = '<svg width="44" height="44" viewBox="0 0 48 48" fill="none"><circle class="mp-svg-draw" cx="24" cy="24" r="15" stroke="#FFFFFF" stroke-width="3.8"/><path class="mp-svg-draw" d="M13.5 13.5L34.5 34.5" stroke="#FDA4AF" stroke-width="4" stroke-linecap="round"/></svg>';
+        }
+        if (chip) chip.innerHTML = '<i class="fas fa-pause-circle"></i> Earning Revenue Paused';
+        if (title) title.textContent = "Monetization Disabled";
+        if (desc) desc.textContent = "An administrator has turned OFF monetization for your channel. Earning revenue is paused until reactivated.";
+        if (cta) cta.textContent = "Okay, Got It";
     } else {
         playUI('success');
-        if (badge) badge.innerHTML = '<i class="fas fa-check"></i>';
-        if (title) title.textContent = 'Application Submitted!';
-        if (desc) desc.textContent = "Your Flaynity Partner application has been sent and is now under review. We'll notify you once reviewed.";
-        if (cta) cta.textContent = 'Got It';
+        if (badge) {
+            badge.innerHTML = '<svg width="44" height="44" viewBox="0 0 48 48" fill="none"><path class="mp-svg-draw" d="M12 24.5L20.5 33L36 16" stroke="#FFFFFF" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        }
+        if (chip) chip.innerHTML = '<i class="fas fa-sparkles"></i> Application Under Review';
+        if (title) title.textContent = "Application Submitted!";
+        if (desc) desc.textContent = "Your Flaynity Partner application has been sent and is now under review. We'll notify you as soon as it's reviewed.";
+        if (cta) cta.textContent = "Got It";
     }
 
-    modal.classList.add('open');
+    requestAnimationFrame(() => modal.classList.add('open'));
 }
 
 function closeMonetizationPopup() {
@@ -11699,8 +11806,14 @@ function checkMonetizationDecisionPopup() {
     let lastSeen = '';
     try { lastSeen = localStorage.getItem(storageKey) || ''; } catch (e) {}
 
-    if (isChannelMonetized(ch) || reqStatus === 'approved') {
-        const sig = 'approved:' + String(req.reviewedAt || ch.monetizedAt || ch.monetizationReviewedAt || 'active');
+    if (isChannelMonetizationDisabled(ch)) {
+        const sig = 'disabled:' + String(ch.monetizationDisabledAt || ch.monetizationUpdatedAt || ch.updatedAt || 'off');
+        if (lastSeen !== sig) {
+            try { localStorage.setItem(storageKey, sig); } catch (e) {}
+            showMonetizationPopup('disabled');
+        }
+    } else if (isChannelMonetized(ch) || (reqStatus === 'approved' && chStatus !== 'off' && chStatus !== 'disabled' && chStatus !== 'rejected')) {
+        const sig = 'approved:' + String(ch.monetizationUpdatedAt || req.reviewedAt || ch.monetizedAt || ch.monetizationReviewedAt || 'active');
         if (lastSeen !== sig) {
             try { localStorage.setItem(storageKey, sig); } catch (e) {}
             showMonetizationPopup('approved');
@@ -11725,6 +11838,11 @@ async function handleMonetizationApply() {
     const applyBtn = document.getElementById('btn-monetization-apply');
     const monState = applyBtn ? applyBtn.dataset.monState : '';
 
+    if (monState === 'disabled' || isChannelMonetizationDisabled(currentChannelData)) {
+        showMonetizationPopup('disabled');
+        return;
+    }
+
     if (monState === 'approved' || isChannelMonetized(currentChannelData)) {
         playUI('click');
         AppNavigation.pushPremiumService('flay-payout');
@@ -11736,7 +11854,6 @@ async function handleMonetizationApply() {
         return;
     }
 
-    // Verify all eligibility rules strictly before allowing submission
     const subs = lastMonetizationMetrics
         ? lastMonetizationMetrics.subs
         : Math.max(0, Number(currentChannelData && currentChannelData.subscribersCount) || 0);

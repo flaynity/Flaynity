@@ -20,11 +20,11 @@
 <meta name="google-adsense-account" content="ca-pub-3200255969875766">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<style id="flaynity-launch-base">html{background:#0F0F0F}</style>
+<style id="flaynity-launch-base">html{background:#FCEAD9}</style>
 <link rel="preload" as="image" href="assets/flaynity-logo.png">
 <title>Flaynity</title>
-<meta name="theme-color" content="#FFFFFF" id="flaynity-theme-color">
-<meta name="msapplication-navbutton-color" content="#FFFFFF" id="flaynity-ms-theme-color">
+<meta name="theme-color" content="#FCEAD9" id="flaynity-theme-color">
+<meta name="msapplication-navbutton-color" content="#FCEAD9" id="flaynity-ms-theme-color">
 
 <script id="flaynity-brand-asset-cache">
 (function () {
@@ -105,7 +105,7 @@
 (function () {
     try {
         const dark = localStorage.getItem('flaynity-theme-pref') === 'dark';
-        const color = dark ? '#0F0F0F' : '#FFFFFF';
+        const color = dark ? '#16100D' : '#FCEAD9';
         const meta = document.getElementById('flaynity-theme-color');
         const msMeta = document.getElementById('flaynity-ms-theme-color');
         if (meta) meta.setAttribute('content', color);
@@ -115,6 +115,23 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Cinzel:wght@600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link id="flaynity-soft3d-theme" rel="stylesheet" href="assets/soft3d-theme.css">
+<script id="flaynity-soft3d-cascade-guard">
+(function () {
+    'use strict';
+    function pinSoft3DLast() {
+        var head = document.head;
+        var link = document.getElementById('flaynity-soft3d-theme');
+        if (head && link && head.lastElementChild !== link) {
+            head.appendChild(link);
+        }
+    }
+    if (window.MutationObserver && document.head) {
+        new MutationObserver(pinSoft3DLast).observe(document.head, { childList: true });
+    }
+    document.addEventListener('DOMContentLoaded', pinSoft3DLast);
+})();
+</script>
 </head>
 <body>
 
@@ -131,11 +148,11 @@
      a glass logo appears at the centre of the brand screen. Then it fades out. -->
 <style id="flaynity-launch-style">
     #flaynity-startup-splash {
-        --fs-brand: #D80E45;           /* same as --primary in home.html */
-        --fs-brand-lt: #FF4D7A;
-        --fs-dark: #0F0F0F;
-        --fs-surface: #FFFFFF;         /* stage 2 background (light theme) */
-        --fs-ink: #0F0F0F;             /* wordmark colour */
+        --fs-brand: #9A5B34;           /* same as --primary in home.html */
+        --fs-brand-lt: #C07E51;
+        --fs-dark: #16100D;
+        --fs-surface: #FCEAD9;         /* stage 2 background (light theme) */
+        --fs-ink: #2D1E15;             /* wordmark colour */
         --fs-LB: clamp(96px, 28vmin, 140px);   /* logo size in stage 1 */
         --fs-k: .55;                           /* logo scale used in the brand lockup */
         --fs-L: calc(var(--fs-LB) * var(--fs-k));
@@ -150,7 +167,7 @@
         -webkit-tap-highlight-color: transparent;
         transition: opacity .26s ease .06s;
     }
-    #flaynity-startup-splash.fs-dark { --fs-surface: #161618; --fs-ink: #FFFFFF; }
+    #flaynity-startup-splash.fs-dark { --fs-surface: #16100D; --fs-ink: #F9F0E7; }
     #flaynity-startup-splash > * { position: absolute; margin: 0; }
     /* every moving piece gets its own GPU layer, so it animates on the compositor (smooth at 60/90/120/144Hz) */
     #flaynity-startup-splash .fs-glow, #flaynity-startup-splash .fs-white, #flaynity-startup-splash .fs-ring,
@@ -161,7 +178,7 @@
     #flaynity-startup-splash .fs-glow {
         left: 50%; top: 50%; width: calc(var(--fs-LB) * 3); height: calc(var(--fs-LB) * 3);
         margin: calc(var(--fs-LB) * -1.5) 0 0 calc(var(--fs-LB) * -1.5); border-radius: 50%;
-        background: radial-gradient(circle, rgba(216,14,69,.55) 0%, rgba(216,14,69,.18) 38%, rgba(216,14,69,0) 68%);
+        background: radial-gradient(circle, rgba(154,91,52,.52) 0%, rgba(154,91,52,.20) 38%, rgba(154,91,52,0) 68%);
         opacity: 0; animation: fsGlow 1000ms ease-out 0ms both;
     }
     #flaynity-startup-splash .fs-white {
@@ -663,7 +680,7 @@
     }
     function reveal() {
         if (!onboarding) return;
-        if (themeMeta) { savedThemeColor = themeMeta.getAttribute('content'); themeMeta.setAttribute('content', '#FFFFFF'); }
+        if (themeMeta) { savedThemeColor = themeMeta.getAttribute('content'); themeMeta.setAttribute('content', '#FCEAD9'); }
         onboarding.style.display = 'block';
         onboarding.setAttribute('aria-hidden', 'false');
         onboarding.classList.remove('ready');

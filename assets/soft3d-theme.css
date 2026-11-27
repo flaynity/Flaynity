@@ -1,0 +1,1265 @@
+/* ==========================================================================
+   FLAYNITY — WARM CREAM LAYERED SOFT 3D DESIGN SYSTEM (ALL 13 PAGES)
+   Inspired by Sunlit Warm Cream Claymorphism + Sculpted Caramel-Chestnut 3D
+   Zero JS breakage • Full Firebase/R2/HLS & Sketchware WebView Compatibility
+   ========================================================================== */
+
+:root {
+  /* Core Warm Cream & Caramel-Chestnut Layered Soft 3D Palette */
+  --s3d-cream-top: #FCEAD9;
+  --s3d-cream: #F8E3CE;
+  --s3d-cream-bot: #F3D9C0;
+  --s3d-surface-hi: #FFF9F2;
+  --s3d-surface-mid: #FBECE0;
+  --s3d-surface-lo: #F5E0CC;
+  --s3d-well: #F3DFCA;
+  --s3d-beige-line: rgba(154, 102, 66, 0.18);
+  --s3d-white-rim: rgba(255, 255, 255, 0.88);
+
+  /* Sculpted Caramel-Chestnut Accent Palette */
+  --s3d-caramel-hi: #C07E51;
+  --s3d-caramel: #9A5B34;
+  --s3d-caramel-lo: #76401F;
+  --s3d-peach-soft: #E5B492;
+  --s3d-sage: #2E8B57;
+  --s3d-sage-soft: rgba(46, 139, 87, 0.14);
+
+  /* Typography & Warm Espresso Ink */
+  --s3d-ink-strong: #2C180D;
+  --s3d-ink: #3E2416;
+  --s3d-ink-muted: #7C5A45;
+  --s3d-ink-soft: #A3806A;
+  --s3d-font: 'Plus Jakarta Sans', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Layered Gradients */
+  --s3d-canvas-grad: linear-gradient(180deg, #FCEAD9 0%, #F7E1CC 52%, #F2D7BD 100%);
+  --s3d-card-grad: linear-gradient(180deg, #FFFBF6 0%, #F9E9D9 100%);
+  --s3d-card-inner-grad: linear-gradient(180deg, #FFFDF9 0%, #F5E1CD 100%);
+  --s3d-pill-grad: linear-gradient(180deg, #FFF9F2 0%, #F5E2CF 100%);
+  --s3d-caramel-grad: linear-gradient(145deg, #BD7B4E 0%, #945630 56%, #753F1F 100%);
+  --s3d-caramel-grad-hover: linear-gradient(145deg, #C78456 0%, #9E5E36 56%, #7F4624 100%);
+  --s3d-nav-grad: linear-gradient(180deg, #FFF9F2 0%, #F3DEC8 100%);
+
+  /* Multi-Layered Tactile Clay Shadows */
+  --s3d-shadow-card:
+    0 12px 26px rgba(124, 74, 42, 0.13),
+    0 3px 8px rgba(124, 74, 42, 0.06),
+    inset 0 2px 2.5px rgba(255, 255, 255, 0.96),
+    inset 0 -3px 6px rgba(168, 110, 68, 0.15);
+  --s3d-shadow-layer:
+    0 7px 16px rgba(124, 74, 42, 0.11),
+    0 2px 5px rgba(124, 74, 42, 0.05),
+    inset 0 2px 2px rgba(255, 255, 255, 0.94),
+    inset 0 -2px 5px rgba(168, 110, 68, 0.14);
+  --s3d-shadow-cta:
+    0 10px 22px rgba(117, 63, 31, 0.30),
+    0 3px 7px rgba(117, 63, 31, 0.16),
+    inset 0 2px 2px rgba(255, 232, 212, 0.44),
+    inset 0 -3px 6px rgba(84, 42, 18, 0.30);
+  --s3d-shadow-btn-light:
+    0 6px 14px rgba(124, 74, 42, 0.12),
+    0 2px 4px rgba(124, 74, 42, 0.06),
+    inset 0 2px 2px rgba(255, 255, 255, 0.96),
+    inset 0 -2px 4px rgba(168, 110, 68, 0.15);
+  --s3d-shadow-pressed:
+    0 2px 4px rgba(117, 63, 31, 0.10),
+    inset 0 3px 7px rgba(117, 63, 31, 0.24),
+    inset 0 -1px 2px rgba(255, 249, 242, 0.55);
+  --s3d-shadow-inset:
+    inset 3px 3px 8px rgba(132, 82, 48, 0.15),
+    inset -2px -2px 6px rgba(255, 253, 250, 0.95);
+  --s3d-shadow-modal:
+    0 24px 54px rgba(64, 36, 18, 0.24),
+    0 6px 18px rgba(64, 36, 18, 0.12),
+    inset 0 2px 3px rgba(255, 255, 255, 0.94),
+    inset 0 -2px 6px rgba(168, 110, 68, 0.14);
+
+  --s3d-radius-xl: 28px;
+  --s3d-radius-lg: 22px;
+  --s3d-radius-md: 16px;
+  --s3d-radius-pill: 999px;
+  --s3d-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ---- Unified Native Variable Overrides Across All 13 Pages ---- */
+  --bg-color: var(--s3d-cream) !important;
+  --surface: var(--s3d-surface-hi) !important;
+  --card-bg: var(--s3d-surface-hi) !important;
+  --primary: var(--s3d-caramel) !important;
+  --primary-glow: rgba(154, 91, 52, 0.22) !important;
+  --text-main: var(--s3d-ink) !important;
+  --text-primary: var(--s3d-ink) !important;
+  --text-muted: var(--s3d-ink-muted) !important;
+  --text-secondary: var(--s3d-ink-muted) !important;
+  --border-color: var(--s3d-beige-line) !important;
+  --glass-bg: rgba(255, 249, 242, 0.94) !important;
+  --glass-border: var(--s3d-beige-line) !important;
+  --chip-bg: var(--s3d-surface-mid) !important;
+  --chip-c: var(--s3d-ink) !important;
+
+  /* Discover */
+  --dc-bg: var(--s3d-cream) !important;
+  --dc-top: transparent !important;
+  --dc-field: var(--s3d-well) !important;
+  --dc-field-on: var(--s3d-surface-hi) !important;
+  --dc-ink: var(--s3d-ink) !important;
+  --dc-mute: var(--s3d-ink-muted) !important;
+  --sp-accent: var(--s3d-caramel) !important;
+  --sp-field: var(--s3d-well) !important;
+  --sp-ink: var(--s3d-ink) !important;
+  --sp-mute: var(--s3d-ink-muted) !important;
+
+  /* Analytics */
+  --an-bg: var(--s3d-cream) !important;
+  --an-sf: var(--s3d-surface-hi) !important;
+  --an-cd: var(--s3d-surface-hi) !important;
+  --an-tx: var(--s3d-ink) !important;
+  --an-mu: var(--s3d-ink-muted) !important;
+  --an-bd: var(--s3d-beige-line) !important;
+  --an-p: var(--s3d-caramel) !important;
+  --an-ok: var(--s3d-sage) !important;
+  --an-soft: rgba(154, 91, 52, 0.14) !important;
+  --an-soft2: rgba(154, 91, 52, 0.26) !important;
+  --an-track: rgba(154, 91, 52, 0.16) !important;
+
+  /* Upload Media Picker */
+  --bg: var(--s3d-cream) !important;
+  --fg: var(--s3d-ink) !important;
+  --pill: var(--s3d-surface-hi) !important;
+  --line: var(--s3d-beige-line) !important;
+  --cell: var(--s3d-surface-mid) !important;
+  --sub: var(--s3d-ink-muted) !important;
+  --chip: var(--s3d-surface-hi) !important;
+  --chipfg: var(--s3d-ink) !important;
+
+  /* Flay Pay & Flay Payout */
+  --fp-bg: var(--s3d-cream) !important;
+  --fp-surface: var(--s3d-surface-hi) !important;
+  --fp-surface-alt: var(--s3d-surface-mid) !important;
+  --fp-text: var(--s3d-ink) !important;
+  --fp-text-main: var(--s3d-ink) !important;
+  --fp-muted: var(--s3d-ink-muted) !important;
+  --fp-text-muted: var(--s3d-ink-muted) !important;
+  --fp-text-light: var(--s3d-ink-soft) !important;
+  --fp-border: var(--s3d-beige-line) !important;
+  --fp-accent: var(--s3d-caramel) !important;
+  --fp-primary-pink: var(--s3d-caramel) !important;
+  --fp-primary-grad: var(--s3d-caramel-grad) !important;
+  --fp-primary-subtle: rgba(154, 91, 52, 0.15) !important;
+  --fp-soft: rgba(154, 91, 52, 0.15) !important;
+  --fp-shadow: var(--s3d-shadow-card) !important;
+  --fp-card-shadow: var(--s3d-shadow-card) !important;
+  --fp-btn-shadow: var(--s3d-shadow-cta) !important;
+  --fp-banner-shadow: var(--s3d-shadow-cta) !important;
+  --fp-font: var(--s3d-font) !important;
+
+  /* Verified Badge & Upgrade Pro */
+  --flay-pink: var(--s3d-caramel) !important;
+  --app-bar-bg: transparent !important;
+  --card-shadow: var(--s3d-shadow-card) !important;
+  --accent: var(--s3d-caramel) !important;
+  --border: var(--s3d-beige-line) !important;
+  --muted: var(--s3d-ink-muted) !important;
+  --soft: rgba(154, 91, 52, 0.14) !important;
+
+  /* Report a Problem */
+  --rp-bg: var(--s3d-cream) !important;
+  --rp-card: var(--s3d-surface-hi) !important;
+  --rp-field: var(--s3d-well) !important;
+  --rp-text: var(--s3d-ink) !important;
+  --rp-muted: var(--s3d-ink-muted) !important;
+  --rp-border: var(--s3d-beige-line) !important;
+  --rp-primary: var(--s3d-caramel) !important;
+
+  /* Auth & Feed */
+  --au-grad: var(--s3d-caramel-grad) !important;
+  --au-violet: var(--s3d-caramel-lo) !important;
+  --tt-line: var(--s3d-beige-line) !important;
+  --tt-muted: var(--s3d-ink-muted) !important;
+  --fb-card: var(--s3d-surface-hi) !important;
+  --fb-line: var(--s3d-beige-line) !important;
+  --fb-muted: var(--s3d-ink-muted) !important;
+  --fb-link: var(--s3d-caramel) !important;
+}
+
+/* ==========================================================================
+   WARM ESPRESSO LAYERED SOFT 3D DARK MODE ([data-theme="dark"])
+   ========================================================================== */
+[data-theme="dark"],
+[data-theme="dark"] #media-picker,
+[data-theme="dark"] .flay-pay-wrapper,
+[data-theme="dark"] .flay-payout-wrapper,
+[data-theme="dark"] .fvb-wrapper,
+[data-theme="dark"] .an-page,
+[data-theme="dark"] .an-sheet-wrap {
+  --s3d-cream-top: #1B1410;
+  --s3d-cream: #16100D;
+  --s3d-cream-bot: #120D0A;
+  --s3d-surface-hi: #271E19;
+  --s3d-surface-mid: #211914;
+  --s3d-surface-lo: #1A130F;
+  --s3d-well: #15100D;
+  --s3d-beige-line: rgba(229, 180, 146, 0.16);
+  --s3d-white-rim: rgba(255, 232, 212, 0.10);
+
+  --s3d-caramel-hi: #CC8A5E;
+  --s3d-caramel: #A6663E;
+  --s3d-caramel-lo: #824B29;
+  --s3d-ink-strong: #FFF9F2;
+  --s3d-ink: #F8EDE3;
+  --s3d-ink-muted: #C2AA98;
+  --s3d-ink-soft: #967D6C;
+
+  --s3d-canvas-grad: linear-gradient(180deg, #1B1410 0%, #150F0C 100%);
+  --s3d-card-grad: linear-gradient(180deg, #2A201A 0%, #201813 100%);
+  --s3d-card-inner-grad: linear-gradient(180deg, #32261F 0%, #251C17 100%);
+  --s3d-pill-grad: linear-gradient(180deg, #2C221C 0%, #211914 100%);
+  --s3d-caramel-grad: linear-gradient(145deg, #C78458 0%, #9E5D36 56%, #7C4524 100%);
+  --s3d-nav-grad: linear-gradient(180deg, #281F1A 0%, #1C1511 100%);
+
+  --s3d-shadow-card:
+    0 12px 28px rgba(0, 0, 0, 0.50),
+    0 3px 8px rgba(0, 0, 0, 0.30),
+    inset 0 1.5px 2px rgba(255, 232, 212, 0.10),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.38);
+  --s3d-shadow-layer:
+    0 7px 18px rgba(0, 0, 0, 0.42),
+    inset 0 1.5px 1.5px rgba(255, 232, 212, 0.09),
+    inset 0 -2px 5px rgba(0, 0, 0, 0.34);
+  --s3d-shadow-cta:
+    0 10px 22px rgba(0, 0, 0, 0.48),
+    inset 0 1.5px 2px rgba(255, 236, 222, 0.28),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.38);
+  --s3d-shadow-btn-light:
+    0 6px 14px rgba(0, 0, 0, 0.38),
+    inset 0 1.5px 1.5px rgba(255, 232, 212, 0.10),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.32);
+  --s3d-shadow-pressed:
+    0 1px 3px rgba(0, 0, 0, 0.36),
+    inset 0 3px 8px rgba(0, 0, 0, 0.54);
+  --s3d-shadow-inset:
+    inset 3px 3px 8px rgba(0, 0, 0, 0.50),
+    inset -2px -2px 5px rgba(255, 232, 212, 0.06);
+  --s3d-shadow-modal:
+    0 24px 56px rgba(0, 0, 0, 0.68),
+    inset 0 1.5px 2px rgba(255, 232, 212, 0.12);
+
+  --bg-color: var(--s3d-cream) !important;
+  --surface: var(--s3d-surface-hi) !important;
+  --card-bg: var(--s3d-surface-hi) !important;
+  --primary: #CC8A5E !important;
+  --text-main: var(--s3d-ink) !important;
+  --text-primary: var(--s3d-ink) !important;
+  --text-muted: var(--s3d-ink-muted) !important;
+  --text-secondary: var(--s3d-ink-muted) !important;
+  --border-color: var(--s3d-beige-line) !important;
+  --glass-bg: rgba(39, 30, 25, 0.94) !important;
+  --glass-border: var(--s3d-beige-line) !important;
+  --fp-bg: var(--s3d-cream) !important;
+  --fp-surface: var(--s3d-surface-hi) !important;
+  --fp-surface-alt: var(--s3d-surface-mid) !important;
+  --fp-text: var(--s3d-ink) !important;
+  --fp-text-main: var(--s3d-ink) !important;
+  --fp-muted: var(--s3d-ink-muted) !important;
+  --fp-text-muted: var(--s3d-ink-muted) !important;
+  --fp-border: var(--s3d-beige-line) !important;
+  --an-bg: var(--s3d-cream) !important;
+  --an-sf: var(--s3d-surface-hi) !important;
+  --an-cd: var(--s3d-surface-hi) !important;
+  --an-tx: var(--s3d-ink) !important;
+  --an-mu: var(--s3d-ink-muted) !important;
+  --an-bd: var(--s3d-beige-line) !important;
+  --rp-bg: var(--s3d-cream) !important;
+  --rp-card: var(--s3d-surface-hi) !important;
+  --rp-field: var(--s3d-well) !important;
+  --rp-text: var(--s3d-ink) !important;
+  --rp-muted: var(--s3d-ink-muted) !important;
+  --rp-border: var(--s3d-beige-line) !important;
+}
+
+/* ==========================================================================
+   1. BASE WARM CREAM CANVAS & MEDIA PROTECTION
+   ========================================================================== */
+html, body {
+  background: var(--s3d-cream) !important;
+  background-image: var(--s3d-canvas-grad) !important;
+  color: var(--s3d-ink) !important;
+  font-family: var(--s3d-font) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+#app,
+#app-screen,
+.tab-content,
+.fullscreen-page,
+.premium-service-page,
+#home-tab,
+#search-tab,
+#fullscreen-search-page,
+#posts-tab,
+#you-tab,
+#view-channel-page,
+#channel-settings-page,
+#edit-channel-page,
+#media-picker,
+.an-page,
+.flay-pay-wrapper,
+.flay-payout-wrapper,
+.fvb-wrapper,
+#upgrade-pro-app,
+#report-a-problem-page {
+  background-color: var(--s3d-cream) !important;
+  background-image: var(--s3d-canvas-grad) !important;
+  color: var(--s3d-ink) !important;
+  font-family: var(--s3d-font) !important;
+}
+
+/* Protect immersive video/camera dark surfaces */
+#feels-tab,
+#feels-swiper-container,
+#full-movie-page .wp-stage,
+#video-player-container,
+#video-player-skeleton,
+#upload-short-view,
+#short-camera-preview,
+#short-preview-page,
+#short-editor-page {
+  background: #0F0C0A !important;
+  background-image: none !important;
+}
+
+/* Bottom clearance above Warm Cream sculpted bottom nav */
+#home-tab,
+#posts-tab,
+#search-tab,
+#you-tab {
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* Tabular figures for all numbers & stats */
+.channel-stat-num,
+.an-big,
+.an-stat,
+.fp-text-tabular,
+.fp-hero-val,
+.plan-price,
+.plan-choice-price,
+#fp-avail-balance,
+#fp-recharged-balance,
+#fp-spent-balance,
+#val-revenue,
+#val-pending,
+#val-paid {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   2. OPEN WARM CREAM HEADERS & SCULPTED CIRCULAR ACTION BUTTONS (1000172750)
+   ========================================================================== */
+header:not(.post-header):not(.fp-step-header):not(.bs-header):not(.chk-header),
+.appbar,
+.an-head,
+.fp-topbar,
+.page-header,
+.search-topbar,
+.mp-appbar,
+.rp-bar,
+.topbar-nav.solid {
+  background: rgba(252, 234, 217, 0.88) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border-bottom: 1px solid rgba(154, 102, 66, 0.12) !important;
+  box-shadow: 0 4px 16px rgba(124, 74, 42, 0.06) !important;
+  color: var(--s3d-ink-strong) !important;
+  min-height: 60px !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  box-sizing: border-box !important;
+}
+[data-theme="dark"] header:not(.post-header):not(.fp-step-header):not(.bs-header):not(.chk-header),
+[data-theme="dark"] .appbar,
+[data-theme="dark"] .an-head,
+[data-theme="dark"] .fp-topbar,
+[data-theme="dark"] .page-header,
+[data-theme="dark"] .search-topbar,
+[data-theme="dark"] .mp-appbar,
+[data-theme="dark"] .rp-bar {
+  background: rgba(27, 20, 16, 0.90) !important;
+  border-bottom: 1px solid rgba(229, 180, 146, 0.12) !important;
+}
+
+/* Brand logo badge in home header */
+#brand-appbar > img:first-child {
+  width: 32px !important;
+  height: 32px !important;
+  padding: 4px !important;
+  border-radius: 12px !important;
+  background: var(--s3d-card-grad) !important;
+  box-shadow: var(--s3d-shadow-btn-light) !important;
+  box-sizing: border-box !important;
+}
+
+/* Header titles */
+.appbar .appbar-title,
+.an-head h1,
+.an-head .an-title,
+.fp-topbar .fp-topbar-title,
+.page-header .header-title,
+.mp-appbar .mp-appbar-title,
+.rp-bar h1 {
+  color: var(--s3d-ink-strong) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* Sculpted Circular Soft 3D Header Icon Buttons (Matches 1000172750.png top corners) */
+header #appbar-actions-wrap > button,
+.appbar .appbar-back-btn,
+.appbar .appbar-theme-btn,
+.appbar > button,
+.an-back,
+.fp-topbar .fp-back-btn,
+.page-header .back-btn,
+.search-topbar .search-back-btn,
+.mp-appbar .mp-back-btn,
+.rp-bar #rp-backBtn {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  border-radius: 50% !important;
+  background: var(--s3d-pill-grad) !important;
+  border: 1px solid var(--s3d-white-rim) !important;
+  color: var(--s3d-ink-strong) !important;
+  box-shadow: var(--s3d-shadow-btn-light) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: transform 0.16s var(--s3d-ease), box-shadow 0.16s var(--s3d-ease) !important;
+}
+header #appbar-actions-wrap > button:active,
+.appbar .appbar-back-btn:active,
+.appbar .appbar-theme-btn:active,
+.an-back:active,
+.fp-topbar .fp-back-btn:active,
+.page-header .back-btn:active,
+.search-topbar .search-back-btn:active,
+.rp-bar #rp-backBtn:active {
+  transform: scale(0.92) translateY(1px) !important;
+  box-shadow: var(--s3d-shadow-pressed) !important;
+}
+
+/* ==========================================================================
+   3. WARM CREAM SCULPTED BOTTOM NAVIGATION BAR (Exact match: 1000172750.png)
+   ========================================================================== */
+.bottom-nav {
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
+  padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px)) 10px !important;
+  box-sizing: border-box !important;
+  background: var(--s3d-nav-grad) !important;
+  border-top: 1.5px solid var(--s3d-white-rim) !important;
+  border-radius: 28px 28px 0 0 !important;
+  box-shadow:
+    0 -10px 28px rgba(124, 74, 42, 0.15),
+    0 -2px 8px rgba(124, 74, 42, 0.07),
+    inset 0 2px 3px rgba(255, 255, 255, 0.92) !important;
+  display: flex !important;
+  justify-content: space-around !important;
+  align-items: center !important;
+  z-index: 1000 !important;
+}
+[data-theme="dark"] .bottom-nav {
+  box-shadow:
+    0 -12px 30px rgba(0, 0, 0, 0.55),
+    inset 0 1.5px 2px rgba(255, 232, 212, 0.12) !important;
+}
+
+.bottom-nav .nav-item {
+  flex: 1 !important;
+  height: 54px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  color: var(--s3d-ink-muted) !important;
+  border-radius: 20px !important;
+  transition: transform 0.18s var(--s3d-ease) !important;
+}
+.bottom-nav .nav-item:active {
+  transform: scale(0.91) !important;
+}
+
+.bottom-nav .nav-icon-container {
+  width: 44px !important;
+  height: 32px !important;
+  border-radius: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  transition: all 0.25s var(--s3d-ease) !important;
+}
+.bottom-nav .nav-item svg,
+.bottom-nav .nav-item .nav-icon-svg {
+  width: 22px !important;
+  height: 22px !important;
+  stroke: var(--s3d-ink) !important;
+  color: var(--s3d-ink) !important;
+}
+.bottom-nav .nav-label {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  color: var(--s3d-ink-muted) !important;
+  line-height: 1.1 !important;
+}
+
+/* Active Bottom Nav Item: Sculpted 3D Caramel-Chestnut Pill (1000172750.png) */
+.bottom-nav .nav-item.active .nav-icon-container {
+  width: 50px !important;
+  height: 34px !important;
+  border-radius: 17px !important;
+  background: var(--s3d-caramel-grad) !important;
+  border: 1px solid rgba(255, 232, 212, 0.42) !important;
+  box-shadow: var(--s3d-shadow-cta) !important;
+  transform: translateY(-4px) !important;
+}
+.bottom-nav .nav-item.active svg,
+.bottom-nav .nav-item.active .nav-icon-svg {
+  stroke: #FFF9F2 !important;
+  color: #FFF9F2 !important;
+}
+.bottom-nav .nav-item.active .nav-label {
+  color: var(--s3d-caramel-lo) !important;
+  font-weight: 800 !important;
+}
+[data-theme="dark"] .bottom-nav .nav-item.active .nav-label {
+  color: #E8B898 !important;
+}
+
+/* Center Raised 3D Caramel '+' Sphere */
+.bottom-nav .nav-create-circle {
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 50% !important;
+  background: var(--s3d-caramel-grad) !important;
+  color: #FFF9F2 !important;
+  border: 2.5px solid var(--s3d-surface-hi) !important;
+  box-shadow: var(--s3d-shadow-cta) !important;
+  transform: translateY(-10px) !important;
+}
+
+/* ==========================================================================
+   4. LAYERED SOFT 3D CARDS (HOME, FEED, WATCH, POSTS, DISCOVER, ANALYTICS, YOU)
+   ========================================================================== */
+
+/* Outer Elevated Warm Cream Soft 3D Cards */
+.long-video-feed-card,
+.movie-card,
+.fx-card,
+.fxr-card,
+.post-card,
+.fb-post,
+.short-home-card-2col,
+.discover-feels-card,
+.px-card,
+.ch-vcard,
+.ch-fcard,
+.channel-video-card-long,
+.short-grid-card,
+.comment-preview-card,
+.premium-white-card-watch,
+.queue-item-card,
+.fl-live-upload-card,
+.profile-card-you,
+.channel-profile-section,
+.analytics-overview-card,
+.analytics-card,
+.an-card,
+.an-rev,
+.fc-card,
+.fc-ccard,
+.fc-gcard,
+.fc-lcard,
+.fl-aw-card,
+.mp-elig-card,
+.mp-feature-card,
+.fp-breakdown-card,
+.fp-amount-card,
+.fp-confirm-details-card,
+.payment-card,
+.security-card,
+.plan-card,
+.plan-choice-card,
+.plan-status-card,
+.plan-overview-card,
+.comp-card,
+.countdown-card,
+.preview-card,
+.info-box,
+.rp-card,
+.edit-privacy-card,
+.chk-plan-box,
+.chk-user-box,
+.fs-card-white,
+.recent-wrap {
+  background: var(--s3d-card-grad) !important;
+  border: 1.5px solid var(--s3d-white-rim) !important;
+  border-radius: var(--s3d-radius-lg) !important;
+  box-shadow: var(--s3d-shadow-card) !important;
+  color: var(--s3d-ink) !important;
+  transition: transform 0.2s var(--s3d-ease), box-shadow 0.2s var(--s3d-ease) !important;
+}
+
+/* Nested Inner Layer Tiles (Quick Access, Stats, KPI Tiles, Mini Cards) */
+.channel-stat-item,
+.an-stat,
+.an-mini,
+.an-metric,
+.fp-mini-card,
+.fc-stat,
+.pbc-stat-box,
+.user-row,
+.suggestion-item,
+.recent-item,
+.account-row {
+  background: var(--s3d-card-inner-grad) !important;
+  border: 1px solid var(--s3d-white-rim) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--s3d-shadow-layer) !important;
+  color: var(--s3d-ink) !important;
+}
+
+/* Home & Posts feed breathing room */
+#home-feed-container .long-video-feed-card,
+#home-feed-container .movie-card,
+#home-feed-container .fx-card,
+#posts-feed-container .post-card,
+#posts-feed-container .fb-post {
+  margin: 0 14px 16px 14px !important;
+  padding: 12px !important;
+  box-sizing: border-box !important;
+}
+.long-video-feed-card img,
+.movie-card img,
+.fx-thumb,
+.rx-thumb,
+.dc-thumb,
+.px-poster,
+.video-card-thumb-wrap,
+.fb-media img,
+.fb-media video {
+  border-radius: 16px !important;
+}
+
+/* Sculpted Caramel-Chestnut Hero Banners (Wallet, Payout, Verified, Create Channel) */
+.premium-balance-card,
+.fp-hero-banner,
+.hero-card,
+.fc-hero,
+.channel-action-box {
+  background: var(--s3d-caramel-grad) !important;
+  border: 1.5px solid rgba(255, 232, 212, 0.36) !important;
+  border-radius: var(--s3d-radius-xl) !important;
+  box-shadow: var(--s3d-shadow-cta) !important;
+  color: #FFF9F2 !important;
+}
+.premium-balance-card *,
+.fp-hero-banner *,
+.hero-card .hero-title,
+.hero-card .hero-desc,
+.fc-hero * {
+  color: #FFF9F2 !important;
+}
+.premium-balance-card .pbc-stat-box {
+  background: rgba(255, 249, 242, 0.16) !important;
+  border: 1px solid rgba(255, 249, 242, 0.28) !important;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.24) !important;
+}
+
+/* ==========================================================================
+   5. PAGE-SPECIFIC LAYERED SOFT 3D POLISH (EVERY SINGLE PAGE)
+   ========================================================================== */
+
+/* --- DISCOVER PAGE (pages/discover.html — 2nd phone in 1000172750.png) --- */
+.discover-search-trigger,
+.dc-search-btn {
+  background: var(--s3d-pill-grad) !important;
+  border: 1.5px solid var(--s3d-white-rim) !important;
+  border-radius: 20px !important;
+  box-shadow: var(--s3d-shadow-inset) !important;
+  color: var(--s3d-ink) !important;
+}
+.discover-feels-card {
+  padding: 8px !important;
+  border-radius: 22px !important;
+}
+.dc-badge {
+  background: var(--s3d-caramel-grad) !important;
+  color: #FFF9F2 !important;
+  border-radius: var(--s3d-radius-pill) !important;
+  box-shadow: var(--s3d-shadow-cta) !important;
+}
+.discover-section-title {
+  color: var(--s3d-ink-strong) !important;
+  font-weight: 800 !important;
+}
+.dc-toast {
+  background: var(--s3d-caramel-grad) !important;
+  color: #FFF9F2 !important;
+  border-radius: var(--s3d-radius-pill) !important;
+}
+
+/* --- FEELS PAGE (pages/feels.html — Soft 3D Glass/Clay Controls on Video) --- */
+.feels-mode-switch {
+  background: rgba(34, 22, 15, 0.52) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(255, 232, 212, 0.26) !important;
+  border-radius: var(--s3d-radius-pill) !important;
+  padding: 4px !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.32) !important;
+}
+.feels-mode-btn.active {
+  background: var(--s3d-caramel-grad) !important;
+  color: #FFF9F2 !important;
+  border-radius: var(--s3d-radius-pill) !important;
+  box-shadow: 0 4px 12px rgba(117, 63, 31, 0.42) !important;
+}
+.feels-search-btn,
+.feels-settings-btn,
+.short-action-btn-tiktok,
+.short-action-btn-tiktok-other {
+  background: rgba(38, 24, 16, 0.48) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 236, 220, 0.28) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.32), inset 0 1px 1.5px rgba(255, 255, 255, 0.22) !important;
+}
+.short-subscribe-btn,
+.short-channel-subscribe-btn,
+.short-quality-pill {
+  background: var(--s3d-caramel-grad) !important;
+  color: #FFF9F2 !important;
+  border: 1px solid rgba(255, 232, 212, 0.36) !important;
+  border-radius: var(--s3d-radius-pill) !important;
+  box-shadow: var(--s3d-shadow-cta) !important;
+}
+.short-expandable-panel {
+  background: rgba(32, 21, 15, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  border-radius: 26px 26px 0 0 !important;
+  border-top: 1px solid rgba(255, 232, 212, 0.22) !important;
+}
+
+/* --- POSTS PAGE (pages/posts.html) --- */
+.px-compose {
+  margin: 10px 14px 14px 14px !important;
+  padding: 12px 14px !important;
+  background: var(--s3d-card-grad) !important;
+  border: 1.5px solid var(--s3d-white-rim) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--s3d-shadow-card) !important;
+}
+.px-input {
+  background: var(--s3d-well) !important;
+  border: 1px solid var(--s3d-beige-line) !important;
+  border-radius: var(--s3d-radius-pill) !important;
+  box-shadow: var(--s3d-shadow-inset) !important;
+  color: var(--s3d-ink) !important;
+}
+.px-pic {
+  background: var(--s3d-pill-grad) !important;
+  border: 1px solid var(--s3d-white-rim) !important;
+  border-radius: 50% !important;
+  box-shadow: var(--s3d-shadow-btn-light) !important;
+  color: var(--s3d-caramel-lo) !important;
+}
+.px-feels {
+  margin: 0 14px 14px 14px !important;
+  padding: 12px !important;
+  background: var(--s3d-card-grad) !important;
+  border: 1.5px solid var(--s3d-white-rim) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--s3d-shadow-card) !important;
+}
+
+/* --- UPLOAD PAGE (pages/upload.html) --- */
+#media-picker .mp-box {
+  background: var(--s3d-card-grad) !important;
+  border-radius: 28px 28px 0 0 !important;
+  box-shadow: var(--s3d-shadow-modal) !important;
+}
+.mp-chip,
+.mp-pill,
+.mode-item {
+  background: var(--s3d-pill-grad) !important;
+  color: var(--s3d-ink) !important;
+  border: 1px solid var(--s3d-white-rim) !important;
+  border-radius: var(--s3d-radius-pill) !important;
+  box-shadow: var(--s3d-shadow-btn-light) !important;
+}
+.mode-item.active,
+.mp-chip.active,
+.tk-next {
+  background: var(--s3d-caramel-grad) !important;
+  color: #FFF9F2 !important;
+  border-radius: var(--s3d-radius-pill) !important;
+  box-shadow: var(--s3d-shadow-cta) !important;
+}
+
+/* --- ANALYTICS PAGE (pages/analytics.html — 3rd phone in 1000172750.png) --- */
+.an-tabs {
+  gap: 8px !important;
+  padding: 6px 14px !important;
+}
+.an-tab,
+.an-chip,
+.an-rangebtn {
+  background: var(--s3d-pill-grad) !important;
+  color: var(--s3d-ink) !important;
+  border: 1.5px solid var(--s3d-white-rim) !important;
+  border-radius: var(--s3d-radius-pill) !important;
+  box-shadow: var(--s3d-shadow-btn-light) !important;
+  font-weight: 700 !important;
+}
+.an-tab.on,
+.an-tab.active,
+.an-chip.on,
+.an-chip.active {
+  background: var(--s3d-caramel-grad) !important;
+  color: #FFF9F2 !important;
+  border-color: rgba(255, 232, 212, 0.36) !important;
+  box-shadow: var(--s3d-shadow-cta) !important;
+}
+.an-card {
+  padding: 16px !important;
+  margin-bottom: 14px !important;
+}
+.an-ico {
+  background: var(--s3d-card-inner-grad) !important;
+  border: 1px solid var(--s3d-white-rim) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--s3d-shadow-btn-light) !important;
+  color: var(--s3d-caramel-lo) !important;
+}
+.an-tr.up {
+  color: var(--s3d-sage) !important;
+  background: var(--s3d-sage-soft) !important;
+  padding: 3px 9px !important;
+  border-radius: var(--s3d-radius-pill) !important;
+  font-weight: 700 !important;
+}
+.an-btn {
+  background: var(--s3d-caramel-grad) !important;
+  color: #FFF9F2 !important;
+  border-radius: var(--s3d-radius-pill) !important;
+  box-shadow: var(--s3d-shadow-cta) !important;
+}
+
+/* --- YOU & PROFILE PAGE (pages/you.html — 4th phone in 1000172750.png) --- */
+.avatar-preview-container,
+#view-channel-avatar {
+  border: 4px solid var(--s3d-surface-hi) !important;
+  box-shadow:
+    0 12px 26px rgba(124, 74, 42, 0.22),
+    inset 0 2px 3px rgba(255, 255, 255, 0.90) !important;
+}
+.you-menu,
+.ch-menu,
+.premium-service-menu {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 11px !important;
+  padding: 0 14px !important;
+}
+.you-menu-item,
+.premium-service-item,
+.fp-tx-card,
+.fp-method-card,
+.fp-op-card,
+.faq-item,
+.benefit-item,
+.feature-row,
+.format-option-row,
+.theme-menu-item,
+.fly-menu-item {
+  background: var(--s3d-card-grad) !important;
+  border: 1.5px solid var(--s3d-white-rim) !important;
+  border-radius: 22px !important;
+  box-shadow: var(--s3d-shadow-layer) !important;
+  padding: 13px 16px !important;
+  color: var(--s3d-ink) !important;
+  transition: transform 0.16s var(--s3d-ease), box-shadow 0.16s var(--s3d-ease) !important;
+}
+.you-menu-item:active,
+.premium-service-item:active,
+.fp-tx-card:active,
+.fp-method-card:active,
+.fp-op-card:active,
+.format-option-row:active,
+.theme-menu-item:active,
+.fly-menu-item:active {
+  transform: scale(0.985) translateY(1px) !important;
+  box-shadow: var(--s3d-shadow-pressed) !important;
+}
+
+/* Circular / Squircle Soft 3D Icon Wells inside Menu Rows */
+.premium-icon-box,
+.card-icon,
+.fp-method-icon-box,
+.fp-mini-card-icon,
+.hero-icon-container,
+.fc-chip-ico {
+  border-radius: 14px !important;
+  background: var(--s3d-card-inner-grad) !important;
+  border: 1px solid var(--s3d-white-rim) !important;
+  color: var(--s3d-caramel-lo) !important;
+  box-shadow: var(--s3d-shadow-btn-light) !important;
+}
+
+/* Active Selection Border for Plan & Payment Cards */
+.plan-card.active,
+.plan-card.selected,
+.plan-choice-card.active,
+.plan-choice-card.selected,
+.payment-card.active,
+.payment-card.selected,
+.fp-method-card.active,
+.fp-method-card.selected,
+.edit-privacy-card.active {
+  border: 2px solid var(--s3d-caramel) !important;
+  box-shadow:
+    0 12px 26px rgba(154, 91, 52, 0.22),
+    inset 0 2px 3px rgba(255, 255, 255, 0.94) !important;
+}
+
+/* ==========================================================================
+   6. GLOBAL SOFT 3D BUTTONS, CHIPS, INPUTS, MODALS & TOASTS
+   ========================================================================== */
+
+/* Primary Sculpted Caramel-Chestnut 3D CTA Buttons */
+.btn-primary,
+.btn-primary-action,
+.btn-watch-subscribe,
+.btn-create-channel,
+.user-sub-btn:not(.subscribed),
+.au-submit,
+.vf-btn,
+.fc-gbtn,
+.fp-btn-submit-glow,
+.mp-apply-btn,
+.fs-submit-btn,
+.btn-confirm,
+.btn-success-done,
+.floating-next-btn,
+.premium-alert-btn,
+#flaynity-onboarding-next,
+#rp-submitBtn,
+#continueBtn,
+#mainCta {
+  background: var(--s3d-caramel-grad) !important;
+  color: #FFF9F2 !important;
+  border: 1px solid rgba(255, 232, 212, 0.36) !important;
+  border-radius: var(--s3d-radius-pill) !important;
+  box-shadow: var(--s3d-shadow-cta) !important;
+  font-family: var(--s3d-font) !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: transform 0.16s var(--s3d-ease), box-shadow 0.16s var(--s3d-ease), background 0.2s ease !important;
+}
+.btn-primary:active,
+.btn-primary-action:active,
+.btn-watch-subscribe:active,
+.btn-create-channel:active,
+.au-submit:active,
+.vf-btn:active,
+.fc-gbtn:active,
+.fp-btn-submit-glow:active,
+.mp-apply-btn:active,
+.fs-submit-btn:active,
+.btn-confirm:active,
+.btn-success-done:active,
+.floating-next-btn:active,
+.premium-alert-btn:active,
+#flaynity-onboarding-next:active,
+#rp-submitBtn:active,
+#continueBtn:active,
+#mainCta:active {
+  transform: translateY(2px) scale(0.97) !important;
+  box-shadow: var(--s3d-shadow-pressed) !important;
+}
+
+/* Secondary Warm Cream Soft 3D Buttons */
+.btn-channel-pill,
+.btn-edit-channel,
+.btn-view-channel,
+.btn-analytics,
+.btn-switch-account-header,
+.btn-watch-like,
+.btn-watch-dislike,
+.btn-watch-download,
+.btn-more-desc,
+.btn-cancel,
+.fp-btn-cancel,
+.fp-copy-btn,
+.fs-copy-btn,
+.gateway-btn,
+.au-btn-white,
+.au-btn-outline,
+.fb-act,
+.fb-follow,
+.studio-btn,
+.mp-btn,
+.search-go-btn,
+.search-action-btn,
+.faq-btn,
+.user-sub-btn.subscribed {
+  background: var(--s3d-pill-grad) !important;
+  color: var(--s3d-ink-strong) !important;
+  border: 1.5px solid var(--s3d-white-rim) !important;
+  border-radius: var(--s3d-radius-pill) !important;
+  box-shadow: var(--s3d-shadow-btn-light) !important;
+  font-family: var(--s3d-font) !important;
+  font-weight: 700 !important;
+  transition: transform 0.16s var(--s3d-ease), box-shadow 0.16s var(--s3d-ease) !important;
+}
+.btn-channel-pill:active,
+.btn-edit-channel:active,
+.btn-view-channel:active,
+.btn-analytics:active,
+.btn-watch-like:active,
+.btn-watch-dislike:active,
+.btn-watch-download:active,
+.btn-cancel:active,
+.fp-btn-cancel:active,
+.gateway-btn:active,
+.au-btn-white:active,
+.fb-act:active,
+.studio-btn:active,
+.mp-btn:active {
+  transform: translateY(2px) scale(0.965) !important;
+  box-shadow: var(--s3d-shadow-pressed) !important;
+}
+
+/* Floating Action Button (FAB) */
+.fab {
+  background: var(--s3d-caramel-grad) !important;
+  color: #FFF9F2 !important;
+  border: 2px solid var(--s3d-surface-hi) !important;
+  border-radius: 50% !important;
+  box-shadow: var(--s3d-shadow-cta) !important;
+}
+.fab:active {
+  transform: scale(0.92) translateY(2px) !important;
+  box-shadow: var(--s3d-shadow-pressed) !important;
+}
+
+/* Soft 3D Category, Filter & Tab Chips */
+.chip-item,
+.discover-tag-chip,
+.ch-chip,
+.fc-chip,
+.fxd-chip,
+.fp-pill-filter,
+.fp-max-pill,
+.fp-payout-pill,
+.fp-ready-pill,
+.fp-verified-pill,
+.fp-bd-rate-pill,
+.ch-privacy-pill,
+.free-badge-pill,
+.search-tab-btn,
+.channel-tab-item,
+.inner-tab-item,
+.rp-chips button,
+.mp-tabs button {
+  background: var(--s3d-pill-grad) !important;
+  color: var(--s3d-ink) !important;
+  border: 1.5px solid var(--s3d-white-rim) !important;
+  border-radius: var(--s3d-radius-pill) !important;
+  box-shadow: var(--s3d-shadow-btn-light) !important;
+  font-weight: 700 !important;
+  transition: transform 0.16s var(--s3d-ease), background 0.2s ease, box-shadow 0.2s ease !important;
+}
+.chip-item.active,
+.discover-tag-chip.active,
+.ch-chip.active,
+.fc-chip.active,
+.fxd-chip.active,
+.fp-pill-filter.active,
+.search-tab-btn.active,
+.channel-tab-item.active,
+.inner-tab-item.active,
+.rp-chips button.active,
+.rp-chips button.selected,
+.mp-tabs button.active {
+  background: var(--s3d-caramel-grad) !important;
+  color: #FFF9F2 !important;
+  border-color: rgba(255, 232, 212, 0.38) !important;
+  box-shadow: var(--s3d-shadow-cta) !important;
+}
+.channel-tab-item.active svg,
+.channel-tab-item.active .ch-tab-label {
+  color: #FFF9F2 !important;
+  stroke: #FFF9F2 !important;
+}
+
+/* Soft Inset Neumorphic Inputs & Textareas */
+.au-input,
+.au-input-wrap,
+.form-input,
+.form-textarea,
+.form-select,
+.sheet-input,
+.sheet-textarea,
+.sheet-select,
+.handle-input-wrap,
+.search-input-wrap,
+.bs-input-amount,
+.amount-input-wrapper,
+.fs-input-box,
+.fp-amount-input,
+.vf-box,
+#report-a-problem-page input:not([type="file"]):not([type="checkbox"]):not([type="radio"]),
+#report-a-problem-page textarea,
+#report-a-problem-page select {
+  background: var(--s3d-well) !important;
+  color: var(--s3d-ink-strong) !important;
+  border: 1.5px solid var(--s3d-beige-line) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--s3d-shadow-inset) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+}
+.au-input:focus,
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus,
+.sheet-input:focus,
+.sheet-textarea:focus,
+.sheet-select:focus,
+.search-input-wrap:focus-within,
+.bs-input-amount:focus,
+.fs-input-box:focus,
+.fp-amount-input:focus,
+.vf-box:focus,
+#report-a-problem-page input:focus,
+#report-a-problem-page textarea:focus {
+  background: var(--s3d-surface-hi) !important;
+  border-color: var(--s3d-caramel) !important;
+  box-shadow:
+    0 0 0 3.5px rgba(154, 91, 52, 0.20),
+    inset 2px 2px 5px rgba(124, 74, 42, 0.10) !important;
+  outline: none !important;
+}
+
+/* Elevated Soft 3D Modals, Bottom Sheets, Popups & Toasts */
+.bottom-sheet-overlay,
+.fp-modal-overlay,
+.upcoming-modal,
+.premium-download-modal,
+.studio-popup-modal,
+.ce-modal {
+  background: rgba(44, 24, 13, 0.44) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.bottom-sheet,
+.au-sheet,
+.fc-sheet,
+.fxd-sheet,
+.fxm-sheet,
+.ce-sheet,
+.an-sheet,
+.fp-modal-sheet,
+.premium-download-content,
+.upcoming-content,
+.theme-popup-menu,
+.fly-menu,
+.premium-alert-card,
+.mp-alert-card,
+.rp-dialog,
+.studio-popup-content,
+.vf-card,
+.premium-checkout-card,
+.premium-success-card,
+.flcv-sheet {
+  background: var(--s3d-card-grad) !important;
+  color: var(--s3d-ink) !important;
+  border: 1.5px solid var(--s3d-white-rim) !important;
+  border-radius: 30px !important;
+  box-shadow: var(--s3d-shadow-modal) !important;
+  animation: s3dPopIn 0.26s var(--s3d-ease) both;
+}
+.bottom-sheet,
+.au-sheet,
+.fc-sheet,
+.fxd-sheet,
+.fxm-sheet,
+.ce-sheet,
+.an-sheet,
+.fp-modal-sheet,
+.flcv-sheet {
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.toast,
+.fp-toast {
+  background: var(--s3d-caramel-grad) !important;
+  color: #FFF9F2 !important;
+  border: 1px solid rgba(255, 232, 212, 0.38) !important;
+  border-radius: var(--s3d-radius-pill) !important;
+  box-shadow: var(--s3d-shadow-cta) !important;
+  font-weight: 700 !important;
+  padding: 12px 20px !important;
+}
+
+/* Auth & Onboarding Warm Cream Theme */
+#auth-screen,
+#flaynity-onboarding {
+  background: var(--s3d-canvas-grad) !important;
+  color: var(--s3d-ink) !important;
+}
+#flaynity-onboarding .ob-title {
+  color: var(--s3d-ink-strong) !important;
+}
+#flaynity-onboarding .ob-title em {
+  background: var(--s3d-caramel-grad) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+}
+#flaynity-onboarding .ob-desc {
+  color: var(--s3d-ink-muted) !important;
+}
+#flaynity-onboarding-dots span {
+  background: rgba(154, 91, 52, 0.26) !important;
+}
+#flaynity-onboarding-dots span.on {
+  background: var(--s3d-caramel) !important;
+  width: 24px !important;
+  border-radius: 999px !important;
+}
+
+/* Animations & Reduced Motion */
+@keyframes s3dPopIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

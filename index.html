@@ -20,11 +20,11 @@
 <meta name="google-adsense-account" content="ca-pub-3200255969875766">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<style id="flaynity-launch-base">html{background:#FCEAD9}</style>
+<style id="flaynity-launch-base">html{background:#FDE0C7}</style>
 <link rel="preload" as="image" href="assets/flaynity-logo.png">
 <title>Flaynity</title>
-<meta name="theme-color" content="#FCEAD9" id="flaynity-theme-color">
-<meta name="msapplication-navbutton-color" content="#FCEAD9" id="flaynity-ms-theme-color">
+<meta name="theme-color" content="#FDE0C7" id="flaynity-theme-color">
+<meta name="msapplication-navbutton-color" content="#FDE0C7" id="flaynity-ms-theme-color">
 
 <script id="flaynity-brand-asset-cache">
 (function () {
@@ -105,7 +105,7 @@
 (function () {
     try {
         const dark = localStorage.getItem('flaynity-theme-pref') === 'dark';
-        const color = dark ? '#0F0F0F' : '#FCEAD9';
+        const color = dark ? '#0F0F0F' : '#FDE0C7';
         const meta = document.getElementById('flaynity-theme-color');
         const msMeta = document.getElementById('flaynity-ms-theme-color');
         if (meta) meta.setAttribute('content', color);
@@ -151,7 +151,7 @@
         --fs-brand: #9A5B34;           /* same as --primary in home.html */
         --fs-brand-lt: #C07E51;
         --fs-dark: #0F0F0F;
-        --fs-surface: #FCEAD9;         /* stage 2 background (light theme) */
+        --fs-surface: #FDE0C7;         /* stage 2 background (light theme) */
         --fs-ink: #2D1E15;             /* wordmark colour */
         --fs-LB: clamp(96px, 28vmin, 140px);   /* logo size in stage 1 */
         --fs-k: .55;                           /* logo scale used in the brand lockup */
@@ -680,7 +680,7 @@
     }
     function reveal() {
         if (!onboarding) return;
-        if (themeMeta) { savedThemeColor = themeMeta.getAttribute('content'); themeMeta.setAttribute('content', '#FCEAD9'); }
+        if (themeMeta) { savedThemeColor = themeMeta.getAttribute('content'); themeMeta.setAttribute('content', '#FDE0C7'); }
         onboarding.style.display = 'block';
         onboarding.setAttribute('aria-hidden', 'false');
         onboarding.classList.remove('ready');

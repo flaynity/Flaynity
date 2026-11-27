@@ -511,8 +511,7 @@ header #appbar-actions-wrap > button:active,
 .edit-privacy-card,
 .chk-plan-box,
 .chk-user-box,
-.fs-card-white,
-.recent-wrap {
+.fs-card-white {
   background: var(--s3d-card-grad) !important;
   border: 1px solid var(--s3d-white-rim) !important;
   border-radius: 20px !important;
@@ -894,6 +893,49 @@ header #appbar-actions-wrap > button:active,
   background: #F5DDC5 !important;
   background-image: none !important;
   box-shadow: 0 3px 10px rgba(124, 74, 42, 0.06) !important;
+}
+
+
+/* Slim, spaced-apart Soft 3D cards for Search Suggestions & Recent Searches */
+.search-suggestions-list,
+.recent-wrap {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 6px 0 !important;
+}
+.suggestion-item,
+.recent-item {
+  width: calc(100% - 28px) !important;
+  max-width: calc(100% - 28px) !important;
+  margin: 0 auto 8px auto !important;
+  padding: 7px 12px !important;
+  min-height: 38px !important;
+  height: auto !important;
+  box-sizing: border-box !important;
+  border-radius: 14px !important;
+  background: var(--s3d-card-inner-grad) !important;
+  border: 1px solid var(--s3d-white-rim) !important;
+  box-shadow: var(--s3d-shadow-layer) !important;
+  gap: 10px !important;
+  transition: transform 0.14s var(--s3d-ease), box-shadow 0.14s var(--s3d-ease) !important;
+}
+.suggestion-item:active,
+.recent-item:active {
+  transform: scale(0.985) !important;
+  box-shadow: var(--s3d-shadow-pressed) !important;
+}
+.suggestion-ic,
+.recent-clock {
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  font-size: 13px !important;
+}
+.suggestion-text,
+.recent-text {
+  font-size: 13.5px !important;
+  line-height: 1.25 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

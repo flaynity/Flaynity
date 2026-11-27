@@ -317,10 +317,7 @@ html, body {
 #full-movie-page .wp-stage,
 #video-player-container,
 #video-player-skeleton,
-#upload-short-view,
-#short-camera-preview,
-#short-preview-page,
-#short-editor-page {
+#short-camera-preview {
   background: #0F0F0F !important;
   background-image: none !important;
 }
@@ -1204,6 +1201,155 @@ header #appbar-actions-wrap > button:active,
 .mode-item:active {
   transform: translateY(1.5px) scale(0.96) !important;
   box-shadow: var(--s3d-shadow-pressed) !important;
+}
+
+
+/* ==========================================================================
+   FEELS UPLOAD PAGES: RECORD, PREVIEW & EDIT (Warm Cream Soft 3D / Claymorphic)
+   Light Mode: #FDE0C7 Warm Cream canvas + Cream Clay controls & Caramel accents
+   Dark Mode: #0F0F0F canvas + Dark Clay controls & Caramel accents
+   ========================================================================== */
+#premium-upload-studio,
+#upload-short-view,
+#short-preview-page,
+#short-editor-page,
+.studio-page {
+  background: var(--s3d-cream) !important;
+  background-color: var(--s3d-cream) !important;
+  color: var(--s3d-ink) !important;
+}
+
+/* Record & Preview Video Stage Frames */
+#upload-short-view .preview-wrapper-top,
+#short-preview-page .tk-video-box,
+#short-editor-page .ce-stage {
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  border: 2px solid var(--s3d-white-rim) !important;
+  box-shadow: var(--s3d-shadow-card) !important;
+}
+
+/* Circular Soft 3D Clay Buttons across Record, Preview & Edit */
+#btn-close-studio,
+#upload-short-view .camera-ctrl-btn,
+#btn-cam-gallery,
+#short-preview-page .tk-back,
+#short-preview-page .tk-dl,
+#short-preview-page .tk-tool-ic,
+#short-editor-page .ce-circle:not(.ce-go),
+#short-editor-page .ce-back {
+  background: var(--s3d-pill-grad) !important;
+  color: var(--s3d-ink-strong) !important;
+  border: 1.5px solid var(--s3d-white-rim) !important;
+  border-radius: 50% !important;
+  box-shadow: var(--s3d-shadow-btn-light) !important;
+  transition: transform 0.15s var(--s3d-ease), box-shadow 0.15s var(--s3d-ease) !important;
+}
+#upload-short-view .camera-ctrl-btn.active-state {
+  background: var(--s3d-caramel-grad) !important;
+  color: #FFF9F2 !important;
+  border-color: rgba(255, 232, 212, 0.40) !important;
+  box-shadow: var(--s3d-shadow-cta) !important;
+}
+#upload-short-view .camera-ctrl-btn:active,
+#short-preview-page .tk-back:active,
+#short-preview-page .tk-tool-ic:active,
+#short-editor-page .ce-circle:active {
+  transform: scale(0.91) !important;
+  box-shadow: var(--s3d-shadow-pressed) !important;
+}
+
+/* Sculpted Record Button, Timer Pill & Mode Slider */
+#recording-timer {
+  background: var(--s3d-caramel-grad) !important;
+  color: #FFF9F2 !important;
+  border: 1px solid rgba(255, 232, 212, 0.38) !important;
+  border-radius: 999px !important;
+  box-shadow: var(--s3d-shadow-cta) !important;
+}
+#record-btn-outer {
+  background: var(--s3d-card-grad) !important;
+  border: 3px solid var(--s3d-white-rim) !important;
+  box-shadow: var(--s3d-shadow-card) !important;
+}
+.mode-slider-wrap,
+.mode-slider {
+  background: var(--s3d-card-grad) !important;
+  border: 1px solid var(--s3d-white-rim) !important;
+  border-radius: 999px !important;
+  box-shadow: var(--s3d-shadow-layer) !important;
+  padding: 4px !important;
+}
+
+/* Preview Sound Pill, Tool Labels & Trim Panel */
+#short-preview-page .tk-sound {
+  background: var(--s3d-pill-grad) !important;
+  color: var(--s3d-ink-strong) !important;
+  border: 1.5px solid var(--s3d-white-rim) !important;
+  border-radius: 999px !important;
+  box-shadow: var(--s3d-shadow-btn-light) !important;
+}
+#short-preview-page .tk-tool-label {
+  color: var(--s3d-ink-strong) !important;
+  text-shadow: 0 1px 2px rgba(255, 249, 242, 0.65) !important;
+}
+[data-theme="dark"] #short-preview-page .tk-tool-label {
+  color: #FFF9F2 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.70) !important;
+}
+#short-preview-page .tk-trim-panel,
+.trimmer-wrap {
+  background: var(--s3d-card-grad) !important;
+  border: 1.5px solid var(--s3d-white-rim) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--s3d-shadow-modal) !important;
+  color: var(--s3d-ink) !important;
+}
+.trimmer-handle {
+  background: var(--s3d-caramel-grad) !important;
+  border: 1.5px solid #FFF9F2 !important;
+  box-shadow: var(--s3d-shadow-cta) !important;
+}
+.trimmer-time-display {
+  background: var(--s3d-well) !important;
+  color: var(--s3d-ink-strong) !important;
+  border-radius: 999px !important;
+  box-shadow: var(--s3d-shadow-inset) !important;
+}
+
+/* Feels Edit Page (#short-editor-page): Timeline, Controls, Tool Items & Sheets */
+#short-editor-page .ce-tl,
+#short-editor-page .ce-bars,
+#short-editor-page .ce-ctrl {
+  background: var(--s3d-card-grad) !important;
+  border-top: 1px solid var(--s3d-white-rim) !important;
+  box-shadow: var(--s3d-nav-shadow) !important;
+  color: var(--s3d-ink) !important;
+}
+#short-editor-page .ce-time {
+  color: var(--s3d-ink-strong) !important;
+  font-weight: 700 !important;
+}
+#short-editor-page .ce-item {
+  background: var(--s3d-pill-grad) !important;
+  color: var(--s3d-ink) !important;
+  border: 1px solid var(--s3d-white-rim) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--s3d-shadow-btn-light) !important;
+}
+#short-editor-page .ce-item.sel,
+#short-editor-page .ce-item.active {
+  background: var(--s3d-caramel-grad) !important;
+  color: #FFF9F2 !important;
+  border-color: rgba(255, 232, 212, 0.38) !important;
+  box-shadow: var(--s3d-shadow-cta) !important;
+}
+#short-editor-page .ce-box {
+  background: var(--s3d-card-grad) !important;
+  border: 1px solid var(--s3d-white-rim) !important;
+  border-radius: 22px !important;
+  box-shadow: var(--s3d-shadow-card) !important;
+  color: var(--s3d-ink) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

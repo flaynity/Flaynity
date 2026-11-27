@@ -657,8 +657,10 @@ header #appbar-actions-wrap > button:active,
 .search-tabs {
   padding: 8px 12px !important;
   gap: 8px !important;
-  background: transparent !important;
-  border-bottom: none !important;
+  background: var(--s3d-cream) !important;
+  border-bottom: 1px solid var(--s3d-beige-line) !important;
+  position: sticky !important;
+  z-index: 25 !important;
 }
 .search-tab-btn,
 .chip-item,
@@ -936,6 +938,49 @@ header #appbar-actions-wrap > button:active,
 .recent-text {
   font-size: 13.5px !important;
   line-height: 1.25 !important;
+}
+
+
+/* Discover & Search Results: clean vertical gaps between every card & zero overlap */
+#search-users-section {
+  padding: 6px 0 10px 0 !important;
+}
+#search-users-section .discover-section-title {
+  padding: 4px 14px 8px 14px !important;
+}
+#search-users-results .user-row,
+#search-results-container .user-row {
+  width: calc(100% - 24px) !important;
+  max-width: calc(100% - 24px) !important;
+  margin: 0 auto 12px auto !important;
+  padding: 10px 14px !important;
+  box-sizing: border-box !important;
+}
+#search-feed-results .fb-post,
+#search-results-container .fb-post {
+  margin-top: 10px !important;
+  margin-bottom: 14px !important;
+}
+#search-results-container .feels-result-grid,
+#search-feels-section {
+  margin-top: 12px !important;
+  margin-bottom: 14px !important;
+  padding-top: 4px !important;
+}
+
+/* Unified #F5DDC5 Long Video Card color everywhere in Light Mode (Home, Play, Search, Discover, Channel) */
+:root:not([data-theme="dark"]) .fb-post,
+:root:not([data-theme="dark"]) .long-video-feed-card,
+:root:not([data-theme="dark"]) .movie-card,
+:root:not([data-theme="dark"]) .fx-card,
+:root:not([data-theme="dark"]) .fxr-card,
+:root:not([data-theme="dark"]) .ch-vcard,
+:root:not([data-theme="dark"]) .channel-video-card-long,
+:root:not([data-theme="dark"]) #search-results-container .fb-post,
+:root:not([data-theme="dark"]) #search-feed-results .fb-post {
+  background: #F5DDC5 !important;
+  background-image: none !important;
+  border-radius: 0 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -8,7 +8,7 @@
 
 :root {
   /* ---- LIGHT MODE: Warm Cream & Caramel-Chestnut Layered Soft 3D ---- */
-  --s3d-cream: #F8E3CE;
+  --s3d-cream: #FDE0C7;
   --s3d-surface-hi: #FFF9F2;
   --s3d-surface-mid: #FBECE0;
   --s3d-well: #F3DFCA;
@@ -28,8 +28,8 @@
   --s3d-font: 'Plus Jakarta Sans', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   /* Layered Gradients (Light) */
-  --s3d-canvas-grad: linear-gradient(180deg, #FCEAD9 0%, #F7E1CC 52%, #F2D7BD 100%);
-  --s3d-header-bg: #FCEAD9;
+  --s3d-canvas-grad: none;
+  --s3d-header-bg: #FDE0C7;
   --s3d-card-grad: linear-gradient(180deg, #FFFBF6 0%, #F9E9D9 100%);
   --s3d-card-inner-grad: linear-gradient(180deg, #FFFDF9 0%, #F5E1CD 100%);
   --s3d-pill-grad: linear-gradient(180deg, #FFF9F2 0%, #F5E2CF 100%);
@@ -1002,6 +1002,61 @@ header #appbar-actions-wrap > button:active,
 .an-tabs {
   background: var(--s3d-header-bg) !important;
   border-bottom: none !important;
+}
+
+
+/* Unified Single-Tone Warm Cream Background across EVERY page, sub-page & header (Light Mode) */
+:root:not([data-theme="dark"]) html,
+:root:not([data-theme="dark"]) body,
+:root:not([data-theme="dark"]) #app,
+:root:not([data-theme="dark"]) #app-screen,
+:root:not([data-theme="dark"]) .tab-content,
+:root:not([data-theme="dark"]) .fullscreen-page,
+:root:not([data-theme="dark"]) .premium-service-page,
+:root:not([data-theme="dark"]) .an-page,
+:root:not([data-theme="dark"]) .an-scroll,
+:root:not([data-theme="dark"]) #analytics-page,
+:root:not([data-theme="dark"]) #an-main,
+:root:not([data-theme="dark"]) #analytics-overview-page,
+:root:not([data-theme="dark"]) #analytics-reach-page,
+:root:not([data-theme="dark"]) #analytics-engagement-page,
+:root:not([data-theme="dark"]) #analytics-audience-page,
+:root:not([data-theme="dark"]) #analytics-top-page,
+:root:not([data-theme="dark"]) #home-tab,
+:root:not([data-theme="dark"]) #posts-tab,
+:root:not([data-theme="dark"]) #search-tab,
+:root:not([data-theme="dark"]) #fullscreen-search-page,
+:root:not([data-theme="dark"]) #you-tab,
+:root:not([data-theme="dark"]) #view-channel-page,
+:root:not([data-theme="dark"]) #channel-settings-page,
+:root:not([data-theme="dark"]) #edit-channel-page,
+:root:not([data-theme="dark"]) #full-movie-page,
+:root:not([data-theme="dark"]) #media-picker,
+:root:not([data-theme="dark"]) .flay-pay-wrapper,
+:root:not([data-theme="dark"]) .flay-payout-wrapper,
+:root:not([data-theme="dark"]) #view-main,
+:root:not([data-theme="dark"]) #view-local-1,
+:root:not([data-theme="dark"]) #view-local-2,
+:root:not([data-theme="dark"]) #view-confirm,
+:root:not([data-theme="dark"]) .fvb-wrapper,
+:root:not([data-theme="dark"]) #upgrade-pro-app,
+:root:not([data-theme="dark"]) #report-a-problem-page,
+:root:not([data-theme="dark"]) .fsg-gate,
+:root:not([data-theme="dark"]) #auth-screen,
+:root:not([data-theme="dark"]) #flaynity-onboarding,
+:root:not([data-theme="dark"]) header:not(.post-header):not(.fp-step-header):not(.bs-header):not(.chk-header),
+:root:not([data-theme="dark"]) .appbar,
+:root:not([data-theme="dark"]) .an-head,
+:root:not([data-theme="dark"]) .an-tabs,
+:root:not([data-theme="dark"]) .fp-topbar,
+:root:not([data-theme="dark"]) .page-header,
+:root:not([data-theme="dark"]) .search-topbar,
+:root:not([data-theme="dark"]) .search-tabs,
+:root:not([data-theme="dark"]) .mp-appbar,
+:root:not([data-theme="dark"]) .rp-bar {
+  background: #FDE0C7 !important;
+  background-color: #FDE0C7 !important;
+  background-image: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

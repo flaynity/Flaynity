@@ -1348,6 +1348,85 @@ header #appbar-actions-wrap > button:active,
   filter: none !important;
 }
 
+
+/* ==========================================================================
+   DARK THEME: UNIFIED #0F0F0F ACROSS EVERY PAGE, HEADER, LONG VIDEO & POST CARD
+   ========================================================================== */
+[data-theme="dark"] html,
+[data-theme="dark"] body,
+[data-theme="dark"] #app,
+[data-theme="dark"] #app-screen,
+[data-theme="dark"] .tab-content,
+[data-theme="dark"] .fullscreen-page:not(#short-editor-page):not(#short-preview-page),
+[data-theme="dark"] .premium-service-page,
+[data-theme="dark"] .an-page,
+[data-theme="dark"] .an-scroll,
+[data-theme="dark"] #analytics-page,
+[data-theme="dark"] #an-main,
+[data-theme="dark"] #analytics-overview-page,
+[data-theme="dark"] #analytics-reach-page,
+[data-theme="dark"] #analytics-engagement-page,
+[data-theme="dark"] #analytics-audience-page,
+[data-theme="dark"] #analytics-top-page,
+[data-theme="dark"] #home-tab,
+[data-theme="dark"] #posts-tab,
+[data-theme="dark"] #search-tab,
+[data-theme="dark"] #fullscreen-search-page,
+[data-theme="dark"] #you-tab,
+[data-theme="dark"] #view-channel-page,
+[data-theme="dark"] #channel-settings-page,
+[data-theme="dark"] #edit-channel-page,
+[data-theme="dark"] #full-movie-page,
+[data-theme="dark"] #media-picker,
+[data-theme="dark"] .flay-pay-wrapper,
+[data-theme="dark"] .flay-payout-wrapper,
+[data-theme="dark"] #view-main,
+[data-theme="dark"] #view-local-1,
+[data-theme="dark"] #view-local-2,
+[data-theme="dark"] #view-confirm,
+[data-theme="dark"] .fvb-wrapper,
+[data-theme="dark"] #upgrade-pro-app,
+[data-theme="dark"] #report-a-problem-page,
+[data-theme="dark"] .fsg-gate,
+[data-theme="dark"] #auth-screen,
+[data-theme="dark"] #flaynity-onboarding,
+[data-theme="dark"] header:not(.post-header):not(.fp-step-header):not(.bs-header):not(.chk-header),
+[data-theme="dark"] .appbar,
+[data-theme="dark"] .an-head,
+[data-theme="dark"] .an-tabs,
+[data-theme="dark"] .fp-topbar,
+[data-theme="dark"] .page-header,
+[data-theme="dark"] .search-topbar,
+[data-theme="dark"] .search-tabs,
+[data-theme="dark"] .mp-appbar,
+[data-theme="dark"] .rp-bar {
+  background: #0F0F0F !important;
+  background-color: #0F0F0F !important;
+  background-image: none !important;
+}
+
+/* Dark Theme: Long Video Card & Post Card Box = EXACT SAME #0F0F0F background color */
+[data-theme="dark"] .fb-post,
+[data-theme="dark"] #home-feed-container .fb-post,
+[data-theme="dark"] #posts-feed-container .fb-post,
+[data-theme="dark"] #search-results-container .fb-post,
+[data-theme="dark"] #search-feed-results .fb-post,
+[data-theme="dark"] #full-movie-page .fb-post,
+[data-theme="dark"] .long-video-feed-card,
+[data-theme="dark"] .movie-card,
+[data-theme="dark"] .fx-card,
+[data-theme="dark"] .fxr-card,
+[data-theme="dark"] #full-movie-page .premium-white-card-watch,
+[data-theme="dark"] #full-movie-page .comment-preview-card,
+[data-theme="dark"] #full-movie-page .queue-item-card {
+  background: #0F0F0F !important;
+  background-color: #0F0F0F !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border-top: 1px solid rgba(252, 234, 217, 0.08) !important;
+  border-bottom: 1px solid rgba(252, 234, 217, 0.10) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

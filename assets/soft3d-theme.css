@@ -29,7 +29,7 @@
 
   /* Layered Gradients (Light) */
   --s3d-canvas-grad: linear-gradient(180deg, #FCEAD9 0%, #F7E1CC 52%, #F2D7BD 100%);
-  --s3d-header-bg: rgba(252, 234, 217, 0.92);
+  --s3d-header-bg: #FCEAD9;
   --s3d-card-grad: linear-gradient(180deg, #FFFBF6 0%, #F9E9D9 100%);
   --s3d-card-inner-grad: linear-gradient(180deg, #FFFDF9 0%, #F5E1CD 100%);
   --s3d-pill-grad: linear-gradient(180deg, #FFF9F2 0%, #F5E2CF 100%);
@@ -182,7 +182,7 @@
   /* Original Pure Dark App Background (#0F0F0F) */
   --s3d-cream: #0F0F0F;
   --s3d-canvas-grad: none;
-  --s3d-header-bg: rgba(15, 15, 15, 0.92);
+  --s3d-header-bg: #0F0F0F;
 
   /* Layered Soft 3D Dark Clay Cards with Warm Cream Rim & Caramel Accents */
   --s3d-surface-hi: #1C1816;
@@ -338,10 +338,11 @@ header:not(.post-header):not(.fp-step-header):not(.bs-header):not(.chk-header),
 .rp-bar,
 .topbar-nav.solid {
   background: var(--s3d-header-bg) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border-bottom: 1px solid var(--s3d-beige-line) !important;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06) !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
   color: var(--s3d-ink-strong) !important;
 }
 
@@ -522,8 +523,6 @@ header #appbar-actions-wrap > button:active,
 
 /* Nested Layer Tiles */
 .an-stat,
-.an-mini,
-.an-metric,
 .fp-mini-card,
 .fc-stat,
 .user-row,
@@ -633,8 +632,6 @@ header #appbar-actions-wrap > button:active,
 .fp-method-card,
 .fp-op-card,
 .faq-item,
-.benefit-item,
-.feature-row,
 .format-option-row,
 .theme-menu-item,
 .fly-menu-item {
@@ -981,6 +978,30 @@ header #appbar-actions-wrap > button:active,
   background: #F5DDC5 !important;
   background-image: none !important;
   border-radius: 0 !important;
+}
+
+
+/* Remove broken nested inner card boxes inside Analytics cards & Verified/Pro benefit cards */
+.an-card .an-metric,
+.an-card .an-mini,
+.an-metric,
+.an-mini,
+.benefit-item,
+.feature-row,
+.features-list .benefit-item,
+.features-list .feature-row {
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Keep top sticky bar / search-tabs / an-tabs seamless with status bar & header */
+.search-tabs,
+.an-tabs {
+  background: var(--s3d-header-bg) !important;
+  border-bottom: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

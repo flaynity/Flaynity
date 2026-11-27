@@ -862,8 +862,6 @@ header #appbar-actions-wrap > button:active,
 .movie-card,
 .fx-card,
 .fxr-card,
-.ch-vcard,
-.channel-video-card-long,
 #home-feed-container .fb-post,
 #full-movie-page .fb-post,
 #full-movie-page .long-video-feed-card,
@@ -971,8 +969,6 @@ header #appbar-actions-wrap > button:active,
 :root:not([data-theme="dark"]) .movie-card,
 :root:not([data-theme="dark"]) .fx-card,
 :root:not([data-theme="dark"]) .fxr-card,
-:root:not([data-theme="dark"]) .ch-vcard,
-:root:not([data-theme="dark"]) .channel-video-card-long,
 :root:not([data-theme="dark"]) #search-results-container .fb-post,
 :root:not([data-theme="dark"]) #search-feed-results .fb-post {
   background: #F5DDC5 !important;
@@ -1060,38 +1056,6 @@ header #appbar-actions-wrap > button:active,
 }
 
 
-/* Circular Warm Cream Soft 3D / Claymorphic Icons for Long Video & Post Like, Comment, Share */
-.fb-post .fb-foot {
-  gap: 12px !important;
-}
-.fb-post .fb-act {
-  gap: 6px !important;
-}
-.fb-post .fb-ico {
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  border-radius: 50% !important;
-  background: var(--s3d-pill-grad) !important;
-  border: 1.5px solid var(--s3d-white-rim) !important;
-  color: var(--s3d-ink-strong) !important;
-  box-shadow: var(--s3d-shadow-btn-light) !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 0 !important;
-  box-sizing: border-box !important;
-  transition: transform 0.15s var(--s3d-ease), box-shadow 0.15s var(--s3d-ease) !important;
-}
-.fb-post .fb-ico svg {
-  width: 19px !important;
-  height: 19px !important;
-}
-.fb-post .fb-ico:active {
-  transform: scale(0.90) !important;
-  box-shadow: var(--s3d-shadow-pressed) !important;
-}
-
 /* Circular Warm Cream Soft 3D / Claymorphic Menu & QR Buttons on You / Channel Page */
 #view-channel-page .view-channel-settings-btn,
 #view-channel-page .view-channel-qr-btn,
@@ -1124,6 +1088,66 @@ header #appbar-actions-wrap > button:active,
 .view-channel-qr-btn:active {
   transform: scale(0.91) !important;
   box-shadow: var(--s3d-shadow-pressed) !important;
+}
+
+
+/* Light Theme: You Page Menu & QR icons in pure black (#000000) */
+:root:not([data-theme="dark"]) #view-channel-page .view-channel-settings-btn,
+:root:not([data-theme="dark"]) #view-channel-page .view-channel-settings-btn i,
+:root:not([data-theme="dark"]) #view-channel-page .view-channel-settings-btn svg,
+:root:not([data-theme="dark"]) #view-channel-page .view-channel-qr-btn,
+:root:not([data-theme="dark"]) #view-channel-page .view-channel-qr-btn svg,
+:root:not([data-theme="dark"]) .view-channel-settings-btn,
+:root:not([data-theme="dark"]) .view-channel-settings-btn i,
+:root:not([data-theme="dark"]) .view-channel-qr-btn svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
+
+/* You -> Video Tab: Soft 3D Horizontal Video List Cards (Reference: 1000172834.jpg) */
+#channel-videos-grid,
+.channel-videos-container {
+  gap: 12px !important;
+  padding: 6px 12px 16px 12px !important;
+  box-sizing: border-box !important;
+}
+#view-channel-page .ch-vcard,
+#channel-videos-grid .ch-vcard,
+.channel-video-card-long {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  padding: 10px 12px !important;
+  box-sizing: border-box !important;
+  border-radius: 22px !important;
+  background: linear-gradient(180deg, #FAF0E6 0%, #F2E2D4 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.88) !important;
+  box-shadow:
+    0 8px 18px rgba(124, 74, 42, 0.12),
+    0 2px 5px rgba(124, 74, 42, 0.06),
+    inset 0 2px 2px rgba(255, 255, 255, 0.94),
+    inset 0 -2px 4px rgba(168, 110, 68, 0.14) !important;
+  transition: transform 0.16s var(--s3d-ease), box-shadow 0.16s var(--s3d-ease) !important;
+}
+[data-theme="dark"] #view-channel-page .ch-vcard,
+[data-theme="dark"] #channel-videos-grid .ch-vcard,
+[data-theme="dark"] .channel-video-card-long {
+  background: var(--s3d-card-grad) !important;
+  border: 1px solid var(--s3d-white-rim) !important;
+  box-shadow: var(--s3d-shadow-card) !important;
+}
+#view-channel-page .ch-vcard:active,
+#channel-videos-grid .ch-vcard:active,
+.channel-video-card-long:active {
+  transform: scale(0.985) !important;
+  box-shadow: var(--s3d-shadow-pressed) !important;
+}
+#view-channel-page .ch-vthumb,
+.video-card-thumb-wrap {
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

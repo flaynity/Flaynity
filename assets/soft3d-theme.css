@@ -389,91 +389,44 @@ header #appbar-actions-wrap > button:active,
 }
 
 /* ==========================================================================
-   4. LONG VIDEO CARD & POSTS CARD (.fb-post) — FULL WIDTH, ZERO DOUBLE PADDING!
-   Parent container already has 16px side padding, so -6px gives a crisp 10px
-   gutter on left/right with FULL internal width for username, Subscribed pill,
-   16:9 video/photo media, and bottom action bar (no crushed text/clipped icons)
+   4. POST CARD & LONG VIDEO CARD (.fb-post) — EXACT ORIGINAL BOX SIZE!
+   Preserves original full-bleed width (calc(100% + 32px), margin: 0 -16px),
+   original padding, original header/footer/button sizing — ONLY applies
+   Warm Cream / Dark Soft 3D surface & subtle layered elevation!
    ========================================================================== */
 #home-feed-container .fb-post,
 #posts-feed-container .fb-post,
 .fb-post {
-  width: calc(100% + 12px) !important;
-  max-width: calc(100% + 12px) !important;
-  margin: 0 -6px 14px -6px !important;
-  padding: 0 !important;
-  box-sizing: border-box !important;
-  background: var(--s3d-card-grad) !important;
-  border: 1px solid var(--s3d-white-rim) !important;
-  border-radius: 20px !important;
-  box-shadow: var(--s3d-shadow-card) !important;
-  overflow: hidden !important;
-}
-.fb-post::after {
-  display: none !important;
-}
-.fb-post .fb-head {
-  padding: 12px 12px 6px 12px !important;
-}
-.fb-post .fb-caption-wrap {
-  padding: 0 12px 8px 12px !important;
-}
-.fb-post .fb-media {
-  margin-top: 2px !important;
-  border-radius: 0 !important;
-  overflow: hidden !important;
-}
-.fb-post .fb-foot {
-  padding: 10px 12px 12px 12px !important;
-  border-top: 1px solid var(--s3d-beige-line) !important;
-  background: transparent !important;
-}
-
-/* Posts page Composer aligned pixel-for-pixel with .fb-post cards */
-.px-compose {
-  width: calc(100% + 12px) !important;
-  max-width: calc(100% + 12px) !important;
-  margin: 10px -6px 12px -6px !important;
-  padding: 10px 12px !important;
-  box-sizing: border-box !important;
-  background: var(--s3d-card-grad) !important;
-  border: 1px solid var(--s3d-white-rim) !important;
-  border-radius: 20px !important;
-  box-shadow: var(--s3d-shadow-card) !important;
-}
-
-/* Posts page Feels strip: clean full-bleed transparent row (no boxy empty wrapper) */
-.px-feels {
   width: calc(100% + 32px) !important;
-  max-width: calc(100% + 32px) !important;
-  margin: 0 -16px 12px -16px !important;
-  padding: 4px 0 8px 0 !important;
-  box-sizing: border-box !important;
-  background: transparent !important;
-  border: none !important;
+  max-width: none !important;
+  margin: 0 -16px 8px -16px !important;
+  padding: 0 !important;
   border-radius: 0 !important;
-  box-shadow: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: 1px solid var(--s3d-white-rim) !important;
+  border-bottom: 1px solid var(--s3d-beige-line) !important;
+  background: var(--s3d-card-grad) !important;
+  box-shadow: 0 4px 12px rgba(124, 74, 42, 0.08), inset 0 1.5px 2px rgba(255, 255, 255, 0.85) !important;
 }
-.px-feels-strip {
-  padding: 4px 10px 8px 10px !important;
-  gap: 10px !important;
-}
-.px-feels .px-card {
-  border-radius: 18px !important;
-  border: 1.5px solid var(--s3d-white-rim) !important;
-  box-shadow: var(--s3d-shadow-card) !important;
+[data-theme="dark"] #home-feed-container .fb-post,
+[data-theme="dark"] #posts-feed-container .fb-post,
+[data-theme="dark"] .fb-post {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45), inset 0 1px 1.5px rgba(252, 234, 217, 0.10) !important;
 }
 
-/* Keep Post Card header & footer crisp and uncrushed */
-.fb-post .fb-subbtn,
-.fb-post .fb-follow {
-  padding: 5px 12px !important;
-  font-size: 12.5px !important;
-  flex-shrink: 0 !important;
-}
-.fb-post .fb-foot {
-  justify-content: space-between !important;
-  gap: 10px !important;
-  padding: 10px 14px 12px 14px !important;
+/* Posts page Composer: exact original full-bleed width & padding */
+.px-compose {
+  width: calc(100% + 32px) !important;
+  max-width: none !important;
+  margin: 0 -16px 6px -16px !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: 1px solid var(--s3d-white-rim) !important;
+  border-bottom: 1px solid var(--s3d-beige-line) !important;
+  background: var(--s3d-card-grad) !important;
+  box-shadow: 0 4px 10px rgba(124, 74, 42, 0.07) !important;
 }
 .px-input {
   background: var(--s3d-well) !important;
@@ -488,8 +441,25 @@ header #appbar-actions-wrap > button:active,
   border-radius: 50% !important;
 }
 
+/* Posts page Feels strip: clean full-bleed transparent row */
+.px-feels {
+  width: calc(100% + 32px) !important;
+  max-width: none !important;
+  margin: 0 -16px 8px -16px !important;
+  padding: 6px 0 10px 0 !important;
+  box-sizing: border-box !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.px-feels .px-card {
+  border-radius: 16px !important;
+  border: 1px solid var(--s3d-white-rim) !important;
+  box-shadow: var(--s3d-shadow-card) !important;
+}
+
 /* Other Layered Soft 3D Cards across ALL pages (Light & Dark) */
-.post-card,
 .long-video-feed-card,
 .movie-card,
 .fx-card,

@@ -8,7 +8,7 @@
 
 :root {
   /* ---- LIGHT MODE: Warm Cream & Caramel-Chestnut Layered Soft 3D ---- */
-  --s3d-cream: #FDE0C7;
+  --s3d-cream: #F4E8D8;
   --s3d-surface-hi: #FFF9F2;
   --s3d-surface-mid: #FBECE0;
   --s3d-well: #F3DFCA;
@@ -29,7 +29,7 @@
 
   /* Layered Gradients (Light) */
   --s3d-canvas-grad: none;
-  --s3d-header-bg: #FDE0C7;
+  --s3d-header-bg: #F4E8D8;
   --s3d-card-grad: linear-gradient(180deg, #FFFBF6 0%, #F9E9D9 100%);
   --s3d-card-inner-grad: linear-gradient(180deg, #FFFDF9 0%, #F5E1CD 100%);
   --s3d-pill-grad: linear-gradient(180deg, #FFF9F2 0%, #F5E2CF 100%);
@@ -404,7 +404,7 @@ header #appbar-actions-wrap > button:active,
   border-right: none !important;
   border-top: 1px solid rgba(255, 249, 242, 0.65) !important;
   border-bottom: 1px solid var(--s3d-beige-line) !important;
-  background: linear-gradient(180deg, #F5DDC5 0%, #F1D7BE 100%) !important;
+  background: linear-gradient(180deg, #F4E8D8 0%, #F1D7BE 100%) !important;
   background-color: #F3DBC2 !important;
   box-shadow: 0 4px 12px rgba(124, 74, 42, 0.08), inset 0 1.5px 2px rgba(255, 255, 255, 0.55) !important;
 }
@@ -877,7 +877,7 @@ header #appbar-actions-wrap > button:active,
   border-radius: 0 !important;
 }
 
-/* Home Page & Long Video Play Page (#full-movie-page) Long Video Card background = #F5DDC5 (Light Mode) */
+/* Home Page & Long Video Play Page (#full-movie-page) Long Video Card background = #F4E8D8 (Light Mode) */
 :root:not([data-theme="dark"]) #home-feed-container .fb-post,
 :root:not([data-theme="dark"]) #home-feed-container .long-video-feed-card,
 :root:not([data-theme="dark"]) #home-feed-container .movie-card,
@@ -891,7 +891,7 @@ header #appbar-actions-wrap > button:active,
 :root:not([data-theme="dark"]) #full-movie-page .premium-white-card-watch,
 :root:not([data-theme="dark"]) #full-movie-page .comment-preview-card,
 :root:not([data-theme="dark"]) #full-movie-page .queue-item-card {
-  background: #F5DDC5 !important;
+  background: #F4E8D8 !important;
   background-image: none !important;
   box-shadow: 0 3px 10px rgba(124, 74, 42, 0.06) !important;
 }
@@ -967,7 +967,7 @@ header #appbar-actions-wrap > button:active,
   padding-top: 4px !important;
 }
 
-/* Unified #F5DDC5 Long Video Card color everywhere in Light Mode (Home, Play, Search, Discover, Channel) */
+/* Unified #F4E8D8 Long Video Card color everywhere in Light Mode (Home, Play, Search, Discover, Channel) */
 :root:not([data-theme="dark"]) .fb-post,
 :root:not([data-theme="dark"]) .long-video-feed-card,
 :root:not([data-theme="dark"]) .movie-card,
@@ -975,7 +975,7 @@ header #appbar-actions-wrap > button:active,
 :root:not([data-theme="dark"]) .fxr-card,
 :root:not([data-theme="dark"]) #search-results-container .fb-post,
 :root:not([data-theme="dark"]) #search-feed-results .fb-post {
-  background: #F5DDC5 !important;
+  background: #F4E8D8 !important;
   background-image: none !important;
   border-radius: 0 !important;
 }
@@ -1054,8 +1054,8 @@ header #appbar-actions-wrap > button:active,
 :root:not([data-theme="dark"]) .search-tabs,
 :root:not([data-theme="dark"]) .mp-appbar,
 :root:not([data-theme="dark"]) .rp-bar {
-  background: #FDE0C7 !important;
-  background-color: #FDE0C7 !important;
+  background: #F4E8D8 !important;
+  background-color: #F4E8D8 !important;
   background-image: none !important;
 }
 
@@ -1428,7 +1428,7 @@ header #appbar-actions-wrap > button:active,
 }
 
 
-/* Monetization Page (#monetization-page) Top Header matches App Background seamlessly (Light #FDE0C7 & Dark #0F0F0F) */
+/* Monetization Page (#monetization-page) Top Header matches App Background seamlessly (Light #F4E8D8 & Dark #0F0F0F) */
 #monetization-page .mp-appbar,
 #monetization-page .appbar,
 #monetization-page > header,
@@ -1453,7 +1453,7 @@ header #appbar-actions-wrap > button:active,
 }
 
 
-/* You Menu Page/Drawer & Video/Posts More Options Page: Exact App Background Color (#FDE0C7 Light / #0F0F0F Dark) */
+/* You Menu Page/Drawer & Video/Posts More Options Page: Exact App Background Color (#F4E8D8 Light / #0F0F0F Dark) */
 #you-quick-menu-overlay .you-quick-menu-panel,
 #you-quick-menu-overlay .you-quick-menu-header,
 .you-quick-menu-panel,

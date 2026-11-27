@@ -1390,6 +1390,85 @@ header #appbar-actions-wrap > button:active,
   color: var(--s3d-ink) !important;
 }
 
+
+/* ==========================================================================
+   LIGHT THEME BULLETPROOF BLACK ICONS & TEXT FOR FEELS RECORD, PREVIEW & EDIT
+   ========================================================================== */
+
+/* 1. Feels Recording Page: Video / Feels / Post tabs 100% visible in Light Mode */
+:root:not([data-theme="dark"]) #premium-upload-studio #upload-mode-slider-wrap,
+:root:not([data-theme="dark"]) #premium-upload-studio #mode-slider {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+:root:not([data-theme="dark"]) #premium-upload-studio #mode-slider .mode-item {
+  color: #000000 !important;
+  opacity: 0.65 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+:root:not([data-theme="dark"]) #premium-upload-studio #mode-slider .mode-item.active {
+  color: #000000 !important;
+  opacity: 1 !important;
+  font-weight: 800 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 2. Feels Preview Page: Back, Add sound & ALL Right-Side Tool Icons -> Pure Black (#000000) */
+:root:not([data-theme="dark"]) #short-preview-page .tk-back,
+:root:not([data-theme="dark"]) #short-preview-page .tk-sound,
+:root:not([data-theme="dark"]) #short-preview-page .tk-dl,
+:root:not([data-theme="dark"]) #short-preview-page #tk-tools .tk-tool,
+:root:not([data-theme="dark"]) #short-preview-page #tk-tools .tk-tool-ic,
+:root:not([data-theme="dark"]) #short-preview-page #tk-tools .tk-tool-label,
+:root:not([data-theme="dark"]) #short-preview-page #tk-tools .tk-aa {
+  color: #000000 !important;
+}
+:root:not([data-theme="dark"]) #short-preview-page .tk-back svg,
+:root:not([data-theme="dark"]) #short-preview-page .tk-sound svg,
+:root:not([data-theme="dark"]) #short-preview-page .tk-dl svg,
+:root:not([data-theme="dark"]) #short-preview-page #tk-tools .tk-tool-ic svg,
+:root:not([data-theme="dark"]) #short-preview-page #tk-tools .tk-tool svg {
+  filter: brightness(0) !important;
+  opacity: 1 !important;
+}
+
+/* 3. Feels Edit Page: ALL Icons & Text -> Pure Black (#000000) in Light Mode */
+:root:not([data-theme="dark"]) #short-editor-page .ce-back,
+:root:not([data-theme="dark"]) #short-editor-page .ce-ctrl,
+:root:not([data-theme="dark"]) #short-editor-page .ce-ctrl button,
+:root:not([data-theme="dark"]) #short-editor-page .ce-time,
+:root:not([data-theme="dark"]) #short-editor-page .ce-time span,
+:root:not([data-theme="dark"]) #short-editor-page .ce-tl,
+:root:not([data-theme="dark"]) #short-editor-page .ce-tl *,
+:root:not([data-theme="dark"]) #short-editor-page .ce-bar,
+:root:not([data-theme="dark"]) #short-editor-page .ce-bar .ce-tool,
+:root:not([data-theme="dark"]) #short-editor-page .ce-bar .ce-tool * {
+  color: #000000 !important;
+}
+:root:not([data-theme="dark"]) #short-editor-page .ce-back svg,
+:root:not([data-theme="dark"]) #short-editor-page .ce-ctrl button svg,
+:root:not([data-theme="dark"]) #short-editor-page #ce-play svg,
+:root:not([data-theme="dark"]) #short-editor-page #ce-undo svg,
+:root:not([data-theme="dark"]) #short-editor-page #ce-redo svg,
+:root:not([data-theme="dark"]) #short-editor-page #ce-fs svg,
+:root:not([data-theme="dark"]) #short-editor-page .ce-tl svg,
+:root:not([data-theme="dark"]) #short-editor-page .ce-bar .ce-tool svg {
+  filter: brightness(0) !important;
+  opacity: 1 !important;
+}
+/* Keep the Caramel-Chestnut Next arrow button (.ce-go) crisp white */
+:root:not([data-theme="dark"]) #short-editor-page .ce-go svg {
+  filter: none !important;
+  stroke: #FFF9F2 !important;
+  color: #FFF9F2 !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

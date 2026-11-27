@@ -105,7 +105,7 @@
 (function () {
     try {
         const dark = localStorage.getItem('flaynity-theme-pref') === 'dark';
-        const color = dark ? '#16100D' : '#FCEAD9';
+        const color = dark ? '#0F0F0F' : '#FCEAD9';
         const meta = document.getElementById('flaynity-theme-color');
         const msMeta = document.getElementById('flaynity-ms-theme-color');
         if (meta) meta.setAttribute('content', color);
@@ -150,7 +150,7 @@
     #flaynity-startup-splash {
         --fs-brand: #9A5B34;           /* same as --primary in home.html */
         --fs-brand-lt: #C07E51;
-        --fs-dark: #16100D;
+        --fs-dark: #0F0F0F;
         --fs-surface: #FCEAD9;         /* stage 2 background (light theme) */
         --fs-ink: #2D1E15;             /* wordmark colour */
         --fs-LB: clamp(96px, 28vmin, 140px);   /* logo size in stage 1 */
@@ -167,7 +167,7 @@
         -webkit-tap-highlight-color: transparent;
         transition: opacity .26s ease .06s;
     }
-    #flaynity-startup-splash.fs-dark { --fs-surface: #16100D; --fs-ink: #F9F0E7; }
+    #flaynity-startup-splash.fs-dark { --fs-surface: #0F0F0F; --fs-ink: #FFFFFF; }
     #flaynity-startup-splash > * { position: absolute; margin: 0; }
     /* every moving piece gets its own GPU layer, so it animates on the compositor (smooth at 60/90/120/144Hz) */
     #flaynity-startup-splash .fs-glow, #flaynity-startup-splash .fs-white, #flaynity-startup-splash .fs-ring,

@@ -1392,34 +1392,76 @@ header #appbar-actions-wrap > button:active,
 
 
 /* ==========================================================================
-   LIGHT THEME BULLETPROOF BLACK ICONS & TEXT FOR FEELS RECORD, PREVIEW & EDIT
+   FEELS RECORDING (BLACK STUDIO + WARM CREAM 3D ANIMATED 9:16 BORDER + CARAMEL
+   ACTIVE TAB), FEELS PREVIEW (BLACK ICONS IN LIGHT MODE), & FEELS EDIT (CRISP
+   DARK STUDIO WITH 100% READABLE WHITE ICONS/TEXT + CARAMEL SOFT 3D ACCENTS)
    ========================================================================== */
 
-/* 1. Feels Recording Page: Video / Feels / Post tabs 100% visible in Light Mode */
-:root:not([data-theme="dark"]) #premium-upload-studio #upload-mode-slider-wrap,
-:root:not([data-theme="dark"]) #premium-upload-studio #mode-slider {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-:root:not([data-theme="dark"]) #premium-upload-studio #mode-slider .mode-item {
-  color: #000000 !important;
-  opacity: 0.65 !important;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  text-shadow: none !important;
-}
-:root:not([data-theme="dark"]) #premium-upload-studio #mode-slider .mode-item.active {
-  color: #000000 !important;
-  opacity: 1 !important;
-  font-weight: 800 !important;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+@keyframes s3dWarmBorderGlow {
+  0%, 100% {
+    border-color: #FCEAD9;
+    box-shadow:
+      0 0 0 2px rgba(252, 234, 217, 0.35),
+      0 0 18px rgba(192, 126, 81, 0.50),
+      inset 0 0 10px rgba(252, 234, 217, 0.25);
+  }
+  50% {
+    border-color: #D49468;
+    box-shadow:
+      0 0 0 3px rgba(212, 148, 104, 0.45),
+      0 0 26px rgba(252, 234, 217, 0.65),
+      inset 0 0 14px rgba(212, 148, 104, 0.35);
+  }
 }
 
-/* 2. Feels Preview Page: Back, Add sound & ALL Right-Side Tool Icons -> Pure Black (#000000) */
+/* 1. Feels Recording Page: Pure Black background + Animated Warm Cream Soft 3D 9:16 Border */
+#premium-upload-studio,
+#upload-short-view {
+  background: #000000 !important;
+  background-color: #000000 !important;
+  background-image: none !important;
+  color: #FFF9F2 !important;
+}
+#upload-short-view .preview-wrapper-top {
+  border-radius: 24px !important;
+  border: 2.5px solid #FCEAD9 !important;
+  overflow: hidden !important;
+  animation: s3dWarmBorderGlow 3.2s ease-in-out infinite !important;
+  box-sizing: border-box !important;
+}
+
+/* Feels Recording Mode Tabs (Video / Feels / Post): Active tab = Caramel Soft 3D Pill (1000172865.jpg) */
+#premium-upload-studio #upload-mode-slider-wrap,
+#premium-upload-studio #mode-slider {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+#premium-upload-studio #mode-slider .mode-item {
+  color: rgba(255, 249, 242, 0.78) !important;
+  opacity: 1 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 6px 16px !important;
+  border-radius: 999px !important;
+  font-weight: 700 !important;
+}
+#premium-upload-studio #mode-slider .mode-item.active {
+  background: linear-gradient(145deg, #BD7B4E 0%, #945630 56%, #753F1F 100%) !important;
+  color: #FFF9F2 !important;
+  opacity: 1 !important;
+  font-weight: 800 !important;
+  border: 1px solid rgba(255, 232, 212, 0.42) !important;
+  border-radius: 999px !important;
+  padding: 6px 18px !important;
+  box-shadow:
+    0 7px 18px rgba(189, 123, 78, 0.38),
+    inset 0 1.5px 2px rgba(255, 232, 212, 0.46),
+    inset 0 -2.5px 5px rgba(84, 42, 18, 0.30) !important;
+}
+
+/* 2. Feels Preview Page (Light Mode): Crisp Pure Black (#000000) Right-Side & Top Icons */
 :root:not([data-theme="dark"]) #short-preview-page .tk-back,
 :root:not([data-theme="dark"]) #short-preview-page .tk-sound,
 :root:not([data-theme="dark"]) #short-preview-page .tk-dl,
@@ -1438,35 +1480,66 @@ header #appbar-actions-wrap > button:active,
   opacity: 1 !important;
 }
 
-/* 3. Feels Edit Page: ALL Icons & Text -> Pure Black (#000000) in Light Mode */
-:root:not([data-theme="dark"]) #short-editor-page .ce-back,
-:root:not([data-theme="dark"]) #short-editor-page .ce-ctrl,
-:root:not([data-theme="dark"]) #short-editor-page .ce-ctrl button,
-:root:not([data-theme="dark"]) #short-editor-page .ce-time,
-:root:not([data-theme="dark"]) #short-editor-page .ce-time span,
-:root:not([data-theme="dark"]) #short-editor-page .ce-tl,
-:root:not([data-theme="dark"]) #short-editor-page .ce-tl *,
-:root:not([data-theme="dark"]) #short-editor-page .ce-bar,
-:root:not([data-theme="dark"]) #short-editor-page .ce-bar .ce-tool,
-:root:not([data-theme="dark"]) #short-editor-page .ce-bar .ce-tool * {
-  color: #000000 !important;
+/* 3. Feels Edit Page (#short-editor-page): Crisp Dark Studio (#0F0F0F) + 100% Readable White Icons/Text
+      + Warm Cream Border on Stage & Caramel Soft 3D Next/Active Accents */
+#short-editor-page {
+  background: #0F0F0F !important;
+  background-color: #0F0F0F !important;
+  background-image: none !important;
+  color: #FFFFFF !important;
 }
-:root:not([data-theme="dark"]) #short-editor-page .ce-back svg,
-:root:not([data-theme="dark"]) #short-editor-page .ce-ctrl button svg,
-:root:not([data-theme="dark"]) #short-editor-page #ce-play svg,
-:root:not([data-theme="dark"]) #short-editor-page #ce-undo svg,
-:root:not([data-theme="dark"]) #short-editor-page #ce-redo svg,
-:root:not([data-theme="dark"]) #short-editor-page #ce-fs svg,
-:root:not([data-theme="dark"]) #short-editor-page .ce-tl svg,
-:root:not([data-theme="dark"]) #short-editor-page .ce-bar .ce-tool svg {
-  filter: brightness(0) !important;
-  opacity: 1 !important;
+#short-editor-page .ce-stage {
+  border: 2px solid rgba(252, 234, 217, 0.45) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55) !important;
 }
-/* Keep the Caramel-Chestnut Next arrow button (.ce-go) crisp white */
-:root:not([data-theme="dark"]) #short-editor-page .ce-go svg {
+#short-editor-page .ce-ctrl,
+#short-editor-page .ce-tl,
+#short-editor-page .ce-bar {
+  background: #141211 !important;
+  border-top: 1px solid rgba(252, 234, 217, 0.14) !important;
+  color: #FFFFFF !important;
+}
+#short-editor-page .ce-time,
+#short-editor-page .ce-ctrl button,
+#short-editor-page .ce-back,
+#short-editor-page .ce-bar .ce-tool,
+#short-editor-page .ce-bar .ce-tool *,
+#short-editor-page .ce-tl,
+#short-editor-page .ce-tl * {
+  color: #FFFFFF !important;
+}
+#short-editor-page .ce-time span {
+  color: #BCA89A !important;
+}
+#short-editor-page .ce-back {
+  background: linear-gradient(180deg, #26201C 0%, #1A1614 100%) !important;
+  border: 1px solid rgba(252, 234, 217, 0.22) !important;
+}
+#short-editor-page .ce-bar .ce-tool {
+  background: linear-gradient(180deg, #241E1B 0%, #181412 100%) !important;
+  border: 1px solid rgba(252, 234, 217, 0.14) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.40) !important;
+}
+#short-editor-page .ce-back svg,
+#short-editor-page .ce-ctrl button svg,
+#short-editor-page .ce-bar .ce-tool svg,
+#short-editor-page .ce-tl svg,
+#short-editor-page .ce-go svg {
   filter: none !important;
-  stroke: #FFF9F2 !important;
+  color: #FFFFFF !important;
+}
+#short-editor-page .ce-ctrl button svg[stroke],
+#short-editor-page .ce-back svg[stroke],
+#short-editor-page .ce-bar .ce-tool svg[stroke] {
+  stroke: #FFFFFF !important;
+}
+#short-editor-page .ce-tl [class*="aud"],
+#short-editor-page .ce-tl [class*="snd"] {
+  background: #231D1A !important;
   color: #FFF9F2 !important;
+  border: 1px solid rgba(252, 234, 217, 0.18) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1059,6 +1059,73 @@ header #appbar-actions-wrap > button:active,
   background-image: none !important;
 }
 
+
+/* Circular Warm Cream Soft 3D / Claymorphic Icons for Long Video & Post Like, Comment, Share */
+.fb-post .fb-foot {
+  gap: 12px !important;
+}
+.fb-post .fb-act {
+  gap: 6px !important;
+}
+.fb-post .fb-ico {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  border-radius: 50% !important;
+  background: var(--s3d-pill-grad) !important;
+  border: 1.5px solid var(--s3d-white-rim) !important;
+  color: var(--s3d-ink-strong) !important;
+  box-shadow: var(--s3d-shadow-btn-light) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  transition: transform 0.15s var(--s3d-ease), box-shadow 0.15s var(--s3d-ease) !important;
+}
+.fb-post .fb-ico svg {
+  width: 19px !important;
+  height: 19px !important;
+}
+.fb-post .fb-ico:active {
+  transform: scale(0.90) !important;
+  box-shadow: var(--s3d-shadow-pressed) !important;
+}
+
+/* Circular Warm Cream Soft 3D / Claymorphic Menu & QR Buttons on You / Channel Page */
+#view-channel-page .view-channel-settings-btn,
+#view-channel-page .view-channel-qr-btn,
+#you-tab .view-channel-settings-btn,
+#you-tab .view-channel-qr-btn,
+.view-channel-settings-btn,
+.view-channel-qr-btn {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  border-radius: 50% !important;
+  background: var(--s3d-pill-grad) !important;
+  border: 1.5px solid var(--s3d-white-rim) !important;
+  color: var(--s3d-ink-strong) !important;
+  box-shadow: var(--s3d-shadow-btn-light) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  transition: transform 0.15s var(--s3d-ease), box-shadow 0.15s var(--s3d-ease) !important;
+}
+.view-channel-settings-btn i,
+.view-channel-settings-btn svg,
+.view-channel-qr-btn svg {
+  color: var(--s3d-ink-strong) !important;
+  stroke: var(--s3d-ink-strong) !important;
+}
+.view-channel-settings-btn:active,
+.view-channel-qr-btn:active {
+  transform: scale(0.91) !important;
+  box-shadow: var(--s3d-shadow-pressed) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

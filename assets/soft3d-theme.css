@@ -767,6 +767,7 @@ header #appbar-actions-wrap > button:active,
   box-shadow: var(--s3d-shadow-btn-light) !important;
 }
 
+/* Single clean rounded Soft 3D inset box for standalone inputs & input wrappers */
 .au-input,
 .au-input-wrap,
 .form-input,
@@ -777,6 +778,7 @@ header #appbar-actions-wrap > button:active,
 .sheet-select,
 .handle-input-wrap,
 .search-input-wrap,
+.amount-input-wrapper,
 .dc-search-btn,
 .bs-input-amount,
 .fs-input-box,
@@ -788,7 +790,26 @@ header #appbar-actions-wrap > button:active,
   background: var(--s3d-well) !important;
   color: var(--s3d-ink-strong) !important;
   border: 1px solid var(--s3d-beige-line) !important;
+  border-radius: 16px !important;
   box-shadow: var(--s3d-shadow-inset) !important;
+  overflow: hidden;
+}
+
+/* Remove double-nested box inside wrappers (HANDLE, Auth, Search, Amount) so every
+   wrapped input looks identical to the clean single-box CHANNEL NAME field */
+.handle-input-wrap input,
+.handle-input-wrap .form-input,
+.au-input-wrap input,
+.au-input-wrap .au-input,
+.search-input-wrap input,
+.search-input-wrap .search-main-input,
+.amount-input-wrapper input,
+.amount-input-wrapper .bs-input-amount {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 .bottom-sheet,
@@ -831,6 +852,17 @@ header #appbar-actions-wrap > button:active,
   background: var(--s3d-sage-soft) !important;
   padding: 2px 8px !important;
   border-radius: 999px !important;
+}
+
+
+/* Home Page Long Video Card box matches the Warm Cream app background seamlessly (Light Mode) */
+:root:not([data-theme="dark"]) #home-feed-container .fb-post,
+:root:not([data-theme="dark"]) #home-feed-container .long-video-feed-card,
+:root:not([data-theme="dark"]) #home-feed-container .movie-card,
+:root:not([data-theme="dark"]) #home-feed-container .fx-card {
+  background: #F5DDC5 !important;
+  background-image: none !important;
+  box-shadow: 0 4px 12px rgba(124, 74, 42, 0.06), inset 0 1px 1.5px rgba(255, 255, 255, 0.45) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1427,6 +1427,55 @@ header #appbar-actions-wrap > button:active,
   border-bottom: 1px solid rgba(252, 234, 217, 0.10) !important;
 }
 
+
+/* Monetization Page (#monetization-page) Top Header matches App Background seamlessly (Light #FDE0C7 & Dark #0F0F0F) */
+#monetization-page .mp-appbar,
+#monetization-page .appbar,
+#monetization-page > header,
+#monetization-page > div:first-child {
+  background: var(--s3d-header-bg) !important;
+  background-color: var(--s3d-header-bg) !important;
+  background-image: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+#monetization-page .mp-appbar-title {
+  color: var(--s3d-ink-strong) !important;
+}
+#monetization-page .mp-back-btn {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  background: var(--s3d-pill-grad) !important;
+  border: 1.5px solid var(--s3d-white-rim) !important;
+  color: var(--s3d-ink-strong) !important;
+  box-shadow: var(--s3d-shadow-btn-light) !important;
+}
+
+
+/* You Menu Page/Drawer & Video/Posts More Options Page: Exact App Background Color (#FDE0C7 Light / #0F0F0F Dark) */
+#you-quick-menu-overlay .you-quick-menu-panel,
+#you-quick-menu-overlay .you-quick-menu-header,
+.you-quick-menu-panel,
+.fxm-sheet,
+.fxd-sheet,
+.fly-menu,
+.bottom-sheet,
+.flcv-sheet,
+.premium-download-content {
+  background: var(--s3d-cream) !important;
+  background-color: var(--s3d-cream) !important;
+  background-image: none !important;
+  color: var(--s3d-ink) !important;
+}
+#you-quick-menu-overlay .you-quick-menu-item .yqm-icon,
+#you-quick-menu-overlay .you-quick-menu-item .quick-menu-label {
+  color: var(--s3d-ink-strong) !important;
+}
+#you-quick-menu-overlay .you-quick-menu-section-title {
+  color: var(--s3d-ink-muted) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

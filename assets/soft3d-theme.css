@@ -1156,27 +1156,25 @@ header #appbar-actions-wrap > button:active,
 }
 
 
-/* Upload Page Tabs (Video, Feels, Post) & ALL Next/Publish Buttons (Reference: 1000172865.jpg) */
-.mode-item,
-#mp-tabs button,
-.mp-tabs button,
-#mp-tabs > * {
-  border-radius: 999px !important;
-  padding: 8px 18px !important;
-  font-weight: 700 !important;
-  transition: transform 0.15s var(--s3d-ease), background 0.2s var(--s3d-ease), box-shadow 0.2s var(--s3d-ease) !important;
+/* Upload Page Tabs (Video, Feels, Post): Original clean layout with crisp readable text */
+.mode-slider-wrap,
+.mode-slider {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
-.mode-item.active,
-#mp-tabs button.active,
-#mp-tabs .active,
-#mp-tabs .on,
-.mp-tabs button.active,
-.mp-tabs .active {
-  background: var(--s3d-caramel-grad) !important;
-  color: #FFF9F2 !important;
-  border: 1px solid rgba(255, 232, 212, 0.36) !important;
-  border-radius: 999px !important;
-  box-shadow: var(--s3d-shadow-cta) !important;
+.mode-item {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--s3d-ink-muted) !important;
+}
+.mode-item.active {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--s3d-ink-strong) !important;
+  font-weight: 800 !important;
 }
 .floating-next-btn,
 .tk-next,
@@ -1272,14 +1270,7 @@ header #appbar-actions-wrap > button:active,
   border: 3px solid var(--s3d-white-rim) !important;
   box-shadow: var(--s3d-shadow-card) !important;
 }
-.mode-slider-wrap,
-.mode-slider {
-  background: var(--s3d-card-grad) !important;
-  border: 1px solid var(--s3d-white-rim) !important;
-  border-radius: 999px !important;
-  box-shadow: var(--s3d-shadow-layer) !important;
-  padding: 4px !important;
-}
+
 
 /* Preview Sound Pill, Tool Labels & Trim Panel */
 #short-preview-page .tk-sound {
@@ -1317,32 +1308,79 @@ header #appbar-actions-wrap > button:active,
   box-shadow: var(--s3d-shadow-inset) !important;
 }
 
-/* Feels Edit Page (#short-editor-page): Timeline, Controls, Tool Items & Sheets */
+/* Fix ALL white-on-cream SVGs & Text on Feels Preview (#short-preview-page) & Edit (#short-editor-page) */
+#short-preview-page .tk-back svg,
+#short-preview-page .tk-dl svg,
+#short-preview-page .tk-tool-ic svg,
+#short-preview-page .tk-sound svg,
+#short-editor-page .ce-ctrl button svg,
+#short-editor-page .ce-back svg,
+#short-editor-page .ce-bar .ce-tool svg {
+  color: var(--s3d-ink-strong) !important;
+}
+#short-preview-page .tk-back svg[stroke="#fff"],
+#short-preview-page .tk-tool-ic svg[stroke="#fff"],
+#short-preview-page .tk-dl svg[stroke="#fff"],
+#short-editor-page .ce-ctrl button svg[stroke="#fff"],
+#short-editor-page .ce-back svg[stroke="#fff"],
+#short-editor-page .ce-bar .ce-tool svg[stroke="#fff"],
+#short-preview-page .tk-back svg [stroke="#fff"],
+#short-preview-page .tk-tool-ic svg [stroke="#fff"],
+#short-editor-page .ce-ctrl button svg [stroke="#fff"],
+#short-editor-page .ce-bar .ce-tool svg [stroke="#fff"] {
+  stroke: var(--s3d-ink-strong) !important;
+}
+#short-preview-page .tk-sound svg[fill="#fff"],
+#short-preview-page .tk-tool-ic svg[fill="#fff"],
+#short-preview-page .tk-dl svg[fill="#fff"],
+#short-editor-page .ce-ctrl button svg[fill="#fff"],
+#short-editor-page .ce-bar .ce-tool svg[fill="#fff"],
+#short-preview-page .tk-sound svg [fill="#fff"],
+#short-preview-page .tk-tool-ic svg [fill="#fff"],
+#short-editor-page .ce-ctrl button svg [fill="#fff"],
+#short-editor-page .ce-bar .ce-tool svg [fill="#fff"] {
+  fill: var(--s3d-ink-strong) !important;
+}
+
+/* Keep Next arrow inside Caramel-Chestnut .ce-go button crisp white */
+#short-editor-page .ce-go svg,
+#short-editor-page .ce-go svg * {
+  stroke: #FFF9F2 !important;
+  color: #FFF9F2 !important;
+}
+
+/* Feels Edit Page (#short-editor-page): Timeline, Controls, Add Sound & Bottom Tool Bar */
 #short-editor-page .ce-tl,
-#short-editor-page .ce-bars,
 #short-editor-page .ce-ctrl {
   background: var(--s3d-card-grad) !important;
   border-top: 1px solid var(--s3d-white-rim) !important;
-  box-shadow: var(--s3d-nav-shadow) !important;
-  color: var(--s3d-ink) !important;
-}
-#short-editor-page .ce-time {
   color: var(--s3d-ink-strong) !important;
-  font-weight: 700 !important;
 }
-#short-editor-page .ce-item {
+#short-editor-page .ce-time,
+#short-editor-page .ce-ctrl button {
+  color: var(--s3d-ink-strong) !important;
+}
+#short-editor-page .ce-bar {
+  background: var(--s3d-cream) !important;
+  border-top: 1px solid var(--s3d-beige-line) !important;
+}
+#short-editor-page .ce-bar .ce-tool {
   background: var(--s3d-pill-grad) !important;
-  color: var(--s3d-ink) !important;
+  color: var(--s3d-ink-strong) !important;
   border: 1px solid var(--s3d-white-rim) !important;
   border-radius: 16px !important;
   box-shadow: var(--s3d-shadow-btn-light) !important;
 }
-#short-editor-page .ce-item.sel,
-#short-editor-page .ce-item.active {
-  background: var(--s3d-caramel-grad) !important;
-  color: #FFF9F2 !important;
-  border-color: rgba(255, 232, 212, 0.38) !important;
-  box-shadow: var(--s3d-shadow-cta) !important;
+#short-editor-page .ce-bar .ce-tool span,
+#short-editor-page .ce-bar .ce-tool p {
+  color: var(--s3d-ink-strong) !important;
+}
+#short-editor-page .ce-tl [class*="aud"],
+#short-editor-page .ce-tl [class*="snd"] {
+  background: var(--s3d-well) !important;
+  color: var(--s3d-ink-strong) !important;
+  border: 1px solid var(--s3d-beige-line) !important;
+  box-shadow: var(--s3d-shadow-inset) !important;
 }
 #short-editor-page .ce-box {
   background: var(--s3d-card-grad) !important;

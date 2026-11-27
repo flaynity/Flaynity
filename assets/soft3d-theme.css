@@ -1,17 +1,14 @@
 /* ==========================================================================
-   FLAYNITY — WARM CREAM LAYERED SOFT 3D DESIGN SYSTEM (PRECISION FIX)
-   - Light Mode (:root:not([data-theme="dark"])): Warm Cream & Caramel-Chestnut
-     Layered Soft 3D styling across all 13 pages
-   - Dark Mode ([data-theme="dark"]): Preserves original #0F0F0F app background
-   - Preserves original Bottom Nav height (48px), icon sizes (29px), text sizes,
-     and full layout geometry with zero right-edge clipping
+   FLAYNITY — WARM CREAM & CARAMEL-CHESTNUT LAYERED SOFT 3D DESIGN SYSTEM
+   - Light Mode: Warm Cream (#FCEAD9 → #F2D7BD) + Caramel-Chestnut Soft 3D
+   - Dark Mode: Original #0F0F0F App Background + Layered Soft 3D Cards,
+     Buttons, Chips, Modals & Caramel-Chestnut / Warm Cream Accents
+   - Exact Original 48px Bottom Nav, 29px Icons, Full-Width .fb-post Cards
    ========================================================================== */
 
-:root:not([data-theme="dark"]) {
-  /* Core Warm Cream & Caramel-Chestnut Palette */
-  --s3d-cream-top: #FCEAD9;
+:root {
+  /* ---- LIGHT MODE: Warm Cream & Caramel-Chestnut Layered Soft 3D ---- */
   --s3d-cream: #F8E3CE;
-  --s3d-cream-bot: #F3D9C0;
   --s3d-surface-hi: #FFF9F2;
   --s3d-surface-mid: #FBECE0;
   --s3d-well: #F3DFCA;
@@ -30,15 +27,17 @@
   --s3d-ink-soft: #A3806A;
   --s3d-font: 'Plus Jakarta Sans', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  /* Layered Gradients */
+  /* Layered Gradients (Light) */
   --s3d-canvas-grad: linear-gradient(180deg, #FCEAD9 0%, #F7E1CC 52%, #F2D7BD 100%);
+  --s3d-header-bg: rgba(252, 234, 217, 0.92);
   --s3d-card-grad: linear-gradient(180deg, #FFFBF6 0%, #F9E9D9 100%);
   --s3d-card-inner-grad: linear-gradient(180deg, #FFFDF9 0%, #F5E1CD 100%);
   --s3d-pill-grad: linear-gradient(180deg, #FFF9F2 0%, #F5E2CF 100%);
   --s3d-caramel-grad: linear-gradient(145deg, #BD7B4E 0%, #945630 56%, #753F1F 100%);
   --s3d-nav-grad: linear-gradient(180deg, #FFF9F2 0%, #F4E0CC 100%);
+  --s3d-nav-active-ink: #76401F;
 
-  /* Balanced Tactile Clay Shadows */
+  /* Balanced Tactile Clay Shadows (Light) */
   --s3d-shadow-card:
     0 8px 20px rgba(124, 74, 42, 0.11),
     0 2px 6px rgba(124, 74, 42, 0.05),
@@ -70,10 +69,13 @@
     0 20px 46px rgba(64, 36, 18, 0.22),
     0 6px 16px rgba(64, 36, 18, 0.10),
     inset 0 2px 2.5px rgba(255, 255, 255, 0.92);
+  --s3d-nav-shadow:
+    0 -6px 18px rgba(124, 74, 42, 0.11),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.92);
 
   --s3d-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
-  /* ---- Override Native Page CSS Tokens (LIGHT MODE ONLY) ---- */
+  /* ---- Native Page Variable Overrides (Light) ---- */
   --bg-color: var(--s3d-cream) !important;
   --surface: var(--s3d-surface-hi) !important;
   --card-bg: var(--s3d-surface-hi) !important;
@@ -89,7 +91,6 @@
   --chip-bg: var(--s3d-surface-mid) !important;
   --chip-c: var(--s3d-ink) !important;
 
-  /* Discover */
   --dc-bg: var(--s3d-cream) !important;
   --dc-top: transparent !important;
   --dc-field: var(--s3d-well) !important;
@@ -101,7 +102,6 @@
   --sp-ink: var(--s3d-ink) !important;
   --sp-mute: var(--s3d-ink-muted) !important;
 
-  /* Analytics */
   --an-bg: var(--s3d-cream) !important;
   --an-sf: var(--s3d-surface-hi) !important;
   --an-cd: var(--s3d-surface-hi) !important;
@@ -114,7 +114,6 @@
   --an-soft2: rgba(154, 91, 52, 0.24) !important;
   --an-track: rgba(154, 91, 52, 0.15) !important;
 
-  /* Upload Media Picker */
   --bg: var(--s3d-cream) !important;
   --fg: var(--s3d-ink) !important;
   --pill: var(--s3d-surface-hi) !important;
@@ -124,7 +123,6 @@
   --chip: var(--s3d-surface-hi) !important;
   --chipfg: var(--s3d-ink) !important;
 
-  /* Flay Pay & Flay Payout */
   --fp-bg: var(--s3d-cream) !important;
   --fp-surface: var(--s3d-surface-hi) !important;
   --fp-surface-alt: var(--s3d-surface-mid) !important;
@@ -143,9 +141,7 @@
   --fp-card-shadow: var(--s3d-shadow-card) !important;
   --fp-btn-shadow: var(--s3d-shadow-cta) !important;
   --fp-banner-shadow: var(--s3d-shadow-cta) !important;
-  --fp-font: var(--s3d-font) !important;
 
-  /* Verified Badge & Upgrade Pro */
   --flay-pink: var(--s3d-caramel) !important;
   --app-bar-bg: transparent !important;
   --card-shadow: var(--s3d-shadow-card) !important;
@@ -154,7 +150,6 @@
   --muted: var(--s3d-ink-muted) !important;
   --soft: rgba(154, 91, 52, 0.14) !important;
 
-  /* Report a Problem */
   --rp-bg: var(--s3d-cream) !important;
   --rp-card: var(--s3d-surface-hi) !important;
   --rp-field: var(--s3d-well) !important;
@@ -163,7 +158,6 @@
   --rp-border: var(--s3d-beige-line) !important;
   --rp-primary: var(--s3d-caramel) !important;
 
-  /* Auth & Feed */
   --au-grad: var(--s3d-caramel-grad) !important;
   --au-violet: var(--s3d-caramel-lo) !important;
   --tt-line: var(--s3d-beige-line) !important;
@@ -175,76 +169,149 @@
 }
 
 /* ==========================================================================
-   DARK THEME: KEEP ORIGINAL #0F0F0F APP BACKGROUND EXACTLY AS BEFORE
+   DARK THEME: ORIGINAL #0F0F0F APP BACKGROUND + WARM CREAM / CARAMEL-CHESTNUT
+   LAYERED SOFT 3D CARDS, BUTTONS, CHIPS, INPUTS, MODALS & BOTTOM NAV
    ========================================================================== */
-[data-theme="dark"] {
-  --bg-color: #0F0F0F !important;
-  --surface: #0F0F0F !important;
-  --card-bg: #141416 !important;
-  --text-main: #FFFFFF !important;
-  --text-muted: #AAAAAA !important;
-}
-[data-theme="dark"] html,
-[data-theme="dark"] body,
-[data-theme="dark"] #app,
-[data-theme="dark"] #app-screen,
-[data-theme="dark"] .tab-content,
-[data-theme="dark"] .fullscreen-page,
-[data-theme="dark"] .premium-service-page,
-[data-theme="dark"] #home-tab,
-[data-theme="dark"] #search-tab,
-[data-theme="dark"] #fullscreen-search-page,
-[data-theme="dark"] #posts-tab,
-[data-theme="dark"] #you-tab,
-[data-theme="dark"] #view-channel-page,
-[data-theme="dark"] #channel-settings-page,
-[data-theme="dark"] #edit-channel-page,
-[data-theme="dark"] .an-page,
+[data-theme="dark"],
+[data-theme="dark"] #media-picker,
 [data-theme="dark"] .flay-pay-wrapper,
 [data-theme="dark"] .flay-payout-wrapper,
 [data-theme="dark"] .fvb-wrapper,
-[data-theme="dark"] #upgrade-pro-app,
-[data-theme="dark"] #report-a-problem-page {
-  background: #0F0F0F !important;
-  background-image: none !important;
+[data-theme="dark"] .an-page,
+[data-theme="dark"] .an-sheet-wrap {
+  /* Original Pure Dark App Background (#0F0F0F) */
+  --s3d-cream: #0F0F0F;
+  --s3d-canvas-grad: none;
+  --s3d-header-bg: rgba(15, 15, 15, 0.92);
+
+  /* Layered Soft 3D Dark Clay Cards with Warm Cream Rim & Caramel Accents */
+  --s3d-surface-hi: #1C1816;
+  --s3d-surface-mid: #171412;
+  --s3d-well: #12100E;
+  --s3d-beige-line: rgba(252, 234, 217, 0.13);
+  --s3d-white-rim: rgba(252, 234, 217, 0.14);
+
+  --s3d-caramel-hi: #D49468;
+  --s3d-caramel: #C07E51;
+  --s3d-caramel-lo: #8E522E;
+  --s3d-ink-strong: #FFF9F2;
+  --s3d-ink: #F7ECE2;
+  --s3d-ink-muted: #BCA89A;
+  --s3d-ink-soft: #8F7C6F;
+
+  --s3d-card-grad: linear-gradient(180deg, #211C19 0%, #171412 100%);
+  --s3d-card-inner-grad: linear-gradient(180deg, #28221E 0%, #1C1815 100%);
+  --s3d-pill-grad: linear-gradient(180deg, #26201C 0%, #1A1614 100%);
+  --s3d-caramel-grad: linear-gradient(145deg, #CE8B5E 0%, #A26037 56%, #7E4624 100%);
+  --s3d-nav-grad: linear-gradient(180deg, #1A1614 0%, #12100F 100%);
+  --s3d-nav-active-ink: #E0A379;
+
+  --s3d-shadow-card:
+    0 10px 24px rgba(0, 0, 0, 0.52),
+    0 2px 6px rgba(0, 0, 0, 0.30),
+    inset 0 1.5px 1.5px rgba(252, 234, 217, 0.11),
+    inset 0 -2px 5px rgba(0, 0, 0, 0.42);
+  --s3d-shadow-layer:
+    0 6px 16px rgba(0, 0, 0, 0.44),
+    inset 0 1px 1.5px rgba(252, 234, 217, 0.10),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.36);
+  --s3d-shadow-cta:
+    0 8px 18px rgba(0, 0, 0, 0.48),
+    inset 0 1.5px 2px rgba(255, 236, 222, 0.30),
+    inset 0 -2.5px 5px rgba(0, 0, 0, 0.38);
+  --s3d-shadow-btn-light:
+    0 5px 12px rgba(0, 0, 0, 0.40),
+    inset 0 1px 1.5px rgba(252, 234, 217, 0.12),
+    inset 0 -1.5px 3px rgba(0, 0, 0, 0.36);
+  --s3d-shadow-pressed:
+    0 1px 3px rgba(0, 0, 0, 0.42),
+    inset 0 2.5px 7px rgba(0, 0, 0, 0.56);
+  --s3d-shadow-inset:
+    inset 2.5px 2.5px 7px rgba(0, 0, 0, 0.54),
+    inset -1.5px -1.5px 4px rgba(252, 234, 217, 0.06);
+  --s3d-shadow-modal:
+    0 22px 50px rgba(0, 0, 0, 0.72),
+    inset 0 1.5px 2px rgba(252, 234, 217, 0.13);
+  --s3d-nav-shadow:
+    0 -8px 22px rgba(0, 0, 0, 0.55),
+    inset 0 1px 1.5px rgba(252, 234, 217, 0.12);
+
+  /* Native Page Variable Overrides (Dark: #0F0F0F bg + Warm Cream/Caramel Soft 3D) */
+  --bg-color: #0F0F0F !important;
+  --surface: var(--s3d-surface-hi) !important;
+  --card-bg: var(--s3d-surface-hi) !important;
+  --primary: var(--s3d-caramel) !important;
+  --text-main: var(--s3d-ink) !important;
+  --text-primary: var(--s3d-ink) !important;
+  --text-muted: var(--s3d-ink-muted) !important;
+  --text-secondary: var(--s3d-ink-muted) !important;
+  --border-color: var(--s3d-beige-line) !important;
+  --glass-bg: rgba(24, 20, 18, 0.94) !important;
+  --glass-border: var(--s3d-beige-line) !important;
+  --fp-bg: #0F0F0F !important;
+  --fp-surface: var(--s3d-surface-hi) !important;
+  --fp-surface-alt: var(--s3d-surface-mid) !important;
+  --fp-text: var(--s3d-ink) !important;
+  --fp-text-main: var(--s3d-ink) !important;
+  --fp-muted: var(--s3d-ink-muted) !important;
+  --fp-text-muted: var(--s3d-ink-muted) !important;
+  --fp-border: var(--s3d-beige-line) !important;
+  --an-bg: #0F0F0F !important;
+  --an-sf: var(--s3d-surface-hi) !important;
+  --an-cd: var(--s3d-surface-hi) !important;
+  --an-tx: var(--s3d-ink) !important;
+  --an-mu: var(--s3d-ink-muted) !important;
+  --an-bd: var(--s3d-beige-line) !important;
+  --rp-bg: #0F0F0F !important;
+  --rp-card: var(--s3d-surface-hi) !important;
+  --rp-field: var(--s3d-well) !important;
+  --rp-text: var(--s3d-ink) !important;
+  --rp-muted: var(--s3d-ink-muted) !important;
+  --rp-border: var(--s3d-beige-line) !important;
+  --fb-card: var(--s3d-surface-hi) !important;
+  --fb-line: var(--s3d-beige-line) !important;
+  --fb-muted: var(--s3d-ink-muted) !important;
+  --dc-bg: #0F0F0F !important;
 }
 
 /* ==========================================================================
-   1. LIGHT MODE BASE WARM CREAM CANVAS (NO OVERFLOW)
+   1. BASE CANVAS (LIGHT: WARM CREAM | DARK: ORIGINAL #0F0F0F)
    ========================================================================== */
 html, body {
   max-width: 100vw;
   overflow-x: hidden;
+  background-color: var(--s3d-cream) !important;
+  background-image: var(--s3d-canvas-grad) !important;
+  color: var(--s3d-ink) !important;
   -webkit-font-smoothing: antialiased;
 }
 
-:root:not([data-theme="dark"]) body,
-:root:not([data-theme="dark"]) #app,
-:root:not([data-theme="dark"]) #app-screen,
-:root:not([data-theme="dark"]) .tab-content,
-:root:not([data-theme="dark"]) .fullscreen-page,
-:root:not([data-theme="dark"]) .premium-service-page,
-:root:not([data-theme="dark"]) #home-tab,
-:root:not([data-theme="dark"]) #search-tab,
-:root:not([data-theme="dark"]) #fullscreen-search-page,
-:root:not([data-theme="dark"]) #posts-tab,
-:root:not([data-theme="dark"]) #you-tab,
-:root:not([data-theme="dark"]) #view-channel-page,
-:root:not([data-theme="dark"]) #channel-settings-page,
-:root:not([data-theme="dark"]) #edit-channel-page,
-:root:not([data-theme="dark"]) #media-picker,
-:root:not([data-theme="dark"]) .an-page,
-:root:not([data-theme="dark"]) .flay-pay-wrapper,
-:root:not([data-theme="dark"]) .flay-payout-wrapper,
-:root:not([data-theme="dark"]) .fvb-wrapper,
-:root:not([data-theme="dark"]) #upgrade-pro-app,
-:root:not([data-theme="dark"]) #report-a-problem-page {
+#app,
+#app-screen,
+.tab-content,
+.fullscreen-page,
+.premium-service-page,
+#home-tab,
+#search-tab,
+#fullscreen-search-page,
+#posts-tab,
+#you-tab,
+#view-channel-page,
+#channel-settings-page,
+#edit-channel-page,
+#media-picker,
+.an-page,
+.flay-pay-wrapper,
+.flay-payout-wrapper,
+.fvb-wrapper,
+#upgrade-pro-app,
+#report-a-problem-page {
   background-color: var(--s3d-cream) !important;
   background-image: var(--s3d-canvas-grad) !important;
   color: var(--s3d-ink) !important;
 }
 
-/* Protect immersive dark video/camera screens */
+/* Protect immersive video/camera dark surfaces */
 #feels-tab,
 #feels-swiper-container,
 #full-movie-page .wp-stage,
@@ -259,35 +326,34 @@ html, body {
 }
 
 /* ==========================================================================
-   2. HEADERS — ORIGINAL SIZING PRESERVED, WARM CREAM SOFT 3D SURFACE
+   2. HEADERS — ORIGINAL SIZING + LAYERED SOFT 3D (LIGHT & DARK)
    ========================================================================== */
-:root:not([data-theme="dark"]) header:not(.post-header):not(.fp-step-header):not(.bs-header):not(.chk-header),
-:root:not([data-theme="dark"]) .appbar,
-:root:not([data-theme="dark"]) .an-head,
-:root:not([data-theme="dark"]) .fp-topbar,
-:root:not([data-theme="dark"]) .page-header,
-:root:not([data-theme="dark"]) .search-topbar,
-:root:not([data-theme="dark"]) .mp-appbar,
-:root:not([data-theme="dark"]) .rp-bar,
-:root:not([data-theme="dark"]) .topbar-nav.solid {
-  background: rgba(252, 234, 217, 0.92) !important;
+header:not(.post-header):not(.fp-step-header):not(.bs-header):not(.chk-header),
+.appbar,
+.an-head,
+.fp-topbar,
+.page-header,
+.search-topbar,
+.mp-appbar,
+.rp-bar,
+.topbar-nav.solid {
+  background: var(--s3d-header-bg) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
-  border-bottom: 1px solid rgba(154, 102, 66, 0.12) !important;
-  box-shadow: 0 3px 12px rgba(124, 74, 42, 0.06) !important;
+  border-bottom: 1px solid var(--s3d-beige-line) !important;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06) !important;
   color: var(--s3d-ink-strong) !important;
 }
 
-/* Keep header action buttons at their natural compact 36px size, just Soft 3D */
-:root:not([data-theme="dark"]) header #appbar-actions-wrap > button,
-:root:not([data-theme="dark"]) .appbar .appbar-back-btn,
-:root:not([data-theme="dark"]) .appbar .appbar-theme-btn,
-:root:not([data-theme="dark"]) .an-back,
-:root:not([data-theme="dark"]) .fp-topbar .fp-back-btn,
-:root:not([data-theme="dark"]) .page-header .back-btn,
-:root:not([data-theme="dark"]) .search-topbar .search-back-btn,
-:root:not([data-theme="dark"]) .mp-appbar .mp-back-btn,
-:root:not([data-theme="dark"]) .rp-bar #rp-backBtn {
+header #appbar-actions-wrap > button,
+.appbar .appbar-back-btn,
+.appbar .appbar-theme-btn,
+.an-back,
+.fp-topbar .fp-back-btn,
+.page-header .back-btn,
+.search-topbar .search-back-btn,
+.mp-appbar .mp-back-btn,
+.rp-bar #rp-backBtn {
   background: var(--s3d-pill-grad) !important;
   border: 1px solid var(--s3d-white-rim) !important;
   color: var(--s3d-ink-strong) !important;
@@ -295,54 +361,46 @@ html, body {
   border-radius: 50% !important;
   transition: transform 0.15s var(--s3d-ease), box-shadow 0.15s var(--s3d-ease) !important;
 }
-:root:not([data-theme="dark"]) header #appbar-actions-wrap > button:active,
-:root:not([data-theme="dark"]) .appbar .appbar-back-btn:active,
-:root:not([data-theme="dark"]) .search-topbar .search-back-btn:active {
+header #appbar-actions-wrap > button:active,
+.appbar .appbar-back-btn:active,
+.search-topbar .search-back-btn:active {
   transform: scale(0.92) !important;
   box-shadow: var(--s3d-shadow-pressed) !important;
 }
 
 /* ==========================================================================
-   3. BOTTOM NAVIGATION — EXACT ORIGINAL 48px BOX SIZE & 29px ICON SIZE!
+   3. BOTTOM NAVIGATION — EXACT ORIGINAL 48px BOX & 29px ICONS (LIGHT & DARK)
    ========================================================================== */
-:root:not([data-theme="dark"]) .bottom-nav {
+.bottom-nav {
   background: var(--s3d-nav-grad) !important;
   border-top: 1px solid var(--s3d-white-rim) !important;
-  box-shadow:
-    0 -6px 18px rgba(124, 74, 42, 0.11),
-    inset 0 1.5px 2px rgba(255, 255, 255, 0.92) !important;
-  /* NOTE: height (48px), padding-bottom, .nav-icon-container (29px),
-     .nav-icon-svg (29px), and .nav-label (display:none) stay 100% ORIGINAL! */
+  box-shadow: var(--s3d-nav-shadow) !important;
 }
-
-:root:not([data-theme="dark"]) .bottom-nav .nav-item .nav-icon-svg {
+.bottom-nav .nav-item .nav-icon-svg {
   color: var(--s3d-ink) !important;
 }
-:root:not([data-theme="dark"]) .bottom-nav .nav-item.active .nav-icon-svg {
-  color: var(--s3d-caramel-lo) !important;
-  filter: drop-shadow(0 2px 4px rgba(118, 64, 31, 0.25));
+.bottom-nav .nav-item.active .nav-icon-svg {
+  color: var(--s3d-nav-active-ink) !important;
+  filter: drop-shadow(0 2px 4px rgba(154, 91, 52, 0.30));
 }
-:root:not([data-theme="dark"]) .bottom-nav .nav-item.active .nav-avatar-circle {
+.bottom-nav .nav-item.active .nav-avatar-circle {
   border-color: var(--s3d-caramel) !important;
-  box-shadow: 0 2px 8px rgba(118, 64, 31, 0.26);
+  box-shadow: 0 2px 8px rgba(154, 91, 52, 0.32);
 }
 
 /* ==========================================================================
-   4. LAYERED SOFT 3D CARDS — SYMMETRICAL WIDTH, ZERO CLIPPING OR OVERFLOW
+   4. LONG VIDEO CARD & POSTS CARD (.fb-post) — FULL WIDTH, ZERO DOUBLE PADDING!
+   Parent container already has 16px side padding, so -6px gives a crisp 10px
+   gutter on left/right with FULL internal width for username, Subscribed pill,
+   16:9 video/photo media, and bottom action bar (no crushed text/clipped icons)
    ========================================================================== */
-
-/* Feed & Post cards: explicitly center with calc(100% - 24px) so NEVER clips right edge */
-:root:not([data-theme="dark"]) #home-feed-container .fb-post,
-:root:not([data-theme="dark"]) #home-feed-container .post-card,
-:root:not([data-theme="dark"]) #home-feed-container .long-video-feed-card,
-:root:not([data-theme="dark"]) #home-feed-container .movie-card,
-:root:not([data-theme="dark"]) #home-feed-container .fx-card,
-:root:not([data-theme="dark"]) #posts-feed-container .fb-post,
-:root:not([data-theme="dark"]) #posts-feed-container .post-card {
-  width: calc(100% - 24px) !important;
-  max-width: calc(100% - 24px) !important;
-  margin: 0 auto 14px auto !important;
-  padding: 12px !important;
+#home-feed-container .fb-post,
+#posts-feed-container .fb-post,
+.fb-post {
+  width: calc(100% + 12px) !important;
+  max-width: calc(100% + 12px) !important;
+  margin: 0 -6px 14px -6px !important;
+  padding: 0 !important;
   box-sizing: border-box !important;
   background: var(--s3d-card-grad) !important;
   border: 1px solid var(--s3d-white-rim) !important;
@@ -350,12 +408,31 @@ html, body {
   box-shadow: var(--s3d-shadow-card) !important;
   overflow: hidden !important;
 }
+.fb-post::after {
+  display: none !important;
+}
+.fb-post .fb-head {
+  padding: 12px 12px 6px 12px !important;
+}
+.fb-post .fb-caption-wrap {
+  padding: 0 12px 8px 12px !important;
+}
+.fb-post .fb-media {
+  margin-top: 2px !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+}
+.fb-post .fb-foot {
+  padding: 10px 12px 12px 12px !important;
+  border-top: 1px solid var(--s3d-beige-line) !important;
+  background: transparent !important;
+}
 
-/* Posts page Compose & Feels strip: centered calc(100% - 24px), zero right-edge clipping */
-:root:not([data-theme="dark"]) .px-compose,
-:root:not([data-theme="dark"]) .px-feels {
-  width: calc(100% - 24px) !important;
-  max-width: calc(100% - 24px) !important;
+/* Posts page Compose & Feels strip aligned cleanly with .fb-post */
+.px-compose,
+.px-feels {
+  width: calc(100% - 20px) !important;
+  max-width: calc(100% - 20px) !important;
   margin: 10px auto 12px auto !important;
   padding: 10px 12px !important;
   box-sizing: border-box !important;
@@ -364,64 +441,66 @@ html, body {
   border-radius: 20px !important;
   box-shadow: var(--s3d-shadow-card) !important;
 }
-
-:root:not([data-theme="dark"]) .px-input {
+.px-input {
   background: var(--s3d-well) !important;
   border: 1px solid var(--s3d-beige-line) !important;
   box-shadow: var(--s3d-shadow-inset) !important;
   color: var(--s3d-ink) !important;
 }
-
-:root:not([data-theme="dark"]) .px-pic {
+.px-pic {
   background: var(--s3d-pill-grad) !important;
   border: 1px solid var(--s3d-white-rim) !important;
   box-shadow: var(--s3d-shadow-btn-light) !important;
   border-radius: 50% !important;
 }
 
-/* General Layered Soft 3D Cards across all pages (preserving original sizing/padding) */
-:root:not([data-theme="dark"]) .short-home-card-2col,
-:root:not([data-theme="dark"]) .discover-feels-card,
-:root:not([data-theme="dark"]) .px-card,
-:root:not([data-theme="dark"]) .ch-vcard,
-:root:not([data-theme="dark"]) .ch-fcard,
-:root:not([data-theme="dark"]) .channel-video-card-long,
-:root:not([data-theme="dark"]) .short-grid-card,
-:root:not([data-theme="dark"]) .comment-preview-card,
-:root:not([data-theme="dark"]) .premium-white-card-watch,
-:root:not([data-theme="dark"]) .queue-item-card,
-:root:not([data-theme="dark"]) .fl-live-upload-card,
-:root:not([data-theme="dark"]) .profile-card-you,
-:root:not([data-theme="dark"]) .analytics-overview-card,
-:root:not([data-theme="dark"]) .analytics-card,
-:root:not([data-theme="dark"]) .an-card,
-:root:not([data-theme="dark"]) .an-rev,
-:root:not([data-theme="dark"]) .fc-card,
-:root:not([data-theme="dark"]) .fc-ccard,
-:root:not([data-theme="dark"]) .fc-gcard,
-:root:not([data-theme="dark"]) .fc-lcard,
-:root:not([data-theme="dark"]) .fl-aw-card,
-:root:not([data-theme="dark"]) .mp-elig-card,
-:root:not([data-theme="dark"]) .mp-feature-card,
-:root:not([data-theme="dark"]) .fp-breakdown-card,
-:root:not([data-theme="dark"]) .fp-amount-card,
-:root:not([data-theme="dark"]) .fp-confirm-details-card,
-:root:not([data-theme="dark"]) .payment-card,
-:root:not([data-theme="dark"]) .security-card,
-:root:not([data-theme="dark"]) .plan-card,
-:root:not([data-theme="dark"]) .plan-choice-card,
-:root:not([data-theme="dark"]) .plan-status-card,
-:root:not([data-theme="dark"]) .plan-overview-card,
-:root:not([data-theme="dark"]) .comp-card,
-:root:not([data-theme="dark"]) .countdown-card,
-:root:not([data-theme="dark"]) .preview-card,
-:root:not([data-theme="dark"]) .info-box,
-:root:not([data-theme="dark"]) .rp-card,
-:root:not([data-theme="dark"]) .edit-privacy-card,
-:root:not([data-theme="dark"]) .chk-plan-box,
-:root:not([data-theme="dark"]) .chk-user-box,
-:root:not([data-theme="dark"]) .fs-card-white,
-:root:not([data-theme="dark"]) .recent-wrap {
+/* Other Layered Soft 3D Cards across ALL pages (Light & Dark) */
+.post-card,
+.long-video-feed-card,
+.movie-card,
+.fx-card,
+.short-home-card-2col,
+.discover-feels-card,
+.px-card,
+.ch-vcard,
+.ch-fcard,
+.channel-video-card-long,
+.short-grid-card,
+.comment-preview-card,
+.premium-white-card-watch,
+.queue-item-card,
+.fl-live-upload-card,
+.profile-card-you,
+.analytics-overview-card,
+.analytics-card,
+.an-card,
+.an-rev,
+.fc-card,
+.fc-ccard,
+.fc-gcard,
+.fc-lcard,
+.fl-aw-card,
+.mp-elig-card,
+.mp-feature-card,
+.fp-breakdown-card,
+.fp-amount-card,
+.fp-confirm-details-card,
+.payment-card,
+.security-card,
+.plan-card,
+.plan-choice-card,
+.plan-status-card,
+.plan-overview-card,
+.comp-card,
+.countdown-card,
+.preview-card,
+.info-box,
+.rp-card,
+.edit-privacy-card,
+.chk-plan-box,
+.chk-user-box,
+.fs-card-white,
+.recent-wrap {
   background: var(--s3d-card-grad) !important;
   border: 1px solid var(--s3d-white-rim) !important;
   border-radius: 20px !important;
@@ -430,16 +509,16 @@ html, body {
   box-sizing: border-box !important;
 }
 
-/* Nested Layer Tiles (Analytics stats, Payout mini cards, User rows) */
-:root:not([data-theme="dark"]) .an-stat,
-:root:not([data-theme="dark"]) .an-mini,
-:root:not([data-theme="dark"]) .an-metric,
-:root:not([data-theme="dark"]) .fp-mini-card,
-:root:not([data-theme="dark"]) .fc-stat,
-:root:not([data-theme="dark"]) .user-row,
-:root:not([data-theme="dark"]) .suggestion-item,
-:root:not([data-theme="dark"]) .recent-item,
-:root:not([data-theme="dark"]) .account-row {
+/* Nested Layer Tiles */
+.an-stat,
+.an-mini,
+.an-metric,
+.fp-mini-card,
+.fc-stat,
+.user-row,
+.suggestion-item,
+.recent-item,
+.account-row {
   background: var(--s3d-card-inner-grad) !important;
   border: 1px solid var(--s3d-white-rim) !important;
   border-radius: 16px !important;
@@ -447,32 +526,32 @@ html, body {
   color: var(--s3d-ink) !important;
 }
 
-/* Sculpted Caramel-Chestnut Hero Banners */
-:root:not([data-theme="dark"]) .premium-balance-card,
-:root:not([data-theme="dark"]) .fp-hero-banner,
-:root:not([data-theme="dark"]) .hero-card,
-:root:not([data-theme="dark"]) .fc-hero,
-:root:not([data-theme="dark"]) .channel-action-box {
+/* Sculpted Caramel-Chestnut Hero Banners (Light & Dark) */
+.premium-balance-card,
+.fp-hero-banner,
+.hero-card,
+.fc-hero,
+.channel-action-box {
   background: var(--s3d-caramel-grad) !important;
-  border: 1px solid rgba(255, 232, 212, 0.36) !important;
+  border: 1px solid rgba(255, 232, 212, 0.34) !important;
   border-radius: 24px !important;
   box-shadow: var(--s3d-shadow-cta) !important;
   color: #FFF9F2 !important;
 }
-:root:not([data-theme="dark"]) .premium-balance-card *,
-:root:not([data-theme="dark"]) .fp-hero-banner *,
-:root:not([data-theme="dark"]) .hero-card .hero-title,
-:root:not([data-theme="dark"]) .hero-card .hero-desc,
-:root:not([data-theme="dark"]) .fc-hero * {
+.premium-balance-card *,
+.fp-hero-banner *,
+.hero-card .hero-title,
+.hero-card .hero-desc,
+.fc-hero * {
   color: #FFF9F2 !important;
 }
 
 /* ==========================================================================
-   5. CHANNEL / YOU PAGE FIXES (CLEAN STATS, COMPACT TABS, LAYERED MENU)
+   5. CHANNEL / YOU PAGE, SEARCH TABS & MENU LISTS (LIGHT & DARK)
    ========================================================================== */
-:root:not([data-theme="dark"]) .channel-profile-section {
-  width: calc(100% - 24px) !important;
-  max-width: calc(100% - 24px) !important;
+.channel-profile-section {
+  width: calc(100% - 20px) !important;
+  max-width: calc(100% - 20px) !important;
   margin: 10px auto 12px auto !important;
   padding: 16px !important;
   box-sizing: border-box !important;
@@ -481,20 +560,16 @@ html, body {
   border-radius: 22px !important;
   box-shadow: var(--s3d-shadow-card) !important;
 }
-
-/* Keep channel stats clean & unclipped (no cramped oval border!) */
-:root:not([data-theme="dark"]) .channel-stat-item {
+.channel-stat-item {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   padding: 0 !important;
-  border-radius: 0 !important;
 }
 
-/* Clean, compact segmented Soft 3D Channel Tabs (no bloated touching pills) */
-:root:not([data-theme="dark"]) .channel-tabs {
-  width: calc(100% - 24px) !important;
-  max-width: calc(100% - 24px) !important;
+.channel-tabs {
+  width: calc(100% - 20px) !important;
+  max-width: calc(100% - 20px) !important;
   margin: 8px auto 10px auto !important;
   padding: 4px !important;
   box-sizing: border-box !important;
@@ -504,7 +579,7 @@ html, body {
   box-shadow: var(--s3d-shadow-inset) !important;
   gap: 6px !important;
 }
-:root:not([data-theme="dark"]) .channel-tab-item {
+.channel-tab-item {
   height: 38px !important;
   padding: 0 10px !important;
   border-radius: 12px !important;
@@ -513,21 +588,20 @@ html, body {
   box-shadow: none !important;
   color: var(--s3d-ink-muted) !important;
 }
-:root:not([data-theme="dark"]) .channel-tab-item.active {
+.channel-tab-item.active {
   background: var(--s3d-caramel-grad) !important;
   color: #FFF9F2 !important;
   box-shadow: var(--s3d-shadow-cta) !important;
 }
-:root:not([data-theme="dark"]) .channel-tab-item.active svg,
-:root:not([data-theme="dark"]) .channel-tab-item.active .ch-tab-label {
+.channel-tab-item.active svg,
+.channel-tab-item.active .ch-tab-label {
   color: #FFF9F2 !important;
   stroke: #FFF9F2 !important;
 }
 
-/* Menu Lists (You, Payout, FAQ, Settings) */
-:root:not([data-theme="dark"]) .you-menu,
-:root:not([data-theme="dark"]) .ch-menu,
-:root:not([data-theme="dark"]) .premium-service-menu {
+.you-menu,
+.ch-menu,
+.premium-service-menu {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -537,17 +611,17 @@ html, body {
   padding: 0 12px !important;
   box-sizing: border-box !important;
 }
-:root:not([data-theme="dark"]) .you-menu-item,
-:root:not([data-theme="dark"]) .premium-service-item,
-:root:not([data-theme="dark"]) .fp-tx-card,
-:root:not([data-theme="dark"]) .fp-method-card,
-:root:not([data-theme="dark"]) .fp-op-card,
-:root:not([data-theme="dark"]) .faq-item,
-:root:not([data-theme="dark"]) .benefit-item,
-:root:not([data-theme="dark"]) .feature-row,
-:root:not([data-theme="dark"]) .format-option-row,
-:root:not([data-theme="dark"]) .theme-menu-item,
-:root:not([data-theme="dark"]) .fly-menu-item {
+.you-menu-item,
+.premium-service-item,
+.fp-tx-card,
+.fp-method-card,
+.fp-op-card,
+.faq-item,
+.benefit-item,
+.feature-row,
+.format-option-row,
+.theme-menu-item,
+.fly-menu-item {
   background: var(--s3d-card-grad) !important;
   border: 1px solid var(--s3d-white-rim) !important;
   border-radius: 18px !important;
@@ -555,34 +629,32 @@ html, body {
   color: var(--s3d-ink) !important;
   transition: transform 0.15s var(--s3d-ease), box-shadow 0.15s var(--s3d-ease) !important;
 }
-:root:not([data-theme="dark"]) .you-menu-item:active,
-:root:not([data-theme="dark"]) .premium-service-item:active,
-:root:not([data-theme="dark"]) .fp-tx-card:active,
-:root:not([data-theme="dark"]) .fp-method-card:active {
+.you-menu-item:active,
+.premium-service-item:active,
+.fp-tx-card:active,
+.fp-method-card:active {
   transform: scale(0.985) !important;
   box-shadow: var(--s3d-shadow-pressed) !important;
 }
 
-/* ==========================================================================
-   6. COMPACT SEARCH TABS, CHIPS & FILTER PILLS (NO BLOATING)
-   ========================================================================== */
-:root:not([data-theme="dark"]) .search-tabs {
+/* Compact Search Tabs, Chips & Filter Pills */
+.search-tabs {
   padding: 8px 12px !important;
   gap: 8px !important;
   background: transparent !important;
   border-bottom: none !important;
 }
-:root:not([data-theme="dark"]) .search-tab-btn,
-:root:not([data-theme="dark"]) .chip-item,
-:root:not([data-theme="dark"]) .discover-tag-chip,
-:root:not([data-theme="dark"]) .ch-chip,
-:root:not([data-theme="dark"]) .fc-chip,
-:root:not([data-theme="dark"]) .fxd-chip,
-:root:not([data-theme="dark"]) .fp-pill-filter,
-:root:not([data-theme="dark"]) .an-tab,
-:root:not([data-theme="dark"]) .an-chip,
-:root:not([data-theme="dark"]) .rp-chips button,
-:root:not([data-theme="dark"]) .mp-tabs button {
+.search-tab-btn,
+.chip-item,
+.discover-tag-chip,
+.ch-chip,
+.fc-chip,
+.fxd-chip,
+.fp-pill-filter,
+.an-tab,
+.an-chip,
+.rp-chips button,
+.mp-tabs button {
   padding: 6px 14px !important;
   height: auto !important;
   min-height: 32px !important;
@@ -595,20 +667,20 @@ html, body {
   box-shadow: var(--s3d-shadow-btn-light) !important;
   font-weight: 700 !important;
 }
-:root:not([data-theme="dark"]) .search-tab-btn.active,
-:root:not([data-theme="dark"]) .chip-item.active,
-:root:not([data-theme="dark"]) .discover-tag-chip.active,
-:root:not([data-theme="dark"]) .ch-chip.active,
-:root:not([data-theme="dark"]) .fc-chip.active,
-:root:not([data-theme="dark"]) .fxd-chip.active,
-:root:not([data-theme="dark"]) .fp-pill-filter.active,
-:root:not([data-theme="dark"]) .an-tab.on,
-:root:not([data-theme="dark"]) .an-tab.active,
-:root:not([data-theme="dark"]) .an-chip.on,
-:root:not([data-theme="dark"]) .an-chip.active,
-:root:not([data-theme="dark"]) .rp-chips button.active,
-:root:not([data-theme="dark"]) .rp-chips button.selected,
-:root:not([data-theme="dark"]) .mp-tabs button.active {
+.search-tab-btn.active,
+.chip-item.active,
+.discover-tag-chip.active,
+.ch-chip.active,
+.fc-chip.active,
+.fxd-chip.active,
+.fp-pill-filter.active,
+.an-tab.on,
+.an-tab.active,
+.an-chip.on,
+.an-chip.active,
+.rp-chips button.active,
+.rp-chips button.selected,
+.mp-tabs button.active {
   background: var(--s3d-caramel-grad) !important;
   color: #FFF9F2 !important;
   border-color: rgba(255, 232, 212, 0.36) !important;
@@ -616,66 +688,65 @@ html, body {
 }
 
 /* ==========================================================================
-   7. BUTTONS, INPUTS, MODALS & TOASTS (LIGHT MODE WARM CREAM SOFT 3D)
+   6. SOFT 3D BUTTONS, INPUTS, MODALS & TOASTS (BOTH LIGHT & DARK MODE)
    ========================================================================== */
-:root:not([data-theme="dark"]) .btn-primary,
-:root:not([data-theme="dark"]) .btn-primary-action,
-:root:not([data-theme="dark"]) .btn-watch-subscribe,
-:root:not([data-theme="dark"]) .btn-create-channel,
-:root:not([data-theme="dark"]) .user-sub-btn:not(.subscribed),
-:root:not([data-theme="dark"]) .au-submit,
-:root:not([data-theme="dark"]) .vf-btn,
-:root:not([data-theme="dark"]) .fc-gbtn,
-:root:not([data-theme="dark"]) .fp-btn-submit-glow,
-:root:not([data-theme="dark"]) .mp-apply-btn,
-:root:not([data-theme="dark"]) .fs-submit-btn,
-:root:not([data-theme="dark"]) .btn-confirm,
-:root:not([data-theme="dark"]) .btn-success-done,
-:root:not([data-theme="dark"]) .floating-next-btn,
-:root:not([data-theme="dark"]) .premium-alert-btn,
-:root:not([data-theme="dark"]) #flaynity-onboarding-next,
-:root:not([data-theme="dark"]) #rp-submitBtn,
-:root:not([data-theme="dark"]) #continueBtn,
-:root:not([data-theme="dark"]) #mainCta,
-:root:not([data-theme="dark"]) .an-btn {
+.btn-primary,
+.btn-primary-action,
+.btn-watch-subscribe,
+.btn-create-channel,
+.user-sub-btn:not(.subscribed),
+.au-submit,
+.vf-btn,
+.fc-gbtn,
+.fp-btn-submit-glow,
+.mp-apply-btn,
+.fs-submit-btn,
+.btn-confirm,
+.btn-success-done,
+.floating-next-btn,
+.premium-alert-btn,
+#flaynity-onboarding-next,
+#rp-submitBtn,
+#continueBtn,
+#mainCta,
+.an-btn {
   background: var(--s3d-caramel-grad) !important;
   color: #FFF9F2 !important;
-  border: 1px solid rgba(255, 232, 212, 0.36) !important;
+  border: 1px solid rgba(255, 232, 212, 0.34) !important;
   border-radius: 999px !important;
   box-shadow: var(--s3d-shadow-cta) !important;
   transition: transform 0.15s var(--s3d-ease), box-shadow 0.15s var(--s3d-ease) !important;
 }
-:root:not([data-theme="dark"]) .btn-primary:active,
-:root:not([data-theme="dark"]) .btn-primary-action:active,
-:root:not([data-theme="dark"]) .au-submit:active,
-:root:not([data-theme="dark"]) .fp-btn-submit-glow:active,
-:root:not([data-theme="dark"]) #rp-submitBtn:active,
-:root:not([data-theme="dark"]) #continueBtn:active,
-:root:not([data-theme="dark"]) #mainCta:active {
+.btn-primary:active,
+.btn-primary-action:active,
+.au-submit:active,
+.fp-btn-submit-glow:active,
+#rp-submitBtn:active,
+#continueBtn:active,
+#mainCta:active {
   transform: translateY(1.5px) scale(0.975) !important;
   box-shadow: var(--s3d-shadow-pressed) !important;
 }
 
-/* Secondary Light Clay Buttons */
-:root:not([data-theme="dark"]) .btn-channel-pill,
-:root:not([data-theme="dark"]) .btn-edit-channel,
-:root:not([data-theme="dark"]) .btn-view-channel,
-:root:not([data-theme="dark"]) .btn-analytics,
-:root:not([data-theme="dark"]) .btn-switch-account-header,
-:root:not([data-theme="dark"]) .btn-watch-like,
-:root:not([data-theme="dark"]) .btn-watch-dislike,
-:root:not([data-theme="dark"]) .btn-watch-download,
-:root:not([data-theme="dark"]) .btn-cancel,
-:root:not([data-theme="dark"]) .fp-btn-cancel,
-:root:not([data-theme="dark"]) .fp-copy-btn,
-:root:not([data-theme="dark"]) .fs-copy-btn,
-:root:not([data-theme="dark"]) .gateway-btn,
-:root:not([data-theme="dark"]) .au-btn-white,
-:root:not([data-theme="dark"]) .au-btn-outline,
-:root:not([data-theme="dark"]) .studio-btn,
-:root:not([data-theme="dark"]) .mp-btn,
-:root:not([data-theme="dark"]) .faq-btn,
-:root:not([data-theme="dark"]) .user-sub-btn.subscribed {
+.btn-channel-pill,
+.btn-edit-channel,
+.btn-view-channel,
+.btn-analytics,
+.btn-switch-account-header,
+.btn-watch-like,
+.btn-watch-dislike,
+.btn-watch-download,
+.btn-cancel,
+.fp-btn-cancel,
+.fp-copy-btn,
+.fs-copy-btn,
+.gateway-btn,
+.au-btn-white,
+.au-btn-outline,
+.studio-btn,
+.mp-btn,
+.faq-btn,
+.user-sub-btn.subscribed {
   background: var(--s3d-pill-grad) !important;
   color: var(--s3d-ink-strong) !important;
   border: 1px solid var(--s3d-white-rim) !important;
@@ -683,83 +754,72 @@ html, body {
   box-shadow: var(--s3d-shadow-btn-light) !important;
 }
 
-/* Soft Inset Inputs */
-:root:not([data-theme="dark"]) .au-input,
-:root:not([data-theme="dark"]) .au-input-wrap,
-:root:not([data-theme="dark"]) .form-input,
-:root:not([data-theme="dark"]) .form-textarea,
-:root:not([data-theme="dark"]) .form-select,
-:root:not([data-theme="dark"]) .sheet-input,
-:root:not([data-theme="dark"]) .sheet-textarea,
-:root:not([data-theme="dark"]) .sheet-select,
-:root:not([data-theme="dark"]) .handle-input-wrap,
-:root:not([data-theme="dark"]) .search-input-wrap,
-:root:not([data-theme="dark"]) .dc-search-btn,
-:root:not([data-theme="dark"]) .bs-input-amount,
-:root:not([data-theme="dark"]) .fs-input-box,
-:root:not([data-theme="dark"]) .fp-amount-input,
-:root:not([data-theme="dark"]) .vf-box,
-:root:not([data-theme="dark"]) #report-a-problem-page input:not([type="file"]):not([type="checkbox"]):not([type="radio"]),
-:root:not([data-theme="dark"]) #report-a-problem-page textarea,
-:root:not([data-theme="dark"]) #report-a-problem-page select {
+.au-input,
+.au-input-wrap,
+.form-input,
+.form-textarea,
+.form-select,
+.sheet-input,
+.sheet-textarea,
+.sheet-select,
+.handle-input-wrap,
+.search-input-wrap,
+.dc-search-btn,
+.bs-input-amount,
+.fs-input-box,
+.fp-amount-input,
+.vf-box,
+#report-a-problem-page input:not([type="file"]):not([type="checkbox"]):not([type="radio"]),
+#report-a-problem-page textarea,
+#report-a-problem-page select {
   background: var(--s3d-well) !important;
   color: var(--s3d-ink-strong) !important;
   border: 1px solid var(--s3d-beige-line) !important;
   box-shadow: var(--s3d-shadow-inset) !important;
 }
 
-/* Soft 3D Modals, Bottom Sheets & Toasts */
-:root:not([data-theme="dark"]) .bottom-sheet,
-:root:not([data-theme="dark"]) .au-sheet,
-:root:not([data-theme="dark"]) .fc-sheet,
-:root:not([data-theme="dark"]) .fxd-sheet,
-:root:not([data-theme="dark"]) .fxm-sheet,
-:root:not([data-theme="dark"]) .ce-sheet,
-:root:not([data-theme="dark"]) .an-sheet,
-:root:not([data-theme="dark"]) .fp-modal-sheet,
-:root:not([data-theme="dark"]) .premium-download-content,
-:root:not([data-theme="dark"]) .upcoming-content,
-:root:not([data-theme="dark"]) .theme-popup-menu,
-:root:not([data-theme="dark"]) .fly-menu,
-:root:not([data-theme="dark"]) .premium-alert-card,
-:root:not([data-theme="dark"]) .mp-alert-card,
-:root:not([data-theme="dark"]) .rp-dialog,
-:root:not([data-theme="dark"]) .studio-popup-content,
-:root:not([data-theme="dark"]) .vf-card,
-:root:not([data-theme="dark"]) .premium-checkout-card,
-:root:not([data-theme="dark"]) .premium-success-card,
-:root:not([data-theme="dark"]) .flcv-sheet {
+.bottom-sheet,
+.au-sheet,
+.fc-sheet,
+.fxd-sheet,
+.fxm-sheet,
+.ce-sheet,
+.an-sheet,
+.fp-modal-sheet,
+.premium-download-content,
+.upcoming-content,
+.theme-popup-menu,
+.fly-menu,
+.premium-alert-card,
+.mp-alert-card,
+.rp-dialog,
+.studio-popup-content,
+.vf-card,
+.premium-checkout-card,
+.premium-success-card,
+.flcv-sheet {
   background: var(--s3d-card-grad) !important;
   color: var(--s3d-ink) !important;
   border: 1px solid var(--s3d-white-rim) !important;
   box-shadow: var(--s3d-shadow-modal) !important;
 }
 
-:root:not([data-theme="dark"]) .toast,
-:root:not([data-theme="dark"]) .fp-toast {
+.toast,
+.fp-toast {
   background: var(--s3d-caramel-grad) !important;
   color: #FFF9F2 !important;
-  border: 1px solid rgba(255, 232, 212, 0.36) !important;
+  border: 1px solid rgba(255, 232, 212, 0.34) !important;
   border-radius: 999px !important;
   box-shadow: var(--s3d-shadow-cta) !important;
 }
 
-/* Auth & Onboarding Warm Cream Light Mode */
-:root:not([data-theme="dark"]) #auth-screen,
-:root:not([data-theme="dark"]) #flaynity-onboarding {
-  background: var(--s3d-canvas-grad) !important;
-  color: var(--s3d-ink) !important;
-}
-
-/* Analytics Positive Growth Badge */
-:root:not([data-theme="dark"]) .an-tr.up {
+.an-tr.up {
   color: var(--s3d-sage) !important;
   background: var(--s3d-sage-soft) !important;
   padding: 2px 8px !important;
   border-radius: 999px !important;
 }
 
-/* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

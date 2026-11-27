@@ -483,7 +483,6 @@ header #appbar-actions-wrap > button:active,
 .premium-white-card-watch,
 .queue-item-card,
 .fl-live-upload-card,
-.profile-card-you,
 .analytics-overview-card,
 .analytics-card,
 .an-card,
@@ -562,16 +561,14 @@ header #appbar-actions-wrap > button:active,
 /* ==========================================================================
    5. CHANNEL / YOU PAGE, SEARCH TABS & MENU LISTS (LIGHT & DARK)
    ========================================================================== */
-.channel-profile-section {
-  width: calc(100% - 20px) !important;
-  max-width: calc(100% - 20px) !important;
-  margin: 10px auto 12px auto !important;
-  padding: 16px !important;
-  box-sizing: border-box !important;
-  background: var(--s3d-card-grad) !important;
-  border: 1px solid var(--s3d-white-rim) !important;
-  border-radius: 22px !important;
-  box-shadow: var(--s3d-shadow-card) !important;
+/* You / Channel Page: NO card box around Channel Name, Handle, Image */
+.channel-profile-section,
+.profile-card-you {
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 .channel-stat-item {
   background: transparent !important;
@@ -580,30 +577,37 @@ header #appbar-actions-wrap > button:active,
   padding: 0 !important;
 }
 
+/* Video / Feels / Posts Tabs: NO outer box — ONLY active clicked tab shows Soft 3D card */
 .channel-tabs {
-  width: calc(100% - 20px) !important;
-  max-width: calc(100% - 20px) !important;
+  width: calc(100% - 24px) !important;
+  max-width: calc(100% - 24px) !important;
   margin: 8px auto 10px auto !important;
-  padding: 4px !important;
+  padding: 4px 0 !important;
   box-sizing: border-box !important;
-  background: var(--s3d-well) !important;
-  border: 1px solid var(--s3d-beige-line) !important;
-  border-radius: 16px !important;
-  box-shadow: var(--s3d-shadow-inset) !important;
-  gap: 6px !important;
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  gap: 8px !important;
 }
 .channel-tab-item {
   height: 38px !important;
-  padding: 0 10px !important;
-  border-radius: 12px !important;
+  padding: 0 12px !important;
+  border-radius: 14px !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   color: var(--s3d-ink-muted) !important;
+  transition: background 0.2s var(--s3d-ease), box-shadow 0.2s var(--s3d-ease), transform 0.15s var(--s3d-ease) !important;
+}
+.channel-tab-item:active {
+  transform: scale(0.95) !important;
 }
 .channel-tab-item.active {
   background: var(--s3d-caramel-grad) !important;
   color: #FFF9F2 !important;
+  border: 1px solid rgba(255, 232, 212, 0.34) !important;
   box-shadow: var(--s3d-shadow-cta) !important;
 }
 .channel-tab-item.active svg,
@@ -855,14 +859,41 @@ header #appbar-actions-wrap > button:active,
 }
 
 
-/* Home Page Long Video Card box matches the Warm Cream app background seamlessly (Light Mode) */
+/* Remove rounded corners on ALL Long Video Cards across the entire app */
+.long-video-feed-card,
+.movie-card,
+.fx-card,
+.fxr-card,
+.ch-vcard,
+.channel-video-card-long,
+#home-feed-container .fb-post,
+#full-movie-page .fb-post,
+#full-movie-page .long-video-feed-card,
+#full-movie-page .movie-card,
+#full-movie-page .fx-card,
+#full-movie-page .fxr-card,
+#full-movie-page .premium-white-card-watch,
+#full-movie-page .queue-item-card {
+  border-radius: 0 !important;
+}
+
+/* Home Page & Long Video Play Page (#full-movie-page) Long Video Card background = #F5DDC5 (Light Mode) */
 :root:not([data-theme="dark"]) #home-feed-container .fb-post,
 :root:not([data-theme="dark"]) #home-feed-container .long-video-feed-card,
 :root:not([data-theme="dark"]) #home-feed-container .movie-card,
-:root:not([data-theme="dark"]) #home-feed-container .fx-card {
+:root:not([data-theme="dark"]) #home-feed-container .fx-card,
+:root:not([data-theme="dark"]) #full-movie-page,
+:root:not([data-theme="dark"]) #full-movie-page .fb-post,
+:root:not([data-theme="dark"]) #full-movie-page .long-video-feed-card,
+:root:not([data-theme="dark"]) #full-movie-page .movie-card,
+:root:not([data-theme="dark"]) #full-movie-page .fx-card,
+:root:not([data-theme="dark"]) #full-movie-page .fxr-card,
+:root:not([data-theme="dark"]) #full-movie-page .premium-white-card-watch,
+:root:not([data-theme="dark"]) #full-movie-page .comment-preview-card,
+:root:not([data-theme="dark"]) #full-movie-page .queue-item-card {
   background: #F5DDC5 !important;
   background-image: none !important;
-  box-shadow: 0 4px 12px rgba(124, 74, 42, 0.06), inset 0 1px 1.5px rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 3px 10px rgba(124, 74, 42, 0.06) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

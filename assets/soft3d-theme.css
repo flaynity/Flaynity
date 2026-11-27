@@ -428,18 +428,52 @@ header #appbar-actions-wrap > button:active,
   background: transparent !important;
 }
 
-/* Posts page Compose & Feels strip aligned cleanly with .fb-post */
-.px-compose,
-.px-feels {
-  width: calc(100% - 20px) !important;
-  max-width: calc(100% - 20px) !important;
-  margin: 10px auto 12px auto !important;
+/* Posts page Composer aligned pixel-for-pixel with .fb-post cards */
+.px-compose {
+  width: calc(100% + 12px) !important;
+  max-width: calc(100% + 12px) !important;
+  margin: 10px -6px 12px -6px !important;
   padding: 10px 12px !important;
   box-sizing: border-box !important;
   background: var(--s3d-card-grad) !important;
   border: 1px solid var(--s3d-white-rim) !important;
   border-radius: 20px !important;
   box-shadow: var(--s3d-shadow-card) !important;
+}
+
+/* Posts page Feels strip: clean full-bleed transparent row (no boxy empty wrapper) */
+.px-feels {
+  width: calc(100% + 32px) !important;
+  max-width: calc(100% + 32px) !important;
+  margin: 0 -16px 12px -16px !important;
+  padding: 4px 0 8px 0 !important;
+  box-sizing: border-box !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.px-feels-strip {
+  padding: 4px 10px 8px 10px !important;
+  gap: 10px !important;
+}
+.px-feels .px-card {
+  border-radius: 18px !important;
+  border: 1.5px solid var(--s3d-white-rim) !important;
+  box-shadow: var(--s3d-shadow-card) !important;
+}
+
+/* Keep Post Card header & footer crisp and uncrushed */
+.fb-post .fb-subbtn,
+.fb-post .fb-follow {
+  padding: 5px 12px !important;
+  font-size: 12.5px !important;
+  flex-shrink: 0 !important;
+}
+.fb-post .fb-foot {
+  justify-content: space-between !important;
+  gap: 10px !important;
+  padding: 10px 14px 12px 14px !important;
 }
 .px-input {
   background: var(--s3d-well) !important;
@@ -461,7 +495,6 @@ header #appbar-actions-wrap > button:active,
 .fx-card,
 .short-home-card-2col,
 .discover-feels-card,
-.px-card,
 .ch-vcard,
 .ch-fcard,
 .channel-video-card-long,

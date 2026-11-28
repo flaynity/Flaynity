@@ -885,7 +885,6 @@ header #appbar-actions-wrap > button:active,
 :root:not([data-theme="dark"]) #full-movie-page .fx-card,
 :root:not([data-theme="dark"]) #full-movie-page .fxr-card,
 :root:not([data-theme="dark"]) #full-movie-page .premium-white-card-watch,
-:root:not([data-theme="dark"]) #full-movie-page .comment-preview-card,
 :root:not([data-theme="dark"]) #full-movie-page .queue-item-card {
   background: #FFFFFF !important;
   background-image: none !important;
@@ -1321,7 +1320,6 @@ header #appbar-actions-wrap > button:active,
 [data-theme="dark"] .fx-card,
 [data-theme="dark"] .fxr-card,
 [data-theme="dark"] #full-movie-page .premium-white-card-watch,
-[data-theme="dark"] #full-movie-page .comment-preview-card,
 [data-theme="dark"] #full-movie-page .queue-item-card {
   background: #0F0F0F !important;
   background-color: #0F0F0F !important;
@@ -1455,6 +1453,43 @@ header #appbar-actions-wrap > button:active,
 #full-movie-page .comment-preview-card:active,
 .comment-preview-card:active {
   transform: scale(0.985) !important;
+}
+
+
+/* Light Theme: Crisp divider line between top header and FIRST Long Video Card */
+:root:not([data-theme="dark"]) header:not(.post-header):not(.fp-step-header):not(.bs-header):not(.chk-header) {
+  border-bottom: 1.5px solid #E5D4C3 !important;
+  box-shadow: 0 2px 6px rgba(124, 74, 42, 0.06) !important;
+}
+:root:not([data-theme="dark"]) #home-feed-container > .fb-post:first-child,
+:root:not([data-theme="dark"]) #home-feed-container .fb-post:first-of-type {
+  border-top: 2px solid #E5D4C3 !important;
+}
+
+/* Long Video Play Page Comments Preview Box: High-specificity Recessed Soft 3D Inset Card (1000172861.jpg) */
+:root:not([data-theme="dark"]) #full-movie-page .comment-preview-card {
+  background: #F3DFCA !important;
+  background-color: #F3DFCA !important;
+  background-image: none !important;
+  border: 1.5px solid rgba(154, 102, 66, 0.26) !important;
+  border-radius: 18px !important;
+  box-shadow:
+    inset 3px 3px 7px rgba(132, 82, 48, 0.16),
+    inset -2px -2px 6px rgba(255, 253, 250, 0.94) !important;
+  padding: 12px 16px !important;
+  color: #3E2416 !important;
+}
+[data-theme="dark"] #full-movie-page .comment-preview-card {
+  background: #171412 !important;
+  background-color: #171412 !important;
+  background-image: none !important;
+  border: 1.5px solid rgba(252, 234, 217, 0.16) !important;
+  border-radius: 18px !important;
+  box-shadow:
+    inset 3px 3px 8px rgba(0, 0, 0, 0.56),
+    inset -2px -2px 5px rgba(252, 234, 217, 0.07) !important;
+  padding: 12px 16px !important;
+  color: #F7ECE2 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

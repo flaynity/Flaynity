@@ -8,7 +8,7 @@
 
 :root {
   /* ---- LIGHT MODE: Warm Cream & Caramel-Chestnut Layered Soft 3D ---- */
-  --s3d-cream: #F4E8D8;
+  --s3d-cream: #FFFFFF;
   --s3d-surface-hi: #FFF9F2;
   --s3d-surface-mid: #FBECE0;
   --s3d-well: #F3DFCA;
@@ -29,7 +29,7 @@
 
   /* Layered Gradients (Light) */
   --s3d-canvas-grad: none;
-  --s3d-header-bg: #F4E8D8;
+  --s3d-header-bg: #FFFFFF;
   --s3d-card-grad: linear-gradient(180deg, #FFFBF6 0%, #F9E9D9 100%);
   --s3d-card-inner-grad: linear-gradient(180deg, #FFFDF9 0%, #F5E1CD 100%);
   --s3d-pill-grad: linear-gradient(180deg, #FFF9F2 0%, #F5E2CF 100%);
@@ -162,7 +162,7 @@
   --au-violet: var(--s3d-caramel-lo) !important;
   --tt-line: var(--s3d-beige-line) !important;
   --tt-muted: var(--s3d-ink-muted) !important;
-  --fb-card: #F3DBC2 !important;
+  --fb-card: #FFFFFF !important;
   --fb-line: var(--s3d-beige-line) !important;
   --fb-muted: var(--s3d-ink-muted) !important;
   --fb-link: var(--s3d-caramel) !important;
@@ -404,8 +404,8 @@ header #appbar-actions-wrap > button:active,
   border-right: none !important;
   border-top: 1px solid rgba(255, 249, 242, 0.65) !important;
   border-bottom: 1px solid var(--s3d-beige-line) !important;
-  background: linear-gradient(180deg, #F4E8D8 0%, #F1D7BE 100%) !important;
-  background-color: #F3DBC2 !important;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%) !important;
+  background-color: #FFFFFF !important;
   box-shadow: 0 4px 12px rgba(124, 74, 42, 0.08), inset 0 1.5px 2px rgba(255, 255, 255, 0.55) !important;
 }
 [data-theme="dark"] #home-feed-container .fb-post,
@@ -481,10 +481,6 @@ header #appbar-actions-wrap > button:active,
 .fx-card,
 .short-home-card-2col,
 .discover-feels-card,
-.ch-vcard,
-.ch-fcard,
-.channel-video-card-long,
-.short-grid-card,
 .comment-preview-card,
 .premium-white-card-watch,
 .queue-item-card,
@@ -877,7 +873,7 @@ header #appbar-actions-wrap > button:active,
   border-radius: 0 !important;
 }
 
-/* Home Page & Long Video Play Page (#full-movie-page) Long Video Card background = #F4E8D8 (Light Mode) */
+/* Home Page & Long Video Play Page (#full-movie-page) Long Video Card background = #FFFFFF (Light Mode) */
 :root:not([data-theme="dark"]) #home-feed-container .fb-post,
 :root:not([data-theme="dark"]) #home-feed-container .long-video-feed-card,
 :root:not([data-theme="dark"]) #home-feed-container .movie-card,
@@ -891,7 +887,7 @@ header #appbar-actions-wrap > button:active,
 :root:not([data-theme="dark"]) #full-movie-page .premium-white-card-watch,
 :root:not([data-theme="dark"]) #full-movie-page .comment-preview-card,
 :root:not([data-theme="dark"]) #full-movie-page .queue-item-card {
-  background: #F4E8D8 !important;
+  background: #FFFFFF !important;
   background-image: none !important;
   box-shadow: 0 3px 10px rgba(124, 74, 42, 0.06) !important;
 }
@@ -967,7 +963,7 @@ header #appbar-actions-wrap > button:active,
   padding-top: 4px !important;
 }
 
-/* Unified #F4E8D8 Long Video Card color everywhere in Light Mode (Home, Play, Search, Discover, Channel) */
+/* Unified #FFFFFF Long Video Card color everywhere in Light Mode (Home, Play, Search, Discover, Channel) */
 :root:not([data-theme="dark"]) .fb-post,
 :root:not([data-theme="dark"]) .long-video-feed-card,
 :root:not([data-theme="dark"]) .movie-card,
@@ -975,7 +971,7 @@ header #appbar-actions-wrap > button:active,
 :root:not([data-theme="dark"]) .fxr-card,
 :root:not([data-theme="dark"]) #search-results-container .fb-post,
 :root:not([data-theme="dark"]) #search-feed-results .fb-post {
-  background: #F4E8D8 !important;
+  background: #FFFFFF !important;
   background-image: none !important;
   border-radius: 0 !important;
 }
@@ -1054,8 +1050,8 @@ header #appbar-actions-wrap > button:active,
 :root:not([data-theme="dark"]) .search-tabs,
 :root:not([data-theme="dark"]) .mp-appbar,
 :root:not([data-theme="dark"]) .rp-bar {
-  background: #F4E8D8 !important;
-  background-color: #F4E8D8 !important;
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
   background-image: none !important;
 }
 
@@ -1107,98 +1103,6 @@ header #appbar-actions-wrap > button:active,
   color: #000000 !important;
   stroke: #000000 !important;
 }
-
-/* You -> Video Tab: Soft 3D Horizontal Video List Cards (Reference: 1000172834.jpg) */
-#channel-videos-grid,
-.channel-videos-container {
-  gap: 12px !important;
-  padding: 6px 12px 16px 12px !important;
-  box-sizing: border-box !important;
-}
-#view-channel-page .ch-vcard,
-#channel-videos-grid .ch-vcard,
-.channel-video-card-long {
-  display: flex !important;
-  align-items: center !important;
-  gap: 12px !important;
-  width: 100% !important;
-  padding: 10px 12px !important;
-  box-sizing: border-box !important;
-  border-radius: 22px !important;
-  background: linear-gradient(180deg, #FAF0E6 0%, #F2E2D4 100%) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.88) !important;
-  box-shadow:
-    0 8px 18px rgba(124, 74, 42, 0.12),
-    0 2px 5px rgba(124, 74, 42, 0.06),
-    inset 0 2px 2px rgba(255, 255, 255, 0.94),
-    inset 0 -2px 4px rgba(168, 110, 68, 0.14) !important;
-  transition: transform 0.16s var(--s3d-ease), box-shadow 0.16s var(--s3d-ease) !important;
-}
-[data-theme="dark"] #view-channel-page .ch-vcard,
-[data-theme="dark"] #channel-videos-grid .ch-vcard,
-[data-theme="dark"] .channel-video-card-long {
-  background: var(--s3d-card-grad) !important;
-  border: 1px solid var(--s3d-white-rim) !important;
-  box-shadow: var(--s3d-shadow-card) !important;
-}
-#view-channel-page .ch-vcard:active,
-#channel-videos-grid .ch-vcard:active,
-.channel-video-card-long:active {
-  transform: scale(0.985) !important;
-  box-shadow: var(--s3d-shadow-pressed) !important;
-}
-#view-channel-page .ch-vthumb,
-.video-card-thumb-wrap {
-  border-radius: 14px !important;
-  overflow: hidden !important;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14) !important;
-}
-
-
-/* Upload Page Tabs (Video, Feels, Post): Original clean layout with crisp readable text */
-.mode-slider-wrap,
-.mode-slider {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-.mode-item {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  color: var(--s3d-ink-muted) !important;
-}
-.mode-item.active {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  color: var(--s3d-ink-strong) !important;
-  font-weight: 800 !important;
-}
-.floating-next-btn,
-.tk-next,
-.studio-page .studio-btn,
-#premium-post-publish-btn,
-#media-picker .mp-next,
-#media-picker .mp-go {
-  background: var(--s3d-caramel-grad) !important;
-  color: #FFF9F2 !important;
-  border: 1px solid rgba(255, 232, 212, 0.38) !important;
-  border-radius: 999px !important;
-  box-shadow: var(--s3d-shadow-cta) !important;
-  font-weight: 800 !important;
-  transition: transform 0.15s var(--s3d-ease), box-shadow 0.15s var(--s3d-ease) !important;
-}
-.floating-next-btn:active,
-.tk-next:active,
-.ce-go:active,
-.studio-page .studio-btn:active,
-#premium-post-publish-btn:active,
-.mode-item:active {
-  transform: translateY(1.5px) scale(0.96) !important;
-  box-shadow: var(--s3d-shadow-pressed) !important;
-}
-
 
 /* ==========================================================================
    FEELS RECORDING & PREVIEW (CLEAN SCOPED — Feels Edit Page 100% ORIGINAL)
@@ -1428,7 +1332,7 @@ header #appbar-actions-wrap > button:active,
 }
 
 
-/* Monetization Page (#monetization-page) Top Header matches App Background seamlessly (Light #F4E8D8 & Dark #0F0F0F) */
+/* Monetization Page (#monetization-page) Top Header matches App Background seamlessly (Light #FFFFFF & Dark #0F0F0F) */
 #monetization-page .mp-appbar,
 #monetization-page .appbar,
 #monetization-page > header,
@@ -1453,7 +1357,7 @@ header #appbar-actions-wrap > button:active,
 }
 
 
-/* You Menu Page/Drawer & Video/Posts More Options Page: Exact App Background Color (#F4E8D8 Light / #0F0F0F Dark) */
+/* You Menu Page/Drawer & Video/Posts More Options Page: Exact App Background Color (#FFFFFF Light / #0F0F0F Dark) */
 #you-quick-menu-overlay .you-quick-menu-panel,
 #you-quick-menu-overlay .you-quick-menu-header,
 .you-quick-menu-panel,
@@ -1474,6 +1378,53 @@ header #appbar-actions-wrap > button:active,
 }
 #you-quick-menu-overlay .you-quick-menu-section-title {
   color: var(--s3d-ink-muted) !important;
+}
+
+
+/* 1. Monetization Page Top Header: Exact App Background Color (#FFFFFF Light / #0F0F0F Dark) */
+:root:not([data-theme="dark"]) #monetization-page,
+:root:not([data-theme="dark"]) #monetization-page header.appbar,
+:root:not([data-theme="dark"]) #monetization-page .appbar,
+:root:not([data-theme="dark"]) #monetization-page .mp-appbar {
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  background-image: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] #monetization-page,
+[data-theme="dark"] #monetization-page header.appbar,
+[data-theme="dark"] #monetization-page .appbar,
+[data-theme="dark"] #monetization-page .mp-appbar {
+  background: #0F0F0F !important;
+  background-color: #0F0F0F !important;
+  background-image: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+/* 2. You -> Video Tab: Delete Video List Card Box Design */
+#view-channel-page .ch-vcard,
+#channel-videos-grid .ch-vcard,
+.channel-video-card-long {
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+/* 3. Feels Tab & Channel Feels Cards: Delete Rounding Corners (border-radius: 0) */
+#feels-tab .short-slide,
+#feels-tab .short-video-el,
+#feels-tab video,
+#channel-content-feels .ch-fcard,
+#channel-feels-grid .ch-fcard,
+#channel-feels-grid .short-grid-card,
+.ch-fcard,
+.short-grid-card {
+  border-radius: 0 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
